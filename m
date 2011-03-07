@@ -1,226 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1CGEdw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 23:33:52 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:48061 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab1CGEdu (ORCPT
+	id S1755288Ab1CGEeK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 23:34:10 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43763 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab1CGEeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 23:33:50 -0500
-X-Greylist: delayed 654 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 23:33:50 EST
-Subject: Re: [PATCH] Fix over-zealous flush_disk when changing device size.
-From: Andrew Patterson <andrew.patterson@hp.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, James.Bottomley@suse.de
-In-Reply-To: <20110306174755.49404c8e@notabene.brown>
-References: <20110217165057.5c50e566@notabene.brown>
-	 <20110303143120.GA8134@infradead.org>
-	 <20110304111624.4be27aaf@notabene.brown> <1299259506.2118.24.camel@grinch>
-	 <20110306174755.49404c8e@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Mar 2011 21:22:51 -0700
-Message-ID: <1299471771.2228.11.camel@grinch>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Mar 2011 23:34:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=lTf3aUy8KtYC5Y8XXq56qxv6r1Yi+Tq8ZlTiyV/+NvppNWkgEAt3cgFqCTrx5xKeuT
+         X+jJoG/GeXDa42vYF0CNipR/snr0vue7qet8qQG3XVCjpczfrWMXLaqXSO6YEG/y1c3n
+         XDUqRm+s7wyUend4JC7M6INj1jKMT2Qr3+E/k=
+MIME-Version: 1.0
+Date: Mon, 7 Mar 2011 15:34:02 +1100
+Message-ID: <AANLkTinaTbqccp0D3DwFBA2BTkY9RLyYZ7NWAK_9udKn@mail.gmail.com>
+Subject: Intermittent problem with BogoMIPs calculation on Intel AP CPUs
+From: Andrew Worsley <amworsley@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+Content-Type: multipart/mixed; boundary=00261883a59c513948049ddd0136
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-06 at 17:47 +1100, NeilBrown wrote:
-> On Fri, 04 Mar 2011 10:25:06 -0700 Andrew Patterson <andrew.patterson@hp.com>
-> wrote:
-> 
-> > On Fri, 2011-03-04 at 11:16 +1100, NeilBrown wrote:
-> > > On Thu, 3 Mar 2011 09:31:20 -0500 Christoph Hellwig <hch@infradead.org> wrote:
-> > > 
-> > > > On Thu, Feb 17, 2011 at 04:50:57PM +1100, NeilBrown wrote:
-> > > > > 
-> > > > > Hi Andrew (and others)
-> > > > >  I wonder if you would review the following for me and comment.
-> > > > 
-> > > > Please send think in this area through -fsdevel next time, thanks!
-> > > 
-> > > Will try to remember - it is sometimes hard to get this sort of patch before
-> > > the right audience ... I thought "block layer" rather than "file systems" :-(
-> > > 
-> > > Thanks for finding it anyway.
-> > > 
-> > > > 
-> > > > > There are two cases when we call flush_disk.
-> > > > > In one, the device has disappeared (check_disk_change) so any
-> > > > > data will hold becomes irrelevant.
-> > > > > In the oter, the device has changed size (check_disk_size_change)
-> > > > > so data we hold may be irrelevant.
-> > > > > 
-> > > > > In both cases it makes sense to discard any 'clean' buffers,
-> > > > > so they will be read back from the device if needed.
-> > > > 
-> > > > Does it?  If the device has disappeared we can't read them back anyway.
-> > > 
-> > > I think that is the point - return an error rather than stale data.
-> > > 
-> > > > If the device has resized to a smaller size the same is true about
-> > > > those buffers that have gone away, and if it has resized to a larger
-> > > > size invalidating anything doesn't make sense at all.  I think this
-> > > > area needs more love than a quick kill_dirty hackjob.
-> > > 
-> > > I tend to agree.  I wasn't entirely convinced by the changelog comments on
-> > > the original offending patch, but I couldn't convince myself there was no
-> > > justification either, and I wanted to fix the corruption I saw - while close
-> > > to the end of a release cycle - without introducing any new regressions.
-> > > 
-> > > > 
-> > > > > In the former case it makes sense to discard 'dirty' buffers
-> > > > > as there will never be anywhere safe to write the data.  In the
-> > > > > second case it *does*not* make sense to discard dirty buffers
-> > > > > as that will lead to file system corruption when you simply enlarge
-> > > > > the containing devices.
-> > > > 
-> > > > Doing anything like this at the buffer cache layer or inode cache layer
-> > > > doesn't make any sense.  If a device goes away or shrinks below the
-> > > > filesystem size the filesystem simply needs to be shut down and in te
-> > > > former size the admin needs to start a manual repair.  Trying to do
-> > > > any botch jobs in lower layer never works in practice.
-> > > 
-> > > Amen.
-> > > What I personally would really like to see is an interface for the block
-> > > device to say to the filesystem (or more specifically: whatever has bdclaimed
-> > > it) "I am about to resize to $X - is that OK?" and also "I have resized -
-> > > deal with it".
-> > > 
-> > > > 
-> > > > For now I think the best short term fix is to simply revert commit
-> > > > 608aeef17a91747d6303de4df5e2c2e6899a95e8
-> > > > 
-> > > > 	"Call flush_disk() after detecting an online resize."
-> > > 
-> > > You may be right, but I suspect that Andrew Patterson had a real issue to
-> > > solve which lead to submitting it, and I'd really like to understand that
-> > > issue before I would feel confident just reverting it.
-> > > 
-> > > Andrew:  are you out there?  Can you provide some background for your patch?
-> > 
-> > I put in the flush disk stuff at the suggestion of James Bottomley. In
-> > fact the text for the justification in 608aeef17a91747d6303 is mostly
-> > his.  The idea is to get errors reported immediately rather than waiting
-> > around for them to eventually get flushed and to make sure stale data is
-> > not kept around.  Certainly, at a minimum, not keeping stale data around
-> > seems valuable to me. 
-> > 
-> > What parts of the original justification did you think are unconvincing?
-> > Note that the flush for growing the device is really only there for the
-> > degenerate case where someone might shrink then grow a device
-> > (admittedly, the user probably deserves to get data corruption/security
-> > holes in such a case).
-> 
-> hi Andrew.
-> 
->  One of the things that I didn't like about the change log is that it didn't
->  give clear context - what exactly is the problem it is trying to fix?
+--00261883a59c513948049ddd0136
+Content-Type: text/plain; charset=ISO-8859-1
 
-Well true, but the rest of the patch set might have given the context.
+I am seeing an occasional problem with the value of the bogoMIPs value
+calculated by calibrate_delay_direct() in init/calibrate.c
+on the 2nd CPU of a "Intel(R) Core(TM)2 Duo CPU     E8500  @ 3.16GHz
+stepping 0a" system on a 2.6.30 kernel running in 32bit mode.
+This code has hardly changed in trunk - I just took the single patch
+different and it makes no difference.
 
->  When you talk about "disks" changing size (reduced radius:-?) I think first
->  of 'dm' and  'md' - yet it clearly isn't dm related as dm doesn't even use
->  that code, and if it was 'md' related I would have thought I would have
->  heard about it....
->  So presumably these are some SCSI-attached devices that do internal volume
->  management and can change the size of .... targets?  LUNs?  something like
->  that.
+Occasionally it generates a very large number or a smaller number.
+Both happen to cause failures reading an
+i2c memory as udelay() doesn't delay long enough. Either because lpj
+is too small or it is too big and causes an overflow in
+part of the calculation - loops_per_jiffy * (HZ/4) in __const_udelay()
+at arch/x86/lib/delay.c
 
-Yes.  The idea is that you want to increase/decrease the size of the
-underlying block device (usually a FC or iSCSI LUN).  Short of a reboot,
-the OS will not detect the size changed.  I added some code that rescans
-the LUN and gets the new size and report the new size to the block
-layer.
+Anyway either of these is very painful on my system and forcing the
+lpj value to a good one via a grub appears to fix everything which
+will allow me to live with this but I think the code in
+calibrate_delay_direct() is buggy, as I describe below.
 
->  So can these things change size without the SCSI layer immediately knowing
->  about it??  Don't you get some sort of "unit attention" or something?
-> 
+ Is it acceptable to just compare the value with the directly
+calculated value from the first Boot CPU?
 
-In some cases with some hardware yes.  In most, no.
+ Is this calibrate_delay_direct() calculation adding any value on
+other CPUs when the direct calculation appears to be fine for the
+first CPU?
 
->  The idea that the device might reduce in size and then grow again seems just
->  plain wrong. 
+The code in commit 8a9e1b0f564615bd92ba50162623e25c2904e564 added
+calibrate_delay_direct() with some detailed comments
+describing how it is trying to avoid problems caused by SMM (see
+http://en.wikipedia.org/wiki/System_Management_Mode) interrupts
+which presumably either cause TSC (Time Stamp Counter) and jiffies to
+increment suddenly in the middle of a tight loop and stuff up
+the calculation.
 
-This would usually be due to some user error.  The user may have shrunk
-the device too much, realized there error and then corrected it. I admit
-that it is pretty far-fetched.
+I illustrate with some output (with an extra printk) showing the
+problems I have seen (perhaps 1 in 10 boots)
 
->  If that is possible it could return to it's original size and
->  you would never notice? 
+  This one I think is because under 32bit mode the TSC lower 32bits
+will wrap and the code doesn't handle that:
 
-Yes.
+...
+Booting processor 1 APIC 0x1 ip 0x6000
+Initializing CPU#1
+calibrate_delay_direct() timer_rate_max=31666645
+timer_rate_min=31666293 pre_start=3378627722 pre_end=3410294234
+calibrate_delay_direct() timer_rate_max=31666673
+timer_rate_min=31666255 pre_start=3473627114 pre_end=3505293578
+calibrate_delay_direct() timer_rate_max=31666597
+timer_rate_min=31666283 pre_start=3568626535 pre_end=3600292951
+calibrate_delay_direct() timer_rate_max=31666635
+timer_rate_min=31666293 pre_start=3663625870 pre_end=3695292372
+calibrate_delay_direct() timer_rate_max=31666607
+timer_rate_min=31666293 pre_start=3758625290 pre_end=3790291773
+Calibrating delay using timer specific routine.. 6333.32 BogoMIPS (lpj=31666631)
 
->  And if there are cases that you know you will never
->  notice, then it seems like it is the wrong solution.
->  It would have been more credible if it *only* tried to flush when the size
->  was reduced ... which you do suggest as a possibility above I think.
-> 
-> 
->  The "potential security hole" seems completely bogus.
->   If you give me permission to read something, and I do, then you remove that
->   permission, the fact that I still remember what I read is not a security
->   hole.  It is a natural fact of life
+.... the next boot actually hits the wrap around and gets the bad value...
 
-I think the case here might be where you add a LUN onto the space where
-the previous LUN space existed. Again, not likely.
+Booting processor 1 APIC 0x1 ip 0x6000
+Initializing CPU#1
+calibrate_delay_direct() timer_rate_max=2453994723
+timer_rate_min=2453994372 pre_start=4262693219 pre_end=2421720428
+<==== screwy value here
+calibrate_delay_direct() timer_rate_max=31666664
+timer_rate_min=31666255 pre_start=2469376541 pre_end=2501043005
+calibrate_delay_direct() timer_rate_max=31666578
+timer_rate_min=31666321 pre_start=2564375962 pre_end=2596042416
+calibrate_delay_direct() timer_rate_max=31666616
+timer_rate_min=31666303 pre_start=2659375344 pre_end=2691041837
+calibrate_delay_direct() timer_rate_max=31666644
+timer_rate_min=31666245 pre_start=2754374727 pre_end=2786041162
+Calibrating delay using timer specific routine.. 103226.44 BogoMIPS
+(lpj=516132245)
+...
 
-> 
->  As for the two cases: I would describe them:
->    1. planned.  The fs is already shrunk to within the new boundary so there
->       is nothing to be gained by flushing, and we could have to reload a
->       pile of data from storage which would be pointless
+     * Here's a different style failure where we end up with a
+anomalously low value - SMI interrupts??? - also causes i2c issues for
+me :-(
+...
+Booting processor 1 APIC 0x1 ip 0x6000
+Initializing CPU#1
+calibrate_delay_direct() timer_rate_max=31666682
+timer_rate_min=31666255 pre_start=4176760694 pre_end=4208427167
+calibrate_delay_direct() timer_rate_max=289455 timer_rate_min=289209
+pre_start=2383154760 pre_end=2383444092
+calibrate_delay_direct() timer_rate_max=31666606
+timer_rate_min=31666264 pre_start=2446777001 pre_end=2478443474
+calibrate_delay_direct() timer_rate_max=31666597
+timer_rate_min=31666284 pre_start=2541776383 pre_end=2573442857
+calibrate_delay_direct() timer_rate_max=31666683
+timer_rate_min=31666284 pre_start=2636775756 pre_end=2668442230
+Calibrating delay using timer specific routine.. 5078.24 BogoMIPS (lpj=25391204)
+....
 
-This is the security case.
+  * I added a patch to work around the TWC wrap and also some
+additional code that tries to through out bad values (due to SMI?) but
+still get issues very occasionally. Fortunately this time it at least
+fell back to the original calculation which appeared to work so
+perhaps that's okay. I attach my patch below if others want to see my
+printk's et cetera.
 
->    2. unplanned.  The fs is probably toast, so whether we invalidate or not
->       isn't going to make a whole lot of difference.
+....
+Booting processor 1 APIC 0x1 ip 0x6000
+Initializing CPU#1
+calibrate_delay_direct() timer_rate_max=31666597
+timer_rate_min=31666331 pre_start=4100065645 pre_end=4131732109
+calibrate_delay_direct() timer_rate_max=31666587
+timer_rate_min=31666255 pre_start=4195065047 pre_end=4226731511
+calibrate_delay_direct() timer_rate_max=10694540
+timer_rate_min=10694283 pre_start=2391054019 pre_end=2401748435
+<==== screwy value
+calibrate_delay_direct() timer_rate_max=31666654
+timer_rate_min=31666245 pre_start=2465081325 pre_end=2496747770
+calibrate_delay_direct() timer_rate_max=31666987
+timer_rate_min=31666654 pre_start=2560080717 pre_end=2591747580
+calibrate_delay_direct() dropping bad bogoMips estimate 0 = 31666597
+calibrate_delay_direct() dropping bad bogoMips estimate 1 = 31666587
+calibrate_delay_direct() dropping bad bogoMips estimate 2 = 10694540
+calibrate_delay_direct() dropping bad bogoMips estimate 3 = 31666654
+calibrate_delay_direct() dropping bad bogoMips estimate 4 = 31666987
+calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.
+Probably due to long platform interrupts. Consider using "lpj=" boot option.
+Calibrating delay loop... 6330.77 BogoMIPS (lpj=31653888)
+....
 
-Agreed.
+I am not on the mailing list, but would be interesting in hearing
+people's suggestions. Also this might be helpful to some people with
+strange intermittent issues
+as lpj is correct for the first CPU which is calculated directly from
+the frequency, so depending which CPU runs the i2c driver it works or
+fails....
 
-> 
->  So I would vote for not flushing.
-> 
->  The "not keeping stale data around" argument ... the only data that is
->  clearly stale is data that is in the block-device cache and beyond the new
->  EOF.  Most filesystems keep most data in the page cache rather than the
->  block device cache so this would just be some metadata - maybe inode tables
->  or block usage bitmaps or similar.  And caches regularly keep data around
->  that isn't actually going to be used - so keeping a bit more on the rare
->  occasion of a block-device-resize doesn't seem like an important cost.
-> 
->  Getting errors a little bit earlier in the case of an unplanned shrink is
->  possibly a credible argument.  This would be read errors only of course -
->  write errors would still arrive at the same time.  I'm not sure it would
->  really be very much earlier...maybe a bit in some cases.
-> 
->  On the whole, the arguments both for and against this change - in principle
->  - seem rather weak:  "maybe" and "possibly" rather than something concrete.
-> 
->  So given that (due to an oversight) it actually causes filesystem
->  corruption, I tend to agree with Christoph that the best approach at this
->  stage is the revert the original patch, and then review all the related code
->  and come up with a "correct" approach.
-> 
-> 
->  And just to clarify: when I first found that description "unconvincing" I
->  hadn't thought through all of these issues - I think it was just that the
->  justification seems vague rather than concrete, so it was hard to reason
->  about it.
-> 
-> 
->  Would you be uncomfortable if I asked Linus to revert both my fix and your
->  original patch??
+Also I noticed this bug listed:
 
-James Bottomley wanted me to put this functionality in. I have no
-problem with reverting it myself, especially if it is causing other
-problems.  I would have to say that you need to ask him (or rather, I am
-not qualified to render an opinion here).
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/375791 : Bogomips
+incorrect on second core
+
+Thanks
 
 Andrew
 
+--00261883a59c513948049ddd0136
+Content-Type: text/x-diff; charset=US-ASCII; name="calibrate.patch"
+Content-Disposition: attachment; filename="calibrate.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gkywb8oe0
 
+ZGlmZiAtLWdpdCBhL2luaXQvY2FsaWJyYXRlLmMgYi9pbml0L2NhbGlicmF0ZS5jCmluZGV4IGEz
+NzljOTAuLjU2MDJmNGYgMTAwNjQ0Ci0tLSBhL2luaXQvY2FsaWJyYXRlLmMKKysrIGIvaW5pdC9j
+YWxpYnJhdGUuYwpAQCAtMzgsNiArMzgsNyBAQCBzdGF0aWMgdW5zaWduZWQgbG9uZyBfX2NwdWlu
+aXQgY2FsaWJyYXRlX2RlbGF5X2RpcmVjdCh2b2lkKQogCXVuc2lnbmVkIGxvbmcgdGltZXJfcmF0
+ZV9taW4sIHRpbWVyX3JhdGVfbWF4OwogCXVuc2lnbmVkIGxvbmcgZ29vZF90aW1lcl9zdW0gPSAw
+OwogCXVuc2lnbmVkIGxvbmcgZ29vZF90aW1lcl9jb3VudCA9IDA7CisJdW5zaWduZWQgbG9uZyBt
+ZWFzdXJlZF90aW1lc1tNQVhfRElSRUNUX0NBTElCUkFUSU9OX1JFVFJJRVNdOwogCWludCBpOwog
+CiAJaWYgKHJlYWRfY3VycmVudF90aW1lcigmcHJlX3N0YXJ0KSA8IDAgKQpAQCAtNjYsNyArNjcs
+NyBAQCBzdGF0aWMgdW5zaWduZWQgbG9uZyBfX2NwdWluaXQgY2FsaWJyYXRlX2RlbGF5X2RpcmVj
+dCh2b2lkKQogCQlwcmVfc3RhcnQgPSAwOwogCQlyZWFkX2N1cnJlbnRfdGltZXIoJnN0YXJ0KTsK
+IAkJc3RhcnRfamlmZmllcyA9IGppZmZpZXM7Ci0JCXdoaWxlIChqaWZmaWVzIDw9IChzdGFydF9q
+aWZmaWVzICsgMSkpIHsKKwkJd2hpbGUgKHRpbWVfYmVmb3JlX2VxKGppZmZpZXMsIHN0YXJ0X2pp
+ZmZpZXMgKyAxKSkgewogCQkJcHJlX3N0YXJ0ID0gc3RhcnQ7CiAJCQlyZWFkX2N1cnJlbnRfdGlt
+ZXIoJnN0YXJ0KTsKIAkJfQpAQCAtNzQsOCArNzUsOCBAQCBzdGF0aWMgdW5zaWduZWQgbG9uZyBf
+X2NwdWluaXQgY2FsaWJyYXRlX2RlbGF5X2RpcmVjdCh2b2lkKQogCiAJCXByZV9lbmQgPSAwOwog
+CQllbmQgPSBwb3N0X3N0YXJ0OwotCQl3aGlsZSAoamlmZmllcyA8PQotCQkgICAgICAgKHN0YXJ0
+X2ppZmZpZXMgKyAxICsgREVMQVlfQ0FMSUJSQVRJT05fVElDS1MpKSB7CisJCXdoaWxlICh0aW1l
+X2JlZm9yZV9lcShqaWZmaWVzLCBzdGFydF9qaWZmaWVzICsgMSArCisJCQkJCSAgICAgICBERUxB
+WV9DQUxJQlJBVElPTl9USUNLUykpIHsKIAkJCXByZV9lbmQgPSBlbmQ7CiAJCQlyZWFkX2N1cnJl
+bnRfdGltZXIoJmVuZCk7CiAJCX0KQEAgLTkwLDE1ICs5MSw1MCBAQCBzdGF0aWMgdW5zaWduZWQg
+bG9uZyBfX2NwdWluaXQgY2FsaWJyYXRlX2RlbGF5X2RpcmVjdCh2b2lkKQogCQkgKiBJZiB0aGUg
+dXBwZXIgbGltaXQgYW5kIGxvd2VyIGxpbWl0IG9mIHRoZSB0aW1lcl9yYXRlIGlzCiAJCSAqID49
+IDEyLjUlIGFwYXJ0LCByZWRvIGNhbGlicmF0aW9uLgogCQkgKi8KLQkJaWYgKHByZV9zdGFydCAh
+PSAwICYmIHByZV9lbmQgIT0gMCAmJgorCXByaW50ayhLRVJOX1dBUk5JTkcKKyJjYWxpYnJhdGVf
+ZGVsYXlfZGlyZWN0KCkgdGltZXJfcmF0ZV9tYXg9JWx1IHRpbWVyX3JhdGVfbWluPSVsdSBwcmVf
+c3RhcnQ9JWx1IHByZV9lbmQ9JWx1XG4iLAorCQkJICB0aW1lcl9yYXRlX21heCwgdGltZXJfcmF0
+ZV9taW4sIHByZV9zdGFydCwgcHJlX2VuZCk7CisJCWlmIChzdGFydCA+PSBwb3N0X2VuZCkKKwkJ
+CXByaW50ayhLRVJOX1dBUk5JTkcKKwkJCQkiY2FsaWJyYXRlX2RlbGF5X2RpcmVjdCgpIGlnbm9y
+aW5nIHRpbWVyX3JhdGUgYXMgd2UgaGFkIGEgVFNDIHdyYXAgYXJvdW5kIHN0YXJ0PSVsdSA+PXBv
+c3RfZW5kPSVsdVxuIiwKKwkJCQlzdGFydCwgcG9zdF9lbmQpOworCQlpZiAoc3RhcnQgPCBwb3N0
+X2VuZCAmJiBwcmVfc3RhcnQgIT0gMCAmJiBwcmVfZW5kICE9IDAgJiYKIAkJICAgICh0aW1lcl9y
+YXRlX21heCAtIHRpbWVyX3JhdGVfbWluKSA8ICh0aW1lcl9yYXRlX21heCA+PiAzKSkgewogCQkJ
+Z29vZF90aW1lcl9jb3VudCsrOwogCQkJZ29vZF90aW1lcl9zdW0gKz0gdGltZXJfcmF0ZV9tYXg7
+Ci0JCX0KKwkJCW1lYXN1cmVkX3RpbWVzW2ldID0gdGltZXJfcmF0ZV9tYXg7CisJCX0gZWxzZQor
+CQkJbWVhc3VyZWRfdGltZXNbaV0gPSAwOworCiAJfQogCi0JaWYgKGdvb2RfdGltZXJfY291bnQp
+Ci0JCXJldHVybiAoZ29vZF90aW1lcl9zdW0vZ29vZF90aW1lcl9jb3VudCk7CisJaWYgKGdvb2Rf
+dGltZXJfY291bnQpIHsKKwkJdW5zaWduZWQgbG9uZyBlc3RpbWF0ZSA9IChnb29kX3RpbWVyX3N1
+bS9nb29kX3RpbWVyX2NvdW50KTsKKwkJdW5zaWduZWQgbG9uZyBtYXhkaWZmID0gZXN0aW1hdGUg
+Pj4gMzsKKworCQlnb29kX3RpbWVyX3N1bSA9IDA7CisJCWdvb2RfdGltZXJfY291bnQgPSAwOwor
+CQlmb3IgKGkgPSAwOyBpIDwgTUFYX0RJUkVDVF9DQUxJQlJBVElPTl9SRVRSSUVTOyBpKyspIHsK
+KwkJCWlmIChtZWFzdXJlZF90aW1lc1tpXSA9PSAwKQorCQkJCWNvbnRpbnVlOworCQkJaWYgKG1l
+YXN1cmVkX3RpbWVzW2ldID4gZXN0aW1hdGUpIHsKKwkJCQkJaWYgKChtZWFzdXJlZF90aW1lc1tp
+XSAtIGVzdGltYXRlKSA+IG1heGRpZmYpIHsKKwkJCQkJCXByaW50ayhLRVJOX1dBUk5JTkcKKwki
+Y2FsaWJyYXRlX2RlbGF5X2RpcmVjdCgpIGRyb3BwaW5nIGJhZCBib2dvTWlwcyBlc3RpbWF0ZSAl
+ZCA9ICVsdVxuIiwgaSwgbWVhc3VyZWRfdGltZXNbaV0pOworCQkJCQkJY29udGludWU7CisJCQkJ
+CX0KKwkJCX0gZWxzZSBpZiAoKGVzdGltYXRlIC0gbWVhc3VyZWRfdGltZXNbaV0pID4gbWF4ZGlm
+ZikgeworCQkJCQlwcmludGsoS0VSTl9XQVJOSU5HCisJImNhbGlicmF0ZV9kZWxheV9kaXJlY3Qo
+KSBkcm9wcGluZyBiYWQgYm9nb01pcHMgZXN0aW1hdGUgJWQgPSAlbHVcbiIsIGksIG1lYXN1cmVk
+X3RpbWVzW2ldKTsKKwkJCQkJY29udGludWU7CisJCQl9CisJCQlnb29kX3RpbWVyX2NvdW50Kys7
+CisJCQlnb29kX3RpbWVyX3N1bSArPSB0aW1lcl9yYXRlX21heDsKKwkJfQorCisJCWlmIChnb29k
+X3RpbWVyX2NvdW50KQorCQkJcmV0dXJuIChnb29kX3RpbWVyX3N1bS9nb29kX3RpbWVyX2NvdW50
+KTsKKwl9CiAKIAlwcmludGsoS0VSTl9XQVJOSU5HICJjYWxpYnJhdGVfZGVsYXlfZGlyZWN0KCkg
+ZmFpbGVkIHRvIGdldCBhIGdvb2QgIgogCSAgICAgICAiZXN0aW1hdGUgZm9yIGxvb3BzX3Blcl9q
+aWZmeS5cblByb2JhYmx5IGR1ZSB0byBsb25nIHBsYXRmb3JtIGludGVycnVwdHMuIENvbnNpZGVy
+IHVzaW5nIFwibHBqPVwiIGJvb3Qgb3B0aW9uLlxuIik7Cg==
+--00261883a59c513948049ddd0136--
