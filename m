@@ -1,106 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab1CGVia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:38:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201Ab1CGVi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:38:29 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, jwjstone@fastmail.fm,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/2 v2] watchdog:  Always return NOTIFY_OK during cpu up/down events
-Date: Mon,  7 Mar 2011 16:37:40 -0500
-Message-Id: <1299533860-1642-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1299533860-1642-1-git-send-email-dzickus@redhat.com>
-References: <1299533860-1642-1-git-send-email-dzickus@redhat.com>
+	id S1756425Ab1CGVmh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 16:42:37 -0500
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:61130 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756347Ab1CGVmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 16:42:35 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsIGALvfdE2rRN+K/2dsb2JhbACmVQJ0okScAoViBIUchxSDSYUv
+X-IronPort-AV: E=Sophos;i="4.62,279,1297036800"; 
+   d="scan'208";a="341895501"
+User-Agent: Microsoft-Entourage/12.28.0.101117
+Date: Mon, 07 Mar 2011 13:42:37 -0800
+Subject: Re: [PATCH] hwmon: (pmbus) Improve support for paged fans
+From: Greg Schnorr <gschnorr@cisco.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+CC: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>
+Message-ID: <C99A914D.5A89C%gschnorr@cisco.com>
+Thread-Topic: [PATCH] hwmon: (pmbus) Improve support for paged fans
+Thread-Index: AcvdEJNC0oSeL1p9lkWsMb3ycOVWyw==
+In-Reply-To: <1299341303-32570-1-git-send-email-guenter.roeck@ericsson.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
+X-OriginalArrivalTime: 07 Mar 2011 21:42:31.0846 (UTC) FILETIME=[902FD460:01CBDD10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch addresses a couple of problems.  One was the case when the
-hardlockup failed to start, it also failed to start the softlockup.
-There were valid cases when the hardlockup shouldn't start and that
-shouldn't block the softlockup (no lapic, bios controls perf counters).
+Verified this patch works as expected on such "fan rich" hardware...
 
-The second problem was when the hardlockup failed to start on boxes
-(from a no lapic or bios controlled perf counter case), it reported
-failure to the cpu notifier chain.  This blocked the notifier from
-continuing to start other more critical pieces of cpu bring-up (in
-our case based on a 2.6.32 fork, it was the mce).  As a result,
-during soft cpu online/offline testing, the system would panic
-when a cpu was offlined because the cpu notifier would succeed in
-processing a watchdog disable cpu event and would panic in the mce
-case as a result of un-initialized variables from a never executed
-cpu up event.
+On 3/5/11 8:08 AM, "Guenter Roeck" <guenter.roeck@ericsson.com> wrote:
 
-I realized the hardlockup/softlockup cases are really just debugging
-aids and should never impede the progress of a cpu up/down event.
-Therefore I modified the code to always return NOTIFY_OK and instead
-rely on printks to inform the user of problems.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- kernel/watchdog.c |   22 ++++++++++++++++------
- 1 files changed, 16 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index f7c0272..c52645b 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -418,19 +418,22 @@ static int watchdog_prepare_cpu(int cpu)
- static int watchdog_enable(int cpu)
- {
- 	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
--	int err;
-+	int err = 0;
- 
- 	/* enable the perf event */
- 	err = watchdog_nmi_enable(cpu);
--	if (err)
--		return err;
-+
-+	/* Regardless of err above, fall through and start softlockup */
- 
- 	/* create the watchdog thread */
- 	if (!p) {
- 		p = kthread_create(watchdog, (void *)(unsigned long)cpu, "watchdog/%d", cpu);
- 		if (IS_ERR(p)) {
- 			printk(KERN_ERR "softlockup watchdog for %i failed\n", cpu);
--			return PTR_ERR(p);
-+			if (!err)
-+				/* if hardlockup hasn't already set this */
-+				err = PTR_ERR(p);
-+			goto out;
- 		}
- 		kthread_bind(p, cpu);
- 		per_cpu(watchdog_touch_ts, cpu) = 0;
-@@ -438,7 +441,8 @@ static int watchdog_enable(int cpu)
- 		wake_up_process(p);
- 	}
- 
--	return 0;
-+out:
-+	return err;
- }
- 
- static void watchdog_disable(int cpu)
-@@ -550,7 +554,13 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- #endif /* CONFIG_HOTPLUG_CPU */
- 	}
--	return notifier_from_errno(err);
-+
-+	/*
-+	 * hardlockup and softlockup are not important enough
-+	 * to block cpu bring up.  Just always succeed and
-+	 * rely on printk output to flag problems.
-+	 */
-+	return NOTIFY_OK;
- }
- 
- static struct notifier_block __cpuinitdata cpu_nfb = {
--- 
-1.7.3.5
+> So far, it seemed like fans would either all be in page 0, or that
+> there would be one page per fan.
+> 
+> Turns out this was a wrong assumption. There is at least one PMBus
+> fan controller which supports three pages with four fans each.
+> Update code to handle this situation.
+> 
+> Reported-by: Greg Schnorr <gschnorr@cisco.com>
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Greg Schnorr <gschnorr@cisco.com>
 
