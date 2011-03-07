@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab1CGW6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 17:58:05 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:63556 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab1CGW6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 17:58:03 -0500
-Date: Tue, 08 Mar 2011 07:57:57 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: [GIT PULL] Samsung fixes for 2.6.38-rc8
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
-Message-id: <038701cbdd1b$1c11b890$543529b0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvdGxnN1X5GwmurQUaGsl+CUc9uLQ==
+	id S1756737Ab1CGXBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:01:20 -0500
+Received: from kroah.org ([198.145.64.141]:43002 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756345Ab1CGXBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 18:01:19 -0500
+Date: Mon, 7 Mar 2011 15:00:14 -0800
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 00/16] Staging: hv: Consolidate driver and device
+ abstractions
+Message-ID: <20110307230014.GA9873@kroah.com>
+References: <1299531695-22352-1-git-send-email-kys@microsoft.com>
+ <20110307222356.GA25714@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480173E9@TK5EX14MBXC128.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0480173E9@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Mar 07, 2011 at 10:45:15PM +0000, KY Srinivasan wrote:
+> > I'm guessing that you will have follow-on patches now to complete the
+> > migration to the correct driver core use (i.e. proper driver and device
+> > usage?)  Or do you want me to look into doing this?
+> 
+> My immediate goal is to get the vmbus driver to exit staging. To that
+> end I am working on a patch-set to cleanup vmbus_drv.c. I should have this
+> patch-set fairly soon.  Once that is
+> done, I think we would have addressed all the structural/architectural issues
+> of the vmbus driver that is preventing us from exiting staging. 
 
-Please pull Samsung fixes from:
+Well, perhaps, let's not get ahead of ourselves here :)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
+> We are planning to address the issues with other drivers after we are done
+> with the vmbus driver. As always, your help is greatly appreciated.
 
-These things are for small fixes on 2.6.38-rc8.
-If any problems, please let me know.
+The issue I am referring to above still has to do with the vmbus core.
 
-Thanks.
+The goal is to have the vmbus work like all other busses in the kernel.
+You register a hv_driver with some probe and disconnect callbacks, and
+the vmbus calls into the drivers when it needs to.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+You are almost there, using the struct device pointers directly, but a
+few more steps remain.
 
-The following changes since commit dd9c1549edef02290edced639f67b54a25abbe0e:
+I'll look into the details after your remaining cleanups, I don't want
+to get in the way of them.
 
-  Linux 2.6.38-rc7 (2011-03-01 13:55:12 -0800)
+thanks,
 
-are available in the git repository at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
-
-Banajit Goswami (1):
-      ARM: S5P64X0: Fix number of GPIO lines in Bank F
-
-Ben Dooks (3):
-      ARM: S3C64XX: Fix keypad setup to configure correct number of rows
-      ARM: S3C64XX: Add clock for i2c1
-      ARM: S3C64XX: Reduce output of s3c64xx_dma_init1()
-
-Lars-Peter Clausen (2):
-      ARM: S3C2440: Select missing S3C_DEV_USB_HOST on GTA02
-      ARM: S3C2440: Fix usage gpio bank j pin definitions on GTA02
-
-Mark Brown (5):
-      ARM: SAMSUNG: Include devs.h in dev-uart.c to prototype devices
-      ARM: S3C64XX: Staticise non-exported GPIO to interrupt functions
-      ARM: S3C64XX: Tone down SDHCI debugging
-      ARM: S3C64XX: Fix build with WM1190 disabled and WM1192 enabled on
-SMDK6410
-      ARM: S3C64XX: Update regulator names for debugfs compatiblity on
-SMDK6410
-
- arch/arm/mach-s3c2440/Kconfig              |    1 +
- arch/arm/mach-s3c2440/include/mach/gta02.h |   26
-+++++++++++++-------------
- arch/arm/mach-s3c64xx/clock.c              |    6 ++++++
- arch/arm/mach-s3c64xx/dma.c                |   11 ++++++-----
- arch/arm/mach-s3c64xx/gpiolib.c            |    4 ++--
- arch/arm/mach-s3c64xx/mach-smdk6410.c      |   13 +++++++------
- arch/arm/mach-s3c64xx/setup-keypad.c       |    2 +-
- arch/arm/mach-s3c64xx/setup-sdhci.c        |    2 +-
- arch/arm/mach-s5p64x0/include/mach/gpio.h  |    4 ++--
- arch/arm/plat-samsung/dev-uart.c           |    2 ++
- 10 files changed, 41 insertions(+), 30 deletions(-)
-
+greg k-h
