@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab1CGNyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 08:54:43 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:3741 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127Ab1CGNyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 08:54:40 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-cc: "Brett Rudley" <brudley@broadcom.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-References: <AANLkTinhThfS587rkX4y1UbJLQzQKEWGfrFArUVGD3Ew@mail.gmail.com>
- <op.vryqz6qt3ri7v4@arend-laptop>
- <AANLkTinbrbkUO-ycAsX4cLEoM6avPeiYEZZ-zKtavfqq@mail.gmail.com>
-Subject: Re: brcm80211: the system freezes if booted with laptop wifi
- switch to OFF
-To: "Francis Moreau" <francis.moro@gmail.com>
-Date: Mon, 7 Mar 2011 14:54:22 +0100
+	id S1754435Ab1CGOHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 09:07:18 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41666 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab1CGOHQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 09:07:16 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Kernelspace firmware loaders (was: linux-next: manual merge of the staging tree with the v4l-dvb tree)
+Date: Mon, 7 Mar 2011 15:07:36 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r1; KDE/4.6.1; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, "Igor M. Liplianin" <liplianin@me.by>,
+        Ben Gamari <bgamari.foss@gmail.com>
+References: <20110304163905.ed6dd630.sfr@canb.auug.org.au> <20110304171343.GE22173@kroah.com> <4D712750.1070402@redhat.com>
+In-Reply-To: <4D712750.1070402@redhat.com>
 MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vry7kwq83ri7v4@arend-laptop>
-In-Reply-To: <AANLkTinbrbkUO-ycAsX4cLEoM6avPeiYEZZ-zKtavfqq@mail.gmail.com>
-User-Agent: Opera Mail/11.01 (Linux)
-X-WSS-ID: 616A3BAD3T83112815-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103071507.37378.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Mar 2011 12:33:07 +0100, Francis Moreau
-<francis.moro@gmail.com> wrote:
+On Friday 04 March 2011 18:54:24 Mauro Carvalho Chehab wrote:
+> Em 04-03-2011 14:13, Greg KH escreveu:
+> > On Fri, Mar 04, 2011 at 04:39:05PM +1100, Stephen Rothwell wrote:
+> >> Today's linux-next merge of the staging tree got a conflict in
+> >> drivers/staging/Kconfig between commit
+> >> a1256092a1e87511c977a3d0ef96151cda77e5c9 ("[media] Altera FPGA firmware
+> >> download module") from the v4l-dvb tree and commit
+> >> 0867b42113ec4eb8646eb361b15cbcfb741ddf5b ("staging: gma500: Intel GMA500
+> >> staging driver") from the staging tree.
+> >> 
+> >> I fixed it up (see below) and can carry the fix as necessary.
+> > 
+> > That looks correct.
+> > 
+> > Mauro, what is this driver and why is it added to the staging tree?
+> 
+> This driver implements the FPGA programming logic for a firmware required
+> by a DVB driver, and was proposed initially for 2.6.37 inclusion. During
+> the 2.6.38 development cycle, it suffered several revisions, based on our
+> input at the media and lkml mailing lists, where Igor fixed all
+> CodingStyle issues.
+> 
+> In the last minute, during 2.6.38 merge window, two developers (Laurent and
+> Ben) [1] complained against adding a driver for loading FPGA firmware
+> as-is. So, I decided to add it, for now, at staging, to avoid needing to
+> postpone a long series of patches again just because of that, especially
+> since a series of DVB-C devices are without support on Linux without this
+> patch series, and there are very few DVB-C devices currently supported.
+> 
+> The Altera driver is compliant with CodingStyle, and, from my side, it is
+> ok to move it to drivers/others, but it doesn't hurt to give some time for
+> Ben and Laurent to propose alternative way of implementing the firmware
+> request logic.
+> 
+> If nothing happens until 2.6.40 merge window, I think we should go forward
+> and move it to the proper place.
 
->
-> Would it be possible to submit it one more time ?
->
+What's the policy regarding firmware loaders in kernelspace vs. userspace ? 
+JTAG is a quite complex protocol, and we already have lots of JTAG libraries 
+in userspace (http://urjtag.org/ seems to be the most popular one). We also 
+have userspace firmware loaders (such as fxload for the Cypress EZ USB 
+microcontrollers). Do we need a kernelspace JTAG implementation ?
 
-I don't know what the origin is of your kernel so please provide some  
-details on that. The patch itself can be found in the linuxdriver email  
-archive:
+> [1] http://www.mail-archive.com/linux-media@vger.kernel.org/msg26422.html
 
-http://driverdev.linuxdriverproject.org/pipermail/devel/2011-January/011381.html
-
-Not sure whether it applies to whatever you have. I just tried your  
-scenario with my driver and hardware and no freezes during boot.
-
->
-> Thanks
-
-Gr. AvS
 -- 
-"The most merciful thing in the world, I think, is the inability of the
-human
-mind to correlate all its contents." - "The Call of Cthulhu"
+Regards,
 
+Laurent Pinchart
