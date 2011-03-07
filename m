@@ -1,246 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab1CGXn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 18:43:29 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:41645 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756695Ab1CGXn1 (ORCPT
+	id S1753998Ab1CGXpx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:45:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50130 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab1CGXpw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 18:43:27 -0500
-Date: Mon, 7 Mar 2011 17:43:22 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Thieu Le <thieule@chromium.org>
-Cc: kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ecryptfs: modify write path to encrypt page in writepage
-Message-ID: <20110307234321.GA27908@boyd.l.tihix.com>
-References: <20110224224640.GD8237@boyd.l.tihix.com>
- <1298590286-26117-1-git-send-email-thieule@chromium.org>
+	Mon, 7 Mar 2011 18:45:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Q5s6tIb0KdmvnQCAC64IcYHH/dz8bA3jxFv93KgzHovitVeOYDBwJNw+Z5+VIOA7cw
+         oDPOLAXrnCOcwfOFdPYpW3/62uiwtJf41mfoyMnvduUCP2bU/9FNjQhdXVxTVC1yarSf
+         4uS+B5t4/FUc6Gp3S9UWDtw3EVg5nIEhJb1pc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298590286-26117-1-git-send-email-thieule@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110307135831.9e0d7eaa.akpm@linux-foundation.org>
+References: <1299325456-2687-1-git-send-email-avagin@openvz.org>
+	<20110305152056.GA1918@barrios-desktop>
+	<4D72580D.4000208@gmail.com>
+	<20110305155316.GB1918@barrios-desktop>
+	<4D7267B6.6020406@gmail.com>
+	<20110305170759.GC1918@barrios-desktop>
+	<20110307135831.9e0d7eaa.akpm@linux-foundation.org>
+Date: Tue, 8 Mar 2011 08:45:51 +0900
+Message-ID: <AANLkTinDhorLusBju=Gn3bh1VsH1jrv0qixbU3SGWiqa@mail.gmail.com>
+Subject: Re: [PATCH] mm: check zone->all_unreclaimable in all_unreclaimable()
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrew Vagin <avagin@gmail.com>, Andrey Vagin <avagin@openvz.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu Feb 24, 2011 at 03:31:26PM -0800, Thieu Le <thieule@chromium.org> wrote:
-> Change the write path to encrypt the data only when the page is written to
-> disk in ecryptfs_writepage. Previously, ecryptfs encrypts the page in
-> ecryptfs_write_end which means that if there are multiple write requests to
-> the same page, ecryptfs ends up re-encrypting that page over and over again.
-> This patch minimizes the number of encryptions needed.
+On Tue, Mar 8, 2011 at 6:58 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Sun, 6 Mar 2011 02:07:59 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> On Sat, Mar 05, 2011 at 07:41:26PM +0300, Andrew Vagin wrote:
+>> > On 03/05/2011 06:53 PM, Minchan Kim wrote:
+>> > >On Sat, Mar 05, 2011 at 06:34:37PM +0300, Andrew Vagin wrote:
+>> > >>On 03/05/2011 06:20 PM, Minchan Kim wrote:
+>> > >>>On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
+>> > >>>>Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
+>> > >>>>kernel may hang up, because shrink_zones() will do nothing, but
+>> > >>>>all_unreclaimable() will say, that zone has reclaimable pages.
+>> > >>>>
+>> > >>>>do_try_to_free_pages()
+>> > >>>>        shrink_zones()
+>> > >>>>                 for_each_zone
+>> > >>>>                        if (zone->all_unreclaimable)
+>> > >>>>                                continue
+>> > >>>>        if !all_unreclaimable(zonelist, sc)
+>> > >>>>                return 1
+>> > >>>>
+>> > >>>>__alloc_pages_slowpath()
+>> > >>>>retry:
+>> > >>>>        did_some_progress = do_try_to_free_pages(page)
+>> > >>>>        ...
+>> > >>>>        if (!page&&   did_some_progress)
+>> > >>>>                retry;
+>> > >>>>
+>> > >>>>Signed-off-by: Andrey Vagin<avagin@openvz.org>
+>> > >>>>---
+>> > >>>>  mm/vmscan.c |    2 ++
+>> > >>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>> > >>>>
+>> > >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> > >>>>index 6771ea7..1c056f7 100644
+>> > >>>>--- a/mm/vmscan.c
+>> > >>>>+++ b/mm/vmscan.c
+>> > >>>>@@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
+>> > >>>>
+>> > >>>>        for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>> > >>>>                        gfp_zone(sc->gfp_mask), sc->nodemask) {
+>> > >>>>+               if (zone->all_unreclaimable)
+>> > >>>>+                       continue;
+>> > >>>>                if (!populated_zone(zone))
+>> > >>>>                        continue;
+>> > >>>>                if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+>> > >>>zone_reclaimable checks it. Isn't it enough?
+>> > >>I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
+>> > >>This two patches are enough.
+>> > >Sorry if I confused you.
+>> > >I mean zone->all_unreclaimable become true if !zone_reclaimable in balance_pgdat.
+>> > >zone_reclaimable compares recent pages_scanned with the number of zone lru pages.
+>> > >So too many page scanning in small lru pages makes the zone to unreclaimable zone.
+>> > >
+>> > >In all_unreclaimable, we calls zone_reclaimable to detect it.
+>> > >It's the same thing with your patch.
+>> > balance_pgdat set zone->all_unreclaimable, but the problem is that
+>> > it is cleaned late.
+>>
+>> Yes. It can be delayed by pcp so (zone->all_unreclaimable = true) is
+>> a false alram since zone have a free page and it can be returned
+>> to free list by drain_all_pages in next turn.
+>>
+>> >
+>> > The problem is that zone->all_unreclaimable = True, but
+>> > zone_reclaimable() returns True too.
+>>
+>> Why is it a problem?
+>> If zone->all_unreclaimable gives a false alram, we does need to check
+>> it again by zone_reclaimable call.
+>>
+>> If we believe a false alarm and give up the reclaim, maybe we have to make
+>> unnecessary oom kill.
+>>
+>> >
+>> > zone->all_unreclaimable will be cleaned in free_*_pages, but this
+>> > may be late. It is enough allocate one page from page cache, that
+>> > zone_reclaimable() returns True and zone->all_unreclaimable becomes
+>> > True.
+>> > >>>Does the hang up really happen or see it by code review?
+>> > >>Yes. You can reproduce it for help the attached python program. It's
+>> > >>not very clever:)
+>> > >>It make the following actions in loop:
+>> > >>1. fork
+>> > >>2. mmap
+>> > >>3. touch memory
+>> > >>4. read memory
+>> > >>5. munmmap
+>> > >It seems the test program makes fork bombs and memory hogging.
+>> > >If you applied this patch, the problem is gone?
+>> > Yes.
+>>
+>> Hmm.. Although it solves the problem, I think it's not a good idea that
+>> depends on false alram and give up the retry.
+>
+> Any alternative proposals?  We should get the livelock fixed if possible..
+>
 
-Hi Thieu - as we discussed in IRC, there are still some issues with this
-patch. Cloning a local linux-2.6 git tree into an eCryptfs mount, with
-this patch applied, results in some of the top-level plaintext files
-being corrupted.
+And we should avoid unnecessary OOM kill if possible.
 
-$ git clone ~/linux-2.6
-$ md5sum ~/linux-2.6/MAINTAINERS linux-2.6/MAINTAINERS 
-bf67eee70a32b0e13954a11f5a51bb19  /home/tyhicks/linux-2.6/MAINTAINERS
-163da3704e73d2b1a123886305d68d18  linux-2.6/MAINTAINERS
+I think the problem is caused by (zone->pages_scanned <
+zone_reclaimable_pages(zone) * 6). I am not sure (* 6) is a best. It
+would be rather big on recent big DRAM machines.
 
-I haven't had a chance to look into the problem, nor have I found an
-easier way to reproduce this.
+I think it is a trade-off between latency and OOM kill.
+If we decrease the magic value, maybe we should prevent the almost
+livelock but happens unnecessary OOM kill.
 
-Tyler
+And I think zone_reclaimable not fair.
+For example, too many scanning makes reclaimable state to
+unreclaimable state. Maybe it takes a very long time. But just some
+page free makes unreclaimable state to reclaimabe with very easy. So
+we need much painful reclaiming for changing reclaimable state with
+unreclaimabe state. it would affect latency very much.
 
-> 
-> Signed-off-by: Thieu Le <thieule@chromium.org>
-> ---
->  fs/ecryptfs/ecryptfs_kernel.h |    1 -
->  fs/ecryptfs/file.c            |    9 ++++++++-
->  fs/ecryptfs/main.c            |    2 --
->  fs/ecryptfs/mmap.c            |   41 +++++++++++++++++++++++++++--------------
->  fs/ecryptfs/read_write.c      |   12 ++----------
->  fs/ecryptfs/super.c           |    1 -
->  6 files changed, 37 insertions(+), 29 deletions(-)
-> 
-> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-> index dbc84ed..13517ac 100644
-> --- a/fs/ecryptfs/ecryptfs_kernel.h
-> +++ b/fs/ecryptfs/ecryptfs_kernel.h
-> @@ -297,7 +297,6 @@ struct ecryptfs_inode_info {
->  	struct inode vfs_inode;
->  	struct inode *wii_inode;
->  	struct file *lower_file;
-> -	struct mutex lower_file_mutex;
->  	struct ecryptfs_crypt_stat crypt_stat;
->  };
-> 
-> diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-> index 81e10e6..9f7ce63 100644
-> --- a/fs/ecryptfs/file.c
-> +++ b/fs/ecryptfs/file.c
-> @@ -273,7 +273,14 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
->  static int
->  ecryptfs_fsync(struct file *file, int datasync)
->  {
-> -	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
-> +	int rc = 0;
-> +
-> +	rc = generic_file_fsync(file, datasync);
-> +	if (rc)
-> +		goto out;
-> +	rc = vfs_fsync(ecryptfs_file_to_lower(file), datasync);
-> +out:
-> +	return rc;
->  }
-> 
->  static int ecryptfs_fasync(int fd, struct file *file, int flag)
-> diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-> index 758323a..63e412c 100644
-> --- a/fs/ecryptfs/main.c
-> +++ b/fs/ecryptfs/main.c
-> @@ -122,7 +122,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
->  		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
->  	int rc = 0;
-> 
-> -	mutex_lock(&inode_info->lower_file_mutex);
->  	if (!inode_info->lower_file) {
->  		struct dentry *lower_dentry;
->  		struct vfsmount *lower_mnt =
-> @@ -138,7 +137,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
->  			inode_info->lower_file = NULL;
->  		}
->  	}
-> -	mutex_unlock(&inode_info->lower_file_mutex);
->  	return rc;
->  }
-> 
-> diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-> index cc64fca..d36829f 100644
-> --- a/fs/ecryptfs/mmap.c
-> +++ b/fs/ecryptfs/mmap.c
-> @@ -62,6 +62,18 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
->  {
->  	int rc;
-> 
-> +	/*
-> +	 * Refuse to write the page out if we are called from reclaim context
-> +	 * since our writepage() path may potentially allocate memory when
-> +	 * calling into the lower fs vfs_write() which may in turn invoke
-> +	 * us again.
-> +	 */
-> +	if (current->flags & PF_MEMALLOC) {
-> +		redirty_page_for_writepage(wbc, page);
-> +		rc = 0;
-> +		goto out;
-> +	}
-> +
->  	rc = ecryptfs_encrypt_page(page);
->  	if (rc) {
->  		ecryptfs_printk(KERN_WARNING, "Error encrypting "
-> @@ -70,8 +82,8 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
->  		goto out;
->  	}
->  	SetPageUptodate(page);
-> -	unlock_page(page);
->  out:
-> +	unlock_page(page);
->  	return rc;
->  }
-> 
-> @@ -486,6 +498,7 @@ static int ecryptfs_write_end(struct file *file,
->  	struct ecryptfs_crypt_stat *crypt_stat =
->  		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
->  	int rc;
-> +	int need_unlock_page = 1;
-> 
->  	if (crypt_stat->flags & ECRYPTFS_NEW_FILE) {
->  		ecryptfs_printk(KERN_DEBUG, "ECRYPTFS_NEW_FILE flag set in "
-> @@ -512,26 +525,26 @@ static int ecryptfs_write_end(struct file *file,
->  			"zeros in page with index = [0x%.16lx]\n", index);
->  		goto out;
->  	}
-> -	rc = ecryptfs_encrypt_page(page);
-> -	if (rc) {
-> -		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
-> -				"index [0x%.16lx])\n", index);
-> -		goto out;
-> -	}
-> +	set_page_dirty(page);
-> +	unlock_page(page);
-> +	need_unlock_page = 0;
->  	if (pos + copied > i_size_read(ecryptfs_inode)) {
->  		i_size_write(ecryptfs_inode, pos + copied);
->  		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
->  			"[0x%.16llx]\n",
->  			(unsigned long long)i_size_read(ecryptfs_inode));
-> +		balance_dirty_pages_ratelimited(mapping);
-> +		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
-> +		if (rc) {
-> +			printk(KERN_ERR "Error writing inode size to metadata; "
-> +			       "rc = [%d]\n", rc);
-> +			goto out;
-> +		}
->  	}
-> -	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
-> -	if (rc)
-> -		printk(KERN_ERR "Error writing inode size to metadata; "
-> -		       "rc = [%d]\n", rc);
-> -	else
-> -		rc = copied;
-> +	rc = copied;
->  out:
-> -	unlock_page(page);
-> +	if (need_unlock_page)
-> +		unlock_page(page);
->  	page_cache_release(page);
->  	return rc;
->  }
-> diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
-> index db184ef..85d4309 100644
-> --- a/fs/ecryptfs/read_write.c
-> +++ b/fs/ecryptfs/read_write.c
-> @@ -44,15 +44,11 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
->  	ssize_t rc;
-> 
->  	inode_info = ecryptfs_inode_to_private(ecryptfs_inode);
-> -	mutex_lock(&inode_info->lower_file_mutex);
->  	BUG_ON(!inode_info->lower_file);
-> -	inode_info->lower_file->f_pos = offset;
->  	fs_save = get_fs();
->  	set_fs(get_ds());
-> -	rc = vfs_write(inode_info->lower_file, data, size,
-> -		       &inode_info->lower_file->f_pos);
-> +	rc = vfs_write(inode_info->lower_file, data, size, &offset);
->  	set_fs(fs_save);
-> -	mutex_unlock(&inode_info->lower_file_mutex);
->  	mark_inode_dirty_sync(ecryptfs_inode);
->  	return rc;
->  }
-> @@ -234,15 +230,11 @@ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
->  	mm_segment_t fs_save;
->  	ssize_t rc;
-> 
-> -	mutex_lock(&inode_info->lower_file_mutex);
->  	BUG_ON(!inode_info->lower_file);
-> -	inode_info->lower_file->f_pos = offset;
->  	fs_save = get_fs();
->  	set_fs(get_ds());
-> -	rc = vfs_read(inode_info->lower_file, data, size,
-> -		      &inode_info->lower_file->f_pos);
-> +	rc = vfs_read(inode_info->lower_file, data, size, &offset);
->  	set_fs(fs_save);
-> -	mutex_unlock(&inode_info->lower_file_mutex);
->  	return rc;
->  }
-> 
-> diff --git a/fs/ecryptfs/super.c b/fs/ecryptfs/super.c
-> index 3042fe1..15c969e 100644
-> --- a/fs/ecryptfs/super.c
-> +++ b/fs/ecryptfs/super.c
-> @@ -55,7 +55,6 @@ static struct inode *ecryptfs_alloc_inode(struct super_block *sb)
->  	if (unlikely(!inode_info))
->  		goto out;
->  	ecryptfs_init_crypt_stat(&inode_info->crypt_stat);
-> -	mutex_init(&inode_info->lower_file_mutex);
->  	inode_info->lower_file = NULL;
->  	inode = &inode_info->vfs_inode;
->  out:
-> -- 
-> 1.7.3.1
-> 
+Maybe we need more smart zone_reclaimabe which is adaptive with memory pressure.
+
+-- 
+Kind regards,
+Minchan Kim
