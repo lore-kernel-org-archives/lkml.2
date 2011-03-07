@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1CGKpd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 05:45:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883Ab1CGKpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 05:45:25 -0500
-Date: Mon, 7 Mar 2011 11:45:13 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@elte.hu
-Subject: Re: [PATCHv2] trace: adding unstable sched clock note to the warning
-Message-ID: <20110307104513.GB3661@jolsa.redhat.com>
-References: <1296649698-6003-1-git-send-email-jolsa@redhat.com>
- <20110218145219.GD2604@jolsa.brq.redhat.com>
+	id S1755900Ab1CGKrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 05:47:55 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61351 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab1CGKrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 05:47:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Apyz+8r6EspAY6FdGIN2T8kJRYa4kQ5TRtOAZVZBg9bXPEZ01EgT+yz3qMEmCrC2jB
+         QNj9ttTtm0UIbw0a3ZlPKrlVe/YE5H90uOoG7FFmRtwxJKKr8BpVFxeJdSVx85eyD2Bt
+         jFlR1K/yxLunXnuYNinNQFIMRIHcBeOhx3+k8=
+Date: Mon, 7 Mar 2011 11:47:47 +0100
+From: Tejun Heo <tj@kernel.org>
+To: sedat.dilek@gmail.com
+Cc: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the block tree with Linus' tree
+Message-ID: <20110307104747.GH20499@htj.dyndns.org>
+References: <20110307131958.84a5d818.sfr@canb.auug.org.au>
+ <20110307063618.GA10365@mtj.dyndns.org>
+ <4D749A81.50809@kernel.dk>
+ <AANLkTim0qwr-L9RLRDtoZBrFBWGJ1ze9LMxr9dTmdrr9@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110218145219.GD2604@jolsa.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTim0qwr-L9RLRDtoZBrFBWGJ1ze9LMxr9dTmdrr9@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-any feedback?
+On Mon, Mar 07, 2011 at 11:41:23AM +0100, Sedat Dilek wrote:
+> $ git log -1 | cat
+> commit c45165cd2c77843f24ca18af54044303dc2a81ab
+> Author: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date:   Mon Mar 7 17:38:41 2011 +1100
+> 
+>     Add linux-next specific files for 20110307
+> 
+>     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+> $ git pull git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block.git
+> for-next
+> remote: Counting objects: 158, done.
+> remote: Compressing objects: 100% (89/89), done.
+> remote: Total 106 (delta 87), reused 21 (delta 17)
+> Receiving objects: 100% (106/106), 23.33 KiB, done.
+> Resolving deltas: 100% (87/87), completed with 34 local objects.
+> From git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block
+>  * branch            for-next   -> FETCH_HEAD
+> warning: too many files (created: 1120 deleted: 637), skipping inexact
+> rename detection
+> warning: too many files (created: 974 deleted: 462), skipping inexact
+> rename detection
+> Auto-merging block/blk-core.c
+> Auto-merging block/blk-flush.c
+> CONFLICT (content): Merge conflict in block/blk-flush.c
+> Auto-merging block/cfq-iosched.c
+> CONFLICT (content): Merge conflict in block/cfq-iosched.c
+> Automatic merge failed; fix conflicts and then commit the result.
 
-thanks,
-jirka
+Ummm... don't those conflicts come from Stephen's commits?  You would
+need to revert the merge and fixup commits and then pull in the block
+branch.
 
-On Fri, Feb 18, 2011 at 03:52:19PM +0100, Jiri Olsa wrote:
-> hi,
-> 
-> warning "Delta way too big" warning might appear on a system with
-> unstable shed clock right after the system is resumed and tracing
-> was enabled during the suspend.
-> 
-> Since it's not realy bug, and the unstable sched clock is working
-> fast and reliable otherwise, Steven suggested to keep using the
-> sched clock in any case and just to make note in the warning itself.
-> 
-> v2 changes:
-> - added CONFIG_HAVE_UNSTABLE_SCHED_CLOCK dependency
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/trace/ring_buffer.c |   12 ++++++++++--
->  1 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> index bd1c35a..37c4d3e 100644
-> --- a/kernel/trace/ring_buffer.c
-> +++ b/kernel/trace/ring_buffer.c
-> @@ -2162,11 +2162,19 @@ rb_reserve_next_event(struct ring_buffer *buffer,
->  	if (likely(ts >= cpu_buffer->write_stamp)) {
->  		delta = diff;
->  		if (unlikely(test_time_stamp(delta))) {
-> +			int local_clock_stable = 1;
-> +#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
-> +			local_clock_stable = sched_clock_stable;
-> +#endif
->  			WARN_ONCE(delta > (1ULL << 59),
-> -				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n",
-> +				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n%s",
->  				  (unsigned long long)delta,
->  				  (unsigned long long)ts,
-> -				  (unsigned long long)cpu_buffer->write_stamp);
-> +				  (unsigned long long)cpu_buffer->write_stamp,
-> +				  local_clock_stable ? "" :
-> +				  "If you just came from a suspend/resume,\n"
-> +				  "please switch to the trace global clock:\n"
-> +				  "  echo global > /sys/kernel/debug/tracing/trace_clock\n");
->  			add_timestamp = 1;
->  		}
->  	}
-> -- 
-> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks.
+
+-- 
+tejun
