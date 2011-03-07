@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab1CGMPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 07:15:09 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50817 "EHLO
+	id S1755399Ab1CGMYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 07:24:14 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58839 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753549Ab1CGMPG (ORCPT
+	by vger.kernel.org with ESMTP id S1751041Ab1CGMYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 07:15:06 -0500
-Date: Mon, 7 Mar 2011 12:15:03 +0000
+	Mon, 7 Mar 2011 07:24:09 -0500
+Date: Mon, 7 Mar 2011 12:24:08 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
- ADAU1701 SigmaDSP
-Message-ID: <20110307121502.GG13471@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com>
- <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Jassi Brar <jassi.brar@samsung.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] ASoC: neo1973_wm8753: Move lm4857 specefic code to
+ its own module
+Message-ID: <20110307122407.GH13471@opensource.wolfsonmicro.com>
+References: <1299481500-5481-1-git-send-email-lars@metafoo.de>
+ <1299481500-5481-2-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
+In-Reply-To: <1299481500-5481-2-git-send-email-lars@metafoo.de>
 X-Cookie: Today is what happened to yesterday.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 06:50:15AM -0500, Mike Frysinger wrote:
-> On Mon, Mar 7, 2011 at 06:41, Mark Brown wrote:
+On Mon, Mar 07, 2011 at 08:04:55AM +0100, Lars-Peter Clausen wrote:
 
-> > Is this needed by other trees?
+> index 82a4630..37035e6 100644
+> --- a/sound/soc/codecs/Kconfig
+> +++ b/sound/soc/codecs/Kconfig
+> @@ -347,6 +347,9 @@ config SND_SOC_WM9713
+>  	tristate
+>  
+>  # Amp
+> +config SND_SOC_LM4857
+> +	tristate
+> +
+>  config SND_SOC_MAX9877
+>  	tristate
 
-> no
-
-> > I can't apply this driver until it's merged into ASoC via some means
-
-> and andrew has been holding off on merging the firmware driver until
-> something in mainline needs it.  once a driver gets to the point where
-> you're fine with merging it, we can bug akpm to push the sigma
-> firmware loader to linus.
-
-It'd seem easier to just merge the two patches together rather than
-trying to deal with cross-tree issues.
-
-> > This presumably also needs to select the DSP API otherwise it's not
-> > going to build.
-
-> by "DSP API" i'm guessing you mean the Sigma firmware loader
-
-Yes.
-
-> > More generally this doesn't seem like a great interface - apparently the
-> > device requries that firmware be loaded but the whole firmware load
-> > process isn't at all joined up with the driver code meaning that the
-> > application layer has to figure out when firmware needs to be reloaded,
-> > there's no understanding on the part of the driver of what the firmware
-> > on the device is doing or how it's glued into the audio subsystem.
-
-> the API should allow for userspace to specify the firmware name, but
-> that's about it.  it is up to the userspace application to arbitrarily
-> load different firmware files on the fly into the codec without the
-> codec caring what's going into it.  often times the firmware is DSP
-> code to do different post processing on the audio stream (cleanup or
-> whatever).
-
-Right, and this isn't a particularly unusual requirement especially if
-the driver isn't going to have any ability to interact with the DSP (at
-which point it's just coefficient data, the fact that it's a DSP program
-is uninteresting).  The problem is that this isn't a great interface for
-doing that.
-
-At a really basic level the code is not at all integrated with either
-power management or stream handling in ASoC meaning that the user could
-try to download firmware in the middle of an active audio stream (which
-isn't going to be ideal).  Obviously the driver doesn't really support
-any kind of power management at the minute but if it were improved in
-this area you'd also have issues with trying to download firmware while
-the device is off which probably isn't going to work either.
-
-It's also not an interface which offers any kind of discoverability or
-enumerability, meaning that it's not suitable for integration into
-application layer code such as the use case manager.  Applications need
-to be hard coded to know that a particular magic sysfs file needs to be
-poked.  This would be a big step backwards in terms of the ability to
-run off the shelf application software.
+This should also add LM4857 to SND_SOC_ALL_CODECS.  I'll fix that
+incrementally.
