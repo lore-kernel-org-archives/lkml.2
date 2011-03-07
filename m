@@ -1,88 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795Ab1CGXnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 18:43:17 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:1929 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab1CGXnP (ORCPT
+	id S1756814Ab1CGXn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:43:29 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41645 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756695Ab1CGXn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 18:43:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=pREvCPCo7Qj9xP8GdbA+Qej4RETU/tO/blBl4ZU6QI7aG7LjHdiF/jUH9GODuFYBni
-         U2C+s5s4YG0/Gq9/Tkxg==
-Date: Mon, 7 Mar 2011 15:43:03 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>
-cc: Andrew Vagin <avagin@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+	Mon, 7 Mar 2011 18:43:27 -0500
+Date: Mon, 7 Mar 2011 17:43:22 -0600
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Thieu Le <thieule@chromium.org>
+Cc: kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: skip zombie in OOM-killer
-In-Reply-To: <20110307135228.aad5a97d.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1103071537270.21964@chino.kir.corp.google.com>
-References: <1299286307-4386-1-git-send-email-avagin@openvz.org> <20110306193519.49DD.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1103061400170.23737@chino.kir.corp.google.com> <AANLkTi=d+eZxg_NgNWa7roo=1YQS06=EaWJzjseL_Hhs@mail.gmail.com>
- <alpine.DEB.2.00.1103071234480.10264@chino.kir.corp.google.com> <20110307135228.aad5a97d.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Subject: Re: [PATCH] ecryptfs: modify write path to encrypt page in writepage
+Message-ID: <20110307234321.GA27908@boyd.l.tihix.com>
+References: <20110224224640.GD8237@boyd.l.tihix.com>
+ <1298590286-26117-1-git-send-email-thieule@chromium.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298590286-26117-1-git-send-email-thieule@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Mar 2011, Andrew Morton wrote:
+On Thu Feb 24, 2011 at 03:31:26PM -0800, Thieu Le <thieule@chromium.org> wrote:
+> Change the write path to encrypt the data only when the page is written to
+> disk in ecryptfs_writepage. Previously, ecryptfs encrypts the page in
+> ecryptfs_write_end which means that if there are multiple write requests to
+> the same page, ecryptfs ends up re-encrypting that page over and over again.
+> This patch minimizes the number of encryptions needed.
 
-> Andrew's v2 doesn't apply on top of
-> oom-prevent-unnecessary-oom-kills-or-kernel-panics.patch and I'm
-> disinclined to fix that up and merge some untested patch combination.
+Hi Thieu - as we discussed in IRC, there are still some issues with this
+patch. Cloning a local linux-2.6 git tree into an eCryptfs mount, with
+this patch applied, results in some of the top-level plaintext files
+being corrupted.
+
+$ git clone ~/linux-2.6
+$ md5sum ~/linux-2.6/MAINTAINERS linux-2.6/MAINTAINERS 
+bf67eee70a32b0e13954a11f5a51bb19  /home/tyhicks/linux-2.6/MAINTAINERS
+163da3704e73d2b1a123886305d68d18  linux-2.6/MAINTAINERS
+
+I haven't had a chance to look into the problem, nor have I found an
+easier way to reproduce this.
+
+Tyler
+
 > 
-
-Ok.  Andrey, I rebased your patch on top of the latest -mm tree 
-(mmotm-2011-03-02-16-52 with 
-oom-prevent-unnecessary-oom-kills-or-kernel-panics.patch from 
-http://marc.info/?l=linux-mm-commits&m=129953480527038&q=raw) and rewrote 
-the changelog.  They'll both apply on top of Linus' -git even without 
-mmotm.  Could you try this out on your testcase?
-
-Thanks!
-
-
-oom: skip zombies when iterating tasklist
-
-From: Andrey Vagin <avagin@openvz.org>
-
-We shouldn't defer oom killing if a thread has already detached its ->mm
-and still has TIF_MEMDIE set.  Memory needs to be freed, so find kill
-other threads that pin the same ->mm or find another task to kill.
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/oom_kill.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -299,6 +299,8 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 	do_each_thread(g, p) {
- 		unsigned int points;
- 
-+		if (!p->mm)
-+			continue;
- 		if (oom_unkillable_task(p, mem, nodemask))
- 			continue;
- 
-@@ -324,7 +326,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 		 * the process of exiting and releasing its resources.
- 		 * Otherwise we could get an easy OOM deadlock.
- 		 */
--		if ((p->flags & PF_EXITING) && p->mm) {
-+		if (p->flags & PF_EXITING) {
- 			if (p != current)
- 				return ERR_PTR(-1UL);
- 
+> Signed-off-by: Thieu Le <thieule@chromium.org>
+> ---
+>  fs/ecryptfs/ecryptfs_kernel.h |    1 -
+>  fs/ecryptfs/file.c            |    9 ++++++++-
+>  fs/ecryptfs/main.c            |    2 --
+>  fs/ecryptfs/mmap.c            |   41 +++++++++++++++++++++++++++--------------
+>  fs/ecryptfs/read_write.c      |   12 ++----------
+>  fs/ecryptfs/super.c           |    1 -
+>  6 files changed, 37 insertions(+), 29 deletions(-)
+> 
+> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+> index dbc84ed..13517ac 100644
+> --- a/fs/ecryptfs/ecryptfs_kernel.h
+> +++ b/fs/ecryptfs/ecryptfs_kernel.h
+> @@ -297,7 +297,6 @@ struct ecryptfs_inode_info {
+>  	struct inode vfs_inode;
+>  	struct inode *wii_inode;
+>  	struct file *lower_file;
+> -	struct mutex lower_file_mutex;
+>  	struct ecryptfs_crypt_stat crypt_stat;
+>  };
+> 
+> diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+> index 81e10e6..9f7ce63 100644
+> --- a/fs/ecryptfs/file.c
+> +++ b/fs/ecryptfs/file.c
+> @@ -273,7 +273,14 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+>  static int
+>  ecryptfs_fsync(struct file *file, int datasync)
+>  {
+> -	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
+> +	int rc = 0;
+> +
+> +	rc = generic_file_fsync(file, datasync);
+> +	if (rc)
+> +		goto out;
+> +	rc = vfs_fsync(ecryptfs_file_to_lower(file), datasync);
+> +out:
+> +	return rc;
+>  }
+> 
+>  static int ecryptfs_fasync(int fd, struct file *file, int flag)
+> diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+> index 758323a..63e412c 100644
+> --- a/fs/ecryptfs/main.c
+> +++ b/fs/ecryptfs/main.c
+> @@ -122,7 +122,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+>  		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
+>  	int rc = 0;
+> 
+> -	mutex_lock(&inode_info->lower_file_mutex);
+>  	if (!inode_info->lower_file) {
+>  		struct dentry *lower_dentry;
+>  		struct vfsmount *lower_mnt =
+> @@ -138,7 +137,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+>  			inode_info->lower_file = NULL;
+>  		}
+>  	}
+> -	mutex_unlock(&inode_info->lower_file_mutex);
+>  	return rc;
+>  }
+> 
+> diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+> index cc64fca..d36829f 100644
+> --- a/fs/ecryptfs/mmap.c
+> +++ b/fs/ecryptfs/mmap.c
+> @@ -62,6 +62,18 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+>  {
+>  	int rc;
+> 
+> +	/*
+> +	 * Refuse to write the page out if we are called from reclaim context
+> +	 * since our writepage() path may potentially allocate memory when
+> +	 * calling into the lower fs vfs_write() which may in turn invoke
+> +	 * us again.
+> +	 */
+> +	if (current->flags & PF_MEMALLOC) {
+> +		redirty_page_for_writepage(wbc, page);
+> +		rc = 0;
+> +		goto out;
+> +	}
+> +
+>  	rc = ecryptfs_encrypt_page(page);
+>  	if (rc) {
+>  		ecryptfs_printk(KERN_WARNING, "Error encrypting "
+> @@ -70,8 +82,8 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+>  		goto out;
+>  	}
+>  	SetPageUptodate(page);
+> -	unlock_page(page);
+>  out:
+> +	unlock_page(page);
+>  	return rc;
+>  }
+> 
+> @@ -486,6 +498,7 @@ static int ecryptfs_write_end(struct file *file,
+>  	struct ecryptfs_crypt_stat *crypt_stat =
+>  		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+>  	int rc;
+> +	int need_unlock_page = 1;
+> 
+>  	if (crypt_stat->flags & ECRYPTFS_NEW_FILE) {
+>  		ecryptfs_printk(KERN_DEBUG, "ECRYPTFS_NEW_FILE flag set in "
+> @@ -512,26 +525,26 @@ static int ecryptfs_write_end(struct file *file,
+>  			"zeros in page with index = [0x%.16lx]\n", index);
+>  		goto out;
+>  	}
+> -	rc = ecryptfs_encrypt_page(page);
+> -	if (rc) {
+> -		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
+> -				"index [0x%.16lx])\n", index);
+> -		goto out;
+> -	}
+> +	set_page_dirty(page);
+> +	unlock_page(page);
+> +	need_unlock_page = 0;
+>  	if (pos + copied > i_size_read(ecryptfs_inode)) {
+>  		i_size_write(ecryptfs_inode, pos + copied);
+>  		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
+>  			"[0x%.16llx]\n",
+>  			(unsigned long long)i_size_read(ecryptfs_inode));
+> +		balance_dirty_pages_ratelimited(mapping);
+> +		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
+> +		if (rc) {
+> +			printk(KERN_ERR "Error writing inode size to metadata; "
+> +			       "rc = [%d]\n", rc);
+> +			goto out;
+> +		}
+>  	}
+> -	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
+> -	if (rc)
+> -		printk(KERN_ERR "Error writing inode size to metadata; "
+> -		       "rc = [%d]\n", rc);
+> -	else
+> -		rc = copied;
+> +	rc = copied;
+>  out:
+> -	unlock_page(page);
+> +	if (need_unlock_page)
+> +		unlock_page(page);
+>  	page_cache_release(page);
+>  	return rc;
+>  }
+> diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+> index db184ef..85d4309 100644
+> --- a/fs/ecryptfs/read_write.c
+> +++ b/fs/ecryptfs/read_write.c
+> @@ -44,15 +44,11 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
+>  	ssize_t rc;
+> 
+>  	inode_info = ecryptfs_inode_to_private(ecryptfs_inode);
+> -	mutex_lock(&inode_info->lower_file_mutex);
+>  	BUG_ON(!inode_info->lower_file);
+> -	inode_info->lower_file->f_pos = offset;
+>  	fs_save = get_fs();
+>  	set_fs(get_ds());
+> -	rc = vfs_write(inode_info->lower_file, data, size,
+> -		       &inode_info->lower_file->f_pos);
+> +	rc = vfs_write(inode_info->lower_file, data, size, &offset);
+>  	set_fs(fs_save);
+> -	mutex_unlock(&inode_info->lower_file_mutex);
+>  	mark_inode_dirty_sync(ecryptfs_inode);
+>  	return rc;
+>  }
+> @@ -234,15 +230,11 @@ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
+>  	mm_segment_t fs_save;
+>  	ssize_t rc;
+> 
+> -	mutex_lock(&inode_info->lower_file_mutex);
+>  	BUG_ON(!inode_info->lower_file);
+> -	inode_info->lower_file->f_pos = offset;
+>  	fs_save = get_fs();
+>  	set_fs(get_ds());
+> -	rc = vfs_read(inode_info->lower_file, data, size,
+> -		      &inode_info->lower_file->f_pos);
+> +	rc = vfs_read(inode_info->lower_file, data, size, &offset);
+>  	set_fs(fs_save);
+> -	mutex_unlock(&inode_info->lower_file_mutex);
+>  	return rc;
+>  }
+> 
+> diff --git a/fs/ecryptfs/super.c b/fs/ecryptfs/super.c
+> index 3042fe1..15c969e 100644
+> --- a/fs/ecryptfs/super.c
+> +++ b/fs/ecryptfs/super.c
+> @@ -55,7 +55,6 @@ static struct inode *ecryptfs_alloc_inode(struct super_block *sb)
+>  	if (unlikely(!inode_info))
+>  		goto out;
+>  	ecryptfs_init_crypt_stat(&inode_info->crypt_stat);
+> -	mutex_init(&inode_info->lower_file_mutex);
+>  	inode_info->lower_file = NULL;
+>  	inode = &inode_info->vfs_inode;
+>  out:
+> -- 
+> 1.7.3.1
+> 
