@@ -1,179 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab1CGXPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 18:15:54 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:58176 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756345Ab1CGXPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 18:15:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=SjBroluAQZWLMiKMo+VQh/xg3
-	Mh4nMimLoVRh/199PQmzUbjiq4SfwYFfxNJ8pbpUMhHXZ3cFWGU/yGsGWeJ80345
-	PuAAuAtAevI1bjqQYgAKlHGKwjKtd4g9Z5+IHpAOcBKtNKJVS5Ud7mQamO5guFtr
-	hhrqaWfYXtVEp4tNT4=
-Date: Mon, 7 Mar 2011 15:17:57 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: linux-fsdevel@vger.kernel.org
-cc: linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org
-Subject: [RFC] introduce sys_syncfs to sync a single file system (v2)
-In-Reply-To: <87bp1sziqn.fsf@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
- <20110303072223.GA28133@elie> <87bp1sziqn.fsf@linux.vnet.ibm.com>
+	id S932098Ab1CGXQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:16:13 -0500
+Received: from kroah.org ([198.145.64.141]:44599 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756687Ab1CGXQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 18:16:10 -0500
+Date: Mon, 7 Mar 2011 15:15:49 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.37.3
+Message-ID: <20110307231549.GA31536@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes:
- v1->v2: Rename, simplify to just take an fd.
+I'm announcing the release of the 2.6.37.3 kernel.
 
-It is frequently useful to sync a single file system, instead of all
-mounted file systems via sync(2):
+All users of the 2.6.37 kernel series must upgrade.
 
- - On machines with many mounts, it is not at all uncommon for some of
-   them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
-   those and may never get to the one you do care about (e.g., /).
- - Some applications write lots of data to the file system and then
-   want to make sure it is flushed to disk.  Calling fsync(2) on each
-   file introduces unnecessary ordering constraints that result in a large
-   amount of sub-optimal writeback/flush/commit behavior by the file
-   system.
+The updated 2.6.37.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.37.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=summary
 
-There are currently two ways (that I know of) to sync a single super_block:
+thanks,
 
- - BLKFLSBUF ioctl on the block device: That also invalidates the bdev
-   mapping, which isn't usually desirable, and doesn't work for non-block
-   file systems.
- - 'mount -o remount,rw' will call sync_filesystem as an artifact of the
-   current implemention.  Relying on this little-known side effect for
-   something like data safety sounds foolish.
+greg k-h
 
-Both of these approaches require root privileges, which some applications
-do not have (nor should they need?) given that sync(2) is an unprivileged
-operation.
+------------
 
-This patch introduces a new system call syncfs(2) that takes an fd and
-syncs only the file system it references.  Maybe someday we can even
+ Documentation/networking/dns_resolver.txt    |    9 ++
+ Makefile                                     |    2 
+ arch/x86/include/asm/acpi.h                  |    1 
+ arch/x86/include/asm/smpboot_hooks.h         |    2 
+ arch/x86/kernel/acpi/boot.c                  |   14 ++-
+ arch/x86/kernel/early-quirks.c               |   16 +---
+ block/blk-core.c                             |   18 +----
+ block/blk-flush.c                            |    8 +-
+ block/blk-throttle.c                         |   29 +++++---
+ block/cfq-iosched.c                          |    6 -
+ block/elevator.c                             |    4 -
+ block/genhd.c                                |    2 
+ drivers/acpi/debugfs.c                       |   20 +++--
+ drivers/block/floppy.c                       |    2 
+ drivers/block/loop.c                         |    5 -
+ drivers/bluetooth/ath3k.c                    |    5 +
+ drivers/bluetooth/btusb.c                    |   12 ++-
+ drivers/gpu/drm/drm_irq.c                    |    3 
+ drivers/gpu/drm/i915/i915_dma.c              |   11 +++
+ drivers/gpu/drm/radeon/radeon_display.c      |    2 
+ drivers/md/linear.c                          |    1 
+ drivers/md/md.c                              |   25 ++++++-
+ drivers/md/md.h                              |    2 
+ drivers/md/multipath.c                       |    1 
+ drivers/md/raid0.c                           |    1 
+ drivers/md/raid1.c                           |    6 +
+ drivers/md/raid10.c                          |    7 +
+ drivers/md/raid5.c                           |    1 
+ drivers/mfd/tps6586x.c                       |   10 +-
+ drivers/mfd/ucb1x00-ts.c                     |   12 ++-
+ drivers/net/e1000e/ich8lan.c                 |   16 +++-
+ drivers/net/e1000e/netdev.c                  |    3 
+ drivers/net/e1000e/phy.c                     |   14 +++
+ drivers/net/r8169.c                          |    6 +
+ drivers/net/tg3.c                            |    8 +-
+ drivers/net/wireless/ath/ath9k/hif_usb.c     |    9 +-
+ drivers/net/wireless/ath/carl9170/usb.c      |    2 
+ drivers/net/wireless/p54/p54pci.c            |   14 ++-
+ drivers/net/wireless/p54/p54usb.c            |    1 
+ drivers/rtc/rtc-ds3232.c                     |   14 ++-
+ drivers/scsi/scsi_lib.c                      |    2 
+ drivers/scsi/scsi_transport_fc.c             |    2 
+ drivers/staging/brcm80211/sys/wl_mac80211.c  |   14 ++-
+ drivers/staging/brcm80211/sys/wlc_mac80211.c |   14 +++
+ drivers/staging/brcm80211/sys/wlc_pub.h      |    2 
+ drivers/staging/comedi/drivers/mite.c        |    2 
+ drivers/staging/comedi/drivers/ni_6527.c     |    4 +
+ drivers/staging/comedi/drivers/ni_65xx.c     |    4 +
+ drivers/staging/comedi/drivers/ni_660x.c     |    4 +
+ drivers/staging/comedi/drivers/ni_670x.c     |    4 +
+ drivers/staging/comedi/drivers/ni_pcidio.c   |    4 +
+ drivers/staging/comedi/drivers/ni_pcimio.c   |    4 +
+ drivers/staging/usbip/vhci.h                 |    6 -
+ drivers/staging/usbip/vhci_hcd.c             |   54 +++++++++++++--
+ drivers/staging/usbip/vhci_rx.c              |   15 ++--
+ drivers/usb/core/hub.c                       |   23 +++---
+ drivers/usb/core/quirks.c                    |    8 ++
+ drivers/usb/host/xhci-ring.c                 |   40 ++++++-----
+ drivers/usb/musb/musb_core.c                 |    1 
+ drivers/usb/musb/omap2430.c                  |    1 
+ drivers/usb/serial/sierra.c                  |    3 
+ drivers/usb/serial/usb_wwan.c                |   15 ++--
+ drivers/usb/serial/visor.c                   |   12 +++
+ fs/block_dev.c                               |   12 +--
+ fs/eventpoll.c                               |   95 +++++++++++++++++++++++++++
+ fs/ext2/namei.c                              |    9 --
+ fs/fuse/file.c                               |   52 ++++++++++++--
+ fs/fuse/fuse_i.h                             |    6 +
+ fs/gfs2/main.c                               |    9 --
+ fs/inode.c                                   |   31 ++++++--
+ fs/internal.h                                |    2 
+ fs/nilfs2/btnode.c                           |    5 -
+ fs/nilfs2/btnode.h                           |    1 
+ fs/nilfs2/mdt.c                              |    4 -
+ fs/nilfs2/page.h                             |    1 
+ fs/nilfs2/segment.c                          |    3 
+ fs/nilfs2/super.c                            |    2 
+ fs/ocfs2/refcounttree.c                      |    7 +
+ fs/ocfs2/super.c                             |   28 +++++--
+ fs/partitions/ldm.c                          |    5 +
+ include/drm/drmP.h                           |    2 
+ include/linux/blkdev.h                       |    5 -
+ include/linux/fs.h                           |    4 -
+ include/linux/pm.h                           |    2 
+ include/linux/pm_wakeup.h                    |   25 +++----
+ include/linux/vmstat.h                       |   10 +-
+ kernel/time/tick-broadcast.c                 |   10 ++
+ kernel/time/tick-common.c                    |    6 +
+ kernel/time/tick-internal.h                  |    3 
+ lib/swiotlb.c                                |    6 +
+ mm/memory.c                                  |    2 
+ mm/page_alloc.c                              |    5 -
+ mm/vmscan.c                                  |   19 ++++-
+ mm/vmstat.c                                  |   36 +---------
+ net/dccp/input.c                             |    7 -
+ net/dns_resolver/dns_key.c                   |   20 ++++-
+ net/ipv4/devinet.c                           |   30 +++++---
+ net/ipv4/inet_timewait_sock.c                |    2 
+ net/wireless/wext-compat.c                   |    4 -
+ sound/pci/hda/patch_conexant.c               |    5 +
+ sound/pci/hda/patch_via.c                    |    2 
+ sound/soc/imx/eukrea-tlv320.c                |    2 
+ sound/soc/pxa/e740_wm9705.c                  |    4 -
+ sound/soc/pxa/e750_wm9705.c                  |    4 -
+ sound/soc/pxa/e800_wm9712.c                  |    4 -
+ sound/soc/pxa/em-x270.c                      |    4 -
+ sound/soc/pxa/mioa701_wm9713.c               |    4 -
+ sound/soc/pxa/palm27x.c                      |    4 -
+ sound/soc/pxa/tosa.c                         |    4 -
+ sound/soc/pxa/zylonite.c                     |    4 -
+ sound/usb/card.c                             |    4 +
+ sound/usb/pcm.c                              |    7 +
+ sound/usb/usbaudio.h                         |    1 
+ 113 files changed, 763 insertions(+), 322 deletions(-)
 
- $ sync /some/path
+Alan Stern (2):
+      USB: add quirks entry for Keytouch QWERTY Panel
+      USB: prevent buggy hubs from crashing the USB stack
 
-and not get
+Alex Deucher (1):
+      Revert "drm/radeon/kms: switch back to min->max pll post divider iteration"
 
- sync: ignoring all arguments
+Andreas Herrmann (1):
+      x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems
 
-The syscall is motivated by comments by Al and Christoph at the last LSF.
-syncfs(2) seems like an appropriate name given statfs(2).
+Arend van Spriel (1):
+      staging: brcm80211: remove assert to avoid panic since 2.6.37 kernel
 
-A similar ioctl was also proposed a while back, see
-	http://marc.info/?l=linux-fsdevel&m=127970513829285&w=2
+Bruce Allan (2):
+      e1000e: 82579 PHY incorrectly identified during init
+      e1000e: disable broken PHY wakeup for ICH10 LOMs, use MAC wakeup instead
 
-Signed-off-by: Sage Weil <sage@newdream.net>
----
- arch/x86/ia32/ia32entry.S          |    1 +
- arch/x86/include/asm/unistd_32.h   |    3 ++-
- arch/x86/include/asm/unistd_64.h   |    2 ++
- arch/x86/kernel/syscall_table_32.S |    1 +
- fs/sync.c                          |   24 ++++++++++++++++++++++++
- 5 files changed, 30 insertions(+), 1 deletions(-)
+Christian Lamparter (2):
+      p54pci: update receive dma buffers before and after processing
+      p54usb: add Senao NUB-350 usbid
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 518bb99..24082b8 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -851,4 +851,5 @@ ia32_sys_call_table:
- 	.quad sys_fanotify_init
- 	.quad sys32_fanotify_mark
- 	.quad sys_prlimit64		/* 340 */
-+	.quad sys_syncfs
- ia32_syscall_end:
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index b766a5e..da3903f 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -346,10 +346,11 @@
- #define __NR_fanotify_init	338
- #define __NR_fanotify_mark	339
- #define __NR_prlimit64		340
-+#define __NR_syncfs             341
- 
- #ifdef __KERNEL__
- 
--#define NR_syscalls 341
-+#define NR_syscalls 342
- 
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index 363e9b8..a2e7516 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -669,6 +669,8 @@ __SYSCALL(__NR_fanotify_init, sys_fanotify_init)
- __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
- #define __NR_prlimit64				302
- __SYSCALL(__NR_prlimit64, sys_prlimit64)
-+#define __NR_syncfs                             303
-+__SYSCALL(__NR_syncfs, sys_syncfs)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index b35786d..d40bd16 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -340,3 +340,4 @@ ENTRY(sys_call_table)
- 	.long sys_fanotify_init
- 	.long sys_fanotify_mark
- 	.long sys_prlimit64		/* 340 */
-+	.long sys_syncfs
-diff --git a/fs/sync.c b/fs/sync.c
-index ba76b96..92ca208 100644
---- a/fs/sync.c
-+++ b/fs/sync.c
-@@ -7,6 +7,7 @@
- #include <linux/fs.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/namei.h>
- #include <linux/sched.h>
- #include <linux/writeback.h>
- #include <linux/syscalls.h>
-@@ -128,6 +129,29 @@ void emergency_sync(void)
- 	}
- }
- 
-+/*
-+ * sync a single super
-+ */
-+SYSCALL_DEFINE1(syncfs, int, fd)
-+{
-+	struct file *file;
-+	struct super_block *sb;
-+	int ret;
-+	int fput_needed;
-+
-+	file = fget_light(fd, &fput_needed);
-+	if (!file)
-+		return -EBADF;
-+	sb = file->f_dentry->d_sb;
-+
-+	down_read(&sb->s_umount);
-+	ret = sync_filesystem(sb);
-+	up_read(&sb->s_umount);
-+
-+	fput_light(file, fput_needed);
-+	return ret;
-+}
-+
- /**
-  * vfs_fsync_range - helper to sync a range of data & metadata to disk
-  * @file:		file to sync
--- 
-1.7.0
+Daniel J Blueman (1):
+      fix cfg80211_wext_siwfreq lock ordering...
+
+Dave Airlie (1):
+      drm: fix unsigned vs signed comparison issue in modeset ctl ioctl.
+
+David Henningsson (3):
+      ALSA: HDA: Add a new Conexant codec 506e (20590)
+      ALSA: HDA: Fix mic initialization in VIA auto parser
+      ALSA: HDA: Add ideapad quirk for two Dell machines
+
+David Howells (1):
+      DNS: Fix a NULL pointer deref when trying to read an error key [CVE-2011-1076]
+
+Davide Libenzi (1):
+      epoll: prevent creating circular epoll structures
+
+Dmitry Eremin-Solenikov (1):
+      ASoC: correct pxa AC97 DAI names
+
+Don Zickus (1):
+      x86: Use u32 instead of long to set reset vector back to 0
+
+Eric Bénard (1):
+      eukrea-tlv320: fix platform_name
+
+Eric Dumazet (1):
+      tcp: fix inet_twsk_deschedule()
+
+FUJITA Tomonori (1):
+      swiotlb: fix wrong panic
+
+Felipe Balbi (1):
+      usb: musb: core: set has_tt flag
+
+Gerrit Renker (1):
+      dccp: fix oops on Reset after close
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.37.3
+
+Ian Abbott (1):
+      Staging: comedi: Add MODULE_LICENSE and similar to NI modules
+
+Ian Campbell (1):
+      arp_notify: unconditionally send gratuitous ARP for NETDEV_NOTIFY_PEERS.
+
+Jan Niehusmann (1):
+      drm/i915: fix memory corruption with GM965 and >4GB RAM
+
+Jan Puk (1):
+      carl9170: add Airlive X.USB a/b/g/n USBID
+
+Jiri Slaby (1):
+      USB: serial/usb_wwan, fix tty NULL dereference
+
+Jochen Friedrich (1):
+      mfd: Fix NULL pointer due to non-initialized ucb1x00-ts absinfo
+
+Johan Hovold (1):
+      usb: musb: omap2430: fix kernel panic on reboot
+
+Jon Thomas (1):
+      sierra: add new ID for Airprime/Sierra USB IP modem
+
+Josh Hunt (1):
+      ext2: Fix link count corruption under heavy link+rename load
+
+Lei Xu (1):
+      drivers/rtc/rtc-ds3232.c: fix time range difference between linux and RTC chip
+
+Linus Torvalds (1):
+      Revert "Bluetooth: Enable USB autosuspend by default on btusb"
+
+Luben Tuikov (1):
+      USB: Reset USB 3.0 devices on (re)discovery
+
+Maciej Szmigiero (2):
+      USB: Add Samsung SGH-I500/Android modem ID switch to visor driver
+      USB: Add quirk for Samsung Android phone modem
+
+Mark Fasheh (1):
+      ocfs2: Check heartbeat mode for kernel stacks only
+
+Matt Carlson (1):
+      tg3: Restrict phy ioctl access
+
+Max Vozeler (4):
+      staging: usbip: vhci: update reference count for usb_device
+      staging: usbip: vhci: give back URBs from in-flight unlink requests
+      staging: usbip: vhci: refuse to enqueue for dead connections
+      staging: usbip: vhci: use urb->dev->portnum to find port
+
+Mel Gorman (1):
+      mm: vmstat: use a single setter function and callback for adjusting percpu thresholds
+
+Miklos Szeredi (2):
+      mm: prevent concurrent unmap_mapping_range() on the same inode
+      fuse: fix hang of single threaded fuseblk filesystem
+
+Namhyung Kim (1):
+      mm: fix dubious code in __count_immobile_pages()
+
+NeilBrown (4):
+      md: correctly handle probe of an 'mdp' device.
+      md: avoid spinlock problem in blk_throtl_exit
+      md: Fix - again - partition detection when array becomes active
+      Fix over-zealous flush_disk when changing device size.
+
+Oliver Neukum (1):
+      Bluetooth: fix crash with quirky dongles doing sound
+
+Paul Zimmerman (4):
+      xhci: Avoid BUG() in interrupt context
+      xhci: Clarify some expressions in the TRB math
+      xhci: Fix errors in the running total calculations in the TRB math
+      xhci: Fix an error in count_sg_trbs_needed()
+
+Petr Uzel (1):
+      block: kill loop_mutex
+
+Rafael J. Wysocki (1):
+      PM: Make ACPI wakeup from S5 work again when CONFIG_PM_SLEEP is unset
+
+Roland Vossen (1):
+      staging: brcm80211: bugfix for softmac crash on multi cpu configurations
+
+Ryusuke Konishi (1):
+      nilfs2: fix regression that i-flag is not set on changeless checkpoints
+
+Stanislaw Gruszka (1):
+      r8169: disable ASPM
+
+Sujith Manoharan (1):
+      ath9k_htc: Fix an endian issue
+
+Takashi Iwai (1):
+      ALSA: usb-audio: fix oops due to cleanup race when disconnecting
+
+Tejun Heo (2):
+      block: add @force_kblockd to __blk_run_queue()
+      block: blk-flush shouldn't call directly into q->request_fn() __blk_run_queue()
+
+Thomas Gleixner (1):
+      clockevents: Prevent oneshot mode when broadcast device is periodic
+
+Timo Warns (1):
+      ldm: corrupted partition table can cause kernel oops
+
+Tristan Ye (1):
+      Ocfs2/refcounttree: Fix a bug for refcounttree to writeback clusters in a right number.
+
+Vasiliy Kulikov (1):
+      ACPI / debugfs: Fix buffer overflows, double free
+
+Vivek Goyal (1):
+      blk-throttle: Do not use kblockd workqueue for throtl work
+
+Yu-Chen Cho (2):
+      Bluetooth: add Atheros BT AR9285 fw supported
+      Bluetooth: Add Atheros BT AR5BBU12 fw supported
+
+vwadekar@nvidia.com (1):
+      mfd: Avoid tps6586x burst writes
 
