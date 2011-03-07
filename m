@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab1CGXBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 18:01:20 -0500
-Received: from kroah.org ([198.145.64.141]:43002 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756345Ab1CGXBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 18:01:19 -0500
-Date: Mon, 7 Mar 2011 15:00:14 -0800
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 00/16] Staging: hv: Consolidate driver and device
- abstractions
-Message-ID: <20110307230014.GA9873@kroah.com>
-References: <1299531695-22352-1-git-send-email-kys@microsoft.com>
- <20110307222356.GA25714@kroah.com>
- <6E21E5352C11B742B20C142EB499E0480173E9@TK5EX14MBXC128.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0480173E9@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756745Ab1CGXFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:05:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52103 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756345Ab1CGXFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 18:05:46 -0500
+Date: Mon, 7 Mar 2011 15:05:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+        Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/04 v2] sysctl: change to use proc_dointvec_bool while
+ needed
+Message-Id: <20110307150526.9afedd47.akpm@linux-foundation.org>
+In-Reply-To: <20110304154631.GB14672@darkstar>
+References: <20110304154631.GB14672@darkstar>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 10:45:15PM +0000, KY Srinivasan wrote:
-> > I'm guessing that you will have follow-on patches now to complete the
-> > migration to the correct driver core use (i.e. proper driver and device
-> > usage?)  Or do you want me to look into doing this?
-> 
-> My immediate goal is to get the vmbus driver to exit staging. To that
-> end I am working on a patch-set to cleanup vmbus_drv.c. I should have this
-> patch-set fairly soon.  Once that is
-> done, I think we would have addressed all the structural/architectural issues
-> of the vmbus driver that is preventing us from exiting staging. 
+On Fri, 4 Mar 2011 23:46:31 +0800
+Dave Young <hidave.darkstar@gmail.com> wrote:
 
-Well, perhaps, let's not get ahead of ourselves here :)
+> @@ -374,9 +372,7 @@ static struct ctl_table kern_table[] = {
+>  		.data		= &sysctl_sched_autogroup_enabled,
+>  		.maxlen		= sizeof(unsigned int),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> -		.extra1		= &zero,
+> -		.extra2		= &one,
+> +		.proc_handler	= proc_dointvec_bool,
+>  	},
 
-> We are planning to address the issues with other drivers after we are done
-> with the vmbus driver. As always, your help is greatly appreciated.
-
-The issue I am referring to above still has to do with the vmbus core.
-
-The goal is to have the vmbus work like all other busses in the kernel.
-You register a hv_driver with some probe and disconnect callbacks, and
-the vmbus calls into the drivers when it needs to.
-
-You are almost there, using the struct device pointers directly, but a
-few more steps remain.
-
-I'll look into the details after your remaining cleanups, I don't want
-to get in the way of them.
-
-thanks,
-
-greg k-h
+This field has changed in linux-next, so I dropped this hunk.
