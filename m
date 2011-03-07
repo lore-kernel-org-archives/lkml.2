@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab1CGIXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 03:23:37 -0500
+	id S1755268Ab1CGIX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 03:23:56 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:60411 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab1CGIWG (ORCPT
+	with ESMTP id S1754299Ab1CGIV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 03:22:06 -0500
+	Mon, 7 Mar 2011 03:21:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=KKMBkcG0jtW8sgV7HLbnJogoCG5idiaqk5z/AeDMef9nFZ+J5yONarAqPLP5U+wOQ6
-         2UsUJsyH+DGTL86IpWQeZ9KkSQ2Or/BYulSUzg5p9V+Rq8KEAxwBJJsKHzmnOETduEDO
-         swfaz80/yH0HzOH5kffT27r9Oo7B4I9wyH5T4=
+        b=lct/FMkk9Lo12BEouWmknJOn1w9S1MFGRESGYfcSPNljRFwt50pvdr6gtkLG4Bj5Db
+         P9LB1MLIk8lHbAzS9FPe7pd5/qOViIF+O7+vCjvb1kcBI2qurxBX9vDblQF/nZCYI+EP
+         wBSFnbL2FOAL7ficlm0+uej5ErHRYHcvv5WuE=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 18/21] staging: ft1000: Fix coding style in ft1000_chkcard function.
-Date: Mon,  7 Mar 2011 09:21:23 +0100
-Message-Id: <1299486086-7325-19-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 12/21] staging: ft1000: Fix coding style in ft1000_copy_down_pkt function.
+Date: Mon,  7 Mar 2011 09:21:17 +0100
+Message-Id: <1299486086-7325-13-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
@@ -30,85 +30,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   61 +++++++++++++------------
- 1 files changed, 31 insertions(+), 30 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   75 +++++++++++-------------
+ 1 files changed, 34 insertions(+), 41 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index a76e380..5fdfbbd 100644
+index 6e89336..0685070 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1325,40 +1325,41 @@ Jim
- //              TRUE  (device is present)
+@@ -929,37 +929,31 @@ static void ft1000_usb_transmit_complete(struct urb *urb)
+ //              SUCCESS
  //
  //---------------------------------------------------------------------------
--static int ft1000_chkcard (struct ft1000_device *dev) {
--    u16 tempword;
--    u16 status;
-+static int ft1000_chkcard(struct ft1000_device *dev)
-+{
-+	u16 tempword;
-+	u16 status;
- 	struct ft1000_info *info = netdev_priv(dev->net);
+-static int ft1000_copy_down_pkt (struct net_device *netdev, u8 *packet, u16 len)
++static int ft1000_copy_down_pkt(struct net_device *netdev, u8 * packet, u16 len)
+ {
+ 	struct ft1000_info *pInfo = netdev_priv(netdev);
+-    struct ft1000_device *pFt1000Dev = pInfo->pFt1000Dev;
+-
++	struct ft1000_device *pFt1000Dev = pInfo->pFt1000Dev;
  
--    if (info->fCondResetPend)
+ 	int count, ret;
+-    u8 *t;
++	u8 *t;
+ 	struct pseudo_hdr hdr;
+ 
+-    if (!pInfo->CardReady)
 -    {
--        DEBUG("ft1000_hw:ft1000_chkcard:Card is being reset, return FALSE\n");
--        return TRUE;
+-
+-        DEBUG("ft1000_copy_down_pkt::Card Not Ready\n");
+-	return -ENODEV;
+-
 -    }
 -
--    // Mask register is used to check for device presence since it is never
--    // set to zero.
--    status = ft1000_read_register(dev, &tempword, FT1000_REG_SUP_IMASK);
--    //DEBUG("ft1000_hw:ft1000_chkcard: read FT1000_REG_SUP_IMASK = %x\n", tempword);
--    if (tempword == 0) {
--        DEBUG("ft1000_hw:ft1000_chkcard: IMASK = 0 Card not detected\n");
--        return FALSE;
++	if (!pInfo->CardReady) {
++		DEBUG("ft1000_copy_down_pkt::Card Not Ready\n");
++		return -ENODEV;
++	}
+ 
+-    //DEBUG("ft1000_copy_down_pkt() entered, len = %d\n", len);
++	//DEBUG("ft1000_copy_down_pkt() entered, len = %d\n", len);
+ 
+ 	count = sizeof(struct pseudo_hdr) + len;
+-    if(count > MAX_BUF_SIZE)
+-    {
+-        DEBUG("Error:ft1000_copy_down_pkt:Message Size Overflow!\n");
+-    	DEBUG("size = %d\n", count);
+-	return -EINVAL;
 -    }
++	if (count > MAX_BUF_SIZE) {
++		DEBUG("Error:ft1000_copy_down_pkt:Message Size Overflow!\n");
++		DEBUG("size = %d\n", count);
++		return -EINVAL;
++	}
+ 
+-    if ( count % 4)
+-        count = count + (4- (count %4) );
++	if (count % 4)
++		count = count + (4 - (count % 4));
+ 
+ 	memset(&hdr, 0, sizeof(struct pseudo_hdr));
+ 
+@@ -972,46 +966,45 @@ static int ft1000_copy_down_pkt (struct net_device *netdev, u8 *packet, u16 len)
+ 	hdr.control = 0x00;
+ 
+ 	hdr.checksum = hdr.length ^ hdr.source ^ hdr.destination ^
+-			hdr.portdest ^ hdr.portsrc ^ hdr.sh_str_id ^
+-			hdr.control;
++	    hdr.portdest ^ hdr.portsrc ^ hdr.sh_str_id ^ hdr.control;
+ 
+ 	memcpy(&pFt1000Dev->tx_buf[0], &hdr, sizeof(hdr));
+ 	memcpy(&(pFt1000Dev->tx_buf[sizeof(struct pseudo_hdr)]), packet, len);
+ 
+-    netif_stop_queue(netdev);
 -
--    // The system will return the value of 0xffff for the version register
--    // if the device is not present.
--    status = ft1000_read_register(dev, &tempword, FT1000_REG_ASIC_ID);
--    //DEBUG("ft1000_hw:ft1000_chkcard: read FT1000_REG_ASIC_ID = %x\n", tempword);
--    if (tempword != 0x1b01 ){
--	dev->status |= FT1000_STATUS_CLOSING; //mbelian
--        DEBUG("ft1000_hw:ft1000_chkcard: Version = 0xffff Card not detected\n");
--        return FALSE;
--    }
--    return TRUE;
-+	if (info->fCondResetPend) {
-+		DEBUG
-+		    ("ft1000_hw:ft1000_chkcard:Card is being reset, return FALSE\n");
-+		return TRUE;
-+	}
-+	/* Mask register is used to check for device presence since it is never
-+	 * set to zero.
-+	 */
-+	status = ft1000_read_register(dev, &tempword, FT1000_REG_SUP_IMASK);
-+	//DEBUG("ft1000_hw:ft1000_chkcard: read FT1000_REG_SUP_IMASK = %x\n", tempword);
-+	if (tempword == 0) {
-+		DEBUG
-+		    ("ft1000_hw:ft1000_chkcard: IMASK = 0 Card not detected\n");
-+		return FALSE;
-+	}
-+	/* The system will return the value of 0xffff for the version register
-+	 * if the device is not present.
-+	 */
-+	status = ft1000_read_register(dev, &tempword, FT1000_REG_ASIC_ID);
-+	//DEBUG("ft1000_hw:ft1000_chkcard: read FT1000_REG_ASIC_ID = %x\n", tempword);
-+	if (tempword != 0x1b01) {
-+		dev->status |= FT1000_STATUS_CLOSING;	//mbelian
-+		DEBUG
-+		    ("ft1000_hw:ft1000_chkcard: Version = 0xffff Card not detected\n");
-+		return FALSE;
-+	}
-+	return TRUE;
+-    //DEBUG ("ft1000_copy_down_pkt: count = %d\n", count);
++	netif_stop_queue(netdev);
+ 
+-    usb_fill_bulk_urb(pFt1000Dev->tx_urb,
+-                      pFt1000Dev->dev,
+-                      usb_sndbulkpipe(pFt1000Dev->dev, pFt1000Dev->bulk_out_endpointAddr),
+-                      pFt1000Dev->tx_buf,
+-                      count,
+-                      ft1000_usb_transmit_complete,
+-                      (void*)pFt1000Dev);
++	//DEBUG ("ft1000_copy_down_pkt: count = %d\n", count);
+ 
+-    t = (u8 *)pFt1000Dev->tx_urb->transfer_buffer;
+-    //DEBUG("transfer_length=%d\n", pFt1000Dev->tx_urb->transfer_buffer_length);
+-    /*for (i=0; i<count; i++ )
+-    {
+-       DEBUG("%x    ", *t++ );
+-    }*/
++	usb_fill_bulk_urb(pFt1000Dev->tx_urb,
++			  pFt1000Dev->dev,
++			  usb_sndbulkpipe(pFt1000Dev->dev,
++					  pFt1000Dev->bulk_out_endpointAddr),
++			  pFt1000Dev->tx_buf, count,
++			  ft1000_usb_transmit_complete, (void *)pFt1000Dev);
+ 
++	t = (u8 *) pFt1000Dev->tx_urb->transfer_buffer;
++	//DEBUG("transfer_length=%d\n", pFt1000Dev->tx_urb->transfer_buffer_length);
++	/*for (i=0; i<count; i++ )
++	   {
++	   DEBUG("%x    ", *t++ );
++	   } */
+ 
+ 	ret = usb_submit_urb(pFt1000Dev->tx_urb, GFP_ATOMIC);
++
+ 	if (ret) {
+ 		DEBUG("ft1000 failed tx_urb %d\n", ret);
+ 		return ret;
+ 	} else {
+ 		pInfo->stats.tx_packets++;
+-		pInfo->stats.tx_bytes += (len+14);
++		pInfo->stats.tx_bytes += (len + 14);
+ 	}
+ 
+-    //DEBUG("ft1000_copy_down_pkt() exit\n");
++	//DEBUG("ft1000_copy_down_pkt() exit\n");
+ 
+ 	return 0;
  }
  
--
--
++
  //---------------------------------------------------------------------------
+ // Function:    ft1000_start_xmit
  //
- // Function:   ft1000_receive_cmd
 -- 
 1.7.1
 
