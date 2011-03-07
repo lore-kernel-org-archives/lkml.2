@@ -1,84 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab1CGPCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 10:02:15 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:23160 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab1CGPCO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 10:02:14 -0500
-X-IronPort-AV: E=Sophos;i="4.62,277,1297036800"; 
-   d="scan'208";a="4652616"
-Date: Mon, 7 Mar 2011 15:01:56 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Allen Kay <allen.m.kay@intel.com>
-Subject: Re: [RFC PATCH] set current_state to D0 in register_slot
-In-Reply-To: <20110304104251.45b257c4@jbarnes-desktop>
-Message-ID: <alpine.DEB.2.00.1103071500070.2968@kaball-desktop>
-References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop> <20110304104251.45b257c4@jbarnes-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754478Ab1CGPCZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 10:02:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39629 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754161Ab1CGPCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 10:02:20 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/2] Define ENOAUTHSERVICE to indicate "Authentication service
+ unavailable"
+To: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-afs@lists.infradead.org, linux-api@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Mon, 07 Mar 2011 15:02:08 +0000
+Message-ID: <20110307150208.28218.89348.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Mar 2011, Jesse Barnes wrote:
-> On Mon, 28 Feb 2011 16:20:11 +0000
-> Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> 
-> > Hi all,
-> > if a device doesn't support power management (pm_cap == 0) but it is
-> > acpi_pci_power_manageable() because there is a _PS0 method declared for
-> > it and _EJ0 is also declared for the slot then nobody is going to set
-> > current_state = PCI_D0 for this device.  This is what I think it is
-> > happening:
-> > 
-> > 
-> > pci_enable_device
-> >     |
-> > __pci_enable_device_flags
-> > /* here we do not set current_state because !pm_cap */
-> >     |
-> > do_pci_enable_device
-> >     |
-> > pci_set_power_state
-> >     |
-> > __pci_start_power_transition
-> >     |
-> > pci_platform_power_transition
-> > /* platform_pci_power_manageable() calls acpi_pci_power_manageable that
-> >  * returns true */
-> >     |
-> > platform_pci_set_power_state
-> > /* acpi_pci_set_power_state gets called and does nothing because the
-> >  * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
-> >  * ignore the device" */
-> > 
-> > 
-> > at this point if we refer to the commit message that introduced the
-> > comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
-> > the hotplug driver to set the state to D0.
-> > However AFAICT the pci hotplug driver never does, in fact
-> > drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
-> > (SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
-> > current state to PCI_D0.
-> > 
-> > So my proposed fix is also to set current_state = PCI_D0 in
-> > register_slot.
-> > Comments are very welcome.
-> > 
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> Yeah, looks fine.  ACPIPHP is happy for the attention. :)
+As the kernel has or will have filesystems (and possibly other services) that
+want to obtain authentication tokens and/or encryption data on demand (via
+GSSAPI for example), it would seem useful to provide an additional error code
+to indicate a problem with the lookup, rather than overloading some other error
+code.
 
-Great, thanks!
-Would you be OK with taking this patch in your tree?
-Or do you prefer me to send to it Linus myself?
+We already have EKEYREJECTED, EKEYREVOKED and EKEYEXPIRED to indicate problems
+with a token that we already have, but what if the authentication server just
+isn't available?
+
+Define ENOAUTHSERVICE to indicate "Authentication service unavailable".  This
+can be used to indicate, for example, that an attempt was made by request_key()
+to retrieve a key, but the authentication server (e.g. a KDC) it is supposed to
+contact didn't answer or that it couldn't determine the location of a suitable
+server.
+
+One way this can be used is that the user of a network filesystem can get a TGT
+from the KDC and stash it in their session keyring, then the filesystem can
+attempt to automatically get a ticket for accessing the filesystem - but if the
+server is uncontactable then the ticket can be negatively instantiated with
+KEYCTL_REJECT, giving the error to be handed to future requests as
+ENOAUTHSERVICE and a small timeout so that the key will expire from the cache
+and allow a retry after a short while to prevent thrashing.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/alpha/include/asm/errno.h  |    1 +
+ arch/mips/include/asm/errno.h   |    1 +
+ arch/parisc/include/asm/errno.h |    1 +
+ arch/sparc/include/asm/errno.h  |    1 +
+ include/asm-generic/errno.h     |    1 +
+ 5 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/arch/alpha/include/asm/errno.h b/arch/alpha/include/asm/errno.h
+index 98099bd..519663c 100644
+--- a/arch/alpha/include/asm/errno.h
++++ b/arch/alpha/include/asm/errno.h
+@@ -121,5 +121,6 @@
+ #define	ENOTRECOVERABLE	137	/* State not recoverable */
+ 
+ #define	ERFKILL		138	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	139	/* Authentication service not available */
+ 
+ #endif
+diff --git a/arch/mips/include/asm/errno.h b/arch/mips/include/asm/errno.h
+index a0efc73..5fa7fed 100644
+--- a/arch/mips/include/asm/errno.h
++++ b/arch/mips/include/asm/errno.h
+@@ -120,6 +120,7 @@
+ #define	ENOTRECOVERABLE	166	/* State not recoverable */
+ 
+ #define	ERFKILL		167	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	168	/* Authentication service not available */
+ 
+ #define EDQUOT		1133	/* Quota exceeded */
+ 
+diff --git a/arch/parisc/include/asm/errno.h b/arch/parisc/include/asm/errno.h
+index 9992abd..6a19346 100644
+--- a/arch/parisc/include/asm/errno.h
++++ b/arch/parisc/include/asm/errno.h
+@@ -121,5 +121,6 @@
+ #define ENOTRECOVERABLE	255	/* State not recoverable */
+ 
+ #define	ERFKILL		256	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	257	/* Authentication service not available */
+ 
+ #endif
+diff --git a/arch/sparc/include/asm/errno.h b/arch/sparc/include/asm/errno.h
+index 4e2bc49..ab3a26a 100644
+--- a/arch/sparc/include/asm/errno.h
++++ b/arch/sparc/include/asm/errno.h
+@@ -111,5 +111,6 @@
+ #define	ENOTRECOVERABLE	133	/* State not recoverable */
+ 
+ #define	ERFKILL		134	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	135	/* Authentication service not available */
+ 
+ #endif
+diff --git a/include/asm-generic/errno.h b/include/asm-generic/errno.h
+index 28cc03b..bcf1908 100644
+--- a/include/asm-generic/errno.h
++++ b/include/asm-generic/errno.h
+@@ -107,5 +107,6 @@
+ #define	ENOTRECOVERABLE	131	/* State not recoverable */
+ 
+ #define ERFKILL		132	/* Operation not possible due to RF-kill */
++#define	ENOAUTHSERVICE	133	/* Authentication service not available */
+ 
+ #endif
+
