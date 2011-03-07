@@ -1,39 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab1CGQfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:35:18 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63097 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1CGQfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:35:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,277,1297065600"; 
-   d="scan'208";a="894651330"
-Date: Mon, 7 Mar 2011 08:35:13 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
-Message-ID: <20110307163513.GC13384@alboin.amr.corp.intel.com>
-References: <1299182391-6061-1-git-send-email-andi@firstfloor.org>
- <1299182391-6061-9-git-send-email-andi@firstfloor.org>
- <20110307172609.8A01.A69D9226@jp.fujitsu.com>
+	id S1753547Ab1CGQft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:35:49 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41822 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab1CGQfs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 11:35:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110307172609.8A01.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D745D1F.2070808@fastmail.fm>
+References: <1299385050-13674-1-git-send-email-bgat@billgatliff.com>
+	<1299385050-13674-2-git-send-email-bgat@billgatliff.com>
+	<4D745D1F.2070808@fastmail.fm>
+Date: Mon, 7 Mar 2011 10:35:47 -0600
+Message-ID: <AANLkTi=h0MkySh+VjrdohLzTB-NqSmmZOKcRtGRyHTg=@mail.gmail.com>
+Subject: Re: [PWM v6 1/3] PWM: Implement a generic PWM framework
+From: Bill Gatliff <bgat@billgatliff.com>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Don't we need to make per zone stastics? I'm afraid small dma zone 
-> makes much thp-splitting and screw up this stastics.
+Jack:
 
-Does it? I haven't seen that so far.
 
-If it happens a lot it would be better to disable THP for the 16MB DMA
-zone at least. Or did you mean the 4GB zone?
+On Sun, Mar 6, 2011 at 10:20 PM, Jack Stone <jwjstone@fastmail.fm> wrote:
+> On 06/03/2011 04:17, Bill Gatliff wrote:
+>> +The Generic PWM Device API framework is implemented in
+>> +include/linux/pwm/pwm.h and drivers/pwm/pwm.c.  The functions therein
+>> +use information from pwm_device and pwm__config structures to invoke
+>
+> Could you fix that to be pwm_config please.
 
--Andi
+Fixed.
+
+>> +menuconfig GENERIC_PWM
+>> +     tristate "PWM Support"
+>> +     help
+>> +       Enables PWM device support implemented via a generic
+>> +       framework.  If unsure, say N.
+>> +
+>
+> Does this need help text? Can't we just select GENERIC_PWM for the
+> drivers / users that need it?
+
+That would be my preference, actually.  I'll see if I can do that at
+the next review.
+
+>> +
+>> +     if (p->ops->request) {
+>> +             ret = p->ops->request(p);
+>> +             if (ret) {
+>> +                     clear_bit(FLAG_REQUESTED, &p->flags);
+>> +                     goto done;
+>
+> You don't need this goto here.
+
+Fixed.
+
+>> +struct pwm_device *pwm_request(const char *bus_id, int id, const char *label)
+>> +{
+>> +     char name[256];
+>> +     int ret;
+>> +
+>> +     if (id == -1)
+>> +             ret = scnprintf(name, sizeof name, "%s", bus_id);
+>
+> Kernel doc comment for the function to describe the id == -1 case?
+
+Fixed.
+
+>> +static void pwm_handler(struct work_struct *w)
+>> +{
+>> +     struct pwm_device *p = container_of(w, struct pwm_device,
+>> +                                         handler_work);
+>
+>        You could just not queue the work if !p->handler
+
+Good point.  Fixed.
+
+>> +     if (id == -1)
+>> +             ret = scnprintf(name, sizeof name, "%s", dev_name(parent));
+>
+> A kernel doc comment to explain id == -1 would be nice.
+>
+
+Fixed.
+
+> Very nice framework!
+
+Thank you!!
+
+>
+> Would be nice to have kernel doc comments for the functions but that can
+> follow on later.
+
+I'll try to do some of it for the next review series.
+
+
+b.g.
+-- 
+Bill Gatliff
+bgat@billgatliff.com
