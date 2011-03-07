@@ -1,152 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab1CGOgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 09:36:54 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41817 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab1CGOgs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 09:36:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=mzJrVtlAmHWNjrKuOVOJwkCaj/WbYcwJLhMVuQr5sCuJGL3cl1PX8jJUrcC/wk566p
-         GeDP7RM4QPHeoZ9QD+TLPPcnBCCxpHCbxAC3FIEtJDL/DqMDdo0TbocRbSRUfYrwRcmY
-         UjcoqP5VwAz59v4up2GFVaG0KdK0nG/Z+/mT0=
+	id S1753230Ab1CGOjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 09:39:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2232 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901Ab1CGOi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 09:38:59 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        dmonakhov@openvz.org, axboe@kernel.dk
+Subject: Re: [PATCH] block: fix mis-synchronisation in blkdev_issue_zeroout()
+References: <1299231968-5730-1-git-send-email-lczerner@redhat.com>
+	<x49zkpbhszn.fsf@segfault.boston.devel.redhat.com>
+	<alpine.LFD.2.00.1103041552020.5003@dhcp-27-109.brq.redhat.com>
+	<x49lj0uj4rk.fsf@segfault.boston.devel.redhat.com>
+	<alpine.LFD.2.00.1103071315320.5084@dhcp-27-109.brq.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 07 Mar 2011 09:38:53 -0500
+In-Reply-To: <alpine.LFD.2.00.1103071315320.5084@dhcp-27-109.brq.redhat.com>
+	(Lukas Czerner's message of "Mon, 7 Mar 2011 13:25:08 +0100 (CET)")
+Message-ID: <x49wrkbt2pu.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4D71A88E.2060608@cygnusx-1.org>
-References: <4D71668F.9050201@windriver.com>
-	<4D71A88E.2060608@cygnusx-1.org>
-Date: Mon, 7 Mar 2011 09:36:47 -0500
-X-Google-Sender-Auth: BQlKfQBzNS26MHx-58TEO5pJ2-o
-Message-ID: <AANLkTim3Bwhp4W2zOcAnNxBzz1hmgvPMjtewt1cW8V0s@mail.gmail.com>
-Subject: Re: [ANNOUNCE] RT for v2.6.34.8 now available.
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Nathan Grennan <linux-rt-users@cygnusx-1.org>
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 4, 2011 at 10:05 PM, Nathan Grennan
-<linux-rt-users@cygnusx-1.org> wrote:
-> On 03/04/2011 02:24 PM, Paul Gortmaker wrote:
->>
->> As a value add to the 2.6.34 long term release, I'm happy to also
->> announce the availability of 2.6.34-RT.
->>
->> You can find it in the v2.6.34-rt branch at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/paulg/rt-patches.git
->>
->> as a repository of patches.  The v2.6.34-rt branch contains the latest
->> RT patches against the latest v2.6.34.8 kernel release. (The master
->> branch currently stops at v2.6.34 flat, i.e. 2.6.34.0 so to speak.)
->>
->> I've also created over 400 known working RT enabled bisection points
->> between 33 and 34 that you can make use of for testing.  The details
->> on how/why those exist follows - read on if it is of interest to you.
->>
->> Note that all credit of the thinking and engineering of the RT stuff
->> lies with the original patch authors -- to be clear, I'm just doing
->> the grunt work of a carry forward here.
->>
->> Have fun with it, maybe drop me a note if you find it useful etc.
->
-> I tried compiling this, and it quickly failed. Ideas?
+Lukas Czerner <lczerner@redhat.com> writes:
 
-Yes, it is the header cleanup done in the 33-->34 dev cycle, seen
-between the rev list ^9e74e7c b66696e that changes slab.h use.
+> On Fri, 4 Mar 2011, Jeff Moyer wrote:
+>
+>> Lukas Czerner <lczerner@redhat.com> writes:
+>> 
+>> > On Fri, 4 Mar 2011, Jeff Moyer wrote:
+>> >> It seems to me like it might be better to just not complete anything
+>> >> until the count is zero.  Why issue a wakeup for every bio?
+>> >> fs/direct-io does something similar, maybe take a look at the
+>> >> dio_bio_end* routines and see if that would fit well here.  With your
+>> >> scheme, I worry about missing a completion, maybe because the first bio
+>> >> completes before you are done submitting bios.  Is that possible?
+>> >
+>> > I do not think it is possible. For every bio submitted there is
+>> > wait_for_completion called. When bio complete()s completion->done is
+>> > incremented (under the wait->lock). In wait_for_completion() we are
+>> > waiting for single submitted bio to complete (completion->done > 0),
+>> > then completion->done is decremented. It seems like simple
+>> > synchronization.
+>> >
+>> > I am not sure what wakeup you have in mind, but thanks for the tip I'll
+>> > look in fs/direct-io.
+>> 
+>> Let's say you have several bios to submit, and the first bio is errored
+>> immediately in submit_bio.  Since you didn't add yourself to the
+>> waitqueue yet, you might miss the wakeup and sleep forever.
+>> 
+>> Cheers,
+>> Jeff
+>> 
+>
+> (Adding Dimitry and Jens into CC)
+>
+> This can not happen. submit_bio does not return any value. The way how
+> it does notify caller about its status is via ->bio_end_io (see comment
+> for __generic_make_request()). Now the ->bio_end_io is in this case
+> always set because it is the first thing we are doing, so for every bio
+> submitted there will be appropriate complete() and wait_for_completition()
+> call.
+>
+> The one thing can fail though, and it is bio_alloc() however when this
+> fails we are jumping out of the loop immediately without touching
+> "issued" at all, so if it is a first bio issued = 0, hence there is
+> nothing to wait for.
+>
+> I do not see any problems here.
 
-If you look at 8a2032dba45e24 *in the patch repo* you will see where
-I fixed it for the baseline RT-enabled defconfig.  (Meaning I did a
-make defconfig, then enabled the RT options).  Your config must be
-setting something different/extra.
+Yeah, somehow I actually missed the whole point of completions (the done
+variable).  Anyway, I agree with you.
 
-If you do a git show on the above rev list and on the fix in the patch
-repo, you will probably be able to tell what is going on.  Also please
-send me your config (off list) so I can ensure it compiles properly myself.
+> But, now I can see you point about calling wakeup() for every completed
+> bio, which is not strictly needed and we should call complete() only
+> once when the last bio is completed. So how about this ?
+>
+>
+> diff --git a/block/blk-lib.c b/block/blk-lib.c
+> index 1a320d2..ccf5a40 100644
+> --- a/block/blk-lib.c
+> +++ b/block/blk-lib.c
+> @@ -109,7 +109,6 @@ struct bio_batch
+>  	atomic_t 		done;
+>  	unsigned long 		flags;
+>  	struct completion 	*wait;
+> -	bio_end_io_t		*end_io;
+>  };
+>  
+>  static void bio_batch_end_io(struct bio *bio, int err)
+> @@ -122,12 +121,9 @@ static void bio_batch_end_io(struct bio *bio, int err)
+>  		else
+>  			clear_bit(BIO_UPTODATE, &bb->flags);
+>  	}
+> -	if (bb) {
+> -		if (bb->end_io)
+> -			bb->end_io(bio, err);
+> -		atomic_inc(&bb->done);
+> -		complete(bb->wait);
+> -	}
+> +	if (bb)
+> +		if (atomic_dec_and_test(&bb->done))
+> +			complete(bb->wait);
 
-Thanks,
-Paul.
+I don't think we actually have to check for bb != NULL, do you?
 
->
-> I did this on a Fedora 14 x86_64 system with gcc-4.5.1-4.fc14.x86_64.
->
->
-> Here is what I did:
->
-> 1. Downloaded 2.6.34.8 tarball and extracted it
-> 2. git clone -b v2.6.34-rt
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulg/rt-patches.git
-> 3. cat ../rt-patches/series | xargs -i cat ../rt-patches/{} | patch -p1
-> (Applied just fine)
-> 4. Copied an 2.6.31-rt configuration to .config
-> 5. Ran make oldconfig
-> 6. make bzImage
->
->
-> CHK include/linux/version.h
-> CHK include/generated/utsrelease.h
-> HOSTCC scripts/basic/fixdep
-> HOSTCC scripts/basic/docproc
-> HOSTCC scripts/basic/hash
-> CC kernel/bounds.s
-> GEN include/generated/bounds.h
-> CC arch/x86/kernel/asm-offsets.s
-> GEN include/generated/asm-offsets.h
-> CALL scripts/checksyscalls.sh
-> HOSTCC scripts/genksyms/genksyms.o
-> HOSTCC scripts/genksyms/lex.o
-> HOSTCC scripts/genksyms/parse.o
-> HOSTLD scripts/genksyms/genksyms
-> CC scripts/mod/empty.o
-> HOSTCC scripts/mod/mk_elfconfig
-> MKELF scripts/mod/elfconfig.h
-> HOSTCC scripts/mod/file2alias.o
-> HOSTCC scripts/mod/modpost.o
-> HOSTCC scripts/mod/sumversion.o
-> HOSTLD scripts/mod/modpost
-> HOSTCC scripts/selinux/genheaders/genheaders
-> HOSTCC scripts/selinux/mdp/mdp
-> HOSTCC scripts/kallsyms
-> HOSTCC scripts/conmakehash
-> CC init/main.o
-> init/main.c: In function ‘do_one_initcall’:
-> init/main.c:740:10: warning: ‘calltime.tv64’ may be used uninitialized in
-> this function
-> CHK include/generated/compile.h
-> CC init/version.o
-> CC init/do_mounts.o
-> In file included from include/linux/suspend.h:8:0,
-> from init/do_mounts.c:6:
-> include/linux/mm.h: In function ‘pte_lock_init’:
-> include/linux/mm.h:1125:2: error: implicit declaration of function ‘kmalloc’
-> include/linux/mm.h:1125:12: warning: assignment makes pointer from integer
-> without a cast
-> include/linux/mm.h: In function ‘pte_lock_deinit’:
-> include/linux/mm.h:1137:2: error: implicit declaration of function ‘kfree’
-> In file included from include/linux/security.h:36:0,
-> from init/do_mounts.c:8:
-> include/linux/slab.h: At top level:
-> include/linux/slab.h:144:6: warning: conflicting types for ‘kfree’
-> include/linux/mm.h:1137:2: note: previous implicit declaration of ‘kfree’
-> was here
-> In file included from include/linux/slab.h:172:0,
-> from include/linux/security.h:36,
-> from init/do_mounts.c:8:
-> include/linux/slab_def.h:128:52: error: conflicting types for ‘kmalloc’
-> include/linux/mm.h:1125:14: note: previous implicit declaration of ‘kmalloc’
-> was here
-> make[1]: *** [init/do_mounts.o] Error 1
-> make: *** [init] Error 2
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+>  	bio_put(bio);
+>  }
+>  
+> @@ -150,13 +146,12 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+>  	int ret;
+>  	struct bio *bio;
+>  	struct bio_batch bb;
+> -	unsigned int sz, issued = 0;
+> +	unsigned int sz;
+>  	DECLARE_COMPLETION_ONSTACK(wait);
+>  
+> -	atomic_set(&bb.done, 0);
+> +	atomic_set(&bb.done, 1);
+>  	bb.flags = 1 << BIO_UPTODATE;
+>  	bb.wait = &wait;
+> -	bb.end_io = NULL;
+>  
+>  submit:
+>  	ret = 0;
+> @@ -185,12 +180,12 @@ submit:
+>  				break;
+>  		}
+>  		ret = 0;
+> -		issued++;
+> +		atomic_inc(&bb.done);
+>  		submit_bio(WRITE, bio);
+>  	}
+>  
+>  	/* Wait for bios in-flight */
+> -	while (issued != atomic_read(&bb.done))
+> +	if (!atomic_dec_and_test(&bb.done))
+>  		wait_for_completion(&wait);
+>  
+>  	if (!test_bit(BIO_UPTODATE, &bb.flags))
+
+Yep, this looks good to me.  Thanks for fixing this up, Lukas!
+
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
