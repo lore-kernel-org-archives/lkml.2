@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab1CGLK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 06:10:59 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:52484 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385Ab1CGLK6 (ORCPT
+	id S1755744Ab1CGLOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 06:14:42 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42578 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab1CGLOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 06:10:58 -0500
-Date: Mon, 07 Mar 2011 19:27:27 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v3 0/4] MAX8997/8966 MFD (including PMIC&RTC) Initial Release
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-Message-id: <1299493651-25832-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.1
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 07 Mar 2011 10:27:32.0079 (UTC)
- FILETIME=[4471CFF0:01CBDCB2]
+	Mon, 7 Mar 2011 06:14:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=vcZpH7gq1+DJE+y7SgqbYd/ULJKbkzouLqkARjXEph6LcpdCJL3mmCIya5udQa64J0
+         DVIe/b6v6qXTAGxkxjjAUMIzwViD6wLzERmrtxBqx8Zch5fFOdV5NIuQeCee7v8HMiNS
+         u1KXYYtJqrG/vhUy8XdPIBcMVTNnFbImV2LTQ=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110307104747.GH20499@htj.dyndns.org>
+References: <20110307131958.84a5d818.sfr@canb.auug.org.au>
+	<20110307063618.GA10365@mtj.dyndns.org>
+	<4D749A81.50809@kernel.dk>
+	<AANLkTim0qwr-L9RLRDtoZBrFBWGJ1ze9LMxr9dTmdrr9@mail.gmail.com>
+	<20110307104747.GH20499@htj.dyndns.org>
+Date: Mon, 7 Mar 2011 12:14:39 +0100
+Message-ID: <AANLkTinBx5Z9Gp7ZTcbbTMCZZ4Z68-vMBP9yOX-k15EA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the block tree with Linus' tree
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX8997/8966 has
-- PMIC
-- RTC
-- MUIC (usb switch)
-- Flash control
-- Haptic control
-- Fuel Gauge (MAX17042 compatible)
-- Battery charger control
+On 3/7/11, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Mar 07, 2011 at 11:41:23AM +0100, Sedat Dilek wrote:
+>> $ git log -1 | cat
+>> commit c45165cd2c77843f24ca18af54044303dc2a81ab
+>> Author: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date:   Mon Mar 7 17:38:41 2011 +1100
+>>
+>>     Add linux-next specific files for 20110307
+>>
+>>     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+>>
+>> $ git pull
+>> git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block.git
+>> for-next
+>> remote: Counting objects: 158, done.
+>> remote: Compressing objects: 100% (89/89), done.
+>> remote: Total 106 (delta 87), reused 21 (delta 17)
+>> Receiving objects: 100% (106/106), 23.33 KiB, done.
+>> Resolving deltas: 100% (87/87), completed with 34 local objects.
+>> From git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block
+>>  * branch            for-next   -> FETCH_HEAD
+>> warning: too many files (created: 1120 deleted: 637), skipping inexact
+>> rename detection
+>> warning: too many files (created: 974 deleted: 462), skipping inexact
+>> rename detection
+>> Auto-merging block/blk-core.c
+>> Auto-merging block/blk-flush.c
+>> CONFLICT (content): Merge conflict in block/blk-flush.c
+>> Auto-merging block/cfq-iosched.c
+>> CONFLICT (content): Merge conflict in block/cfq-iosched.c
+>> Automatic merge failed; fix conflicts and then commit the result.
+>
+> Ummm... don't those conflicts come from Stephen's commits?  You would
+> need to revert the merge and fixup commits and then pull in the block
+> branch.
+>
+> Thanks.
+>
+> --
+> tejun
+>
 
-This patch adds an initial driver for Maxim Semiconductor 8997/8966's
-PMIC function.
+I have reverted the merge-fix from Stephen "[PATCH] block: update for
+__blk_run_queue() API update" which changed block/blk-flush.c, this
+remains:
+...
+CONFLICT (content): Merge conflict in block/cfq-iosched.c
 
-In this initial release, PMIC (as set of regulators) and RTC drivers are
-included.
+As it is 12p.m. and sun shining, my decision and direction is clear:
+Lunch + City.
 
-The changes from previous patch
-v3
-with comments from Joe:
-	- Style updated for IRQ and RTC
-with comments from Mark
-	- Style updated for RTC and PMIC
-Merged support for RTC and IRQ
-
-v2
-with comments from Samuel:
-	- Style updated for MFD
-with comments from Mark:
-	- Updated API for next and 2.6.38
-	- Style updated for regulators
-Support for hibernation
-Support for bulk register access
-Corrected register names
-Added RTC/IRQ registers
-LDO access bug fixed
-Support for regulator suspend state control
-
-MyungJoo Ham (4):
-  MAX8997/8966 MFD Driver Initial Release (PMIC+RTC+MUIC+Haptic+...)
-  MAX8997/8966 PMIC Regulator Driver Initial Release
-  MAX8997/8966 MFD: Add IRQ control feature
-  MAX8997/8966 RTC Driver Initial Release
-
- drivers/mfd/Kconfig                 |   12 +
- drivers/mfd/Makefile                |    1 +
- drivers/mfd/max8997-irq.c           |  337 ++++++++++
- drivers/mfd/max8997.c               |  427 +++++++++++++
- drivers/regulator/Kconfig           |    9 +
- drivers/regulator/Makefile          |    1 +
- drivers/regulator/max8997.c         | 1196 +++++++++++++++++++++++++++++++++++
- drivers/rtc/Kconfig                 |   10 +
- drivers/rtc/Makefile                |    1 +
- drivers/rtc/rtc-max8997.c           |  445 +++++++++++++
- include/linux/mfd/max8997-private.h |  359 +++++++++++
- include/linux/mfd/max8997.h         |  120 ++++
- 12 files changed, 2918 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/max8997-irq.c
- create mode 100644 drivers/mfd/max8997.c
- create mode 100644 drivers/regulator/max8997.c
- create mode 100644 drivers/rtc/rtc-max8997.c
- create mode 100644 include/linux/mfd/max8997-private.h
- create mode 100644 include/linux/mfd/max8997.h
-
+- Sedat -
