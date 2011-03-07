@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab1CGJXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 04:23:40 -0500
-Received: from gate.crashing.org ([63.228.1.57]:49434 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754511Ab1CGJXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 04:23:39 -0500
-Subject: Re: [PATCH v2] matroxfb: remove incorrect Matrox G200eV support
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: djwong@us.ibm.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Gary Hade <garyhade@us.ibm.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Krzysztof Helt <krzysztof.h1@wp.pl>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110304202905.GB27190@tux1.beaverton.ibm.com>
-References: <20110301175026.GA18770@us.ibm.com>
-	 <AANLkTikwSXN8VgDaoUqfHcxoTNxW9uA4D2fUtRLuLbHo@mail.gmail.com>
-	 <20110304202905.GB27190@tux1.beaverton.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Mar 2011 19:59:16 +1100
-Message-ID: <1299488356.9759.2.camel@pasglop>
+	id S1755071Ab1CGJbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 04:31:17 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54075 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443Ab1CGJbQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 04:31:16 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 7 Mar 2011 18:24:51 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCHv2 03/24] sys_swapon: do not depend on "type" after
+ allocation
+Message-Id: <20110307182451.23b711ad.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1299343345-3984-4-git-send-email-cesarb@cesarb.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+	<1299343345-3984-4-git-send-email-cesarb@cesarb.net>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 12:29 -0800, Darrick J. Wong wrote:
-> This is all quite strange -- 2.5 years ago when I wrote the patch it
-> seemed to
-> work ok.  On newer revisions of the x3650M2 it seems broken.  The
-> original
-> machine I wrote it for was cut up ages ago.
+On Sat,  5 Mar 2011 13:42:04 -0300
+Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+
+> Within sys_swapon, after the swap_info entry has been allocated, we
+> always have type == p->type and swap_info[type] == p. Use this fact to
+> reduce the dependency on the "type" local variable within the function,
+> as a preparation to move the allocation of the swap_info entry to a
+> separate function.
 > 
-> I suppose we could simply blacklist any G200eV with a subsystem vendor
-> ID of
-> 0x1014 (IBM) until we figure out how to correct the driver.  Our
-> customers will
-> be deprived, but as it seems to be broken across most of our product
-> lines I
-> doubt any of them are making serious use of it anyway. :)
-> 
-> Something like this? 
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> Tested-by: Eric B Munson <emunson@mgebm.net>
+> Acked-by: Eric B Munson <emunson@mgebm.net>
+> ---
 
-Does X work with the open source drivers ? In that case a better
-approach would be to try to figure out what's different between the way
-the 2 drivers setup the card registers and fix matroxfb..
-
-Cheers,
-Ben.
-
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujisu.com>
 
