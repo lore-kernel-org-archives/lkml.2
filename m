@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab1CHXqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 18:46:11 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51227 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756473Ab1CHXqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 18:46:10 -0500
-Date: Tue, 8 Mar 2011 23:46:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-Subject: Re: [PATCH v4 2/4] MAX8997/8966 PMIC Regulator Driver Initial
- Release
-Message-ID: <20110308234629.GD2717@opensource.wolfsonmicro.com>
-References: <1299573443-24784-1-git-send-email-myungjoo.ham@samsung.com>
- <1299573443-24784-3-git-send-email-myungjoo.ham@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299573443-24784-3-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756826Ab1CHXqZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 18:46:25 -0500
+Received: from smtp12.ono.com ([62.42.230.20]:20909 "EHLO resmaa12.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756473Ab1CHXqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 18:46:24 -0500
+X-Greylist: delayed 349 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Mar 2011 18:46:24 EST
+Date: Wed, 9 Mar 2011 00:40:33 +0100
+From: JA =?ISO-8859-1?B?TWFnYWxs824=?= <jamagallon@ono.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: wrong index used in inner loop
+Message-ID: <20110309004033.54ff1945@werewolf.home>
+In-Reply-To: <4D76A06A.4090405@gmail.com>
+References: <4D76A06A.4090405@gmail.com>
+X-Mailer: Claws Mail 3.7.8cvs57 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 05:37:21PM +0900, MyungJoo Ham wrote:
-> This patch supports PMIC/Regulator part of MAX8997/MAX8966 MFD.
-> In this initial release, selecting voltages or current-limit
-> and switching on/off the regulators are supported.
+On Tue, 08 Mar 2011 22:32:26 +0100, roel <roel.kluin@gmail.com> wrote:
 
-This looks pretty good, it's probably OK to apply as-is and clean up
-some more stuff later on.
+> Index i was already used in the outer loop
+> 
 
-> +static int max8997_list_voltage_charger_cv(struct regulator_dev *rdev,
-> +		unsigned int selector)
-> +{
-> +	int rid = max8997_get_rid(rdev);
-> +
-> +	if (rid == MAX8997_CHARGER_CV) {
+Is this as serious as it looks ?
+Is it worth tho flag your own loved distro to hurry on a kernel
+patch ?
 
-A little nicer to do if != then error out (saves indentation for the
-entire rest of the function.
+TIA
 
-> +/*
-> + * Assess the damage on the voltage setting of BUCK1,2,5 by the change.
-> + *
-> + * When GPIO-DVS mode is used for multiple bucks, changing the voltage value
-> + * of one of the bucks may affect that of another buck, which is the side
-> + * effect of the change (set_voltage). This function examines the GPIO-DVS
-> + * configurations and checks whether such side-effect exists.
-> + */
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+>  fs/nfsd/nfs4xdr.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> Not 100% sure this one is needed but it looks suspicious.
+> 
+> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+> index 1275b86..615f0a9 100644
+> --- a/fs/nfsd/nfs4xdr.c
+> +++ b/fs/nfsd/nfs4xdr.c
+> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>  
+>  	u32 dummy;
+>  	char *machine_name;
+> -	int i;
+> +	int i, j;
+>  	int nr_secflavs;
+>  
+>  	READ_BUF(16);
+> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>  			READ_BUF(4);
+>  			READ32(dummy);
+>  			READ_BUF(dummy * 4);
+> -			for (i = 0; i < dummy; ++i)
+> +			for (j = 0; j < dummy; ++j)
+>  				READ32(dummy);
+>  			break;
+>  		case RPC_AUTH_GSS:
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I'm not 100% sure I understand exactly what the mechanism for side
-effects to occur is here (the code is a little abstruse, I'd expect it
-to go through and set a flag if it finds a side effect would occur).
-However, one thing that occurs to me is that you're not using the fact
-that the regulator API passes in voltage ranges in the checks - you're
-checking for any change, but it's possible that a side effect could
-occur and still be in the range that was requested which should ideally
-be allowed.  For example, if the side effect would be to change from
-1.1V to 1.2V but the requested range was 1.1-1.3V then while there is
-a side effect all the requirements that drivers provided are still being
-met so we don't need to worry.
 
-This sort of side effect is something we shouild probably add to the
-core, other hardware has the possibility of having similar gang control
-of the regulators although the mechanism here seems unusually complex.
-I don't think we need to do that for this driver though.
+-- 
+J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
+                                         \         It's better when it's free
