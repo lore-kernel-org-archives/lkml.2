@@ -1,135 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab1CHLWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 06:22:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab1CHLWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 06:22:07 -0500
-Message-ID: <4D761138.4030705@redhat.com>
-Date: Tue, 08 Mar 2011 12:21:28 +0100
-From: Petr Holasek <pholasek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-0.38.b3pre.fc14 Thunderbird/3.1.8
+	id S1754501Ab1CHLWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 06:22:19 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:39967 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409Ab1CHLWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 06:22:16 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D76119A.2030100@cam.ac.uk>
+Date: Tue, 08 Mar 2011 11:23:06 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        emunson@mgebm.net, anton@redhat.com, Andi Kleen <ak@linux.intel.com>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        linux-mm@kvack.org, Nishanth Aravamudan <nacc@us.ibm.com>
-Subject: Re: [PATCH] hugetlb: /proc/meminfo shows data for all sizes of hugepages
-References: <1299503155-6210-1-git-send-email-pholasek@redhat.com>	<1299527214.8493.13263.camel@nimitz>	<20110307145149.97e6676e.akpm@linux-foundation.org>	<20110307231448.GA2946@spritzera.linux.bs1.fc.nec.co.jp> <20110307152516.fee931bb.akpm@linux-foundation.org>
-In-Reply-To: <20110307152516.fee931bb.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: Moving staging:iio over to threaded interrupts.
+References: <4D6FCC99.6090202@cam.ac.uk> <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 12:25 AM, Andrew Morton wrote:
-> On Tue, 8 Mar 2011 08:14:49 +0900
-> Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>  wrote:
->
->> On Mon, Mar 07, 2011 at 02:51:49PM -0800, Andrew Morton wrote:
->>> On Mon, 07 Mar 2011 11:46:54 -0800
->>> Dave Hansen<dave@linux.vnet.ibm.com>  wrote:
->>>
->>>> On Mon, 2011-03-07 at 14:05 +0100, Petr Holasek wrote:
->>>>> +       for_each_hstate(h)
->>>>> +               seq_printf(m,
->>>>> +                               "HugePages_Total:   %5lu\n"
->>>>> +                               "HugePages_Free:    %5lu\n"
->>>>> +                               "HugePages_Rsvd:    %5lu\n"
->>>>> +                               "HugePages_Surp:    %5lu\n"
->>>>> +                               "Hugepagesize:   %8lu kB\n",
->>>>> +                               h->nr_huge_pages,
->>>>> +                               h->free_huge_pages,
->>>>> +                               h->resv_huge_pages,
->>>>> +                               h->surplus_huge_pages,
->>>>> +                               1UL<<  (huge_page_order(h) + PAGE_SHIFT - 10));
->>>>>   }
->>>>
->>>> It sounds like now we'll get a meminfo that looks like:
->>>>
->>>> ...
->>>> AnonHugePages:    491520 kB
->>>> HugePages_Total:       5
->>>> HugePages_Free:        2
->>>> HugePages_Rsvd:        3
->>>> HugePages_Surp:        1
->>>> Hugepagesize:       2048 kB
->>>> HugePages_Total:       2
->>>> HugePages_Free:        1
->>>> HugePages_Rsvd:        1
->>>> HugePages_Surp:        1
->>>> Hugepagesize:    1048576 kB
->>>> DirectMap4k:       12160 kB
->>>> DirectMap2M:     2082816 kB
->>>> DirectMap1G:     2097152 kB
->>>>
->>>> At best, that's a bit confusing.  There aren't any other entries in
->>>> meminfo that occur more than once.  Plus, this information is available
->>>> in the sysfs interface.  Why isn't that sufficient?
->>>>
->>>> Could we do something where we keep the default hpage_size looking like
->>>> it does now, but append the size explicitly for the new entries?
->>>>
->>>> HugePages_Total(1G):       2
->>>> HugePages_Free(1G):        1
->>>> HugePages_Rsvd(1G):        1
->>>> HugePages_Surp(1G):        1
->>>>
->>>
->>> Let's not change the existing interface, please.
->>>
->>> Adding new fields: OK.
->>> Changing the way in whcih existing fields are calculated: OKish.
->>> Renaming existing fields: not OK.
+On 03/08/11 10:30, Thomas Gleixner wrote:
+> On Thu, 3 Mar 2011, Jonathan Cameron wrote:
+>> So to my mind two solutions exist.
+>> 1) A single thread per trigger.  Everything prior to the work queue
+>> calls is moved into a handler that goes in the 'fast' list which stays
+>> in our top half handler.  The work queue bits are called one after
+>> another in the bottom half.
 >>
->> How about lining up multiple values in each field like this?
+>> 2) Allow each consumer to attach it's own thread to the trigger
+>> controller and basically implement our own variant of the core threaded
+>> interrupt code that allows for a list of threads rather than a single one.
 >>
->>    HugePages_Total:       5 2
->>    HugePages_Free:        2 1
->>    HugePages_Rsvd:        3 1
->>    HugePages_Surp:        1 1
->>    Hugepagesize:       2048 1048576 kB
->>    ...
->>
->> This doesn't change the field names and the impact for user space
->> is still small?
->
-> It might break some existing parsers, dunno.
->
-> It was a mistake to assume that all hugepages will have the same size
-> for all time, and we just have to live with that mistake.
->
-> I'd suggest that we leave meminfo alone, just ensuring that its output
-> makes some sense.  Instead create a new interface which presents all
-> the required info in a sensible fashion and migrate usersapce reporting
-> tools over to that interface.  Just let the meminfo field die a slow
-> death.
+>> I rather like the idea of 2.  It might even end up with different
+>> devices being queried from different processor cores simultaneously
+>> which is quite cute.  The question is whether a simple enough
+>> implementation is possible that the originators of the threaded interrupt
+>> code would be happy with it (as it bypasses or would mean additions to their
+>> core code).
+> 
+> Don't implement another threading model. Look at the trigger irq as a
+> demultiplexing interrupt. So if you have several consumers of a single
+> trigger, then you can implement a pseudo irq_chip and register the sub
+> devices as separate interrupts.
+> 
+> That means your main trigger interrupt would look like this:
+> 
+> irqreturn_t hardirq_handler(int irq, void *dev)
+> {
+>      iio_trigger_dev *idev = dev;
+>      int i;
+> 
+>      store_state_as_necessary(idev);
+> 
+>      for (i = 0; i < idev->nr_subirqs; i++) {
+>      	    if (idev->subirqs[i].enabled)
+> 		generic_handle_irq(idev->subirq_base + i);
+>      }
+> }
+> 
+> And you'd have an irq_chip implementation which does:
+> 
+> static void subirq_mask(struct irq_data *d)
+> {
+>      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
+>      int idx = d->irq - idev->subirq_base;
+> 
+>      idev->subirqs[idx].enabled = false;
+> }
+> 
+> static void subirq_unmask(struct irq_data *d)
+> {
+>      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
+>      int idx = d->irq - idev->subirq_base;
+> 
+>      idev->subirqs[idx].enabled = true;
+> }
+> 
+> static struct irq_chip subirq_chip = {
+>        .name = "iiochip",
+>        .mask = subirq_mask,
+>        .unmask = subirq_unmask,
+> };
+> 
+> init()
+> {
+> 	for_each_subirq(i)
+> 		irq_set_chip_and_handler(i, &subirq_chip, handle_simple_irq);
+> }
+> 
+> So now you can request the interrupts for your subdevices with
+> request_irq or request_threaded_irq.
+> 
+> You can also implement #1 this way, you just mark the sub device
+> interrupts as IRQ_NESTED_THREAD, and then call the handlers from the
+> main trigger irq thread.
+Hi Thomas,
 
-The main idea behind this patch is to unify hugetlb interfaces in 
-/proc/meminfo
-and sysfs. When somebody wants to find out all important informations 
-about hugepage
-pools (as hugeadm from libhugetlbfs does), he has to determine default 
-hugepage size
-from /proc/meminfo and then go into 
-/sys/kernel/mm/hugepages/hugepages-<size>kB/
-for informations about next nodes.
+One issue here that I'm not quite sure how to overcome is that the trigger to
+device mapping tends to be dynamic.  That is we quite often switch around
+what device is triggered by which trigger at runtime.  All done via text label
+matching via sysfs.
 
-I agree with idea of throwing away of meminfo hugepage fields in the future,
-but before doing this, sysfs part of interface should indicate default 
-hugepage
-size. And meminfo could possibly show data for all hugepage sizes on 
-system. So when
-these parts will be independent, it is no problem to let meminfo fields 
-die.
+I guess we could maintain this by a spot of indirection and pool of interrupts per
+trigger (with compile time control on how many). Any other approaches come to mind?
 
->
-> It's tempting to remove the meminfo hugepage fields altogether - most
-> parsers _should_ be able to cope with a CONFIG_HUGETLB=n kernel.  But
-> that's breakage as well - some applications may be using meminfo to
-> detect whether the kernel supports huge pages!
+Thanks,
 
+Jonathan
