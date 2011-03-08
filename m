@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab1CHWMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:12:24 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37942 "EHLO ogre.sisk.pl"
+	id S1754926Ab1CHWNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:13:35 -0500
+Received: from cantor.suse.de ([195.135.220.2]:59265 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753706Ab1CHWMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:12:23 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-Date: Tue, 8 Mar 2011 23:12:26 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <Pine.LNX.4.44L0.1102221029100.1968-100000@iolanthe.rowland.org> <201103082025.38559.rjw@suse.com> <4D76920A.8070605@gmail.com>
-In-Reply-To: <4D76920A.8070605@gmail.com>
+	id S1753103Ab1CHWNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:13:34 -0500
+Date: Tue, 8 Mar 2011 23:13:31 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Paul Menage <menage@google.com>
+Cc: Geunsik Lim <leemgs1@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH RESEND 1/2] cgroup:doc Update cpuset info & webiste via
+ cgroup.
+In-Reply-To: <AANLkTi=FYHX3Z1zAi5BqHqxRSQK-iOJ+tSvZwj4csZ=2@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1103082313130.19969@pobox.suse.cz>
+References: <1299459180-11321-1-git-send-email-leemgs1@gmail.com> <1299459180-11321-2-git-send-email-leemgs1@gmail.com> <AANLkTi=FYHX3Z1zAi5BqHqxRSQK-iOJ+tSvZwj4csZ=2@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103082312.26675.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 08, 2011, Jiri Slaby wrote:
-> On 03/08/2011 08:25 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, March 08, 2011, Jiri Slaby wrote:
-> >> On 02/22/2011 04:36 PM, Alan Stern wrote:
-> >>> By the way, are you booting with no_console_suspend?  And do you do 
-> >>> "echo 8 >/proc/sys/kernel/printk" (or equivalently, Alt-SysRq-8) before 
-> >>> suspending?
-> >>
-> >> Unfortunately there are no messages at all.
-> >>
-> >> Rafael, this is a Factory with intel gfx (modesetting). Do pm-utils
-> >> switch a console in such case? And if yes, to which one?
-> > 
-> > pm-utils don't, but s2ram does, I'm not sure from the top of my head to
-> > which one, though.
-> > 
-> > If you use a KMS driver (I get you do), please just "chmod a-x /usr/sbin/s2ram".
-> 
-> Yeah, I meant kernel modesetting, of course. Sorry for the confusion.
-> 
-> I don't have /usr/sbin/s2ram.
+On Tue, 8 Mar 2011, Paul Menage wrote:
 
-Ah.  So it's gone from Factory?  Interesting.
+> > cpuset website is changed.
+> > and, update list of cpuset using cgroup(controller group).
+> >
+> > Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+> 
+> Acked-by: Paul Menage <menage@google.com>
+> 
+> You should forward these to Andew Morton for the -mm tree.
+
+I can take it since you have Acked it.
+
+Applied, thanks.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
