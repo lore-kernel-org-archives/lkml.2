@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab1CHFbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 00:31:49 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48154 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab1CHFbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 00:31:47 -0500
-Date: Tue, 8 Mar 2011 05:32:26 +0000
-From: Andres Salomon <dilinger@queued.net>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: mx51_efika: update platform data for new mfd
- changes
-Message-ID: <20110308053226.7300e65d@debxo>
-In-Reply-To: <20110307144700.GF1829@sirena.org.uk>
-References: <20110304080653.3f2c3f19@debxo>
-	<4D710FF9.6040305@ru.mvista.com>
-	<20110304083822.0f40d120@debxo>
-	<4D713670.70506@ru.mvista.com>
-	<20110307144700.GF1829@sirena.org.uk>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753045Ab1CHFij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 00:38:39 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:52317 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab1CHFii convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 00:38:38 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=37qdrPIVUooonMxFi2BWZ8DhoCRe+hJcgJuumZcJ4K8= c=1 sm=1
+ a=oeVD3z6_cdsA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=pGLkceISAAAA:8 a=1ckM6HE7bukOf_hAgYoA:9
+ a=-gj1kuWWMV3xFUEagYLqJ0CjoX8A:4 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH v3] Check for immutable/append flag in fallocate path
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20110308051121.GE1956@dastard>
+Date: Mon, 7 Mar 2011 22:38:37 -0700
+Cc: Marco Stornelli <marco.stornelli@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <92E5B019-756F-4CBE-829C-724564D4D650@dilger.ca>
+References: <4D6221B8.9040303@gmail.com> <4D6F5473.2070709@gmail.com> <4D720469.1010101@gmail.com> <20110308051121.GE1956@dastard>
+To: Dave Chinner <david@fromorbit.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Mar 2011 14:47:00 +0000
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+On 2011-03-07, at 10:11 PM, Dave Chinner wrote:
+> On Sat, Mar 05, 2011 at 10:37:45AM +0100, Marco Stornelli wrote:
+>> From: Marco Stornelli <marco.stornelli@gmail.com>
+>> 
+>> In the fallocate path the kernel doesn't check for the immutable/append
+>> flag. It's possible to have a race condition in this scenario: an
+>> application open a file in read/write and it does something, meanwhile
+>> root set the immutable flag on the file, the application at that point
+>> can call fallocate with success. In addition, we don't allow to do any
+>> unreserve operation on an append only file but only the reserve one.
+>> 
+>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+>> ---
+>> Patch is against 2.6.38-rc7
+>> 
+>> ChangeLog:
+>> v3: Modified do_fallocate instead of every single fs
+>> v2: Added the check for append-only file for XFS
+>> v1: First draft
+>> 
+>> --- open.c.orig	2011-03-01 22:55:12.000000000 +0100
+>> +++ open.c	2011-03-04 15:28:43.000000000 +0100
+>> @@ -233,6 +233,14 @@ int do_fallocate(struct file *file, int
+>> 
+>> 	if (!(file->f_mode & FMODE_WRITE))
+>> 		return -EBADF;
+>> +
+>> +	/* It's not possible punch hole on append only file */
+>> +	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
+>> +		return -EPERM;
+> 
+> Seeing as I didn't get an answer in before you reposted, I still
+> think punching an append-only file is a valid thing to want to do.
+> 
+> I've seen this done in the past for application-level transaction
+> journal files. The journal file is append only so new transactions
+> can only be written at the end of the file i.e. you cannot overwrite
+> (and therefore corrupt) existing transactions. However, once a
+> transaction is complete and the changes flushed to disk, the
+> transaction is punched out of the file to zero the range so it
+> doesn't get replayed during recovery after a system crash.
 
-> On Fri, Mar 04, 2011 at 09:58:56PM +0300, Sergei Shtylyov wrote:
-> > Andres Salomon wrote:
-> 
-> >>>> MFD changes in c738892f cause the mc13xxx_platform_data struct
-> 
-> >>>     Linus asks to also specify the commit summary in parens.
-> 
-> >> Also, what?  If there are changes to how patches should be
-> >> submitted, please provide a reference
-> >> (Documentation/SubmittingPatches should be updated, as well).
-> 
-> >    I have no time to rummage in the mail archives, sorry.
-> 
-> There's been multiple discussions of this.  The issue is that commit
-> IDs only mean something in specific trees and go bad if someone
-> rebases, and they aren't legibile by humans (so even if the commit is
-> in something like Linus' tree the reader still needs a git repository
-> to figure out what changes are being talked about).
+To my thinking "append only" means just that - only new data can be written at the end of the file, and existing data cannot be modified.  Allowing hole punch on such a file (e.g. range 0 .. ~0) would allow erasing all of the data, entirely bypassing the append-only flag.
 
-Ah, thanks, that makes sense.  Sergei's original statement was unclear
-("...instead of just the commit ID" would've helped).
+Cheers, Andreas
+
+
+
 
 
