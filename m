@@ -1,88 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab1CHNuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 08:50:16 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34439 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754976Ab1CHNuO (ORCPT
+	id S1755160Ab1CHNwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 08:52:06 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:54296 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab1CHNwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 08:50:14 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Jesper Dangaard Brouer <hawk@comx.dk>
-Cc: Maximilian Attems <max@stro.at>, Michael Prokop <mika@debian.org>,
-        "Marco d'Itri" <md@linux.it>,
-        Debian kernel team <debian-kernel@lists.debian.org>,
-        Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-In-Reply-To: <1299580166.11985.11.camel@firesoul.comx.local>
-References: <1299087769.4279.27.camel@firesoul.comx.local>
-	 <20110303124705.GA19471@stro.at>
-	 <1299580166.11985.11.camel@firesoul.comx.local>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-3DEWxQTd5DPhYZXTltwq"
-Date: Tue, 08 Mar 2011 13:49:48 +0000
-Message-ID: <1299592188.4146.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: HP G6 hardware kernel boot issue > 2.6.37 cciss/hpsa
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+	Tue, 8 Mar 2011 08:52:03 -0500
+Date: Tue, 8 Mar 2011 08:51:57 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        anton@redhat.com, Andi Kleen <ak@linux.intel.com>,
+        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
+        linux-mm@kvack.org, Nishanth Aravamudan <nacc@us.ibm.com>
+Subject: Re: [PATCH] hugetlb: /proc/meminfo shows data for all sizes of
+ hugepages
+Message-ID: <20110308135157.GA4403@mgebm.net>
+References: <1299503155-6210-1-git-send-email-pholasek@redhat.com>
+ <1299527214.8493.13263.camel@nimitz>
+ <20110307145149.97e6676e.akpm@linux-foundation.org>
+ <20110307231448.GA2946@spritzera.linux.bs1.fc.nec.co.jp>
+ <20110307152516.fee931bb.akpm@linux-foundation.org>
+ <4D761138.4030705@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+In-Reply-To: <4D761138.4030705@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-3DEWxQTd5DPhYZXTltwq
-Content-Type: text/plain; charset="UTF-8"
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2011-03-08 at 11:29 +0100, Jesper Dangaard Brouer wrote:
-> On Thu, 2011-03-03 at 13:47 +0100, Maximilian Attems wrote:
-> > On Wed, 02 Mar 2011, Jesper Dangaard Brouer wrote:
-> >=20
-> [...]
-> > please file proper Debian bug report with reportbug.
-> > we already have scripts dealing with such device changes.
-> > Had previously thought that the need of them was over after the
-> > libata change, but obviously you show the contrare.
-> >=20
-> > So fire up reportbug and report against linux-2.6 with severity grave.
+On Tue, 08 Mar 2011, Petr Holasek wrote:
+
+> On 03/08/2011 12:25 AM, Andrew Morton wrote:
+> >On Tue, 8 Mar 2011 08:14:49 +0900
+> >Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>  wrote:
+> >
+> >>On Mon, Mar 07, 2011 at 02:51:49PM -0800, Andrew Morton wrote:
+> >>>On Mon, 07 Mar 2011 11:46:54 -0800
+> >>>Dave Hansen<dave@linux.vnet.ibm.com>  wrote:
+> >>>
+> >>>>On Mon, 2011-03-07 at 14:05 +0100, Petr Holasek wrote:
+> >>>>>+       for_each_hstate(h)
+> >>>>>+               seq_printf(m,
+> >>>>>+                               "HugePages_Total:   %5lu\n"
+> >>>>>+                               "HugePages_Free:    %5lu\n"
+> >>>>>+                               "HugePages_Rsvd:    %5lu\n"
+> >>>>>+                               "HugePages_Surp:    %5lu\n"
+> >>>>>+                               "Hugepagesize:   %8lu kB\n",
+> >>>>>+                               h->nr_huge_pages,
+> >>>>>+                               h->free_huge_pages,
+> >>>>>+                               h->resv_huge_pages,
+> >>>>>+                               h->surplus_huge_pages,
+> >>>>>+                               1UL<<  (huge_page_order(h) + PAGE_SH=
+IFT - 10));
+> >>>>>  }
+> >>>>
+> >>>>It sounds like now we'll get a meminfo that looks like:
+> >>>>
+> >>>>...
+> >>>>AnonHugePages:    491520 kB
+> >>>>HugePages_Total:       5
+> >>>>HugePages_Free:        2
+> >>>>HugePages_Rsvd:        3
+> >>>>HugePages_Surp:        1
+> >>>>Hugepagesize:       2048 kB
+> >>>>HugePages_Total:       2
+> >>>>HugePages_Free:        1
+> >>>>HugePages_Rsvd:        1
+> >>>>HugePages_Surp:        1
+> >>>>Hugepagesize:    1048576 kB
+> >>>>DirectMap4k:       12160 kB
+> >>>>DirectMap2M:     2082816 kB
+> >>>>DirectMap1G:     2097152 kB
+> >>>>
+> >>>>At best, that's a bit confusing.  There aren't any other entries in
+> >>>>meminfo that occur more than once.  Plus, this information is availab=
+le
+> >>>>in the sysfs interface.  Why isn't that sufficient?
+> >>>>
+> >>>>Could we do something where we keep the default hpage_size looking li=
+ke
+> >>>>it does now, but append the size explicitly for the new entries?
+> >>>>
+> >>>>HugePages_Total(1G):       2
+> >>>>HugePages_Free(1G):        1
+> >>>>HugePages_Rsvd(1G):        1
+> >>>>HugePages_Surp(1G):        1
+> >>>>
+> >>>
+> >>>Let's not change the existing interface, please.
+> >>>
+> >>>Adding new fields: OK.
+> >>>Changing the way in whcih existing fields are calculated: OKish.
+> >>>Renaming existing fields: not OK.
+> >>
+> >>How about lining up multiple values in each field like this?
+> >>
+> >>   HugePages_Total:       5 2
+> >>   HugePages_Free:        2 1
+> >>   HugePages_Rsvd:        3 1
+> >>   HugePages_Surp:        1 1
+> >>   Hugepagesize:       2048 1048576 kB
+> >>   ...
+> >>
+> >>This doesn't change the field names and the impact for user space
+> >>is still small?
+> >
+> >It might break some existing parsers, dunno.
+> >
+> >It was a mistake to assume that all hugepages will have the same size
+> >for all time, and we just have to live with that mistake.
+> >
+> >I'd suggest that we leave meminfo alone, just ensuring that its output
+> >makes some sense.  Instead create a new interface which presents all
+> >the required info in a sensible fashion and migrate usersapce reporting
+> >tools over to that interface.  Just let the meminfo field die a slow
+> >death.
 >=20
-> I finally succeeded filing a Debian bug-report (as Debians mail system
-> clamav kept categorizing me as malware... hmm)
+> The main idea behind this patch is to unify hugetlb interfaces in
+> /proc/meminfo
+> and sysfs. When somebody wants to find out all important
+> informations about hugepage
+> pools (as hugeadm from libhugetlbfs does), he has to determine
+> default hugepage size
+> from /proc/meminfo and then go into
+> /sys/kernel/mm/hugepages/hugepages-<size>kB/
+> for informations about next nodes.
+>=20
+> I agree with idea of throwing away of meminfo hugepage fields in the futu=
+re,
+> but before doing this, sysfs part of interface should indicate
+> default hugepage
+> size. And meminfo could possibly show data for all hugepage sizes on
+> system. So when
+> these parts will be independent, it is no problem to let meminfo
+> fields die.
 
-Nothing personal, it was bouncing most incoming mail for a few hours.
+I think the two best options here are:
 
-Ben.
+1. Use hugeadm (packaged with libhugetlbfs) to indicate the kernel default =
+huge
+page size to any userspace tool that needs to know.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+2. Add an marker for the kernel default huge page size in sysfs.
 
---=-3DEWxQTd5DPhYZXTltwq
+I don't have a strong opinion about which is "right".
+
+>=20
+> >
+> >It's tempting to remove the meminfo hugepage fields altogether - most
+> >parsers _should_ be able to cope with a CONFIG_HUGETLB=3Dn kernel.  But
+> >that's breakage as well - some applications may be using meminfo to
+> >detect whether the kernel supports huge pages!
+>=20
+
+--UugvWAfsgieZRqgk
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Digital signature
+Content-Disposition: inline
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIVAwUATXYz9+e/yOyVhhEJAQpfpBAAmUrCwmKi46H6JY/QyUKVCx2otEpJo23z
-7xwHkv+yywBBnpd3Elh2mzMrRAzhjMunY2UFBC/DAmpUY4FtDnAsnFUhK9SZktji
-Jdu7pQXz63PBCjT69yNIGk0ucbhMM9p4+zpIxIHlsqIC5u05/xsZaDeqnrCZ0jcN
-csG8BqCZj1SlqtCqd+CxR0q+jlSneg1ywfxlHc9jG/RwCz6UlE7HV0Bh1o5tmwqk
-i1yjuceWbM/uOvH77GILuCRh+bLa/eAR5OoT3/kw2PJ6NSQNU0NuFBVdYxocHCEO
-JL/9XAEZIuGj6tLq+OG+d580vG5vZ9IUrA8vg+D/xmBaaMU3Np6tujGRD6BywaTi
-JAkMRCyGr2hmJTTo+uxt5QwsV9/VFldS6QQm9tk9FrlpqTnbeoQw06BeG6cvKXjW
-HwdRx08+yJadJT+I0ojSn0OVftgPMhGcEHX0tbRQMW+d84zQVPI6Sodfs/twAPop
-5RsPv3D8MpgR7TjvK61wfHctgkTrHEIbUH4a6nnM7IEY/6zSGYzCU5tB1ufRKjL0
-hoSYQPjPN9FeAscEwSxMdZHU3nGlKkUZfomiKYPHznLm4uLl2zpu/8XA9pjs24iA
-iSOsOzDRcVwoWID7L7jHeMzDmYLWBFBzdNgAqtj32UuQDPikMHWeeOLPWnZdc4jg
-DdMn88Ledls=
-=4rP3
+iQEcBAEBAgAGBQJNdjR9AAoJEH65iIruGRnNSCwH/1to/Bq+fl2aTKOunpfsEpZP
+zhW2VOaTaNgBZaUuvr2sJFzpseQeNVtVi6v/NhPzmALoucL0AD9uvGKuY6Lo9+zy
+5YWpkaq6Y4D1FeL3eNvqUZZ7fuD+Bg+9BEn1F76wpo110oLvESCMrPdibDkhSPAs
+kMOX8/kh+D+K++Zo3/KvIwnSHVlGgiK3owmiDubFB+DQEElXVjLhEw51tlf5O7Om
+F2/52hpDs0v6JxW3t6ie+8nhztQaGghjUULurht7a5TL78VfvKkL4ANNqkcWga8u
+ChMIthYIRzmx6JNCUv+dGFcgJ3zKPtv/0yNCAq8TdOKBq4noulK4nczSWn5HIQw=
+=A76V
 -----END PGP SIGNATURE-----
 
---=-3DEWxQTd5DPhYZXTltwq--
+--UugvWAfsgieZRqgk--
