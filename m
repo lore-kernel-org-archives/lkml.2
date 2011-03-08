@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1CHP2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:28:33 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:49591 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab1CHP2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:28:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=SazlUaMEpnfBZ8abz4nEQFxLLVbyjd+i94+bGof0yvHcq7ReT0Fu24plNgwyQaHrWW
-         sRLYhGWWhKqMCAISA/py7zR6mcVLQalGh8MC+Jnix6TeByqg4X5DoCeFMBpm+rp29z/e
-         lcnIgb3accWnA1UEdgKiFaiE043FYJYAYS/24=
+	id S1755935Ab1CHP3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:29:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55428 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755120Ab1CHP3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 10:29:31 -0500
+Message-ID: <4D764B59.1060801@suse.cz>
+Date: Tue, 08 Mar 2011 16:29:29 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTik_Cb7tXheZNOBjqnoQc4MSL1LnDtFGFP5mqZRi@mail.gmail.com>
-References: <AANLkTin2H9=NWp5G6N6_e=bxBTh2eS1dbUxOjT6xX98C@mail.gmail.com>
-	<AANLkTik_Cb7tXheZNOBjqnoQc4MSL1LnDtFGFP5mqZRi@mail.gmail.com>
-Date: Tue, 8 Mar 2011 16:28:26 +0100
-Message-ID: <AANLkTinBv__n7k3Z=EJWv1fdQScyB7AJV0SsYJE0mCwQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for March 8 (BROKEN: arch/x86/kernel/entry_32.S?
- Debian's binutils/as?)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Matthias Klose <doko@debian.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        debian-gcc <debian-gcc@lists.debian.org>,
-        binutils <binutils@sourceware.org>, psomas@cslab.ece.ntua.gr,
-        JBeulich@novell.com, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Joe Perches <joe@perches.com>, linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, users@kernel.org
+Subject: Re: RFC: Removing old tags, reducing the git size of -next.
+References: <1299039746.4208.28.camel@Joe-Laptop> <20110302165447.f47fd4b2.sfr@canb.auug.org.au>
+In-Reply-To: <20110302165447.f47fd4b2.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/8/11, H.J. Lu <hjl.tools@gmail.com> wrote:
-> On Tue, Mar 8, 2011 at 2:44 AM, Sedat Dilek <sedat.dilek@googlemail.com>
-> wrote:
->> Hi,
+On 2.3.2011 06:54, Stephen Rothwell wrote:
+> Hi Joe,
+> 
+> On Tue, 01 Mar 2011 20:22:26 -0800 Joe Perches <joe@perches.com> wrote:
 >>
->> my build of linux-next (next-20110308, the same with the one from
->> yesterday) is broken.
->> (I translated the German output.)
->>
->> [ build.log ]
->>  AS      arch/x86/kernel/entry_32.o
->> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
->> Assembler messages:
->> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
->> Error: .size expression does not evaluate to a constant
->> make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1 (Error 1)
->> make[5]: *** [arch/x86/kernel] Fehler 2 (Error 2)
->> make[4]: *** [arch/x86] Fehler 2 (Error 2)
->> make[4]: *** Warte auf noch nicht beendete Prozesse... (Waiting for
->> unfinished jobs...)
->>
->
-> This is a kernel bug.  Please use the latest binutils from CVS.
-> It will tell you which symbol causes this.
->
->
-> --
-> H.J.
->
+>> I personally do not find git history to be very useful
+>> for the next tree.  The collected next tree history
+>> also makes the repository fairly large and unwieldy to
+>> use on smaller development systems.
+> 
+> Yeah, I have been thinking about this again recently.
+> 
+>> Would it be reasonable to create a separate history tree
+>> for -next every once in awhile and have say a maximum of
+>> a few weeks of next history in the current tree?
+> 
+> I could easily have a tree that is historical and contains what the
+> current linux-next tree contains while also removing old stuff from the
+> normal linux-next tree (I could push into both each day).  The only
+> connection between the daily releases is the "history" branch which,
+> frankly, does not serve any purpose and I will remove.
 
-Yeah, I have cherry-picked these two upstream commits before you have
-mentionned it...
+FWIW, I use the following setup for linux-next:
 
-0001-Mention-symbol-name-in-non-constant-.size-expression.patch
-       (Cherry-picked from commit b9521fc0be7945fc842ce1197e241a023378125d)
-0002-Revert-the-last-change-on-gas-elf-bad-size.err.patch
-       (Cherry-picked from commit cbd141bb69f791de7ea1581abe7afb34f0c61288)
+[remote "linux-next"]
+        url =
+git://git.kernel.org/pub/scm/linux/kernel/git/sfr/linux-next.git
+        fetch = +refs/heads/master:refs/heads/linux-next
+        fetch = +refs/heads/stable:refs/remotes/linux-next/stable
+        tagopt = --no-tags
 
-... and have built with them a new binutils Debian package.
+and fetch the next-* tags manually only when I need them.
 
-The error looks now like this (sorry for the German output):
-...
-  AS      arch/x86/kernel/entry_32.o
-/home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
-Assembler messages:
-/home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
-Error: .size expression with symbol `apf_page_fault' does not evaluate
-to a constant
-make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1
-make[5]: *** [arch/x86/kernel] Fehler 2
-make[5]: *** Warte auf noch nicht beendete Prozesse...
-
-Anyway, before more riddling around it would be very helpful to have a
-clear pointer if there is a fix around... That building, testing and
-installing took me now several hours.
-And... yeah, backports to 2.21-branch appreciated.
-
-- Sedat -
+Michal
