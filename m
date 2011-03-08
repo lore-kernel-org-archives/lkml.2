@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab1CHUKL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:10:11 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:44343 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab1CHUKJ (ORCPT
+	id S1756338Ab1CHUQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:16:13 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:58611 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab1CHUQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 15:10:09 -0500
-X-IronPort-AV: E=Sophos;i="4.62,285,1297036800"; 
-   d="scan'208";a="4681058"
-Date: Tue, 8 Mar 2011 20:09:48 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: "x86-64, mm: Put early page table high" causes crash on Xen
-In-Reply-To: <AANLkTinkA5UNfdAqhnJYgC+czPrNYtOtfY332JCvZXy-@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1103081913560.2968@kaball-desktop>
-References: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop> <4D6D6980.7060304@kernel.org> <alpine.DEB.2.00.1103071527500.2968@kaball-desktop> <AANLkTi=aUGdjvtvy81FimMZB5PZNzASXHN0BZHWHUuLs@mail.gmail.com> <alpine.DEB.2.00.1103081203260.2968@kaball-desktop>
- <AANLkTikmiKvdgzE_G1-w7PBqBf=kD5R5k5QZChHeiDCd@mail.gmail.com> <alpine.DEB.2.00.1103081728300.2968@kaball-desktop> <AANLkTinkA5UNfdAqhnJYgC+czPrNYtOtfY332JCvZXy-@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 8 Mar 2011 15:16:12 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        arnaud.patard@rtp-net.org
+Subject: [PATCH 00/15] staging: xgifb: misc cleanups
+Date: Tue,  8 Mar 2011 22:16:05 +0200
+Message-Id: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Mar 2011, Yinghai Lu wrote:
-> [    0.000000] kernel direct mapping tables up to 7f750000 @
-> [0x7f74c000-0x7f74ffff] pre-allocated
-> [    0.000000] DEBUG map_low_page phys    243a000
-> [    0.000000] DEBUG map_low_page phys    243e000
-> [    0.000000] DEBUG alloc_low_page phys   7f74c000
-> [    0.000000] DEBUG map_low_page phys    243a000
-> [    0.000000] DEBUG map_low_page phys   7f74c000
-> [    0.000000] DEBUG alloc_low_page phys   7f74d000
-> 
+Hello,
 
-I couldn't see this on my machine but I was afraid it could happen on
-some hardware :(
-Thank you very much for spending your time on this and for your kind
-replies.
-I'll follow up with an update of the xen specific patch I posted before
-and I won't bother you again with this :)
-Cheers,
+Here's again some miscellaneous xgifb cleanups mainly to remove unused
+code.
 
-Stefano
+No compilation warnings from GCC 4.5.2, also checked that framebuffer
+console works with Z9 on ARM.
+
+Aaro Koskinen (15):
+  staging: xgifb: delete HW cursor memory allocation
+  staging: xgifb: delete command queue selection/init
+  staging: xgifb: delete offscreen memory management
+  staging: xgifb: delete unused fields from xgi_hw_device_info
+  staging: xgifb: delete bSkipSense
+  staging: xgifb: delete bIntegratedMMEnabled
+  staging: xgifb: delete nomax module parameter
+  staging: xgifb: vb_setmode: make internal functions static
+  staging: xgifb: vb_setmode: include the .h file
+  staging: xgifb: vb_ext: delete redundant declarations
+  staging: xgifb: vb_ext: delete unused functions
+  staging: xgifb: vb_ext: make internal functions static
+  staging: xgifb: vb_init: delete redundant declarations
+  staging: xgifb: vb_init: delete unused functions
+  staging: xgifb: vb_init: make internal functions static
+
+ drivers/staging/xgifb/XGI_main.h    |  104 ----
+ drivers/staging/xgifb/XGI_main_26.c |  573 ------------------
+ drivers/staging/xgifb/XGIfb.h       |    1 -
+ drivers/staging/xgifb/vb_ext.c      |  472 +--------------
+ drivers/staging/xgifb/vb_ext.h      |    6 -
+ drivers/staging/xgifb/vb_init.c     | 1135 ++---------------------------------
+ drivers/staging/xgifb/vb_setmode.c  |  417 ++++++--------
+ drivers/staging/xgifb/vb_setmode.h  |    4 -
+ drivers/staging/xgifb/vgatypes.h    |   33 -
+ 9 files changed, 235 insertions(+), 2510 deletions(-)
+
