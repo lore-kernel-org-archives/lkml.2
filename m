@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab1CHVuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 16:50:04 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:35959 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756376Ab1CHVuC (ORCPT
+	id S1756897Ab1CHVuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 16:50:23 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:13737 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756376Ab1CHVuT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 16:50:02 -0500
-Date: Tue, 8 Mar 2011 22:49:19 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH R4 5/7] xen/balloon: Minor notation fixes
-Message-ID: <20110308214919.GF27331@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	Tue, 8 Mar 2011 16:50:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=YgWkZtix39BxVNTuwixPtQ80Ias/qVUq6Ohere+0w7t6AB+VGd0yJjQfBhd+7U4yn/
+         LJvarudS3AQncVw2wIEA==
+MIME-Version: 1.0
+In-Reply-To: <1299459180-11321-2-git-send-email-leemgs1@gmail.com>
+References: <1299459180-11321-1-git-send-email-leemgs1@gmail.com> <1299459180-11321-2-git-send-email-leemgs1@gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 8 Mar 2011 13:49:56 -0800
+Message-ID: <AANLkTi=FYHX3Z1zAi5BqHqxRSQK-iOJ+tSvZwj4csZ=2@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/2] cgroup:doc Update cpuset info & webiste via cgroup.
+To: Geunsik Lim <leemgs1@gmail.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor notation fixes.
+On Sun, Mar 6, 2011 at 4:52 PM, Geunsik Lim <leemgs1@gmail.com> wrote:
+> cpuset website is changed.
+> and, update list of cpuset using cgroup(controller group).
+>
+> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
----
- drivers/xen/balloon.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Acked-by: Paul Menage <menage@google.com>
 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 6bae013..431e9f0 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -592,11 +592,11 @@ static struct attribute *balloon_info_attrs[] = {
- 
- static struct attribute_group balloon_info_group = {
- 	.name = "info",
--	.attrs = balloon_info_attrs,
-+	.attrs = balloon_info_attrs
- };
- 
- static struct sysdev_class balloon_sysdev_class = {
--	.name = BALLOON_CLASS_NAME,
-+	.name = BALLOON_CLASS_NAME
- };
- 
- static int register_balloon(struct sys_device *sysdev)
--- 
-1.5.6.5
+You should forward these to Andew Morton for the -mm tree.
+
+Paul
+
+> ---
+>  Documentation/cgroups/cpusets.txt |   17 +++++++++--------
+>  1 files changed, 9 insertions(+), 8 deletions(-)
+>
+> diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
+> index 5d0d569..98a3082 100644
+> --- a/Documentation/cgroups/cpusets.txt
+> +++ b/Documentation/cgroups/cpusets.txt
+> @@ -693,7 +693,7 @@ There are ways to query or modify cpusets:
+>  - via the C library libcgroup.
+>    (http://sourceforge.net/projects/libcg/)
+>  - via the python application cset.
+> -   (http://developer.novell.com/wiki/index.php/Cpuset)
+> +   (http://code.google.com/p/cpuset/)
+>
+>  The sched_setaffinity calls can also be done at the shell prompt using
+>  SGI's runon or Robert Love's taskset.  The mbind and set_mempolicy
+> @@ -725,13 +725,14 @@ Now you want to do something with this cpuset.
+>
+>  In this directory you can find several files:
+>  # ls
+> -cpuset.cpu_exclusive       cpuset.memory_spread_slab
+> -cpuset.cpus                cpuset.mems
+> -cpuset.mem_exclusive       cpuset.sched_load_balance
+> -cpuset.mem_hardwall        cpuset.sched_relax_domain_level
+> -cpuset.memory_migrate      notify_on_release
+> -cpuset.memory_pressure     tasks
+> -cpuset.memory_spread_page
+> +cgroup.clone_children  cpuset.memory_pressure
+> +cgroup.event_control   cpuset.memory_spread_page
+> +cgroup.procs           cpuset.memory_spread_slab
+> +cpuset.cpu_exclusive   cpuset.mems
+> +cpuset.cpus            cpuset.sched_load_balance
+> +cpuset.mem_exclusive   cpuset.sched_relax_domain_level
+> +cpuset.mem_hardwall    notify_on_release
+> +cpuset.memory_migrate  tasks
+>
+>  Reading them will give you information about the state of this cpuset:
+>  the CPUs and Memory Nodes it can use, the processes that are using
+> --
+> 1.6.2.5
+>
+>
