@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab1CHKvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 05:51:42 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35848 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab1CHKvj (ORCPT
+	id S1753743Ab1CHKx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 05:53:57 -0500
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:51789 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab1CHKxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 05:51:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=tN0MZ6Mwdmt4VPctXbOwFSDAedJXUt2xL5feiWo3Ts7pfZqVZL+okfj3ThcaekiQYS
-         qaWJdlaPeUY0zQGiXkcAY+oFZXEbCGNEtuuF8XFb5mllafRxsY3dFQ+919pqv3joeTXQ
-         0O3LrWrRnNz3PfZwHV+dY8fBx+cjc8cO7UcEA=
-Message-ID: <4D760A36.5040206@gmail.com>
-Date: Tue, 08 Mar 2011 11:51:34 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Tue, 8 Mar 2011 05:53:55 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D760AF6.7030809@cam.ac.uk>
+Date: Tue, 08 Mar 2011 10:54:46 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Slaby <jslaby@suse.cz>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: eeepc: rfkill on 900A defunct
-References: <4CED26EF.5000109@suse.cz>	<20101124201834.GA7760@srcf.ucam.org>	<4D6B6F9A.1020102@gmail.com>	<4D75FF8E.9010103@gmail.com> <AANLkTinBRCdOa1QdvWJiihvBpmJyvmRvDoFYgp0yTMFc@mail.gmail.com>
-In-Reply-To: <AANLkTinBRCdOa1QdvWJiihvBpmJyvmRvDoFYgp0yTMFc@mail.gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: Moving staging:iio over to threaded interrupts.
+References: <4D6FCC99.6090202@cam.ac.uk> <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
 X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 11:22 AM, Corentin Chary wrote:
-> On Tue, Mar 8, 2011 at 10:06 AM, Jiri Slaby <jirislaby@gmail.com> wrote:
->> On 02/28/2011 10:49 AM, Jiri Slaby wrote:
->>> On 11/24/2010 09:18 PM, Matthew Garrett wrote:
->>>> Hm. As a shorter term fix, can you try this (entirely untested!)
->>>> approach?
->>>
->>> What is the status of this? Was there any alternative merged?
+On 03/08/11 10:30, Thomas Gleixner wrote:
+> On Thu, 3 Mar 2011, Jonathan Cameron wrote:
+>> So to my mind two solutions exist.
+>> 1) A single thread per trigger.  Everything prior to the work queue
+>> calls is moved into a handler that goes in the 'fast' list which stays
+>> in our top half handler.  The work queue bits are called one after
+>> another in the bottom half.
 >>
->> Ping.
+>> 2) Allow each consumer to attach it's own thread to the trigger
+>> controller and basically implement our own variant of the core threaded
+>> interrupt code that allows for a list of threads rather than a single one.
+>>
+>> I rather like the idea of 2.  It might even end up with different
+>> devices being queried from different processor cores simultaneously
+>> which is quite cute.  The question is whether a simple enough
+>> implementation is possible that the originators of the threaded interrupt
+>> code would be happy with it (as it bypasses or would mean additions to their
+>> core code).
 > 
-> Because this is Matthew's patch, and I have no hardware to test that
-> patch, I'm not touching it.
+> Don't implement another threading model. Look at the trigger irq as a
+> demultiplexing interrupt. So if you have several consumers of a single
+> trigger, then you can implement a pseudo irq_chip and register the sub
+> devices as separate interrupts.
 > 
-> Jiri, on what models was this patch tested (only got 701 and 901 here) ?
+> That means your main trigger interrupt would look like this:
+> 
+> irqreturn_t hardirq_handler(int irq, void *dev)
+> {
+>      iio_trigger_dev *idev = dev;
+>      int i;
+> 
+>      store_state_as_necessary(idev);
+> 
+>      for (i = 0; i < idev->nr_subirqs; i++) {
+>      	    if (idev->subirqs[i].enabled)
+> 		generic_handle_irq(idev->subirq_base + i);
+>      }
+> }
+> 
+> And you'd have an irq_chip implementation which does:
+> 
+> static void subirq_mask(struct irq_data *d)
+> {
+>      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
+>      int idx = d->irq - idev->subirq_base;
+> 
+>      idev->subirqs[idx].enabled = false;
+> }
+> 
+> static void subirq_unmask(struct irq_data *d)
+> {
+>      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
+>      int idx = d->irq - idev->subirq_base;
+> 
+>      idev->subirqs[idx].enabled = true;
+> }
+> 
+> static struct irq_chip subirq_chip = {
+>        .name = "iiochip",
+>        .mask = subirq_mask,
+>        .unmask = subirq_unmask,
+> };
+> 
+> init()
+> {
+> 	for_each_subirq(i)
+> 		irq_set_chip_and_handler(i, &subirq_chip, handle_simple_irq);
+> }
+> 
+> So now you can request the interrupts for your subdevices with
+> request_irq or request_threaded_irq.
+> 
+> You can also implement #1 this way, you just mark the sub device
+> interrupts as IRQ_NESTED_THREAD, and then call the handlers from the
+> main trigger irq thread.
+Excellent.  I hadn't thought of doing it that way at all and it certainly looks
+like a much cleaner option than what we have now let alone the mess I was suggesting
+above.
 
-It was 900A.
+Will have a go at implementing this asap.
 
-thanks,
--- 
-js
+Thanks for the advice,
+
+Jonathan
+
