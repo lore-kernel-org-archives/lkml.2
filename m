@@ -1,56 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab1CHT6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 14:58:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755891Ab1CHT6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 14:58:31 -0500
-Message-ID: <4D768A62.3050903@redhat.com>
-Date: Tue, 08 Mar 2011 14:58:26 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>
-Subject: Re: [PATCH] add missing guest clock update removed by	e48672fa25e879f7ae21785c7efd187738139593
-References: <20110307101827.GA1762@pcnci.linuxbox.cz>
-In-Reply-To: <20110307101827.GA1762@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756358Ab1CHT67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 14:58:59 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38953 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755918Ab1CHT65 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 14:58:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=mZTDvUOFHMcFZKue37mQK/rfRNPG4sw+BITPfUgUAg6Nxn6QGwAt37pqqHZaNLvE+o
+         UoIeQsK4P/Sh8LCSG3IJi35H8QYbLYlLy3TcGNbAwRvVHQHRxj55ZetrZ4xtKX3GVQ8w
+         i9qr2rxcV/DyThYmpVa0fDmb3RzWmdzVUREF0=
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
+        vda.linux@googlemail.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/8] job control: Add @for_ptrace to do_notify_parent_cldstop()
+Date: Tue,  8 Mar 2011 20:56:36 +0100
+Message-Id: <1299614199-25142-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299614199-25142-1-git-send-email-tj@kernel.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2011 05:18 AM, Nikola Ciprich wrote:
-> e48672fa25e879f7ae21785c7efd187738139593 removed kvm_request_guest_time_update(vcpu);
-> this breaks 32bit SMP guests using virtio-clock.
-> thus add unconditional call to kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu) to fix the
-> problem.
->
-> Signed-off-by: Nikola Ciprich<nikola.ciprich@linuxbox.cz>
-> ---
->   arch/x86/kvm/x86.c |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index bcc0efc..4c27144 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2091,6 +2091,7 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->   	}
->
->   	kvm_x86_ops->vcpu_load(vcpu, cpu);
-> +	kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->   	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
->   		/* Make sure TSC doesn't go backwards */
->   		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->
->
->    
+Currently, do_notify_parent_cldstop() determines whether the
+notification is for the real parent or ptracer.  Move the decision to
+the caller by adding @for_ptrace parameter to
+do_notify_parent_cldstop().  All the callers are updated to pass
+task_ptrace(target_task), so this patch doesn't cause any behavior
+difference.
 
-Can you try moving the kvm_make_request() inside the if conditional and 
-see if it that also fixes it?
+While at it, add function comment to do_notify_parent_cldstop().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/signal.c |   31 ++++++++++++++++++++++++-------
+ 1 files changed, 24 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 6130cb8..4acca00 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1595,16 +1595,30 @@ int do_notify_parent(struct task_struct *tsk, int sig)
+ 	return ret;
+ }
+ 
+-static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
++/**
++ * do_notify_parent_cldstop - notify parent of stopped/continued state change
++ * @tsk: task reporting the state change
++ * @for_ptracer: the notification is for ptracer
++ * @why: CLD_{CONTINUED|STOPPED|TRAPPED} to report
++ *
++ * Notify @tsk's parent that the stopped/continued state has changed.  If
++ * @for_ptracer is %false, @tsk's group leader notifies to its real parent.
++ * If %true, @tsk reports to @tsk->parent which should be the ptracer.
++ *
++ * CONTEXT:
++ * Must be called with tasklist_lock at least read locked.
++ */
++static void do_notify_parent_cldstop(struct task_struct *tsk,
++				     bool for_ptracer, int why)
+ {
+ 	struct siginfo info;
+ 	unsigned long flags;
+ 	struct task_struct *parent;
+ 	struct sighand_struct *sighand;
+ 
+-	if (task_ptrace(tsk))
++	if (for_ptracer) {
+ 		parent = tsk->parent;
+-	else {
++	} else {
+ 		tsk = tsk->group_leader;
+ 		parent = tsk->real_parent;
+ 	}
+@@ -1743,7 +1757,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 	read_lock(&tasklist_lock);
+ 	if (may_ptrace_stop()) {
+-		do_notify_parent_cldstop(current, why);
++		do_notify_parent_cldstop(current, task_ptrace(current), why);
+ 		/*
+ 		 * Don't want to allow preemption here, because
+ 		 * sys_ptrace() needs this task to be inactive.
+@@ -1886,7 +1900,8 @@ retry:
+ 
+ 		if (notify) {
+ 			read_lock(&tasklist_lock);
+-			do_notify_parent_cldstop(current, notify);
++			do_notify_parent_cldstop(current, task_ptrace(current),
++						 notify);
+ 			read_unlock(&tasklist_lock);
+ 		}
+ 
+@@ -1982,6 +1997,7 @@ relock:
+ 	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
+ 	 */
+ 	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
++		struct task_struct *leader;
+ 		int why;
+ 
+ 		if (signal->flags & SIGNAL_CLD_CONTINUED)
+@@ -1994,7 +2010,8 @@ relock:
+ 		spin_unlock_irq(&sighand->siglock);
+ 
+ 		read_lock(&tasklist_lock);
+-		do_notify_parent_cldstop(current->group_leader, why);
++		leader = current->group_leader;
++		do_notify_parent_cldstop(leader, task_ptrace(leader), why);
+ 		read_unlock(&tasklist_lock);
+ 		goto relock;
+ 	}
+@@ -2167,7 +2184,7 @@ out:
+ 
+ 	if (unlikely(group_stop)) {
+ 		read_lock(&tasklist_lock);
+-		do_notify_parent_cldstop(tsk, group_stop);
++		do_notify_parent_cldstop(tsk, task_ptrace(tsk), group_stop);
+ 		read_unlock(&tasklist_lock);
+ 	}
+ }
+-- 
+1.7.1
+
