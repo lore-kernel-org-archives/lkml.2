@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab1CHKfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 05:35:21 -0500
-Received: from www.tglx.de ([62.245.132.106]:37838 "EHLO www.tglx.de"
+	id S1753332Ab1CHKmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 05:42:52 -0500
+Received: from www.tglx.de ([62.245.132.106]:35737 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab1CHKfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 05:35:19 -0500
-Date: Tue, 8 Mar 2011 11:34:59 +0100 (CET)
+	id S1751683Ab1CHKmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 05:42:49 -0500
+Date: Tue, 8 Mar 2011 11:41:42 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
-cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v9 1/1] PRUSS UIO driver support
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C008B02@dbde02.ent.ti.com>
-Message-ID: <alpine.LFD.2.00.1103081133510.2787@localhost6.localdomain6>
-References: <1299175677-17859-1-git-send-email-pratheesh@ti.com> <1299175677-17859-2-git-send-email-pratheesh@ti.com> <201103031915.55825.arnd@arndb.de> <B85A65D85D7EB246BE421B3FB0FBB593024C008B02@dbde02.ent.ti.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [patch 31/37] mn10300: Use generic irq Kconfig
+In-Reply-To: <20110305220127.GA21728@merkur.ravnborg.org>
+Message-ID: <alpine.LFD.2.00.1103081140580.2787@localhost6.localdomain6>
+References: <20110119205258.462759212@linutronix.de> <20110119210840.381111598@linutronix.de> <AANLkTi=nLFx7Z7UfiXZrBQoGgC1Fh_dh9--5T=Di9qhc@mail.gmail.com> <20110305220127.GA21728@merkur.ravnborg.org>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1698934581-1299580906=:2787"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Mar 2011, TK, Pratheesh Gangadhar wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Hi,
-> > -----Original Message-----
-> > From: Arnd Bergmann [mailto:arnd@arndb.de]
-> > Sent: Thursday, March 03, 2011 11:46 PM
-> > On Thursday 03 March 2011 19:07:57 Pratheesh Gangadhar wrote:
-> > > +struct uio_pruss_dev {
-> > > +       struct uio_info *info;
-> > > +       struct clk *pruss_clk;
-> > > +       dma_addr_t sram_paddr;
-> > > +       dma_addr_t ddr_paddr;
-> > > +       void __iomem *prussio_vaddr;
-> > > +       void *sram_vaddr;
-> > > +       void *ddr_vaddr;
-> > > +       unsigned int hostirq_start;
-> > > +       unsigned int pintc_base;
-> > > +};
-> > > +
-> > > +struct pruss_priv {
-> > > +       struct uio_pruss_dev *pupdev;
-> > > +};
+---1463795968-1698934581-1299580906=:2787
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Sat, 5 Mar 2011, Sam Ravnborg wrote:
+
+> On Sat, Mar 05, 2011 at 10:02:33PM +0100, Geert Uytterhoeven wrote:
+> > On Wed, Jan 19, 2011 at 22:49, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > No functional change.
+> > >
+> > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: David Howells <dhowells@redhat.com>
+> > > ---
+> > >  arch/mn10300/Kconfig |    5 +----
+> > >  1 file changed, 1 insertion(+), 4 deletions(-)
+> > >
+> > > Index: linux-2.6/arch/mn10300/Kconfig
+> > > ===================================================================
+> > > --- linux-2.6.orig/arch/mn10300/Kconfig
+> > > +++ linux-2.6/arch/mn10300/Kconfig
+> > > @@ -1,6 +1,7 @@
+> > >  config MN10300
+> > >        def_bool y
+> > >        select HAVE_OPROFILE
+> > > +       select GENERIC_HARDIRQS
 > > 
-> > I cannot see the point of struct pruss_priv, I think it would be better to
-> > just merge the two data structures into one. Everything else looks
-> > good to me now.
+> > Wasn't this supposed to be "select HAVE_GENERIC_HARDIRQS"?
+
+Crap, yes.
+
+> > /me studying generic hardirqs...
 > 
-> pruss_priv is needed to get access to uio_pruss_dev from uio_info *info in
-> UIO interrupt handler (pruss_handler) and shall be per interrupt entry.
+> One could hope this was nicely documented in kernel/irq/Kconfig.
+> But that file contains only 9 lines of comments for 10 config symbols.
 > 
-> +static irqreturn_t pruss_handler(int irq, struct uio_info *info) {
-> +	struct pruss_priv *priv = info->priv;
-> +	struct uio_pruss_dev *gdev = priv->pupdev;
+> Maybe it is just me but I was struggeling understanding the purpose
+> of these config symbols.
 > 
-> Note that info is a pointer to array supporting 8 interrupts. This allows to
-> redirect to driver structure via info->priv quickly.
+> I found the individual bits of genirq nicely documented in most cases.
+> But the overall picture was/is hard to get.
+> 
+> And I never got enough understanding to write up something myself :-(
 
-struct uio_pruss_dev *dev = container_of(info, struct uio_pruss_dev, info);
+Point taken. /me goes and adds comments :)
 
-Perhaps ?
-
-Thanks,
-
-	tglx
+      tglx
+---1463795968-1698934581-1299580906=:2787--
