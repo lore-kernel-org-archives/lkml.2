@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab1CHT2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 14:28:17 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:54938 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab1CHT2O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 14:28:14 -0500
-Message-ID: <4D76833E.9010603@candelatech.com>
-Date: Tue, 08 Mar 2011 11:27:58 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
+	id S1755769Ab1CHTgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 14:36:53 -0500
+Received: from www.tglx.de ([62.245.132.106]:42582 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755644Ab1CHTgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 14:36:52 -0500
+Date: Tue, 8 Mar 2011 20:36:23 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Yong Zhang <yong.zhang0@gmail.com>, Venkatesh Pallipadi <venki@google.com>,
+        Yong Zhang <yong.zhang@windriver.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ath9k-devel@atheros.com
-Subject: Re: WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536 ath_stoprecv+0xc8/0xda
- [ath9k]()
-References: <AANLkTik9To0Rkq2FRqQFB2wNu0kyJ7CzyBek2jBp36Cb@mail.gmail.com>	<20110303135942.GA8969@tuxdriver.com>	<AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>	<20110307151201.GC2664@tuxdriver.com> <AANLkTi=7RSdKhzGazQFUnBZqzMQskOSHq=7E08uan2vu@mail.gmail.com> <4D767A4B.1060203@gmail.com>
-In-Reply-To: <4D767A4B.1060203@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: mce.c related WARNING: at kernel/timer.c:983 del_timer_sync
+In-Reply-To: <20110308185035.GF2499@one.firstfloor.org>
+Message-ID: <alpine.LFD.2.00.1103082019180.2787@localhost6.localdomain6>
+References: <AANLkTikupmQqgVd5Y6Tg0Cj-0TGUvzko8-VPs6_n_pKE@mail.gmail.com> <AANLkTi=7S60UjieW0_ZhX7F5gm39+c28Bdv=dRhPd=tQ@mail.gmail.com> <20110308185035.GF2499@one.firstfloor.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 10:49 AM, Justin P. Mattock wrote:
-> On 03/07/2011 07:22 AM, Mohammed Shafi wrote:
->> On Mon, Mar 7, 2011 at 8:42 PM, John W.
->> Linville<linville@tuxdriver.com> wrote:
->>> On Sun, Mar 06, 2011 at 12:47:05AM -0800, Justin Mattock wrote:
->>>
->>>> full dmesg here:
->>>> http://fpaste.org/5JQp/
->>>> let me know if I need to supply any info(also I can try a bisect, but
->>>> am in the middle of changing residencies, so it might not be right
->>>> away)
->>>
->>> One of the Atheros guys suggested that you change a DMA timeout value.
->>> Did you try that?
->>
->> John it looks like increasing the timeout also does not seems to help.
->> A user reported this issue in ath9k developer list and he told that
->> increasing the timeout did not fix this issue.
->>
->>>
->>> John
->>> --
->>> John W. Linville Someday the world will need a hero, and you
->>> linville@tuxdriver.com might be all we have. Be ready.
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe
->>> linux-wireless" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>>
->>
->
-> at barnes and noble, and I see this has fired off again. will see if I
-> can reproduce and bisect.
+B1;2401;0cOn Tue, 8 Mar 2011, Andi Kleen wrote:
+> > >
+> > > But, the actual reason is likely some MCE parameter change at boot causing
+> > > mce_restart() which in turn calls on_each_cpu mce_cpu_restart() which calls
+> > > del_timer_sync().
+> > 
+> > Seems we found a real bug.
+> 
+> I don't think it's a real bug actually because the timer cannot run at
+> the same time in this state. It's an interrupt which runs with irq disabled 
+> Really the only case where it could lead to deadlock is when the timer
+> runs with irqs on and the other interrupt with the del_timer_sync
+> interrupts it. So most likely your new WARN_ON() is catching
+> lots of innocent code.
 
-This problem goes way back, and the driver has had lots of fixes in the
-last few months, so I'm not sure if bisecting is going to
-do you any good.
+Nonsense. All timer callbacks run with interrupts enabled. See
+timer.c:__run_timers()
+
+	spin_unlock_irq(&base->lock);
+	call_timer_fn(timer, fn, data);
+        spin_lock_irq(&base->lock);
+
+So it can happen and that's a plain bug, not innocent code.
+
+> That said I don't think we need the del_timer_sync in mce.c either
+> for the same reason.  The timer is always on the
+> same CPU, so it cannot run in parallel.
+
+But a running timer callback can be interrupted by the smp function
+call and if that happens you run into a different problem
+
+     softirq()
+	mce_start_timer()
+		--> SMP function call interrupt
+		    __mcheck_cpu_init_timer()
+			del_timer()
+			add_timer_on()
+                <--
+	   add_timer_on()
+		--> BUG_ON(timer_pending())
+
+> @@ -2075,7 +2075,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+>  		break;
+>  	case CPU_DOWN_PREPARE:
+>  	case CPU_DOWN_PREPARE_FROZEN:
+> -		del_timer_sync(t);
+> +		del_timer(t);
+
+Sigh. This is not called on the CPU which is taken down and you really
+want to call del_timer_sync() here.
+
+>  		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
+>  		break;
+>  	case CPU_DOWN_FAILED:
 
 Thanks,
-Ben
 
->
-> full dmesg:
->
-> http://fpaste.org/6sIH/
->
-> Justin P. Mattock
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+	tglx
