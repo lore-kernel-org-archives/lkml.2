@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab1CHTpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 14:45:08 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52072 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235Ab1CHTpD (ORCPT
+	id S1755951Ab1CHTpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 14:45:42 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45931 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab1CHTpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 14:45:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=txwdFrd7MJSQYEX5nTrB/cdaGRnEO/mhURHdBYSULM2SFqrEgawnNsmMQ74n9s7Obj
-         nKEO+Bba+NxtAtRwLTkGeKaSb0/AEAjPCiPDba8347Dkbc7LQ7KuPpg+VmPIvvI/0Rx3
-         of8KBGCR52VdO72+gbQYrqVvD6PYrPDqmrYWg=
+	Tue, 8 Mar 2011 14:45:40 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=_SwmUG3pykIA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=ByIdwKuej8lqhwltNQgA:9 a=CrzEylRj16iNKTbS8ZEUihbBvcoA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Tue, 8 Mar 2011 14:45:38 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: broonie@opensource.wolfsonmicro.com, joe@perches.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Fwd: [PATCH 05/18] MAINTAINERS: Remove unnecessary
+ linux-kernel@vger.kernel.org entries
+Message-ID: <20110308194538.GA8002@home.goodmis.org>
+References: <cover.1298439175.git.joe@perches.com>
+ <03b0dc89c5badbc0b8f155ecdd5912cad3e278f2.1298439175.git.joe@perches.com>
+ <20110301112038.GA12568@sirena.org.uk>
+ <20110301141024.GA9014@gmail.com>
+ <20110301141308.GG9662@opensource.wolfsonmicro.com>
+ <AANLkTin2++GT3eRcTQeeqcB_1whedAt_0Hn+YY8y=v1s@mail.gmail.com>
+ <20110301144712.GA9798@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4D76833E.9010603@candelatech.com>
-References: <AANLkTik9To0Rkq2FRqQFB2wNu0kyJ7CzyBek2jBp36Cb@mail.gmail.com>
-	<20110303135942.GA8969@tuxdriver.com>
-	<AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>
-	<20110307151201.GC2664@tuxdriver.com>
-	<AANLkTi=7RSdKhzGazQFUnBZqzMQskOSHq=7E08uan2vu@mail.gmail.com>
-	<4D767A4B.1060203@gmail.com>
-	<4D76833E.9010603@candelatech.com>
-Date: Tue, 8 Mar 2011 14:45:02 -0500
-Message-ID: <AANLkTikPQt+njjFPB6sJ-mEcsx6f-R6TAOhEd8egkqhH@mail.gmail.com>
-Subject: Re: WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536
- ath_stoprecv+0xc8/0xda [ath9k]()
-From: Brian Prodoehl <bprodoehl@gmail.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Mohammed Shafi <shafi.wireless@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ath9k-devel@atheros.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110301144712.GA9798@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 2:27 PM, Ben Greear <greearb@candelatech.com> wrote:
-> On 03/08/2011 10:49 AM, Justin P. Mattock wrote:
->>
->> On 03/07/2011 07:22 AM, Mohammed Shafi wrote:
->>>
->>> On Mon, Mar 7, 2011 at 8:42 PM, John W.
->>> Linville<linville@tuxdriver.com> wrote:
->>>>
->>>> On Sun, Mar 06, 2011 at 12:47:05AM -0800, Justin Mattock wrote:
->>>>
->>>>> full dmesg here:
->>>>> http://fpaste.org/5JQp/
->>>>> let me know if I need to supply any info(also I can try a bisect, but
->>>>> am in the middle of changing residencies, so it might not be right
->>>>> away)
->>>>
->>>> One of the Atheros guys suggested that you change a DMA timeout value.
->>>> Did you try that?
->>>
->>> John it looks like increasing the timeout also does not seems to help.
->>> A user reported this issue in ath9k developer list and he told that
->>> increasing the timeout did not fix this issue.
->>>
->>>>
->>>> John
->>>> --
->>>> John W. Linville Someday the world will need a hero, and you
->>>> linville@tuxdriver.com might be all we have. Be ready.
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe
->>>> linux-wireless" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>>>
->>>
->>
->> at barnes and noble, and I see this has fired off again. will see if I
->> can reproduce and bisect.
->
-> This problem goes way back, and the driver has had lots of fixes in the
-> last few months, so I'm not sure if bisecting is going to
-> do you any good.
->
-> Thanks,
-> Ben
+On Tue, Mar 01, 2011 at 10:47:15PM +0800, Harry Wei wrote:
+> > 
+> > >      I agree with Joe. I think any patch about kernel should be
+> > >      emailed to LKML and other connection ML, as well as maintainers.
+> > 
+> > You're missing my point.  My point is that removing references to LKML
+> > from MAINTAINERS is working against this as it makes it harder for users
+> > to work out that they're supposed to do this.
+> Maybe you are right.
 
-The warnings have been around since you added the check for the
-problem, right?  I remember initially it was a WARN_ON, and I'd get a
-steady flood of backtraces, and then it was switched to a
-WARN_ON_ONCE.  I see these on every platform I have (x86_64, IXP425
-and AR71xx) with AR9002 and AR9003.
+Perhaps we should just add at the beginning of MAINTAINERS a note that
+says something to the effect: "When in doubt, Cc
+linux-kernel@vger.kernel.org". And then remove all individual references
+to the list.
 
--Brian
+-- Steve
+
