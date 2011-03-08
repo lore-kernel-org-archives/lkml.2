@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab1CHSsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 13:48:18 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34457
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752395Ab1CHSsR (ORCPT
+	id S1754798Ab1CHSsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 13:48:24 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:30840 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab1CHSsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 13:48:17 -0500
-Date: Tue, 08 Mar 2011 10:48:54 -0800 (PST)
-Message-Id: <20110308.104854.226775113.davem@davemloft.net>
-To: sledz@dresearch.de
-Cc: netdev@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        m.schuknecht@dresearch.de
-Subject: Re: [PATCH v3] tcp: ioctl type SIOCOUTQNSD returns amount of data
- not sent
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D7619A2.4090207@dresearch.de>
-References: <20110304123950.2c91ebd9@lxorguk.ukuu.org.uk>
-	<1299441595-18455-1-git-send-email-sledz@dresearch.de>
-	<4D7619A2.4090207@dresearch.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 8 Mar 2011 13:48:19 -0500
+Subject: Re: ANNOUNCE: debloat-testing kernel git tree
+From: Rick Jones <rick.jones2@hp.com>
+Reply-To: rick.jones2@hp.com
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Tianji Li <Tianji.Li@nuim.ie>, Dave T?ht <d@taht.net>,
+        sedat.dilek@gmail.com, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, bloat-devel@lists.bufferbloat.net,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110308065819.GA1357@ucw.cz>
+References: <20110225222210.GA3618@tuxdriver.com>
+	 <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
+	 <87fwr9jxya.fsf@cruithne.co.teklibre.org>
+	 <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
+	 <8739n9ii7z.fsf@cruithne.co.teklibre.org>
+	 <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
+	 <87tyfph2az.fsf@cruithne.co.teklibre.org> <1299176168.2157.14.camel@tardy>
+	 <4D6FEFD4.9010608@nuim.ie>  <20110308065819.GA1357@ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Mar 2011 10:48:16 -0800
+Message-ID: <1299610096.2087.8.camel@tardy>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steffen Sledz <sledz@dresearch.de>
-Date: Tue, 08 Mar 2011 12:57:22 +0100
+On Tue, 2011-03-08 at 07:58 +0100, Pavel Machek wrote:
+> Bandwidth varies greatly with time. On cellphone, you can go from
+> 5KB/sec GPRS to 300KB/sec HSDPA and back...
 
-> Anything else to do?
+How quickly/often and does that trigger an event in the host that would
+allow adjustment of the queue?
 
-Be patient.
+rick jones
+
