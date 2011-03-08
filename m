@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab1CHQpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 11:45:50 -0500
-Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:49309 "EHLO
-	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab1CHQpt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 11:45:49 -0500
-Date: Tue, 8 Mar 2011 17:45:08 +0100
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-To: dm-crypt@saout.de
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: dm-crypt: Performance Regression 2.6.37 -> 2.6.38-rc8
-Message-ID: <20110308164508.GA8729@darkside.kls.lan>
-Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
-	dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-	Andi Kleen <ak@linux.intel.com>, Milan Broz <mbroz@redhat.com>,
-	Alasdair G Kergon <agk@redhat.com>
+	id S1755574Ab1CHQth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 11:49:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61487 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753889Ab1CHQte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 11:49:34 -0500
+Date: Tue, 8 Mar 2011 11:48:49 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+Cc: Neil Brown <neilb@suse.de>, akpm@linux-foundation.org, dm-devel@redhat.com,
+        cotte@de.ibm.com, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, ehrhardt@linux.vnet.ibm.com,
+        "Alasdair G. Kergon" <agk@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH v3] dm stripe: implement merge method
+Message-ID: <20110308164849.GA5692@redhat.com>
+References: <201012271219.56476.mume@linux.vnet.ibm.com>
+ <20101227225459.5a5150ab@notabene.brown>
+ <201012271323.13406.mume@linux.vnet.ibm.com>
+ <4D74AEF9.7050108@linux.vnet.ibm.com>
+ <20110308022158.GA663@redhat.com>
+ <4D76051E.5060303@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D76051E.5060303@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 08 2011 at  5:29am -0500,
+Mustafa Mesanovic <mume@linux.vnet.ibm.com> wrote:
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 03/08/2011 03:21 AM, Mike Snitzer wrote:
+>
+> >Here is a revised version of your patch that uses the relatively new
+> >stripe_map_sector(), removes an unnecessary cast, and a few other
+> >cleanups.
+> >
+> >This v3 should work as well as your v2 but should be suitable for
+> >upstream inclusion -- authorship of the change is still attributed to
+> >you as I only updated the code slightly.  I'd appreciate it if you could
+> >verify your config still performs as expected.
+>
+> Mike,
+> 
+> your changes are working well and performing even a bit better.
 
-Hello,
+Good to know.
 
-dm-crypt in 2.6.38 changed to per-CPU workqueues to increase it's
-performance by parallelizing encryption to multiple CPUs.
-This modification seems to cause (massive) performance drops for
-multiple parallel dm-crypt instances...
+> Are there any further comments from others, or can consider putting it
+> upstream.
 
-I'm running a 4-disk RAID0 on top of 4 independent dm-crypt(aes-xts)
-devices on a Core2Quad 3GHz. This setup did overcome the single-CPU
-limitation from previous versions and utilized all 4 cores for
-encryption.
-The throughput of this array drops from 282MB/s sustained read (dd,
-single process) with 2.6.37.3 down to 133MB/s with 2.6.38-rc8 (which
-nearly equals to single-disk throughput of 128MB/s - just in case this
-matters).
+I chatted with Alasdair and one concern he had was: does the existence
+of stripe_merge() ever hurt due to the fact that stripe_map_sector() is
+performed twice (once for .merge and again for .map)?  May be that a
+really small chuck_size proves to be more problematic but using a small
+chunk_size generally isn't productive to begin with.
 
-This indicates way less parallelization now with 2.6.38 than before.
-I don't think this was intentional :)
+In any case, it clearly helps your workload.
 
-The dm-crypt per-CPU workqueues got introduced in 2.6.38 with
-	c029772125594e31eb1a5ad9e0913724ed9891f2
-Reverting dm-crypt.c to the version before this commit re-gains the same
-throughput as with 2.6.37.
+Could you explain your config in more detail?
+- what is your chunk_size?
+- how many stripes (how many mpath devices)?
+- what is the performance, of your test workload, of a single underlying
+  mpath device?
 
+And, in particular, what is your test workload?
+- What is the nature of your IO (are you using a particular tool)?
+- Are you using AIO?
+- How many threads?
+- Are you driving deep queue depths? Etc.
 
-Submitters/Signers of c029772125594e31eb1a5ad9e0913724ed9891f2 CC:ed.
+I have various configs that I'll be testing to help verify the benefit.
+The only other change Alasdair request is that the target version should
+be bumped to 1.4 (rather than 1.3.2).
 
+Given that I can put some time to this now: we should be able to sort
+all this out for upstream inclusion in 2.6.39.
 
-Thanks for your work & regards
-   Mario
---=20
-There are two major products that come from Berkeley: LSD and UNIX.
-We don't believe this to be a coincidence.    -- Jeremy S. Anderson
-
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEVAwUBTXZdFBS+e2HeSPbpAQKziwf/f32YT/lMyVfgmOCVAoh7maD0O9qkYozT
-FRBd2S8LXJmCqUDEJnVLenYCUoDo9UeFiAZ2wQ9cekBj0KZepPTSJuopJQlMYygk
-9Am771WshE6mGEvcywdm5UXX/q1ICh8+b1ykzdNw6MLsTsLMULb6vdrXxe/n76me
-O0SGv6haM6O8tC99MlN88gwvCBN+dQIdvVOM1cXdNfZpFouVcAaSYRgCm456Z4qV
-91XKwcMeJTIVCLjNHzrFNWdPnKxiQ8egIRHJKzuwbBD1rg+JnLTqCnfEs1kvnZxL
-u13MTemm0aHF4sb086DQxxfQPVUDc3ceUGitKpOQSOFSOia7LmPD+w==
-=GgyN
------END PGP SIGNATURE-----
-
---tThc/1wpZn/ma/RB--
+Thanks,
+Mike
