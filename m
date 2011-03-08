@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1CHTpm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 14:45:42 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45931 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab1CHTpk (ORCPT
+	id S1755876Ab1CHTxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 14:53:03 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55373 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab1CHTw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 14:45:40 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=_SwmUG3pykIA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=ByIdwKuej8lqhwltNQgA:9 a=CrzEylRj16iNKTbS8ZEUihbBvcoA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Tue, 8 Mar 2011 14:45:38 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: broonie@opensource.wolfsonmicro.com, joe@perches.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: [PATCH 05/18] MAINTAINERS: Remove unnecessary
- linux-kernel@vger.kernel.org entries
-Message-ID: <20110308194538.GA8002@home.goodmis.org>
-References: <cover.1298439175.git.joe@perches.com>
- <03b0dc89c5badbc0b8f155ecdd5912cad3e278f2.1298439175.git.joe@perches.com>
- <20110301112038.GA12568@sirena.org.uk>
- <20110301141024.GA9014@gmail.com>
- <20110301141308.GG9662@opensource.wolfsonmicro.com>
- <AANLkTin2++GT3eRcTQeeqcB_1whedAt_0Hn+YY8y=v1s@mail.gmail.com>
- <20110301144712.GA9798@gmail.com>
+	Tue, 8 Mar 2011 14:52:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=DHfao3gESzBpJ9sE3XwMHCkbpxW+A8QQOCBedoRtvF9eX79bsIc1wX9JxuqID6SN4p
+         mhQe88PeGSKbspk14wvSxOKOkYqbganKxtYf1no1EsYdSV0LxKlHcSgeIrTV2jrCu+Qp
+         VkiY8saTJivtZA31gAEYMaewlYtiIdvsRx388=
+Message-ID: <4D768917.9040605@gmail.com>
+Date: Tue, 08 Mar 2011 20:52:55 +0100
+From: roel <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110301144712.GA9798@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wolfgang Grandegger <wg@grandegger.com>, socketcan-core@lists.berlios.de,
+        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] can: wrong index used in inner loop
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 10:47:15PM +0800, Harry Wei wrote:
-> > 
-> > >      I agree with Joe. I think any patch about kernel should be
-> > >      emailed to LKML and other connection ML, as well as maintainers.
-> > 
-> > You're missing my point.  My point is that removing references to LKML
-> > from MAINTAINERS is working against this as it makes it harder for users
-> > to work out that they're supposed to do this.
-> Maybe you are right.
+Index i was already used in the outer loop.
 
-Perhaps we should just add at the beginning of MAINTAINERS a note that
-says something to the effect: "When in doubt, Cc
-linux-kernel@vger.kernel.org". And then remove all individual references
-to the list.
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ drivers/net/can/usb/esd_usb2.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
--- Steve
-
+diff --git a/drivers/net/can/usb/esd_usb2.c b/drivers/net/can/usb/esd_usb2.c
+index 05a5275..dc53c83 100644
+--- a/drivers/net/can/usb/esd_usb2.c
++++ b/drivers/net/can/usb/esd_usb2.c
+@@ -659,7 +659,7 @@ failed:
+ static void unlink_all_urbs(struct esd_usb2 *dev)
+ {
+ 	struct esd_usb2_net_priv *priv;
+-	int i;
++	int i, j;
+ 
+ 	usb_kill_anchored_urbs(&dev->rx_submitted);
+ 	for (i = 0; i < dev->net_count; i++) {
+@@ -668,8 +668,8 @@ static void unlink_all_urbs(struct esd_usb2 *dev)
+ 			usb_kill_anchored_urbs(&priv->tx_submitted);
+ 			atomic_set(&priv->active_tx_jobs, 0);
+ 
+-			for (i = 0; i < MAX_TX_URBS; i++)
+-				priv->tx_contexts[i].echo_index = MAX_TX_URBS;
++			for (j = 0; j < MAX_TX_URBS; j++)
++				priv->tx_contexts[j].echo_index = MAX_TX_URBS;
+ 		}
+ 	}
+ }
