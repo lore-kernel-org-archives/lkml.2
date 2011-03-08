@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab1CHBbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 20:31:33 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:38129 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756781Ab1CHBbb (ORCPT
+	id S1756867Ab1CHBbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 20:31:39 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57657 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756743Ab1CHBbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 20:31:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=B0c74PDvTa+DsWEe2JWFJJsDUOaA2V4xccKxqHIR1iPfBSlD8VT7RSQV+WHIp+47bP
-         ZRE3XA/CLiUCJQWCrr3Q==
+	Mon, 7 Mar 2011 20:31:37 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: Query about kdump_msg hook into crash_kexec()
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jwilson@redhat.com>
+In-Reply-To: <20110204150047.GC32190@redhat.com>
+References: <20110203141850.93C2.A69D9226@jp.fujitsu.com> <20110204150047.GC32190@redhat.com>
+Message-Id: <20110308102741.7E9C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Date: Mon, 7 Mar 2011 17:31:28 -0800
-Message-ID: <AANLkTikupmQqgVd5Y6Tg0Cj-0TGUvzko8-VPs6_n_pKE@mail.gmail.com>
-Subject: mce.c related WARNING: at kernel/timer.c:983 del_timer_sync
-From: Venkatesh Pallipadi <venki@google.com>
-To: Andi Kleen <andi@firstfloor.org>, Yong Zhang <yong.zhang@windriver.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  8 Mar 2011 10:31:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With latest git kernel, I see the below WARN_ON at boot, once for each CPU.
+I'm sorry I've missed this mail long time.
 
-[   26.806429] ------------[ cut here ]------------
-[   26.806434] WARNING: at kernel/timer.c:983 del_timer_sync+0x39/0x4d()
-[   26.806437] Hardware name: MCP55
-[   26.806438] Modules linked in: tg3 forcedeth sata_mv powernow_k8
-freq_table processor mperf msr cpuid ipv6 genrtc
-[   26.806447] Pid: 0, comm: swapper Tainted: G        W
-2.6.38-smp-linus.22280 #23
-[   26.806449] Call Trace:
-[   26.806450]  <IRQ>  [<ffffffff8106e8ea>] ? warn_slowpath_common+0x85/0x9d
-[   26.806456]  [<ffffffff8106e91c>] ? warn_slowpath_null+0x1a/0x1c
-[   26.806459]  [<ffffffff8107ac48>] ? del_timer_sync+0x39/0x4d
-[   26.806462]  [<ffffffff81047a44>] ? mce_cpu_restart+0x1e/0x54
-[   26.806466]  [<ffffffff81099b22>] ?
-generic_smp_call_function_single_interrupt+0xd1/0xf3
-[   26.806469]  [<ffffffff8104c188>] ?
-smp_call_function_single_interrupt+0x18/0x27
-[   26.806473]  [<ffffffff810375f3>] ? call_function_single_interrupt+0x13/0x20
-[   26.806475]  <EOI>  [<ffffffff8103da93>] ? default_idle+0x4d/0x7f
-[   26.806479]  [<ffffffff8103da73>] ? default_idle+0x2d/0x7f
-[   26.806482]  [<ffffffff8103dbad>] ? c1e_idle+0xe8/0xef
-[   26.806485]  [<ffffffff8145bc62>] ? atomic_notifier_call_chain+0x18/0x1a
-[   26.806488]  [<ffffffff81035cc7>] ? cpu_idle+0x5f/0x96
-[   26.806491]  [<ffffffff8144af7e>] ? rest_init+0x72/0x74
-[   26.806495]  [<ffffffff818edcfe>] ? start_kernel+0x37b/0x386
-[   26.806498]  [<ffffffff818ed2a4>] ? x86_64_start_reservations+0xb4/0xb8
-[   26.806502]  [<ffffffff818ed39a>] ? x86_64_start_kernel+0xf2/0xf9
-[   26.806504] ---[ end trace 69a4de56993e518a ]---
+> > ---------------------------------------------------------------------
+> > @@ -74,6 +75,7 @@ NORET_TYPE void panic(const char * fmt, ...)
+> >         dump_stack();
+> >  #endif
+> > 
+> > +       kmsg_dump(KMSG_DUMP_PANIC);
+> >         /*
+> >          * If we have crashed and we have a crash kernel loaded let it handle
+> >          * everything else.
+> >          * Do we want to call this before we try to display a message?
+> >          */
+> >         crash_kexec(NULL);
+> > ---------------------------------------------------------------------
+> 
+> And I think to compensate for that somebody introduced additional
+> kmsg_dump(KEXEC) call inside crash_kexec() and put it under CONFIG
+> option so that one can change the behavior based on config options.
+> 
+> I think this makes the logic somewhat twisted and an unnecessary call
+> inside crash_kexec(). So until and unless there is a strong reason we
+> can get rid of KEXEC event and move kmsg_dump call before crash_kexec()
+> for now and see how does it go, IMHO.
 
-Looks like WARN_ON was after this change
-commit 466bd3030973910118ca601da8072be97a1e2209
-Author: Yong Zhang <yong.zhang@windriver.com>
-Date:   Wed Oct 20 15:57:33 2010 -0700
+I think I can agree your proposal. But could you please explain why do
+you think kmsg _before_ kdump and kmsg _in_ kdump are so different?
+I think it is only C level difference. CPU don't care C function and
+anyway the kernel call kmsg_dump() because invoke second kernel even 
+if you proposal applied.
 
-    timer: Warn when del_timer_sync() is called in hardirq context
+It is only curious. I'm not against your proposal.
 
-But, the actual reason is likely some MCE parameter change at boot causing
-mce_restart() which in turn calls on_each_cpu mce_cpu_restart() which calls
-del_timer_sync().
+Thanks.
 
-Thanks,
-Venki
+
+
