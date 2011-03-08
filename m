@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab1CHP3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:29:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55428 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755120Ab1CHP3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:29:31 -0500
-Message-ID: <4D764B59.1060801@suse.cz>
-Date: Tue, 08 Mar 2011 16:29:29 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Joe Perches <joe@perches.com>, linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, users@kernel.org
-Subject: Re: RFC: Removing old tags, reducing the git size of -next.
-References: <1299039746.4208.28.camel@Joe-Laptop> <20110302165447.f47fd4b2.sfr@canb.auug.org.au>
-In-Reply-To: <20110302165447.f47fd4b2.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1753968Ab1CHPdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:33:13 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:45546 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab1CHPdK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 10:33:10 -0500
+From: Abhilash K V <abhilash.kv@ti.com>
+To: linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Cc: jhnikula@gmail.com, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
+        Abhilash K V <abhilash.kv@ti.com>
+Subject: [PATCH] ASoC: AM3517: Update codec name after multi-component update
+Date: Tue,  8 Mar 2011 21:02:43 +0530
+Message-Id: <1299598363-32656-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2.3.2011 06:54, Stephen Rothwell wrote:
-> Hi Joe,
-> 
-> On Tue, 01 Mar 2011 20:22:26 -0800 Joe Perches <joe@perches.com> wrote:
->>
->> I personally do not find git history to be very useful
->> for the next tree.  The collected next tree history
->> also makes the repository fairly large and unwieldy to
->> use on smaller development systems.
-> 
-> Yeah, I have been thinking about this again recently.
-> 
->> Would it be reasonable to create a separate history tree
->> for -next every once in awhile and have say a maximum of
->> a few weeks of next history in the current tree?
-> 
-> I could easily have a tree that is historical and contains what the
-> current linux-next tree contains while also removing old stuff from the
-> normal linux-next tree (I could push into both each day).  The only
-> connection between the daily releases is the "history" branch which,
-> frankly, does not serve any purpose and I will remove.
+The i2c client device name (".2-001a" in this case, including
+the separator period) for the AIC23 codec on the TI AM3517-EVM
+was appended to the codec_name member of am3517evm_dai to
+resolve the names mismatch happening in soc_bind_dai_link(),
+due to which the card was not getting registered.
 
-FWIW, I use the following setup for linux-next:
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
 
-[remote "linux-next"]
-        url =
-git://git.kernel.org/pub/scm/linux/kernel/git/sfr/linux-next.git
-        fetch = +refs/heads/master:refs/heads/linux-next
-        fetch = +refs/heads/stable:refs/remotes/linux-next/stable
-        tagopt = --no-tags
+Acked-by: Jarkko Nikula <jhnikula@gmail.com>
 
-and fetch the next-* tags manually only when I need them.
+---
+ sound/soc/omap/am3517evm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Michal
+diff --git a/sound/soc/omap/am3517evm.c b/sound/soc/omap/am3517evm.c
+index 979dd50..ddbd2a1 100644
+--- a/sound/soc/omap/am3517evm.c
++++ b/sound/soc/omap/am3517evm.c
+@@ -139,7 +139,7 @@ static struct snd_soc_dai_link am3517evm_dai = {
+ 	.cpu_dai_name ="omap-mcbsp-dai.0",
+ 	.codec_dai_name = "tlv320aic23-hifi",
+ 	.platform_name = "omap-pcm-audio",
+-	.codec_name = "tlv320aic23-codec",
++	.codec_name = "tlv320aic23-codec.2-001a",
+ 	.init = am3517evm_aic23_init,
+ 	.ops = &am3517evm_ops,
+ };
+-- 
+1.6.2.4
+
