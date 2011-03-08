@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab1CHSVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 13:21:46 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:35580 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751996Ab1CHSVo (ORCPT
+	id S1754080Ab1CHSYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 13:24:16 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:35215 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753405Ab1CHSYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 13:21:44 -0500
-X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Mar 2011 13:21:44 EST
-X-Sasl-enc: 3XBEiyuq6NMpZl63zm8XspdqIth1CnyD79SkKldrZMjP 1299607936
-Message-ID: <4D76717E.2000900@fastmail.fm>
-Date: Tue, 08 Mar 2011 18:12:14 +0000
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	Tue, 8 Mar 2011 13:24:12 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: tsDnOgUVM1mQvTd33QAtsIapiDPIjwd1egoZu4rA95ZA_Nl
+ T0fT2CotDi9Uu.1Vn0Zg9tSSTUiAcydhISuLAHQAz19H8rXM7c3O3_z4dMfK
+ yswivQXKXL6IhCtACDBCFXB_4JotNF3L5t0Luh3fl_KgtPjYjfsYHBt84FLe
+ q2xXo6Vnqef5AItKAzhfSUEfC6pdCYUsrsF2qV1Cu5MUsSjwi0uPJ1R5FH6Y
+ A74ib9XhrAojW2EkVzdxraIWeUx3CvHpSX.h5f8PEK_bUfULnYV2LlsHO.O8
+ FZTLO4_rY0MKDYeQJqbZyu2.siL4wCwPejBtQVY0JkepdEMg-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 8 Mar 2011 12:24:07 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/4] slub: automatically reserve bytes at the end of
+ slab
+In-Reply-To: <4D6CA84B.9080606@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1103081222380.25214@router.home>
+References: <4D6CA84B.9080606@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Bill Gatliff <bgat@billgatliff.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PWM v6 1/3] PWM: Implement a generic PWM framework
-References: <1299385050-13674-1-git-send-email-bgat@billgatliff.com>	<1299385050-13674-2-git-send-email-bgat@billgatliff.com>	<4D745D1F.2070808@fastmail.fm>	<AANLkTi=h0MkySh+VjrdohLzTB-NqSmmZOKcRtGRyHTg=@mail.gmail.com> <AANLkTikbW-FApSyx0FyVUCYHUG=0HS8JHpoNha0EdiZH@mail.gmail.com>
-In-Reply-To: <AANLkTikbW-FApSyx0FyVUCYHUG=0HS8JHpoNha0EdiZH@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2011 17:08, Bill Gatliff wrote:
-> Jack:
-> 
-> On Mon, Mar 7, 2011 at 10:35 AM, Bill Gatliff <bgat@billgatliff.com> wrote:
->> On Sun, Mar 6, 2011 at 10:20 PM, Jack Stone <jwjstone@fastmail.fm> wrote:
->>>> +menuconfig GENERIC_PWM
->>>> +     tristate "PWM Support"
->>>> +     help
->>>> +       Enables PWM device support implemented via a generic
->>>> +       framework.  If unsure, say N.
->>>> +
->>>
->>> Does this need help text? Can't we just select GENERIC_PWM for the
->>> drivers / users that need it?
->>
->> That would be my preference, actually.  I'll see if I can do that at
->> the next review.
-> 
-> Actually, I take that back. Unlike gpiolib, the PWM API isn't
-> mandatory.  So I think I'll leave this as a menuconfig.
-> 
-> 
-> b.g.
+On Tue, 1 Mar 2011, Lai Jiangshan wrote:
 
-It's up to you, of course, but I don't see why I would want to choose.
+> So we add a field "reserved" to struct kmem_cache, when a slab
+> is allocated, kmem_cache->reserved bytes are automatically reserved
+> at the end of the slab for slab's metadata.
 
-It makes life much easier for users if they only have to support one way
-of talking to PWM devices and any device can be connected to any user,
-with appropriate connections provided by platform data.
+The reserved field should be exported via sysfs. Please add the code to
+show it in /sys/kernel/slab/<name>
 
-If you make it a depend rather than it being selected when needed then
-either the driver supports multiple interfaces (which is harder to
-maintain) or the person configuring the kernel has to know to build
-GENERIC_PWM to get the drivers they want.
-
-It seems much simpler to me to always use it in appropriate
-drivers/users and therefore if the person configuring the kernel does
-not have to know anything new and the support will only be included if
-needed.
-
-Just my £0.02,
-
-Jack
