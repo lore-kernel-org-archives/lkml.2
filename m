@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab1CHSdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 13:33:24 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:62091 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab1CHSdW (ORCPT
+	id S1754607Ab1CHSeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 13:34:17 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26289 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab1CHSeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 13:33:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=QJlSTNKqYH5GjRMxEZ8wMrzkGaCkfZKGiYMYUJEm/WIILY6mRRRfssS7WCBOT8uqwl
-         0v/3Rd2G3jY55vs1JHgdUIUhuFyFgZB5g3J4iknC18p4KMyDlUotWjAZHkvMOTcw83JD
-         83+FS5MtIRsf3tGglGs5BJf/mo9z5e1LMNvew=
-Message-ID: <4D767660.9030509@gmail.com>
-Date: Tue, 08 Mar 2011 10:33:04 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101220 Thunderbird/3.1.7
+	Tue, 8 Mar 2011 13:34:16 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6279"; a="78731680"
+From: David Brown <davidb@codeaurora.org>
+To: Kenneth Heitke <kheitke@codeaurora.org>
+Cc: bryanh@codeaurora.org, dwalker@fifo99.com, dima@android.com,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tsoni@codeaurora.org, swetland@google.com, <akpm@linux-foundation.org>,
+        <joe@perches.com>, <davem@davemloft.net>, <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH v3 1/2] MAINTAINERS: Add drivers/platform/msm to MSM subsystem
+References: <1299038465-11782-1-git-send-email-kheitke@codeaurora.org>
+	<1299038465-11782-2-git-send-email-kheitke@codeaurora.org>
+Date: Tue, 08 Mar 2011 10:34:17 -0800
+In-Reply-To: <1299038465-11782-2-git-send-email-kheitke@codeaurora.org>
+	(Kenneth Heitke's message of "Tue, 1 Mar 2011 21:01:04 -0700")
+Message-ID: <8yalj0pjwba.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: trivial@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]trivial: Remove one to many r's in some comments.
-References: <1299527103-9953-1-git-send-email-justinmattock@gmail.com> <1299528921.20104.54.camel@Joe-Laptop>
-In-Reply-To: <1299528921.20104.54.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2011 12:15 PM, Joe Perches wrote:
-> On Mon, 2011-03-07 at 11:45 -0800, Justin P. Mattock wrote:
->> The below patch fixes some typos with one to many "rr's" in a comment.
->> PLease have a look and let me know if I missed anything.
->> --- a/arch/arm/mach-omap2/smartreflex.c
->> +++ b/arch/arm/mach-omap2/smartreflex.c
->> @@ -246,7 +246,7 @@ static void sr_stop_vddautocomp(struct omap_sr *sr)
->>    * driver register and sr device intializtion API's. Only one call
->>    * will ultimately succeed.
->>    *
->> - * Currenly this function registers interrrupt handler for a particular SR
->> + * Currenly this function registers interrupt handler for a particular SR
->
-> When you do typo fixes, it'd be good to check the lines
-> modified to make sure there are no other typos on the
-> same or nearby lines.
->
-> s/intializtion/initialization/
-> s/Currenly/Currently/
->
->
+On Tue, Mar 01 2011, Kenneth Heitke wrote:
 
-again I missed this(hard of hearing/reading) will resend, hopefully 
-correct this time.
+> ---
+>  MAINTAINERS |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 59869e4..696cb18 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -904,6 +904,7 @@ F:	drivers/mmc/host/msm_sdcc.c
+>  F:	drivers/mmc/host/msm_sdcc.h
+>  F:	drivers/tty/serial/msm_serial.h
+>  F:	drivers/tty/serial/msm_serial.c
+> +F:	drivers/platform/msm/
+>  T:	git git://codeaurora.org/quic/kernel/davidb/linux-msm.git
+>  S:	Maintained
 
->> diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
->> index 1758d44..1473476 100644
->> --- a/drivers/net/wireless/rtlwifi/pci.c
->> +++ b/drivers/net/wireless/rtlwifi/pci.c
->> @@ -1506,7 +1506,7 @@ void rtl_pci_stop(struct ieee80211_hw *hw)
->>   	u8 RFInProgressTimeOut = 0;
->>
->>   	/*
->> -	 *should before disable interrrupt&adapter
->> +	 *should before disable interrupt&adapter
->
-> Bad grammar?  Stop HAL before disabling interrupt and adapter?
->
+This should be sent 'To' someone who will be able to bring this patch
+into the tree.  Probably one of Andrew Morton or Greg KH should be made
+the 'To' and this resent.  At a minimum, I would need one of them to
+sign the patch off.
 
-not sure if HAL is involved with this or not, if anybody objects to the 
-above then I will change if not I will resend with the above.
+Thanks,
+David
 
->> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
->> index 2fe3046..c5d03e0 100644
->> --- a/drivers/usb/musb/musb_gadget.c
->> +++ b/drivers/usb/musb/musb_gadget.c
->> @@ -699,7 +699,7 @@ static void rxstate(struct musb *musb, struct musb_request *req)
->>   	 * most these gadgets, end of is signified either by a short packet,
->>   	 * or filling the last byte of the buffer.  (Sending extra data in
->>   	 * that last pckate should trigger an overflow fault.)  But in mode 1,
->
-> s/pckate/packet/
->
->> diff --git a/include/linux/pxa2xx_ssp.h b/include/linux/pxa2xx_ssp.h
->> index 2f691e4..d2d4fb6 100644
->> --- a/include/linux/pxa2xx_ssp.h
->> +++ b/include/linux/pxa2xx_ssp.h
->> @@ -56,7 +56,7 @@
->>   /* PXA27x, PXA3xx */
->>   #define SSCR0_EDSS	(1<<  20)	/* Extended data size select */
->>   #define SSCR0_NCS	(1<<  21)	/* Network clock select */
->> -#define SSCR0_RIM	(1<<  22)	/* Receive FIFO overrrun interrupt mask */
->> +#define SSCR0_RIM	(1<<  22)	/* Receive FIFO overrun interupt mask */
->
-> Fix one, introduce one.  Dangers of s/rr/r/
->
-> overrun interrupt.
->
->
->
->
-
-
-yeah.
-
-Cool, Thanks for looking through..
-
-Justin P. Mattock
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
