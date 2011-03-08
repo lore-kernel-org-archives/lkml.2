@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab1CHUH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:07:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab1CHUH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 15:07:27 -0500
-Message-ID: <4D768C6E.6010202@redhat.com>
-Date: Tue, 08 Mar 2011 21:07:10 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>, dm-crypt@saout.de,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [dm-crypt] dm-crypt: Performance Regression 2.6.37 -> 2.6.38-rc8
-References: <20110308164508.GA8729@darkside.kls.lan> <4D7668C5.5050100@redhat.com> <20110308192341.GA8356@darkside.kls.lan>
-In-Reply-To: <20110308192341.GA8356@darkside.kls.lan>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755993Ab1CHUJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:09:14 -0500
+Received: from xenotime.net ([184.105.210.51]:52189 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752257Ab1CHUJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 15:09:13 -0500
+Date: Tue, 8 Mar 2011 12:09:06 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Roland Kammerer <dev.rck@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/CodingStyle: fixed header file for
+ pr_info() and pr_debug(). Removed unnecessary "Last updated" line
+Message-Id: <20110308120906.bda1e8c1.rdunlap@xenotime.net>
+In-Reply-To: <AANLkTim5w1wRPk=+GgVEm-k9fMBWGt513v9txyXF+kmJ@mail.gmail.com>
+References: <AANLkTim5w1wRPk=+GgVEm-k9fMBWGt513v9txyXF+kmJ@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 08:23 PM, Mario 'BitKoenig' Holbe wrote:
-> On Tue, Mar 08, 2011 at 06:35:01PM +0100, Milan Broz wrote:
->> On 03/08/2011 05:45 PM, Mario 'BitKoenig' Holbe wrote:
->>> dm-crypt in 2.6.38 changed to per-CPU workqueues to increase it's
->>> performance by parallelizing encryption to multiple CPUs.
->>> This modification seems to cause (massive) performance drops for
->>> multiple parallel dm-crypt instances...
->> Well, it depends. I never suggested this kind of workaround because
->> you basically hardcoded (in device stacking) how many parallel instances
->> (==cpu cores ideally) of dmcrypt can run effectively.
-> 
-> Yes. But it was the best to get :)
+On Mon, 7 Mar 2011 20:54:09 +0100 Roland Kammerer wrote:
 
-I know...
+> pr_info() and pr_debug() are in linux/printk.h
+> Last updated is unnecessary, we have git for that
+> 
+> Signed-off-by: Roland Kammerer <dev.rck@gmail.com>
+> ---
+>  Documentation/CodingStyle |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+> 
+> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
+> index 8bb3723..1cd3478 100644
+> --- a/Documentation/CodingStyle
+> +++ b/Documentation/CodingStyle
+> @@ -659,7 +659,7 @@ There are a number of driver model diagnostic
+> macros in <linux/device.h>
 
-> 
->> With current design the IO is encrypted by the cpu which submitted it.
-> ...
->> If you use one dmcrypt instance over RAID0, you will now get probably
->> much more better throughput. (Even with one process generating IOs
->> the bios are, surprisingly, submitted on different cpus. But this time
->> it runs really in parallel.)
-> 
-> Mh, not really. I just tested this with kernels fresh booted into
-> emergency and udev started to create device nodes:
-> 
-> # cryptsetup -c aes-xts-plain -s 256 -h sha256 -d /dev/urandom create foo1 /dev/sdc
-> ...
-> # cryptsetup -c aes-xts-plain -s 256 -h sha256 -d /dev/urandom create foo4 /dev/sdf
-> # mdadm -B -l raid0 -n 4 -c 256 /dev/md/foo /dev/mapper/foo[1-4]
-> # dd if=/dev/md/foo of=/dev/null bs=1M count=20k
-> 
-> 2.6.37: 291MB/s		2.6.38: 139MB/s
-> 
-> # mdadm -B -l raid0 -n 4 -c 256 /dev/md/foo /dev/sd[c-f]
-> # cryptsetup -c aes-xts-plain -s 256 -h sha256 -d /dev/urandom create foo /dev/md/foo
-> # dd if=/dev/mapper/foo of=/dev/null bs=1M count=20k
-> 
-> 2.6.37: 126MB/s		2.6.38: 138MB/s
-> 
-> So... performance drops on .37 (as expected) and nothing changes on .38
-> (unlike expected).
+Hi,
+I have applied this to my patch queue, but I had to fix it first.
+Please note & prevent in the future:  the long lines above were split (broken)
+for you (or for us), probably by your email client.
+Documentation/email-clients.txt may help you fix that.
 
-Could you please try also writes? I get better results than reads here.
+>  which you should use to make sure messages are matched to the right device
+>  and driver, and are tagged with the right level:  dev_err(), dev_warn(),
+>  dev_info(), and so forth.  For messages that aren't associated with a
+> -particular device, <linux/kernel.h> defines pr_debug() and pr_info().
+> +particular device, <linux/printk.h> defines pr_debug() and pr_info().
+> 
+>  Coming up with good debugging messages can be quite a challenge; and once
+>  you have them, they can be a huge help for remote troubleshooting.  Such
+> @@ -819,6 +819,3 @@ language C, URL: http://www.open-std.org/JTC1/SC22/WG14/
+>  Kernel CodingStyle, by greg@kroah.com at OLS 2002:
+>  http://www.kroah.com/linux/talks/ols_2002_kernel_codingstyle_talk/html/
+> 
+> ---
+> -Last updated on 2007-July-13.
+> -
+> -- 
 
-Anyway, the patch provides parallel processing if it is submitted from
-different CPUs, it does not provide any load balancing if everything is submitted
-from one process.
-(Seems it is side effect of something else...)
 
-So unfortunately for someone it is huge improvement, in this case it causes
-just troubles.
-
-We need to investigate if some change on top of current code can provide
-better results here.
-
-Milan
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
