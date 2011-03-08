@@ -1,108 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab1CHUAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:00:12 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:43605 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756492Ab1CHUAI (ORCPT
+	id S1756432Ab1CHUCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:02:31 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49669 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756024Ab1CHUCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 15:00:08 -0500
-Message-ID: <4D768A9A.7090201@candelatech.com>
-Date: Tue, 08 Mar 2011 11:59:22 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Tue, 8 Mar 2011 15:02:30 -0500
 MIME-Version: 1.0
-To: Brian Prodoehl <bprodoehl@gmail.com>
-CC: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Mohammed Shafi <shafi.wireless@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ath9k-devel@atheros.com
-Subject: Re: WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536 ath_stoprecv+0xc8/0xda
- [ath9k]()
-References: <AANLkTik9To0Rkq2FRqQFB2wNu0kyJ7CzyBek2jBp36Cb@mail.gmail.com>	<20110303135942.GA8969@tuxdriver.com>	<AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>	<20110307151201.GC2664@tuxdriver.com>	<AANLkTi=7RSdKhzGazQFUnBZqzMQskOSHq=7E08uan2vu@mail.gmail.com>	<4D767A4B.1060203@gmail.com>	<4D76833E.9010603@candelatech.com> <AANLkTikPQt+njjFPB6sJ-mEcsx6f-R6TAOhEd8egkqhH@mail.gmail.com>
-In-Reply-To: <AANLkTikPQt+njjFPB6sJ-mEcsx6f-R6TAOhEd8egkqhH@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1299614199-25142-1-git-send-email-tj@kernel.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 8 Mar 2011 12:01:40 -0800
+Message-ID: <AANLkTinWp0cUGD4FxLpvSMcb0kYrbyQB_76u3CYjiNJy@mail.gmail.com>
+Subject: Re: [RFC PATCHSET] ptrace,signal: Fix notifications to the real
+ parent while ptraced
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
+        vda.linux@googlemail.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 11:45 AM, Brian Prodoehl wrote:
-> On Tue, Mar 8, 2011 at 2:27 PM, Ben Greear<greearb@candelatech.com>  wrote:
->> On 03/08/2011 10:49 AM, Justin P. Mattock wrote:
->>>
->>> On 03/07/2011 07:22 AM, Mohammed Shafi wrote:
->>>>
->>>> On Mon, Mar 7, 2011 at 8:42 PM, John W.
->>>> Linville<linville@tuxdriver.com>  wrote:
->>>>>
->>>>> On Sun, Mar 06, 2011 at 12:47:05AM -0800, Justin Mattock wrote:
->>>>>
->>>>>> full dmesg here:
->>>>>> http://fpaste.org/5JQp/
->>>>>> let me know if I need to supply any info(also I can try a bisect, but
->>>>>> am in the middle of changing residencies, so it might not be right
->>>>>> away)
->>>>>
->>>>> One of the Atheros guys suggested that you change a DMA timeout value.
->>>>> Did you try that?
->>>>
->>>> John it looks like increasing the timeout also does not seems to help.
->>>> A user reported this issue in ath9k developer list and he told that
->>>> increasing the timeout did not fix this issue.
->>>>
->>>>>
->>>>> John
->>>>> --
->>>>> John W. Linville Someday the world will need a hero, and you
->>>>> linville@tuxdriver.com might be all we have. Be ready.
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe
->>>>> linux-wireless" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>>>>
->>>>
->>>
->>> at barnes and noble, and I see this has fired off again. will see if I
->>> can reproduce and bisect.
->>
->> This problem goes way back, and the driver has had lots of fixes in the
->> last few months, so I'm not sure if bisecting is going to
->> do you any good.
->>
->> Thanks,
->> Ben
+On Tue, Mar 8, 2011 at 11:56 AM, Tejun Heo <tj@kernel.org> wrote:
 >
-> The warnings have been around since you added the check for the
-> problem, right?  I remember initially it was a WARN_ON, and I'd get a
-> steady flood of backtraces, and then it was switched to a
-> WARN_ON_ONCE.  I see these on every platform I have (x86_64, IXP425
-> and AR71xx) with AR9002 and AR9003.
+> This patchset implements "P2. Fix notifications to the real parent" of
+> the ptrace job control improvements proposal[1].
 
-I don't think I added the original check, but either way, it's
-an old problem and bisecting it is unlikely to help.
+Ok, from skimming the patches, I like the whole series. I especially
+liked how all the steps were small and well-commented, both in the
+code and in the changelog. I could basically follow the patch series
+from just reading the changelogs, and the patches themselves looked
+fine too.
 
-I can't believe that the Atheros guys really are unable reproduce
-this, but I can believe that it might be very difficult to
-actually understand and fix.
-
-At least in my testing, I see it quite often, but it doesn't
-seem to cause any serious harm.  We do occasionally see crashes,
-especially on module unload for a heavily utilized system, or
-one that is constantly trying and failing to associate,
-so it could be related to this.
-
-Also, my patches to decrease scan and work_work related channel changes
-made this harder to hit for our test cases.
-
-Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+                        Linus
