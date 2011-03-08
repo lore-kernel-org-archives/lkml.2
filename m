@@ -1,86 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab1CHKES (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 05:04:18 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:51673 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab1CHKEO (ORCPT
+	id S1753380Ab1CHKGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 05:06:15 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62193 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab1CHKGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 05:04:14 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "drm: fix unsigned vs signed comparison issue in modeset ctl ioctl." has been added to staging queue
-Date: Tue,  8 Mar 2011 11:04:11 +0100
-Message-Id: <1299578651-8902-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-To: Dave Airlie <airlied@redhat.com>
+	Tue, 8 Mar 2011 05:06:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=CxYgiHZd0BMmiWIt+qoAvhrzYr6QJxV546M+df3ZrtNT+sD+ToiaKOxYR4qKlZ0ZhE
+         +JyP/3gsgDeF0lqM5iFD7A91M8349rLQOE/SAhHHuWyAVjzvKnsXlqDJ1H7tC+SDh8X5
+         IIYkJJs1B0i5Gd5BFmlsmy6jXFIYQwInfTFpQ=
+Message-ID: <4D75FF8E.9010103@gmail.com>
+Date: Tue, 08 Mar 2011 11:06:06 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jiri Slaby <jslaby@suse.cz>, corentincj@iksaif.net,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: eeepc: rfkill on 900A defunct
+References: <4CED26EF.5000109@suse.cz> <20101124201834.GA7760@srcf.ucam.org> <4D6B6F9A.1020102@gmail.com>
+In-Reply-To: <4D6B6F9A.1020102@gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On 02/28/2011 10:49 AM, Jiri Slaby wrote:
+> On 11/24/2010 09:18 PM, Matthew Garrett wrote:
+>> Hm. As a shorter term fix, can you try this (entirely untested!) 
+>> approach?
+> 
+> What is the status of this? Was there any alternative merged?
 
-    drm: fix unsigned vs signed comparison issue in modeset ctl ioctl.
+Ping.
 
-to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
+>> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+>> index b2edfdc..8f817d6 100644
+>> --- a/drivers/platform/x86/eeepc-laptop.c
+>> +++ b/drivers/platform/x86/eeepc-laptop.c
+>> @@ -574,8 +574,9 @@ static bool eeepc_wlan_rfkill_blocked(struct eeepc_laptop *eeepc)
+>>  	return true;
+>>  }
+>>  
+>> -static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
+>> +static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+>>  {
+>> +	struct pci_dev *port;
+>>  	struct pci_dev *dev;
+>>  	struct pci_bus *bus;
+>>  	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
+>> @@ -588,9 +589,17 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
+>>  	mutex_lock(&eeepc->hotplug_lock);
+>>  
+>>  	if (eeepc->hotplug_slot) {
+>> -		bus = pci_find_bus(0, 1);
+>> +		port = acpi_get_pci_dev(handle);
+>> +
+>> +		if (!port) {
+>> +			pr_warning("Unable to find port\n");
+>> +			goto out_unlock;
+>> +		}
+>> +
+>> +		bus = port->subordinate;
+>> +
+>>  		if (!bus) {
+>> -			pr_warning("Unable to find PCI bus 1?\n");
+>> +			pr_warning("Unable to find PCI bus?\n");
+>>  			goto out_unlock;
+>>  		}
+>>  
+>> @@ -636,6 +645,17 @@ out_unlock:
+>>  	mutex_unlock(&eeepc->hotplug_lock);
+>>  }
+>>  
+>> +static void eeepc_rfkill_hotplug_update(struct eeepc_laptop *eeepc, char *node)
+>> +{
+>> +	acpi_status status = AE_OK;
+>> +	acpi_handle handle;
+>> +
+>> +	status = acpi_get_handle(NULL, node, &handle);
+>> +
+>> +	if (ACPI_SUCCESS(status))
+>> +		eeepc_rfkill_hotplug(eeepc, handle);
+>> +}
+>> +
+>>  static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
+>>  {
+>>  	struct eeepc_laptop *eeepc = data;
+>> @@ -643,7 +663,7 @@ static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
+>>  	if (event != ACPI_NOTIFY_BUS_CHECK)
+>>  		return;
+>>  
+>> -	eeepc_rfkill_hotplug(eeepc);
+>> +	eeepc_rfkill_hotplug(eeepc, handle);
+>>  }
+>>  
+>>  static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
+>> @@ -661,6 +681,11 @@ static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
+>>  						     eeepc);
+>>  		if (ACPI_FAILURE(status))
+>>  			pr_warning("Failed to register notify on %s\n", node);
+>> +		/*
+>> +		 * Refresh pci hotplug in case the rfkill state was
+>> +		 * changed during setup.
+>> +		 */
+>> +		eeepc_rfkill_hotplug(eeepc, handle);
+>>  	} else
+>>  		return -ENODEV;
+>>  
+>> @@ -682,6 +707,12 @@ static void eeepc_unregister_rfkill_notifier(struct eeepc_laptop *eeepc,
+>>  		if (ACPI_FAILURE(status))
+>>  			pr_err("Error removing rfkill notify handler %s\n",
+>>  				node);
+>> +			/*
+>> +			 * Refresh pci hotplug in case the rfkill
+>> +			 * state was changed after
+>> +			 * eeepc_unregister_rfkill_notifier()
+>> +			 */
+>> +		eeepc_rfkill_hotplug(eeepc, handle);
+>>  	}
+>>  }
+>>  
+>> @@ -805,11 +836,7 @@ static void eeepc_rfkill_exit(struct eeepc_laptop *eeepc)
+>>  		rfkill_destroy(eeepc->wlan_rfkill);
+>>  		eeepc->wlan_rfkill = NULL;
+>>  	}
+>> -	/*
+>> -	 * Refresh pci hotplug in case the rfkill state was changed after
+>> -	 * eeepc_unregister_rfkill_notifier()
+>> -	 */
+>> -	eeepc_rfkill_hotplug(eeepc);
+>> +
+>>  	if (eeepc->hotplug_slot)
+>>  		pci_hp_deregister(eeepc->hotplug_slot);
+>>  
+>> @@ -878,11 +905,6 @@ static int eeepc_rfkill_init(struct eeepc_laptop *eeepc)
+>>  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P5");
+>>  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P6");
+>>  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P7");
+>> -	/*
+>> -	 * Refresh pci hotplug in case the rfkill state was changed during
+>> -	 * setup.
+>> -	 */
+>> -	eeepc_rfkill_hotplug(eeepc);
+>>  
+>>  exit:
+>>  	if (result && result != -ENODEV)
+>> @@ -917,8 +939,11 @@ static int eeepc_hotk_restore(struct device *device)
+>>  	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
+>>  
+>>  	/* Refresh both wlan rfkill state and pci hotplug */
+>> -	if (eeepc->wlan_rfkill)
+>> -		eeepc_rfkill_hotplug(eeepc);
+>> +	if (eeepc->wlan_rfkill) {
+>> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P5");
+>> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P6");
+>> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P7");
+>> +	}
+>>  
+>>  	if (eeepc->bluetooth_rfkill)
+>>  		rfkill_set_sw_state(eeepc->bluetooth_rfkill,
+> 
+> thanks,
 
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
 
-If you, or anyone else, feels it should not be added to the drm33-longterm tree,
-please reply to this email not later than 8 days after this email was sent.
-
-Thanks.
--Stefan
-
-------
-
->From 1a24f0451bd22eaa6e61405e3fcb214fb8fa3931 Mon Sep 17 00:00:00 2001
-From: Dave Airlie <airlied@redhat.com>
-Date: Thu, 24 Feb 2011 08:35:06 +1000
-Subject: [PATCH] drm: fix unsigned vs signed comparison issue in modeset ctl ioctl.
-
-commit 1922756124ddd53846877416d92ba4a802bc658f upstream.
-
-This fixes CVE-2011-1013.
-
-Reported-by: Matthiew Herrb (OpenBSD X.org team)
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
----
- drivers/gpu/drm/drm_irq.c |    3 ++-
- include/drm/drmP.h        |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-index b98384d..d07dfe1 100644
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -543,7 +543,8 @@ int drm_modeset_ctl(struct drm_device *dev, void *data,
- 		    struct drm_file *file_priv)
- {
- 	struct drm_modeset_ctl *modeset = data;
--	int crtc, ret = 0;
-+	int ret = 0;
-+	unsigned int crtc;
-
- 	/* If drm_vblank_init() hasn't been called yet, just no-op */
- 	if (!dev->num_crtcs)
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index ffac157..c6c8eb9 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1020,7 +1020,7 @@ struct drm_device {
- 	struct pci_controller *hose;
- #endif
- 	struct drm_sg_mem *sg;	/**< Scatter gather memory */
--	int num_crtcs;                  /**< Number of CRTCs on this device */
-+	unsigned int num_crtcs;                  /**< Number of CRTCs on this device */
- 	void *dev_private;		/**< device private data */
- 	void *mm_private;
- 	struct address_space *dev_mapping;
---
-1.7.0.4
-
+-- 
+js
