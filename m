@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1CHNYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 08:24:25 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:58127 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab1CHNYY (ORCPT
+	id S1754872Ab1CHN0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 08:26:16 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55625 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab1CHN0P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 08:24:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v9 1/1] PRUSS UIO driver support
-Date: Tue, 8 Mar 2011 14:24:00 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
-Cc: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1299175677-17859-1-git-send-email-pratheesh@ti.com> <B85A65D85D7EB246BE421B3FB0FBB593024C008B02@dbde02.ent.ti.com> <alpine.LFD.2.00.1103081133510.2787@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103081133510.2787@localhost6.localdomain6>
+	Tue, 8 Mar 2011 08:26:15 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103081424.01476.arnd@arndb.de>
-X-Provags-ID: V02:K0:MUM5NERALH9QYwA7tnkuI97Ex+24i5HHdVBRxo+AnTz
- hhS4brockCKhax57jVnK6eYHvE01MLx6BogYv8/KMSVwqV9Y44
- cInn1Z8ZVM3wr0JOf6bdeuv6CrTinNtB1+Tjq8hbegkDalwayN
- 92N6E5Wp8s9LllO+IX2YmYNvy9/O4P43W956jkkQW0PgWqGmKL
- 5qURcbSz52MVVKg2NwNhQ==
+In-Reply-To: <20110308115640.GC20944@opensource.wolfsonmicro.com>
+References: <1299577320-31389-1-git-send-email-linus.walleij@stericsson.com>
+	<20110308115640.GC20944@opensource.wolfsonmicro.com>
+Date: Tue, 8 Mar 2011 14:26:14 +0100
+Message-ID: <AANLkTin7qD7O70u5HQVgWXQZTFR1O8dUOqyKWmn6sU1b@mail.gmail.com>
+Subject: Re: [PATCH 2/3] regulator: add a subdriver for TI TPS6105x regulator portions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <samuel.ortiz@intel.com>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 March 2011, Thomas Gleixner wrote:
-> > 
-> > +static irqreturn_t pruss_handler(int irq, struct uio_info *info) {
-> > +     struct pruss_priv *priv = info->priv;
-> > +     struct uio_pruss_dev *gdev = priv->pupdev;
-> > 
-> > Note that info is a pointer to array supporting 8 interrupts. This allows to
-> > redirect to driver structure via info->priv quickly.
-> 
-> struct uio_pruss_dev *dev = container_of(info, struct uio_pruss_dev, info);
-> 
-> Perhaps ?
+On Tue, Mar 8, 2011 at 12:56 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-That would require having the same number of uio_info structs as uio_pruss_dev
-instances. Right now, one platform device has one uio_pruss_dev instance, which
-has 8 uio_info instances, so the container_of() trick doesn't work.
+> On Tue, Mar 08, 2011 at 10:42:00AM +0100, Linus Walleij wrote:
+>
+>> +static int tps6105x_regulator_get_voltage(struct regulator_dev *rdev)
+>> +{
+>
+> It'd probably simplify things to use the _sel variants for the voltage
+> operations.
 
-	Arnd
+Good idea. Fixed it.
+
+>> +static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
+>> +{
+>> +     struct tps6105x *tps6105x = platform_get_drvdata(pdev);
+>> +     struct tps6105x_platform_data *pdata = tps6105x->pdata;
+>> +     int ret;
+>> +
+>> +     /* This instance is not set for regulator mode so bail out */
+>> +     if (pdata->mode != TPS6105X_MODE_VOLTAGE)
+>> +             return 0;
+>
+> -ENODEV?  Logging to explain why we're bombing out might be helpful too.
+
+Not in this case actually, the chip is configured by platform data to
+operate as regulator, LED or flashgun. All three drivers may be
+compiled in at some point, and a system may have three TPS chips
+performing each function. They will spawn three children each,
+but only one of them should probe.
+
+So the fact that the regulator driver doesn't probe doesn't mean any
+failure, some other driver will likely probe successfully for the chip.
+
+>> +     /* Set lowest voltage 4.5V to begin */
+>> +     ret = tps6105x_mask_and_set(tps6105x, TPS6105X_REG_0,
+>> +             TPS6105X_REG0_VOLTAGE_MASK,
+>> +             TPS6105X_REG0_VOLTAGE_450 << TPS6105X_REG0_VOLTAGE_SHIFT);
+>> +     if (ret)
+>> +             return ret;
+>
+> Don't do this, if the user wants to set a defualt voltage they can use
+> constraints but if the driver does it then it may disrupt a running
+> system.
+
+OK dropped it.
+
+>> +#if 0
+>> +     /* Activate voltage mode - use to check if voltage comes out */
+>> +     ret = tps6105x_mask_and_set(tps6105x, TPS6105X_REG_0,
+>> +             TPS6105X_REG0_MODE_MASK,
+>> +             TPS6105X_REG0_MODE_VOLTAGE << TPS6105X_REG0_MODE_SHIFT);
+>> +     if (ret)
+>> +             return ret;
+>> +#endif
+>
+> Don't include if 0 code.
+
+Dropped it.
+
+>> +subsys_initcall(tps6105x_regulator_init);
+>> +module_exit(tps6105x_regulator_exit);
+>
+> These usually go next to the functions.
+
+Reordered.
+
+Thanks Mark,
+Linus Walleij
