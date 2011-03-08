@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab1CHWNf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:13:35 -0500
-Received: from cantor.suse.de ([195.135.220.2]:59265 "EHLO mx1.suse.de"
+	id S1755354Ab1CHWNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:13:45 -0500
+Received: from www.tglx.de ([62.245.132.106]:37538 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753103Ab1CHWNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:13:34 -0500
-Date: Tue, 8 Mar 2011 23:13:31 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Menage <menage@google.com>
-Cc: Geunsik Lim <leemgs1@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH RESEND 1/2] cgroup:doc Update cpuset info & webiste via
- cgroup.
-In-Reply-To: <AANLkTi=FYHX3Z1zAi5BqHqxRSQK-iOJ+tSvZwj4csZ=2@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1103082313130.19969@pobox.suse.cz>
-References: <1299459180-11321-1-git-send-email-leemgs1@gmail.com> <1299459180-11321-2-git-send-email-leemgs1@gmail.com> <AANLkTi=FYHX3Z1zAi5BqHqxRSQK-iOJ+tSvZwj4csZ=2@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755036Ab1CHWNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:13:43 -0500
+Date: Tue, 8 Mar 2011 23:13:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Micha Nelissen <micha@neli.hopto.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] Add support for multiple MSI on x86
+In-Reply-To: <71ed11a4-aff7-4eb6-b037-0e097bb96444@email.android.com>
+Message-ID: <alpine.LFD.2.00.1103082311090.2787@localhost6.localdomain6>
+References: <4D583E31.4070507@neli.hopto.org> <20110304103634.4641ae36@jbarnes-desktop> <4D714357.3010807@neli.hopto.org> <alpine.LFD.2.00.1103082143460.2787@localhost6.localdomain6> <35bd5f56-658b-48e3-a376-b07350a29cf6@email.android.com>
+ <alpine.LFD.2.00.1103082215300.2787@localhost6.localdomain6> <71ed11a4-aff7-4eb6-b037-0e097bb96444@email.android.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Mar 2011, Paul Menage wrote:
+On Tue, 8 Mar 2011, H. Peter Anvin wrote:
 
-> > cpuset website is changed.
-> > and, update list of cpuset using cgroup(controller group).
-> >
-> > Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-> 
-> Acked-by: Paul Menage <menage@google.com>
-> 
-> You should forward these to Andew Morton for the -mm tree.
+> You said MSI-X has replaced MSI, which is true of course but doesn't
+> change older devices in the field.
 
-I can take it since you have Acked it.
+I know, but not for the price of nested loops over nr of cpus with
+locks held and interrupts disabled implemented with a metric sh*tload
+of horrible code.
 
-Applied, thanks.
+Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+	tglx
