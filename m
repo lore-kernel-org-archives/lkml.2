@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1CHOSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 09:18:55 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49347 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754469Ab1CHOSy (ORCPT
+	id S1755045Ab1CHOZQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 09:25:16 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:54606 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750931Ab1CHOZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 09:18:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=j36xa7zglw6W6wYCSvhz//ZTpMnn3IM2ql6cOemxwOeawBVS6FBUVaHDAL7UvmcJgH
-         QZeHtiCcw9BcYJ8FqyoT7F05Y/ZeEhRMbb2nR43zI0wxO2FsGt221Q42EpaGlCm6A61u
-         jnk16YH5CoTqOoujUhg8XrjslRPbYWtpYbGKA=
-Date: Tue, 8 Mar 2011 15:18:49 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Reiserfs deadlock in 2.6.36
-Message-ID: <20110308141847.GB1837@nowhere>
-References: <201011181650.00152.roucaries.bastien@gmail.com>
- <AANLkTik=+smaiGNwVw0pDBXexVd=trsz9aSawuqLZP6k@mail.gmail.com>
- <20101223034229.GF1739@nowhere>
- <201101300108.32383.roucaries.bastien@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201101300108.32383.roucaries.bastien@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 8 Mar 2011 09:25:14 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18Ju1wWx6YJr64UhAbeBdPcdINtbH86T55tjEviVC
+	w4uGnPPNGsB1pp
+Subject: Re: [patchlet] sched: fix rt throttle runtime borrowing
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1299591983.2308.1502.camel@twins>
+References: <1299486101.14465.25.camel@marge.simson.net>
+	 <AANLkTikOY2-_EAjYTBZG4Wb9HNHRxJ4Qcd+zbvbxzPbt@mail.gmail.com>
+	 <1299490414.14465.74.camel@marge.simson.net>
+	 <1299508052.8093.1.camel@marge.simson.net>
+	 <1299588399.2308.1424.camel@twins>
+	 <1299590878.7949.41.camel@marge.simson.net>
+	 <1299591983.2308.1502.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Mar 2011 15:25:04 +0100
+Message-ID: <1299594304.7938.33.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 30, 2011 at 01:08:29AM +0100, Bastien ROUCARIES wrote:
-> Le jeudi 23 décembre 2010 04:42:33, Frederic Weisbecker a écrit :
-> Hi,
+On Tue, 2011-03-08 at 14:46 +0100, Peter Zijlstra wrote:
+> On Tue, 2011-03-08 at 14:27 +0100, Mike Galbraith wrote:
 > 
-> I take me more than two days of testing to reporduce this bugs with trace enabled. My filesystem was quite slow and this bugs seems 
-> to be timing related.
+> > > Also, how much of a problem is it really? When I start a FIFO spinner on
+> > > my machine I can still ssh in and kill the thing.
+> > 
+> > It's a problem if you have one box.  Also, try starting a hefty load
+> > then having an rt task go nuts.  Nothing good happens here. 
 > 
-> One patern that trigger this bug is git. Doing a lot of git work of my desktop crash my machine.
-> 
-> Moreover, trying to reproduce this bug lead to data loss. I have rebuilded twice my / partition using --rebuild-tree, and restored 
-> my home partition three times using backups.
-> 
-> My log is here.
-> 
-> Do you need more information?
-> 
-> Bastien
+> Right, so I think we're not aggressive enough to migrate tasks away from
+> very small cpu_power CPUs, trapping tasks on such CPUs.
 
-You have a first series of hung task report from 19440.852298 to 19440.880024
-then it's followed by the traces and then again with a hung task report at
-19560.880084. But there is only one task stuck in that 2nd report. Did
-you report your whole dmesg there or have you cut it? If it's your
-whole dmesg then it means the other tasks from the first report have released
-from their hung state. So the queued writers have been released by someone
-who closed the journal.
+I don't think that's it at all.  I just tried (again) with virgin tip.
+Start a kbuild, start an RT hog.  Instant frozen box.  If you're in a
+console shell, you may or may not save the box, but the desktop is
+instantly toast, and there is no ssh possibility.  I can ping the box,
+but that's it.  It's a pingable doorstop.
 
-This could confirm the theory that someone has opened the journal and
-spent way too much time before releasing it. Or something else.
-In any case tell me, there are other tests we can run.
+> Of course, this is no help for pinned tasks.. but then you get what you
+> asked for isn't it ;-)
+
+But events/N are pinned, and kinda critical.
+
+> > > Not allowing 100% FIFO usage on SMP is going to make it very very hard
+> > > to implement any kind of fifo-cgroup stuff.
+> > 
+> > The only thing I care much about is the default setup.  The safety net
+> > should work, otherwise it's a waste.
+> 
+> Right, but how much trouble can be avoided by making the sched_fair
+> load-balancer migrate tasks away from very small cpu_power CPUs?
+
+I don't think that's the issue.  I think when any events is blocked
+forever, it's game over.
+
+> It won't avoid actual deadlocks when someone tries to wait for workqueue
+> broadcasts and the like, but how much of that is actually happening?
+
+Mmmmm.. enough to kill my box every time I test? :)
+
+> > Maybe only doing the borrow thing when there are active RT groups is the
+> > right thing to do.  (minus knob) 
+> 
+> Thing is the whole borrowing needs to go, Dario and me finally came up
+> with a 'sane' way to implement fifo-cgroups, but that does include
+> explicitly allowing starving CPUs.
+
+Hm, borrowing going away sounds great.  Dunno about that starving CPUs
+bit, that has never led to anything but BRB poking here.
+
+> Not allowing that very quickly degenerates into massive trouble like
+> gang-scheduling or bouncing tasks around like mad and generally messing
+> up the 'load-balancer'.
+
+If the problematic code is going away anyway, I'll just leave it. It's
+the same problem that has existed since the dawn of time.  RT hogs can
+be utterly deadly a while longer I suppose :)
+
+	-Mike
+
