@@ -1,108 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab1CHXKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 18:10:09 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:21023 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab1CHXKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 18:10:04 -0500
-Subject: [PATCH 2/2] hpsa: export resettable_on_kexec host attribute
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        smcameron@yahoo.com, thenzl@redhat.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com
-Date: Tue, 08 Mar 2011 17:10:03 -0600
-Message-ID: <20110308231003.22291.20417.stgit@beardog.cce.hp.com>
-In-Reply-To: <20110308230749.22291.56200.stgit@beardog.cce.hp.com>
-References: <20110308230749.22291.56200.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1756410Ab1CHXOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 18:14:20 -0500
+Received: from gate.crashing.org ([63.228.1.57]:33453 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754819Ab1CHXOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 18:14:19 -0500
+Subject: Re: RFC: x86: kill binutils 2.16.x?
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        Kumar Gala <kumar.gala@freescale.com>
+In-Reply-To: <AANLkTikAnb39XhR0hdZAzTKGJ-P1rH+ZxtD+Dea7-364@mail.gmail.com>
+References: <4D6E8932.1010405@zytor.com>
+	 <alpine.LFD.2.00.1103022152420.2701@localhost6.localdomain6>
+	 <4D6EB07C.5040004@zytor.com>
+	 <alpine.LFD.2.00.1103022216180.2701@localhost6.localdomain6>
+	 <4D6ECBDB.6090307@zytor.com> <20110303083035.GB14854@elte.hu>
+	 <AANLkTik4aTN8+Ob_GVwF17v6pDNGg2DEZJubBazs2e3L@mail.gmail.com>
+	 <1299619716.22236.32.camel@pasglop>
+	 <AANLkTikAnb39XhR0hdZAzTKGJ-P1rH+ZxtD+Dea7-364@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Mar 2011 10:13:28 +1100
+Message-ID: <1299626008.22236.47.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Tue, 2011-03-08 at 16:59 -0500, Kyle Moffett wrote:
+> 
+> The problem is not with the kernel compile itself, but with the 2.12
+> "dssall" binutils test.  Basically, recent binutils treats e500 as
+> effectively a separate architecture that happens to share *most* of
+> the opcodes with regular PowerPC. 
 
-This attribute, requested by Redhat, allows kexec-tools to know
-whether the controller can honor the reset_devices kernel parameter
-and actually reset the controller.  For kdump to work properly it
-is necessary that the reset_devices parameter be honored.  This
-attribute enables kexec-tools to warn the user if they attempt to
-designate a non-resettable controller as the dump device.
+This is bogus. Newer e500 don't have that SPE crap afaik and BookI and
+II of the architecture have been converged. In fact, Scott, don't newer
+FSL chips also support real lwsync ?
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/scsi/hpsa.c |   41 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 41 insertions(+), 0 deletions(-)
+>  Any opcode which is not understood
+> by the e500 chip is either convert to an equivalent opcode which is
+> understood (IE: lwsync => sync), or failed with an error.  This means
+> that the kernel compile aborts early telling me to upgrade to a newer
+> version of binutils.
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index dcabef4..1d4fe80 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -273,6 +273,44 @@ static ssize_t host_show_transport_mode(struct device *dev,
- 			"performant" : "simple");
- }
- 
-+/* List of controllers which cannot be reset on kexec with reset_devices */
-+static u32 unresettable_controller[] = {
-+	0x324a103C, /* Smart Array P712m */
-+	0x324b103C, /* SmartArray P711m */
-+	0x3223103C, /* Smart Array P800 */
-+	0x3234103C, /* Smart Array P400 */
-+	0x3235103C, /* Smart Array P400i */
-+	0x3211103C, /* Smart Array E200i */
-+	0x3212103C, /* Smart Array E200 */
-+	0x3213103C, /* Smart Array E200i */
-+	0x3214103C, /* Smart Array E200i */
-+	0x3215103C, /* Smart Array E200i */
-+	0x3237103C, /* Smart Array E500 */
-+	0x3223103C, /* Smart Array P800 */
-+	0x3234103C, /* Smart Array P400 */
-+	0x323D103C, /* Smart Array P700m */
-+};
-+
-+static int resettable_on_kexec(struct ctlr_info *h)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(unresettable_controller); i++)
-+		if (unresettable_controller[i] == h->board_id)
-+			return 0;
-+	return 1;
-+}
-+
-+static ssize_t host_show_resettable_on_kexec(struct device *dev,
-+	struct device_attribute *attr, char *buf)
-+{
-+	struct ctlr_info *h;
-+	struct Scsi_Host *shost = class_to_shost(dev);
-+
-+	h = shost_to_hba(shost);
-+	return snprintf(buf, 20, "%d\n", resettable_on_kexec(h));
-+}
-+
- static inline int is_logical_dev_addr_mode(unsigned char scsi3addr[])
- {
- 	return (scsi3addr[3] & 0xC0) == 0x40;
-@@ -379,6 +417,8 @@ static DEVICE_ATTR(commands_outstanding, S_IRUGO,
- 	host_show_commands_outstanding, NULL);
- static DEVICE_ATTR(transport_mode, S_IRUGO,
- 	host_show_transport_mode, NULL);
-+static DEVICE_ATTR(resettable_on_kexec, S_IRUGO,
-+	host_show_resettable_on_kexec, NULL);
- 
- static struct device_attribute *hpsa_sdev_attrs[] = {
- 	&dev_attr_raid_level,
-@@ -392,6 +432,7 @@ static struct device_attribute *hpsa_shost_attrs[] = {
- 	&dev_attr_firmware_revision,
- 	&dev_attr_commands_outstanding,
- 	&dev_attr_transport_mode,
-+	&dev_attr_resettable_on_kexec,
- 	NULL,
- };
- 
+This is more bogosity in binutils. lwsync is designed to fallback as
+sync if not supported in -HW-, binutils shouldn't silently swallow it.
+
+Or is it that FSL failed on the original e500 and make lwsync actually
+trap ?
+
+> This was *critical* for getting an actual Debian distribution
+> bootstrapped on the e500 cores, because so much software assumes
+> PowerPC == altivec (ffmpeg), hardcodes 'asm("lwsync")' for memory
+> barriers (80+ packages in Debian), or includes hand-coded
+> floating-point ASM instructions (libffi).  Noisy build errors are
+> better than silent runtime failures any day of the week.
+> 
+> At the very least that test needs to be turned off if
+> CONFIG_ALTIVEC=n, because the kernel builds and runs fine otherwise.
+
+I think the right thing is to keep that as e500-legacy or something,
+because afaik, newer e500's don't have most of these issues and could be
+treated as "normal" powerpc again.
+
+Cheers,
+Ben.
+
 
