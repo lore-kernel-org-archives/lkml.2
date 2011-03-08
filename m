@@ -1,101 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab1CHSDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 13:03:51 -0500
-Received: from 75-145-127-229-Colorado.hfc.comcastbusiness.net ([75.145.127.229]:39644
-	"EHLO gw.co.teklibre.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751292Ab1CHSDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 13:03:48 -0500
-From: d@taht.net (Dave =?utf-8?Q?T=C3=A4ht?=)
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-        bloat-devel <bloat-devel@lists.bufferbloat.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Some debloat-testing results with problems of 2.6.38-rc7-bloat2-db
-Organization: Teklibre - http://www.teklibre.com
-Date: Tue, 08 Mar 2011 11:03:45 -0700
-Message-ID: <87sjuxmqv2.fsf@cruithne.co.teklibre.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753576Ab1CHSSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 13:18:17 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60615 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752337Ab1CHSSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 13:18:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,285,1297065600"; 
+   d="scan'208";a="665159344"
+Date: Tue, 8 Mar 2011 10:18:11 -0800
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: balbir@linux.vnet.ibm.com
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [CFS Bandwidth Control v4 0/7] Introduction
+Message-ID: <20110308101811.00000eab@unknown>
+In-Reply-To: <20110308035759.GI2868@balbir.in.ibm.com>
+References: <20110216031831.571628191@google.com>
+	<20110224161111.7d83a884@jacob-laptop>
+	<AANLkTi=i-fgng0Pa2JDSy8RgqRs2mo2vc2CKbx12-=Ri@mail.gmail.com>
+	<20110225050646.2828709c@jacob-laptop>
+	<20110308035759.GI2868@balbir.in.ibm.com>
+Organization: Intel OTC
+X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+on Tue, 8 Mar 2011 09:27:59 +0530 Balbir Singh wrote:
+>* jacob pan <jacob.jun.pan@linux.intel.com> [2011-02-25 05:06:46]:
+>
+>> On Fri, 25 Feb 2011 02:03:54 -0800
+>> Paul Turner <pjt@google.com> wrote:
+>> 
+>> > On Thu, Feb 24, 2011 at 4:11 PM, jacob pan
+>> > <jacob.jun.pan@linux.intel.com> wrote:
+>> > > On Tue, 15 Feb 2011 19:18:31 -0800
+>> > > Paul Turner <pjt@google.com> wrote:
+>> > >
+>> > >> Hi all,
+>> > >>
+>> > >> Please find attached v4 of CFS bandwidth control; while this rebase
+>> > >> against some of the latest SCHED_NORMAL code is new, the features
+>> > >> and methodology are fairly mature at this point and have proved
+>> > >> both effective and stable for several workloads.
+>> > >>
+>> > >> As always, all comments/feedback welcome.
+>> > >>
+>> > >
+>> > > Hi Paul,
+>> > >
+>> > > Your patches provide a very useful but slightly different feature
+>> > > for what we need to manage idle time in order to save power. What we
+>> > > need is kind of a quota/period in terms of idle time. I have been
+>> > > playing with your patches and noticed that when the cgroup cpu usage
+>> > > exceeds the quota the effect of throttling is similar to what I have
+>> > > been trying to do with freezer subsystem. i.e. freeze and thaw at
+>> > > given period and percentage runtime.
+>> > > https://lkml.org/lkml/2011/2/15/314
+>> > >
+>> > > Have you thought about adding such feature (please see detailed
+>> > > description in the link above) to your patches?
+>> > >
+>> > 
+>> > So reading the description it seems like rooting everything in a
+>> > 'freezer' container and then setting up a quota of
+>> > 
+>> > (1 - frozen_percentage)  * nr_cpus * frozen_period * sec_to_usec
+>> > 
+>> I guess you meant frozen_percentage is less than 1, i.e. 90 is .90. my
+>> code treat 90 as 90. just a clarification.
+>> > on a period of
+>> > 
+>> > frozen_period * sec_to_usec
+>> > 
+>> > Would provide the same functionality.  Is there other unduplicated
+>> > functionality beyond this?
+>> Do you mean the same functionality as your patch? Not really, since my
+>> approach will stop the tasks based on hard time slices. But seems your
+>> patch will allow them to run if they don't exceed the quota. Am i
+>> missing something?
+>> That is the only functionality difference i know.
+>> 
+>> Like the reviewer of freezer patch pointed out, it is a more logical
+>> fit to implement such feature in scheduler/yours in stead of freezer. So
+>> i am wondering if your patch can be expended to include limiting quota
+>> on real time.
+>>
+>
+>Do you mean sched rt group controller? Have you looked at
+>cpu.rt_runtime_us and cpu.rt_perioud_us?
+> 
+>> I did a comparison study between CFS BW and freezer patch on skype with
+>> identical quota setting as you pointed out earlier. Both use 2 sec
+>> period and .2 sec quota (10%). Skype typically uses 5% of the CPU on my
+>> system when placing a call(below cfs quota) and it wakes up every 100ms
+>> to do some quick checks. Then I run skype in cpu then freezer cgroup
+>> (with all its children). Here is my result based on timechart and
+>> powertop.
+>> 
+>> patch name	wakeups		skype call?
+>> ------------------------------------------------------------------
+>> CFS BW		10/sec		yes
+>> freezer		1/sec		no
+>>
+>
+>Is this good or bad for CFS BW?
+In terms of power saving for this particular use case, it is bad for
+CFS BW. Since I am trying use cgroup to manage applications that are
+not written with power saving in mind. CFS BW does not prevent
+unnecessary wake-ups from these apps., therefore the system consumes
+more power than the case where freezer duty cycling patch is used.
+In my use case, as soon as skype is switched to the UI foreground, it
+will be moved to another cgroup where enough quota will be given to
+allow it place calls. Therefore, not being able to make calls while
+being throttled is not a concern.
 
-Over the weekend I did some tests of the debloat-testing[1] tree,
-there's good, bad, and ugly results thus far.
+For mobile devices, often have just one app in the foreground. So
+throttling background apps may not impact user experience but still can
+save power.
 
-* The Good
+Since CFS BW patch has the period and quota concept on BW control, that
+is why I am asking if it is worth extending CFS BW patch to have a idle
+time quota. Perhaps adding another parameter to allow limitting the idle
+time in parallel to cfs_quota.
 
-There are now ubuntu 10.10 debs up fpr 2.6.38-rc7-bloat2-db up for
-x86_64 systems at:
+Rafael (CCed) wants to get an opinion from the scheduler folks before
+considering the freezer patch.
 
-http://mirrors.bufferbloat.net/debs/
+Thanks,
 
-The kernel boots. I've had it running for 3 days. In using my iwlagn
-
-03:00.0 Network controller: Intel Corporation PRO/Wireless 4965 AG or
-AGN [Kedron] Network Connection (rev 61)
-
-Which I think supports aggregation... (?)
-
-I can happily report that the 130ms+ latency under load I experienced
-with this device on the default kernel has now been reduced to under ~3ms
-(using ping to test and iperf to saturate) while connected at 38Mbit.
-
-* The Bad
-
-The git tree[2] was updated this morning to -rc8. It would be nice to
-have debs for x86 and other architectures, too.
-
-While performing the wireless testing above, I also experienced 11%
-packet loss (this was admittedly under purposely bad conditions - 2
-floors, 3 concrete walls, not so good antennas - see here[3] for my test
-rig - I was using a partially debloated wndr3700 for this test too)
-
-I haven't had time to check if the patched TC[4] supports the
-additional parameters of CHOKe and SFB yet. And that said, shaper
-scripts that integrate these AQMs are direly needed. Anyone?
-
-* The Ugly
-
-I'm concerned that the effective latency reduction I'm experiencing for
-TCP/IP is more tied to the wireless packet loss, rather than the new
-eBDP algorithm actually addressing it. How to go about testing this?
-Seeing some knobs or stats?
-
-The patches to the wired e1000e (and most likely e1000 driver) do not
-work correctly with TX rings set below 64. At 16, it ends up in a near
-permanent reset state:
-
-e1000e 0000:00:19.0: eth0: Reset adapter
-e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
-e1000e 0000:00:19.0: eth0: 10/100 speed: disabling TSO
-
-It's harder to trigger at TX ring 32, but still happens under load.
-
-Even disabling TSO/GSO etc via ethtool had no effect. Thankfully you can
-increase the TX ring back to 64 and have a working network card again.
-
-It would be good if someone with more of a clue than the idjit that
-produced those patches could look into what it would really take to be
-able to reduce the dynamic range of the e1000e wired network DMA TX ring
-down to very low (say, 4) levels and still have TSO/GSO work. Having a
-good look at a responsive network stack without the complexities of
-wireless involved would be very helpful.
-
-Aside from that, no babies eaten, and progress made. My thx to John
-Linville, Dave Woodhouse, and everyone else involved in pulling this
-tree together!
-
-
-[1] https://lists.bufferbloat.net/pipermail/bloat-devel/2011-February/000061.html 
-[2] http://git.infradead.org/debloat-testing.git
-[3] http://nex-6.taht.net/images/housenet.png
-[4] https://github.com/dtaht/iproute2bufferbloat
-
--- 
-Dave Taht
-http://the-edge.blogspot.com
-
+Jacob
