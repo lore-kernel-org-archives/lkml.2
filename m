@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1CHMlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 07:41:45 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:46193 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753689Ab1CHMlo (ORCPT
+	id S1754902Ab1CHMlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 07:41:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33221 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754662Ab1CHMlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 07:41:44 -0500
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Mar 2011 07:41:44 EST
-X-Sasl-enc: 9UXKl9UDVvondCoZxr07vyUbmWlWe3y7KKXOOsgpTG1+ 1299587744
-Date: Tue, 8 Mar 2011 09:35:41 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] thinkpad-acpi: module autoloading for newer Lenovo
- ThinkPads.
-Message-ID: <20110308123541.GA11804@khazad-dum.debian.net>
-References: <1299540407-3779-1-git-send-email-manoj.iyer@canonical.com>
- <1299540407-3779-2-git-send-email-manoj.iyer@canonical.com>
+	Tue, 8 Mar 2011 07:41:53 -0500
+Date: Tue, 8 Mar 2011 12:41:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
+        MyungJoo Ham <myungjoo.ham@gmail.com>
+Subject: Re: [PATCH v2 2/2] MAX8997/8966 PMIC Regulator Driver Initial
+ Release
+Message-ID: <20110308124151.GD20944@opensource.wolfsonmicro.com>
+References: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
+ <1299221427-4726-3-git-send-email-myungjoo.ham@samsung.com>
+ <20110305120302.GC30187@opensource.wolfsonmicro.com>
+ <AANLkTik4cT3fbsCLFcsUcNMtia1Ymnhe8JFzzO+N+9sq@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299540407-3779-2-git-send-email-manoj.iyer@canonical.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <AANLkTik4cT3fbsCLFcsUcNMtia1Ymnhe8JFzzO+N+9sq@mail.gmail.com>
+X-Cookie: Tomorrow, you can be anywhere.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Mar 2011, Manoj Iyer wrote:
-> The newer Lenovo ThinkPads have HKEY HID of LEN0068 instead
-> of IBM0068. Added new HID so that thinkpad_acpi module will
-> auto load on these newer Lenovo ThinkPads.
-> 
-> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+On Tue, Mar 08, 2011 at 10:50:04AM +0900, MyungJoo Ham wrote:
+> On Sat, Mar 5, 2011 at 9:03 PM, Mark Brown
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> > This looks odd, especially since you have a disable operation?
 
-> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-> index eb99223..125d891 100644
-> --- a/drivers/platform/x86/thinkpad_acpi.c
-> +++ b/drivers/platform/x86/thinkpad_acpi.c
-> @@ -128,7 +128,8 @@ enum {
->  };
->  
->  /* ACPI HIDs */
-> -#define TPACPI_ACPI_HKEY_HID		"IBM0068"
-> +#define TPACPI_ACPI_IBM_HKEY_HID	"IBM0068"
-> +#define TPACPI_ACPI_LENOVO_HKEY_HID	"LEN0068"
->  #define TPACPI_ACPI_EC_HID		"PNP0C09"
->  
->  /* Input IDs */
-> @@ -3879,7 +3880,8 @@ errexit:
->  }
->  
->  static const struct acpi_device_id ibm_htk_device_ids[] = {
-> -	{TPACPI_ACPI_HKEY_HID, 0},
-> +	{TPACPI_ACPI_IBM_HKEY_HID, 0},
-> +	{TPACPI_ACPI_LENOVO_HKEY_HID, 0},
->  	{"", 0},
->  };
+> The intention is to keep it enabled if it was enabled before entering
+> sleep and not to enable if it has not been using while the system is
+> running. Probably, we need three states for suspend-prepare for
+> regulators: disable, enable, keep_state?
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+No, that's not what the suspend mode settings are doing.  Many
+regulators have separate state configuration for use when the system is
+suspended, the purpose of suspend_prepare() is to configure that.  They
+are orthogonal to the state seen when the system is running and it is
+expected that the previously configured state will be automatically
+recovered when exiting suspend.
+
+The reason we set this stuff immediately before suspend is that Linux
+has multiple suspend types so we need to adjust the configuration to
+reflect the suspend type that's been chosen.
