@@ -1,192 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab1CHE4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 23:56:34 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:15095 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756012Ab1CHE4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 23:56:32 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPtEdU15LK5J/2dsb2JhbACmVXW+QQ2CdIJhBA
-Date: Tue, 8 Mar 2011 15:56:26 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Chris Mason <chris.mason@oracle.com>, Jan Kara <jack@suse.cz>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation
- problem
-Message-ID: <20110308045626.GD1956@dastard>
-References: <20110222020022.GH32261@tux1.beaverton.ibm.com>
- <yq1vd0cf26f.fsf@sermon.lab.mkp.net>
- <20110223202446.GG4020@noexit>
- <1298493173-sup-8301@think>
- <20110224164758.GH23042@quack.suse.cz>
- <1298566775-sup-730@think>
- <20110224182732.GV27190@tux1.beaverton.ibm.com>
- <1298897186-sup-9394@think>
- <20110304210724.GF27190@tux1.beaverton.ibm.com>
+	id S1751141Ab1CHFBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 00:01:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50089 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab1CHFBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 00:01:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,282,1297065600"; 
+   d="scan'208";a="717492926"
+Message-ID: <4D75B815.2080603@linux.intel.com>
+Date: Tue, 08 Mar 2011 13:01:09 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304210724.GF27190@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Clark Williams <williams@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: Re: [PATCH V2] page-types.c: auto debugfs mount for hwpoison operation
+References: <1299487900-7792-1-git-send-email-gong.chen@linux.intel.com> <20110307184133.8A19.A69D9226@jp.fujitsu.com> <20110307113937.GB5080@localhost>
+In-Reply-To: <20110307113937.GB5080@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 01:07:24PM -0800, Darrick J. Wong wrote:
-> On Mon, Feb 28, 2011 at 07:54:05AM -0500, Chris Mason wrote:
-> > Excerpts from Darrick J. Wong's message of 2011-02-24 13:27:32 -0500:
-> > > On Thu, Feb 24, 2011 at 12:37:53PM -0500, Chris Mason wrote:
-> > > > Excerpts from Jan Kara's message of 2011-02-24 11:47:58 -0500:
-> > > > > On Wed 23-02-11 15:35:11, Chris Mason wrote:
-> > > > > > Excerpts from Joel Becker's message of 2011-02-23 15:24:47 -0500:
-> > > > > > > On Tue, Feb 22, 2011 at 11:45:44AM -0500, Martin K. Petersen wrote:
-> > > > > > > > Also, DIX is only the tip of the iceberg. Many other impending
-> > > > > > > > technologies feature checksums and require pages to be stable during I/O
-> > > > > > > > due to checksumming, encryption and so on.
-> > > > > > > > 
-> > > > > > > > The VM is already trying to do the right thing. We just need the
-> > > > > > > > relevant filesystems to catch up.
-> > > > > > > 
-> > > > > > >     ocfs2 handles stable metadata for its checksums when feeding
-> > > > > > > things to the journal.  If we're doing pagecache-based I/O, is the
-> > > > > > > pagecache going to help here for data?
-> > > > > > 
-> > > > > > Data is much easier than metadata.  All you really need is to wait on
-> > > > > > writeback in file_write, wait on writeback in page_mkwrite, and make
-> > > > > > sure you don't free blocks back to the allocator that are actively under
-> > > > > > IO.
-> > > > > > 
-> > > > > > I expect the hard part to be jbd and metadata in ext34.
-> > > > >   But JBD already has to do data copy if a buffer is going to be modified
-> > > > > before/while it is written to the journal. So we should alredy do all that
-> > > > > is needed for metadata. I don't say there aren't any bugs as they could be
-> > > > > triggered only by crashing at the wrong moment and observing fs corruption.
-> > > > > But most of the work should be there...
-> > > > 
-> > > > Most of it is there, but there are always little bits and pieces.  The
-> > > > ext4 journal csumming code was one semi-recent example where we found
-> > > > metadata changing in flight.
-> > > > 
-> > > > A big part of testing this is getting some way to detect the bugs
-> > > > without dif/dix.  With btrfs I have patches to do set_memory_ro on
-> > > > pages once I've don the crc, hopefully we can generalize that idea or
-> > > > some up with something smarter.
-> > > 
-> > > Right now I'm faking it with modprobe scsi_debug ato=1 guard=1 dif=3 dix=199.
-> > > 
-> > > Hm, would you mind sharing those patches?  I've been working on a second patch
-> > > to do the wait-on-writeback per everyone's suggestions, but I still see the
-> > > occasional corruption error as soon as I enable the mmap write case and covet
-> > > some more debugging tools.  It does seem to be working for the pure pwrite()
-> > > case. :)
-> > 
-> > Here's an ext4 version of the debugging patch.  It's a few years old but
-> > it'll give you the idea.  This only covers metadata pages.
-> > 
-> > Looks like I hacked the btrfs version up and didn't keep the original,
-> > I'll have to rework it, I was trying to use it for the big corruption I
-> > fixed recently and made a bunch of changes.
-> > 
-> > For data if mmap is giving you trouble you need to wait on writeback in
-> > page_mkwrite, with the page locked.  fs/btrfs/inode.c has our
-> > page_mkwrite, which uses wait_on_page_writeback() and also the btrfs
-> > ordered write code.  But for the other filesystems, waiting on writeback
-> > should be enough.
-> 
-> Ok, here's what I have so far.  I took everyone's suggestions of where to add
-> calls to wait_on_page_writeback, which seems to handle the multiple-write case
-> adequately.  Unfortunately, it is still possible to generate checksum errors by
-> scribbling furiously on a mmap'd region, even after adding the writeback wait
-> in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
-> removing its wait_for_page_writeback call, so I suspect there's a bit more
-> going on in btrfs than I've been able to figure out.
-> 
-> The set_memory_ro debugging trick didn't ferret out any write paths that I
-> didn't catch... though it did have the effect of causing occasional fsync()
-> deadlocks.  I suppose I could sprinkle in a few more of those write calls to
-> see what happens.
-> 
-> Either way, I'm emailing to ask everyone's advice since I've run out of ideas.
-> Or: Did I miss something?
-> 
-> Thanks all for the feedback so far!
-> 
-> --
-> fs: Wait for page writeback when rewrite detected
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> ---
-> 
->  fs/buffer.c     |    4 +++-
->  fs/ext4/inode.c |    3 +++
->  mm/filemap.c    |   15 +++++++++++++--
->  3 files changed, 19 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 2219a76..39e934c 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -2379,8 +2379,10 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
->  			ret = VM_FAULT_OOM;
->  		else /* -ENOSPC, -EIO, etc */
->  			ret = VM_FAULT_SIGBUS;
-> -	} else
-> +	} else {
-> +		wait_on_page_writeback(page);
->  		ret = VM_FAULT_LOCKED;
-> +	}
+page-types.c doesn't supply a way to specify the debugfs path and
+the original debugfs path is not usual on most machines. This patch
+supplies a way to auto mount debugfs if needed.
 
-I think this needs to wait before the __block_write_begin() call,
-not after it. i.e. wait before the page is mapped, not afterwards.
+This patch is heavily inspired by tools/perf/utils/debugfs.c
 
-....
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 83a45d3..f201d80 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2217,8 +2217,8 @@ EXPORT_SYMBOL(generic_file_direct_write);
->   * Find or create a page at the given pagecache position. Return the locked
->   * page. This function is specifically for buffered writes.
->   */
-> -struct page *grab_cache_page_write_begin(struct address_space *mapping,
-> -					pgoff_t index, unsigned flags)
-> +struct page *__grab_cache_page_write_begin(struct address_space *mapping,
-> +					   pgoff_t index, unsigned flags)
->  {
->  	int status;
->  	struct page *page;
-> @@ -2243,6 +2243,17 @@ repeat:
->  	}
->  	return page;
->  }
-> +struct page *grab_cache_page_write_begin(struct address_space *mapping,
-> +					pgoff_t index, unsigned flags)
-> +{
-> +	struct page *p;
-> +
-> +	p = __grab_cache_page_write_begin(mapping, index, flags);
-> +	if (p)
-> +		wait_on_page_writeback(p);
-> +
-> +	return p;
-> +}
->  EXPORT_SYMBOL(grab_cache_page_write_begin);
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+---
+  Documentation/vm/page-types.c |  105 
++++++++++++++++++++++++++++++++++++++++--
+  1 files changed, 101 insertions(+), 4 deletions(-)
 
-Not much point in add in a wrapper when nothing else calls
-__grab_cache_page_write_begin(), which should also be static....
+diff --git a/Documentation/vm/page-types.c b/Documentation/vm/page-types.c
+index cc96ee2..303b4ed 100644
+--- a/Documentation/vm/page-types.c
++++ b/Documentation/vm/page-types.c
+@@ -32,8 +32,20 @@
+  #include <sys/types.h>
+  #include <sys/errno.h>
+  #include <sys/fcntl.h>
++#include <sys/mount.h>
++#include <sys/statfs.h>
++#include "../../include/linux/magic.h"
 
-Cheers,
 
-Dave.
++#ifndef MAX_PATH
++# define MAX_PATH 256
++#endif
++
++#ifndef STR
++# define _STR(x) #x
++# define STR(x) _STR(x)
++#endif
++
+  /*
+   * pagemap kernel ABI bits
+   */
+@@ -152,6 +164,12 @@ static const char *page_flag_names[] = {
+  };
+
+
++static const char *debugfs_known_mountpoints[] = {
++	"/sys/kernel/debug",
++	"/debug",
++	0,
++};
++
+  /*
+   * data structures
+   */
+@@ -184,7 +202,7 @@ static int		kpageflags_fd;
+  static int		opt_hwpoison;
+  static int		opt_unpoison;
+
+-static const char	hwpoison_debug_fs[] = "/debug/hwpoison";
++static char		hwpoison_debug_fs[MAX_PATH+1];
+  static int		hwpoison_inject_fd;
+  static int		hwpoison_forget_fd;
+
+@@ -464,21 +482,100 @@ static uint64_t kpageflags_flags(uint64_t flags)
+  	return flags;
+  }
+
++/* verify that a mountpoint is actually a debugfs instance */
++int debugfs_valid_mountpoint(const char *debugfs)
++{
++	struct statfs st_fs;
++
++	if (statfs(debugfs, &st_fs) < 0)
++		return -ENOENT;
++	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
++		return -ENOENT;
++
++	return 0;
++}
++
++/* find the path to the mounted debugfs */
++const char *debugfs_find_mountpoint(void)
++{
++	const char **ptr;
++	char type[100];
++	FILE *fp;
++
++	ptr = debugfs_known_mountpoints;
++	while (*ptr) {
++		if (debugfs_valid_mountpoint(*ptr) == 0) {
++			strcpy(hwpoison_debug_fs, *ptr);
++			return hwpoison_debug_fs;
++		}
++		ptr++;
++	}
++
++	/* give up and parse /proc/mounts */
++	fp = fopen("/proc/mounts", "r");
++	if (fp == NULL)
++		perror("Can't open /proc/mounts for read");
++
++	while (fscanf(fp, "%*s %"
++		      STR(MAX_PATH)
++		      "s %99s %*s %*d %*d\n",
++		      hwpoison_debug_fs, type) == 2) {
++		if (strcmp(type, "debugfs") == 0)
++			break;
++	}
++	fclose(fp);
++
++	if (strcmp(type, "debugfs") != 0)
++		return NULL;
++
++	return hwpoison_debug_fs;
++}
++
++/* mount the debugfs somewhere if it's not mounted */
++
++void debugfs_mount()
++{
++	const char **ptr;
++
++	/* see if it's already mounted */
++	if (debugfs_find_mountpoint())
++		return;
++
++	ptr = debugfs_known_mountpoints;
++	while (*ptr) {
++		if (mount(NULL, *ptr, "debugfs", 0, NULL) == 0) {
++			/* save the mountpoint */
++			strcpy(hwpoison_debug_fs, *ptr);
++			break;
++		}
++		ptr++;
++	}
++
++	if (*ptr == NULL) {
++		perror("mount debugfs");
++		exit(EXIT_FAILURE);
++	}
++}
++
+  /*
+   * page actions
+   */
+
+  static void prepare_hwpoison_fd(void)
+  {
+-	char buf[100];
++	char buf[MAX_PATH + 1];
++
++	debugfs_mount();
+
+  	if (opt_hwpoison && !hwpoison_inject_fd) {
+-		sprintf(buf, "%s/corrupt-pfn", hwpoison_debug_fs);
++		snprintf(buf, MAX_PATH, "%s/hwpoison/corrupt-pfn",
++			hwpoison_debug_fs);
+  		hwpoison_inject_fd = checked_open(buf, O_WRONLY);
+  	}
+
+  	if (opt_unpoison && !hwpoison_forget_fd) {
+-		sprintf(buf, "%s/unpoison-pfn", hwpoison_debug_fs);
++		snprintf(buf, MAX_PATH, "%s/hwpoison/unpoison-pfn",
++			hwpoison_debug_fs);
+  		hwpoison_forget_fd = checked_open(buf, O_WRONLY);
+  	}
+  }
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.3.1.120.g38a18
+
+
