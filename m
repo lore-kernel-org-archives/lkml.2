@@ -1,42 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab1CHVQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 16:16:55 -0500
-Received: from www.tglx.de ([62.245.132.106]:58898 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755260Ab1CHVQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 16:16:53 -0500
-Date: Tue, 8 Mar 2011 22:16:27 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Micha Nelissen <micha@neli.hopto.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH] Add support for multiple MSI on x86
-In-Reply-To: <35bd5f56-658b-48e3-a376-b07350a29cf6@email.android.com>
-Message-ID: <alpine.LFD.2.00.1103082215300.2787@localhost6.localdomain6>
-References: <4D583E31.4070507@neli.hopto.org> <20110304103634.4641ae36@jbarnes-desktop> <4D714357.3010807@neli.hopto.org> <alpine.LFD.2.00.1103082143460.2787@localhost6.localdomain6> <35bd5f56-658b-48e3-a376-b07350a29cf6@email.android.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932105Ab1CHVVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 16:21:48 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:9618 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab1CHVVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 16:21:45 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=X386cJkJmCuWxbwOrDeNrUURCv8zDCwmi5h06vbqKh59xvx1kK3ckgC+dSN+YgiET
+	ZNW18qq+7H4IRr2NCRhSg==
+From: Justin TerAvest <teravest@google.com>
+To: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, ryov@valinux.co.jp, taka@valinux.co.jp,
+        kamezawa.hiroyu@jp.fujitsu.com, righi.andrea@gmail.com,
+        guijianfeng@cn.fujitsu.com, balbir@linux.vnet.ibm.com,
+        ctalbott@google.com, nauman@google.com, mrubin@google.com,
+        Justin TerAvest <teravest@google.com>
+Subject: [PATCH 4/6] With per-cgroup async, don't special case queues.
+Date: Tue,  8 Mar 2011 13:20:54 -0800
+Message-Id: <1299619256-12661-5-git-send-email-teravest@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1299619256-12661-1-git-send-email-teravest@google.com>
+References: <1299619256-12661-1-git-send-email-teravest@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Mar 2011, H. Peter Anvin wrote:
+This reverts effectively reverts commit f26bd1f0a3a31bc5e16d285f5e1b00a56abf6238
+"blkio: Determine async workload length based on total number of queues"
+in the case when async IO tracking is enabled.
 
-> Yes, but there are MSI devices in the field...
+That commit was used to work around the fact that async
+queues were part of root cgroup. That is no longer the case when we have
+async write tracking enabed.
 
-And the point is?
+Signed-off-by: Justin TerAvest <teravest@google.com>
+---
+ block/cfq-iosched.c |   90 +++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 56 insertions(+), 34 deletions(-)
 
-> -- 
-> Sent from my mobile phone. Please pardon any lack of formatting.
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 75902b1..ef01dd8 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -442,13 +442,6 @@ static inline int cfq_group_busy_queues_wl(enum wl_prio_t wl,
+ 		+ cfqg->service_trees[wl][SYNC_WORKLOAD].count;
+ }
+ 
+-static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
+-					struct cfq_group *cfqg)
+-{
+-	return cfqg->service_trees[RT_WORKLOAD][ASYNC_WORKLOAD].count
+-		+ cfqg->service_trees[BE_WORKLOAD][ASYNC_WORKLOAD].count;
+-}
+-
+ static void cfq_dispatch_insert(struct request_queue *, struct request *);
+ static struct cfq_queue *cfq_get_queue(struct cfq_data *, struct bio*, bool,
+ 				       struct io_context *, gfp_t);
+@@ -1011,27 +1004,50 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+ 	return slice_used;
+ }
+ 
+-static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+-				struct cfq_queue *cfqq)
++#ifndef CONFIG_CGROUP_BLKIOTRACK
++static inline int cfqg_busy_async_queues(struct cfq_group *cfqg)
+ {
+-	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+-	unsigned int used_sl, charge;
+-	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
++	return cfqg->service_trees[RT_WORKLOAD][ASYNC_WORKLOAD].count
++		+ cfqg->service_trees[BE_WORKLOAD][ASYNC_WORKLOAD].count;
++}
++#endif
++
++static void cfq_charge_slice(struct cfq_rb_root *st, struct cfq_group *cfqg,
++				struct cfq_queue *cfqq, unsigned int used_sl)
++{
++	struct cfq_data *cfqd = cfqq->cfqd;
++	unsigned int charge = used_sl;
++#ifndef CONFIG_CGROUP_BLKIOTRACK
++	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqg)
+ 			- cfqg->service_tree_idle.count;
+ 
+ 	BUG_ON(nr_sync < 0);
+-	used_sl = charge = cfq_cfqq_slice_usage(cfqq);
+ 
+ 	if (iops_mode(cfqd))
+ 		charge = cfqq->slice_dispatch;
+ 	else if (!cfq_cfqq_sync(cfqq) && !nr_sync)
+ 		charge = cfqq->allocated_slice;
++#endif
+ 
+ 	/* Can't update vdisktime while group is on service tree */
+ 	cfq_group_service_tree_del(st, cfqg);
+ 	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
+ 	/* If a new weight was requested, update now, off tree */
++	cfq_update_group_weight(cfqg);
+ 	cfq_group_service_tree_add(st, cfqg);
++	cfq_log_cfqq(cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
++			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
++			iops_mode(cfqd), cfqq->nr_sectors);
++}
++
++static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
++				struct cfq_queue *cfqq)
++{
++	struct cfq_rb_root *st = &cfqd->grp_service_tree;
++	unsigned int used_sl;
++
++	used_sl = cfq_cfqq_slice_usage(cfqq);
++	cfq_charge_slice(st, cfqg, cfqq, used_sl);
+ 
+ 	/* This group is being expired. Save the context */
+ 	if (time_after(cfqd->workload_expires, jiffies)) {
+@@ -1044,9 +1060,6 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+ 
+ 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+ 					st->min_vdisktime);
+-	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
+-			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
+-			iops_mode(cfqd), cfqq->nr_sectors);
+ 	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+ 	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
+ }
+@@ -2198,6 +2211,30 @@ static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
+ 	return cur_best;
+ }
+ 
++static unsigned cfq_async_slice(struct cfq_data *cfqd, struct cfq_group *cfqg,
++				unsigned slice)
++{
++#ifndef CONFIG_CGROUP_BLKIOTRACK
++	unsigned tmp;
++	/*
++	 * Async queues are currently system wide. Just taking
++	 * proportion of queues with-in same group will lead to higher
++	 * async ratio system wide as generally root group is going
++	 * to have higher weight. A more accurate thing would be to
++	 * calculate system wide asnc/sync ratio.
++	 */
++	tmp = cfq_target_latency * cfqg_busy_async_queues(cfqg);
++	tmp = tmp/cfqd->busy_queues;
++	slice = min_t(unsigned, slice, tmp);
++#endif
++	/*
++	 * async workload slice is scaled down according to
++	 * the sync/async slice ratio.
++	 */
++	slice = slice * cfqd->cfq_slice[0] / cfqd->cfq_slice[1];
++	return slice;
++}
++
+ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ {
+ 	unsigned slice;
+@@ -2252,24 +2289,9 @@ new_workload:
+ 		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
+ 		      cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+ 
+-	if (cfqd->serving_type == ASYNC_WORKLOAD) {
+-		unsigned int tmp;
+-
+-		/*
+-		 * Async queues are currently system wide. Just taking
+-		 * proportion of queues with-in same group will lead to higher
+-		 * async ratio system wide as generally root group is going
+-		 * to have higher weight. A more accurate thing would be to
+-		 * calculate system wide asnc/sync ratio.
+-		 */
+-		tmp = cfq_target_latency * cfqg_busy_async_queues(cfqd, cfqg);
+-		tmp = tmp/cfqd->busy_queues;
+-		slice = min_t(unsigned, slice, tmp);
+-
+-		/* async workload slice is scaled down according to
+-		 * the sync/async slice ratio. */
+-		slice = slice * cfqd->cfq_slice[0] / cfqd->cfq_slice[1];
+-	} else
++	if (cfqd->serving_type == ASYNC_WORKLOAD)
++		slice = cfq_async_slice(cfqd, cfqg, slice);
++	else
+ 		/* sync workload slice is at least 2 * cfq_slice_idle */
+ 		slice = max(slice, 2 * cfqd->cfq_slice_idle);
+ 
+-- 
+1.7.3.1
 
-That does not make an excuse for lack of content and context :)
-
-Thanks,
-
-	tglx
