@@ -1,63 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab1CHRpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 12:45:10 -0500
+	id S1756122Ab1CHRpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 12:45:14 -0500
 Received: from sj-iport-4.cisco.com ([171.68.10.86]:50863 "EHLO
 	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab1CHRpJ (ORCPT
+	with ESMTP id S1755904Ab1CHRpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 12:45:09 -0500
+	Tue, 8 Mar 2011 12:45:10 -0500
 X-IronPort-AV: E=Sophos;i="4.62,285,1297036800"; 
-   d="scan'208";a="272624650"
+   d="scan'208";a="272624664"
 From: David Ahern <daahern@cisco.com>
 To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
         fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
         David Ahern <daahern@cisco.com>
-Subject: [PATCH 0/5 v3] perf script: add support for dumping events other than trace
-Date: Tue,  8 Mar 2011 10:45:37 -0700
-Message-Id: <1299606342-26745-1-git-send-email-daahern@cisco.com>
+Subject: [PATCH 1/5] perf script: change process_event prototype
+Date: Tue,  8 Mar 2011 10:45:38 -0700
+Message-Id: <1299606342-26745-2-git-send-email-daahern@cisco.com>
 X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1299606342-26745-1-git-send-email-daahern@cisco.com>
+References: <1299606342-26745-1-git-send-email-daahern@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2 -> v3:
-- removed show-unresolved option
-- setup different output defaults based on event type
-- moved printing of comm, pid/tid, time and event name from print_event to
-  builtin-script and renamed print_event to print_trace_event
-- removed unneeded cursor depth check
-- updated to latest perf-core to get Arnaldo's recent makeovers
-- created smaller, focused patches 
+Prepare for handling of samples for any event type.
 
-v1 -> v2:
-- fixed process_event handler in trace-event-perl
-- removed unneeded call to callchain_register_param
-- corrected walking of callchains in perf_session__print_symbols
-- complete rewrite for handling non-tracepoint events
+Signed-off-by: David Ahern <daahern@cisco.com>
+---
+ tools/perf/builtin-script.c                        |   25 ++++++++++++-------
+ .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++--
+ .../util/scripting-engines/trace-event-python.c    |   11 ++++++--
+ tools/perf/util/trace-event-scripting.c            |    9 +++----
+ tools/perf/util/trace-event.h                      |    7 ++++-
+ 5 files changed, 41 insertions(+), 22 deletions(-)
 
-David Ahern (5):
-  perf script: change process_event prototype
-  perf script: move printing of 'common' data from print_event and
-    rename
-  perf script: support custom field selection for output
-  perf script: add support for dumping symbols
-  perf script: add support for H/W and S/W events
-
- tools/perf/Documentation/perf-script.txt           |   22 ++
- tools/perf/builtin-script.c                        |  296 ++++++++++++++++++--
- tools/perf/util/parse-events.c                     |   22 ++
- tools/perf/util/parse-events.h                     |    1 +
- .../perf/util/scripting-engines/trace-event-perl.c |   11 +-
- .../util/scripting-engines/trace-event-python.c    |   11 +-
- tools/perf/util/session.c                          |   61 ++++
- tools/perf/util/session.h                          |    4 +
- tools/perf/util/trace-event-parse.c                |  106 +-------
- tools/perf/util/trace-event-scripting.c            |    9 +-
- tools/perf/util/trace-event.h                      |   10 +-
- 11 files changed, 416 insertions(+), 137 deletions(-)
-
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 5f40df6..b2bdd55 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -20,6 +20,20 @@ static u64			last_timestamp;
+ static u64			nr_unordered;
+ extern const struct option	record_options[];
+ 
++static void process_event(union perf_event *event __unused,
++			  struct perf_sample *sample,
++			  struct perf_session *session __unused,
++			  struct thread *thread)
++{
++	/*
++	 * FIXME: better resolve from pid from the struct trace_entry
++	 * field, although it should be the same than this perf
++	 * event pid
++	 */
++	print_event(sample->cpu, sample->raw_data, sample->raw_size,
++		    sample->time, thread->comm);
++}
++
+ static int default_start_script(const char *script __unused,
+ 				int argc __unused,
+ 				const char **argv __unused)
+@@ -40,7 +54,7 @@ static int default_generate_script(const char *outfile __unused)
+ static struct scripting_ops default_scripting_ops = {
+ 	.start_script		= default_start_script,
+ 	.stop_script		= default_stop_script,
+-	.process_event		= print_event,
++	.process_event		= process_event,
+ 	.generate_script	= default_generate_script,
+ };
+ 
+@@ -86,14 +100,7 @@ static int process_sample_event(union perf_event *event,
+ 			last_timestamp = sample->time;
+ 			return 0;
+ 		}
+-		/*
+-		 * FIXME: better resolve from pid from the struct trace_entry
+-		 * field, although it should be the same than this perf
+-		 * event pid
+-		 */
+-		scripting_ops->process_event(sample->cpu, sample->raw_data,
+-					     sample->raw_size,
+-					     sample->time, thread->comm);
++		scripting_ops->process_event(event, sample, session, thread);
+ 	}
+ 
+ 	session->hists.stats.total_period += sample->period;
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 9368081..6214272 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -245,9 +245,10 @@ static inline struct event *find_cache_event(int type)
+ 	return event;
+ }
+ 
+-static void perl_process_event(int cpu, void *data,
+-			       int size __unused,
+-			       unsigned long long nsecs, char *comm)
++static void perl_process_event(union perf_event *pevent __unused,
++			       struct perf_sample *sample,
++			       struct perf_session *session __unused,
++			       struct thread *thread)
+ {
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -256,6 +257,10 @@ static void perl_process_event(int cpu, void *data,
+ 	struct event *event;
+ 	int type;
+ 	int pid;
++	int cpu = sample->cpu;
++	void *data = sample->raw_data;
++	unsigned long long nsecs = sample->time;
++	char *comm = thread->comm;
+ 
+ 	dSP;
+ 
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 2040b85..1b85d60 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -204,9 +204,10 @@ static inline struct event *find_cache_event(int type)
+ 	return event;
+ }
+ 
+-static void python_process_event(int cpu, void *data,
+-				 int size __unused,
+-				 unsigned long long nsecs, char *comm)
++static void python_process_event(union perf_event *pevent __unused,
++				 struct perf_sample *sample,
++				 struct perf_session *session __unused,
++				 struct thread *thread)
+ {
+ 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+@@ -217,6 +218,10 @@ static void python_process_event(int cpu, void *data,
+ 	unsigned n = 0;
+ 	int type;
+ 	int pid;
++	int cpu = sample->cpu;
++	void *data = sample->raw_data;
++	unsigned long long nsecs = sample->time;
++	char *comm = thread->comm;
+ 
+ 	t = PyTuple_New(MAX_FIELDS);
+ 	if (!t)
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index f7af2fc..66f4b78 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -36,11 +36,10 @@ static int stop_script_unsupported(void)
+ 	return 0;
+ }
+ 
+-static void process_event_unsupported(int cpu __unused,
+-				      void *data __unused,
+-				      int size __unused,
+-				      unsigned long long nsecs __unused,
+-				      char *comm __unused)
++static void process_event_unsupported(union perf_event *event __unused,
++				      struct perf_sample *sample __unused,
++				      struct perf_session *session __unused,
++				      struct thread *thread __unused)
+ {
+ }
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index b5f12ca..5f7b513 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -3,6 +3,7 @@
+ 
+ #include <stdbool.h>
+ #include "parse-events.h"
++#include "session.h"
+ 
+ #define __unused __attribute__((unused))
+ 
+@@ -278,8 +279,10 @@ struct scripting_ops {
+ 	const char *name;
+ 	int (*start_script) (const char *script, int argc, const char **argv);
+ 	int (*stop_script) (void);
+-	void (*process_event) (int cpu, void *data, int size,
+-			       unsigned long long nsecs, char *comm);
++	void (*process_event) (union perf_event *event,
++			       struct perf_sample *sample,
++			       struct perf_session *session,
++			       struct thread *thread);
+ 	int (*generate_script) (const char *outfile);
+ };
+ 
 -- 
 1.7.4
 
