@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1CHPEL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:04:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab1CHPEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:04:07 -0500
-Date: Tue, 8 Mar 2011 10:03:57 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Justin TerAvest <teravest@google.com>,
-        "ctalbott@google.com" <ctalbott@google.com>,
-        "guijianfeng@cn.fujitsu.com" <guijianfeng@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-cgroup: Lower minimum weight from 100 to 10.
-Message-ID: <20110308150357.GE27455@redhat.com>
-References: <1299538394-9669-1-git-send-email-teravest@google.com>
- <4D763F07.1070103@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D763F07.1070103@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755237Ab1CHPHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:07:10 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48378 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754469Ab1CHPHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 10:07:05 -0500
+From: Jamie Iles <jamie@jamieiles.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Jamie Iles <jamie@jamieiles.com>
+Subject: [PATCHv6 0/5] ARM: add initial support for Picochip picoXcell SoC
+Date: Tue,  8 Mar 2011 15:06:52 +0000
+Message-Id: <1299596817-19879-1-git-send-email-jamie@jamieiles.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 03:36:55PM +0100, Jens Axboe wrote:
-> On 2011-03-07 23:53, Justin TerAvest wrote:
-> > We've found that we still get good, useful isolation at weights this
-> > low. I'd like to adjust the minimum so that any other changes can take
-> > these values into account.
-> 
-> Justin, this looks fine to me if Vivek agrees. You did not sign-off on
-> the patch though, so I can't apply it yet. Please re-send with the ack
-> from Vivek added and your signed-off-by as well.
+Hi,
 
-The primary reason I am fine with wider weight range because there are
-many situations where we just don't get effective 10 times service
-differentiation for various reasons like workload don't seem to be
-active at the service tree at the same time or if we decide to swith
-off idling on faster storage etc.
+I've respun this patch series to move the DEBUG_LL 32-bit helpers into
+debug-macro.S like mach-davinci does and include the basic clk stuff so
+that we can build with drivers that want CLK support.
 
-So because of this leaky nature of service differentiation, it might help to
-have a wider range of allowed weights.
+This patch series takes us to a login console over serial on both PC3X2
+and PC3X3 devices on the PC7302 board booted with NOR flash.  I plan on
+adding support for the next generation of soc, PM, cpufreq etc at a
+later date once these patches are merged but figured it would be good to
+start with a nice stable base.
 
-Thanks
-Vivek
+Any feedback would be very much appreciated!
+
+Thanks,
+
+Jamie Iles (5):
+
+  picoxcell: support for Picochip picoXcell SoC
+  picoxcell: support for the common system timers
+  picoxcell: common SoC peripheral support
+  picoxcell: basic clk infrastructure
+  picoxcell: support for the PC7302 development board
+
+ arch/arm/Kconfig                                   |   14 ++
+ arch/arm/Makefile                                  |    1 +
+ arch/arm/mach-picoxcell/Kconfig                    |   13 ++
+ arch/arm/mach-picoxcell/Makefile                   |    5 +
+ arch/arm/mach-picoxcell/Makefile.boot              |    3 +
+ arch/arm/mach-picoxcell/axi2cfg.c                  |   36 ++++
+ arch/arm/mach-picoxcell/board_pc7302.c             |  109 ++++++++++
+ arch/arm/mach-picoxcell/clk.c                      |   83 ++++++++
+ arch/arm/mach-picoxcell/devices.c                  |  122 +++++++++++
+ arch/arm/mach-picoxcell/include/mach/clkdev.h      |   70 ++++++
+ arch/arm/mach-picoxcell/include/mach/debug-macro.S |   39 ++++
+ arch/arm/mach-picoxcell/include/mach/entry-macro.S |   19 ++
+ arch/arm/mach-picoxcell/include/mach/hardware.h    |   29 +++
+ arch/arm/mach-picoxcell/include/mach/io.h          |   38 ++++
+ arch/arm/mach-picoxcell/include/mach/irqs.h        |   89 ++++++++
+ arch/arm/mach-picoxcell/include/mach/memory.h      |   27 +++
+ .../include/mach/picoxcell/axi2cfg.h               |  122 +++++++++++
+ .../mach-picoxcell/include/mach/picoxcell/gpio.h   |   48 +++++
+ .../include/mach/picoxcell/picoxcell.h             |   62 ++++++
+ .../mach-picoxcell/include/mach/picoxcell/timer.h  |   37 ++++
+ .../mach-picoxcell/include/mach/picoxcell/wdog.h   |   43 ++++
+ arch/arm/mach-picoxcell/include/mach/platform.h    |   27 +++
+ arch/arm/mach-picoxcell/include/mach/system.h      |   51 +++++
+ arch/arm/mach-picoxcell/include/mach/timex.h       |   26 +++
+ arch/arm/mach-picoxcell/include/mach/uncompress.h  |   60 ++++++
+ arch/arm/mach-picoxcell/include/mach/vmalloc.h     |   18 ++
+ arch/arm/mach-picoxcell/io.c                       |   49 +++++
+ arch/arm/mach-picoxcell/picoxcell_core.c           |  107 ++++++++++
+ arch/arm/mach-picoxcell/picoxcell_core.h           |   25 +++
+ arch/arm/mach-picoxcell/soc.h                      |   32 +++
+ arch/arm/mach-picoxcell/time.c                     |  222 ++++++++++++++++++++
+ 31 files changed, 1626 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-picoxcell/Kconfig
+ create mode 100644 arch/arm/mach-picoxcell/Makefile
+ create mode 100644 arch/arm/mach-picoxcell/Makefile.boot
+ create mode 100644 arch/arm/mach-picoxcell/axi2cfg.c
+ create mode 100644 arch/arm/mach-picoxcell/board_pc7302.c
+ create mode 100644 arch/arm/mach-picoxcell/clk.c
+ create mode 100644 arch/arm/mach-picoxcell/devices.c
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/clkdev.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/debug-macro.S
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/entry-macro.S
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/hardware.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/io.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/irqs.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/memory.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/picoxcell/axi2cfg.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/picoxcell/gpio.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/picoxcell/picoxcell.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/picoxcell/timer.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/picoxcell/wdog.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/platform.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/system.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/timex.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/uncompress.h
+ create mode 100644 arch/arm/mach-picoxcell/include/mach/vmalloc.h
+ create mode 100644 arch/arm/mach-picoxcell/io.c
+ create mode 100644 arch/arm/mach-picoxcell/picoxcell_core.c
+ create mode 100644 arch/arm/mach-picoxcell/picoxcell_core.h
+ create mode 100644 arch/arm/mach-picoxcell/soc.h
+ create mode 100644 arch/arm/mach-picoxcell/time.c
+
+-- 
+1.7.4
+
