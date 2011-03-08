@@ -1,124 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1CHOvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 09:51:07 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:54390 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1CHOvB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 09:51:01 -0500
-X-IronPort-AV: E=Sophos;i="4.62,284,1297036800"; 
-   d="scan'208";a="4674820"
-Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
- register_slot
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110304104251.45b257c4@jbarnes-desktop>
-References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>
-	 <20110304104251.45b257c4@jbarnes-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Tue, 8 Mar 2011 14:50:58 +0000
-Message-ID: <1299595858.17339.512.camel@zakaz.uk.xensource.com>
+	id S1755278Ab1CHOvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 09:51:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755145Ab1CHOvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 09:51:46 -0500
+Date: Tue, 8 Mar 2011 09:51:21 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: lina <lulina_nuaa@foxmail.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: blk-throttle.c : When limit is changed, must start a new slice
+Message-ID: <20110308145121.GD27455@redhat.com>
+References: <tencent_5B2F59AF17F4410D6A9CFA34@qq.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tencent_5B2F59AF17F4410D6A9CFA34@qq.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 18:42 +0000, Jesse Barnes wrote:
-> On Mon, 28 Feb 2011 16:20:11 +0000
-> Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> 
-> > Hi all,
-> > if a device doesn't support power management (pm_cap == 0) but it is
-> > acpi_pci_power_manageable() because there is a _PS0 method declared for
-> > it and _EJ0 is also declared for the slot then nobody is going to set
-> > current_state = PCI_D0 for this device.  This is what I think it is
-> > happening:
-> > 
-> > 
-> > pci_enable_device
-> >     |
-> > __pci_enable_device_flags
-> > /* here we do not set current_state because !pm_cap */
-> >     |
-> > do_pci_enable_device
-> >     |
-> > pci_set_power_state
-> >     |
-> > __pci_start_power_transition
-> >     |
-> > pci_platform_power_transition
-> > /* platform_pci_power_manageable() calls acpi_pci_power_manageable that
-> >  * returns true */
-> >     |
-> > platform_pci_set_power_state
-> > /* acpi_pci_set_power_state gets called and does nothing because the
-> >  * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
-> >  * ignore the device" */
-> > 
-> > 
-> > at this point if we refer to the commit message that introduced the
-> > comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
-> > the hotplug driver to set the state to D0.
-> > However AFAICT the pci hotplug driver never does, in fact
-> > drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
-> > (SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
-> > current state to PCI_D0.
-> > 
-> > So my proposed fix is also to set current_state = PCI_D0 in
-> > register_slot.
-> > Comments are very welcome.
-> > 
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> Yeah, looks fine.  ACPIPHP is happy for the attention. :)
+On Tue, Mar 08, 2011 at 10:33:47PM +0800, lina wrote:
+> >On Mon, Mar 07, 2011 at 11:05:49PM +0800, lina wrote:
+> >> >On Sat, Mar 05, 2011 at 12:30:55AM +0800, lina wrote:
+> >> >> Hi Vivek,    
+> >> >>      Take you a litter time to read this letter, I think there seens  to 
+> >> >>  be a small bug in blk-throttle.c.
+> >> >>      This might happen that initially cgroup limit was greater than the 
+> >> >>  device's physic ability, but later limit was under physic ability. In this
+> >> >>  case, all of the bio in the device was throttled for serveral minutes. 
+> >> >>   
+> >> >>      I did some analysis as the following:
+> >> >>      First, setting a very large bps on device lead all of the bio go
+> >> >>  through. The slice is begin when test begin, and only extend but 
+> >> >>  can not start new one. 
+> >> >>      Second, change the limit under physic ability to make one bio 
+> >> >>  queued. Once one bio queued, blk_throtl_bio func will call 
+> >> >>  tg_update_disptime to estimate the delay time for the throtl_work.
+> >> >>      As the slice is very old, there is a very large value in 
+> >> >>  tg->bytes_disp[rw], and the tg->disptime is a long time after jiffies. 
+> >> >>  During this time, all of the bio is queued. And the work_queue can 
+> >> >>  not start, so tg->slice_start[rw] still can not be reset.
+> >> >>   
+> >> >>      Although after serveral minutes everything will be ok, but it still
+> >> >>  seens no-good for users.
+> >> >>      
+> >> >>      I think it should start a new slice when the limit is changed. 
+> >> >>      Here is my patch, please conrrect it if there is something wrong
+> >> >>  follow.
+> >>  >
+> >> >
+> >> >CCing to lkml. Lets keep all the testing and bug reports regarding
+> >> >blkio throttling on mailing list.
+> >> >
+> >> >thanks for the bug report lina. I think this is a bug. I am not too keen
+> >> >on restarting slice all the time upon limit change as somebody can exploit
+> >> >that to get higher BW by doing it frequently. Can you try attached patch
+> >> >and see if it solves your problem.
+> >> 
+> >>  Thank you for this patch, it can solve the problem. But there still has 5~10
+> >>  seconds 0 bps in the test. I think this is because we first tirm the end of
+> >>  slice, then new one, there is some latency. Do you have any idea to let the 
+> >>  limit change work immediately or make less latency(maybe 1 or 2 seconds
+> >>   
+> >
+> >Ok, if you are concerned about those few seconds, can you please try
+> >following patch. I think starting a new slice is better when processing
+> >limit change instead of in blk_throtl_bio().
+> >
+>   
+>  Yes. It's better starting a new slice in processing limit change function. I
+>  have test starting a new slice in blk_throtl_bio(), if I change the limit very
+>  quickly, the bps go out of my control.
 
-This helps for coldplug of devices which lack the PCI CFG space power
-management capability but doesn't help with hotplugging such devices.
+I thought about changing limits too quickly. Is this a problem? In many
+setups a non-priviliged user will not be able to write to limit files so
+he can not exploit it. root should not anyway do that. To get higher
+bandwidth root can simply write to files and there is no reason to try
+to write to reset limit frequently.
 
-Is it fair to assume that any PCI device in a slot which has just been
-powered on will be in D0?
+So resetting the slice upon limit change probably is not a huge problem then.
 
-e.g. Stefano's patch plus the following seem to fix the crashes I've
-been having with 82599 VFs for both hot and cold plug.
+>   
+>  Unfortunately, the following patch still has 5~10 seconds latency. I have no
+>  idea to resolve this problem, it seens hard to find a more suitable func to
+>  call throtl_start_new_slice().
 
-Ian.
+So are you saying that following patch did not solve the latnecy issue?
+Resetting slice upon limit change did not work for you?
 
-acpiphp: set each new function to state D0 after powering on a slot.
+Thanks
+Vivek
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index e610cfe..b4befbd 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -819,9 +819,17 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 		}
- 	}
- 
--	list_for_each_entry(func, &slot->funcs, sibling)
-+	list_for_each_entry(func, &slot->funcs, sibling) {
- 		acpiphp_bus_add(func);
- 
-+		dev = pci_get_slot(bus, PCI_DEVFN(slot->device,
-+						  func->function));
-+		if (!dev)
-+			continue;
-+		dev->current_state = PCI_D0;
-+		pci_dev_put(dev);
-+	}
-+
- 	pci_bus_assign_resources(bus);
- 	acpiphp_sanitize_bus(bus);
- 	acpiphp_set_hpp_values(bus);
-
-
+> >
+> >---
+> > block/blk-throttle.c |   21 +++++++++++++++++++++
+> > 1 file changed, 21 insertions(+)
+> >
+> >Index: linux-2.6/block/blk-throttle.c
+> >===================================================================
+> >--- linux-2.6.orig/block/blk-throttle.c 2011-03-04 13:59:45.000000000 -0500
+> >+++ linux-2.6/block/blk-throttle.c 2011-03-07 10:54:30.639467538 -0500
+> >@@ -757,6 +757,14 @@ static void throtl_process_limit_change(
+> >  " riops=%u wiops=%u", tg->bps[READ],
+> >  tg->bps[WRITE], tg->iops[READ],
+> >  tg->iops[WRITE]);
+> >+ /*
+> >+ * Restart the slices for both READ and WRITES. It
+> >+ * might happen that a group's limit are dropped
+> >+ * suddenly and we don't want to account recently
+> >+ * dispatched IO with new low rate
+> >+ */
+> >+ throtl_start_new_slice(td, tg, 0);
+> >+ throtl_start_new_slice(td, tg, 1);
+> >  tg_update_disptime(td, tg);
+> >  tg->limits_changed = false;
+> >  }
+> >@@ -1023,6 +1031,19 @@ int blk_throtl_bio(struct request_queue 
+> >  /* Bio is with-in rate limit of group */
+> >  if (tg_may_dispatch(td, tg, bio, NULL)) {
+> >  throtl_charge_bio(tg, bio);
+> >+
+> >+ /*
+> >+ * We need to trim slice even when bios are not being queued
+> >+ * otherwise it might happen that a bio is not queued for
+> >+ * a long time and slice keeps on extending and trim is not
+> >+ * called for a long time. Now if limits are reduced suddenly
+> >+ * we take into account all the IO dispatched so far at new
+> >+ * low rate and * newly queued IO gets a really long dispatch
+> >+ * time.
+> >+ *
+> >+ * So keep on trimming slice even if bio is not queued.
+> >+ */
+> >+ throtl_trim_slice(td, tg, rw);
+> >  goto out;
+> >  }
+>  
+> Thanks
+>  Lina
