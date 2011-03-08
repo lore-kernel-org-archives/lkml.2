@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1CHJlB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 04:41:01 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38206 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253Ab1CHJk7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 04:40:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=E6bpJ2mD34KxatnfnnMhe/Rwma8HGNNfDIsz/tC9KAflL82mgFb0divv/DGbh4ZU8y
-         jBsKz/kLx4XVHV8g0Nfz4YtOdsQufngrQkOZF8gzkVkxeKOSa0y3EK5iGkAqQtffqOi5
-         wa5DLevpPERZfVTbzXiZTJoNKQOZR8GQpO5/A=
+	id S1753443Ab1CHJlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 04:41:20 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:47127 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753125Ab1CHJlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 04:41:15 -0500
+X-ASG-Debug-ID: 1299577273-03d6a54f6323bd0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D75F9B5.1050704@fusionio.com>
+Date: Tue, 8 Mar 2011 10:41:09 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <201103081035.24459.Martin@lichtvoll.de>
-References: <201103051510.35057.Martin@lichtvoll.de>
-	<201103062020.21959.Martin@lichtvoll.de>
-	<AANLkTinhx12_HvDq3Mp7xrkrCez90pNiSuh7KrJAmFXp@mail.gmail.com>
-	<201103081035.24459.Martin@lichtvoll.de>
-Date: Tue, 8 Mar 2011 19:40:58 +1000
-Message-ID: <AANLkTim8kRi8twRJmAZRQs6WhJin8cMMp70mBV+cpLQX@mail.gmail.com>
-Subject: Re: [regression] 2.6.37-post-rc7 with radeon kms: reproducably locks
- up hard when using desktop cube of kwin
-From: Dave Airlie <airlied@gmail.com>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Snitzer <snitzer@redhat.com>, Shaohua Li <shli@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	 <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>	 <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>	 <20110303221353.GA10366@redhat.com>	 <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com>	 <20110304214359.GA18442@redhat.com> <4D715E8A.5070006@fusionio.com>	 <20110304222702.GB18921@redhat.com>  <4D72A302.6060008@fusionio.com>	 <1299493427.2308.11.camel@twins>  <4D753556.3020800@fusionio.com>	 <1299530500.2308.417.camel@twins>  <4D754411.5010508@fusionio.com> <1299577122.2308.1201.camel@twins>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <1299577122.2308.1201.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299577273
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57395
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 7:35 PM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
-> Its rainy again in Sevilla...
->
-> Am Sunday 06 March 2011 schrieb Dave Airlie:
->> > I verified this. Lockup happens with 2.6.38, last one tested
->> > rc8-gfb62c00, but not with 2.6.37 with exactly same userspace.
->> > Needed to try the effect several times, as this time the lockup with
->> > 2.6.38 only happened shortly after the second activation of the
->> > effect.
+On 2011-03-08 10:38, Peter Zijlstra wrote:
+> On Mon, 2011-03-07 at 21:46 +0100, Jens Axboe wrote:
 >>
->> Hmm, can you attach Xorg logs from both?
->
-> Attached. I have dmesgs available as well. Both kernels are mainly
-> upstream. The 2.6.37 contains some recursive mtime patches from Jan for
-> Ext3/4 that are very likely unrelated. For 2.6.38 I am testing too
-> hibernation patches from Raphael, but the lockup also happened with a
-> plain vanilla 2.6.38 one before.
->
->> I'm guessing its either pageflipping or a later kernel allowing some
->> feature of mesa to be used.
+>> Great, that'll work for me! Your patch should work as-is, then. Thanks
+>> Peter.
+> 
+> Well I think it would be good to write it like:
+> 
+>   if (prev->state != TASK_RUNNING && blkneeds_flush(prev)) {
+>     raw_spin_unlock(&rq->lock);
+>     blk_flush_plug(prev);
+>     raw_spin_lock(&rq->lock);
+>   }
+> 
+> To avoid flipping that lock when we don't have to.
 
-Okay can you try using an xorg.conf with Option "pageflip" "false" set
-in it for the radeon.
+Yes good point, in any case the need to flush will be an unlikely event.
+So saving the lock/unlock dance for when we really need it is a good
+optimization.
 
-Dave.
+-- 
+Jens Axboe
+
