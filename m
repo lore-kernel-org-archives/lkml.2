@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab1CHVjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 16:39:47 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58611 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab1CHVjn (ORCPT
+	id S1756811Ab1CHVlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 16:41:42 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40851 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1CHVll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 16:39:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=gwIHGyqUUSDf2vC2xQCfNPvEY6j/K3HYQQugsD3q/yzocSiSD58z6SQmQbjrA8oN2D
-         +YWueqTgfV+qLKQ5X/FxGHiFGCtQuLsj5uqWsupgNL2Vw6S7SVtvRwZhMv2ZRBmZ1bdA
-         ykqVmSYB80Y0Iuqmjpld6pvgaj0rHd5rfNlgg=
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: [PATCH] x86: Fix ACPI wakeup build failure
-Date: Tue,  8 Mar 2011 22:39:24 +0100
-Message-Id: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 8 Mar 2011 16:41:41 -0500
+Date: Tue, 8 Mar 2011 16:41:31 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Andy Gospodarek <andy@greyhouse.net>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        Jay Vosburgh <fubar@us.ibm.com>, netdev@vger.kernel.org
+Subject: Re: [Patch V2] bonding: fix netpoll in active-backup mode
+Message-ID: <20110308214131.GE19669@hmsreliant.think-freely.org>
+References: <1299578336-5888-1-git-send-email-amwang@redhat.com>
+ <20110308212405.GX11864@gospo.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110308212405.GX11864@gospo.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following breakage in linux-next (next-20110308):
-  AS      arch/x86/kernel/acpi/wakeup_rm.o
-  arch/x86/kernel/acpi/wakeup_rm.S: Assembler messages:
-  arch/x86/kernel/acpi/wakeup_rm.S:12: Error: .size expression with symbol `wakeup_code_start' does not evaluate to a constant
+On Tue, Mar 08, 2011 at 04:24:05PM -0500, Andy Gospodarek wrote:
+> On Tue, Mar 08, 2011 at 05:58:56PM +0800, Amerigo Wang wrote:
+> > V2: avoid calling slave_diable_netpoll() with write_lock_bh() held.
+> > 
+> > netconsole doesn't work in active-backup mode, because we don't do anything
+> > for nic failover in active-backup mode. We should disable netpoll on the
+> > failing slave when it is detected down and enable netpoll when it becomes
+> > the active slave.
+> > 
+> > Tested by ifdown the current active slave and ifup it again for several times,
+> > netconsole works well.
+> > 
+> > Signed-off-by: WANG Cong <amwang@redhat.com>
+> > Cc: Neil Horman <nhorman@tuxdriver.com>
+> > 
+> 
+> It seems like you are going to a lot of trouble to fix a bug where
+> netpoll will not be setup on any interface that is down when enslaved.
+> That seems to be the only path that would not have slave->np setup
+> properly at enslavement.
+> 
+> Did you ever try just this?
+> 
++1, this is what I was suggesting.  Just setup netpoll on all the slaves
+regardless of status, and let their netpoll state follow that of the bond.
+Neil
 
-The issue was introduced by commit d1ee433539ea5963a8f946f3428b335d1c5fdb20:
-"x86, trampoline: Use the unified trampoline setup for ACPI wakeup"
-
-The problem was discovered while using Debian's binutils (2.21.0.20110302-1)
-and experimenting with binutils from upstream.
-
-Thanks Alexander and H.J. for the vital help.
-
-CC: Alexander van Heukelum <heukelum@fastmail.fm>
-CC: "H.J. Lu" <hjl.tools@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
-CC: linux-pm@lists.linux-foundation.org
-CC: linux-kernel@vger.kernel.org
-CC: linux-next@vger.kernel.org
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- arch/x86/kernel/acpi/wakeup_rm.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/acpi/wakeup_rm.S b/arch/x86/kernel/acpi/wakeup_rm.S
-index 6ce81ee..63b8ab5 100644
---- a/arch/x86/kernel/acpi/wakeup_rm.S
-+++ b/arch/x86/kernel/acpi/wakeup_rm.S
-@@ -9,4 +9,4 @@
- 	.globl	acpi_wakeup_code
- acpi_wakeup_code:
- 	.incbin	"arch/x86/kernel/acpi/realmode/wakeup.bin"
--	.size	wakeup_code_start, .-wakeup_code_start
-+	.size	acpi_wakeup_code, .-acpi_wakeup_code
--- 
-1.7.4.1
-
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 0592e6d..8d93044 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -1352,8 +1352,6 @@ static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
+>  
+>  	read_lock(&bond->lock);
+>  	bond_for_each_slave(bond, slave, i) {
+> -		if (!IS_UP(slave->dev))
+> -			continue;
+>  		err = slave_enable_netpoll(slave);
+>  		if (err) {
+>  			__bond_netpoll_cleanup(bond);
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
