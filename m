@@ -1,323 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab1CHMol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 07:44:41 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:46081 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab1CHMoj (ORCPT
+	id S1753315Ab1CHMpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 07:45:46 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:4996 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab1CHMpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 07:44:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=DL0LLF/V4pcZzO8gxEjgpvqeqbKi7fv4hkVO4o70XwWOIaTHGwdRzf6ma1maxPIbMY
-         hWPLxswCAvO7XE3d8tBeL+sU2l9EfauAe2zNf0+y0KcmvyS1WF0kohaGyfvDE10bzCZa
-         eje6bGdsWjDYq0Y0aOmLZl2guckDWMKUx01Zg=
+	Tue, 8 Mar 2011 07:45:45 -0500
+X-IronPort-AV: E=Sophos;i="4.62,284,1297036800"; 
+   d="scan'208";a="4671145"
+Date: Tue, 8 Mar 2011 12:45:25 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: topperxin <topperxin@126.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re:Re:Re:[Xen-devel] [PATCH v2 0/6] Xen PV on HVM fixes and
+ improvements
+In-Reply-To: <37633ce9.14869.12e95634727.Coremail.topperxin@126.com>
+Message-ID: <alpine.DEB.2.00.1103081215270.2968@kaball-desktop>
+References: <alpine.DEB.2.00.1103081115250.2968@kaball-desktop> <alpine.DEB.2.00.1103031502090.2968@kaball-desktop> <alpine.DEB.2.00.1102251651570.19277@kaball-desktop> <50e6b629.254d.12e798c9072.Coremail.topperxin@126.com> <7ef859a1.d96b.12e933f972a.Coremail.topperxin@126.com>
+ <37633ce9.14869.12e95634727.Coremail.topperxin@126.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTin2H9=NWp5G6N6_e=bxBTh2eS1dbUxOjT6xX98C@mail.gmail.com>
-References: <AANLkTin2H9=NWp5G6N6_e=bxBTh2eS1dbUxOjT6xX98C@mail.gmail.com>
-Date: Tue, 8 Mar 2011 13:44:38 +0100
-Message-ID: <AANLkTi=8Gr8Q8VXPJLZtCH_iZRuQYB=6TxgxAqddetx_@mail.gmail.com>
-Subject: Re: linux-next: Tree for March 8 (BROKEN: arch/x86/kernel/entry_32.S?
- Debian's binutils/as?)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Matthias Klose <doko@debian.org>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        debian-gcc <debian-gcc@lists.debian.org>,
-        binutils <binutils@sourceware.org>, psomas@cslab.ece.ntua.gr,
-        JBeulich@novell.com, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=20cf3036380dadcf6c049df7f90a
+Content-Type: multipart/mixed;
+	boundary="8323329-1735475764-1299586586=:2968"
+Content-ID: <alpine.DEB.2.00.1103081223310.2968@kaball-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3036380dadcf6c049df7f90a
-Content-Type: text/plain; charset=UTF-8
+--8323329-1735475764-1299586586=:2968
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1103081223311.2968@kaball-desktop>
 
-On 3/8/11, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> Hi,
->
-> my build of linux-next (next-20110308, the same with the one from
-> yesterday) is broken.
-> (I translated the German output.)
->
-> [ build.log ]
->   AS      arch/x86/kernel/entry_32.o
-> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
-> Assembler messages:
-> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
-> Error: .size expression does not evaluate to a constant
-> make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1 (Error 1)
-> make[5]: *** [arch/x86/kernel] Fehler 2 (Error 2)
-> make[4]: *** [arch/x86] Fehler 2 (Error 2)
-> make[4]: *** Warte auf noch nicht beendete Prozesse... (Waiting for
-> unfinished jobs...)
->
-> I am not sure if this is a problem of Debian's binutils snapshot from
-> binutils-2_21-branch (Debian-version: 2.21.0.20110302-1) from sid/i386
-> or this is only a problem for x86, but I just want to let you know.
->
-> FYI: The previous binutils (2.21.0.20110216-2) works fine.
->
-> I have tried with reverting the last two changes to
-> arch/x86/kernel/entry_32.S in linux-next:
->
-> "x86: Use {push,pop}_cfi in more places" (see [1])
-> "x86, asm: Cleanup unnecssary macros in asm-offsets.c" (see [2])
->
-> Reverting both or [1] or [2] breaks with Debians as (2.21.0.20110302-1).
->
-> BTW, [3] has a complete GIT history for the above file.
->
-> So, I am unsure from where the problem exactly aroses.
-> If this a known issue (and a fix around) or rings a bell to you, let
-> me and others know.
->
-> Thanks in advance.
->
-> Regards,
-> - Sedat -
->
-> [1]
-> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commit;h=60cf637a13932a4750da6746efd0199e8a4c341b
->
-> [2]
-> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commit;h=7bf04be8f48ceeeffa5b5a79734d6d6e0d59e5f8
->
-> [3]
-> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=history;f=arch/x86/kernel/entry_32.S;h=2878821cb8c1da1d7147b26271114fa9546afe03;hb=HEAD
->
+On Tue, 8 Mar 2011, topperxin wrote:
+> >you must be working on the wrong tree :)
+> 
+> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-rc6-pvhvm
+> isn't it? I get it from this address, you given in the mail.
+> cloud you please give me a right address?
+> thanks a lot.
+ 
+You probably cloned my master branch: 2.6.38-rc6-pvhvm is the name of a
+branch, if you executed:
 
-I just jumped on binutils-2_21-branch GIT and looked what changed in
-gas/ directory.
+git clone git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-rc6-pvhvm
 
-So there were two patches to consider in the time 2011-03-02 and
-2011-02-16 (chronological order, latest listed as first):
+you just cloned the "master" branch in a directory named "2.6.38-rc6-pvhvm".
 
-[1] commit a57ef8e7f3b214e0cf9ee33bb17c11f9f63bf6aa
-"* symbols.c (report_op_error): Remove unnecessary forward declaration."
+try:
 
-[2] commit 345bbf7731af2912390e72b86807eb1b2af3e27b
-"PR gas/12519"
+git remote update
+git branch -r
 
-Reverting [1] still breaks build.
-With reverting [1] and [2] I had success.
-(Unfortunately, both patches have made changes to gas/ChangeLog, so
-for isolating only [2] I had no fun and time).
+you should get a list of remote branches available, among which
+"2.6.38-rc6-pvhvm".
 
-As a conclusion:
-It looks like the "PR gas/12519" patch breaks the linux-next kernel
-(or l-n needs some modifications?).
-It's up to the experts.
+At this point you can checkout the branch 2.6.38-rc6-pvhvm with this
+command:
 
-Hope this helps to fix the problem.
-
-- Sedat -
-
-P.S.: I have added both revert-patches.
-
-[1] http://sourceware.org/git/?p=binutils.git;a=commit;h=a57ef8e7f3b214e0cf9ee33bb17c11f9f63bf6aa
-
-[2] http://sourceware.org/git/?p=binutils.git;a=commit;h=345bbf7731af2912390e72b86807eb1b2af3e27b
-
---20cf3036380dadcf6c049df7f90a
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-Revert-symbols.c-report_op_error-Remove-unnecessary-.patch"
-Content-Disposition: attachment; 
-	filename="0001-Revert-symbols.c-report_op_error-Remove-unnecessary-.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: file1
-
-RnJvbSBhOTYxNDkxZGFjZWIxN2Q0ZDA2MGUxYTUxMDI1YjFlYjllMmUzMmNmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBUdWUsIDggTWFyIDIwMTEgMTE6NTQ6MzkgKzAxMDAKU3ViamVjdDogW1BBVENIIDEvMl0g
-UmV2ZXJ0ICIJKiBzeW1ib2xzLmMgKHJlcG9ydF9vcF9lcnJvcik6IFJlbW92ZSB1bm5lY2Vzc2Fy
-eSBmb3J3YXJkIGRlY2xhcmF0aW9uLiIKClRoaXMgcmV2ZXJ0cyBjb21taXQgYTU3ZWY4ZTdmM2Iy
-MTRlMGNmOWVlMzNiYjE3YzExZjlmNjNiZjZhYS4KLS0tCiBnYXMvQ2hhbmdlTG9nIHwgICAgOCAt
-LS0tLQogZ2FzL3N5bWJvbHMuYyB8ICAgOTkgKysrKysrKysrKysrKysrKysrKysrKysrKystLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAyIGZpbGVzIGNoYW5nZWQsIDQ1IGluc2VydGlv
-bnMoKyksIDYyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2dhcy9DaGFuZ2VMb2cgYi9nYXMv
-Q2hhbmdlTG9nCmluZGV4IDQ4OGQ3YjQuLmNhYTliMWUgMTAwNjQ0Ci0tLSBhL2dhcy9DaGFuZ2VM
-b2cKKysrIGIvZ2FzL0NoYW5nZUxvZwpAQCAtMSwxMSArMSwzIEBACi0yMDExLTAyLTI4ICBBbGFu
-IE1vZHJhICA8YW1vZHJhQGdtYWlsLmNvbT4KLQotCSogc3ltYm9scy5jIChyZXBvcnRfb3BfZXJy
-b3IpOiBSZW1vdmUgdW5uZWNlc3NhcnkgZm9yd2FyZCBkZWNsYXJhdGlvbi4KLQlBZGQgIm9wIiBw
-YXJhbWV0ZXIuICBSZXBvcnQgb3BlcmF0b3IgYW5kIG9wZXJhbmQgc2VnbWVudHMgaW4gZXJyb3IK
-LQltZXNzYWdlLCBub3Qgb3BlcmFuZCBzeW1ib2xzLgotCShyZXNvbHZlX3N5bWJvbF92YWx1ZSk6
-IEFsd2F5cyBzZXQgc2VnbWVudCBmb3IgZXF1YXRlZCBzeW1ib2xzLCBub3QKLQlqdXN0IHdoZW4g
-ZmluYWxpemluZy4gIEFkanVzdCByZXBvcnRfb3BfZXJyb3IgY2FsbHMuCi0KIDIwMTEtMDItMjUg
-IEFsYW4gTW9kcmEgIDxhbW9kcmFAZ21haWwuY29tPgogCiAJUFIgZ2FzLzEyNTE5CmRpZmYgLS1n
-aXQgYS9nYXMvc3ltYm9scy5jIGIvZ2FzL3N5bWJvbHMuYwppbmRleCA5MWQwY2RiLi45YTRlMmJl
-IDEwMDY0NAotLS0gYS9nYXMvc3ltYm9scy5jCisrKyBiL2dhcy9zeW1ib2xzLmMKQEAgLTEsNyAr
-MSw3IEBACiAvKiBzeW1ib2xzLmMgLXN5bWJvbCB0YWJsZS0KICAgIENvcHlyaWdodCAxOTg3LCAx
-OTkwLCAxOTkxLCAxOTkyLCAxOTkzLCAxOTk0LCAxOTk1LCAxOTk2LCAxOTk3LCAxOTk4LAotICAg
-MTk5OSwgMjAwMCwgMjAwMSwgMjAwMiwgMjAwMywgMjAwNCwgMjAwNSwgMjAwNiwgMjAwNywgMjAw
-OCwgMjAwOSwgMjAxMCwKLSAgIDIwMTEgRnJlZSBTb2Z0d2FyZSBGb3VuZGF0aW9uLCBJbmMuCisg
-ICAxOTk5LCAyMDAwLCAyMDAxLCAyMDAyLCAyMDAzLCAyMDA0LCAyMDA1LCAyMDA2LCAyMDA3LCAy
-MDA4LCAyMDA5CisgICBGcmVlIFNvZnR3YXJlIEZvdW5kYXRpb24sIEluYy4KIAogICAgVGhpcyBm
-aWxlIGlzIHBhcnQgb2YgR0FTLCB0aGUgR05VIEFzc2VtYmxlci4KIApAQCAtNzIsNiArNzIsNyBA
-QCBzdGF0aWMgbG9uZyBkb2xsYXJfbGFiZWxfaW5zdGFuY2UgKGxvbmcpOwogc3RhdGljIGxvbmcg
-ZmJfbGFiZWxfaW5zdGFuY2UgKGxvbmcpOwogCiBzdGF0aWMgdm9pZCBwcmludF9iaW5hcnkgKEZJ
-TEUgKiwgY29uc3QgY2hhciAqLCBleHByZXNzaW9uUyAqKTsKK3N0YXRpYyB2b2lkIHJlcG9ydF9v
-cF9lcnJvciAoc3ltYm9sUyAqLCBzeW1ib2xTICosIHN5bWJvbFMgKik7CiAKIC8qIFJldHVybiBh
-IHBvaW50ZXIgdG8gYSBuZXcgc3ltYm9sLiAgRGllIGlmIHdlIGNhbid0IG1ha2UgYSBuZXcKICAg
-IHN5bWJvbC4gIEZpbGwgaW4gdGhlIHN5bWJvbCdzIHZhbHVlcy4gIEFkZCBzeW1ib2wgdG8gZW5k
-IG9mIHN5bWJvbApAQCAtOTY5LDY1ICs5NzAsNTUgQEAgdXNlX2NvbXBsZXhfcmVsb2NzX2ZvciAo
-c3ltYm9sUyAqIHN5bXApCiAjZW5kaWYKIAogc3RhdGljIHZvaWQKLXJlcG9ydF9vcF9lcnJvciAo
-c3ltYm9sUyAqc3ltcCwgc3ltYm9sUyAqbGVmdCwgb3BlcmF0b3JUIG9wLCBzeW1ib2xTICpyaWdo
-dCkKK3JlcG9ydF9vcF9lcnJvciAoc3ltYm9sUyAqc3ltcCwgc3ltYm9sUyAqbGVmdCwgc3ltYm9s
-UyAqcmlnaHQpCiB7CiAgIGNoYXIgKmZpbGU7CiAgIHVuc2lnbmVkIGludCBsaW5lOwotICBzZWdU
-IHNlZ19sZWZ0ID0gbGVmdCA/IFNfR0VUX1NFR01FTlQgKGxlZnQpIDogMDsKLSAgc2VnVCBzZWdf
-cmlnaHQgPSBTX0dFVF9TRUdNRU5UIChyaWdodCk7Ci0gIGNvbnN0IGNoYXIgKm9wbmFtZTsKLQot
-ICBzd2l0Y2ggKG9wKQotICAgIHsKLSAgICBkZWZhdWx0OgotICAgICAgYWJvcnQgKCk7Ci0gICAg
-ICByZXR1cm47Ci0KLSAgICBjYXNlIE9fdW1pbnVzOgkJb3BuYW1lID0gIi0iOyBicmVhazsKLSAg
-ICBjYXNlIE9fYml0X25vdDoJCW9wbmFtZSA9ICJ+IjsgYnJlYWs7Ci0gICAgY2FzZSBPX2xvZ2lj
-YWxfbm90OgkJb3BuYW1lID0gIiEiOyBicmVhazsKLSAgICBjYXNlIE9fbXVsdGlwbHk6CQlvcG5h
-bWUgPSAiKiI7IGJyZWFrOwotICAgIGNhc2UgT19kaXZpZGU6CQlvcG5hbWUgPSAiLyI7IGJyZWFr
-OwotICAgIGNhc2UgT19tb2R1bHVzOgkJb3BuYW1lID0gIiUiOyBicmVhazsKLSAgICBjYXNlIE9f
-bGVmdF9zaGlmdDoJCW9wbmFtZSA9ICI8PCI7IGJyZWFrOwotICAgIGNhc2UgT19yaWdodF9zaGlm
-dDoJCW9wbmFtZSA9ICI+PiI7IGJyZWFrOwotICAgIGNhc2UgT19iaXRfaW5jbHVzaXZlX29yOglv
-cG5hbWUgPSAifCI7IGJyZWFrOwotICAgIGNhc2UgT19iaXRfb3Jfbm90OgkJb3BuYW1lID0gInx+
-IjsgYnJlYWs7Ci0gICAgY2FzZSBPX2JpdF9leGNsdXNpdmVfb3I6CW9wbmFtZSA9ICJeIjsgYnJl
-YWs7Ci0gICAgY2FzZSBPX2JpdF9hbmQ6CQlvcG5hbWUgPSAiJiI7IGJyZWFrOwotICAgIGNhc2Ug
-T19hZGQ6CQkJb3BuYW1lID0gIisiOyBicmVhazsKLSAgICBjYXNlIE9fc3VidHJhY3Q6CQlvcG5h
-bWUgPSAiLSI7IGJyZWFrOwotICAgIGNhc2UgT19lcToJCQlvcG5hbWUgPSAiPT0iOyBicmVhazsK
-LSAgICBjYXNlIE9fbmU6CQkJb3BuYW1lID0gIiE9IjsgYnJlYWs7Ci0gICAgY2FzZSBPX2x0OgkJ
-CW9wbmFtZSA9ICI8IjsgYnJlYWs7Ci0gICAgY2FzZSBPX2xlOgkJCW9wbmFtZSA9ICI8PSI7IGJy
-ZWFrOwotICAgIGNhc2UgT19nZToJCQlvcG5hbWUgPSAiPj0iOyBicmVhazsKLSAgICBjYXNlIE9f
-Z3Q6CQkJb3BuYW1lID0gIj4iOyBicmVhazsKLSAgICBjYXNlIE9fbG9naWNhbF9hbmQ6CQlvcG5h
-bWUgPSAiJiYiOyBicmVhazsKLSAgICBjYXNlIE9fbG9naWNhbF9vcjoJCW9wbmFtZSA9ICJ8fCI7
-IGJyZWFrOwotICAgIH0KKyAgc2VnVCBzZWdfbGVmdCA9IFNfR0VUX1NFR01FTlQgKGxlZnQpOwor
-ICBzZWdUIHNlZ19yaWdodCA9IHJpZ2h0ID8gU19HRVRfU0VHTUVOVCAocmlnaHQpIDogMDsKIAog
-ICBpZiAoZXhwcl9zeW1ib2xfd2hlcmUgKHN5bXAsICZmaWxlLCAmbGluZSkpCiAgICAgewotICAg
-ICAgaWYgKGxlZnQpCisgICAgICBpZiAoc2VnX2xlZnQgPT0gdW5kZWZpbmVkX3NlY3Rpb24pCiAJ
-YXNfYmFkX3doZXJlIChmaWxlLCBsaW5lLAotCQkgICAgICBfKCJpbnZhbGlkIG9wZXJhbmRzICgl
-cyBhbmQgJXMgc2VjdGlvbnMpIGZvciBgJXMnIiksCi0JCSAgICAgIHNlZ19sZWZ0LT5uYW1lLCBz
-ZWdfcmlnaHQtPm5hbWUsIG9wbmFtZSk7Ci0gICAgICBlbHNlCisJCSAgICAgIF8oInVuZGVmaW5l
-ZCBzeW1ib2wgYCVzJyBpbiBvcGVyYXRpb24iKSwKKwkJICAgICAgU19HRVRfTkFNRSAobGVmdCkp
-OworICAgICAgaWYgKHNlZ19yaWdodCA9PSB1bmRlZmluZWRfc2VjdGlvbikKIAlhc19iYWRfd2hl
-cmUgKGZpbGUsIGxpbmUsCi0JCSAgICAgIF8oImludmFsaWQgb3BlcmFuZCAoJXMgc2VjdGlvbikg
-Zm9yIGAlcyciKSwKLQkJICAgICAgc2VnX3JpZ2h0LT5uYW1lLCBvcG5hbWUpOworCQkgICAgICBf
-KCJ1bmRlZmluZWQgc3ltYm9sIGAlcycgaW4gb3BlcmF0aW9uIiksCisJCSAgICAgIFNfR0VUX05B
-TUUgKHJpZ2h0KSk7CisgICAgICBpZiAoc2VnX2xlZnQgIT0gdW5kZWZpbmVkX3NlY3Rpb24KKwkg
-ICYmIHNlZ19yaWdodCAhPSB1bmRlZmluZWRfc2VjdGlvbikKKwl7CisJICBpZiAocmlnaHQpCisJ
-ICAgIGFzX2JhZF93aGVyZSAoZmlsZSwgbGluZSwKKwkJCSAgXygiaW52YWxpZCBzZWN0aW9ucyBm
-b3Igb3BlcmF0aW9uIG9uIGAlcycgYW5kIGAlcyciKSwKKwkJCSAgU19HRVRfTkFNRSAobGVmdCks
-IFNfR0VUX05BTUUgKHJpZ2h0KSk7CisJICBlbHNlCisJICAgIGFzX2JhZF93aGVyZSAoZmlsZSwg
-bGluZSwKKwkJCSAgXygiaW52YWxpZCBzZWN0aW9uIGZvciBvcGVyYXRpb24gb24gYCVzJyIpLAor
-CQkJICBTX0dFVF9OQU1FIChsZWZ0KSk7CisJfQorCiAgICAgfQogICBlbHNlCiAgICAgewotICAg
-ICAgY29uc3QgY2hhciAqc25hbWUgPSBTX0dFVF9OQU1FIChzeW1wKTsKLQotICAgICAgaWYgKGxl
-ZnQpCi0JYXNfYmFkIChfKCJpbnZhbGlkIG9wZXJhbmRzICglcyBhbmQgJXMgc2VjdGlvbnMpIGZv
-ciBgJXMnIHdoZW4gc2V0dGluZyBgJXMnIiksCi0JCXNlZ19sZWZ0LT5uYW1lLCBzZWdfcmlnaHQt
-Pm5hbWUsIG9wbmFtZSwgc25hbWUpOwotICAgICAgZWxzZQotCWFzX2JhZCAoXygiaW52YWxpZCBv
-cGVyYW5kICglcyBzZWN0aW9uKSBmb3IgYCVzJyB3aGVuIHNldHRpbmcgYCVzJyIpLAotCQlzZWdf
-cmlnaHQtPm5hbWUsIG9wbmFtZSwgc25hbWUpOworICAgICAgaWYgKHNlZ19sZWZ0ID09IHVuZGVm
-aW5lZF9zZWN0aW9uKQorCWFzX2JhZCAoXygidW5kZWZpbmVkIHN5bWJvbCBgJXMnIGluIG9wZXJh
-dGlvbiBzZXR0aW5nIGAlcyciKSwKKwkJU19HRVRfTkFNRSAobGVmdCksIFNfR0VUX05BTUUgKHN5
-bXApKTsKKyAgICAgIGlmIChzZWdfcmlnaHQgPT0gdW5kZWZpbmVkX3NlY3Rpb24pCisJYXNfYmFk
-IChfKCJ1bmRlZmluZWQgc3ltYm9sIGAlcycgaW4gb3BlcmF0aW9uIHNldHRpbmcgYCVzJyIpLAor
-CQlTX0dFVF9OQU1FIChyaWdodCksIFNfR0VUX05BTUUgKHN5bXApKTsKKyAgICAgIGlmIChzZWdf
-bGVmdCAhPSB1bmRlZmluZWRfc2VjdGlvbgorCSAgJiYgc2VnX3JpZ2h0ICE9IHVuZGVmaW5lZF9z
-ZWN0aW9uKQorCXsKKwkgIGlmIChyaWdodCkKKwkgICAgYXNfYmFkIChfKCJpbnZhbGlkIHNlY3Rp
-b25zIGZvciBvcGVyYXRpb24gb24gYCVzJyBhbmQgYCVzJyBzZXR0aW5nIGAlcyciKSwKKwkJICAg
-IFNfR0VUX05BTUUgKGxlZnQpLCBTX0dFVF9OQU1FIChyaWdodCksIFNfR0VUX05BTUUgKHN5bXAp
-KTsKKwkgIGVsc2UKKwkgICAgYXNfYmFkIChfKCJpbnZhbGlkIHNlY3Rpb24gZm9yIG9wZXJhdGlv
-biBvbiBgJXMnIHNldHRpbmcgYCVzJyIpLAorCQkgICAgU19HRVRfTkFNRSAobGVmdCksIFNfR0VU
-X05BTUUgKHN5bXApKTsKKwl9CiAgICAgfQogfQogCkBAIC0xMjIwLDggKzEyMTEsOCBAQCByZXNv
-bHZlX3N5bWJvbF92YWx1ZSAoc3ltYm9sUyAqc3ltcCkKIAkJICBzeW1wLT5zeV92YWx1ZS5YX2Fk
-ZF9udW1iZXIgPSBmaW5hbF92YWw7CiAJCSAgLyogVXNlIFhfb3Bfc3ltYm9sIGFzIGEgZmxhZy4g
-ICovCiAJCSAgc3ltcC0+c3lfdmFsdWUuWF9vcF9zeW1ib2wgPSBhZGRfc3ltYm9sOworCQkgIGZp
-bmFsX3NlZyA9IHNlZ19sZWZ0OwogCQl9Ci0JICAgICAgZmluYWxfc2VnID0gc2VnX2xlZnQ7CiAJ
-ICAgICAgZmluYWxfdmFsID0gMDsKIAkgICAgICByZXNvbHZlZCA9IHN5bWJvbF9yZXNvbHZlZF9w
-IChhZGRfc3ltYm9sKTsKIAkgICAgICBzeW1wLT5zeV9yZXNvbHZpbmcgPSAwOwpAQCAtMTI3MCw3
-ICsxMjYxLDcgQEAgcmVzb2x2ZV9zeW1ib2xfdmFsdWUgKHN5bWJvbFMgKnN5bXApCiAJCX5TIC0+
-IFMgXiB+MCAJb25seSBwZXJtaXR0ZWQgb24gYWJzb2x1dGUgICovCiAJICBpZiAob3AgIT0gT19s
-b2dpY2FsX25vdCAmJiBzZWdfbGVmdCAhPSBhYnNvbHV0ZV9zZWN0aW9uCiAJICAgICAgJiYgZmlu
-YWxpemVfc3ltcykKLQkgICAgcmVwb3J0X29wX2Vycm9yIChzeW1wLCBOVUxMLCBvcCwgYWRkX3N5
-bWJvbCk7CisJICAgIHJlcG9ydF9vcF9lcnJvciAoc3ltcCwgYWRkX3N5bWJvbCwgTlVMTCk7CiAK
-IAkgIGlmIChmaW5hbF9zZWcgPT0gZXhwcl9zZWN0aW9uIHx8IGZpbmFsX3NlZyA9PSB1bmRlZmlu
-ZWRfc2VjdGlvbikKIAkgICAgZmluYWxfc2VnID0gYWJzb2x1dGVfc2VjdGlvbjsKQEAgLTEzNDcs
-NyArMTMzOCw3IEBAIHJlc29sdmVfc3ltYm9sX3ZhbHVlIChzeW1ib2xTICpzeW1wKQogCSAgICAg
-cHJvYmFibHkgbmVlZCB0byBiZSBjaGFuZ2VkIGZvciBhbiBvYmplY3QgZmlsZSBmb3JtYXQgd2hp
-Y2gKIAkgICAgIHN1cHBvcnRzIGFyYml0cmFyeSBleHByZXNzaW9ucywgc3VjaCBhcyBJRUVFLTY5
-NS4gICovCiAJICBpZiAoIShzZWdfbGVmdCA9PSBhYnNvbHV0ZV9zZWN0aW9uCi0JCSYmIHNlZ19y
-aWdodCA9PSBhYnNvbHV0ZV9zZWN0aW9uKQorCQkgICAmJiBzZWdfcmlnaHQgPT0gYWJzb2x1dGVf
-c2VjdGlvbikKIAkgICAgICAmJiAhKG9wID09IE9fZXEgfHwgb3AgPT0gT19uZSkKIAkgICAgICAm
-JiAhKChvcCA9PSBPX3N1YnRyYWN0CiAJCSAgICB8fCBvcCA9PSBPX2x0IHx8IG9wID09IE9fbGUg
-fHwgb3AgPT0gT19nZSB8fCBvcCA9PSBPX2d0KQpAQCAtMTM1OCw3ICsxMzQ5LDcgQEAgcmVzb2x2
-ZV9zeW1ib2xfdmFsdWUgKHN5bWJvbFMgKnN5bXApCiAJICAgICAgLyogRG9uJ3QgZW1pdCBtZXNz
-YWdlcyB1bmxlc3Mgd2UncmUgZmluYWxpemluZyB0aGUgc3ltYm9sIHZhbHVlLAogCQkgb3RoZXJ3
-aXNlIHdlIG1heSBnZXQgdGhlIHNhbWUgbWVzc2FnZSBtdWx0aXBsZSB0aW1lcy4gICovCiAJICAg
-ICAgaWYgKGZpbmFsaXplX3N5bXMpCi0JCXJlcG9ydF9vcF9lcnJvciAoc3ltcCwgYWRkX3N5bWJv
-bCwgb3AsIG9wX3N5bWJvbCk7CisJCXJlcG9ydF9vcF9lcnJvciAoc3ltcCwgYWRkX3N5bWJvbCwg
-b3Bfc3ltYm9sKTsKIAkgICAgICAvKiBIb3dldmVyIGRvIG5vdCBtb3ZlIHRoZSBzeW1ib2wgaW50
-byB0aGUgYWJzb2x1dGUgc2VjdGlvbgogCQkgaWYgaXQgY2Fubm90IGN1cnJlbnRseSBiZSByZXNv
-bHZlZCAtIHRoaXMgd291bGQgY29uZnVzZQogCQkgb3RoZXIgcGFydHMgb2YgdGhlIGFzc2VtYmxl
-ciBpbnRvIGJlbGlldmluZyB0aGF0IHRoZQotLSAKMS43LjQuMQoK
---20cf3036380dadcf6c049df7f90a
-Content-Type: text/x-patch; charset=US-ASCII; name="0002-Revert-PR-gas-12519.patch"
-Content-Disposition: attachment; filename="0002-Revert-PR-gas-12519.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: file2
-
-RnJvbSBjNTE0ODg1NjlkZjc0ODkzNzRiNWM2YjI4MjVmMTg3MTg2YWY1ZjhiIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBUdWUsIDggTWFyIDIwMTEgMTI6Mzg6NDEgKzAxMDAKU3ViamVjdDogW1BBVENIIDIvMl0g
-UmV2ZXJ0ICIJUFIgZ2FzLzEyNTE5IgoKVGhpcyByZXZlcnRzIGNvbW1pdCAzNDViYmY3NzMxYWYy
-OTEyMzkwZTcyYjg2ODA3ZWIxYjJhZjNlMjdiLgotLS0KIGdhcy9DaGFuZ2VMb2cgICAgICAgICAg
-ICAgICAgICAgICAgIHwgICAgNSAtLS0tLQogZ2FzL2NvbmZpZy9vYmotZWxmLmMgICAgICAgICAg
-ICAgICAgfCAgIDI0ICsrKysrKysrKysrKysrKysrKy0tLS0tLQogbGQvdGVzdHN1aXRlL0NoYW5n
-ZUxvZyAgICAgICAgICAgICAgfCAgICA1IC0tLS0tCiBsZC90ZXN0c3VpdGUvbGQtbW4xMDMwMC9p
-MTM1NDA5LTMucyB8ICAgIDIgKy0KIGxkL3Rlc3RzdWl0ZS9sZC1zaC9zaDY0L3N0b2xpYi5zICAg
-IHwgICAgMiArLQogNSBmaWxlcyBjaGFuZ2VkLCAyMCBpbnNlcnRpb25zKCspLCAxOCBkZWxldGlv
-bnMoLSkKCmRpZmYgLS1naXQgYS9nYXMvQ2hhbmdlTG9nIGIvZ2FzL0NoYW5nZUxvZwppbmRleCBj
-YWE5YjFlLi43OGRjMmQ3IDEwMDY0NAotLS0gYS9nYXMvQ2hhbmdlTG9nCisrKyBiL2dhcy9DaGFu
-Z2VMb2cKQEAgLTEsOCArMSwzIEBACi0yMDExLTAyLTI1ICBBbGFuIE1vZHJhICA8YW1vZHJhQGdt
-YWlsLmNvbT4KLQotCVBSIGdhcy8xMjUxOQotCSogY29uZmlnL29iai1lbGYuYyAoZWxmX2Zyb2Jf
-c3ltYm9sKTogUHJvcGVybHkgaGFuZGxlIHNpemUgZXhwcmVzc2lvbi4KLQogMjAxMS0wMi0wMSAg
-QWxhbiBNb2RyYSAgPGFtb2RyYUBnbWFpbC5jb20+CiAKIAlCYWNrcG9ydCBmcm9tIG1haW5saW5l
-CmRpZmYgLS1naXQgYS9nYXMvY29uZmlnL29iai1lbGYuYyBiL2dhcy9jb25maWcvb2JqLWVsZi5j
-CmluZGV4IDk2OWE1MDkuLmM2ZGM4ZDYgMTAwNjQ0Ci0tLSBhL2dhcy9jb25maWcvb2JqLWVsZi5j
-CisrKyBiL2dhcy9jb25maWcvb2JqLWVsZi5jCkBAIC0xLDYgKzEsNiBAQAogLyogRUxGIG9iamVj
-dCBmaWxlIGZvcm1hdAogICAgQ29weXJpZ2h0IDE5OTIsIDE5OTMsIDE5OTQsIDE5OTUsIDE5OTYs
-IDE5OTcsIDE5OTgsIDE5OTksIDIwMDAsCi0gICAyMDAxLCAyMDAyLCAyMDAzLCAyMDA0LCAyMDA1
-LCAyMDA2LCAyMDA3LCAyMDA4LCAyMDA5LCAyMDEwLCAyMDExCisgICAyMDAxLCAyMDAyLCAyMDAz
-LCAyMDA0LCAyMDA1LCAyMDA2LCAyMDA3LCAyMDA4LCAyMDA5LCAyMDEwCiAgICBGcmVlIFNvZnR3
-YXJlIEZvdW5kYXRpb24sIEluYy4KIAogICAgVGhpcyBmaWxlIGlzIHBhcnQgb2YgR0FTLCB0aGUg
-R05VIEFzc2VtYmxlci4KQEAgLTE4ODksMTEgKzE4ODksMjMgQEAgZWxmX2Zyb2Jfc3ltYm9sIChz
-eW1ib2xTICpzeW1wLCBpbnQgKnB1bnRwKQogCiAgIGlmIChzeV9vYmotPnNpemUgIT0gTlVMTCkK
-ICAgICB7Ci0gICAgICBpZiAocmVzb2x2ZV9leHByZXNzaW9uIChzeV9vYmotPnNpemUpCi0JICAm
-JiBzeV9vYmotPnNpemUtPlhfb3AgPT0gT19jb25zdGFudCkKLQlTX1NFVF9TSVpFIChzeW1wLCBz
-eV9vYmotPnNpemUtPlhfYWRkX251bWJlcik7Ci0gICAgICBlbHNlCi0JYXNfYmFkIChfKCIuc2l6
-ZSBleHByZXNzaW9uIGRvZXMgbm90IGV2YWx1YXRlIHRvIGEgY29uc3RhbnQiKSk7CisgICAgICBz
-d2l0Y2ggKHN5X29iai0+c2l6ZS0+WF9vcCkKKwl7CisJY2FzZSBPX3N1YnRyYWN0OgorCSAgU19T
-RVRfU0laRSAoc3ltcCwKKwkJICAgICAgKFNfR0VUX1ZBTFVFIChzeV9vYmotPnNpemUtPlhfYWRk
-X3N5bWJvbCkKKwkJICAgICAgICsgc3lfb2JqLT5zaXplLT5YX2FkZF9udW1iZXIKKwkJICAgICAg
-IC0gU19HRVRfVkFMVUUgKHN5X29iai0+c2l6ZS0+WF9vcF9zeW1ib2wpKSk7CisJICBicmVhazsK
-KwljYXNlIE9fY29uc3RhbnQ6CisJICBTX1NFVF9TSVpFIChzeW1wLAorCQkgICAgICAoU19HRVRf
-VkFMVUUgKHN5X29iai0+c2l6ZS0+WF9hZGRfc3ltYm9sKQorCQkgICAgICAgKyBzeV9vYmotPnNp
-emUtPlhfYWRkX251bWJlcikpOworCSAgYnJlYWs7CisJZGVmYXVsdDoKKwkgIGFzX2JhZCAoXygi
-LnNpemUgZXhwcmVzc2lvbiB0b28gY29tcGxpY2F0ZWQgdG8gZml4IHVwIikpOworCSAgYnJlYWs7
-CisJfQogICAgICAgZnJlZSAoc3lfb2JqLT5zaXplKTsKICAgICAgIHN5X29iai0+c2l6ZSA9IE5V
-TEw7CiAgICAgfQpkaWZmIC0tZ2l0IGEvbGQvdGVzdHN1aXRlL0NoYW5nZUxvZyBiL2xkL3Rlc3Rz
-dWl0ZS9DaGFuZ2VMb2cKaW5kZXggMWI4Zjg0ZS4uNTZhN2ExMSAxMDA2NDQKLS0tIGEvbGQvdGVz
-dHN1aXRlL0NoYW5nZUxvZworKysgYi9sZC90ZXN0c3VpdGUvQ2hhbmdlTG9nCkBAIC0xLDggKzEs
-MyBAQAotMjAxMS0wMi0yNSAgQWxhbiBNb2RyYSAgPGFtb2RyYUBnbWFpbC5jb20+Ci0KLQkqIGxk
-LW1uMTAzMDAvaTEzNTQwOS0zLnM6IENvcnJlY3QgLnNpemUgbGFiZWwgcmVmZXJlbmNlLgotCSog
-bGQtc2gvc2g2NC9zdG9saWIuczogTGlrZXdpc2UuCi0KIDIwMTEtMDItMTAgIEFsYW4gTW9kcmEg
-IDxhbW9kcmFAZ21haWwuY29tPgogCiAJKiBsZC1nYy9zdGFydC5kOiBFeGNsdWRlIGZydi0qLWxp
-bnV4Ki4KZGlmZiAtLWdpdCBhL2xkL3Rlc3RzdWl0ZS9sZC1tbjEwMzAwL2kxMzU0MDktMy5zIGIv
-bGQvdGVzdHN1aXRlL2xkLW1uMTAzMDAvaTEzNTQwOS0zLnMKaW5kZXggODExM2I3OC4uZTgzYWQ5
-NiAxMDA2NDQKLS0tIGEvbGQvdGVzdHN1aXRlL2xkLW1uMTAzMDAvaTEzNTQwOS0zLnMKKysrIGIv
-bGQvdGVzdHN1aXRlL2xkLW1uMTAzMDAvaTEzNTQwOS0zLnMKQEAgLTEwLDcgKzEwLDcgQEAgQToK
-IEJPVFRPTToKICAgICAgIC5iYWxpZ24gMHg4CiAgICAgICBhZGQgICAgIEQwLEQxCi0gICAgICAu
-c2l6ZSAgIF9mdW5jLCAuLV9mdW5jCisgICAgICAuc2l6ZSAgIF9mdW5jLCAuLWZ1bmMKIAogICAg
-ICAgLmRhdGEKIEwwMDE6CmRpZmYgLS1naXQgYS9sZC90ZXN0c3VpdGUvbGQtc2gvc2g2NC9zdG9s
-aWIucyBiL2xkL3Rlc3RzdWl0ZS9sZC1zaC9zaDY0L3N0b2xpYi5zCmluZGV4IGE1ZGVlMmIuLjU4
-N2ZhYTYgMTAwNjQ0Ci0tLSBhL2xkL3Rlc3RzdWl0ZS9sZC1zaC9zaDY0L3N0b2xpYi5zCisrKyBi
-L2xkL3Rlc3RzdWl0ZS9sZC1zaC9zaDY0L3N0b2xpYi5zCkBAIC00LDQgKzQsNCBAQAogYmFyOgog
-CXB0YWJzCXIxOCwgdHIwCiAJYmxpbmsJdHIwLCByNjMKLS5MZmVfYmFyOiAuc2l6ZSBiYXIsLkxm
-ZV9iYXItYmFyCisJLkxmZV9iYXI6IC5zaXplIGJhciwuTGZlX2Jhci1YCi0tIAoxLjcuNC4xCgo=
---20cf3036380dadcf6c049df7f90a--
+git checkout -b your_branch_name "origin/2.6.38-rc6-pvhvm"
+--8323329-1735475764-1299586586=:2968--
