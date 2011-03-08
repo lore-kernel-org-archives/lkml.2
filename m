@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab1CHBIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 20:08:04 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:51521 "EHLO smtps.tip.net.au"
+	id S1755587Ab1CHBJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 20:09:32 -0500
+Received: from mga01.intel.com ([192.55.52.88]:45931 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab1CHBIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 20:08:01 -0500
-Date: Tue, 8 Mar 2011 12:07:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frank Filz <ffilzlnx@us.ibm.com>, Jeff Layton <jlayton@redhat.com>
-Subject: linux-next: build failure after merge of the nfs tree
-Message-Id: <20110308120753.8adb3ff6.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752016Ab1CHBJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 20:09:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,280,1297065600"; 
+   d="scan'208";a="664859166"
+Subject: Re: [PATCH] [SCSI] bnx2fc: fix build error when !CONFIG_MODULES
+From: Robert Love <robert.w.love@intel.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Bhanu Gollapudi <bprakash@broadcom.com>,
+        Mariusz Kozlowski <mk@lab.zgora.pl>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+In-Reply-To: <1299543497.15955.108.camel@mulgrave.site>
+References: <20110302182740.e4dfd79f.sfr@canb.auug.org.au>
+	 <1299103803-32594-1-git-send-email-mk@lab.zgora.pl>
+	 <20110307201610.GA9032@mako-laptop>
+	 <1299542075.5232.5.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
+	 <1299543497.15955.108.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Mar 2011 17:09:06 -0800
+Message-ID: <1299546546.1689.40.camel@fritz>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__8_Mar_2011_12_07_53_+1100_Kv6gVELRy4XmCOHp"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Mar_2011_12_07_53_+1100_Kv6gVELRy4XmCOHp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2011-03-07 at 16:18 -0800, James Bottomley wrote:
+> On Mon, 2011-03-07 at 15:54 -0800, Bhanu Gollapudi wrote:
+> > On Mon, 2011-03-07 at 12:16 -0800, Mariusz Kozlowski wrote: 
+> > > On Wed, Mar 02, 2011 at 11:10:03PM +0100, Mariusz Kozlowski wrote:
+> > > > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: dereferencing pointer to incomplete type
+> > > > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
+> > > 
+> > > Hm. Still there in next-20110307. Is this patch wrong or..?
+> > > 
+> > 
+> > James,
+> > 
+> > Here is my ack for this patch.
+> 
+> OK, so the patch is actually wrong because adding #ifdefs on modules in
+> files really impedes readability.  The bug is using a direct deref on
+> module state instead of one of the APIs which work in the non-modular
+> case, namely try_module_get(). That means the other two need to come out
+> and be reworked (plus all the others in fcoe).
+> 
+> Reworked looks like it might be a bigger item than bnx2fc.  If any of
+> those tests is ever relevant, it means we have a race in the
+> fcoe_transport because it shouldn't be calling function pointers on a
+> dying module (unless it wants to trigger an oops).
+> 
+> So, why are you trying to do this in the first place?
+> 
+First, fcoe.c started with these checks. Here is a comment in fcoe.c at
+the point of one of the checks.
 
-Hi Trond,
+/*
+ * Make sure the module has been initialized, and is not about to be
+ * removed.  Module paramter sysfs files are writable before the
+ * module_init function is called and after module_exit.
+ */
 
-After merging the nfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+I don't know the correct way to fix that race is, but we may be past the
+need to fix it in the LLDs.
 
-fs/nfs/inode.c: In function 'nfs_compat_user_ino64':
-fs/nfs/inode.c:93: error: 'compat_ulong_t' undeclared (first use in this fu=
-nction)
-fs/nfs/inode.c:93: error: expected ';' before 'ino'
-fs/nfs/inode.c:100: error: 'ino' undeclared (first use in this function)
+Next, the fcoe transport was added. Since it (libfcoe.ko) is now calling
+what used to be the fcoe.ko sysfs entry points I don't think the problem
+exists in fcoe.c or in bnx2fc_fcoe.c, the problem should be in the fcoe
+transport code, as James suggested.
 
-Caused by commit 5fa1ca22302da56ffa568e847100e80be90cc602 ("(try3-resend)
-Fix nfs_compat_user_ino64 so it doesn't cause problems if bit 31 or 63
-are set in fileid").
+The fcoe transport code already has these checks to protect against
+sysfs files being writable before module initialization is complete. It
+uses the ft_mutex to protect the list of transports(LLDs) so when
+'create' is called it knows that the transport is still there to call
+down to. It holds the ft_mutex until the LLD's 'create' routine returns.
+The transports(LLDs) should be detaching themselves from the fcoe
+transport layer before they exit. fcoe_transport_detach will try to
+acquire the ft_mutex and block until the 'create' call returns and
+releases the ft_mutex. I think this ensures that the transport(LLD) will
+be fine when the fcoe transport calls it.
 
-I have used the nfs tree from next-20110307 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+My feeling is that these checks are still needed in the fcoe transport,
+but not in the LLDs. If someone can suggest a better way to protect
+against writable sysfs files when the module hasn't finished
+initializing, we should do that instead of the ifdefs.
 
---Signature=_Tue__8_Mar_2011_12_07_53_+1100_Kv6gVELRy4XmCOHp
-Content-Type: application/pgp-signature
+Hope this helps,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+//Rob
 
-iQEcBAEBAgAGBQJNdYFpAAoJEDMEi1NhKgbsqkYH/1zoeijluaTx+7nn/2NsS63D
-BqaxW4MezzwXedcGj1xi7PxGNAkojCBe58PXvXk05OXw0KrE1RW/yFyqW3o7M8PI
-aSRC1GU+bW6fGz8LbYdJDHhgjo0b5yqDI5tYAeyz6srylt76XvdXmwS2jesE17Gb
-AwONZwtuXVEzgXZL8KJBIzPrPBwuEaREp7U3T3I5EQ32iGk9RW05xbCm6FrjmP7G
-6AYkOpfzpi5mjErk6natecEGKsTLcQHpMcvVBKG+YPQx6LpgqGXycgbbmhr922bO
-XO7DuvJT+DXAB5S+w9/TV6bKn/qz0OWCi6Fz/ePSOLYCVqoS7FIRh7KLsXFTER4=
-=78rC
------END PGP SIGNATURE-----
+FYI: mnc asked about this code and the trylock code in fcoe and libfcoe.
+I have patches in our internal validation to remove the trylock usage,
+but I don't have patches to fix the module state checking.
 
---Signature=_Tue__8_Mar_2011_12_07_53_+1100_Kv6gVELRy4XmCOHp--
