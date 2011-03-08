@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab1CHPZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:25:32 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48092 "EHLO
+	id S1755772Ab1CHP0b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:26:31 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55482 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499Ab1CHPZ3 (ORCPT
+	with ESMTP id S1755798Ab1CHPZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:25:29 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=F4WAOCV8yzkA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=rsZ3HKq3mQpPV7094goA:9 a=ZDHblQRzQd9DKhVaXKofq5DwrSoA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 8 Mar 2011 10:25:31 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=_Atk6O0qAXQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=BM5NF0PkXgaL02LBgS4A:9 a=QFN9-i7JxP_z8XAzGlX9HLXGin0A:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110308152528.036486067@goodmis.org>
+Message-Id: <20110308152528.995957273@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 08 Mar 2011 10:22:01 -0500
+Date: Tue, 08 Mar 2011 10:22:05 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/9] ktest: Handle kernels before make oldnoconfig
+Subject: [PATCH 7/9] ktest: Fix bug where the test would not end after failure
 References: <20110308152158.799699072@goodmis.org>
-Content-Disposition: inline; filename=0003-ktest-Handle-kernels-before-make-oldnoconfig.patch
+Content-Disposition: inline; filename=0007-ktest-Fix-bug-where-the-test-would-not-end-after-fai.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-When bisecting, one may come across a kernel that does not have
-make oldnoconfig. In this case, we need to run the command "yes"
-into a make oldconfig. This will select defaults instead of 'n'
-into each command, but it works as a work around.
+The config STOP_AFTER_FAILURE is the number of seconds to continue
+the test when a failure is detected. This lets the monitor record
+more data to the logs and console that may be helpful in solving
+the bug that was found.
 
-Note, "yes n" will not work because a config may have a value that
-"n" is not acceptable for.
+But the test had a bug. If the failure caused multiple
+"Call Trace" stack dumps, the start time to compare the
+STOP_AFTER_FAILURE would constantly be reset. Only update the start
+time at the first "Call Trace" instance.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |   27 ++++++++++++++++++++-------
- 1 files changed, 20 insertions(+), 7 deletions(-)
+ tools/testing/ktest/ktest.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 6620fe4..c95209b 100755
+index 65c5c55..125ab94 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -930,6 +930,18 @@ sub check_buildlog {
-     return 1;
- }
+@@ -804,7 +804,7 @@ sub monitor {
+ 	}
  
-+sub make_oldconfig {
-+    my ($defconfig) = @_;
-+
-+    if (!run_command "$defconfig $make oldnoconfig") {
-+	# Perhaps oldnoconfig doesn't exist in this version of the kernel
-+	# try a yes '' | oldconfig
-+	doprint "oldnoconfig failed, trying yes '' | make oldconfig\n";
-+	run_command "yes '' | $defconfig $make oldconfig" or
-+	    dodie "failed make config oldconfig";
-+    }
-+}
-+
- sub build {
-     my ($type) = @_;
-     my $defconfig = "";
-@@ -975,8 +987,12 @@ sub build {
- 	$defconfig = "KCONFIG_ALLCONFIG=$minconfig";
-     }
- 
--    run_command "$defconfig $make $type" or
--	dodie "failed make config";
-+    if ($type eq "oldnoconfig") {
-+	make_oldconfig $defconfig;
-+    } else {
-+	run_command "$defconfig $make $type" or
-+	    dodie "failed make config";
-+    }
- 
-     $redirect = "$buildlog";
-     if (!run_command "$make $build_options") {
-@@ -1395,9 +1411,7 @@ sub create_config {
-     close(OUT);
- 
- #    exit;
--    run_command "$make oldnoconfig" or
--	dodie "failed make config oldconfig";
--
-+    make_oldconfig "";
- }
- 
- sub compare_configs {
-@@ -1599,8 +1613,7 @@ sub config_bisect {
-     close(IN);
- 
-     # Now run oldconfig with the minconfig (and addconfigs)
--    run_command "$defconfig $make oldnoconfig" or
--	dodie "failed make config oldconfig";
-+    make_oldconfig $defconfig;
- 
-     # check to see what we lost (or gained)
-     open (IN, $output_config)
+ 	if ($full_line =~ /call trace:/i) {
+-	    if (!$skip_call_trace) {
++	    if (!$bug && !$skip_call_trace) {
+ 		$bug = 1;
+ 		$failure_start = time;
+ 	    }
 -- 
 1.7.2.3
 
