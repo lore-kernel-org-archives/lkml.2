@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab1CHPBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:01:21 -0500
-Received: from www.tglx.de ([62.245.132.106]:59953 "EHLO www.tglx.de"
+	id S1755332Ab1CHPEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:04:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32777 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab1CHPBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:01:20 -0500
-Date: Tue, 8 Mar 2011 16:01:00 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 1/1] PRUSS UIO driver support
-In-Reply-To: <201103081424.01476.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.00.1103081600450.2787@localhost6.localdomain6>
-References: <1299175677-17859-1-git-send-email-pratheesh@ti.com> <B85A65D85D7EB246BE421B3FB0FBB593024C008B02@dbde02.ent.ti.com> <alpine.LFD.2.00.1103081133510.2787@localhost6.localdomain6> <201103081424.01476.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755118Ab1CHPEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 10:04:07 -0500
+Date: Tue, 8 Mar 2011 10:03:57 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Justin TerAvest <teravest@google.com>,
+        "ctalbott@google.com" <ctalbott@google.com>,
+        "guijianfeng@cn.fujitsu.com" <guijianfeng@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blk-cgroup: Lower minimum weight from 100 to 10.
+Message-ID: <20110308150357.GE27455@redhat.com>
+References: <1299538394-9669-1-git-send-email-teravest@google.com>
+ <4D763F07.1070103@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D763F07.1070103@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Mar 2011, Arnd Bergmann wrote:
-
-> On Tuesday 08 March 2011, Thomas Gleixner wrote:
-> > > 
-> > > +static irqreturn_t pruss_handler(int irq, struct uio_info *info) {
-> > > +     struct pruss_priv *priv = info->priv;
-> > > +     struct uio_pruss_dev *gdev = priv->pupdev;
-> > > 
-> > > Note that info is a pointer to array supporting 8 interrupts. This allows to
-> > > redirect to driver structure via info->priv quickly.
-> > 
-> > struct uio_pruss_dev *dev = container_of(info, struct uio_pruss_dev, info);
-> > 
-> > Perhaps ?
+On Tue, Mar 08, 2011 at 03:36:55PM +0100, Jens Axboe wrote:
+> On 2011-03-07 23:53, Justin TerAvest wrote:
+> > We've found that we still get good, useful isolation at weights this
+> > low. I'd like to adjust the minimum so that any other changes can take
+> > these values into account.
 > 
-> That would require having the same number of uio_info structs as uio_pruss_dev
-> instances. Right now, one platform device has one uio_pruss_dev instance, which
-> has 8 uio_info instances, so the container_of() trick doesn't work.
+> Justin, this looks fine to me if Vivek agrees. You did not sign-off on
+> the patch though, so I can't apply it yet. Please re-send with the ack
+> from Vivek added and your signed-off-by as well.
 
-Duh. Yes :)
+The primary reason I am fine with wider weight range because there are
+many situations where we just don't get effective 10 times service
+differentiation for various reasons like workload don't seem to be
+active at the service tree at the same time or if we decide to swith
+off idling on faster storage etc.
 
-     tglx
+So because of this leaky nature of service differentiation, it might help to
+have a wider range of allowed weights.
+
+Thanks
+Vivek
