@@ -1,284 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab1CHVvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 16:51:07 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:35981 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756824Ab1CHVuy (ORCPT
+	id S932184Ab1CHVvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 16:51:43 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:22408 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756644Ab1CHVvl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 16:50:54 -0500
-Date: Tue, 8 Mar 2011 22:50:49 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
-        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH R4 7/7] xen/balloon: Memory hotplug support for Xen balloon driver
-Message-ID: <20110308215049.GH27331@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	Tue, 8 Mar 2011 16:51:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Mqm0+iB2Nw/0xv8PxEd15IpsgkV+XOxObVOqYZS0dIILYKIOvw73joSWy9aSLFSto+
+         zqWED1UvUI/Bc42c0FBw==
+MIME-Version: 1.0
+In-Reply-To: <1299459180-11321-3-git-send-email-leemgs1@gmail.com>
+References: <1299459180-11321-1-git-send-email-leemgs1@gmail.com> <1299459180-11321-3-git-send-email-leemgs1@gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 8 Mar 2011 13:51:18 -0800
+Message-ID: <AANLkTimBTs43Bi+-aKuMkgpA1vQbSEMKkSdBQ6CcfzF7@mail.gmail.com>
+Subject: Re: [PATCH RESEND 2/2] cgroup:doc Update suitable words to explain cgroups.
+To: Geunsik Lim <leemgs1@gmail.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory hotplug support for Xen balloon driver. It should be
-mentioned that hotplugged memory is not onlined automatically.
-It should be onlined by user through standard sysfs interface.
+On Sun, Mar 6, 2011 at 4:53 PM, Geunsik Lim <leemgs1@gmail.com> wrote:
+> Update a sutible words to explaind / understand cgroups cotents.
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
----
- drivers/xen/Kconfig   |   10 +++
- drivers/xen/balloon.c |  154 +++++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 159 insertions(+), 5 deletions(-)
+s/sutible/suitable/
+s/explaind/explain/
+s/cotents/contents/
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index 07bec09..8f880aa 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -9,6 +9,16 @@ config XEN_BALLOON
- 	  the system to expand the domain's memory allocation, or alternatively
- 	  return unneeded memory to the system.
- 
-+config XEN_BALLOON_MEMORY_HOTPLUG
-+	bool "Memory hotplug support for Xen balloon driver"
-+	default n
-+	depends on XEN_BALLOON && MEMORY_HOTPLUG
-+	help
-+	  Memory hotplug support for Xen balloon driver allows expanding memory
-+	  available for the system above limit declared at system startup.
-+	  It is very useful on critical systems which require long
-+	  run without rebooting.
-+
- config XEN_SCRUB_PAGES
- 	bool "Scrub pages before returning them to system"
- 	depends on XEN_BALLOON
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 431e9f0..3dc8a83 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -6,6 +6,12 @@
-  * Copyright (c) 2003, B Dragovic
-  * Copyright (c) 2003-2004, M Williamson, K Fraser
-  * Copyright (c) 2005 Dan M. Smith, IBM Corporation
-+ * Copyright (c) 2010 Daniel Kiper
-+ *
-+ * Memory hotplug support was written by Daniel Kiper. Work on
-+ * it was sponsored by Google under Google Summer of Code 2010
-+ * program. Jeremy Fitzhardinge from Xen.org was the mentor for
-+ * this project.
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License version 2
-@@ -44,6 +50,9 @@
- #include <linux/list.h>
- #include <linux/sysdev.h>
- #include <linux/gfp.h>
-+#include <linux/notifier.h>
-+#include <linux/memory.h>
-+#include <linux/memory_hotplug.h>
- 
- #include <asm/page.h>
- #include <asm/pgalloc.h>
-@@ -93,6 +102,10 @@ struct balloon_stats {
- 	unsigned long max_schedule_delay;
- 	unsigned long retry_count;
- 	unsigned long max_retry_count;
-+#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
-+	unsigned long hotplug_pages;
-+	unsigned long balloon_hotplug;
-+#endif
- };
- 
- static DEFINE_MUTEX(balloon_mutex);
-@@ -221,7 +234,93 @@ static enum bp_state update_schedule(enum bp_state state)
- 	return BP_EAGAIN;
- }
- 
--static unsigned long current_target(void)
-+#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
-+static long current_credit(void)
-+{
-+	return balloon_stats.target_pages - balloon_stats.current_pages -
-+		balloon_stats.hotplug_pages;
-+}
-+
-+static int balloon_is_inflated(void)
-+{
-+	if (balloon_stats.balloon_low || balloon_stats.balloon_high ||
-+			balloon_stats.balloon_hotplug)
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static enum bp_state reserve_additional_memory(long credit)
-+{
-+	int rc;
-+	unsigned long balloon_hotplug = credit;
-+
-+	balloon_hotplug <<= PAGE_SHIFT;
-+
-+	rc = add_virtual_memory((u64 *)&balloon_hotplug);
-+
-+	if (rc) {
-+		pr_info("xen_balloon: %s: add_virtual_memory() failed: %i\n", __func__, rc);
-+		return BP_EAGAIN;
-+	}
-+
-+	balloon_hotplug >>= PAGE_SHIFT;
-+
-+	balloon_hotplug -= credit;
-+
-+	balloon_stats.hotplug_pages += credit;
-+	balloon_stats.balloon_hotplug = balloon_hotplug;
-+
-+	return BP_DONE;
-+}
-+
-+static int xen_online_page_notifier(struct notifier_block *nb, unsigned long val, void *v)
-+{
-+	struct page *page = v;
-+	unsigned long pfn = page_to_pfn(page);
-+
-+	if (pfn >= num_physpages)
-+		num_physpages = pfn + 1;
-+
-+	inc_totalhigh_pages();
-+
-+#ifdef CONFIG_FLATMEM
-+	max_mapnr = max(pfn, max_mapnr);
-+#endif
-+
-+	mutex_lock(&balloon_mutex);
-+
-+	__balloon_append(page);
-+
-+	if (balloon_stats.hotplug_pages)
-+		--balloon_stats.hotplug_pages;
-+	else
-+		--balloon_stats.balloon_hotplug;
-+
-+	mutex_unlock(&balloon_mutex);
-+
-+	return NOTIFY_STOP;
-+}
-+
-+static struct notifier_block xen_online_page_nb = {
-+	.notifier_call = xen_online_page_notifier,
-+	.priority = 10
-+};
-+
-+static int xen_memory_notifier(struct notifier_block *nb, unsigned long val, void *v)
-+{
-+	if (val == MEM_ONLINE)
-+		schedule_delayed_work(&balloon_worker, 0);
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block xen_memory_nb = {
-+	.notifier_call = xen_memory_notifier,
-+	.priority = 0
-+};
-+#else
-+static long current_credit(void)
- {
- 	unsigned long target = balloon_stats.target_pages;
- 
-@@ -230,9 +329,24 @@ static unsigned long current_target(void)
- 		     balloon_stats.balloon_low +
- 		     balloon_stats.balloon_high);
- 
--	return target;
-+	return target - balloon_stats.current_pages;
-+}
-+
-+static int balloon_is_inflated(void)
-+{
-+	if (balloon_stats.balloon_low || balloon_stats.balloon_high)
-+		return 1;
-+	else
-+		return 0;
- }
- 
-+static enum bp_state reserve_additional_memory(long credit)
-+{
-+	balloon_stats.target_pages = balloon_stats.current_pages;
-+	return BP_DONE;
-+}
-+#endif /* CONFIG_XEN_BALLOON_MEMORY_HOTPLUG */
-+
- static enum bp_state increase_reservation(unsigned long nr_pages)
- {
- 	int rc;
-@@ -244,6 +358,15 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
- 		.domid        = DOMID_SELF
- 	};
- 
-+#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
-+	if (!balloon_stats.balloon_low && !balloon_stats.balloon_high) {
-+		nr_pages = min(nr_pages, balloon_stats.balloon_hotplug);
-+		balloon_stats.hotplug_pages += nr_pages;
-+		balloon_stats.balloon_hotplug -= nr_pages;
-+		return BP_DONE;
-+	}
-+#endif
-+
- 	if (nr_pages > ARRAY_SIZE(frame_list))
- 		nr_pages = ARRAY_SIZE(frame_list);
- 
-@@ -308,6 +431,15 @@ static enum bp_state decrease_reservation(unsigned long nr_pages)
- 		.domid        = DOMID_SELF
- 	};
- 
-+#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
-+	if (balloon_stats.hotplug_pages) {
-+		nr_pages = min(nr_pages, balloon_stats.hotplug_pages);
-+		balloon_stats.hotplug_pages -= nr_pages;
-+		balloon_stats.balloon_hotplug += nr_pages;
-+		return BP_DONE;
-+	}
-+#endif
-+
- 	if (nr_pages > ARRAY_SIZE(frame_list))
- 		nr_pages = ARRAY_SIZE(frame_list);
- 
-@@ -368,10 +500,14 @@ static void balloon_process(struct work_struct *work)
- 	mutex_lock(&balloon_mutex);
- 
- 	do {
--		credit = current_target() - balloon_stats.current_pages;
-+		credit = current_credit();
- 
--		if (credit > 0)
--			state = increase_reservation(credit);
-+		if (credit > 0) {
-+			if (balloon_is_inflated())
-+				state = increase_reservation(credit);
-+			else
-+				state = reserve_additional_memory(credit);
-+		}
- 
- 		if (credit < 0)
- 			state = decrease_reservation(-credit);
-@@ -458,6 +594,14 @@ static int __init balloon_init(void)
- 	balloon_stats.retry_count = 1;
- 	balloon_stats.max_retry_count = 16;
- 
-+#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
-+	balloon_stats.hotplug_pages = 0;
-+	balloon_stats.balloon_hotplug = 0;
-+
-+	register_online_page_notifier(&xen_online_page_nb);
-+	register_memory_notifier(&xen_memory_nb);
-+#endif
-+
- 	register_balloon(&balloon_sysdev);
- 
- 	/*
--- 
-1.5.6.5
+Paul
+>
+> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+> ---
+>  Documentation/cgroups/cgroups.txt |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+> index 44b8b7a..7252cbd 100644
+> --- a/Documentation/cgroups/cgroups.txt
+> +++ b/Documentation/cgroups/cgroups.txt
+> @@ -110,22 +110,22 @@ university server with various users - students, professors, system
+>  tasks etc. The resource planning for this server could be along the
+>  following lines:
+>
+> -       CPU :           Top cpuset
+> +       CPU :          "Top cpuset"
+>                        /       \
+>                CPUSet1         CPUSet2
+> -                  |              |
+> -               (Profs)         (Students)
+> +                  |               |
+> +               (Professors)    (Students)
+>
+>                In addition (system tasks) are attached to topcpuset (so
+>                that they can run anywhere) with a limit of 20%
+>
+> -       Memory : Professors (50%), students (30%), system (20%)
+> +       Memory : Professors (50%), Students (30%), system (20%)
+>
+> -       Disk : Prof (50%), students (30%), system (20%)
+> +       Disk : Professors (50%), Students (30%), system (20%)
+>
+>        Network : WWW browsing (20%), Network File System (60%), others (20%)
+>                                / \
+> -                       Prof (15%) students (5%)
+> +               Professors (15%)  students (5%)
+>
+>  Browsers like Firefox/Lynx go into the WWW network class, while (k)nfsd go
+>  into NFS network class.
+> --
+> 1.6.2.5
+>
+>
