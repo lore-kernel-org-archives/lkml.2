@@ -1,87 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab1CHCQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 21:16:16 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56901 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab1CHCQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 21:16:12 -0500
-Message-ID: <4D7591C5.5070909@cn.fujitsu.com>
-Date: Tue, 08 Mar 2011 10:17:41 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1755841Ab1CHCWX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 21:22:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35415 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753779Ab1CHCWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 21:22:21 -0500
+Date: Mon, 7 Mar 2011 21:21:59 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+Cc: Neil Brown <neilb@suse.de>, akpm@linux-foundation.org, cotte@de.ibm.com,
+        dm-devel@redhat.com, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, ehrhardt@linux.vnet.ibm.com
+Subject: [PATCH v3] dm stripe: implement merge method
+Message-ID: <20110308022158.GA663@redhat.com>
+References: <201012271219.56476.mume@linux.vnet.ibm.com>
+ <20101227225459.5a5150ab@notabene.brown>
+ <201012271323.13406.mume@linux.vnet.ibm.com>
+ <4D74AEF9.7050108@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/4] slub,rcu: don't assume the size of struct rcu_head
-References: <4D6CA852.3060303@cn.fujitsu.com>	<AANLkTimXy2Yaj+NTDMNTWuLqHHfKZJhVDpeXj3CfMvBf@mail.gmail.com>	<alpine.DEB.2.00.1103010909320.6253@router.home>	<AANLkTim0Zjc7c9-7LCnEaYpV5PVN=5fNQpjMYqtZe-fk@mail.gmail.com>	<alpine.DEB.2.00.1103020625290.10180@router.home> <AANLkTikk02f6kLiPFqqAGroJErQkHbJFfHzpHy4Y5P8Y@mail.gmail.com>
-In-Reply-To: <AANLkTikk02f6kLiPFqqAGroJErQkHbJFfHzpHy4Y5P8Y@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-08 10:14:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-08 10:14:57,
-	Serialize complete at 2011-03-08 10:14:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D74AEF9.7050108@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2011 03:39 AM, Hugh Dickins wrote:
-> On Wed, Mar 2, 2011 at 4:32 AM, Christoph Lameter <cl@linux.com> wrote:
->> On Tue, 1 Mar 2011, Hugh Dickins wrote:
->>
->>>> Struct page may be larger for debugging purposes already because of the
->>>> need for extended spinlock data.
->>>
->>> That was so for a long time, but I stopped it just over a year ago
->>> with commit a70caa8ba48f21f46d3b4e71b6b8d14080bbd57a, stop ptlock
->>> enlarging struct page.
->>
->> Strange. I just played around with in in January and the page struct size
->> changes when I build kernels with full debugging. I have some
->> cmpxchg_double patches here that depend on certain alignment in the page
->> struct. Debugging causes all that stuff to get out of whack so that I had
->> to do some special patches to make sure fields following the spinlock are
->> properly aligned when the sizes change.
-> 
-> That puzzles me, it's not my experience and I don't have an
-> explanation: do you have time to investigate?
-> 
-> Uh oh, you're going to tell me you're working on an out-of-tree
-> architecture with a million cpus ;)  In that case, yes, I'm afraid
-> I'll have to update the SPLIT_PTLOCK_CPUS defaulting (for a million -
-> 1 even).
-> 
->>
->>> If a union leads to "random junk" overwriting the page->mapping field
->>> when the page is reused, and that junk could resemble the pointer in
->>> question, then KSM would mistakenly think it still owned the page.
->>> Very remote chance, and maybe it amounts to no more than a leak.  But
->>> I'd still prefer we keep page->mapping for pointers (sometimes with
->>> lower bits set as flags).
->>
->> DESTROY BY RCU uses the lru field which follows the mapping field in page
->> struct. Why would random junk overwrite the mapping field?
-> 
-> Random junk does not overwrite the mapping field with the current
-> implementation of DESTROY_BY_RCU.  But you and Jiangshan were
-> discussing how to change it, so I was warning of this issue with
-> page->mapping.
-> 
-> But I would anyway agree with Jiangshan, that it's preferable not to
-> bloat struct page size just for this DESTROY_BY_RCU issue, even if it
-> is only an issue when debugging.
-> 
+Hello Mustafa,
 
-A union with rcu_head does not cause overwriting, But the problem is
-only one minority use of the page (as a DESTROY_BY_RCU slab) needs to
-fit a rcu_head and to bloat the struct page size.
+On Mon, Mar 07 2011 at  5:10am -0500,
+Mustafa Mesanovic <mume@linux.vnet.ibm.com> wrote:
 
-Except for preparing for debugging or adding priority information for rcu_head,
-this patch also does a de-coupling work.
+> On 12/27/2010 01:23 PM, Mustafa Mesanovic wrote:
+> >On Mon December 27 2010 12:54:59 Neil Brown wrote:
+> >>On Mon, 27 Dec 2010 12:19:55 +0100 Mustafa Mesanovic
+> >>
+> >><mume@linux.vnet.ibm.com>  wrote:
+> >>>From: Mustafa Mesanovic<mume@linux.vnet.ibm.com>
+> >>>
+> >>>A short explanation in prior: in this case we have "stacked" dm devices.
+> >>>Two multipathed luns combined together to one striped logical volume.
+> >>>
+> >>>I/O throughput degradation happens at __bio_add_page when bio's get
+> >>>checked upon max_sectors. In this setup max_sectors is always set to 8
+> >>>->  what is 4KiB.
+> >>>A standalone striped logical volume on luns which are not multipathed do
+> >>>not have the problem: the logical volume will take over the max_sectors
+> >>>from luns below.
+> [...]
+> 
+> >>>Using the patch improves read I/O up to 3x. In this specific case from
+> >>>600MiB/s up to 1800MiB/s.
+> >>and using this patch will cause IO to fail sometimes.
+> >>If an IO request which is larger than a page crosses a device boundary in
+> >>the underlying e.g. RAID0, the RAID0 will return an error as such things
+> >>should not happen - they are prevented by merge_bvec_fn.
+> >>
+> >>If merge_bvec_fn is not being honoured, then you MUST limit requests to a
+> >>single entry iovec of at most one page.
+> >>
+> >>NeilBrown
+> >>
+> >Thank you for that hint, I will try to write a merge_bvec_fn for dm-stripe.c
+> >which solves the problem, if that is ok?
+> >
+> >Mustafa Mesanovic
+> >
+> Now here my new suggestion to fix this issue, what is your opinion?
+> I tested this with different setups, and it worked fine and I had
+> very good performance improvements.
+> 
+> [RFC][PATCH] dm: improve read performance - v2
+>
+> This patch adds a merge_fn for the dm stripe target. This merge_fn
+> prevents dm_set_device_limits() setting the max_sectors to 4KiB
+> (PAGE_SIZE). (As in a prior patch already mentioned.)
+>
+> Now the read performance improved up to 3x higher compared to before.
+> 
+> What happened before:
+> I/O throughput degradation happened at __bio_add_page() when bio's got checked
+> at the very beginning upon max_sectors. In this setup max_sectors is always
+> set to 8. So bio's entered the dm target with a max of 4KiB.
+
+So to recap:
+- you are stacking dm-stripe on DM multipath devices
+- dm_set_device_limits() will set max_hw_sectors to PAGE_SIZE if:
+  1) q->merge_bvec_fn is defined (as is the case for all DM devices)
+  2) target does not define a merge_fn (as was the case for dm-stripe)
+- dm_merge_bvec (aka DM's q->merge_bvec_fn) will only allow a single
+  page for the situation described in the previous point.
+
+> Now dm-stripe target will have its own merge_fn so max_sectors will not
+> pushed down to 8 (4KiB), and bio's can get bigger than 4KiB.
+> 
+> Signed-off-by: Mustafa Mesanovic<mume@linux.vnet.ibm.com>
+
+Here is a revised version of your patch that uses the relatively new
+stripe_map_sector(), removes an unnecessary cast, and a few other
+cleanups.
+
+This v3 should work as well as your v2 but should be suitable for
+upstream inclusion -- authorship of the change is still attributed to
+you as I only updated the code slightly.  I'd appreciate it if you could
+verify your config still performs as expected.
+
+Thanks,
+	Mike
+
+
+From: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+
+When the stripe target's underlying devices provide a merge_bvec_fn
+(e.g. DM) it is important to call down to them when building a biovec
+that doesn't span a stripe boundary.
+
+Without the merge method, a striped DM device stacked on DM devices
+would cause bios with a single page to be submitted.  The small bios
+that were built resulted in unnecessary overhead that hurt performance.
+
+In one setup, striped DM multipath devices, read performance was
+improved from 600MB/s to 1800MB/s.
+
+Signed-off-by: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ drivers/md/dm-stripe.c |   23 ++++++++++++++++++++++-
+ 1 files changed, 22 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/md/dm-stripe.c b/drivers/md/dm-stripe.c
+index dddfa14..fdfc1c6 100644
+--- a/drivers/md/dm-stripe.c
++++ b/drivers/md/dm-stripe.c
+@@ -396,9 +396,29 @@ static void stripe_io_hints(struct dm_target *ti,
+ 	blk_limits_io_opt(limits, chunk_size * sc->stripes);
+ }
+ 
++static int stripe_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
++			struct bio_vec *biovec, int max_size)
++{
++	struct stripe_c *sc = ti->private;
++	sector_t bvm_sector = bvm->bi_sector;
++	uint32_t stripe;
++	struct request_queue *q;
++
++	stripe_map_sector(sc, bvm_sector, &stripe, &bvm_sector);
++
++	q = bdev_get_queue(sc->stripe[stripe].dev->bdev);
++	if (!q->merge_bvec_fn)
++		return max_size;
++
++	bvm->bi_bdev = sc->stripe[stripe].dev->bdev;
++	bvm->bi_sector = sc->stripe[stripe].physical_start + bvm_sector;
++
++	return min(max_size, q->merge_bvec_fn(q, bvm, biovec));
++}
++
+ static struct target_type stripe_target = {
+ 	.name   = "striped",
+-	.version = {1, 3, 1},
++	.version = {1, 3, 2},
+ 	.module = THIS_MODULE,
+ 	.ctr    = stripe_ctr,
+ 	.dtr    = stripe_dtr,
+@@ -407,6 +427,7 @@ static struct target_type stripe_target = {
+ 	.status = stripe_status,
+ 	.iterate_devices = stripe_iterate_devices,
+ 	.io_hints = stripe_io_hints,
++	.merge  = stripe_merge,
+ };
+ 
+ int __init dm_stripe_init(void)
