@@ -1,94 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab1CHQPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 11:15:49 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40732 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909Ab1CHQPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 11:15:47 -0500
-Date: Tue, 8 Mar 2011 17:15:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        masami.hiramatsu.pt@hitachi.com, hpa@zytor.com, ananth@in.ibm.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        eric.dumazet@gmail.com, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] x86: separating entry text section
-Message-ID: <20110308161524.GE1751@elte.hu>
-References: <20110220125948.GC25700@elte.hu>
- <1298298313-5980-1-git-send-email-jolsa@redhat.com>
- <1298298313-5980-2-git-send-email-jolsa@redhat.com>
- <20110222080934.GB7001@elte.hu>
- <20110222125201.GB1884@jolsa.brq.redhat.com>
- <20110307104423.GA3661@jolsa.redhat.com>
- <20110307152921.GC28226@elte.hu>
- <20110307181039.GB15197@jolsa.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110307181039.GB15197@jolsa.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755875Ab1CHQR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 11:17:28 -0500
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:26439 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755426Ab1CHQR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 11:17:26 -0500
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Allen Kay <allen.m.kay@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1299595858.17339.512.camel@zakaz.uk.xensource.com>
+References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>
+	 <20110304104251.45b257c4@jbarnes-desktop>
+	 <1299595858.17339.512.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Mar 2011 16:17:12 +0000
+Message-ID: <1299601032.17339.525.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
+ register_slot
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=vdPf92PhWpEA:10 a=IkcTkHD0fZMA:10 a=tHz9FfFoAAAA:8 a=u82Y5rAqqe5l7JFwmS8A:9 a=wr_4s0ZvNYB8vCdeD5wA:7 a=bGnLDv9Acaw9V-i37qvhS6ID__4A:4 a=QEXdDO2ut3YA:10 a=6O0IECtVFhoA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jiri Olsa <jolsa@redhat.com> wrote:
-
-> On Mon, Mar 07, 2011 at 04:29:21PM +0100, Ingo Molnar wrote:
+On Tue, 2011-03-08 at 14:50 +0000, Ian Campbell wrote:
+> On Fri, 2011-03-04 at 18:42 +0000, Jesse Barnes wrote:
+> > On Mon, 28 Feb 2011 16:20:11 +0000
+> > Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
 > > 
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
+> > > Hi all,
+> > > if a device doesn't support power management (pm_cap == 0) but it is
+> > > acpi_pci_power_manageable() because there is a _PS0 method declared for
+> > > it and _EJ0 is also declared for the slot then nobody is going to set
+> > > current_state = PCI_D0 for this device.  This is what I think it is
+> > > happening:
+> > > 
+> > > 
+> > > pci_enable_device
+> > >     |
+> > > __pci_enable_device_flags
+> > > /* here we do not set current_state because !pm_cap */
+> > >     |
+> > > do_pci_enable_device
+> > >     |
+> > > pci_set_power_state
+> > >     |
+> > > __pci_start_power_transition
+> > >     |
+> > > pci_platform_power_transition
+> > > /* platform_pci_power_manageable() calls acpi_pci_power_manageable that
+> > >  * returns true */
+> > >     |
+> > > platform_pci_set_power_state
+> > > /* acpi_pci_set_power_state gets called and does nothing because the
+> > >  * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
+> > >  * ignore the device" */
+> > > 
+> > > 
+> > > at this point if we refer to the commit message that introduced the
+> > > comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
+> > > the hotplug driver to set the state to D0.
+> > > However AFAICT the pci hotplug driver never does, in fact
+> > > drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
+> > > (SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
+> > > current state to PCI_D0.
+> > > 
+> > > So my proposed fix is also to set current_state = PCI_D0 in
+> > > register_slot.
+> > > Comments are very welcome.
+> > > 
+> > > 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > > 
-> > > hi,
-> > > any feedback?
-> > 
-> > Did you get my reply below?
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
+> > Yeah, looks fine.  ACPIPHP is happy for the attention. :)
 > 
-> hi,
+> This helps for coldplug of devices which lack the PCI CFG space power
+> management capability but doesn't help with hotplugging such devices.
 > 
-> strange, I believe I did reply on this.. got missed
-> somehow or I'm missing simething :) reattached..
-
-hm, the direct mail to me got lost, but i found your reply in the lkml folder. 
-That's how i missed your reply.
-
-> I made another test with "reseting" the system state as suggested and only for 
-> cache-misses together with instructions and cycles events.
+> Is it fair to assume that any PCI device in a slot which has just been
+> powered on will be in D0?
 > 
-> I can see even bigger drop of icache load misses than before
-> from 19359739 to 16448709 (about 15%).
+> e.g. Stefano's patch plus the following seem to fix the crashes I've
+> been having with 82599 VFs for both hot and cold plug.
 > 
-> The instruction/cycles count is slightly bigger in the patched
-> kernel run though..
+> Ian.
+> 
+> acpiphp: set each new function to state D0 after powering on a slot.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 
-Ok, elapsed time is more stable, it went from:
+That version did it too soon and/or to devices which were already known.
+I think this one is more like it:
 
->         0.205402048  seconds time elapsed   ( +-   0.299% )
->         0.206267711  seconds time elapsed   ( +-   0.138% )
+8<------
 
-to:
+>From 5cb5d576e7177762abe29cfba3f616c48e619145 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Tue, 8 Mar 2011 16:16:34 +0000
+Subject: [PATCH] acpiphp: assume device is in state D0 after powering on a slot.
 
->         0.206072845  seconds time elapsed   ( +-   0.276% )
->         0.206747566  seconds time elapsed   ( +-   0.137% )
+Devices which do not support PCI configuration space based power
+management may not otherwise be enabled.
 
-which is 0.1% slower, within the noise of the measurement.
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+---
+ drivers/pci/hotplug/acpiphp_glue.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Will apply the patches, thanks Jiri!
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index e610cfe..a502fef 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -827,6 +827,13 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+ 	acpiphp_set_hpp_values(bus);
+ 	acpiphp_set_acpi_region(slot);
+ 	pci_enable_bridges(bus);
++
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		/* Assume that newly added devices are powered on already. */
++		if (!dev->is_added)
++			dev->current_state = PCI_D0;
++	}
++
+ 	pci_bus_add_devices(bus);
+ 
+ 	list_for_each_entry(func, &slot->funcs, sibling) {
+-- 
+1.5.6.5
 
-Thanks,
 
-	Ingo
+
+-- 
+Ian Campbell
+Current Noise: Behemoth - Daimonos
+
+Unix is a Registered Bell of AT&T Trademark Laboratories.
+		-- Donn Seeley
+
