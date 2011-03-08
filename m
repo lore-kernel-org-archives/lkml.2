@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab1CHV72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 16:59:28 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57583 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab1CHV70 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 16:59:26 -0500
+	id S1753611Ab1CHWFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:05:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46922 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751373Ab1CHWFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:05:32 -0500
+Date: Tue, 8 Mar 2011 17:05:26 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+Message-ID: <20110308220526.GA393@redhat.com>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+ <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
+ <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
+ <20110303221353.GA10366@redhat.com>
+ <4D761E0D.8050200@fusionio.com>
+ <20110308202100.GA31744@redhat.com>
+ <4D76912C.9040705@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <1299619716.22236.32.camel@pasglop>
-References: <4D6E8932.1010405@zytor.com> <alpine.LFD.2.00.1103022152420.2701@localhost6.localdomain6>
- <4D6EB07C.5040004@zytor.com> <alpine.LFD.2.00.1103022216180.2701@localhost6.localdomain6>
- <4D6ECBDB.6090307@zytor.com> <20110303083035.GB14854@elte.hu>
- <AANLkTik4aTN8+Ob_GVwF17v6pDNGg2DEZJubBazs2e3L@mail.gmail.com> <1299619716.22236.32.camel@pasglop>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Tue, 8 Mar 2011 16:59:05 -0500
-Message-ID: <AANLkTikAnb39XhR0hdZAzTKGJ-P1rH+ZxtD+Dea7-364@mail.gmail.com>
-Subject: Re: RFC: x86: kill binutils 2.16.x?
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        Kumar Gala <kumar.gala@freescale.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D76912C.9040705@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 16:28, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Tue, 2011-03-08 at 14:57 -0500, Kyle Moffett wrote:
->> Specifically the e500 doesn't have a normal PowerPC FPU, it has a
->> custom FPU built using extended integer registers instead, and it
->> happens to borrow the AltiVec opcode range to do it.
->>
->> When trying to port Debian to the platform we were getting SIGILL's
->> all over the place until binutils got updated to reject all of the
->> unsupported opcodes on this particular platform.  Now of course we get
->> build errors, but that's a lot easier to debug and fix. :-D
->>
->> Basically, binutils no longer supports "-many" (because too many
->> opcodes conflict), and the test itself would fail anyways (because
->> "dssall" is not valid on "any" PowerPC).
->
-> Note that this freescale "SPE" fiasco is just that ... a fiasco :-) I
-> don't think there's that many cases of opcode overlap outside of it.
+On Tue, Mar 08 2011 at  3:27pm -0500,
+Jens Axboe <jaxboe@fusionio.com> wrote:
 
-I absolutely agree on the "fiasco" part, although I'm pretty sure that
-there's a large number of incompatible ARM variants (even 16-bit vs.
-32-bit opcodes).  Unfortunately there's a lot of shipped hardware to
-be supported and maintained...
+> On 2011-03-08 21:21, Mike Snitzer wrote:
+> > On Tue, Mar 08 2011 at  7:16am -0500,
+> > Jens Axboe <jaxboe@fusionio.com> wrote:
+> > 
+> >> On 2011-03-03 23:13, Mike Snitzer wrote:
+> >>> I'm now hitting a lockdep issue, while running a 'for-2.6.39/stack-plug'
+> >>> kernel, when I try an fsync heavy workload to a request-based mpath
+> >>> device (the kernel ultimately goes down in flames, I've yet to look at
+> >>> the crashdump I took)
+> >>
+> >> Mike, can you re-run with the current stack-plug branch? I've fixed the
+> >> !CONFIG_BLOCK and rebase issues, and also added a change for this flush
+> >> on schedule event. It's run outside of the runqueue lock now, so
+> >> hopefully that should solve this one.
+> > 
+> > Works for me, thanks.
+> 
+> Super, thanks! Out of curiousity, did you use dm/md?
 
-
-> Now regarding the kernel, the best is probably for nasty cases like that
-> to use hand coded opcodes (see ppc-opcodes.h) and stick to a more
-> "generic" setting for binutils, since it should be possible to build
-> kernels that support multiple types of BookE CPUs with different
-> floating point units.
-
-The problem is not with the kernel compile itself, but with the 2.12
-"dssall" binutils test.  Basically, recent binutils treats e500 as
-effectively a separate architecture that happens to share *most* of
-the opcodes with regular PowerPC.  Any opcode which is not understood
-by the e500 chip is either convert to an equivalent opcode which is
-understood (IE: lwsync => sync), or failed with an error.  This means
-that the kernel compile aborts early telling me to upgrade to a newer
-version of binutils.
-
-This was *critical* for getting an actual Debian distribution
-bootstrapped on the e500 cores, because so much software assumes
-PowerPC == altivec (ffmpeg), hardcodes 'asm("lwsync")' for memory
-barriers (80+ packages in Debian), or includes hand-coded
-floating-point ASM instructions (libffi).  Noisy build errors are
-better than silent runtime failures any day of the week.
-
-At the very least that test needs to be turned off if
-CONFIG_ALTIVEC=n, because the kernel builds and runs fine otherwise.
-
-Cheers,
-Kyle Moffett
+Yes, I've been using a request-based DM multipath device.
