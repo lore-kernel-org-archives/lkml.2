@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab1CHN0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 08:26:49 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55189 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab1CHN0r (ORCPT
+	id S1754952Ab1CHN2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 08:28:06 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:43169 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754469Ab1CHN2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 08:26:47 -0500
-Date: Tue, 8 Mar 2011 08:26:32 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jay Vosburgh <fubar@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org
-Subject: Re: [Patch] bonding: fix netpoll in active-backup mode
-Message-ID: <20110308132632.GA19072@hmsreliant.think-freely.org>
-References: <1299507114-12144-1-git-send-email-amwang@redhat.com>
- <20110307185038.GA31788@hmsreliant.think-freely.org>
- <4D75AD50.7060400@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D75AD50.7060400@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.6 (--)
+	Tue, 8 Mar 2011 08:28:03 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/dqQcK9Ijdmdu3ZhGpRkkE0qjYk7DXb4LL1m0vqu
+	cZwI6yQLtpFugd
+Subject: Re: [patchlet] sched: fix rt throttle runtime borrowing
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1299588399.2308.1424.camel@twins>
+References: <1299486101.14465.25.camel@marge.simson.net>
+	 <AANLkTikOY2-_EAjYTBZG4Wb9HNHRxJ4Qcd+zbvbxzPbt@mail.gmail.com>
+	 <1299490414.14465.74.camel@marge.simson.net>
+	 <1299508052.8093.1.camel@marge.simson.net>
+	 <1299588399.2308.1424.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Mar 2011 14:27:58 +0100
+Message-ID: <1299590878.7949.41.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 12:15:12PM +0800, Cong Wang wrote:
-> 于 2011年03月08日 02:50, Neil Horman 写道:
-> >On Mon, Mar 07, 2011 at 10:11:50PM +0800, Amerigo Wang wrote:
-> >>netconsole doesn't work in active-backup mode, because we don't do anything
-> >>for nic failover in active-backup mode. This patch fixes the problem by:
-> >>
-> >>1) make slave_enable_netpoll() and slave_disable_netpoll() callable in softirq
-> >>    context, that is, moving code after synchronize_rcu_bh() into call_rcu_bh()
-> >>    callback function, teaching kzalloc() to use GFP_ATOMIC.
-> >>
-> >>2) disable netpoll on old slave and enable netpoll on the new slave.
-> >>
-> >>Tested by ifdown the current active slave and ifup it again for several times,
-> >>netconsole works well.
-> >>
-> >>Signed-off-by: WANG Cong<amwang@redhat.com>
-> >>
-> >I may be missing soething but this seems way over-complicated to me.  I presume
-> >the problem is that in active backup mode a failover results in the new active
-> >slave not having netpoll setup on it?  If thats the case, why not just setup
-> >netpoll on all slaves when ndo_netpoll_setup is called on the bonding interface?
-> >I don't see anything immeidately catastrophic that would happen as a result.
+On Tue, 2011-03-08 at 13:46 +0100, Peter Zijlstra wrote:
+> On Mon, 2011-03-07 at 15:27 +0100, Mike Galbraith wrote:
+> > sched: fix rt throttle runtime borrowing
+> > 
+> > If allowed to borrow up to rt_period, the throttle has no effect on an out
+> > of control RT task, allowing it to consume 100% CPU indefinitely, blocking
+> > system critical SCHED_NORMAL threads indefinitely.
+> > 
+> > To make the throttle a more effective safety mechanism, disable borrowing
+> > by default. while providing an opt-in switch for those who know the risks.
+> > Also fix the throttle such that it never silently bumps rt_runtime to the
+> > point that it disables itself (rt_runtime >= rt_period).
+> > 
+> > Convert balance_runtime() and do_balance_runtime() to void since their
+> > return values are never used.
+> > 
+> > Signed-off-by: Mike Galbraith <efault@gmx.de>
 > 
-> 
-> But we still need to clean up the netpoll on the failing slave, which still
-> needs to call slave_disable_netpoll() in monitor code, I see no big differences
-> with the solution I take.
-> 
-Why?  I understand you want to free up that memory, but I don't see any special
-state codified in that structure that can't wait until you disable netpoll on
-the bond as a whole.  Save yourself the time and trouble, enable netpoll on both
-slaves when its enabled on the bond, and tear it down when its torn down on the
-bond. Do worry about doing anything during a failover.
+> I'm very hesitant here, pretty much all of the sched_rt cgroup stuff
+> needs to be thrown out and rewritten. Adding more knobs to it isn't
+> going to make things much better.
 
-Neil
+Yeah, I already fed it to the bitwolf.
+
+> (I'd myself much prefer to simply not support SCHED_FIFO/RR at all, but
+> seeing as POSIX mandates that crap there's really no choice there).
 > 
-> >And then you wouldn't have to worry about disabling/enabling anything on a
-> >failover (or during a panic for that matter).  As for the rcu bits?  Why are
-> >they needed?  One would presume that wouldn't (or at least shouldn't) be able to
-> >teardown our netpoll setup until such time as all the pending frames for that
-> >netpoll client have been transmitted.  If we're not blocknig on that RCU isn't
-> >really going to help.  Seems like the proper fix is take a reference to the
-> >appropriate npinfo struct in netpoll_send_skb, and drop it from the skbs
-> >destructor or some such.
-> 
-> I saw a "scheduling while in atomic" warning without touching the rcu bits.
-> 
-> Thanks!
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Also, how much of a problem is it really? When I start a FIFO spinner on
+> my machine I can still ssh in and kill the thing.
+
+It's a problem if you have one box.  Also, try starting a hefty load
+then having an rt task go nuts.  Nothing good happens here. 
+
+> Not allowing 100% FIFO usage on SMP is going to make it very very hard
+> to implement any kind of fifo-cgroup stuff.
+
+The only thing I care much about is the default setup.  The safety net
+should work, otherwise it's a waste.
+
+Maybe only doing the borrow thing when there are active RT groups is the
+right thing to do.  (minus knob) 
+
+	-Mike
+
