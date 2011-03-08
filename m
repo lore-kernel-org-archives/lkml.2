@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab1CHPli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:41:38 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37676 "EHLO
+	id S1755825Ab1CHPmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:42:08 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39107 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755070Ab1CHPlY (ORCPT
+	with ESMTP id S1754199Ab1CHPmF (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 8 Mar 2011 10:41:24 -0500
+	Tue, 8 Mar 2011 10:42:05 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
         dri-devel@lists.freedesktop.org,
         Thomas Hellstrom <thomas@shipmail.org>,
         Alex Deucher <alexdeucher@gmail.com>,
         Jerome Glisse <j.glisse@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/2] ttm: Include the 'struct dev' when using the DMA API.
-Date: Tue,  8 Mar 2011 10:39:48 -0500
-Message-Id: <1299598789-20402-2-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be passed in for DMA API calls.
+Date: Tue,  8 Mar 2011 10:39:47 -0500
+Message-Id: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com>
-References: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4D764E12.01B0,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4D764E1D.00C6,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the accounting when using 'debug_dma_dump_mappings()'
-and CONFIG_DMA_API_DEBUG=y be assigned to the correct device
-instead of 'fallback'.
+These two patches are not strictly required but they do a bit of
+cleanup and also fix a false reporting issue when the kernel is compiled
+with CONFIG_DEBUG_DMA_API.
 
-No functional change - just cosmetic.
+Essentially the patchset modifies 'struct ttm_tt' and 'struct ttm_bo_device'
+to contain a pointer to 'struct device'. Passing of the 'struct device'
+is done via the 'tt_bo_device_init'. The 'struct device' is then used
+during the allocation/deallocation of pages when TTM_PAGE_FLAG_DMA32 flag
+is set.
 
-At first it seems that we just need to keep a copy of
-'struct device' in the struct ttm_bo_device and use that. However,
+At first it seems that we would need to keep a copy of
+'struct device' in the struct ttm_bo_device only and use that. However,
 when 'ttm_tt_destroy' is called it sets ttm->be (which contains
 the 'struct ttm_bo_device') to NULL so we cannot use it. Hence
 we copy the 'struct device' pointer to the 'struct ttm_tm' and keep
 it there.
 
-[v2: Added 'struct device' in 'struct ttm_tm']
+I've put the patches on:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/nouveau/nouveau_mem.c |    1 +
- drivers/gpu/drm/radeon/radeon_ttm.c   |    1 +
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/ttm.pci-api.v5
+
+The testing was a bit difficult b/c I could not persuade the machine to unload
+either the nouveau or radeon driver (I had a serial console hooked so I figured
+it would fallback to that?). Ended up calling 'unbind' on the
+/sys/pci/.../$BDF/driver/[radeon,nouveau] to trigger the de-allocation path.
+
+Thomas,
+
+What is the best way to test vmw-gfx*? Does the Workstation (5?) support
+this particular frontend? 
+
+Konrad Rzeszutek Wilk (2):
+      ttm: Include the 'struct dev' when using the DMA API.
+      ttm: Pass in 'struct device' to TTM so it can do DMA API on behalf of device.
+
+ drivers/gpu/drm/nouveau/nouveau_mem.c |    3 ++-
+ drivers/gpu/drm/radeon/radeon_ttm.c   |    3 ++-
+ drivers/gpu/drm/ttm/ttm_bo.c          |    4 +++-
  drivers/gpu/drm/ttm/ttm_page_alloc.c  |   11 ++++++-----
  drivers/gpu/drm/ttm/ttm_tt.c          |    5 +++--
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   |    2 +-
- include/drm/ttm/ttm_bo_driver.h       |    2 ++
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   |    4 ++--
+ include/drm/ttm/ttm_bo_driver.h       |    7 ++++++-
  include/drm/ttm/ttm_page_alloc.h      |    8 ++++++--
- 7 files changed, 20 insertions(+), 10 deletions(-)
+ 8 files changed, 30 insertions(+), 15 deletions(-)
+
+
+The full diff:
 
 diff --git a/drivers/gpu/drm/nouveau/nouveau_mem.c b/drivers/gpu/drm/nouveau/nouveau_mem.c
-index 26347b7..7b57067 100644
+index 26347b7..3706156 100644
 --- a/drivers/gpu/drm/nouveau/nouveau_mem.c
 +++ b/drivers/gpu/drm/nouveau/nouveau_mem.c
-@@ -409,6 +409,7 @@ nouveau_mem_vram_init(struct drm_device *dev)
- 	if (ret)
- 		return ret;
- 
-+	dev_priv->ttm.bdev.dev = dev->dev;
+@@ -412,7 +412,8 @@ nouveau_mem_vram_init(struct drm_device *dev)
  	ret = ttm_bo_device_init(&dev_priv->ttm.bdev,
  				 dev_priv->ttm.bo_global_ref.ref.object,
  				 &nouveau_bo_driver, DRM_FILE_PAGE_OFFSET,
+-				 dma_bits <= 32 ? true : false);
++				 dma_bits <= 32 ? true : false,
++				 dev->dev);
+ 	if (ret) {
+ 		NV_ERROR(dev, "Error initialising bo driver: %d\n", ret);
+ 		return ret;
 diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
-index 9ead11f..d19bfcf 100644
+index 9ead11f..371890c 100644
 --- a/drivers/gpu/drm/radeon/radeon_ttm.c
 +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -513,6 +513,7 @@ int radeon_ttm_init(struct radeon_device *rdev)
- 	if (r) {
- 		return r;
- 	}
-+	rdev->mman.bdev.dev = rdev->dev;
- 	/* No others user of address space so set it to 0 */
+@@ -517,7 +517,8 @@ int radeon_ttm_init(struct radeon_device *rdev)
  	r = ttm_bo_device_init(&rdev->mman.bdev,
  			       rdev->mman.bo_global_ref.ref.object,
+ 			       &radeon_bo_driver, DRM_FILE_PAGE_OFFSET,
+-			       rdev->need_dma32);
++			       rdev->need_dma32,
++			       rdev->dev);
+ 	if (r) {
+ 		DRM_ERROR("failed initializing buffer object driver(%d).\n", r);
+ 		return r;
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index af61fc2..278a2d3 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1526,12 +1526,14 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
+ 		       struct ttm_bo_global *glob,
+ 		       struct ttm_bo_driver *driver,
+ 		       uint64_t file_page_offset,
+-		       bool need_dma32)
++		       bool need_dma32,
++		       struct device *dev)
+ {
+ 	int ret = -EINVAL;
+ 
+ 	rwlock_init(&bdev->vm_lock);
+ 	bdev->driver = driver;
++	bdev->dev = dev;
+ 
+ 	memset(bdev->man, 0, sizeof(bdev->man));
+ 
 diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
 index 737a2a2..35849db 100644
 --- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
@@ -159,20 +202,25 @@ index 86d5b17..354f9d9 100644
  	ttm->dummy_read_page = dummy_read_page;
  
 diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-index 10ca97e..4a8c789 100644
+index 10ca97e..803d979 100644
 --- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
 +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -322,7 +322,7 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
+@@ -322,11 +322,11 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
  	ttm_lock_set_kill(&dev_priv->fbdev_master.lock, false, SIGTERM);
  	dev_priv->active_master = &dev_priv->fbdev_master;
  
 -
-+	dev_priv->bdev.dev = dev->dev;
  	ret = ttm_bo_device_init(&dev_priv->bdev,
  				 dev_priv->bo_global_ref.ref.object,
  				 &vmw_bo_driver, VMWGFX_FILE_PAGE_OFFSET,
+-				 false);
++				 false,
++				 dev->dev);
+ 	if (unlikely(ret != 0)) {
+ 		DRM_ERROR("Failed initializing TTM buffer object driver.\n");
+ 		goto out_err1;
 diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index efed082..7589c0a 100644
+index efed082..2024a74 100644
 --- a/include/drm/ttm/ttm_bo_driver.h
 +++ b/include/drm/ttm/ttm_bo_driver.h
 @@ -177,6 +177,7 @@ struct ttm_tt {
@@ -191,6 +239,25 @@ index efed082..7589c0a 100644
  	rwlock_t vm_lock;
  	struct ttm_mem_type_manager man[TTM_NUM_MEM_TYPES];
  	spinlock_t fence_lock;
+@@ -791,6 +793,8 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
+  * @file_page_offset: Offset into the device address space that is available
+  * for buffer data. This ensures compatibility with other users of the
+  * address space.
++ * @need_dma32: Allocate pages under 4GB
++ * @dev: 'struct device' of the PCI device.
+  *
+  * Initializes a struct ttm_bo_device:
+  * Returns:
+@@ -799,7 +803,8 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
+ extern int ttm_bo_device_init(struct ttm_bo_device *bdev,
+ 			      struct ttm_bo_global *glob,
+ 			      struct ttm_bo_driver *driver,
+-			      uint64_t file_page_offset, bool need_dma32);
++			      uint64_t file_page_offset, bool need_dma32,
++			      struct device *dev);
+ 
+ /**
+  * ttm_bo_unmap_virtual
 diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
 index 8062890..ccb6b7a 100644
 --- a/include/drm/ttm/ttm_page_alloc.h
@@ -227,6 +294,3 @@ index 8062890..ccb6b7a 100644
  /**
   * Initialize pool allocator.
   */
--- 
-1.7.1
-
