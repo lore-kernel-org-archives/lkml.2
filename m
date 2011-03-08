@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1CHQth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 11:49:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61487 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889Ab1CHQte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 11:49:34 -0500
-Date: Tue, 8 Mar 2011 11:48:49 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
-Cc: Neil Brown <neilb@suse.de>, akpm@linux-foundation.org, dm-devel@redhat.com,
-        cotte@de.ibm.com, heiko.carstens@de.ibm.com,
-        linux-kernel@vger.kernel.org, ehrhardt@linux.vnet.ibm.com,
-        "Alasdair G. Kergon" <agk@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH v3] dm stripe: implement merge method
-Message-ID: <20110308164849.GA5692@redhat.com>
-References: <201012271219.56476.mume@linux.vnet.ibm.com>
- <20101227225459.5a5150ab@notabene.brown>
- <201012271323.13406.mume@linux.vnet.ibm.com>
- <4D74AEF9.7050108@linux.vnet.ibm.com>
- <20110308022158.GA663@redhat.com>
- <4D76051E.5060303@linux.vnet.ibm.com>
+	id S1755646Ab1CHQxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 11:53:17 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59605 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab1CHQxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 11:53:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Y6h/6XM1CeHQ8IfPwINJCTys9oFndCfzDpasTONIphzoBQjYE51IF6yM9wM2Te9pCf
+         ovkpwLLbN/cnYBVqrkcJev/Gby98uJ+O7hoFrRkGR2uh/HOuB4tID1u4Jywwi27hAY4Y
+         H9HRIGwWQogm82aWvIsWUrcD+YCLgVPaRAO+E=
+Date: Tue, 8 Mar 2011 18:53:09 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, bskeggs@redhat.com
+Subject: Re: 2.6.38-rc8: lockdep vs nouveau
+Message-ID: <20110308165309.GA25650@p183.telecom.by>
+References: <AANLkTimG-1nSZw3P5q7LQbGmQch3ibsMPQ_duhAjhtQH@mail.gmail.com>
+ <20110308092254.GA4909@p183.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D76051E.5060303@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110308092254.GA4909@p183.telecom.by>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08 2011 at  5:29am -0500,
-Mustafa Mesanovic <mume@linux.vnet.ibm.com> wrote:
-
-> On 03/08/2011 03:21 AM, Mike Snitzer wrote:
->
-> >Here is a revised version of your patch that uses the relatively new
-> >stripe_map_sector(), removes an unnecessary cast, and a few other
-> >cleanups.
-> >
-> >This v3 should work as well as your v2 but should be suitable for
-> >upstream inclusion -- authorship of the change is still attributed to
-> >you as I only updated the code slightly.  I'd appreciate it if you could
-> >verify your config still performs as expected.
->
-> Mike,
+On Tue, Mar 08, 2011 at 11:22:54AM +0200, Alexey Dobriyan wrote:
+> [drm] No driver support for vblank timestamp query.
 > 
-> your changes are working well and performing even a bit better.
+> =========================================================
+> [ INFO: possible irq lock inversion dependency detected ]
+> 2.6.38-rc8 #9
+> ---------------------------------------------------------
+> kworker/0:1/0 just changed the state of lock:
+>  (&(&dev_priv->context_switch_lock)->rlock){-.....}, at: [<ffffffff812a6727>] nouveau_irq_handler+0x57/0x150
 
-Good to know.
+And then, there is this:
 
-> Are there any further comments from others, or can consider putting it
-> upstream.
-
-I chatted with Alasdair and one concern he had was: does the existence
-of stripe_merge() ever hurt due to the fact that stripe_map_sector() is
-performed twice (once for .merge and again for .map)?  May be that a
-really small chuck_size proves to be more problematic but using a small
-chunk_size generally isn't productive to begin with.
-
-In any case, it clearly helps your workload.
-
-Could you explain your config in more detail?
-- what is your chunk_size?
-- how many stripes (how many mpath devices)?
-- what is the performance, of your test workload, of a single underlying
-  mpath device?
-
-And, in particular, what is your test workload?
-- What is the nature of your IO (are you using a particular tool)?
-- Are you using AIO?
-- How many threads?
-- Are you driving deep queue depths? Etc.
-
-I have various configs that I'll be testing to help verify the benefit.
-The only other change Alasdair request is that the target version should
-be bumped to 1.4 (rather than 1.3.2).
-
-Given that I can put some time to this now: we should be able to sort
-all this out for upstream inclusion in 2.6.39.
-
-Thanks,
-Mike
+	...
+[12085.767490] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 00417c1400 status 0000cb20 channel 2 (0x00000906)
+[12085.767493] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 00417c1400
+[12085.767496] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 00120000, e20: 00000011, e24: 0c030000
+[12085.767503] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[12085.767507] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x00000000
+	...
+[19445.986827] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 00417c2400 status 0000cb20 channel 2 (0x00000906)
+[19445.986835] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0040b16300
+[19445.986841] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 000c0000, e20: 00000011, e24: 0c030000
+[19445.986851] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[19445.986860] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x6e51504f
+[19458.826528] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0040b17b00 status 0000cb20 channel 2 (0x00000906)
+[19458.826535] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041a61300
+[19458.826542] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 000c0000, e20: 00000011, e24: 0c030000
+[19458.826552] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[19458.826561] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x6e51504f
+	...
+[26658.316541] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041a62300 status 0000cb20 channel 2 (0x00000906)
+[26658.316545] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041cfc300
+[26658.316548] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 000c0020, e20: 00000011, e24: 0c030000
+[26658.316555] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[26658.316559] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x6b4e4d4d
+[27184.011732] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041bf4300 status 0000cb20 channel 2 (0x00000906)
+[27184.011735] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041bf4300
+[27184.011738] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 000c0020, e20: 00000011, e24: 0c030000
+[27184.011745] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27184.011749] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x6b4e4d4d
+[27184.011767] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041bf5400 status 0000cb20 channel 2 (0x00000906)
+[27184.011769] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041bf5400
+[27184.011772] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 00100046, e20: 00000011, e24: 0c030000
+[27184.011779] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27184.011782] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x61474646
+[27184.011800] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041bf5c00 status 0000cb20 channel 2 (0x00000906)
+[27184.011802] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041bf5c00
+[27184.011804] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 0012005e, e20: 00000011, e24: 0c030000
+[27184.011811] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27184.011814] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x09060606
+[27184.011835] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041bf6d00 status 0000cb20 channel 2 (0x00000906)
+[27184.011836] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041bf6d00
+[27184.011838] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 00140076, e20: 00000011, e24: 0c030000
+[27184.011845] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27184.011848] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x00000000
+[27184.011865] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041bf7500 status 0000cb20 channel 2 (0x00000906)
+[27184.011867] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041bf7500
+[27184.011869] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 0016008e, e20: 00000011, e24: 0c030000
+[27184.011876] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27184.011879] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x060c data 0x0000000a
+[27236.139499] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041cc0300 status 0000cb20 channel 2 (0x00000906)
+[27236.139503] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041cc0300
+[27236.139505] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 000e0020, e20: 00000011, e24: 0c030000
+[27236.139513] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27236.139516] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x684c4b4b
+[27236.139535] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 0041cc4400 status 0000cb20 channel 2 (0x00000906)
+[27236.139537] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 0041cc4400
+[27236.139539] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 001000a0, e20: 00000011, e24: 0c030000
+[27236.139546] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27236.139549] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x09060606
+[27259.300269] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 00418c5400 status 0000cb20 channel 2 (0x00000906)
+[27259.300276] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 00418c5400
+[27259.300283] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 00120020, e20: 00000011, e24: 0c030000
+[27259.300293] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27259.300301] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x0860 data 0x00000000
+[27259.300324] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP_TPDMA - VM: Trapped write at 00418c5500 status 0000cb20 channel 2 (0x00000906)
+[27259.300329] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - Unknown fault at address 00418c5500
+[27259.300335] [drm] nouveau 0000:01:00.0: PGRAPH_TRAP_TPDMA_2D - TP 0 - e0c: 00000000, e18: 00000000, e1c: 00160020, e20: 00000011, e24: 0c030000
+[27259.300345] [drm] nouveau 0000:01:00.0: PGRAPH - TRAP
+[27259.300352] [drm] nouveau 0000:01:00.0: PGRAPH - ch 2 (0x0000906000) subc 2 class 0x502d mthd 0x060c data 0x0000000a
