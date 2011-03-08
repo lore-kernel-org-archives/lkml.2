@@ -1,58 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab1CHWQs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:16:48 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37976 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329Ab1CHWQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:16:47 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-Date: Tue, 8 Mar 2011 23:16:59 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <Pine.LNX.4.44L0.1102221029100.1968-100000@iolanthe.rowland.org> <201103082312.26675.rjw@sisk.pl> <4D76AA2C.2010805@gmail.com>
-In-Reply-To: <4D76AA2C.2010805@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755206Ab1CHWSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:18:09 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45951 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab1CHWSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:18:07 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=ZuHi0PLGDe8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=taGs_qngAAAA:8 a=v8_LmKUIAAAA:8 a=meVymXHHAAAA:8 a=Q8fLcT12XPm1J2Jnn78A:9 a=8DTJJ6MDhXw4HlNKgpMA:7 a=-Hzp8OyxruFmZTuuo6lBEHTm8U8A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=n7Cch7CHiCMA:10 a=jeBq3FmKZ4MA:10 a=oSXv0JUDx-e85Qpr:21 a=IXF-OPIxVD9g2cgJ:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][RFC] tracing: Enable tracepoints via module parameters
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        chris <chris@chris-wilson.co.uk>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 08 Mar 2011 17:18:04 -0500
+Message-ID: <1299622684.20306.77.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103082316.59901.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 08, 2011, Jiri Slaby wrote:
-> On 03/08/2011 11:12 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, March 08, 2011, Jiri Slaby wrote:
-> >> On 03/08/2011 08:25 PM, Rafael J. Wysocki wrote:
-> >>> On Tuesday, March 08, 2011, Jiri Slaby wrote:
-> >>>> On 02/22/2011 04:36 PM, Alan Stern wrote:
-> >>>>> By the way, are you booting with no_console_suspend?  And do you do 
-> >>>>> "echo 8 >/proc/sys/kernel/printk" (or equivalently, Alt-SysRq-8) before 
-> >>>>> suspending?
-> >>>>
-> >>>> Unfortunately there are no messages at all.
-> >>>>
-> >>>> Rafael, this is a Factory with intel gfx (modesetting). Do pm-utils
-> >>>> switch a console in such case? And if yes, to which one?
-> >>>
-> >>> pm-utils don't, but s2ram does, I'm not sure from the top of my head to
-> >>> which one, though.
-> >>>
-> >>> If you use a KMS driver (I get you do), please just "chmod a-x /usr/sbin/s2ram".
-> >>
-> >> Yeah, I meant kernel modesetting, of course. Sorry for the confusion.
-> >>
-> >> I don't have /usr/sbin/s2ram.
-> > 
-> > Ah.  So it's gone from Factory?  Interesting.
-> 
-> I don't know, maybe it's in suspend package which I don't have installed.
+A few months ago it was suggested to have a way to enable tracepoints in
+a module when it is loaded. I tried various methods, but this one seems
+to be the least intrusive. In fact, it requires no modification to the
+module code.
 
-Hm.  So you use the in-kernel hibernate code?
+The trace event now adds its own MODULE_INFO() and kernel_param_ops that
+and links the information about a tracepoint into the module's __param
+section. A module can be loaded with a tracepoint active by adding
+trace_<tracepoint>=1 as one of the parameters.
 
-The one in the suspend package is generally faster.
+The following patch is in:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+
+    branch: rfc/trace
+
+
+Steven Rostedt (1):
+      tracing: Enable tracepoints via module parameters
+
+----
+ include/linux/ftrace_event.h |    4 +++
+ include/trace/ftrace.h       |   22 ++++++++++++++++-
+ kernel/trace/trace_events.c  |   52 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 76 insertions(+), 2 deletions(-)
+---------------------------
+commit b514aa1b59148994a47086cdd46db7f994b4789e
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Tue Mar 8 17:06:14 2011 -0500
+
+    tracing: Enable tracepoints via module parameters
+    
+    Add the tracepoints within the module to the module info section
+    and allow the tracepoints to be enabled when the module is loaded.
+    
+    For example:
+    
+    [root]# modinfo samples/trace_events/trace-events-sample.ko
+    filename:       samples/trace_events/trace-events-sample.ko
+    license:        GPL
+    description:    trace-events-sample
+    author:         Steven Rostedt
+    tracepoint:     foo_bar
+    srcversion:     F6AC4B8D911A5C5B9CCDD7B
+    depends:
+    vermagic:       2.6.38-rc5+ SMP preempt mod_unload
+    
+    Notice that the trace-events-sample tracepoint "foo_bar" shows
+    up in the modinfo. When loading the module with:
+    
+     # insmod trace-events-sample.ko trace_foo_bar=1
+    
+    The tracepoint "foo_bar" will be enabled.
+    
+    Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+    Cc: Chris Wilson <chris@chris-wilson.co.uk>
+    Cc: Rusty Russell <rusty@rustycorp.com.au>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 47e3997..b672889 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -124,6 +124,8 @@ void tracing_record_cmdline(struct task_struct *tsk);
+ 
+ struct event_filter;
+ 
++extern struct kernel_param_ops ftrace_mod_ops;
++
+ enum trace_reg {
+ 	TRACE_REG_REGISTER,
+ 	TRACE_REG_UNREGISTER,
+@@ -155,6 +157,7 @@ enum {
+ 	TRACE_EVENT_FL_FILTERED_BIT,
+ 	TRACE_EVENT_FL_RECORDED_CMD_BIT,
+ 	TRACE_EVENT_FL_CAP_ANY_BIT,
++	TRACE_EVENT_FL_MOD_ENABLE_BIT,
+ };
+ 
+ enum {
+@@ -162,6 +165,7 @@ enum {
+ 	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
+ 	TRACE_EVENT_FL_RECORDED_CMD	= (1 << TRACE_EVENT_FL_RECORDED_CMD_BIT),
+ 	TRACE_EVENT_FL_CAP_ANY		= (1 << TRACE_EVENT_FL_CAP_ANY_BIT),
++	TRACE_EVENT_FL_MOD_ENABLE	= (1 << TRACE_EVENT_FL_MOD_ENABLE_BIT),
+ };
+ 
+ struct ftrace_event_call {
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 3e68366..3d4a6ee 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -561,6 +561,22 @@ static inline void ftrace_test_probe_##call(void)			\
+ #undef __get_dynamic_array
+ #undef __get_str
+ 
++/*
++ * Add ftrace trace points in modules to be set by module
++ * parameters. This adds "trace_##call" as a module parameter.
++ * The user could enable trace points on module load with:
++ *  trace_##call=1 as a module parameter.
++ */
++#undef ftrace_mod_params
++#ifdef MODULE
++#define ftrace_mod_params(call)				\
++	module_param_cb(trace_##call, &ftrace_mod_ops,	\
++			&event_##call, 0644);		\
++	MODULE_INFO(tracepoint, #call)
++#else
++#define ftrace_mod_params(call)
++#endif
++
+ #undef TP_printk
+ #define TP_printk(fmt, args...) "\"" fmt "\", "  __stringify(args)
+ 
+@@ -588,7 +604,8 @@ static struct ftrace_event_call __used event_##call = {			\
+ 	.print_fmt		= print_fmt_##template,			\
+ };									\
+ static struct ftrace_event_call __used					\
+-__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
++__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;\
++ftrace_mod_params(call)
+ 
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, call, proto, args, print)		\
+@@ -602,7 +619,8 @@ static struct ftrace_event_call __used event_##call = {			\
+ 	.print_fmt		= print_fmt_##call,			\
+ };									\
+ static struct ftrace_event_call __used					\
+-__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
++__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call; \
++ftrace_mod_params(call)
+ 
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ 
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5f499e0..5223751 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1285,6 +1285,7 @@ static void trace_module_add_events(struct module *mod)
+ {
+ 	struct ftrace_module_file_ops *file_ops = NULL;
+ 	struct ftrace_event_call **call, **start, **end;
++	int ret;
+ 
+ 	start = mod->trace_events;
+ 	end = mod->trace_events + mod->num_trace_events;
+@@ -1300,6 +1301,14 @@ static void trace_module_add_events(struct module *mod)
+ 		__trace_add_event_call(*call, mod,
+ 				       &file_ops->id, &file_ops->enable,
+ 				       &file_ops->filter, &file_ops->format);
++		/* If the module tracepoint parameter was set */
++		if ((*call)->flags & TRACE_EVENT_FL_MOD_ENABLE) {
++			(*call)->flags = 0;
++			ret = ftrace_event_enable_disable(*call, 1);
++			if (ret < 0)
++				pr_warning("unable to enable tracepoint %s",
++					   (*call)->name);
++		}
+ 	}
+ }
+ 
+@@ -1457,6 +1466,49 @@ static __init int event_trace_init(void)
+ }
+ fs_initcall(event_trace_init);
+ 
++/* Allow modules to load with enabled trace points */
++int ftrace_mod_param_set(const char *val, const struct kernel_param *kp)
++{
++	struct ftrace_event_call *call = kp->arg;
++
++	/* This is set like param_set_bool() */
++
++	/* No equals means "set"... */
++	if (!val)
++		val = "1";
++
++	/* One of =[yYnN01] */
++	switch (val[0]) {
++	case 'y': case 'Y': case '1':
++		break;
++	case 'n': case 'N': case '0':
++		/* Do nothing */
++		return 0;
++	default:
++		return -EINVAL;
++	}
++
++	/* Set flag to tell ftrace to enable this event on init */
++	call->flags = TRACE_EVENT_FL_MOD_ENABLE;
++
++	return 0;
++}
++
++int ftrace_mod_param_get(char *buffer, const struct kernel_param *kp)
++{
++	struct ftrace_event_call *call = kp->arg;
++
++	return sprintf(buffer, "%d",
++		   !!(call->flags &
++		     (TRACE_EVENT_FL_MOD_ENABLE | TRACE_EVENT_FL_ENABLED)));
++}
++
++struct kernel_param_ops ftrace_mod_ops = {
++	.set = ftrace_mod_param_set,
++	.get = ftrace_mod_param_get,
++};
++EXPORT_SYMBOL(ftrace_mod_ops);
++
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+ 
+ static DEFINE_SPINLOCK(test_spinlock);
+
+
