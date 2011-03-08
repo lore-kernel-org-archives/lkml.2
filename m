@@ -1,71 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab1CHUVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:21:54 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51309 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756302Ab1CHUVw convert rfc822-to-8bit (ORCPT
+	id S1756504Ab1CHUYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:24:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57790 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156Ab1CHUYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 15:21:52 -0500
+	Tue, 8 Mar 2011 15:24:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=eyq2T0Fd2ZzM30MOKt73ZkYXqzteV+hAZnZj+3y5+WqusPeTQ/0Pv8qtp32XO9kZQE
-         jsYlIbJcIgAsbuyBIc+KrWxS5GM9gAKGFyvmUMzt0wCzHpcioBPh5tYQ6SHbniXPSA2i
-         kNFce5bqvTXeRV1T6HcWDifvHRPr0tRI7IUd8=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1103081913560.2968@kaball-desktop>
-References: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop>
-	<4D6D6980.7060304@kernel.org>
-	<alpine.DEB.2.00.1103071527500.2968@kaball-desktop>
-	<AANLkTi=aUGdjvtvy81FimMZB5PZNzASXHN0BZHWHUuLs@mail.gmail.com>
-	<alpine.DEB.2.00.1103081203260.2968@kaball-desktop>
-	<AANLkTikmiKvdgzE_G1-w7PBqBf=kD5R5k5QZChHeiDCd@mail.gmail.com>
-	<alpine.DEB.2.00.1103081728300.2968@kaball-desktop>
-	<AANLkTinkA5UNfdAqhnJYgC+czPrNYtOtfY332JCvZXy-@mail.gmail.com>
-	<alpine.DEB.2.00.1103081913560.2968@kaball-desktop>
-Date: Tue, 8 Mar 2011 12:21:51 -0800
-X-Google-Sender-Auth: axlV1r8OE3lxcx7Fw3YLFh9XFn0
-Message-ID: <AANLkTimq_cqZ7xgLcx5ch_GQS5gxQse5gVqpaTYRXh_x@mail.gmail.com>
-Subject: Re: "x86-64, mm: Put early page table high" causes crash on Xen
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=PLfrxZk8Oogk347KX0/vaGse4e4qVhxLOhsLLorqseuB/o+ZtFGU25tCQGi/LY5HdL
+         LxxpGxZqBBMrr+ZrSeT9xoVlbpuKnmNZlmkpjfcskJJH9FWQ7smQwZx6+tBS6S0wFE1T
+         O7CFjIMGASs1lch28lx/K7VBgzzN2wOGjnHmk=
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
+        vda.linux@googlemail.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/8] job control: Fix ptracer wait(2) hang and explain notask_error clearing
+Date: Tue,  8 Mar 2011 20:56:34 +0100
+Message-Id: <1299614199-25142-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299614199-25142-1-git-send-email-tj@kernel.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 12:09 PM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
-> On Tue, 8 Mar 2011, Yinghai Lu wrote:
->> [    0.000000] kernel direct mapping tables up to 7f750000 @
->> [0x7f74c000-0x7f74ffff] pre-allocated
->> [    0.000000] DEBUG map_low_page phys    243a000
->> [    0.000000] DEBUG map_low_page phys    243e000
->> [    0.000000] DEBUG alloc_low_page phys   7f74c000
->> [    0.000000] DEBUG map_low_page phys    243a000
->> [    0.000000] DEBUG map_low_page phys   7f74c000
->> [    0.000000] DEBUG alloc_low_page phys   7f74d000
->>
->
-> I couldn't see this on my machine but I was afraid it could happen on
-> some hardware :(
+wait(2) and friends allow access to stopped/continued states through
+zombies, which is required as the states are process-wide and should
+be accessible whether the leader task is alive or undead.
+wait_consider_task() implements this by always clearing notask_error
+and going through wait_task_stopped/continued() for unreaped zombies.
 
-if system have more than 4g memory.
+However, while ptraced, the stopped state is per-task and as such if
+the ptracee became a zombie, there's no further stopped event to
+listen to and wait(2) and friends should return -ECHILD on the tracee.
 
-> Thank you very much for spending your time on this and for your kind
-> replies.
-> I'll follow up with an update of the xen specific patch I posted before
-> and I won't bother you again with this :)
+Fix it by clearing notask_error only if WCONTINUED is set for ptraced
+zombies.  While at it, document why clearing notask_error is safe for
+each case.
 
-never mind.
+Test case follows.
 
-Thanks
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <pthread.h>
+  #include <time.h>
+  #include <sys/types.h>
+  #include <sys/ptrace.h>
+  #include <sys/wait.h>
 
-Yinghai
+  static void *nooper(void *arg)
+  {
+	  pause();
+	  return NULL;
+  }
+
+  int main(void)
+  {
+	  const struct timespec ts1s = { .tv_sec = 1 };
+	  pid_t tracee, tracer;
+	  siginfo_t si;
+
+	  tracee = fork();
+	  if (tracee == 0) {
+		  pthread_t thr;
+
+		  pthread_create(&thr, NULL, nooper, NULL);
+		  nanosleep(&ts1s, NULL);
+		  printf("tracee exiting\n");
+		  pthread_exit(NULL);	/* let subthread run */
+	  }
+
+	  tracer = fork();
+	  if (tracer == 0) {
+		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
+		  while (1) {
+			  if (waitid(P_PID, tracee, &si, WSTOPPED) < 0) {
+				  perror("waitid");
+				  break;
+			  }
+			  ptrace(PTRACE_CONT, tracee, NULL,
+				 (void *)(long)si.si_status);
+		  }
+		  return 0;
+	  }
+
+	  waitid(P_PID, tracer, &si, WEXITED);
+	  kill(tracee, SIGKILL);
+	  return 0;
+  }
+
+Before the patch, after the tracee becomes a zombie, the tracer's
+waitid(WSTOPPED) never returns and the program doesn't terminate.
+
+  tracee exiting
+  ^C
+
+After the patch, tracee exiting triggers waitid() to fail.
+
+  tracee exiting
+  waitid: No child processes
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/exit.c |   44 ++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 34 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index b4a935c..7171821 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1550,17 +1550,41 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 		return 0;
+ 	}
+ 
+-	/*
+-	 * We don't reap group leaders with subthreads.
+-	 */
+-	if (p->exit_state == EXIT_ZOMBIE && !delay_group_leader(p))
+-		return wait_task_zombie(wo, p);
++	/* slay zombie? */
++	if (p->exit_state == EXIT_ZOMBIE) {
++		/* we don't reap group leaders with subthreads */
++		if (!delay_group_leader(p))
++			return wait_task_zombie(wo, p);
+ 
+-	/*
+-	 * It's stopped or running now, so it might
+-	 * later continue, exit, or stop again.
+-	 */
+-	wo->notask_error = 0;
++		/*
++		 * Allow access to stopped/continued state via zombie by
++		 * falling through.  Clearing of notask_error is complex.
++		 *
++		 * When !@ptrace:
++		 *
++		 * If WEXITED is set, notask_error should naturally be
++		 * cleared.  If not, subset of WSTOPPED|WCONTINUED is set,
++		 * so, if there are live subthreads, there are events to
++		 * wait for.  If all subthreads are dead, it's still safe
++		 * to clear - this function will be called again in finite
++		 * amount time once all the subthreads are released and
++		 * will then return without clearing.
++		 *
++		 * When @ptrace:
++		 *
++		 * Stopped state is per-task and thus can't change once the
++		 * target task dies, so notask_error should be cleared only
++		 * if WCONTINUED is set.
++		 */
++		if (likely(!ptrace) || (wo->wo_flags & WCONTINUED))
++			wo->notask_error = 0;
++	} else {
++		/*
++		 * @p is alive and it's gonna stop, continue or exit, so
++		 * there always is something to wait for.
++		 */
++		wo->notask_error = 0;
++	}
+ 
+ 	if (task_stopped_code(p, ptrace))
+ 		return wait_task_stopped(wo, ptrace, p);
+-- 
+1.7.1
+
