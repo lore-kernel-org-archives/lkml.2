@@ -1,133 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1CHT47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 14:56:59 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49360 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab1CHT46 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 14:56:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=h/AvXZ+Bf6I4MZ8xzvI155nYYQ4uGGaH8ILqjcAOvXJ5CB9Zl0Hy2avV2GjUXcdJha
-         sOnMg/MADDYTsCDZJlE3uSUNgkB+mgM03jgCd6crtQ1Gf75wCmjFb3YaJBn+GYvXR5G/
-         caZaTOiVUiuvBIZBldmcnFQIu1nNx4s5EQubg=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
-        vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/8] job control: Don't set group_stop exit_code if re-entering job control stop
-Date: Tue,  8 Mar 2011 20:56:32 +0100
-Message-Id: <1299614199-25142-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299614199-25142-1-git-send-email-tj@kernel.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+	id S1756354Ab1CHT6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 14:58:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24152 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755891Ab1CHT6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 14:58:31 -0500
+Message-ID: <4D768A62.3050903@redhat.com>
+Date: Tue, 08 Mar 2011 14:58:26 -0500
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+CC: KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: [PATCH] add missing guest clock update removed by	e48672fa25e879f7ae21785c7efd187738139593
+References: <20110307101827.GA1762@pcnci.linuxbox.cz>
+In-Reply-To: <20110307101827.GA1762@pcnci.linuxbox.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While ptraced, a task may be resumed while the containing process is
-still job control stopped.  If the task receives another stop signal
-in this state, it will still initiate group stop, which generates
-group_exit_code, which the real parent would be able to see once the
-ptracer detaches.
+On 03/07/2011 05:18 AM, Nikola Ciprich wrote:
+> e48672fa25e879f7ae21785c7efd187738139593 removed kvm_request_guest_time_update(vcpu);
+> this breaks 32bit SMP guests using virtio-clock.
+> thus add unconditional call to kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu) to fix the
+> problem.
+>
+> Signed-off-by: Nikola Ciprich<nikola.ciprich@linuxbox.cz>
+> ---
+>   arch/x86/kvm/x86.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index bcc0efc..4c27144 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2091,6 +2091,7 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>   	}
+>
+>   	kvm_x86_ops->vcpu_load(vcpu, cpu);
+> +	kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>   	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+>   		/* Make sure TSC doesn't go backwards */
+>   		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+>
+>
+>    
 
-In this scenario, the real parent may see two consecutive CLD_STOPPED
-events from two stop signals without intervening SIGCONT, which
-normally is impossible.
-
-Test case follows.
-
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/ptrace.h>
-#include <sys/wait.h>
-
-int main(void)
-{
-	pid_t tracee;
-	siginfo_t si;
-
-	tracee = fork();
-	if (!tracee)
-		while (1)
-			pause();
-
-	kill(tracee, SIGSTOP);
-	waitid(P_PID, tracee, &si, WSTOPPED);
-
-	if (!fork()) {
-		ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
-		waitid(P_PID, tracee, &si, WSTOPPED);
-		ptrace(PTRACE_CONT, tracee, NULL, (void *)(long)si.si_status);
-		waitid(P_PID, tracee, &si, WSTOPPED);
-		ptrace(PTRACE_CONT, tracee, NULL, (void *)(long)si.si_status);
-		waitid(P_PID, tracee, &si, WSTOPPED);
-		ptrace(PTRACE_DETACH, tracee, NULL, NULL);
-		return 0;
-	}
-
-	while (1) {
-		si.si_pid = 0;
-		waitid(P_PID, tracee, &si, WSTOPPED | WNOHANG);
-		if (si.si_pid)
-			printf("st=%02d c=%02d\n", si.si_status, si.si_code);
-	}
-	return 0;
-}
-
-Before the patch, the latter waitid() in polling mode reports the
-second stopped event generated by the implied SIGSTOP of
-PTRACE_ATTACH.
-
-  st=19 c=05
-  ^C
-
-After the patch, the second event is not reported.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/signal.c |   23 ++++++++++++++++++++---
- 1 files changed, 20 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/signal.c b/kernel/signal.c
-index c146150..6130cb8 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1827,10 +1827,27 @@ static int do_signal_stop(int signr)
- 		    unlikely(signal_group_exit(sig)))
- 			return 0;
- 		/*
--		 * There is no group stop already in progress.
--		 * We must initiate one now.
-+		 * There is no group stop already in progress.  We must
-+		 * initiate one now.
-+		 *
-+		 * While ptraced, a task may be resumed while group stop is
-+		 * still in effect and then receive a stop signal and
-+		 * initiate another group stop.  This deviates from the
-+		 * usual behavior as two consecutive stop signals can't
-+		 * cause two group stops when !ptraced.
-+		 *
-+		 * The condition can be distinguished by testing whether
-+		 * SIGNAL_STOP_STOPPED is already set.  Don't generate
-+		 * group_exit_code in such case.
-+		 *
-+		 * This is not necessary for SIGNAL_STOP_CONTINUED because
-+		 * an intervening stop signal is required to cause two
-+		 * continued events regardless of ptrace.
- 		 */
--		sig->group_exit_code = signr;
-+		if (!(sig->flags & SIGNAL_STOP_STOPPED))
-+			sig->group_exit_code = signr;
-+		else
-+			WARN_ON_ONCE(!task_ptrace(current));
- 
- 		current->group_stop &= ~GROUP_STOP_SIGMASK;
- 		current->group_stop |= signr | gstop;
--- 
-1.7.1
-
+Can you try moving the kvm_make_request() inside the if conditional and 
+see if it that also fixes it?
