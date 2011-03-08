@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab1CHRfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 12:35:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909Ab1CHRfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 12:35:11 -0500
-Message-ID: <4D7668C5.5050100@redhat.com>
-Date: Tue, 08 Mar 2011 18:35:01 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1755945Ab1CHRlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 12:41:12 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:7651 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab1CHRlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 12:41:11 -0500
+X-IronPort-AV: E=Sophos;i="4.62,285,1297036800"; 
+   d="scan'208";a="4679213"
+Date: Tue, 8 Mar 2011 17:40:51 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: "x86-64, mm: Put early page table high" causes crash on Xen
+In-Reply-To: <AANLkTikmiKvdgzE_G1-w7PBqBf=kD5R5k5QZChHeiDCd@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1103081728300.2968@kaball-desktop>
+References: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop> <4D6D6980.7060304@kernel.org> <alpine.DEB.2.00.1103071527500.2968@kaball-desktop> <AANLkTi=aUGdjvtvy81FimMZB5PZNzASXHN0BZHWHUuLs@mail.gmail.com> <alpine.DEB.2.00.1103081203260.2968@kaball-desktop>
+ <AANLkTikmiKvdgzE_G1-w7PBqBf=kD5R5k5QZChHeiDCd@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>, dm-crypt@saout.de,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [dm-crypt] dm-crypt: Performance Regression 2.6.37 -> 2.6.38-rc8
-References: <20110308164508.GA8729@darkside.kls.lan>
-In-Reply-To: <20110308164508.GA8729@darkside.kls.lan>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed;
+	boundary="8323329-1027710972-1299605541=:2968"
+Content-ID: <alpine.DEB.2.00.1103081732320.2968@kaball-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 05:45 PM, Mario 'BitKoenig' Holbe wrote:
-> dm-crypt in 2.6.38 changed to per-CPU workqueues to increase it's
-> performance by parallelizing encryption to multiple CPUs.
-> This modification seems to cause (massive) performance drops for
-> multiple parallel dm-crypt instances...
+--8323329-1027710972-1299605541=:2968
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1103081732321.2968@kaball-desktop>
+
+On Tue, 8 Mar 2011, Yinghai Lu wrote:
+> On Tue, Mar 8, 2011 at 4:14 AM, Stefano Stabellini
+> <stefano.stabellini@eu.citrix.com> wrote:
+> >> > [    0.000000] DEBUG alloc low page(cf965000, 00001000)
+> >>
+> >> these are not mapped yet, and need to use early_ioremap.
+> >
+> > In fact we are mapping them inside alloc_low_page. No need for
+> > map_low_page, right?
 > 
-> I'm running a 4-disk RAID0 on top of 4 independent dm-crypt(aes-xts)
-> devices on a Core2Quad 3GHz. This setup did overcome the single-CPU
-> limitation from previous versions and utilized all 4 cores for
-> encryption.
-> The throughput of this array drops from 282MB/s sustained read (dd,
-> single process) with 2.6.37.3 down to 133MB/s with 2.6.38-rc8 (which
-> nearly equals to single-disk throughput of 128MB/s - just in case this
-> matters).
-> 
-> This indicates way less parallelization now with 2.6.38 than before.
-> I don't think this was intentional :)
+> alloc_low_page return virtual address, but it can not be used to
+> access that position right away.
+> so in that case map_low_page is used to convert that virtual address
+> to phy address and then to early map address.
+ 
+Are you sure?
+I am looking at this piece of code under kernel_physical_mapping_init:
 
-Well, it depends. I never suggested this kind of workaround because
-you basically hardcoded (in device stacking) how many parallel instances
-(==cpu cores ideally) of dmcrypt can run effectively.
 
-Previously there was no cpu affinity, so dmcrypt thread simply run
-on some core.
+---
+        pud = alloc_low_page(&pud_phys);
+		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
+						 page_size_mask);
+		unmap_low_page(pud);
+---
 
-With current design the IO is encrypted by the cpu which submitted it.
+and the implementaion of alloc_low_page is:
 
-If you have RAID0 it probably means that one IO is split into stripes
-and these try to encrypt on the same core (in "parallel"). 
-(I need to test what actually happens though.)
+---
+static __ref void *alloc_low_page(unsigned long *phys)
+{
+	unsigned long pfn = pgt_buf_end++;
+	void *adr;
 
-If you use one dmcrypt instance over RAID0, you will now get probably
-much more better throughput. (Even with one process generating IOs
-the bios are, surprisingly, submitted on different cpus. But this time
-it runs really in parallel.)
+	if (after_bootmem) {
+		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+		*phys = __pa(adr);
 
-Maybe we can find some compromise but I basically prefer current design,
-which provides much more better behaviour for most of configurations.
+		return adr;
+	}
 
-Milan
+	if (pfn >= pgt_buf_top)
+		panic("alloc_low_page: ran out of memory");
+
+	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
+	clear_page(adr);
+	*phys  = pfn * PAGE_SIZE;
+	return adr;
+}
+---
+
+It looks to me that map_low_page is never called in this code path.
+If I read the code correctly map_low_page is only used to map pagetable
+pages that are already mapped (see the debug logging I posted in the
+previous email) so it is not useful.
+--8323329-1027710972-1299605541=:2968--
