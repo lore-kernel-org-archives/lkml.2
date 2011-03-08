@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab1CHFJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 00:09:40 -0500
-Received: from cantor.suse.de ([195.135.220.2]:49889 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513Ab1CHFJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 00:09:38 -0500
-Date: Mon, 7 Mar 2011 21:04:25 -0800
-From: Greg KH <gregkh@suse.de>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: Dan Carpenter <error27@gmail.com>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rts_pstor: MSXC card power class
-Message-ID: <20110308050425.GA12135@suse.de>
-References: <1299485461-3941-1-git-send-email-wei_wang@realsil.com.cn>
- <20110307185001.GX3416@bicker>
- <4D75971F.9050802@realsil.com.cn>
+	id S1751732Ab1CHFL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 00:11:26 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:22351 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750698Ab1CHFLZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 00:11:25 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAH9IdU15LK5J/2dsb2JhbACmVXW+PQ2FVQSTEg
+Date: Tue, 8 Mar 2011 16:11:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v3] Check for immutable/append flag in fallocate path
+Message-ID: <20110308051121.GE1956@dastard>
+References: <4D6221B8.9040303@gmail.com>
+ <4D6F5473.2070709@gmail.com>
+ <4D720469.1010101@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D75971F.9050802@realsil.com.cn>
+In-Reply-To: <4D720469.1010101@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 10:40:31AM +0800, wwang wrote:
-> 于 2011年03月08日 02:50, Dan Carpenter 写道:
-> >
-> > This makes scripts/checkpatch.pl complain.
-> >
-> > regards,
-> > dan carpenter
-> >
-> Yes, it would produce a braces warning.
-> Should I send another patch to fix it, or just resend the patch?
+On Sat, Mar 05, 2011 at 10:37:45AM +0100, Marco Stornelli wrote:
+> From: Marco Stornelli <marco.stornelli@gmail.com>
+> 
+> In the fallocate path the kernel doesn't check for the immutable/append
+> flag. It's possible to have a race condition in this scenario: an
+> application open a file in read/write and it does something, meanwhile
+> root set the immutable flag on the file, the application at that point
+> can call fallocate with success. In addition, we don't allow to do any
+> unreserve operation on an append only file but only the reserve one.
+> 
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+> Patch is against 2.6.38-rc7
+> 
+> ChangeLog:
+> v3: Modified do_fallocate instead of every single fs
+> v2: Added the check for append-only file for XFS
+> v1: First draft
+> 
+> --- open.c.orig	2011-03-01 22:55:12.000000000 +0100
+> +++ open.c	2011-03-04 15:28:43.000000000 +0100
+> @@ -233,6 +233,14 @@ int do_fallocate(struct file *file, int
+>  
+>  	if (!(file->f_mode & FMODE_WRITE))
+>  		return -EBADF;
+> +
+> +	/* It's not possible punch hole on append only file */
+> +	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
+> +		return -EPERM;
 
-Resend, I've already dropped this one.
+Seeing as I didn't get an answer in before you reposted, I still
+think punching an append-only file is a valid thing to want to do.
 
-thanks,
+I've seen this done in the past for application-level transaction
+journal files. The journal file is append only so new transactions
+can only be written at the end of the file i.e. you cannot overwrite
+(and therefore corrupt) existing transactions. However, once a
+transaction is complete and the changes flushed to disk, the
+transaction is punched out of the file to zero the range so it
+doesn't get replayed during recovery after a system crash.
 
-greg k-h
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
