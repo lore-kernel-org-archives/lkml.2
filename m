@@ -1,35 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab1CHT7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 14:59:51 -0500
-Received: from kroah.org ([198.145.64.141]:35568 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752257Ab1CHT7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 14:59:50 -0500
-Date: Tue, 8 Mar 2011 11:55:39 -0800
-From: Greg KH <greg@kroah.com>
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Cc: stable@kernel.org, benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        anton@samba.org
-Subject: Re: [stable] [PATCH 0/7] 2.6.32.stable kexec/kdump fixes backport
- series
-Message-ID: <20110308195539.GD21865@kroah.com>
-References: <20110307114104.GB8194@linux.vnet.ibm.com>
+	id S1756520Ab1CHUAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:00:12 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:43605 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756492Ab1CHUAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 15:00:08 -0500
+Message-ID: <4D768A9A.7090201@candelatech.com>
+Date: Tue, 08 Mar 2011 11:59:22 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110307114104.GB8194@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Brian Prodoehl <bprodoehl@gmail.com>
+CC: "Justin P. Mattock" <justinmattock@gmail.com>,
+        Mohammed Shafi <shafi.wireless@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ath9k-devel@atheros.com
+Subject: Re: WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536 ath_stoprecv+0xc8/0xda
+ [ath9k]()
+References: <AANLkTik9To0Rkq2FRqQFB2wNu0kyJ7CzyBek2jBp36Cb@mail.gmail.com>	<20110303135942.GA8969@tuxdriver.com>	<AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>	<20110307151201.GC2664@tuxdriver.com>	<AANLkTi=7RSdKhzGazQFUnBZqzMQskOSHq=7E08uan2vu@mail.gmail.com>	<4D767A4B.1060203@gmail.com>	<4D76833E.9010603@candelatech.com> <AANLkTikPQt+njjFPB6sJ-mEcsx6f-R6TAOhEd8egkqhH@mail.gmail.com>
+In-Reply-To: <AANLkTikPQt+njjFPB6sJ-mEcsx6f-R6TAOhEd8egkqhH@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 05:11:04PM +0530, Kamalesh Babulal wrote:
-> A number of kexec/kdump fixes have gone into the current upstream kernel
-> that need to be part of the 2.6.32-stable, Herein are the patches.
+On 03/08/2011 11:45 AM, Brian Prodoehl wrote:
+> On Tue, Mar 8, 2011 at 2:27 PM, Ben Greear<greearb@candelatech.com>  wrote:
+>> On 03/08/2011 10:49 AM, Justin P. Mattock wrote:
+>>>
+>>> On 03/07/2011 07:22 AM, Mohammed Shafi wrote:
+>>>>
+>>>> On Mon, Mar 7, 2011 at 8:42 PM, John W.
+>>>> Linville<linville@tuxdriver.com>  wrote:
+>>>>>
+>>>>> On Sun, Mar 06, 2011 at 12:47:05AM -0800, Justin Mattock wrote:
+>>>>>
+>>>>>> full dmesg here:
+>>>>>> http://fpaste.org/5JQp/
+>>>>>> let me know if I need to supply any info(also I can try a bisect, but
+>>>>>> am in the middle of changing residencies, so it might not be right
+>>>>>> away)
+>>>>>
+>>>>> One of the Atheros guys suggested that you change a DMA timeout value.
+>>>>> Did you try that?
+>>>>
+>>>> John it looks like increasing the timeout also does not seems to help.
+>>>> A user reported this issue in ath9k developer list and he told that
+>>>> increasing the timeout did not fix this issue.
+>>>>
+>>>>>
+>>>>> John
+>>>>> --
+>>>>> John W. Linville Someday the world will need a hero, and you
+>>>>> linville@tuxdriver.com might be all we have. Be ready.
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>> linux-wireless" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>>
+>>>>
+>>>
+>>> at barnes and noble, and I see this has fired off again. will see if I
+>>> can reproduce and bisect.
+>>
+>> This problem goes way back, and the driver has had lots of fixes in the
+>> last few months, so I'm not sure if bisecting is going to
+>> do you any good.
+>>
+>> Thanks,
+>> Ben
+>
+> The warnings have been around since you added the check for the
+> problem, right?  I remember initially it was a WARN_ON, and I'd get a
+> steady flood of backtraces, and then it was switched to a
+> WARN_ON_ONCE.  I see these on every platform I have (x86_64, IXP425
+> and AR71xx) with AR9002 and AR9003.
 
-I've applied them all, please let me know if I somehow messed them up.
+I don't think I added the original check, but either way, it's
+an old problem and bisecting it is unlikely to help.
 
-thanks,
+I can't believe that the Atheros guys really are unable reproduce
+this, but I can believe that it might be very difficult to
+actually understand and fix.
 
-greg k-h
+At least in my testing, I see it quite often, but it doesn't
+seem to cause any serious harm.  We do occasionally see crashes,
+especially on module unload for a heavily utilized system, or
+one that is constantly trying and failing to associate,
+so it could be related to this.
+
+Also, my patches to decrease scan and work_work related channel changes
+made this harder to hit for our test cases.
+
+Thanks,
+Ben
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
