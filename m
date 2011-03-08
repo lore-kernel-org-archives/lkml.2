@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab1CHPXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:23:03 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38884 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab1CHPXB convert rfc822-to-8bit (ORCPT
+	id S1755806Ab1CHPZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:25:31 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45893 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751634Ab1CHPZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:23:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DLsJEMZ52A6Cd0y+z++vSdGwhiJqH9ySahfWDXccflhimyAXYTxKy4eyfngulATKng
-         RGGieDg3eR9SS8iNYbJygDEYSg3as2KLM/RvrQLqk0uqS5Fij0N64eu2JQU8FSPasLax
-         J1cj+RA+xWakMZmIQVQfCDxdQPtHASgh/uO6s=
-MIME-Version: 1.0
-In-Reply-To: <20110308141847.GB1837@nowhere>
-References: <201011181650.00152.roucaries.bastien@gmail.com>
-	<AANLkTik=+smaiGNwVw0pDBXexVd=trsz9aSawuqLZP6k@mail.gmail.com>
-	<20101223034229.GF1739@nowhere>
-	<201101300108.32383.roucaries.bastien@gmail.com>
-	<20110308141847.GB1837@nowhere>
-Date: Tue, 8 Mar 2011 16:22:59 +0100
-Message-ID: <AANLkTinp4=c9qmVyfocUk_ydJ3PV50b9UckNhJJNFsFm@mail.gmail.com>
-Subject: Re: Reiserfs deadlock in 2.6.36
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Mar 2011 10:25:29 -0500
+Date: Tue, 8 Mar 2011 15:25:18 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate
+ name service errors
+Message-ID: <20110308152518.074d0996@lxorguk.ukuu.org.uk>
+In-Reply-To: <14977.1299596999@redhat.com>
+References: <20110307160042.2ddc8e65@lxorguk.ukuu.org.uk>
+	<20110307150208.28218.89348.stgit@warthog.procyon.org.uk>
+	<20110307150218.28218.84916.stgit@warthog.procyon.org.uk>
+	<14977.1299596999@redhat.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 3:18 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Sun, Jan 30, 2011 at 01:08:29AM +0100, Bastien ROUCARIES wrote:
->> Le jeudi 23 décembre 2010 04:42:33, Frederic Weisbecker a écrit :
->> Hi,
->>
->> I take me more than two days of testing to reporduce this bugs with trace enabled. My filesystem was quite slow and this bugs seems
->> to be timing related.
->>
->> One patern that trigger this bug is git. Doing a lot of git work of my desktop crash my machine.
->>
->> Moreover, trying to reproduce this bug lead to data loss. I have rebuilded twice my / partition using --rebuild-tree, and restored
->> my home partition three times using backups.
->>
->> My log is here.
->>
->> Do you need more information?
->>
->> Bastien
->
-> You have a first series of hung task report from 19440.852298 to 19440.880024
-> then it's followed by the traces and then again with a hung task report at
-> 19560.880084. But there is only one task stuck in that 2nd report. Did
-> you report your whole dmesg there or have you cut it? If it's your
-> whole dmesg then it means the other tasks from the first report have released
-> from their hung state. So the queued writers have been released by someone
-> who closed the journal.
+On Tue, 08 Mar 2011 15:09:59 +0000
+David Howells <dhowells@redhat.com> wrote:
 
-I have reported the whole stuff. But because my log need to go to my
-disk, we could have loss something
+> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> 
+> > > Define ENONAMESERVICE to indicate "Network name service unavailable".
+> > > This can be used to indicate, for example, that an attempt was made by
+> > > dns_query() to make a query, but the name server (e.g. a DNS server) it is
+> > > supposed to contact didn't answer or that it couldn't determine the
+> > > location of a suitable server.
+> > 
+> > Are these in glibc and are there glibc patches submitted and accepted for
+> > this ?
+> 
+> No.
+> 
+> Are you saying that I should push them through glibc first - and then submit
+> them to the kernel? 
 
-> This could confirm the theory that someone has opened the journal and
-> spent way too much time before releasing it. Or something else.
-> In any case tell me, there are other tests we can run.
->
-
-Ok bastien
+I was wondering if at least there was some co-ordination going on so that
+functions like perror() produced sensible answers. Otherwise it's
+debatable if its actually an improvement for the poor end user ?
