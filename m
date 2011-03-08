@@ -1,71 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab1CHNnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 08:43:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57830 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754972Ab1CHNnv (ORCPT
+	id S1755247Ab1CHNoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 08:44:00 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48819 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754469Ab1CHNn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 08:43:51 -0500
-From: Subhasish Ghosh <subhasish@mistralsolutions.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
-        sachi@mistralsolutions.com,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        Kevin Hilman <khilman@ti.com> (supporter:TI DAVINCI MACHIN...),
-        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 6/7] da850: pruss SUART platform specific additions.
-Date: Tue,  8 Mar 2011 19:27:45 +0530
-Message-Id: <1299592667-21367-7-git-send-email-subhasish@mistralsolutions.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com>
-References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com>
+	Tue, 8 Mar 2011 08:43:56 -0500
+Date: Tue, 8 Mar 2011 08:43:49 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jay Vosburgh <fubar@us.ibm.com>,
+        netdev@vger.kernel.org
+Subject: Re: [Patch V2] bonding: fix netpoll in active-backup mode
+Message-ID: <20110308134348.GB19072@hmsreliant.think-freely.org>
+References: <1299578336-5888-1-git-send-email-amwang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299578336-5888-1-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the McASP clock alias.
-The alias is used by the pruss suart driver
-for enabling the McASP PSC.
+On Tue, Mar 08, 2011 at 05:58:56PM +0800, Amerigo Wang wrote:
+> V2: avoid calling slave_diable_netpoll() with write_lock_bh() held.
+> 
+> netconsole doesn't work in active-backup mode, because we don't do anything
+> for nic failover in active-backup mode. We should disable netpoll on the
+> failing slave when it is detected down and enable netpoll when it becomes
+> the active slave.
+> 
+You still haven't explained why it needs to be this way.  what exactly is the
+shortcomming with leaving netpoll enabled on all slaves, regardless of state?
+It should be sufficient if, during a failover in a mode where the inactive slave
+should not tx data, that you simply clear the slave __LINK_STATE_START bit.  That will
+prevent higher layers from sending any queued data without you needing to muck
+about with netpoll state.
 
-Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
----
- arch/arm/mach-davinci/devices-da8xx.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+Neil
 
-diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-index a182a3b..b7a855a 100644
---- a/arch/arm/mach-davinci/devices-da8xx.c
-+++ b/arch/arm/mach-davinci/devices-da8xx.c
-@@ -558,9 +558,27 @@ struct platform_device da8xx_pruss_mfddev = {
- 	.resource	= da8xx_pruss_resources,
- };
- 
-+#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
-+int da8xx_mcasp_clk_add_alias(void)
-+{
-+	return clk_add_alias(NULL, "da8xx_pruss_uart.0",
-+			NULL, &da850_mcasp_device.dev);
-+}
-+#else
-+int da8xx_mcasp_clk_add_alias(void)
-+{
-+	return 0;
-+}
-+#endif
- int __init da8xx_register_pruss_mfd(struct da8xx_pruss_devices *pruss_device)
- {
-+	int ret;
-+
- 	da8xx_pruss_mfddev.dev.platform_data = pruss_device;
-+
-+	ret = da8xx_mcasp_clk_add_alias();
-+	if (ret < 0)
-+		return ret;
- 	return platform_device_register(&da8xx_pruss_mfddev);
- }
- 
--- 
-1.7.2.3
-
+> Tested by ifdown the current active slave and ifup it again for several times,
+> netconsole works well.
+> 
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> 
+> ---
+> 
+>  drivers/net/bonding/bond_main.c |  236 +++++++++++++++++++++------------------
+>  1 files changed, 125 insertions(+), 111 deletions(-)
+> 
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 0592e6d..102a558 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -907,6 +907,120 @@ static void bond_mc_list_flush(struct net_device *bond_dev,
+>  	}
+>  }
+>  
+> +/*--------------------------- Netpoll code ---------------------------*/
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +static inline int slave_enable_netpoll(struct slave *slave)
+> +{
+> +	struct netpoll *np;
+> +	int err = 0;
+> +
+> +	if (slave->np)
+> +		return 0;
+> +
+> +	np = kzalloc(sizeof(*np), GFP_KERNEL);
+> +	err = -ENOMEM;
+> +	if (!np)
+> +		goto out;
+> +
+> +	np->dev = slave->dev;
+> +	err = __netpoll_setup(np);
+> +	if (err) {
+> +		kfree(np);
+> +		goto out;
+> +	}
+> +	slave->np = np;
+> +out:
+> +	return err;
+> +}
+> +static inline void slave_disable_netpoll(struct slave *slave)
+> +{
+> +	struct netpoll *np = slave->np;
+> +
+> +	if (!np)
+> +		return;
+> +
+> +	slave->np = NULL;
+> +	synchronize_rcu_bh();
+> +	__netpoll_cleanup(np);
+> +	kfree(np);
+> +}
+> +static inline bool slave_dev_support_netpoll(struct net_device *slave_dev)
+> +{
+> +	if (slave_dev->priv_flags & IFF_DISABLE_NETPOLL)
+> +		return false;
+> +	if (!slave_dev->netdev_ops->ndo_poll_controller)
+> +		return false;
+> +	return true;
+> +}
+> +
+> +static void bond_poll_controller(struct net_device *bond_dev)
+> +{
+> +}
+> +
+> +static void __bond_netpoll_cleanup(struct bonding *bond)
+> +{
+> +	struct slave *slave;
+> +	int i;
+> +
+> +	bond_for_each_slave(bond, slave, i)
+> +		if (IS_UP(slave->dev))
+> +			slave_disable_netpoll(slave);
+> +}
+> +static void bond_netpoll_cleanup(struct net_device *bond_dev)
+> +{
+> +	struct bonding *bond = netdev_priv(bond_dev);
+> +
+> +	read_lock(&bond->lock);
+> +	__bond_netpoll_cleanup(bond);
+> +	read_unlock(&bond->lock);
+> +}
+> +
+> +static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
+> +{
+> +	struct bonding *bond = netdev_priv(dev);
+> +	struct slave *slave;
+> +	int i, err = 0;
+> +
+> +	read_lock(&bond->lock);
+> +	bond_for_each_slave(bond, slave, i) {
+> +		if (!IS_UP(slave->dev))
+> +			continue;
+> +		err = slave_enable_netpoll(slave);
+> +		if (err) {
+> +			__bond_netpoll_cleanup(bond);
+> +			break;
+> +		}
+> +	}
+> +	read_unlock(&bond->lock);
+> +	return err;
+> +}
+> +
+> +static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
+> +{
+> +	return bond->dev->npinfo;
+> +}
+> +
+> +#else
+> +static inline int slave_enable_netpoll(struct slave *slave)
+> +{
+> +	return 0;
+> +}
+> +static inline void slave_disable_netpoll(struct slave *slave)
+> +{
+> +}
+> +static void bond_netpoll_cleanup(struct net_device *bond_dev)
+> +{
+> +}
+> +static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
+> +{
+> +	return 0;
+> +}
+> +static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +
+>  /*--------------------------- Active slave change ---------------------------*/
+>  
+>  /*
+> @@ -1159,6 +1273,7 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
+>  			bond_set_slave_inactive_flags(old_active);
+>  
+>  		if (new_active) {
+> +			struct netpoll_info *ni;
+>  			bond_set_slave_active_flags(new_active);
+>  
+>  			if (bond->params.fail_over_mac)
+> @@ -1174,6 +1289,13 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
+>  			}
+>  
+>  			write_unlock_bh(&bond->curr_slave_lock);
+> +
+> +			ni = bond_netpoll_info(bond);
+> +			if (ni) {
+> +				new_active->dev->npinfo = ni;
+> +				slave_enable_netpoll(new_active);
+> +			}
+> +
+>  			read_unlock(&bond->lock);
+>  
+>  			netdev_bonding_change(bond->dev, NETDEV_BONDING_FAILOVER);
+> @@ -1280,116 +1402,6 @@ static void bond_detach_slave(struct bonding *bond, struct slave *slave)
+>  	bond->slave_cnt--;
+>  }
+>  
+> -#ifdef CONFIG_NET_POLL_CONTROLLER
+> -static inline int slave_enable_netpoll(struct slave *slave)
+> -{
+> -	struct netpoll *np;
+> -	int err = 0;
+> -
+> -	np = kzalloc(sizeof(*np), GFP_KERNEL);
+> -	err = -ENOMEM;
+> -	if (!np)
+> -		goto out;
+> -
+> -	np->dev = slave->dev;
+> -	err = __netpoll_setup(np);
+> -	if (err) {
+> -		kfree(np);
+> -		goto out;
+> -	}
+> -	slave->np = np;
+> -out:
+> -	return err;
+> -}
+> -static inline void slave_disable_netpoll(struct slave *slave)
+> -{
+> -	struct netpoll *np = slave->np;
+> -
+> -	if (!np)
+> -		return;
+> -
+> -	slave->np = NULL;
+> -	synchronize_rcu_bh();
+> -	__netpoll_cleanup(np);
+> -	kfree(np);
+> -}
+> -static inline bool slave_dev_support_netpoll(struct net_device *slave_dev)
+> -{
+> -	if (slave_dev->priv_flags & IFF_DISABLE_NETPOLL)
+> -		return false;
+> -	if (!slave_dev->netdev_ops->ndo_poll_controller)
+> -		return false;
+> -	return true;
+> -}
+> -
+> -static void bond_poll_controller(struct net_device *bond_dev)
+> -{
+> -}
+> -
+> -static void __bond_netpoll_cleanup(struct bonding *bond)
+> -{
+> -	struct slave *slave;
+> -	int i;
+> -
+> -	bond_for_each_slave(bond, slave, i)
+> -		if (IS_UP(slave->dev))
+> -			slave_disable_netpoll(slave);
+> -}
+> -static void bond_netpoll_cleanup(struct net_device *bond_dev)
+> -{
+> -	struct bonding *bond = netdev_priv(bond_dev);
+> -
+> -	read_lock(&bond->lock);
+> -	__bond_netpoll_cleanup(bond);
+> -	read_unlock(&bond->lock);
+> -}
+> -
+> -static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
+> -{
+> -	struct bonding *bond = netdev_priv(dev);
+> -	struct slave *slave;
+> -	int i, err = 0;
+> -
+> -	read_lock(&bond->lock);
+> -	bond_for_each_slave(bond, slave, i) {
+> -		if (!IS_UP(slave->dev))
+> -			continue;
+> -		err = slave_enable_netpoll(slave);
+> -		if (err) {
+> -			__bond_netpoll_cleanup(bond);
+> -			break;
+> -		}
+> -	}
+> -	read_unlock(&bond->lock);
+> -	return err;
+> -}
+> -
+> -static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
+> -{
+> -	return bond->dev->npinfo;
+> -}
+> -
+> -#else
+> -static inline int slave_enable_netpoll(struct slave *slave)
+> -{
+> -	return 0;
+> -}
+> -static inline void slave_disable_netpoll(struct slave *slave)
+> -{
+> -}
+> -static void bond_netpoll_cleanup(struct net_device *bond_dev)
+> -{
+> -}
+> -static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
+> -{
+> -	return 0;
+> -}
+> -static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
+> -{
+> -	return NULL;
+> -}
+> -#endif
+> -
+>  /*---------------------------------- IOCTL ----------------------------------*/
+>  
+>  static int bond_sethwaddr(struct net_device *bond_dev,
+> @@ -2532,8 +2544,10 @@ static void bond_miimon_commit(struct bonding *bond)
+>  				bond_alb_handle_link_change(bond, slave,
+>  							    BOND_LINK_DOWN);
+>  
+> -			if (slave == bond->curr_active_slave)
+> +			if (slave == bond->curr_active_slave) {
+> +				slave_disable_netpoll(slave);
+>  				goto do_failover;
+> +			}
+>  
+>  			continue;
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
