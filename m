@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab1CHKyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 05:54:35 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55633 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab1CHKye (ORCPT
+	id S1754079Ab1CHLDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 06:03:19 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43771 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab1CHLDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 05:54:34 -0500
+	Tue, 8 Mar 2011 06:03:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ja/C1jGPfut9pv0/LAjXFlOjX9Ukrz2j19QAotxgJV2+jG648WkQovIuUD8Mp1r7+D
-         GLowPl3cKK6XY/GAd2VDuq+O6lMo/kDkDGGVe8P4oXExHZj9QrEOIAruxvIiAV7/md7x
-         eegBo6r3Hdaw0r8eZFS2odDTTzX2DdHqdTBa4=
-Date: Tue, 8 Mar 2011 12:54:28 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] proc: make struct proc_dir_entry::namelen unsigned int
-Message-ID: <20110308105428.GA5767@p183.telecom.by>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Z+LsbFBFj/5m8TnEPSbxOQCn97lGalYPzWwL7RQVXgyjCVIoAIU8Cb5UYfkdFZRd8z
+         m5xjrtiKfJzy00R+a2M6KEGSSQQQH3bfGcB2ptXshU61BtxH+4gW4FS97GG0Q/vPjYYQ
+         +plnW3v6598WeWVE8JZXpA0kl7343xGK28fxE=
+Subject: Re: [PATCH 2/3] mtd: add "platform:" prefix for platform modalias
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jian Zhang <jzhang@ti.com>,
+        Vimal Singh <vimalsingh@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+In-Reply-To: <1299467064.3879.3.camel@mola>
+References: <1299466949.3879.0.camel@mola>  <1299467064.3879.3.camel@mola>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Mar 2011 13:01:48 +0200
+Message-ID: <1299582108.2754.16.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Space is not really conserved, because of natural alignment for the next field.
-sizeof(struct proc_dir_entry) remains the same.
+On Mon, 2011-03-07 at 11:04 +0800, Axel Lin wrote:
+> Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+> with "platform:"), the platform modalias is prefixed with "platform:".
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Jian Zhang <jzhang@ti.com>
+> Cc: Vimal Singh <vimalsingh@ti.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Jarkko Lavinen <jarkko.lavinen@nokia.com>
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
----
+Pushed to l2-mtd-2.6.git, thanks!
 
- fs/proc/generic.c       |    8 ++++----
- include/linux/proc_fs.h |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -28,7 +28,7 @@
- 
- DEFINE_SPINLOCK(proc_subdir_lock);
- 
--static int proc_match(int len, const char *name, struct proc_dir_entry *de)
-+static int proc_match(unsigned int len, const char *name, struct proc_dir_entry *de)
- {
- 	if (de->namelen != len)
- 		return 0;
-@@ -303,7 +303,7 @@ static int __xlate_proc_name(const char *name, struct proc_dir_entry **ret,
- {
- 	const char     		*cp = name, *next;
- 	struct proc_dir_entry	*de;
--	int			len;
-+	unsigned int		len;
- 
- 	de = *ret;
- 	if (!de)
-@@ -602,7 +602,7 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
- {
- 	struct proc_dir_entry *ent = NULL;
- 	const char *fn = name;
--	int len;
-+	unsigned int len;
- 
- 	/* make sure name is valid */
- 	if (!name || !strlen(name)) goto out;
-@@ -786,7 +786,7 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
- 	struct proc_dir_entry **p;
- 	struct proc_dir_entry *de = NULL;
- 	const char *fn = name;
--	int len;
-+	unsigned int len;
- 
- 	spin_lock(&proc_subdir_lock);
- 	if (__xlate_proc_name(name, &parent, &fn) != 0) {
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -50,7 +50,7 @@ typedef	int (write_proc_t)(struct file *file, const char __user *buffer,
- 
- struct proc_dir_entry {
- 	unsigned int low_ino;
--	unsigned short namelen;
-+	unsigned int namelen;
- 	const char *name;
- 	mode_t mode;
- 	nlink_t nlink;
