@@ -1,28 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab1CHAlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 19:41:22 -0500
-Received: from smtp.getmail.no ([84.208.15.66]:38069 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab1CHAlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 19:41:21 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org
-Date: Tue, 08 Mar 2011 01:41:19 +0100
-Subject: Re: [ANNOUNCE] RT for v2.6.34.8 now available.
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.vrz1i5j66426ze@pre-cf9468eccee.getinternet.no>
-User-Agent: Opera Mail/11.01 (Win32)
-X-Antivirus: avast! (VPS 110307-1, 07.03.2011), Outbound message
-X-Antivirus-Status: Clean
+	id S1756845Ab1CHAnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 19:43:06 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:40307 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754040Ab1CHAnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 19:43:04 -0500
+X-Sasl-enc: 7VJm56Fn2e3jfr5evWaMFAyUPYLMFQGvXgxbsb3DPhIv 1299544983
+Date: Mon, 7 Mar 2011 21:43:00 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thinkpad-acpi: module autoloading for newer Lenovo
+ ThinkPads.
+Message-ID: <20110308004300.GA11532@khazad-dum.debian.net>
+References: <1299540407-3779-1-git-send-email-manoj.iyer@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299540407-3779-1-git-send-email-manoj.iyer@canonical.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's not working here. That has been the case with earlier versions of the  
-RT kernel I have tried aswell.
-I am on a MSI7380 mainboard. Do you need more info?
+On Mon, 07 Mar 2011, Manoj Iyer wrote:
+> Please consider the following patch that adds support for auto loading 
+> thinkpad_acpi module on newer Lenovo ThinkPads that have HKEY HID set 
+> to LEN0068 instead of IBM0068. 
 
-http://www.paradoxuncreated.com/tmp/rterror.jpg
+Does the driver do anything useful on these Lenovo thinkpads?
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
