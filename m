@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1CHOzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 09:55:06 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38504 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab1CHOzE convert rfc822-to-8bit (ORCPT
+	id S1755347Ab1CHO5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 09:57:31 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:19009 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755118Ab1CHO52 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 09:55:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Wy1QQHyCelJRTeVSmqxQGgI/b0ClGJfhCi84l2ir3OPjEufAjW96yaFk0Gp9xl7M1b
-         9rMb/yyhiYcDIZ7LauR5/jPikqi8/+d5aEcdkLe7HuMKtBVBhiEuDVLQTGGMv1oOdfUk
-         Pj/m/36zFdHvIZvxQo5BhJ1WjwetUTkrt1djU=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTin2H9=NWp5G6N6_e=bxBTh2eS1dbUxOjT6xX98C@mail.gmail.com>
-References: <AANLkTin2H9=NWp5G6N6_e=bxBTh2eS1dbUxOjT6xX98C@mail.gmail.com>
-Date: Tue, 8 Mar 2011 06:55:03 -0800
-Message-ID: <AANLkTik_Cb7tXheZNOBjqnoQc4MSL1LnDtFGFP5mqZRi@mail.gmail.com>
-Subject: Re: linux-next: Tree for March 8 (BROKEN: arch/x86/kernel/entry_32.S?
- Debian's binutils/as?)
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Matthias Klose <doko@debian.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        debian-gcc <debian-gcc@lists.debian.org>,
-        binutils <binutils@sourceware.org>, psomas@cslab.ece.ntua.gr,
-        JBeulich@novell.com, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Mar 2011 09:57:28 -0500
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Wim Van Sebroeck <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+Date: Tue, 8 Mar 2011 14:56:50 +0000
+Subject: RE: [PATCH] watchdog: hpwdt: eliminate section mismatch warning
+Thread-Topic: [PATCH] watchdog: hpwdt: eliminate section mismatch warning
+Thread-Index: AcvYjFOTL3ZH5yyWQJCdxB9PRLOP7wFFKbnA
+Message-ID: <183C1D5A376DE343AA8F94FC2A1EC1497D734E5608@GVW1091EXB.americas.hpqcorp.net>
+References: <1299037784.16464.1.camel@mola>
+In-Reply-To: <1299037784.16464.1.camel@mola>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 2:44 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> Hi,
->
-> my build of linux-next (next-20110308, the same with the one from
-> yesterday) is broken.
-> (I translated the German output.)
->
-> [ build.log ]
->  AS      arch/x86/kernel/entry_32.o
-> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
-> Assembler messages:
-> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
-> Error: .size expression does not evaluate to a constant
-> make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1 (Error 1)
-> make[5]: *** [arch/x86/kernel] Fehler 2 (Error 2)
-> make[4]: *** [arch/x86] Fehler 2 (Error 2)
-> make[4]: *** Warte auf noch nicht beendete Prozesse... (Waiting for
-> unfinished jobs...)
->
-
-This is a kernel bug.  Please use the latest binutils from CVS.
-It will tell you which symbol causes this.
+Wim:
 
 
+I ACK this patch.
+
+
+Thanks,
+Tom
+
+-----Original Message-----
+From: Axel Lin [mailto:axel.lin@gmail.com] 
+Sent: Tuesday, March 01, 2011 9:50 PM
+To: linux-kernel@vger.kernel.org
+Cc: Mingarelli, Thomas; Wim Van Sebroeck; linux-watchdog@vger.kernel.org
+Subject: [PATCH] watchdog: hpwdt: eliminate section mismatch warning
+
+hpwdt_init_nmi_decoding() is called in hpwdt_init_one error handling,
+thus remove the  __devexit annotation of hpwdt_exit_nmi_decoding().
+
+This patch fixes below warning:
+
+WARNING: drivers/watchdog/hpwdt.o(.devinit.text+0x36f): Section mismatch in reference from the function hpwdt_init_one() to the function .devexit.text:hpwdt_exit_nmi_decoding()
+The function __devinit hpwdt_init_one() references
+a function __devexit hpwdt_exit_nmi_decoding().
+This is often seen when error handling in the init function
+uses functionality in the exit path.
+The fix is often to remove the __devexit annotation of
+hpwdt_exit_nmi_decoding() so it may be used outside an exit section.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/watchdog/hpwdt.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index d54d4ba..8cb2685 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -710,7 +710,7 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
+ 	return 0;
+ }
+ 
+-static void __devexit hpwdt_exit_nmi_decoding(void)
++static void hpwdt_exit_nmi_decoding(void)
+ {
+ 	unregister_die_notifier(&die_notifier);
+ 	if (cru_rom_addr)
+@@ -726,7 +726,7 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
+ 	return 0;
+ }
+ 
+-static void __devexit hpwdt_exit_nmi_decoding(void)
++static void hpwdt_exit_nmi_decoding(void)
+ {
+ }
+ #endif /* CONFIG_HPWDT_NMI_DECODING */
 -- 
-H.J.
+1.7.2
+
+
+
