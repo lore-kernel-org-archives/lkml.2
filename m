@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab1CHLfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 06:35:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43085 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab1CHLfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 06:35:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=Wo2hvBLT7lMrjciHi3hKC3F1dbIqbqd6rBiWt4Hd9USLLfQMW1lF5BMy736E972XMn
-         Xlo8paqgU1SJd3K/bSBIxnxkHgafVRVn82dYQxcjNdO9X2nAZFoE2LFIVagkpA1iIWFc
-         xWICBu208ZKTmQWPbJ9R77KfX8uwbbiUoGBm0=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        error27@gmail.com, Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 11/21 v2] staging: ft1000: Fix coding style in ft1000_usb_transmit_complete function.
-Date: Tue,  8 Mar 2011 12:34:56 +0100
-Message-Id: <1299584096-2791-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299486086-7325-12-git-send-email-marek.belisko@open-nandra.com>
-References: <1299486086-7325-12-git-send-email-marek.belisko@open-nandra.com>
+	id S1754311Ab1CHLkL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 06:40:11 -0500
+Received: from protonic.xs4all.nl ([213.84.116.84]:22498 "EHLO protonic.prtnl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753652Ab1CHLkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 06:40:08 -0500
+Date: Tue, 8 Mar 2011 12:40:23 +0100
+From: David Jander <david.jander@protonic.nl>
+To: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+Cc: Nguyen Dinh-R00091 <R00091@freescale.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Message-ID: <20110308124023.5a952d13@archvile>
+In-Reply-To: <20110307180700.GQ29521@pengutronix.de>
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+	<87oc5puwg3.fsf@lebrac.rtp-net.org>
+	<56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+	<87fwqyvrzf.fsf@lebrac.rtp-net.org>
+	<56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
+	<20110307180700.GQ29521@pengutronix.de>
+Organization: Protonic Holland
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix coding style and also replace printk with proper pr_err
-function.
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Hi Sascha,
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 4c5f443..958292e 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -902,14 +902,14 @@ static int ft1000_reset(struct net_device *dev)
- static void ft1000_usb_transmit_complete(struct urb *urb)
- {
- 
--    struct ft1000_device *ft1000dev = urb->context;
-+	struct ft1000_device *ft1000dev = urb->context;
- 
-     //DEBUG("ft1000_usb_transmit_complete entered\n");
- 
--    if (urb->status)
--        printk("%s: TX status %d\n", ft1000dev->net->name, urb->status);
-+	if (urb->status)
-+		pr_err("%s: TX status %d\n", ft1000dev->net->name, urb->status);
- 
--    netif_wake_queue(ft1000dev->net);
-+	netif_wake_queue(ft1000dev->net);
- 
-     //DEBUG("Return from ft1000_usb_transmit_complete\n");
- }
+On Mon, 7 Mar 2011 19:07:00 +0100
+"s.hauer@pengutronix.de" <s.hauer@pengutronix.de> wrote:
+>[...]
+> > The current imx for-next tree is not booting on my Babbage board. Is
+> > it okay for you with your HW. I'll have to debug the booting part
+> > first.
+> 
+> Probably because other than kconfig states i.MX51 and i.MX53 cannot be
+> compiled in one kernel. the for-next branch boots fine on my babbage.
+
+Would you mind explaining (or pointing to an explanation) as to why this is
+not supposed to work? Given the high level of compatibility between MX51 and
+MX53, I'd say there must be a very good reason not to enable a single binary
+kernel for both. Or is this just temporary brokenness?
+
+Best regards,
+
 -- 
-1.7.1
-
+David Jander
+Protonic Holland.
