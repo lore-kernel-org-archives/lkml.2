@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab1CHPHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:07:31 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57970 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab1CHPH1 (ORCPT
+	id S1755435Ab1CHPHY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:07:24 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48378 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755367Ab1CHPHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:07:27 -0500
+	Tue, 8 Mar 2011 10:07:18 -0500
 From: Jamie Iles <jamie@jamieiles.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Jamie Iles <jamie@jamieiles.com>
-Subject: [PATCHv6 5/5] picoxcell: support for the PC7302 development board
-Date: Tue,  8 Mar 2011 15:06:57 +0000
-Message-Id: <1299596817-19879-6-git-send-email-jamie@jamieiles.com>
+Subject: [PATCHv6 3/5] picoxcell: common SoC peripheral support
+Date: Tue,  8 Mar 2011 15:06:55 +0000
+Message-Id: <1299596817-19879-4-git-send-email-jamie@jamieiles.com>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1299596817-19879-1-git-send-email-jamie@jamieiles.com>
 References: <1299596817-19879-1-git-send-email-jamie@jamieiles.com>
@@ -20,64 +20,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PC7302 development board is capable of taking both PC3X2 and PC3X3
-devices and features NOR flash, NAND flash, SPI NOR flash a serial
-console, 100Mb Ethernet and a number of picoArray peripherals.
+Add the devices common to all picoXcell variants (UART and PMU). Other
+peripherals such as DMA, SPI, fuses and EMAC will be added later
+with driver support.
 
-This patch provides initial support for running on the PC7302 board.
-
-v4:
-	- reduce to the bare minimum for NOR flash booting.
 v3:
-	- remove redundant __init declarations.
-v2:
-	- multiplex the NAND CLE pin by pad name.
-	- convert to __raw_ io accessors.
+    - move device registration to an arch_initcall
+    - mark common_devices with __initdata
+
+v2: - split the UARTs into two separate platform devices and use
+      PLAT8250_* as the IDs
 
 Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 ---
- arch/arm/mach-picoxcell/Kconfig        |   11 +++
- arch/arm/mach-picoxcell/Makefile       |    1 +
- arch/arm/mach-picoxcell/board_pc7302.c |  109 ++++++++++++++++++++++++++++++++
- 3 files changed, 121 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-picoxcell/board_pc7302.c
+ arch/arm/mach-picoxcell/Makefile  |    3 +-
+ arch/arm/mach-picoxcell/devices.c |  122 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 124 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-picoxcell/devices.c
 
-diff --git a/arch/arm/mach-picoxcell/Kconfig b/arch/arm/mach-picoxcell/Kconfig
-index 7b74a45..9e08542 100644
---- a/arch/arm/mach-picoxcell/Kconfig
-+++ b/arch/arm/mach-picoxcell/Kconfig
-@@ -1,2 +1,13 @@
- if ARCH_PICOXCELL
-+
-+comment "Picochip picoXcell board selection"
-+
-+config BOARD_PC7302
-+	bool "Support PC7302 Board"
-+	default y
-+	help
-+          Include support for the picoChip PC7302 platform. This platform is
-+	  can take any of the PC3X2 or PC3X3 devices and includes SPI NOR
-+	  flash, parallel NOR flash and NAND flash.
-+
- endif
 diff --git a/arch/arm/mach-picoxcell/Makefile b/arch/arm/mach-picoxcell/Makefile
-index f6fc8de..69a9e6b 100644
+index 493ec0e..3cace37 100644
 --- a/arch/arm/mach-picoxcell/Makefile
 +++ b/arch/arm/mach-picoxcell/Makefile
-@@ -2,3 +2,4 @@ obj-y				:= picoxcell_core.o io.o axi2cfg.o \
- 				   time.o \
- 				   devices.o \
- 				   clk.o
-+obj-$(CONFIG_BOARD_PC7302)	+= board_pc7302.o
-diff --git a/arch/arm/mach-picoxcell/board_pc7302.c b/arch/arm/mach-picoxcell/board_pc7302.c
+@@ -1,2 +1,3 @@
+ obj-y				:= picoxcell_core.o io.o axi2cfg.o \
+-				   time.o
++				   time.o \
++				   devices.o
+diff --git a/arch/arm/mach-picoxcell/devices.c b/arch/arm/mach-picoxcell/devices.c
 new file mode 100644
-index 0000000..6d2b5e0
+index 0000000..884ecb5
 --- /dev/null
-+++ b/arch/arm/mach-picoxcell/board_pc7302.c
-@@ -0,0 +1,109 @@
++++ b/arch/arm/mach-picoxcell/devices.c
+@@ -0,0 +1,122 @@
 +/*
-+ * linux/arch/arm/mach-picoxcell/board_pc7302.c
-+ *
 + * Copyright (c) 2010 Picochip Ltd., Jamie Iles
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -86,104 +62,119 @@ index 0000000..6d2b5e0
 + *
 + * All enquiries to support@picochip.com
 + */
-+#include <linux/gpio.h>
++#include <linux/serial_8250.h>
++#include <linux/serial_reg.h>
++#include <linux/platform_device.h>
++#include <linux/init.h>
 +#include <linux/interrupt.h>
 +#include <linux/io.h>
-+#include <linux/platform_device.h>
-+#include <linux/mtd/physmap.h>
-+#include <linux/spi/flash.h>
-+
 +#include <mach/hardware.h>
-+#include <asm/leds.h>
-+#include <asm/mach-types.h>
-+#include <asm/mach/arch.h>
++#include <mach/irqs.h>
++
++#include <asm/pmu.h>
 +
 +#include "picoxcell_core.h"
++#include "soc.h"
 +
-+static long pc7302_panic_blink(int state)
++#define UART_USR_REG_OFFSET			0x7C
++static struct plat_serial8250_port serial1_platform_data[] = {
++	{
++		.membase	= IO_ADDRESS(PICOXCELL_UART1_BASE),
++		.mapbase	= PICOXCELL_UART1_BASE,
++		.irq		= IRQ_UART1,
++		.flags		= UPF_BOOT_AUTOCONF,
++		.iotype		= UPIO_DWAPB32,
++		.regshift	= 2,
++		.uartclk	= PICOXCELL_BASE_BAUD,
++		.private_data	= (void *)(PHYS_TO_IO(PICOXCELL_UART1_BASE +
++						      UART_USR_REG_OFFSET)),
++	},
++	{},
++};
++
++static struct resource serial1_resources[] = {
++	{
++		.start		= PICOXCELL_UART1_BASE,
++		.end		= PICOXCELL_UART1_BASE + 0xFFFF,
++		.flags		= IORESOURCE_MEM,
++	},
++	{
++		.start		= IRQ_UART1,
++		.end		= IRQ_UART2,
++		.flags		= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device serial1_device = {
++	.name			= "serial8250",
++	.id			= PLAT8250_DEV_PLATFORM1,
++	.dev.platform_data	= serial1_platform_data,
++	.resource		= serial1_resources,
++	.num_resources		= ARRAY_SIZE(serial1_resources),
++};
++
++static struct plat_serial8250_port serial2_platform_data[] = {
++	{
++		.membase	= IO_ADDRESS(PICOXCELL_UART2_BASE),
++		.mapbase	= PICOXCELL_UART2_BASE,
++		.irq		= IRQ_UART2,
++		.flags		= UPF_BOOT_AUTOCONF,
++		.iotype		= UPIO_DWAPB32,
++		.regshift	= 2,
++		.uartclk	= PICOXCELL_BASE_BAUD,
++		.private_data	= (void *)(PHYS_TO_IO(PICOXCELL_UART2_BASE +
++						      UART_USR_REG_OFFSET)),
++	},
++	{},
++};
++
++static struct resource serial2_resources[] = {
++	{
++		.start		= PICOXCELL_UART2_BASE,
++		.end		= PICOXCELL_UART2_BASE + 0xFFFF,
++		.flags		= IORESOURCE_MEM,
++	},
++	{
++		.start		= IRQ_UART2,
++		.end		= IRQ_UART2,
++		.flags		= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device serial2_device = {
++	.name			= "serial8250",
++	.id			= PLAT8250_DEV_PLATFORM2,
++	.dev.platform_data	= serial2_platform_data,
++	.resource		= serial2_resources,
++	.num_resources		= ARRAY_SIZE(serial2_resources),
++};
++
++static struct resource pmu_resource = {
++	.start			= IRQ_NPMUIRQ,
++	.end			= IRQ_NPMUIRQ,
++	.flags			= IORESOURCE_IRQ,
++};
++
++static struct platform_device pmu_device = {
++	.name			= "arm-pmu",
++	.id			= ARM_PMU_DEVICE_CPU,
++	.num_resources		= 1,
++	.resource		= &pmu_resource,
++};
++
++static struct platform_device *common_devices[] __initdata = {
++	&serial1_device,
++	&serial2_device,
++	&pmu_device,
++};
++
++static int __init picoxcell_add_devices(void)
 +{
-+	__raw_writel(state ? 0xFF : 0, IO_ADDRESS(PICOXCELL_GPIO_BASE +
-+					    GPIO_SW_PORT_C_DR_REG_OFFSET));
++	platform_add_devices(common_devices, ARRAY_SIZE(common_devices));
++
 +	return 0;
 +}
-+
-+static void pc7302_panic_init(void)
-+{
-+	/*
-+	 * We have a BOOT_ERROR pin on PC7302. Reuse that for signalling when
-+	 * the kernel panics. There is only 1 bit wired up to port C but it
-+	 * won't hurt to configure all of them.
-+	 */
-+	__raw_writel(0xF, IO_ADDRESS(PICOXCELL_GPIO_BASE +
-+			       GPIO_SW_PORT_C_DDR_REG_OFFSET));
-+	__raw_writel(0x0, IO_ADDRESS(PICOXCELL_GPIO_BASE +
-+			       GPIO_SW_PORT_C_CTL_REG_OFFSET));
-+
-+	panic_blink = pc7302_panic_blink;
-+}
-+
-+static struct mtd_partition pc7302_nor_partitions[] = {
-+	{
-+		.name		= "Boot",
-+		.size		= SZ_128K,
-+		.offset		= 0,
-+	},
-+	{
-+		.name		= "Boot Environment",
-+		.size		= SZ_128K,
-+		.offset		= MTDPART_OFS_APPEND,
-+	},
-+	{
-+		.name		= "Kernel",
-+		.size		= SZ_4M,
-+		.offset		= MTDPART_OFS_APPEND,
-+	},
-+	{
-+		.name		= "Application",
-+		.size		= MTDPART_SIZ_FULL,
-+		.offset		= MTDPART_OFS_APPEND,
-+	},
-+};
-+
-+static struct physmap_flash_data pc7302_nor_flash_data = {
-+	.width		= 1,
-+	.parts		= pc7302_nor_partitions,
-+	.nr_parts	= ARRAY_SIZE(pc7302_nor_partitions)
-+};
-+
-+static struct resource pc7302_nor_resource = {
-+	.start	= PICOXCELL_FLASH_BASE,
-+	.end	= PICOXCELL_FLASH_BASE + SZ_128M - 1,
-+	.flags	= IORESOURCE_MEM,
-+};
-+
-+static struct platform_device pc7302_nor = {
-+	.name		    = "physmap-flash",
-+	.id		    = -1,
-+	.dev.platform_data  = &pc7302_nor_flash_data,
-+	.resource	    = &pc7302_nor_resource,
-+	.num_resources	    = 1,
-+};
-+
-+static void pc7302_init_nor(void)
-+{
-+	platform_device_register(&pc7302_nor);
-+}
-+
-+static void __init pc7302_init(void)
-+{
-+	picoxcell_core_init();
-+	pc7302_init_nor();
-+	pc7302_panic_init();
-+}
-+
-+MACHINE_START(PC7302, "PC7302")
-+	.map_io		= picoxcell_map_io,
-+	.init_irq	= picoxcell_init_irq,
-+	.init_early	= picoxcell_init_early,
-+	.timer		= &picoxcell_sys_timer,
-+	.init_machine	= pc7302_init,
-+MACHINE_END
++arch_initcall(picoxcell_add_devices);
 -- 
 1.7.4
 
