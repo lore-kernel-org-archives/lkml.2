@@ -1,20 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1CHKbC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 05:31:02 -0500
-Received: from www.tglx.de ([62.245.132.106]:53418 "EHLO www.tglx.de"
+	id S1753026Ab1CHKfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 05:35:21 -0500
+Received: from www.tglx.de ([62.245.132.106]:37838 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab1CHKbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 05:31:00 -0500
-Date: Tue, 8 Mar 2011 11:30:54 +0100 (CET)
+	id S1751809Ab1CHKfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 05:35:19 -0500
+Date: Tue, 8 Mar 2011 11:34:59 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: Moving staging:iio over to threaded interrupts.
-In-Reply-To: <4D6FCC99.6090202@cam.ac.uk>
-Message-ID: <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
-References: <4D6FCC99.6090202@cam.ac.uk>
+To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v9 1/1] PRUSS UIO driver support
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C008B02@dbde02.ent.ti.com>
+Message-ID: <alpine.LFD.2.00.1103081133510.2787@localhost6.localdomain6>
+References: <1299175677-17859-1-git-send-email-pratheesh@ti.com> <1299175677-17859-2-git-send-email-pratheesh@ti.com> <201103031915.55825.arnd@arndb.de> <B85A65D85D7EB246BE421B3FB0FBB593024C008B02@dbde02.ent.ti.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,80 +30,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Mar 2011, Jonathan Cameron wrote:
-> So to my mind two solutions exist.
-> 1) A single thread per trigger.  Everything prior to the work queue
-> calls is moved into a handler that goes in the 'fast' list which stays
-> in our top half handler.  The work queue bits are called one after
-> another in the bottom half.
+On Fri, 4 Mar 2011, TK, Pratheesh Gangadhar wrote:
+
+> Hi,
+> > -----Original Message-----
+> > From: Arnd Bergmann [mailto:arnd@arndb.de]
+> > Sent: Thursday, March 03, 2011 11:46 PM
+> > On Thursday 03 March 2011 19:07:57 Pratheesh Gangadhar wrote:
+> > > +struct uio_pruss_dev {
+> > > +       struct uio_info *info;
+> > > +       struct clk *pruss_clk;
+> > > +       dma_addr_t sram_paddr;
+> > > +       dma_addr_t ddr_paddr;
+> > > +       void __iomem *prussio_vaddr;
+> > > +       void *sram_vaddr;
+> > > +       void *ddr_vaddr;
+> > > +       unsigned int hostirq_start;
+> > > +       unsigned int pintc_base;
+> > > +};
+> > > +
+> > > +struct pruss_priv {
+> > > +       struct uio_pruss_dev *pupdev;
+> > > +};
+> > 
+> > I cannot see the point of struct pruss_priv, I think it would be better to
+> > just merge the two data structures into one. Everything else looks
+> > good to me now.
 > 
-> 2) Allow each consumer to attach it's own thread to the trigger
-> controller and basically implement our own variant of the core threaded
-> interrupt code that allows for a list of threads rather than a single one.
+> pruss_priv is needed to get access to uio_pruss_dev from uio_info *info in
+> UIO interrupt handler (pruss_handler) and shall be per interrupt entry.
 > 
-> I rather like the idea of 2.  It might even end up with different
-> devices being queried from different processor cores simultaneously
-> which is quite cute.  The question is whether a simple enough
-> implementation is possible that the originators of the threaded interrupt
-> code would be happy with it (as it bypasses or would mean additions to their
-> core code).
+> +static irqreturn_t pruss_handler(int irq, struct uio_info *info) {
+> +	struct pruss_priv *priv = info->priv;
+> +	struct uio_pruss_dev *gdev = priv->pupdev;
+> 
+> Note that info is a pointer to array supporting 8 interrupts. This allows to
+> redirect to driver structure via info->priv quickly.
 
-Don't implement another threading model. Look at the trigger irq as a
-demultiplexing interrupt. So if you have several consumers of a single
-trigger, then you can implement a pseudo irq_chip and register the sub
-devices as separate interrupts.
+struct uio_pruss_dev *dev = container_of(info, struct uio_pruss_dev, info);
 
-That means your main trigger interrupt would look like this:
-
-irqreturn_t hardirq_handler(int irq, void *dev)
-{
-     iio_trigger_dev *idev = dev;
-     int i;
-
-     store_state_as_necessary(idev);
-
-     for (i = 0; i < idev->nr_subirqs; i++) {
-     	    if (idev->subirqs[i].enabled)
-		generic_handle_irq(idev->subirq_base + i);
-     }
-}
-
-And you'd have an irq_chip implementation which does:
-
-static void subirq_mask(struct irq_data *d)
-{
-     iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
-     int idx = d->irq - idev->subirq_base;
-
-     idev->subirqs[idx].enabled = false;
-}
-
-static void subirq_unmask(struct irq_data *d)
-{
-     iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
-     int idx = d->irq - idev->subirq_base;
-
-     idev->subirqs[idx].enabled = true;
-}
-
-static struct irq_chip subirq_chip = {
-       .name = "iiochip",
-       .mask = subirq_mask,
-       .unmask = subirq_unmask,
-};
-
-init()
-{
-	for_each_subirq(i)
-		irq_set_chip_and_handler(i, &subirq_chip, handle_simple_irq);
-}
-
-So now you can request the interrupts for your subdevices with
-request_irq or request_threaded_irq.
-
-You can also implement #1 this way, you just mark the sub device
-interrupts as IRQ_NESTED_THREAD, and then call the handlers from the
-main trigger irq thread.
+Perhaps ?
 
 Thanks,
 
