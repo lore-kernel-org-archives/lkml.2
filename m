@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab1CHL4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 06:56:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39045 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754211Ab1CHL4m (ORCPT
+	id S1754690Ab1CHL51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 06:57:27 -0500
+Received: from proxy.DResearch.DE ([87.193.137.100]:34121 "EHLO
+	mail.dresearch.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754211Ab1CHL50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 06:56:42 -0500
-Date: Tue, 8 Mar 2011 11:56:40 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <samuel.ortiz@intel.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH 2/3] regulator: add a subdriver for TI TPS6105x
- regulator portions
-Message-ID: <20110308115640.GC20944@opensource.wolfsonmicro.com>
-References: <1299577320-31389-1-git-send-email-linus.walleij@stericsson.com>
+	Tue, 8 Mar 2011 06:57:26 -0500
+Message-ID: <4D7619A2.4090207@dresearch.de>
+Date: Tue, 08 Mar 2011 12:57:22 +0100
+From: Steffen Sledz <sledz@dresearch.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299577320-31389-1-git-send-email-linus.walleij@stericsson.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Mario Schuknecht <m.schuknecht@dresearch.de>
+Subject: Re: [PATCH v3] tcp: ioctl type SIOCOUTQNSD returns amount of data
+ not sent
+References: <20110304123950.2c91ebd9@lxorguk.ukuu.org.uk> <1299441595-18455-1-git-send-email-sledz@dresearch.de>
+In-Reply-To: <1299441595-18455-1-git-send-email-sledz@dresearch.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 08 Mar 2011 11:57:24.0439 (UTC) FILETIME=[FCF46670:01CBDD87]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 10:42:00AM +0100, Linus Walleij wrote:
+Am 06.03.2011 20:59, schrieb Steffen Sledz:
+> From: Mario Schuknecht <m.schuknecht@dresearch.de>
+> 
+> In contrast to SIOCOUTQ which returns the amount of data sent
+> but not yet acknowledged plus data not yet sent this patch only
+> returns the data not sent.
+> 
+> For various methods of live streaming bitrate control it may
+> be helpful to know how much data are in the tcp outqueue are
+> not sent yet.
+> 
+> Signed-off-by: Mario Schuknecht <m.schuknecht@dresearch.de>
+> Signed-off-by: Steffen Sledz <sledz@dresearch.de>
+> ---
+>  include/linux/sockios.h |    4 +++-
+>  net/ipv4/tcp.c          |    9 +++++++++
+>  2 files changed, 12 insertions(+), 1 deletions(-)
 
-> +static int tps6105x_regulator_get_voltage(struct regulator_dev *rdev)
-> +{
+This is the patch version modified according to the comments from Alan Cox.
 
-It'd probably simplify things to use the _sel variants for the voltage
-operations.
+Anything else to do?
 
-> +static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
-> +{
-> +	struct tps6105x *tps6105x = platform_get_drvdata(pdev);
-> +	struct tps6105x_platform_data *pdata = tps6105x->pdata;
-> +	int ret;
-> +
-> +	/* This instance is not set for regulator mode so bail out */
-> +	if (pdata->mode != TPS6105X_MODE_VOLTAGE)
-> +		return 0;
+Steffen
 
--ENODEV?  Logging to explain why we're bombing out might be helpful too.
+-- 
+DResearch Fahrzeugelektronik GmbH
+Otto-Schmirgal-Str. 3, 10319 Berlin, Germany
+Tel: +49 30 515932-237 mailto:sledz@DResearch.de
+Fax: +49 30 515932-299
+Geschäftsführer: Dr. Michael Weber, Werner Mögle;
+Amtsgericht Berlin Charlottenburg; HRB 130120 B;
+Ust.-IDNr. DE273952058
 
-> +	/* Set lowest voltage 4.5V to begin */
-> +	ret = tps6105x_mask_and_set(tps6105x, TPS6105X_REG_0,
-> +		TPS6105X_REG0_VOLTAGE_MASK,
-> +		TPS6105X_REG0_VOLTAGE_450 << TPS6105X_REG0_VOLTAGE_SHIFT);
-> +	if (ret)
-> +		return ret;
-
-Don't do this, if the user wants to set a defualt voltage they can use
-constraints but if the driver does it then it may disrupt a running
-system.
-
-> +#if 0
-> +	/* Activate voltage mode - use to check if voltage comes out */
-> +	ret = tps6105x_mask_and_set(tps6105x, TPS6105X_REG_0,
-> +		TPS6105X_REG0_MODE_MASK,
-> +		TPS6105X_REG0_MODE_VOLTAGE << TPS6105X_REG0_MODE_SHIFT);
-> +	if (ret)
-> +		return ret;
-> +#endif
-
-Don't include if 0 code.
-
-> +subsys_initcall(tps6105x_regulator_init);
-> +module_exit(tps6105x_regulator_exit);
-
-These usually go next to the functions.
