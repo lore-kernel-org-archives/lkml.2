@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1CHN0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 08:26:16 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55625 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab1CHN0P convert rfc822-to-8bit (ORCPT
+	id S1754941Ab1CHN0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 08:26:49 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55189 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab1CHN0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 08:26:15 -0500
+	Tue, 8 Mar 2011 08:26:47 -0500
+Date: Tue, 8 Mar 2011 08:26:32 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jay Vosburgh <fubar@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org
+Subject: Re: [Patch] bonding: fix netpoll in active-backup mode
+Message-ID: <20110308132632.GA19072@hmsreliant.think-freely.org>
+References: <1299507114-12144-1-git-send-email-amwang@redhat.com>
+ <20110307185038.GA31788@hmsreliant.think-freely.org>
+ <4D75AD50.7060400@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110308115640.GC20944@opensource.wolfsonmicro.com>
-References: <1299577320-31389-1-git-send-email-linus.walleij@stericsson.com>
-	<20110308115640.GC20944@opensource.wolfsonmicro.com>
-Date: Tue, 8 Mar 2011 14:26:14 +0100
-Message-ID: <AANLkTin7qD7O70u5HQVgWXQZTFR1O8dUOqyKWmn6sU1b@mail.gmail.com>
-Subject: Re: [PATCH 2/3] regulator: add a subdriver for TI TPS6105x regulator portions
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <samuel.ortiz@intel.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D75AD50.7060400@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 12:56 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+On Tue, Mar 08, 2011 at 12:15:12PM +0800, Cong Wang wrote:
+> äºŽ 2011å¹´03æœˆ08æ—¥ 02:50, Neil Horman å†™é“:
+> >On Mon, Mar 07, 2011 at 10:11:50PM +0800, Amerigo Wang wrote:
+> >>netconsole doesn't work in active-backup mode, because we don't do anything
+> >>for nic failover in active-backup mode. This patch fixes the problem by:
+> >>
+> >>1) make slave_enable_netpoll() and slave_disable_netpoll() callable in softirq
+> >>    context, that is, moving code after synchronize_rcu_bh() into call_rcu_bh()
+> >>    callback function, teaching kzalloc() to use GFP_ATOMIC.
+> >>
+> >>2) disable netpoll on old slave and enable netpoll on the new slave.
+> >>
+> >>Tested by ifdown the current active slave and ifup it again for several times,
+> >>netconsole works well.
+> >>
+> >>Signed-off-by: WANG Cong<amwang@redhat.com>
+> >>
+> >I may be missing soething but this seems way over-complicated to me.  I presume
+> >the problem is that in active backup mode a failover results in the new active
+> >slave not having netpoll setup on it?  If thats the case, why not just setup
+> >netpoll on all slaves when ndo_netpoll_setup is called on the bonding interface?
+> >I don't see anything immeidately catastrophic that would happen as a result.
+> 
+> 
+> But we still need to clean up the netpoll on the failing slave, which still
+> needs to call slave_disable_netpoll() in monitor code, I see no big differences
+> with the solution I take.
+> 
+Why?  I understand you want to free up that memory, but I don't see any special
+state codified in that structure that can't wait until you disable netpoll on
+the bond as a whole.  Save yourself the time and trouble, enable netpoll on both
+slaves when its enabled on the bond, and tear it down when its torn down on the
+bond. Do worry about doing anything during a failover.
 
-> On Tue, Mar 08, 2011 at 10:42:00AM +0100, Linus Walleij wrote:
->
->> +static int tps6105x_regulator_get_voltage(struct regulator_dev *rdev)
->> +{
->
-> It'd probably simplify things to use the _sel variants for the voltage
-> operations.
-
-Good idea. Fixed it.
-
->> +static int __devinit tps6105x_regulator_probe(struct platform_device *pdev)
->> +{
->> +     struct tps6105x *tps6105x = platform_get_drvdata(pdev);
->> +     struct tps6105x_platform_data *pdata = tps6105x->pdata;
->> +     int ret;
->> +
->> +     /* This instance is not set for regulator mode so bail out */
->> +     if (pdata->mode != TPS6105X_MODE_VOLTAGE)
->> +             return 0;
->
-> -ENODEV?  Logging to explain why we're bombing out might be helpful too.
-
-Not in this case actually, the chip is configured by platform data to
-operate as regulator, LED or flashgun. All three drivers may be
-compiled in at some point, and a system may have three TPS chips
-performing each function. They will spawn three children each,
-but only one of them should probe.
-
-So the fact that the regulator driver doesn't probe doesn't mean any
-failure, some other driver will likely probe successfully for the chip.
-
->> +     /* Set lowest voltage 4.5V to begin */
->> +     ret = tps6105x_mask_and_set(tps6105x, TPS6105X_REG_0,
->> +             TPS6105X_REG0_VOLTAGE_MASK,
->> +             TPS6105X_REG0_VOLTAGE_450 << TPS6105X_REG0_VOLTAGE_SHIFT);
->> +     if (ret)
->> +             return ret;
->
-> Don't do this, if the user wants to set a defualt voltage they can use
-> constraints but if the driver does it then it may disrupt a running
-> system.
-
-OK dropped it.
-
->> +#if 0
->> +     /* Activate voltage mode - use to check if voltage comes out */
->> +     ret = tps6105x_mask_and_set(tps6105x, TPS6105X_REG_0,
->> +             TPS6105X_REG0_MODE_MASK,
->> +             TPS6105X_REG0_MODE_VOLTAGE << TPS6105X_REG0_MODE_SHIFT);
->> +     if (ret)
->> +             return ret;
->> +#endif
->
-> Don't include if 0 code.
-
-Dropped it.
-
->> +subsys_initcall(tps6105x_regulator_init);
->> +module_exit(tps6105x_regulator_exit);
->
-> These usually go next to the functions.
-
-Reordered.
-
-Thanks Mark,
-Linus Walleij
+Neil
+> 
+> >And then you wouldn't have to worry about disabling/enabling anything on a
+> >failover (or during a panic for that matter).  As for the rcu bits?  Why are
+> >they needed?  One would presume that wouldn't (or at least shouldn't) be able to
+> >teardown our netpoll setup until such time as all the pending frames for that
+> >netpoll client have been transmitted.  If we're not blocknig on that RCU isn't
+> >really going to help.  Seems like the proper fix is take a reference to the
+> >appropriate npinfo struct in netpoll_send_skb, and drop it from the skbs
+> >destructor or some such.
+> 
+> I saw a "scheduling while in atomic" warning without touching the rcu bits.
+> 
+> Thanks!
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
