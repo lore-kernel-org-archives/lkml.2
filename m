@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab1CHGIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 01:08:13 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47934 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1CHGIJ (ORCPT
+	id S1754529Ab1CHGLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 01:11:42 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56275 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435Ab1CHGLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 01:08:09 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Subject: Re: [PATCH V2] page-types.c: auto debugfs mount for hwpoison operation
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Clark Williams <williams@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-In-Reply-To: <4D75B815.2080603@linux.intel.com>
-References: <20110307113937.GB5080@localhost> <4D75B815.2080603@linux.intel.com>
-Message-Id: <20110308150824.7EC2.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  8 Mar 2011 15:08:02 +0900 (JST)
+	Tue, 8 Mar 2011 01:11:33 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6278"; a="78415120"
+From: adharmap@codeaurora.org
+To: davidb@codeaurora.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Collins <collinsd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linux.walleij@sterricsson.com>,
+        Thomas Glexiner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [Qualcomm PM8921 MFD v2 5/6] MAINTAINERS: Add patterns for pmic 8921 files to MSM subsystem
+Date: Mon,  7 Mar 2011 22:09:49 -0800
+Message-Id: <1299564590-30116-6-git-send-email-adharmap@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org>
+References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> page-types.c doesn't supply a way to specify the debugfs path and
-> the original debugfs path is not usual on most machines. This patch
-> supplies a way to auto mount debugfs if needed.
-> 
-> This patch is heavily inspired by tools/perf/utils/debugfs.c
-> 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> ---
->   Documentation/vm/page-types.c |  105 
-> +++++++++++++++++++++++++++++++++++++++--
->   1 files changed, 101 insertions(+), 4 deletions(-)
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
 
 
-Cute!
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+---
+ MAINTAINERS |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 696cb18..8d8c87b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -905,6 +905,9 @@ F:	drivers/mmc/host/msm_sdcc.h
+ F:	drivers/tty/serial/msm_serial.h
+ F:	drivers/tty/serial/msm_serial.c
+ F:	drivers/platform/msm/
++F:	drivers/*/pm8???-*
++F:	include/linux/mfd/pm8???.h
++F:	include/linux/mfd/pm8xxx/
+ T:	git git://codeaurora.org/quic/kernel/davidb/linux-msm.git
+ S:	Maintained
+ 
+-- 
+1.7.1
 
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
