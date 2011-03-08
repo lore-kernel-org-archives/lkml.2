@@ -1,125 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab1CHSe7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 13:34:59 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34415 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab1CHSe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 13:34:57 -0500
-Date: Wed, 9 Mar 2011 00:04:42 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <pzijlstr@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Bharata B Rao <bharata.rao@in.ibm.com>
-Subject: Re: [BUGFIX][PATCH] Fix sched rt group scheduling when hierachy is
- enabled
-Message-ID: <20110308183442.GL2868@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <AANLkTikqC=MNXXavJ_jxhFNQz1uNdABXVhvj82HW=BNA@mail.gmail.com>
- <20110304072517.GC2868@balbir.in.ibm.com>
- <AANLkTikuQKGS2SQArVBDo=5vOkyrNPdqXHPrOyQz3KdP@mail.gmail.com>
- <AANLkTi=gtnZ-uC-t6u9R=pNd_aSKE3YsXi_HUqnu5+VQ@mail.gmail.com>
- <AANLkTinMvkuxdrwgj4bS9MfVaimWx-DYaanhUD-bT_wO@mail.gmail.com>
- <AANLkTimy5mPqCEbMv_68XMa7Pq_n_-jq0Pdor8+ck64B@mail.gmail.com>
- <AANLkTi=CxyXHXpa-=CNyyJPOHe-OV0xGr3USKx+TyeqK@mail.gmail.com>
- <20110304121146.GG2868@balbir.in.ibm.com>
- <AANLkTinLe8bMUCTp8Kmv98=s8D8-1qUo78Vff_-Vpgfv@mail.gmail.com>
- <AANLkTi=9nivjLwxACYJUNS6nC0zqOo-EVZbh3am+Cs4C@mail.gmail.com>
+	id S1755139Ab1CHSfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 13:35:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:46150 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753439Ab1CHSfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 13:35:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,285,1297065600"; 
+   d="scan'208";a="717790767"
+Subject: [PATCH] x86: introduce pci_map_biosrom()
+To: hpa@zytor.com
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: dmilburn@redhat.com, Dave Jiang <dave.jiang@intel.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Tue, 08 Mar 2011 10:36:19 -0800
+Message-ID: <20110308183226.6246.90354.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15-7-g9bfb
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=9nivjLwxACYJUNS6nC0zqOo-EVZbh3am+Cs4C@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Yong Zhang <yong.zhang0@gmail.com> [2011-03-08 16:42:00]:
+The isci driver needs to retrieve its preboot orom image which contains
+necessary runtime parameters like platform specific sas addresses and
+phy configuration.  There is no rom bar associated with this area,
+instead we need to scan legacy expansion rom space.
 
-> On Mon, Mar 7, 2011 at 3:00 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> >
-> > I have tested with the attached(web mail will mangle it) patch with
-> > yours applied. But I failed to trigger that WARNING.
-> >
-> > Below is my steps:
-> > 1)mount -t cgroup -ocpu cpu /mnt
-> > 2)mkdir /mnt/test-1
-> > 3)mkdir /mnt/test-1-1
-> > 4)set rt_runtime to 100000 for test-1 and test-1-1
-> > 5)run a loop task and attach it to test-1-1
-> >
-> > So I thought out a scenario to satisfy your description,
-> > but it's based on the unpatched(without your patch) kernel:
-> > Let's assume a dual-core system with test-1/test-1-1
-> > for rt group, a loop task is running on CPU 1 and test-1
-> > and test-1-1 are both throttled.
-> >
-> >              CPU-0                                  CPU-1
-> > do_sched_rt_period_timer(test-1-1)
-> > {
-> >  for CPU-1
-> >    unthrottled test-1-1.rt_rq[1];
-> >      but fail to enqueue it because
-> >      we alway get test-1-1.rt_se[0]
-> >      due to smp_processor_id();
-> >      thus test-1.rt_rq[1].nr_running == 0;
-> >      and it returned with run_time == 0;
-> > }
-> > do_sched_rt_period_timer(test-1)
-> >  unthrottle test-1.rt_rt[1] but
-> >  fail to enqueue test-1.rt_rt[1];
-> >  because nr_running == 0;
-> >
-> >                           So if we have your patch for issue-1, when
-> >                           the hrtimer is running on CPU-1, test-1-1
-> >                           and test-1 will be queued because that
-> >                           additional check in run_timer == 0 case.
-> >
-> > But once we have your patch for issue-2, the above
-> > problem will be killed by it. right?
-> 
-> And another finding is that the top rt_rq could trigger your
-> additional code, but we don't need to enqueue
-> root_task_group.rt_se[].
-> 
-> BTW, I update my patch(attached) to void testing on top rt_rq.
-> 
-> Thanks,
-> Yong
-> 
-> 
-> -- 
-> Only stand for myself
+1/ Promote the probe_roms_32 implementation to x86-64
+2/ Add a facility to find and map an adapter rom by pci device (according to
+   PCI Firmware Specification Revision 3.0)
 
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index 01f75a5..b02b516 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -568,8 +568,14 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
->  			raw_spin_unlock(&rt_rq->rt_runtime_lock);
->  		} else if (rt_rq->rt_nr_running) {
->  			idle = 0;
-> -			if (!rt_rq_throttled(rt_rq))
-> +			if (!rt_rq_throttled(rt_rq)) {
-> +				struct sched_rt_entity *rt_se;
-> +				int cpu = cpu_of(rq_of_rt_rq(rt_rq));
-> +
-> +				rt_se = rt_rq->tg->rt_se[cpu];
-> +				WARN_ON(rt_se && !on_rt_rq(rt_se));
->  				enqueue = 1;
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
 
-Fair enough, I think it is good to have the warning in there.
+Here is the updated rom scanning implementation as initially presented
+here [1].  Dave has been able to verify this implementation on his
+platform.  This is modelled loosely on the interface provided by
+pci_map_rom().
 
-> +			}
->  		}
->  
->  		if (enqueue)
+--
+Dan
 
+[1]: http://marc.info/?l=linux-scsi&m=129862745115270&w=2
 
--- 
-	Three Cheers,
-	Balbir
+ arch/x86/include/asm/probe_roms.h |    8 +++
+ arch/x86/include/asm/setup.h      |    3 +
+ arch/x86/kernel/Makefile          |    2 -
+ arch/x86/kernel/head32.c          |    1 
+ arch/x86/kernel/probe_roms.c      |  101 +++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/x86_init.c        |    2 -
+ 6 files changed, 113 insertions(+), 4 deletions(-)
+ create mode 100644 arch/x86/include/asm/probe_roms.h
+ rename arch/x86/kernel/{probe_roms_32.c => probe_roms.c} (65%)
+
+diff --git a/arch/x86/include/asm/probe_roms.h b/arch/x86/include/asm/probe_roms.h
+new file mode 100644
+index 0000000..4950a0b
+--- /dev/null
++++ b/arch/x86/include/asm/probe_roms.h
+@@ -0,0 +1,8 @@
++#ifndef _PROBE_ROMS_H_
++#define _PROBE_ROMS_H_
++struct pci_dev;
++
++extern void __iomem *pci_map_biosrom(struct pci_dev *pdev);
++extern void pci_unmap_biosrom(void __iomem *rom);
++extern size_t pci_biosrom_size(struct pci_dev *pdev);
++#endif
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index ef292c7..52edb6d 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -93,10 +93,11 @@ void *extend_brk(size_t size, size_t align);
+ 			: : "i" (sz));					\
+ 	}
+ 
++extern void probe_roms(void);
++
+ #ifdef __i386__
+ 
+ void __init i386_start_kernel(void);
+-extern void probe_roms(void);
+ 
+ #else
+ void __init x86_64_start_kernel(char *real_mode);
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index fedf32a..f31ae9b 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -36,7 +36,7 @@ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+ obj-y			+= time.o ioport.o ldt.o dumpstack.o
+ obj-y			+= setup.o x86_init.o i8259.o irqinit.o
+ obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
+-obj-$(CONFIG_X86_32)	+= probe_roms_32.o
++obj-y			+= probe_roms.o
+ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index 784360c..e7605ed 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -21,7 +21,6 @@
+ static void __init i386_default_early_setup(void)
+ {
+ 	/* Initialize 32bit specific setup functions */
+-	x86_init.resources.probe_roms = probe_roms;
+ 	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+ 
+diff --git a/arch/x86/kernel/probe_roms_32.c b/arch/x86/kernel/probe_roms.c
+similarity index 65%
+rename from arch/x86/kernel/probe_roms_32.c
+rename to arch/x86/kernel/probe_roms.c
+index 071e7fe..ba0a4cc 100644
+--- a/arch/x86/kernel/probe_roms_32.c
++++ b/arch/x86/kernel/probe_roms.c
+@@ -73,6 +73,107 @@ static struct resource video_rom_resource = {
+ 	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+ };
+ 
++/* does this oprom support the given pci device, or any of the devices
++ * that the driver supports?
++ */
++static bool match_id(struct pci_dev *pdev, unsigned short vendor, unsigned short device)
++{
++	struct pci_driver *drv = pdev->driver;
++	const struct pci_device_id *id;
++
++	if (pdev->vendor == vendor && pdev->device == device)
++		return true;
++
++	for (id = drv ? drv->id_table : NULL; id && id->vendor; id++)
++		if (id->vendor == vendor && id->device == device)
++			break;
++
++	return id && id->vendor;
++}
++
++static bool probe_list(struct pci_dev *pdev, unsigned short vendor,
++		       const unsigned char *rom_list)
++{
++	unsigned short device;
++
++	do {
++		if (probe_kernel_address(rom_list, device) != 0)
++			device = 0;
++
++		if (device && match_id(pdev, vendor, device))
++			break;
++
++		rom_list += 2;
++	} while (device);
++
++	return !!device;
++}
++
++static struct resource *find_oprom(struct pci_dev *pdev)
++{
++	struct resource *oprom = NULL;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(adapter_rom_resources); i++) {
++		struct resource *res = &adapter_rom_resources[i];
++		unsigned short offset, vendor, device, list, rev;
++		const unsigned char *rom;
++
++		if (res->end == 0)
++			break;
++
++		rom = isa_bus_to_virt(res->start);
++		if (probe_kernel_address(rom + 0x18, offset) != 0)
++			continue;
++
++		if (probe_kernel_address(rom + offset + 0x4, vendor) != 0)
++			continue;
++
++		if (probe_kernel_address(rom + offset + 0x6, device) != 0)
++			continue;
++
++		if (match_id(pdev, vendor, device)) {
++			oprom = res;
++			break;
++		}
++
++		if (probe_kernel_address(rom + offset + 0x8, list) == 0 &&
++		    probe_kernel_address(rom + offset + 0xc, rev) == 0 &&
++		    rev >= 3 && list &&
++		    probe_list(pdev, vendor, rom + offset + list)) {
++			oprom = res;
++			break;
++		}
++	}
++
++	return oprom;
++}
++
++void *pci_map_biosrom(struct pci_dev *pdev)
++{
++	struct resource *oprom = find_oprom(pdev);
++
++	if (!oprom)
++		return NULL;
++
++	return ioremap(oprom->start, resource_size(oprom));
++}
++EXPORT_SYMBOL(pci_map_biosrom);
++
++void pci_unmap_biosrom(void __iomem *image)
++{
++	iounmap(image);
++}
++EXPORT_SYMBOL(pci_unmap_biosrom);
++
++size_t pci_biosrom_size(struct pci_dev *pdev)
++{
++	struct resource *oprom = find_oprom(pdev);
++
++	return oprom ? resource_size(oprom) : 0;
++}
++EXPORT_SYMBOL(pci_biosrom_size);
++
+ #define ROMSIGNATURE 0xaa55
+ 
+ static int __init romsignature(const unsigned char *rom)
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index cd6da6b..1bc104f 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -33,7 +33,7 @@ void iommu_shutdown_noop(void) { }
+ struct x86_init_ops x86_init __initdata = {
+ 
+ 	.resources = {
+-		.probe_roms		= x86_init_noop,
++		.probe_roms		= probe_roms,
+ 		.reserve_resources	= reserve_standard_io_resources,
+ 		.memory_setup		= default_machine_specific_memory_setup,
+ 	},
+
