@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1CHLdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 06:33:18 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57139 "EHLO
+	id S1754179Ab1CHLfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 06:35:09 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43085 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab1CHLdR (ORCPT
+	with ESMTP id S1752982Ab1CHLfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 06:33:17 -0500
+	Tue, 8 Mar 2011 06:35:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=dBky7+Ehr0g59Hm+56Ik5mqcjgz+tvlJZwz2eHafQTcVs7v91Z2zyF689aeWJawtK1
-         3RT/bX7OeqNA5oiEak2OrO246Y09UG8iDhDk2mQrkxaUTK7cTtXta6qlfSSzxjl7LCrI
-         azU32ZOljbZjujqD/VHpvz/xNXakHWInayQS0=
+        b=Wo2hvBLT7lMrjciHi3hKC3F1dbIqbqd6rBiWt4Hd9USLLfQMW1lF5BMy736E972XMn
+         Xlo8paqgU1SJd3K/bSBIxnxkHgafVRVn82dYQxcjNdO9X2nAZFoE2LFIVagkpA1iIWFc
+         xWICBu208ZKTmQWPbJ9R77KfX8uwbbiUoGBm0=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 14/21 v2] staging: ft1000: Fix coding style in ft1000_submit_rx_urb function.
-Date: Tue,  8 Mar 2011 12:33:06 +0100
-Message-Id: <1299583986-2719-1-git-send-email-marek.belisko@open-nandra.com>
+        error27@gmail.com, Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH 11/21 v2] staging: ft1000: Fix coding style in ft1000_usb_transmit_complete function.
+Date: Tue,  8 Mar 2011 12:34:56 +0100
+Message-Id: <1299584096-2791-1-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299486086-7325-15-git-send-email-marek.belisko@open-nandra.com>
-References: <1299486086-7325-15-git-send-email-marek.belisko@open-nandra.com>
+In-Reply-To: <1299486086-7325-12-git-send-email-marek.belisko@open-nandra.com>
+References: <1299486086-7325-12-git-send-email-marek.belisko@open-nandra.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,74 +33,32 @@ function.
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   46 ++++++++++++-------------
- 1 files changed, 22 insertions(+), 24 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 8095dd2..8115e2c 100644
+index 4c5f443..958292e 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1203,38 +1203,36 @@ static int ft1000_copy_up_pkt (struct urb *urb)
- //---------------------------------------------------------------------------
- static int ft1000_submit_rx_urb(struct ft1000_info *info)
+@@ -902,14 +902,14 @@ static int ft1000_reset(struct net_device *dev)
+ static void ft1000_usb_transmit_complete(struct urb *urb)
  {
--    int result;
--    struct ft1000_device *pFt1000Dev = info->pFt1000Dev;
-+	int result;
-+	struct ft1000_device *pFt1000Dev = info->pFt1000Dev;
  
-+	//DEBUG ("ft1000_submit_rx_urb entered: sizeof rx_urb is %d\n", sizeof(*pFt1000Dev->rx_urb));
-+	if (pFt1000Dev->status & FT1000_STATUS_CLOSING) {
-+		DEBUG("network driver is closed, return\n");
-+		//usb_kill_urb(pFt1000Dev->rx_urb); //mbelian
-+		return -ENODEV;
-+	}
+-    struct ft1000_device *ft1000dev = urb->context;
++	struct ft1000_device *ft1000dev = urb->context;
  
--    //DEBUG ("ft1000_submit_rx_urb entered: sizeof rx_urb is %d\n", sizeof(*pFt1000Dev->rx_urb));
--    if ( pFt1000Dev->status & FT1000_STATUS_CLOSING)
--    {
--        DEBUG("network driver is closed, return\n");
--        //usb_kill_urb(pFt1000Dev->rx_urb); //mbelian
--	return -ENODEV;
--    }
--
--    usb_fill_bulk_urb(pFt1000Dev->rx_urb,
--            pFt1000Dev->dev,
--            usb_rcvbulkpipe(pFt1000Dev->dev, pFt1000Dev->bulk_in_endpointAddr),
--            pFt1000Dev->rx_buf,
--            MAX_BUF_SIZE,
--            (usb_complete_t)ft1000_copy_up_pkt,
--            info);
--
-+	usb_fill_bulk_urb(pFt1000Dev->rx_urb,
-+			  pFt1000Dev->dev,
-+			  usb_rcvbulkpipe(pFt1000Dev->dev,
-+					  pFt1000Dev->bulk_in_endpointAddr),
-+			  pFt1000Dev->rx_buf, MAX_BUF_SIZE,
-+			  (usb_complete_t) ft1000_copy_up_pkt, info);
+     //DEBUG("ft1000_usb_transmit_complete entered\n");
  
--    if((result = usb_submit_urb(pFt1000Dev->rx_urb, GFP_ATOMIC)))
--    {
--        printk("ft1000_submit_rx_urb: submitting rx_urb %d failed\n", result);
--	return result;
--    }
-+	result = usb_submit_urb(pFt1000Dev->rx_urb, GFP_ATOMIC);
+-    if (urb->status)
+-        printk("%s: TX status %d\n", ft1000dev->net->name, urb->status);
++	if (urb->status)
++		pr_err("%s: TX status %d\n", ft1000dev->net->name, urb->status);
  
--    //DEBUG("ft1000_submit_rx_urb exit: result=%d\n", result);
-+	if (result) {
-+		pr_err("ft1000_submit_rx_urb: submitting rx_urb %d failed\n",
-+		       result);
-+		return result;
-+	}
-+	//DEBUG("ft1000_submit_rx_urb exit: result=%d\n", result);
+-    netif_wake_queue(ft1000dev->net);
++	netif_wake_queue(ft1000dev->net);
  
- 	return 0;
+     //DEBUG("Return from ft1000_usb_transmit_complete\n");
  }
- 
-+
- //---------------------------------------------------------------------------
- // Function:    ft1000_open
- //
 -- 
 1.7.1
 
