@@ -1,115 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab1CHKx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 05:53:57 -0500
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:51789 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab1CHKxz (ORCPT
+	id S1753930Ab1CHKyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 05:54:35 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55633 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab1CHKye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 05:53:55 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D760AF6.7030809@cam.ac.uk>
-Date: Tue, 08 Mar 2011 10:54:46 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Tue, 8 Mar 2011 05:54:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=ja/C1jGPfut9pv0/LAjXFlOjX9Ukrz2j19QAotxgJV2+jG648WkQovIuUD8Mp1r7+D
+         GLowPl3cKK6XY/GAd2VDuq+O6lMo/kDkDGGVe8P4oXExHZj9QrEOIAruxvIiAV7/md7x
+         eegBo6r3Hdaw0r8eZFS2odDTTzX2DdHqdTBa4=
+Date: Tue, 8 Mar 2011 12:54:28 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] proc: make struct proc_dir_entry::namelen unsigned int
+Message-ID: <20110308105428.GA5767@p183.telecom.by>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: Moving staging:iio over to threaded interrupts.
-References: <4D6FCC99.6090202@cam.ac.uk> <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/11 10:30, Thomas Gleixner wrote:
-> On Thu, 3 Mar 2011, Jonathan Cameron wrote:
->> So to my mind two solutions exist.
->> 1) A single thread per trigger.  Everything prior to the work queue
->> calls is moved into a handler that goes in the 'fast' list which stays
->> in our top half handler.  The work queue bits are called one after
->> another in the bottom half.
->>
->> 2) Allow each consumer to attach it's own thread to the trigger
->> controller and basically implement our own variant of the core threaded
->> interrupt code that allows for a list of threads rather than a single one.
->>
->> I rather like the idea of 2.  It might even end up with different
->> devices being queried from different processor cores simultaneously
->> which is quite cute.  The question is whether a simple enough
->> implementation is possible that the originators of the threaded interrupt
->> code would be happy with it (as it bypasses or would mean additions to their
->> core code).
-> 
-> Don't implement another threading model. Look at the trigger irq as a
-> demultiplexing interrupt. So if you have several consumers of a single
-> trigger, then you can implement a pseudo irq_chip and register the sub
-> devices as separate interrupts.
-> 
-> That means your main trigger interrupt would look like this:
-> 
-> irqreturn_t hardirq_handler(int irq, void *dev)
-> {
->      iio_trigger_dev *idev = dev;
->      int i;
-> 
->      store_state_as_necessary(idev);
-> 
->      for (i = 0; i < idev->nr_subirqs; i++) {
->      	    if (idev->subirqs[i].enabled)
-> 		generic_handle_irq(idev->subirq_base + i);
->      }
-> }
-> 
-> And you'd have an irq_chip implementation which does:
-> 
-> static void subirq_mask(struct irq_data *d)
-> {
->      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
->      int idx = d->irq - idev->subirq_base;
-> 
->      idev->subirqs[idx].enabled = false;
-> }
-> 
-> static void subirq_unmask(struct irq_data *d)
-> {
->      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
->      int idx = d->irq - idev->subirq_base;
-> 
->      idev->subirqs[idx].enabled = true;
-> }
-> 
-> static struct irq_chip subirq_chip = {
->        .name = "iiochip",
->        .mask = subirq_mask,
->        .unmask = subirq_unmask,
-> };
-> 
-> init()
-> {
-> 	for_each_subirq(i)
-> 		irq_set_chip_and_handler(i, &subirq_chip, handle_simple_irq);
-> }
-> 
-> So now you can request the interrupts for your subdevices with
-> request_irq or request_threaded_irq.
-> 
-> You can also implement #1 this way, you just mark the sub device
-> interrupts as IRQ_NESTED_THREAD, and then call the handlers from the
-> main trigger irq thread.
-Excellent.  I hadn't thought of doing it that way at all and it certainly looks
-like a much cleaner option than what we have now let alone the mess I was suggesting
-above.
+Space is not really conserved, because of natural alignment for the next field.
+sizeof(struct proc_dir_entry) remains the same.
 
-Will have a go at implementing this asap.
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-Thanks for the advice,
+ fs/proc/generic.c       |    8 ++++----
+ include/linux/proc_fs.h |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-Jonathan
-
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -28,7 +28,7 @@
+ 
+ DEFINE_SPINLOCK(proc_subdir_lock);
+ 
+-static int proc_match(int len, const char *name, struct proc_dir_entry *de)
++static int proc_match(unsigned int len, const char *name, struct proc_dir_entry *de)
+ {
+ 	if (de->namelen != len)
+ 		return 0;
+@@ -303,7 +303,7 @@ static int __xlate_proc_name(const char *name, struct proc_dir_entry **ret,
+ {
+ 	const char     		*cp = name, *next;
+ 	struct proc_dir_entry	*de;
+-	int			len;
++	unsigned int		len;
+ 
+ 	de = *ret;
+ 	if (!de)
+@@ -602,7 +602,7 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
+ {
+ 	struct proc_dir_entry *ent = NULL;
+ 	const char *fn = name;
+-	int len;
++	unsigned int len;
+ 
+ 	/* make sure name is valid */
+ 	if (!name || !strlen(name)) goto out;
+@@ -786,7 +786,7 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
+ 	struct proc_dir_entry **p;
+ 	struct proc_dir_entry *de = NULL;
+ 	const char *fn = name;
+-	int len;
++	unsigned int len;
+ 
+ 	spin_lock(&proc_subdir_lock);
+ 	if (__xlate_proc_name(name, &parent, &fn) != 0) {
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -50,7 +50,7 @@ typedef	int (write_proc_t)(struct file *file, const char __user *buffer,
+ 
+ struct proc_dir_entry {
+ 	unsigned int low_ino;
+-	unsigned short namelen;
++	unsigned int namelen;
+ 	const char *name;
+ 	mode_t mode;
+ 	nlink_t nlink;
