@@ -1,164 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415Ab1CHFCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 00:02:37 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54858 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab1CHFCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 00:02:36 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 8 Mar 2011 13:56:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [PATCH v2] memcg: fix leak on wrong LRU with FUSE
-Message-Id: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752627Ab1CHFJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 00:09:41 -0500
+Received: from kroah.org ([198.145.64.141]:59444 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751583Ab1CHFJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 00:09:39 -0500
+Date: Mon, 7 Mar 2011 21:07:59 -0800
+From: Greg KH <greg@kroah.com>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        stable@kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [stable] [PATCH] [stable-37] ideapad: read brightness setting
+ when have brightness key notify
+Message-ID: <20110308050759.GA12184@kroah.com>
+References: <1299494125-9655-1-git-send-email-ike.pan@canonical.com>
+ <20110307161805.GB9088@kroah.com>
+ <4D759675.8020600@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D759675.8020600@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 08, 2011 at 10:37:41AM +0800, Ike Panhc wrote:
+> On 03/08/2011 12:18 AM, Greg KH wrote:
+> > On Mon, Mar 07, 2011 at 06:35:25PM +0800, Ike Panhc wrote:
+> >> BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=25922
+> >>
+> >> On ideapad Y530, the brightness key notify will be blocked if the last notify
+> >> is not responsed by getting the brightness value. Read value when we get the
+> >> notify shall fix the problem and will not have any difference on other ideapads.
+> >>
+> >> This patch is made against 2.6.37.y and this bug impacts kernel after 2.6.37.
+> >>
+> >> The equivalent-fix patch is not in upstream yet. Since the policy of stable tree
+> >> is changed and .38 kernel is going to finalize.
+> > 
+> > What "policy of the stable tree is changed"?  Huh?
+> 
+> I thought we will have stable release on lastest kernel only[1]. Since the .38 is
+> going to release soon. It seems I do not have much time for .37 stable release.
+> 
+> I hope I do not miss something.
+> 
+> [1] https://lkml.org/lkml/2010/12/2/388
 
-fs/fuse/dev.c::fuse_try_move_page() does
+I think you miss the fact that if by the time your patch makes it into
+Linus's tree, and we have moved on to not supporting .37 anymore, then
+no one will care about .37 so it doesn't matter at all.
 
-   (1) remove a page by ->steal()
-   (2) re-add the page to page cache 
-   (3) link the page to LRU if it was not on LRU at (1)
+> >> I think to post this patch for stable kernel now should be a good
+> >> idea.
+> > 
+> > Have you not read the Documentation/stable_kernel_rules.txt and seen
+> > that this is totally and completly not allowed?  Why is it suddenly not
+> > true?
+> > 
+> > confused,
+> 
+> Sorry about the confusing. The same patch for upstream is posted[2] but not merged
+> yet. It looks like a now-or-never situation to me. That's why I post and write the
+> concerns in comment.
 
-This implies the page is _on_ LRU when it's added to radix-tree.
-So, the page is added to  memory cgroup while it's on LRU.
-because LRU is lazy and no one flushs it.
+You need to follow the documented and well explained rules, they are
+there for a very good reason, please don't try to subvert them,
+otherwise you will just end up in my kill file.
 
-This is the same behavior as SwapCache and needs special care as
- - remove page from LRU before overwrite pc->mem_cgroup.
- - add page to LRU after overwrite pc->mem_cgroup.
+thanks,
 
-And we need to taking care of pagevec.
-
-If PageLRU(page) is set before we add PCG_USED bit, the page
-will not be added to memcg's LRU (in short period).
-So, regardlress of PageLRU(page) value before commit_charge(),
-we need to check PageLRU(page) after commit_charge().
-
-Changelog:
-  - clean up.
-  - cover !PageLRU() by pagevec case.
-
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   53 ++++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 34 insertions(+), 19 deletions(-)
-
-Index: mmotm-0303/mm/memcontrol.c
-===================================================================
---- mmotm-0303.orig/mm/memcontrol.c
-+++ mmotm-0303/mm/memcontrol.c
-@@ -926,13 +926,12 @@ void mem_cgroup_add_lru_list(struct page
- }
- 
- /*
-- * At handling SwapCache, pc->mem_cgroup may be changed while it's linked to
-- * lru because the page may.be reused after it's fully uncharged (because of
-- * SwapCache behavior).To handle that, unlink page_cgroup from LRU when charge
-- * it again. This function is only used to charge SwapCache. It's done under
-- * lock_page and expected that zone->lru_lock is never held.
-+ * At handling SwapCache and other FUSE stuff, pc->mem_cgroup may be changed
-+ * while it's linked to lru because the page may be reused after it's fully
-+ * uncharged. To handle that, unlink page_cgroup from LRU when charge it again.
-+ * It's done under lock_page and expected that zone->lru_lock isnever held.
-  */
--static void mem_cgroup_lru_del_before_commit_swapcache(struct page *page)
-+static void mem_cgroup_lru_del_before_commit(struct page *page)
- {
- 	unsigned long flags;
- 	struct zone *zone = page_zone(page);
-@@ -948,7 +947,7 @@ static void mem_cgroup_lru_del_before_co
- 	spin_unlock_irqrestore(&zone->lru_lock, flags);
- }
- 
--static void mem_cgroup_lru_add_after_commit_swapcache(struct page *page)
-+static void mem_cgroup_lru_add_after_commit(struct page *page)
- {
- 	unsigned long flags;
- 	struct zone *zone = page_zone(page);
-@@ -2431,9 +2430,28 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype);
- 
-+static void
-+__mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *mem,
-+					enum charge_type ctype)
-+{
-+	struct page_cgroup *pc = lookup_page_cgroup(page);
-+	/*
-+	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
-+	 * is already on LRU. It means the page may on some other page_cgroup's
-+	 * LRU. Take care of it.
-+	 */
-+	if (unlikely(PageLRU(page)))
-+		mem_cgroup_lru_del_before_commit(page);
-+	__mem_cgroup_commit_charge(mem, page, 1, pc, ctype);
-+	if (unlikely(PageLRU(page)))
-+		mem_cgroup_lru_add_after_commit(page);
-+	return;
-+}
-+
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask)
- {
-+	struct mem_cgroup *mem = NULL;
- 	int ret;
- 
- 	if (mem_cgroup_disabled())
-@@ -2468,14 +2486,15 @@ int mem_cgroup_cache_charge(struct page 
- 	if (unlikely(!mm))
- 		mm = &init_mm;
- 
--	if (page_is_file_cache(page))
--		return mem_cgroup_charge_common(page, mm, gfp_mask,
--				MEM_CGROUP_CHARGE_TYPE_CACHE);
--
-+	if (page_is_file_cache(page)) {
-+		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &mem, true);
-+		if (ret || !mem)
-+			return ret;
-+		__mem_cgroup_commit_charge_lrucare(page, mem,
-+					MEM_CGROUP_CHARGE_TYPE_CACHE);
-+	}
- 	/* shmem */
- 	if (PageSwapCache(page)) {
--		struct mem_cgroup *mem;
--
- 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &mem);
- 		if (!ret)
- 			__mem_cgroup_commit_charge_swapin(page, mem,
-@@ -2532,17 +2551,13 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype)
- {
--	struct page_cgroup *pc;
--
- 	if (mem_cgroup_disabled())
- 		return;
- 	if (!ptr)
- 		return;
- 	cgroup_exclude_rmdir(&ptr->css);
--	pc = lookup_page_cgroup(page);
--	mem_cgroup_lru_del_before_commit_swapcache(page);
--	__mem_cgroup_commit_charge(ptr, page, 1, pc, ctype);
--	mem_cgroup_lru_add_after_commit_swapcache(page);
-+
-+	__mem_cgroup_commit_charge_lrucare(page, ptr, ctype);
- 	/*
- 	 * Now swap is on-memory. This means this page may be
- 	 * counted both as mem and swap....double count.
-
+greg k-h
