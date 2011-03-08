@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab1CHQKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 11:10:44 -0500
-Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:56454 "EHLO
-	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab1CHQKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 11:10:43 -0500
-Date: Tue, 8 Mar 2011 17:10:38 +0100
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-To: linux-kernel@vger.kernel.org
-Subject: Re: kernel BUG and freeze on cat /proc/tty/driver/serial
-Message-ID: <20110308161037.GA19950@darkside.kls.lan>
-Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
-	linux-kernel@vger.kernel.org
-References: <20110216161728.GA8431@darkside.kls.lan>
+	id S1755663Ab1CHQPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 11:15:49 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40732 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750909Ab1CHQPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 11:15:47 -0500
+Date: Tue, 8 Mar 2011 17:15:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        masami.hiramatsu.pt@hitachi.com, hpa@zytor.com, ananth@in.ibm.com,
+        davem@davemloft.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        eric.dumazet@gmail.com, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] x86: separating entry text section
+Message-ID: <20110308161524.GE1751@elte.hu>
+References: <20110220125948.GC25700@elte.hu>
+ <1298298313-5980-1-git-send-email-jolsa@redhat.com>
+ <1298298313-5980-2-git-send-email-jolsa@redhat.com>
+ <20110222080934.GB7001@elte.hu>
+ <20110222125201.GB1884@jolsa.brq.redhat.com>
+ <20110307104423.GA3661@jolsa.redhat.com>
+ <20110307152921.GC28226@elte.hu>
+ <20110307181039.GB15197@jolsa.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110216161728.GA8431@darkside.kls.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110307181039.GB15197@jolsa.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---fdj2RfSjLxBAspz7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-Hello,
+> On Mon, Mar 07, 2011 at 04:29:21PM +0100, Ingo Molnar wrote:
+> > 
+> > * Jiri Olsa <jolsa@redhat.com> wrote:
+> > 
+> > > hi,
+> > > any feedback?
+> > 
+> > Did you get my reply below?
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> > 
+> 
+> hi,
+> 
+> strange, I believe I did reply on this.. got missed
+> somehow or I'm missing simething :) reattached..
 
-On Wed, Feb 16, 2011 at 05:17:28PM +0100, Mario 'BitKoenig' Holbe wrote:
-> reading /proc/tty/driver/serial leads to a NULL pointer dereference BUG
-> and freeze on a serial-console enabled 2.6.35.{4,10,11} and 2.6.37.
-> 2.6.32.28 does fine without BUG and freeze.
+hm, the direct mail to me got lost, but i found your reply in the lkml folder. 
+That's how i missed your reply.
 
-This issue persists with 2.6.37.3 and 2.6.38-rc8.
+> I made another test with "reseting" the system state as suggested and only for 
+> cache-misses together with instructions and cycles events.
+> 
+> I can see even bigger drop of icache load misses than before
+> from 19359739 to 16448709 (about 15%).
+> 
+> The instruction/cycles count is slightly bigger in the patched
+> kernel run though..
 
+Ok, elapsed time is more stable, it went from:
 
-regards
-   Mario
---=20
-Good, Fast, Cheap: Pick any two (you can't have all three).
-                                            -- RFC 1925, 7a
+>         0.205402048  seconds time elapsed   ( +-   0.299% )
+>         0.206267711  seconds time elapsed   ( +-   0.138% )
 
---fdj2RfSjLxBAspz7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+to:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>         0.206072845  seconds time elapsed   ( +-   0.276% )
+>         0.206747566  seconds time elapsed   ( +-   0.137% )
 
-iQEVAwUBTXZU/RS+e2HeSPbpAQJZGQgAoD8SmFCzQ85GN46dCStORxmecliBs93y
-ME6qN2OHuHfC5cGAjDLCG7QUzEMtWMOgIkVdMgVqJLveQ8ffrpYfNNxuROy+iW2B
-wLZj9PbKABS1Fn1ml8PGeR7CTquhgjTQqOtSHpRbIPoTlwikaVg8FWy4knbQghkZ
-48NV6J9ltPQ7o9PKzhWIz4YoFykd35Pj9otsWG9gBQMGsS0/G3ULCuk6TZVE9r3i
-1AUNJAAoXhDPixDBOwCQJBCu1jmqdbc8VtWke/rdjSflFbcVG4Hj1xIUZRL9Se8K
-6nyH4QwcZC6N/5m+XCeCuTpnW/1wbuSQiUF81tDJL0Ejfaf4QNT2oQ==
-=iRPl
------END PGP SIGNATURE-----
+which is 0.1% slower, within the noise of the measurement.
 
---fdj2RfSjLxBAspz7--
+Will apply the patches, thanks Jiri!
+
+Thanks,
+
+	Ingo
