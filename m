@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab1CHW0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:26:49 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57757 "EHLO
+	id S1755949Ab1CHWgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:36:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34975 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab1CHW0s (ORCPT
+	with ESMTP id S1755152Ab1CHWgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:26:48 -0500
+	Tue, 8 Mar 2011 17:36:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=lUXPBvApt8r5sMpsbziEpNPB5V1R/MXgW0D/HQeug7ccFWMQ+YqiVJTORnGW4Kayxf
-         ZM08l1//oI2e6CyMKUz9j8zq0r/dpWof+D0xfLkYQbS2osISWmO1ZHnBxTSv7eCrC7ER
-         aOk8CHhC+mX+MEUIvpqiQbI10wcOW9nFJH4dw=
-Message-ID: <4D76AB38.2070906@gmail.com>
-Date: Tue, 08 Mar 2011 23:18:32 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=sE5RpD2ovI0wOtiQr70pqfL7BFzRrvvUSi5UdjeJ1eUG5L0aGgYC3kb8ieshlRDzuy
+         jv/CTHZjO5RtEOw695l63OwkJ3zFY8P05eP9dYG2p0cyhInGeWcoSi33jGaV7KPnSdbC
+         76717On+GoUAFaJN18EboUErPyhYgyXueUhtQ=
+Date: Wed, 9 Mar 2011 01:36:20 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        arnaud.patard@rtp-net.org
+Subject: Re: [PATCH 06/15] staging: xgifb: delete bIntegratedMMEnabled
+Message-ID: <20110308223620.GD3416@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Aaro Koskinen <aaro.koskinen@iki.fi>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	arnaud.patard@rtp-net.org
+References: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
+ <1299615380-22922-7-git-send-email-aaro.koskinen@iki.fi>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Alan Stern <stern@rowland.harvard.edu>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-References: <Pine.LNX.4.44L0.1102221029100.1968-100000@iolanthe.rowland.org> <201103082312.26675.rjw@sisk.pl> <4D76AA2C.2010805@gmail.com> <201103082316.59901.rjw@sisk.pl>
-In-Reply-To: <201103082316.59901.rjw@sisk.pl>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299615380-22922-7-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 11:16 PM, Rafael J. Wysocki wrote:
-> On Tuesday, March 08, 2011, Jiri Slaby wrote:
->> On 03/08/2011 11:12 PM, Rafael J. Wysocki wrote:
->>> On Tuesday, March 08, 2011, Jiri Slaby wrote:
->>>> On 03/08/2011 08:25 PM, Rafael J. Wysocki wrote:
->>>>> On Tuesday, March 08, 2011, Jiri Slaby wrote:
->>>>>> On 02/22/2011 04:36 PM, Alan Stern wrote:
->>>>>>> By the way, are you booting with no_console_suspend?  And do you do 
->>>>>>> "echo 8 >/proc/sys/kernel/printk" (or equivalently, Alt-SysRq-8) before 
->>>>>>> suspending?
->>>>>>
->>>>>> Unfortunately there are no messages at all.
->>>>>>
->>>>>> Rafael, this is a Factory with intel gfx (modesetting). Do pm-utils
->>>>>> switch a console in such case? And if yes, to which one?
->>>>>
->>>>> pm-utils don't, but s2ram does, I'm not sure from the top of my head to
->>>>> which one, though.
->>>>>
->>>>> If you use a KMS driver (I get you do), please just "chmod a-x /usr/sbin/s2ram".
->>>>
->>>> Yeah, I meant kernel modesetting, of course. Sorry for the confusion.
->>>>
->>>> I don't have /usr/sbin/s2ram.
->>>
->>> Ah.  So it's gone from Factory?  Interesting.
->>
->> I don't know, maybe it's in suspend package which I don't have installed.
+On Tue, Mar 08, 2011 at 10:16:11PM +0200, Aaro Koskinen wrote:
+> bIntegratedMMEnabled is always true, so the field and checks can be
+> eliminated.
 > 
-> Hm.  So you use the in-kernel hibernate code?
-> 
-> The one in the suspend package is generally faster.
 
-I don't use hibernation at all. This is a desktop -- suspending to S3.
+What about for the chips that came before the XG40?  Are we dropping
+support for them?
 
--- 
-js
+regards,
+dan carpenter
+
