@@ -1,102 +1,431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab1CHWnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:43:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755152Ab1CHWnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:43:41 -0500
-Date: Tue, 8 Mar 2011 17:43:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        ryov@valinux.co.jp, taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
-        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
-        mrubin@google.com
-Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
-Message-ID: <20110308224325.GK27455@redhat.com>
-References: <1299619256-12661-1-git-send-email-teravest@google.com>
+	id S1755879Ab1CHWtP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:49:15 -0500
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:63706 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab1CHWtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:49:14 -0500
+Message-ID: <4D76B243.4010806@snapgear.com>
+Date: Wed, 9 Mar 2011 08:48:35 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299619256-12661-1-git-send-email-teravest@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Kurz <linux@kbdbabel.org>
+CC: Greg Ungerer <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] m68knommu: fixing compiler warnings
+References: <alpine.DEB.1.10.1103071110070.17775@vs81.sauer-cs.de>
+In-Reply-To: <alpine.DEB.1.10.1103071110070.17775@vs81.sauer-cs.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 01:20:50PM -0800, Justin TerAvest wrote:
-> This patchset adds tracking to the page_cgroup structure for which cgroup has
-> dirtied a page, and uses that information to provide isolation between
-> cgroups performing writeback.
-> 
+Hi Alexander,
 
-Justin,
+On 07/03/11 18:11, Alexander Kurz wrote:
+>> From 9e6846f985e84b0a915df50908f7f44d942ab891 Mon Sep 17 00:00:00 2001
+> From: Alexander Kurz<linux@kbdbabel.org>
+> Date: Sun, 20 Feb 2011 22:45:33 +0100
+> Subject: [PATCH] m68knommu: fixing compiler warnings
 
-So if somebody is trying to isolate a workload which does bunch of READS
-and lots of buffered WRITES, this patchset should help in the sense that
-all the heavy WRITES can be put into a separate cgroup of low weight?
+Thanks. I'll apply to the m68knommu git tree (for inclusion in 2.6.39).
 
-Other application which are primarily doing READS, direct WRITES or little
-bit of buffered WRITES should still get good latencies if heavy writer
-is isolated in a separate group?
+Looks like a few of the other ColdFire gpio support files need this too.
+I'll fix those similar to this.
 
-If yes, then this piece standalone can make sense. And once the other
-piece/patches of memory cgroup dirty ratio and cgroup aware buffered
-writeout come in, then one will be able to differentiate buffered writes
-of different groups.
+Regards
+Greg
 
-Thanks
-Vivek
 
-> I know that there is some discussion to remove request descriptor limits
-> entirely, but I included a patch to introduce per-cgroup limits to enable
-> this functionality. Without it, we didn't see much isolation improvement.
-> 
-> I think most of this material has been discussed on lkml previously, this is
-> just another attempt to make a patchset that handles buffered writes for CFQ.
-> 
-> There was a lot of previous discussion at:
->   http://thread.gmane.org/gmane.linux.kernel/1007922
-> 
-> Thanks to Andrea Righi, Kamezawa Hiroyuki, Munehiro Ikeda, Nauman Rafique,
-> and Vivek Goyal for work on previous versions of these patches.
-> 
-> 
->  Documentation/block/biodoc.txt |   10 +
->  block/blk-cgroup.c             |  204 +++++++++++++++++++++-
->  block/blk-cgroup.h             |    9 +-
->  block/blk-core.c               |  216 +++++++++++++++--------
->  block/blk-settings.c           |    2 +-
->  block/blk-sysfs.c              |   60 ++++---
->  block/cfq-iosched.c            |  390 +++++++++++++++++++++++++++++++---------
->  block/cfq.h                    |    6 +-
->  block/elevator.c               |   11 +-
->  fs/buffer.c                    |    2 +
->  fs/direct-io.c                 |    2 +
->  include/linux/blk_types.h      |    2 +
->  include/linux/blkdev.h         |   81 ++++++++-
->  include/linux/blkio-track.h    |   89 +++++++++
->  include/linux/elevator.h       |   14 ++-
->  include/linux/iocontext.h      |    1 +
->  include/linux/memcontrol.h     |    6 +
->  include/linux/mmzone.h         |    4 +-
->  include/linux/page_cgroup.h    |   12 +-
->  init/Kconfig                   |   16 ++
->  mm/Makefile                    |    3 +-
->  mm/bounce.c                    |    2 +
->  mm/filemap.c                   |    2 +
->  mm/memcontrol.c                |    6 +
->  mm/memory.c                    |    6 +
->  mm/page-writeback.c            |   14 ++-
->  mm/page_cgroup.c               |   29 ++-
->  mm/swap_state.c                |    2 +
->  28 files changed, 985 insertions(+), 216 deletions(-)
-> 
-> [PATCH 1/6] Add IO cgroup tracking for buffered writes.
-> [PATCH 2/6] Make async queues per cgroup.
-> [PATCH 3/6] Modify CFQ to use IO tracking information.
-> [PATCH 4/6] With per-cgroup async, don't special case queues.
-> [PATCH 5/6] Add stat for per cgroup writeout done by flusher.
-> [PATCH 6/6] Per cgroup request descriptor counts
+
+> Signed-off-by: Alexander Kurz<linux@kbdbabel.org>
+> ---
+>   arch/m68knommu/platform/528x/gpio.c |  210 +++++++++++++++++-----------------
+>   1 files changed, 105 insertions(+), 105 deletions(-)
+>
+> diff --git a/arch/m68knommu/platform/528x/gpio.c b/arch/m68knommu/platform/528x/gpio.c
+> index eedaf0a..526db66 100644
+> --- a/arch/m68knommu/platform/528x/gpio.c
+> +++ b/arch/m68knommu/platform/528x/gpio.c
+> @@ -33,9 +33,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 1,
+>   			.ngpio			= 7,
+>   		},
+> -		.pddr				= MCFEPORT_EPDDR,
+> -		.podr				= MCFEPORT_EPDR,
+> -		.ppdr				= MCFEPORT_EPPDR,
+> +		.pddr				= (void __iomem *)MCFEPORT_EPDDR,
+> +		.podr				= (void __iomem *)MCFEPORT_EPDR,
+> +		.ppdr				= (void __iomem *)MCFEPORT_EPPDR,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -49,9 +49,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 8,
+>   			.ngpio			= 4,
+>   		},
+> -		.pddr				= MCFGPTA_GPTDDR,
+> -		.podr				= MCFGPTA_GPTPORT,
+> -		.ppdr				= MCFGPTB_GPTPORT,
+> +		.pddr				= (void __iomem *)MCFGPTA_GPTDDR,
+> +		.podr				= (void __iomem *)MCFGPTA_GPTPORT,
+> +		.ppdr				= (void __iomem *)MCFGPTB_GPTPORT,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -65,9 +65,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 16,
+>   			.ngpio			= 4,
+>   		},
+> -		.pddr				= MCFGPTB_GPTDDR,
+> -		.podr				= MCFGPTB_GPTPORT,
+> -		.ppdr				= MCFGPTB_GPTPORT,
+> +		.pddr				= (void __iomem *)MCFGPTB_GPTDDR,
+> +		.podr				= (void __iomem *)MCFGPTB_GPTPORT,
+> +		.ppdr				= (void __iomem *)MCFGPTB_GPTPORT,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -81,9 +81,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 24,
+>   			.ngpio			= 4,
+>   		},
+> -		.pddr				= MCFQADC_DDRQA,
+> -		.podr				= MCFQADC_PORTQA,
+> -		.ppdr				= MCFQADC_PORTQA,
+> +		.pddr				= (void __iomem *)MCFQADC_DDRQA,
+> +		.podr				= (void __iomem *)MCFQADC_PORTQA,
+> +		.ppdr				= (void __iomem *)MCFQADC_PORTQA,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -97,9 +97,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 32,
+>   			.ngpio			= 4,
+>   		},
+> -		.pddr				= MCFQADC_DDRQB,
+> -		.podr				= MCFQADC_PORTQB,
+> -		.ppdr				= MCFQADC_PORTQB,
+> +		.pddr				= (void __iomem *)MCFQADC_DDRQB,
+> +		.podr				= (void __iomem *)MCFQADC_PORTQB,
+> +		.ppdr				= (void __iomem *)MCFQADC_PORTQB,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -113,11 +113,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 40,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRA,
+> -		.podr				= MCFGPIO_PORTA,
+> -		.ppdr				= MCFGPIO_PORTAP,
+> -		.setr				= MCFGPIO_SETA,
+> -		.clrr				= MCFGPIO_CLRA,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRA,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTA,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTAP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETA,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRA,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -131,11 +131,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 48,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRB,
+> -		.podr				= MCFGPIO_PORTB,
+> -		.ppdr				= MCFGPIO_PORTBP,
+> -		.setr				= MCFGPIO_SETB,
+> -		.clrr				= MCFGPIO_CLRB,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRB,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTB,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTBP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETB,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRB,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -149,11 +149,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 56,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRC,
+> -		.podr				= MCFGPIO_PORTC,
+> -		.ppdr				= MCFGPIO_PORTCP,
+> -		.setr				= MCFGPIO_SETC,
+> -		.clrr				= MCFGPIO_CLRC,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRC,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTC,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTCP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETC,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRC,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -167,11 +167,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 64,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRD,
+> -		.podr				= MCFGPIO_PORTD,
+> -		.ppdr				= MCFGPIO_PORTDP,
+> -		.setr				= MCFGPIO_SETD,
+> -		.clrr				= MCFGPIO_CLRD,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRD,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTD,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTDP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETD,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRD,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -185,11 +185,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 72,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRE,
+> -		.podr				= MCFGPIO_PORTE,
+> -		.ppdr				= MCFGPIO_PORTEP,
+> -		.setr				= MCFGPIO_SETE,
+> -		.clrr				= MCFGPIO_CLRE,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRE,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTE,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTEP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETE,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRE,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -203,11 +203,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 80,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRF,
+> -		.podr				= MCFGPIO_PORTF,
+> -		.ppdr				= MCFGPIO_PORTFP,
+> -		.setr				= MCFGPIO_SETF,
+> -		.clrr				= MCFGPIO_CLRF,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRF,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTF,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTFP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETF,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRF,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -221,11 +221,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 88,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRG,
+> -		.podr				= MCFGPIO_PORTG,
+> -		.ppdr				= MCFGPIO_PORTGP,
+> -		.setr				= MCFGPIO_SETG,
+> -		.clrr				= MCFGPIO_CLRG,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRG,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTG,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTGP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETG,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRG,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -239,11 +239,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 96,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRH,
+> -		.podr				= MCFGPIO_PORTH,
+> -		.ppdr				= MCFGPIO_PORTHP,
+> -		.setr				= MCFGPIO_SETH,
+> -		.clrr				= MCFGPIO_CLRH,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRH,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTH,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTHP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETH,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRH,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -257,11 +257,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 104,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRJ,
+> -		.podr				= MCFGPIO_PORTJ,
+> -		.ppdr				= MCFGPIO_PORTJP,
+> -		.setr				= MCFGPIO_SETJ,
+> -		.clrr				= MCFGPIO_CLRJ,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRJ,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTJ,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTJP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETJ,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRJ,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -275,11 +275,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 112,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDRDD,
+> -		.podr				= MCFGPIO_PORTDD,
+> -		.ppdr				= MCFGPIO_PORTDDP,
+> -		.setr				= MCFGPIO_SETDD,
+> -		.clrr				= MCFGPIO_CLRDD,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRDD,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTDD,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTDDP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETDD,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRDD,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -293,11 +293,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 120,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDREH,
+> -		.podr				= MCFGPIO_PORTEH,
+> -		.ppdr				= MCFGPIO_PORTEHP,
+> -		.setr				= MCFGPIO_SETEH,
+> -		.clrr				= MCFGPIO_CLREH,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDREH,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTEH,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTEHP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETEH,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLREH,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -311,11 +311,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 128,
+>   			.ngpio			= 8,
+>   		},
+> -		.pddr				= MCFGPIO_DDREL,
+> -		.podr				= MCFGPIO_PORTEL,
+> -		.ppdr				= MCFGPIO_PORTELP,
+> -		.setr				= MCFGPIO_SETEL,
+> -		.clrr				= MCFGPIO_CLREL,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDREL,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTEL,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTELP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETEL,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLREL,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -329,11 +329,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 136,
+>   			.ngpio			= 6,
+>   		},
+> -		.pddr				= MCFGPIO_DDRAS,
+> -		.podr				= MCFGPIO_PORTAS,
+> -		.ppdr				= MCFGPIO_PORTASP,
+> -		.setr				= MCFGPIO_SETAS,
+> -		.clrr				= MCFGPIO_CLRAS,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRAS,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTAS,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTASP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETAS,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRAS,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -347,11 +347,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 144,
+>   			.ngpio			= 7,
+>   		},
+> -		.pddr				= MCFGPIO_DDRQS,
+> -		.podr				= MCFGPIO_PORTQS,
+> -		.ppdr				= MCFGPIO_PORTQSP,
+> -		.setr				= MCFGPIO_SETQS,
+> -		.clrr				= MCFGPIO_CLRQS,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRQS,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTQS,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTQSP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETQS,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRQS,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -365,11 +365,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 152,
+>   			.ngpio			= 6,
+>   		},
+> -		.pddr				= MCFGPIO_DDRSD,
+> -		.podr				= MCFGPIO_PORTSD,
+> -		.ppdr				= MCFGPIO_PORTSDP,
+> -		.setr				= MCFGPIO_SETSD,
+> -		.clrr				= MCFGPIO_CLRSD,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRSD,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTSD,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTSDP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETSD,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRSD,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -383,11 +383,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 160,
+>   			.ngpio			= 4,
+>   		},
+> -		.pddr				= MCFGPIO_DDRTC,
+> -		.podr				= MCFGPIO_PORTTC,
+> -		.ppdr				= MCFGPIO_PORTTCP,
+> -		.setr				= MCFGPIO_SETTC,
+> -		.clrr				= MCFGPIO_CLRTC,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRTC,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTTC,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTTCP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETTC,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRTC,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -401,11 +401,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 168,
+>   			.ngpio			= 4,
+>   		},
+> -		.pddr				= MCFGPIO_DDRTD,
+> -		.podr				= MCFGPIO_PORTTD,
+> -		.ppdr				= MCFGPIO_PORTTDP,
+> -		.setr				= MCFGPIO_SETTD,
+> -		.clrr				= MCFGPIO_CLRTD,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRTD,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTTD,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTTDP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETTD,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRTD,
+>   	},
+>   	{
+>   		.gpio_chip			= {
+> @@ -419,11 +419,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
+>   			.base			= 176,
+>   			.ngpio			= 4,
+>   		},
+> -		.pddr				= MCFGPIO_DDRUA,
+> -		.podr				= MCFGPIO_PORTUA,
+> -		.ppdr				= MCFGPIO_PORTUAP,
+> -		.setr				= MCFGPIO_SETUA,
+> -		.clrr				= MCFGPIO_CLRUA,
+> +		.pddr				= (void __iomem *)MCFGPIO_DDRUA,
+> +		.podr				= (void __iomem *)MCFGPIO_PORTUA,
+> +		.ppdr				= (void __iomem *)MCFGPIO_PORTUAP,
+> +		.setr				= (void __iomem *)MCFGPIO_SETUA,
+> +		.clrr				= (void __iomem *)MCFGPIO_CLRUA,
+>   	},
+>   };
+>
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
