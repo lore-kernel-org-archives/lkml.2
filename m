@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab1CHF1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 00:27:11 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60959 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1CHF1J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 00:27:09 -0500
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [RFC] introduce sys_syncfs to sync a single file system (v2)
-In-Reply-To: <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net> <20110303072223.GA28133@elie> <87bp1sziqn.fsf@linux.vnet.ibm.com> <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
-User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Tue, 08 Mar 2011 10:57:00 +0530
-Message-ID: <8762ruchcr.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752395Ab1CHFbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 00:31:49 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48154 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281Ab1CHFbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 00:31:47 -0500
+Date: Tue, 8 Mar 2011 05:32:26 +0000
+From: Andres Salomon <dilinger@queued.net>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Amit Kucheria <amit.kucheria@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: mx51_efika: update platform data for new mfd
+ changes
+Message-ID: <20110308053226.7300e65d@debxo>
+In-Reply-To: <20110307144700.GF1829@sirena.org.uk>
+References: <20110304080653.3f2c3f19@debxo>
+	<4D710FF9.6040305@ru.mvista.com>
+	<20110304083822.0f40d120@debxo>
+	<4D713670.70506@ru.mvista.com>
+	<20110307144700.GF1829@sirena.org.uk>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Mar 2011 15:17:57 -0800 (PST), Sage Weil <sage@newdream.net> wrote:
-> Changes:
->  v1->v2: Rename, simplify to just take an fd.
-> 
-> It is frequently useful to sync a single file system, instead of all
-> mounted file systems via sync(2):
-> 
->  - On machines with many mounts, it is not at all uncommon for some of
->    them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
->    those and may never get to the one you do care about (e.g., /).
->  - Some applications write lots of data to the file system and then
->    want to make sure it is flushed to disk.  Calling fsync(2) on each
->    file introduces unnecessary ordering constraints that result in a large
->    amount of sub-optimal writeback/flush/commit behavior by the file
->    system.
-> 
-> There are currently two ways (that I know of) to sync a single super_block:
-> 
->  - BLKFLSBUF ioctl on the block device: That also invalidates the bdev
->    mapping, which isn't usually desirable, and doesn't work for non-block
->    file systems.
->  - 'mount -o remount,rw' will call sync_filesystem as an artifact of the
->    current implemention.  Relying on this little-known side effect for
->    something like data safety sounds foolish.
-> 
-> Both of these approaches require root privileges, which some applications
-> do not have (nor should they need?) given that sync(2) is an unprivileged
-> operation.
-> 
-> This patch introduces a new system call syncfs(2) that takes an fd and
-> syncs only the file system it references.  Maybe someday we can even
-> 
->  $ sync /some/path
-> 
-> and not get
-> 
->  sync: ignoring all arguments
-> 
-> The syscall is motivated by comments by Al and Christoph at the last LSF.
-> syncfs(2) seems like an appropriate name given statfs(2).
-> 
-> A similar ioctl was also proposed a while back, see
-> 	http://marc.info/?l=linux-fsdevel&m=127970513829285&w=2
-> 
-> Signed-off-by: Sage Weil <sage@newdream.net>
-> ---
->  arch/x86/ia32/ia32entry.S          |    1 +
->  arch/x86/include/asm/unistd_32.h   |    3 ++-
->  arch/x86/include/asm/unistd_64.h   |    2 ++
->  arch/x86/kernel/syscall_table_32.S |    1 +
->  fs/sync.c                          |   24 ++++++++++++++++++++++++
->  5 files changed, 30 insertions(+), 1 deletions(-)
+On Mon, 7 Mar 2011 14:47:00 +0000
+Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
+> On Fri, Mar 04, 2011 at 09:58:56PM +0300, Sergei Shtylyov wrote:
+> > Andres Salomon wrote:
+> 
+> >>>> MFD changes in c738892f cause the mc13xxx_platform_data struct
+> 
+> >>>     Linus asks to also specify the commit summary in parens.
+> 
+> >> Also, what?  If there are changes to how patches should be
+> >> submitted, please provide a reference
+> >> (Documentation/SubmittingPatches should be updated, as well).
+> 
+> >    I have no time to rummage in the mail archives, sorry.
+> 
+> There's been multiple discussions of this.  The issue is that commit
+> IDs only mean something in specific trees and go bad if someone
+> rebases, and they aren't legibile by humans (so even if the commit is
+> in something like Linus' tree the reader still needs a git repository
+> to figure out what changes are being talked about).
 
-include/asm-generic/unistd.h may also need an update.
+Ah, thanks, that makes sense.  Sergei's original statement was unclear
+("...instead of just the commit ID" would've helped).
 
-
--aneesh
 
