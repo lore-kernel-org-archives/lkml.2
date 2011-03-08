@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab1CHILB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 03:11:01 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37485 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab1CHIK6 (ORCPT
+	id S1755636Ab1CHITc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 03:19:32 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64923 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab1CHITa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 03:10:58 -0500
+	Tue, 8 Mar 2011 03:19:30 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=vH+gwv/hSx2QSk6d3hegSeVGpypq/mBWWzlC7imaH/5gmFk5YKXGZs/OhcDx9wFqmC
-         JsisKUF61sdMXI2JzNDtdQRVOU40yBlXUQOWjJZ7lY1Rocf+D1RIeJMSvcU8cmrC6bL0
-         7ALjHPun6CRVnTqAk9S4XbqhrI0AhUOKzMz68=
-Message-ID: <4D75E4E6.9020507@gmail.com>
-Date: Tue, 08 Mar 2011 11:12:22 +0300
-From: Andrew Vagin <avagin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ahpnKU84Pz4jmtAunlEL2QblJKEh+VllYJWoWjHjFWfWLB59OR3TkO+Jl8lOsQeQ4E
+         0jpxlqmVUmepSbtMPucai9OS3sKAc2xEoX1QGNoxswgYs7SN8KXcmMec0ubHwxvFfVV/
+         i9LjIyN5RIIYIXUK/EvUrjMvgzVFMUUE6iero=
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrey Vagin <avagin@openvz.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: check zone->all_unreclaimable in all_unreclaimable()
-References: <1299325456-2687-1-git-send-email-avagin@openvz.org>	<20110305152056.GA1918@barrios-desktop>	<4D72580D.4000208@gmail.com>	<20110305155316.GB1918@barrios-desktop>	<4D7267B6.6020406@gmail.com>	<20110305170759.GC1918@barrios-desktop>	<20110307135831.9e0d7eaa.akpm@linux-foundation.org> <20110308094438.1ba05ed2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110308094438.1ba05ed2.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1299490414.14465.74.camel@marge.simson.net>
+References: <1299486101.14465.25.camel@marge.simson.net>
+	<AANLkTikOY2-_EAjYTBZG4Wb9HNHRxJ4Qcd+zbvbxzPbt@mail.gmail.com>
+	<1299490414.14465.74.camel@marge.simson.net>
+Date: Tue, 8 Mar 2011 16:19:29 +0800
+Message-ID: <AANLkTinPuCg-fGBtOgYSwVf1_67dr9uzw7a-8TfxLUuW@mail.gmail.com>
+Subject: Re: [patchlet] sched: fix rt throttle runtime borrowing
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, All
-> I agree with Minchan and can't think this is a real fix....
-> Andrey, I'm now trying your fix and it seems your fix for oom-killer,
-> 'skip-zombie-process' works enough good for my environ.
+On Mon, Mar 7, 2011 at 5:33 PM, Mike Galbraith <efault@gmx.de> wrote:
+> Well, it does prevent complete death, but you have to be pretty darn
+> attentive to notice that the patient is still technically alive ;-)
 >
-> What is your enviroment ? number of cpus ? architecture ? size of memory ?
-Processort: AMD Phenom(tm) II X6 1055T Processor (six-core)
-Ram: 8Gb
-RHEL6, x86_64. This host doesn't have swap.
+> As such, turning borrowing off by default, and making borrowing up to
+> within a micron of 100% CPU an opt-in feature likely makes more sense.
 
-It hangs up fast. Tomorrow I will have to send a processes state, if it 
-will be interesting for you. With my patch the kernel work fine. I added 
-debug and found that it hangs up in the described case.
-I suppose that my patch may be incorrect, but the problem exists and we 
-should do something.
+Another idea comes into my head is: disable runtime borrowing for
+root_task_group forever by default, but keep current behavior
+for the sub-groups :)
 
+Thanks,
+Yong
+
+
+-- 
+Only stand for myself
