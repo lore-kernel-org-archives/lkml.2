@@ -1,112 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab1CHWvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:51:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab1CHWvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:51:14 -0500
-Date: Tue, 8 Mar 2011 17:50:59 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        ryov@valinux.co.jp, taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
-        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
-        mrubin@google.com
-Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
-Message-ID: <20110308225059.GL27455@redhat.com>
-References: <1299619256-12661-1-git-send-email-teravest@google.com>
- <20110308224325.GK27455@redhat.com>
+	id S1756032Ab1CHWyC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:54:02 -0500
+Received: from flusers.ccur.com ([173.221.59.2]:58758 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755297Ab1CHWyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:54:01 -0500
+Date: Tue, 8 Mar 2011 17:53:55 -0500
+From: Joe Korty <joe.korty@ccur.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] An RCU for SMP with a single CPU garbage collector
+Message-ID: <20110308225355.GA3447@tsunami.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+References: <20101116012846.GV2555@linux.vnet.ibm.com>
+ <20101116135230.GA5362@nowhere>
+ <20101116155104.GB2497@linux.vnet.ibm.com>
+ <20101117005229.GC26243@nowhere>
+ <20110307203106.GA23002@tsunami.ccur.com>
+ <20110307210157.GG3104@linux.vnet.ibm.com>
+ <20110307211613.GA26455@tsunami.ccur.com>
+ <20110307225110.GA19414@tsunami.ccur.com>
+ <20110308090742.GO3104@linux.vnet.ibm.com>
+ <20110308155710.GA15138@tsunami.ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110308224325.GK27455@redhat.com>
+In-Reply-To: <20110308155710.GA15138@tsunami.ccur.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 05:43:25PM -0500, Vivek Goyal wrote:
-> On Tue, Mar 08, 2011 at 01:20:50PM -0800, Justin TerAvest wrote:
-> > This patchset adds tracking to the page_cgroup structure for which cgroup has
-> > dirtied a page, and uses that information to provide isolation between
-> > cgroups performing writeback.
+On Tue, Mar 08, 2011 at 10:57:10AM -0500, Joe Korty wrote:
+> On Tue, Mar 08, 2011 at 04:07:42AM -0500, Paul E. McKenney wrote:
+>>> Thinking about it some more, the tap-into-syscall approach might
+>>> work in my implementation, in which case the tap-into-preempt-enable
+>>> code could go away.
 > > 
+>> OK, please let me know how that goes!
+>> 
+>>> Nice thing about RCU, the algorithms are infinitely mallable :)
+>> 
+>> Just trying to keep the code size finite.  ;-)
 > 
-> Justin,
-> 
-> So if somebody is trying to isolate a workload which does bunch of READS
-> and lots of buffered WRITES, this patchset should help in the sense that
-> all the heavy WRITES can be put into a separate cgroup of low weight?
-> 
-> Other application which are primarily doing READS, direct WRITES or little
-> bit of buffered WRITES should still get good latencies if heavy writer
-> is isolated in a separate group?
-> 
-> If yes, then this piece standalone can make sense. And once the other
-> piece/patches of memory cgroup dirty ratio and cgroup aware buffered
-> writeout come in, then one will be able to differentiate buffered writes
-> of different groups.
+> I hope to get to it this afternoon!  I especially like
+> the lockless nature of JRCU, and that the dedicated cpus
+> are not loaded down with callback inovcations either.
+> Not sure how to support the PREEMPT_RCU mode though; so
+> if Fredrick is planning to support that, that alone would
+> make his approach the very best.
 
-Thinking more about it, currently anyway SYNC preempts the ASYNC. So the
-question would be will it help me enable get better isolation latencies
-of READS agains buffered WRITES?
 
-Thanks
-Vivek 
 
-> 
-> Thanks
-> Vivek
-> 
-> > I know that there is some discussion to remove request descriptor limits
-> > entirely, but I included a patch to introduce per-cgroup limits to enable
-> > this functionality. Without it, we didn't see much isolation improvement.
-> > 
-> > I think most of this material has been discussed on lkml previously, this is
-> > just another attempt to make a patchset that handles buffered writes for CFQ.
-> > 
-> > There was a lot of previous discussion at:
-> >   http://thread.gmane.org/gmane.linux.kernel/1007922
-> > 
-> > Thanks to Andrea Righi, Kamezawa Hiroyuki, Munehiro Ikeda, Nauman Rafique,
-> > and Vivek Goyal for work on previous versions of these patches.
-> > 
-> > 
-> >  Documentation/block/biodoc.txt |   10 +
-> >  block/blk-cgroup.c             |  204 +++++++++++++++++++++-
-> >  block/blk-cgroup.h             |    9 +-
-> >  block/blk-core.c               |  216 +++++++++++++++--------
-> >  block/blk-settings.c           |    2 +-
-> >  block/blk-sysfs.c              |   60 ++++---
-> >  block/cfq-iosched.c            |  390 +++++++++++++++++++++++++++++++---------
-> >  block/cfq.h                    |    6 +-
-> >  block/elevator.c               |   11 +-
-> >  fs/buffer.c                    |    2 +
-> >  fs/direct-io.c                 |    2 +
-> >  include/linux/blk_types.h      |    2 +
-> >  include/linux/blkdev.h         |   81 ++++++++-
-> >  include/linux/blkio-track.h    |   89 +++++++++
-> >  include/linux/elevator.h       |   14 ++-
-> >  include/linux/iocontext.h      |    1 +
-> >  include/linux/memcontrol.h     |    6 +
-> >  include/linux/mmzone.h         |    4 +-
-> >  include/linux/page_cgroup.h    |   12 +-
-> >  init/Kconfig                   |   16 ++
-> >  mm/Makefile                    |    3 +-
-> >  mm/bounce.c                    |    2 +
-> >  mm/filemap.c                   |    2 +
-> >  mm/memcontrol.c                |    6 +
-> >  mm/memory.c                    |    6 +
-> >  mm/page-writeback.c            |   14 ++-
-> >  mm/page_cgroup.c               |   29 ++-
-> >  mm/swap_state.c                |    2 +
-> >  28 files changed, 985 insertions(+), 216 deletions(-)
-> > 
-> > [PATCH 1/6] Add IO cgroup tracking for buffered writes.
-> > [PATCH 2/6] Make async queues per cgroup.
-> > [PATCH 3/6] Modify CFQ to use IO tracking information.
-> > [PATCH 4/6] With per-cgroup async, don't special case queues.
-> > [PATCH 5/6] Add stat for per cgroup writeout done by flusher.
-> > [PATCH 6/6] Per cgroup request descriptor counts
+Hi Paul,
+I had a brainstorm. It _seems_ that JRCU might work fine if
+all I did was remove the expensive preempt_enable() tap.
+No new taps on system calls or anywhere else.  That would
+leave only the context switch tap plus the batch start/end
+sampling that is remotely performed on each cpu by the
+garbage collector.  Not even rcu_read_unlock has a tap --
+it is just a plain-jane preempt_enable() now.
+
+And indeed it works!  I am able to turn off the local
+timer interrupt on one (of 15) cpus and the batches
+keep flowing on.  I have two user 100%  use test apps
+(one of them does no system calls), when I run that
+on the timer-disabled cpu the batches still advance.
+Admittedly the batches do not advance as fast as before
+.. they used to advance at the max rate of 50 msecs/batch.
+Now I regularly see batch lengths approaching 400 msecs.
+
+I plan to put some taps into some other low overhead places
+-- at all the voluntary preemption points, at might_sleep,
+at rcu_read_unlock, for safety purposes.  But it is nice
+to see a zero overhead approach that works fine without
+any of that.
+
+Regards,
+Joe
