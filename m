@@ -1,178 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab1CHKGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 05:06:15 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62193 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab1CHKGL (ORCPT
+	id S1753580Ab1CHKLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 05:11:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10405 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751809Ab1CHKLa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 05:06:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=CxYgiHZd0BMmiWIt+qoAvhrzYr6QJxV546M+df3ZrtNT+sD+ToiaKOxYR4qKlZ0ZhE
-         +JyP/3gsgDeF0lqM5iFD7A91M8349rLQOE/SAhHHuWyAVjzvKnsXlqDJ1H7tC+SDh8X5
-         IIYkJJs1B0i5Gd5BFmlsmy6jXFIYQwInfTFpQ=
-Message-ID: <4D75FF8E.9010103@gmail.com>
-Date: Tue, 08 Mar 2011 11:06:06 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Tue, 8 Mar 2011 05:11:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,283,1297065600"; 
+   d="scan'208";a="717592377"
+From: "Ferraton, Jean RegisX" <jean.regisx.ferraton@intel.com>
+To: "marcel@holtmann.org" <marcel@holtmann.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "xiaosuo@gmail.com" <xiaosuo@gmail.com>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Tue, 8 Mar 2011 10:10:10 +0000
+Subject: [PATCH] Fix "possible circular locking dependency" in rfcomm
+Thread-Topic: [PATCH] Fix "possible circular locking dependency" in rfcomm
+Thread-Index: AcvdeQJAdM7f5EpATZi+XtLC5BHGPw==
+Message-ID: <6E42A1B4DD2F7B4D80A1F26BB498BF9F8C9F86D162@irsmsx501.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jiri Slaby <jslaby@suse.cz>, corentincj@iksaif.net,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: eeepc: rfkill on 900A defunct
-References: <4CED26EF.5000109@suse.cz> <20101124201834.GA7760@srcf.ucam.org> <4D6B6F9A.1020102@gmail.com>
-In-Reply-To: <4D6B6F9A.1020102@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2011 10:49 AM, Jiri Slaby wrote:
-> On 11/24/2010 09:18 PM, Matthew Garrett wrote:
->> Hm. As a shorter term fix, can you try this (entirely untested!) 
->> approach?
-> 
-> What is the status of this? Was there any alternative merged?
+Changes in sock.c in function __rfcomm_sock_close, to release sock before calling rfcomm_dlc_close to avoid possible deadlock when calling rfcomm_lock (in rfcomm_dlc_close).
 
-Ping.
+Signed-off-by: Jean Regis Ferraton <jrferraton@gmail.com>
 
->> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
->> index b2edfdc..8f817d6 100644
->> --- a/drivers/platform/x86/eeepc-laptop.c
->> +++ b/drivers/platform/x86/eeepc-laptop.c
->> @@ -574,8 +574,9 @@ static bool eeepc_wlan_rfkill_blocked(struct eeepc_laptop *eeepc)
->>  	return true;
->>  }
->>  
->> -static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
->> +static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
->>  {
->> +	struct pci_dev *port;
->>  	struct pci_dev *dev;
->>  	struct pci_bus *bus;
->>  	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
->> @@ -588,9 +589,17 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
->>  	mutex_lock(&eeepc->hotplug_lock);
->>  
->>  	if (eeepc->hotplug_slot) {
->> -		bus = pci_find_bus(0, 1);
->> +		port = acpi_get_pci_dev(handle);
->> +
->> +		if (!port) {
->> +			pr_warning("Unable to find port\n");
->> +			goto out_unlock;
->> +		}
->> +
->> +		bus = port->subordinate;
->> +
->>  		if (!bus) {
->> -			pr_warning("Unable to find PCI bus 1?\n");
->> +			pr_warning("Unable to find PCI bus?\n");
->>  			goto out_unlock;
->>  		}
->>  
->> @@ -636,6 +645,17 @@ out_unlock:
->>  	mutex_unlock(&eeepc->hotplug_lock);
->>  }
->>  
->> +static void eeepc_rfkill_hotplug_update(struct eeepc_laptop *eeepc, char *node)
->> +{
->> +	acpi_status status = AE_OK;
->> +	acpi_handle handle;
->> +
->> +	status = acpi_get_handle(NULL, node, &handle);
->> +
->> +	if (ACPI_SUCCESS(status))
->> +		eeepc_rfkill_hotplug(eeepc, handle);
->> +}
->> +
->>  static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
->>  {
->>  	struct eeepc_laptop *eeepc = data;
->> @@ -643,7 +663,7 @@ static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
->>  	if (event != ACPI_NOTIFY_BUS_CHECK)
->>  		return;
->>  
->> -	eeepc_rfkill_hotplug(eeepc);
->> +	eeepc_rfkill_hotplug(eeepc, handle);
->>  }
->>  
->>  static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
->> @@ -661,6 +681,11 @@ static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
->>  						     eeepc);
->>  		if (ACPI_FAILURE(status))
->>  			pr_warning("Failed to register notify on %s\n", node);
->> +		/*
->> +		 * Refresh pci hotplug in case the rfkill state was
->> +		 * changed during setup.
->> +		 */
->> +		eeepc_rfkill_hotplug(eeepc, handle);
->>  	} else
->>  		return -ENODEV;
->>  
->> @@ -682,6 +707,12 @@ static void eeepc_unregister_rfkill_notifier(struct eeepc_laptop *eeepc,
->>  		if (ACPI_FAILURE(status))
->>  			pr_err("Error removing rfkill notify handler %s\n",
->>  				node);
->> +			/*
->> +			 * Refresh pci hotplug in case the rfkill
->> +			 * state was changed after
->> +			 * eeepc_unregister_rfkill_notifier()
->> +			 */
->> +		eeepc_rfkill_hotplug(eeepc, handle);
->>  	}
->>  }
->>  
->> @@ -805,11 +836,7 @@ static void eeepc_rfkill_exit(struct eeepc_laptop *eeepc)
->>  		rfkill_destroy(eeepc->wlan_rfkill);
->>  		eeepc->wlan_rfkill = NULL;
->>  	}
->> -	/*
->> -	 * Refresh pci hotplug in case the rfkill state was changed after
->> -	 * eeepc_unregister_rfkill_notifier()
->> -	 */
->> -	eeepc_rfkill_hotplug(eeepc);
->> +
->>  	if (eeepc->hotplug_slot)
->>  		pci_hp_deregister(eeepc->hotplug_slot);
->>  
->> @@ -878,11 +905,6 @@ static int eeepc_rfkill_init(struct eeepc_laptop *eeepc)
->>  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P5");
->>  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P6");
->>  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P7");
->> -	/*
->> -	 * Refresh pci hotplug in case the rfkill state was changed during
->> -	 * setup.
->> -	 */
->> -	eeepc_rfkill_hotplug(eeepc);
->>  
->>  exit:
->>  	if (result && result != -ENODEV)
->> @@ -917,8 +939,11 @@ static int eeepc_hotk_restore(struct device *device)
->>  	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
->>  
->>  	/* Refresh both wlan rfkill state and pci hotplug */
->> -	if (eeepc->wlan_rfkill)
->> -		eeepc_rfkill_hotplug(eeepc);
->> +	if (eeepc->wlan_rfkill) {
->> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P5");
->> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P6");
->> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P7");
->> +	}
->>  
->>  	if (eeepc->bluetooth_rfkill)
->>  		rfkill_set_sw_state(eeepc->bluetooth_rfkill,
-> 
-> thanks,
+---
+ net/bluetooth/rfcomm/sock.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-
+diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+index 66cc1f0..3b5ec09 100644
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -234,7 +234,10 @@ static void __rfcomm_sock_close(struct sock *sk)
+ 	case BT_CONNECT2:
+ 	case BT_CONFIG:
+ 	case BT_CONNECTED:
++		/* release_sock to avoid deadlock when calling rfcomm_lock() */
++		release_sock(sk);
+ 		rfcomm_dlc_close(d, 0);
++		lock_sock(sk);
+ 
+ 	default:
+ 		sock_set_flag(sk, SOCK_ZAPPED);
 -- 
-js
+1.6.2.5
+
+---------------------------------------------------------------------
+Intel Corporation SAS (French simplified joint stock company)
+Registered headquarters: "Les Montalets"- 2, rue de Paris, 
+92196 Meudon Cedex, France
+Registration Number:  302 456 199 R.C.S. NANTERRE
+Capital: 4,572,000 Euros
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+
