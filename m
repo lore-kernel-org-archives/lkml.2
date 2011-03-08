@@ -1,110 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab1CHQVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 11:21:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:64540 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab1CHQVs (ORCPT
+	id S1755995Ab1CHQWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 11:22:30 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50129 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab1CHQW2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 11:21:48 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [ANNOUNCE] RT for v2.6.34.8 now available.
-Date: Tue, 8 Mar 2011 17:21:44 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-References: <4D71668F.9050201@windriver.com> <201103072101.51326.arnd@arndb.de> <4D7542BF.1000007@windriver.com>
-In-Reply-To: <4D7542BF.1000007@windriver.com>
+	Tue, 8 Mar 2011 11:22:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EGDSHWEaeGTN2z0sQEU/VN81zPyXXuD/3AbId5QZoo4BInI/T3I9eKkGhi5nOUWu61
+         B8oVGrdqOk5XYXGsdGRA/3pVrdGUnWVF3sUVIxANPA5Kg61FWqw/vbW9/LNrnmw0LIXz
+         z7RITSHY3P7L21cbTSrrFMYicKUOr+0ltumbE=
 MIME-Version: 1.0
-Message-Id: <201103081721.44927.arnd@arndb.de>
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:b3zrsGupuQu1oY6xKQRoMmZD+QcjMCLNWIdveMUx6pQ
- VLxxxXu+yQjb2wwCWq9FSygcTRaIlWwJ0KbDPEvvhw2z9PSG9h
- Lbn7guNsimya04ryPYLYcA6y03XkCxLSFGWUORO2kiPMQZ+ASF
- 8+mvknoI+T1u/CG0ADcY0vEXf7fRerJfqaGT/p9hZBZvj3/96s
- WiLbF/nRIFOvXQV5uG5Hg==
+In-Reply-To: <1299597447.4676.25.camel@jlt3.sipsolutions.net>
+References: <AANLkTin0PGOfHr3AvQk-BAhyMY7ihYMU1-wX4RJG=1YT@mail.gmail.com>
+	<20110304134648.GB9866@tuxdriver.com>
+	<1299251879.24333.3.camel@wwguy-ubuntu>
+	<AANLkTinfCc0e4BtBxoq7MHtgv54HJk-yU=gQj9Xm_=R9@mail.gmail.com>
+	<AANLkTi=+jfk5+tWewwnx+SHj+FQAXd03sPC3mDW32GUK@mail.gmail.com>
+	<AANLkTikUE-LLSBNH=cNmPZ+Wenff5RxKcfK0kJXp9Wk+@mail.gmail.com>
+	<1299334144.3826.8.camel@jlt3.sipsolutions.net>
+	<AANLkTikQHUq95e9=3tG5WrayaxUu+K1FdAftJ3y72BTn@mail.gmail.com>
+	<1299597447.4676.25.camel@jlt3.sipsolutions.net>
+Date: Tue, 8 Mar 2011 16:22:27 +0000
+Message-ID: <AANLkTinj1f0Kx5X6eqYEdyzT_3XLbtbLtwbp7jPN2LSH@mail.gmail.com>
+Subject: Re: 2.6.38-rc7, iwlagn warning
+From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: wwguy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 March 2011, Paul Gortmaker wrote:
-> On 11-03-07 03:01 PM, Arnd Bergmann wrote:
+On 8 March 2011 15:17, Johannes Berg <johannes@sipsolutions.net> wrote:
+> FWIW, I'm changing the subject since "crash" bothers me, it's not even
+> close to a crash.
+
+Of course, sorry.
+
+> On Sat, 2011-03-05 at 23:45 +0000, Mathias Burén wrote:
 >
-> > The problem with your method is that you have more work that depends
-> > on the amount of changes in upstream than the work that depends on
-> > the size of the patch set.
-> 
-> You might think so, but that really isn't the case at all.  The
-> work involved is dictated only by the upstream subset that have
-> an impact on the RT commits.   If there was a stream of a thousand
-> contiguous upstream commits that did not break patch application,
-> or the run time boot test, I'd not have to lift a finger.  Scripts
-> applied the commits and ensured a continuous sanity.   If I was to
-> do it again, I'd employ the exact same tactic in a heartbeat.
-
-Fair enough, everyone has their own ways of dealing with this, I just
-wanted to make sure that you are aware that there are other options
-that people have used successfully.
-
-Obviously, the number of conflicts is about the same, independent
-of the way you partition the work. 
- 
-> This could make sense if they were real independent functionality
-> boundaries that happened to give you this nice uniform division.
-> But it is unlikely in practice. 
-
-You have obviously worked a lot with these patches, so you have
-a better understanding than me of how interrelated the patches
-actually are. From a brief look at the contents and from the fact
-that there already were independent branches in the 2.6.31-rt
-kernel, my guess was that it is very possible to do a reasonable
-split. Someone would have to seriously try it in order to know
-for sure.
-
-> And adding an artificial division
-> may not work if there are implicit dependencies between the patches
-> that a patch monkey like me might not see.  Another added cost is that
-> I would now have 20 branches to individually compile and boot test.
-> Maybe I could get away with more sparse testing, but maybe not.
+>> I got it again, with the newly compiled kernel. However, I've been
+>> trying for 20 minutes now and when I load iwlagn with the debug
+>> parameter I can't seem to get the warning. I was monitoring dmesg with
+>> "watch --interval=1 "dmesg|tail -n40"" but I never saw the warning. As
+>> soon as I removed the module, and inserted it again without the debug
+>> option I could reproduce the warning. Here are some dmesg logs:
 >
-> In any case, I really don't see what you are trying to propose here
-> as being really all that fundamentally different -- you want to move
-> a small set of patches over a bigger set of patches.  So you can say
-> I'm moving a set of 20 odd patches, which were merged by Linus (and hence
-> already known to be treatable as a whole self contained unit) over a larger
-> set of some 500 RT patches.  Does it matter which group you call the
-> big set and which one the small set?
+> Curious.
+>
+>> no debug, crash 1: http://www.privatepaste.com/download/06539404a8
+>> no debug, crash 2: http://www.privatepaste.com/download/a6be5f5c81
+>
+> And I'd prefer if you also stopped using the word crash. Nothing
+> crashed. All you got was a stack trace because I put a warning there.
+> Really, not the end of the world, and in fact it probably has very
+> little or even no effect on functionality.
+>
 
-The important difference IMHO is that when you have topic branches,
-you can partition the work into hard and easy tasks at your own
-choice, rather than having to go through all the merges that someone
-else did in the same order:
+Got it.
 
-* Half the branches will have little or no conflicts with the new
-  upstream version, so you immediately reduce the amount of dull
-  work by moving the branch up to the new upstream.
-* Some particularly complex branches will have patches from only
-  one or two people who know that code really well, so you can ask
-  them to rebase the branch.
-* A branch that has complex conflicts may turn out to be relevant
-  only for a small group of users, e.g. a specific architecture,
-  so you can defer rebasing it until someone else is interested
-  in doing the work.
-* Some feature from one branch (e.g. BKL or raw spinlocks) may
-  have been solved upstream in a different way. When the branch
-  is self-contained, you can immediately drop the branch instead
-  of having to look through the 500 patches for possible
-  interactions with the new upstream code.
+> However ... actually looking at the log files I'm totally confused what
+> it is that you're doing. Something appears to be continually switching
+> between interface modes, even using wireless extensions, yet it really
+> wants to be IBSS all the time. What's causing all this pointless
+> switching? It'd be useful to figure that out, but I'm not sure how. What
+> applications are you running that manage wireless? Are you, by any
+> chance, running wpa_supplicant manually in addition to network-manager?
 
-Another very significant difference is that having topic branches
-makes it much easier to merge code upstream. There may be some
-branches that are just in need of a bit care to be acceptable to
-upstream, and other branches contain the code that would need
-a full redesign from scratch before anyone could seriously submit
-them. In both cases, isolating the changes in a branch helps you
-make forward progress towards upstream.
+I'm using NetworkManager, I haven't started anything else manually. I
+don't know why it switches modes like that, it happens on 2 laptops
+(both Ubuntu 10.10) so it could very well be some NetworkManager
+related issue.
 
-	Arnd
+> Irregardless of that though, there's clearly some kind of bug in the
+> driver since the TX power setting times out, and then as a result we get
+> the warning.
+>
+> Would you be willing to enable tracing and capture a trace using
+> trace-cmd, by running 'trace-cmd record -e mac80211 -e iwlwifi'?
+>
+> johannes
+>
+>
+
+I've since upgraded to 2.6.38-rc8 (same config). Looking around in the
+config, is it CONFIG_FUNCTION_TRACER I need to enable, and is that it?
+(kernel function tracer)
+
+// Mathias
