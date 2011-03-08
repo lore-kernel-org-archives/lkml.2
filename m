@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab1CHPH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 10:07:26 -0500
+	id S1755513Ab1CHPHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 10:07:31 -0500
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:57970 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab1CHPHW (ORCPT
+	with ESMTP id S1755395Ab1CHPH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 10:07:22 -0500
+	Tue, 8 Mar 2011 10:07:27 -0500
 From: Jamie Iles <jamie@jamieiles.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Jamie Iles <jamie@jamieiles.com>
-Subject: [PATCHv6 4/5] picoxcell: basic clk infrastructure
-Date: Tue,  8 Mar 2011 15:06:56 +0000
-Message-Id: <1299596817-19879-5-git-send-email-jamie@jamieiles.com>
+Subject: [PATCHv6 5/5] picoxcell: support for the PC7302 development board
+Date: Tue,  8 Mar 2011 15:06:57 +0000
+Message-Id: <1299596817-19879-6-git-send-email-jamie@jamieiles.com>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1299596817-19879-1-git-send-email-jamie@jamieiles.com>
 References: <1299596817-19879-1-git-send-email-jamie@jamieiles.com>
@@ -20,51 +20,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The different picoXcell device variants have different numbers of clocks
-and different capabilities (PC3X2 doesn't have any gateable or
-controllable clocks). Add the infrastructure necessary for device
-variants to provide their own clock implementation.
+The PC7302 development board is capable of taking both PC3X2 and PC3X3
+devices and features NOR flash, NAND flash, SPI NOR flash a serial
+console, 100Mb Ethernet and a number of picoArray peripherals.
+
+This patch provides initial support for running on the PC7302 board.
+
+v4:
+	- reduce to the bare minimum for NOR flash booting.
+v3:
+	- remove redundant __init declarations.
+v2:
+	- multiplex the NAND CLE pin by pad name.
+	- convert to __raw_ io accessors.
 
 Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 ---
- arch/arm/Kconfig                              |    1 +
- arch/arm/mach-picoxcell/Makefile              |    3 +-
- arch/arm/mach-picoxcell/clk.c                 |   83 +++++++++++++++++++++++++
- arch/arm/mach-picoxcell/include/mach/clkdev.h |   70 +++++++++++++++++++++
- arch/arm/mach-picoxcell/picoxcell_core.c      |    1 +
- 5 files changed, 157 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-picoxcell/clk.c
- create mode 100644 arch/arm/mach-picoxcell/include/mach/clkdev.h
+ arch/arm/mach-picoxcell/Kconfig        |   11 +++
+ arch/arm/mach-picoxcell/Makefile       |    1 +
+ arch/arm/mach-picoxcell/board_pc7302.c |  109 ++++++++++++++++++++++++++++++++
+ 3 files changed, 121 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-picoxcell/board_pc7302.c
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 75ff454..7d67e68 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -612,6 +612,7 @@ config ARCH_PICOXCELL
- 	select HAVE_SCHED_CLOCK
- 	select CPU_V6K
- 	select HAVE_TCM
-+	select CLKDEV_LOOKUP
- 	help
- 	  This enables support for systems based on the Picochip picoXcell
- 	  family of Femtocell devices.
+diff --git a/arch/arm/mach-picoxcell/Kconfig b/arch/arm/mach-picoxcell/Kconfig
+index 7b74a45..9e08542 100644
+--- a/arch/arm/mach-picoxcell/Kconfig
++++ b/arch/arm/mach-picoxcell/Kconfig
+@@ -1,2 +1,13 @@
+ if ARCH_PICOXCELL
++
++comment "Picochip picoXcell board selection"
++
++config BOARD_PC7302
++	bool "Support PC7302 Board"
++	default y
++	help
++          Include support for the picoChip PC7302 platform. This platform is
++	  can take any of the PC3X2 or PC3X3 devices and includes SPI NOR
++	  flash, parallel NOR flash and NAND flash.
++
+ endif
 diff --git a/arch/arm/mach-picoxcell/Makefile b/arch/arm/mach-picoxcell/Makefile
-index 3cace37..f6fc8de 100644
+index f6fc8de..69a9e6b 100644
 --- a/arch/arm/mach-picoxcell/Makefile
 +++ b/arch/arm/mach-picoxcell/Makefile
-@@ -1,3 +1,4 @@
- obj-y				:= picoxcell_core.o io.o axi2cfg.o \
+@@ -2,3 +2,4 @@ obj-y				:= picoxcell_core.o io.o axi2cfg.o \
  				   time.o \
--				   devices.o
-+				   devices.o \
-+				   clk.o
-diff --git a/arch/arm/mach-picoxcell/clk.c b/arch/arm/mach-picoxcell/clk.c
+ 				   devices.o \
+ 				   clk.o
++obj-$(CONFIG_BOARD_PC7302)	+= board_pc7302.o
+diff --git a/arch/arm/mach-picoxcell/board_pc7302.c b/arch/arm/mach-picoxcell/board_pc7302.c
 new file mode 100644
-index 0000000..b32e478
+index 0000000..6d2b5e0
 --- /dev/null
-+++ b/arch/arm/mach-picoxcell/clk.c
-@@ -0,0 +1,83 @@
++++ b/arch/arm/mach-picoxcell/board_pc7302.c
+@@ -0,0 +1,109 @@
 +/*
++ * linux/arch/arm/mach-picoxcell/board_pc7302.c
++ *
 + * Copyright (c) 2010 Picochip Ltd., Jamie Iles
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -73,168 +86,104 @@ index 0000000..b32e478
 + *
 + * All enquiries to support@picochip.com
 + */
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/module.h>
-+#include <linux/seq_file.h>
-+#include <linux/spinlock.h>
++#include <linux/gpio.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/mtd/physmap.h>
++#include <linux/spi/flash.h>
 +
-+#include <mach/clkdev.h>
++#include <mach/hardware.h>
++#include <asm/leds.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
 +
-+static DEFINE_SPINLOCK(clk_lock);
-+static LIST_HEAD(picoxcell_clks);
++#include "picoxcell_core.h"
 +
-+unsigned long clk_get_rate(struct clk *clk)
++static long pc7302_panic_blink(int state)
 +{
-+	return clk->get_rate ? clk->get_rate(clk) : clk->rate;
-+}
-+EXPORT_SYMBOL(clk_get_rate);
-+
-+long clk_round_rate(struct clk *clk, unsigned long rate)
-+{
-+	return clk->round_rate ? clk->round_rate(clk, rate) : -EOPNOTSUPP;
-+}
-+EXPORT_SYMBOL(clk_round_rate);
-+
-+int clk_set_rate(struct clk *clk, unsigned long rate)
-+{
-+	return clk->set_rate ? clk->set_rate(clk, rate) : 0;
-+}
-+EXPORT_SYMBOL(clk_set_rate);
-+
-+int __clk_enable(struct clk *clk)
-+{
-+	if (++clk->enable_count > 0) {
-+		if (clk->enable)
-+			clk->enable(clk);
-+	}
-+
++	__raw_writel(state ? 0xFF : 0, IO_ADDRESS(PICOXCELL_GPIO_BASE +
++					    GPIO_SW_PORT_C_DR_REG_OFFSET));
 +	return 0;
 +}
 +
-+int clk_enable(struct clk *clk)
++static void pc7302_panic_init(void)
 +{
-+	unsigned long flags;
-+	int ret;
++	/*
++	 * We have a BOOT_ERROR pin on PC7302. Reuse that for signalling when
++	 * the kernel panics. There is only 1 bit wired up to port C but it
++	 * won't hurt to configure all of them.
++	 */
++	__raw_writel(0xF, IO_ADDRESS(PICOXCELL_GPIO_BASE +
++			       GPIO_SW_PORT_C_DDR_REG_OFFSET));
++	__raw_writel(0x0, IO_ADDRESS(PICOXCELL_GPIO_BASE +
++			       GPIO_SW_PORT_C_CTL_REG_OFFSET));
 +
-+	spin_lock_irqsave(&clk_lock, flags);
-+	ret = __clk_enable(clk);
-+	spin_unlock_irqrestore(&clk_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(clk_enable);
-+
-+void __clk_disable(struct clk *clk)
-+{
-+	if (--clk->enable_count <= 0) {
-+		if (clk->disable)
-+			clk->disable(clk);
-+	}
++	panic_blink = pc7302_panic_blink;
 +}
 +
-+void clk_disable(struct clk *clk)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&clk_lock, flags);
-+	__clk_disable(clk);
-+	spin_unlock_irqrestore(&clk_lock, flags);
-+}
-+EXPORT_SYMBOL(clk_disable);
-+
-+void picoxcell_clk_add(struct clk *clk)
-+{
-+	list_add_tail(&clk->head, &picoxcell_clks);
-+}
-diff --git a/arch/arm/mach-picoxcell/include/mach/clkdev.h b/arch/arm/mach-picoxcell/include/mach/clkdev.h
-new file mode 100644
-index 0000000..93c6058
---- /dev/null
-+++ b/arch/arm/mach-picoxcell/include/mach/clkdev.h
-@@ -0,0 +1,70 @@
-+/*
-+ * Copyright (c) 2010 Picochip Ltd., Jamie Iles
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * All enquiries to support@picochip.com
-+ */
-+#ifndef __PICOXCELL_CLKDEV_H__
-+#define __PICOXCELL_CLKDEV_H__
-+
-+#include <linux/clkdev.h>
-+
-+struct clk {
-+	const char	    *name;
-+	struct list_head    head;
-+	int		    rate;
-+	unsigned	    min, max, step; /* min, max and frequency steps for
-+					       variable rate clocks in KHz. */
-+	int		    enable_count;
-+	int		    clk_num;
-+	void		    (*enable)(struct clk *clk);
-+	void		    (*disable)(struct clk *clk);
-+	int		    (*is_enabled)(struct clk *clk);
-+	long		    (*round_rate)(struct clk *clk, unsigned long rate);
-+	int		    (*set_rate)(struct clk *clk, unsigned long rate);
-+	int		    (*get_rate)(struct clk *clk);
++static struct mtd_partition pc7302_nor_partitions[] = {
++	{
++		.name		= "Boot",
++		.size		= SZ_128K,
++		.offset		= 0,
++	},
++	{
++		.name		= "Boot Environment",
++		.size		= SZ_128K,
++		.offset		= MTDPART_OFS_APPEND,
++	},
++	{
++		.name		= "Kernel",
++		.size		= SZ_4M,
++		.offset		= MTDPART_OFS_APPEND,
++	},
++	{
++		.name		= "Application",
++		.size		= MTDPART_SIZ_FULL,
++		.offset		= MTDPART_OFS_APPEND,
++	},
 +};
 +
-+static inline int __clk_get(struct clk *clk)
++static struct physmap_flash_data pc7302_nor_flash_data = {
++	.width		= 1,
++	.parts		= pc7302_nor_partitions,
++	.nr_parts	= ARRAY_SIZE(pc7302_nor_partitions)
++};
++
++static struct resource pc7302_nor_resource = {
++	.start	= PICOXCELL_FLASH_BASE,
++	.end	= PICOXCELL_FLASH_BASE + SZ_128M - 1,
++	.flags	= IORESOURCE_MEM,
++};
++
++static struct platform_device pc7302_nor = {
++	.name		    = "physmap-flash",
++	.id		    = -1,
++	.dev.platform_data  = &pc7302_nor_flash_data,
++	.resource	    = &pc7302_nor_resource,
++	.num_resources	    = 1,
++};
++
++static void pc7302_init_nor(void)
 +{
-+	return 1;
++	platform_device_register(&pc7302_nor);
 +}
 +
-+static inline void __clk_put(struct clk *clk)
++static void __init pc7302_init(void)
 +{
++	picoxcell_core_init();
++	pc7302_init_nor();
++	pc7302_panic_init();
 +}
 +
-+extern void picoxcell_clk_add(struct clk *clk);
-+extern int __clk_enable(struct clk *clk);
-+extern void __clk_disable(struct clk *clk);
-+
-+/*
-+ * Declare a new clock with a given rate and ID. All clocks are enabled by
-+ * default.
-+ */
-+#define FIXED_CLK(__name, __rate, __id)					\
-+	static struct clk __name ## _clk = {				\
-+		.name		= #__name,				\
-+		.rate		= __rate,				\
-+		.clk_num	= __id,					\
-+		.enable_count	= 1,					\
-+	}
-+
-+#define VARIABLE_CLK(__name, __id, __min, __max, __step)		\
-+	static struct clk __name ## _clk = {				\
-+		.name		= #__name,				\
-+		.clk_num	= __id,					\
-+		.enable_count	= 1,					\
-+		.rate		= -1,					\
-+		.min		= __min,				\
-+		.max		= __max,				\
-+		.step		= __step,				\
-+	}
-+
-+#define CLK_LOOKUP(__dev_id, __con_id, __clk) \
-+	{ .dev_id = __dev_id, .con_id = __con_id, .clk = __clk }
-+
-+#endif /* __PICOXCELL_CLKDEV_H__ */
-diff --git a/arch/arm/mach-picoxcell/picoxcell_core.c b/arch/arm/mach-picoxcell/picoxcell_core.c
-index a54d981..3716d03 100644
---- a/arch/arm/mach-picoxcell/picoxcell_core.c
-+++ b/arch/arm/mach-picoxcell/picoxcell_core.c
-@@ -14,6 +14,7 @@
- #include <asm/hardware/vic.h>
- #include <asm/mach-types.h>
- 
-+#include <mach/clkdev.h>
- #include <mach/hardware.h>
- 
- #include "picoxcell_core.h"
++MACHINE_START(PC7302, "PC7302")
++	.map_io		= picoxcell_map_io,
++	.init_irq	= picoxcell_init_irq,
++	.init_early	= picoxcell_init_early,
++	.timer		= &picoxcell_sys_timer,
++	.init_machine	= pc7302_init,
++MACHINE_END
 -- 
 1.7.4
 
