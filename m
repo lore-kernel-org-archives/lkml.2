@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1CHLpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 06:45:05 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:55892 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab1CHLpC (ORCPT
+	id S1754603Ab1CHLrf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 06:47:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60686 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754338Ab1CHLre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 06:45:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=QIU6hSPGc2T3H7Yg5FvY771T2vsQrw3Uf/ZxyMbvXnyxZoPGMnXkaePij1bQDGBJe8
-         QqZ+lBc0NxY1murL4Ox7hxHzkl3ngs3nknvGgn/NJLQgI1T/G+Jk9fAjpY8+NyRvmiM8
-         Vr20WUFwumIBAnwbNiOu1vAUNAUZSF5RYs4mM=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 -tip 4/4] x86, dumpstack: Use frame pointer during stack trace
-Date: Tue,  8 Mar 2011 20:44:22 +0900
-Message-Id: <1299584662-24421-4-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1299584662-24421-1-git-send-email-namhyung@gmail.com>
-References: <1299584662-24421-1-git-send-email-namhyung@gmail.com>
+	Tue, 8 Mar 2011 06:47:34 -0500
+Date: Tue, 8 Mar 2011 11:47:31 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <samuel.ortiz@intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH 3/3] mach-ux500: configure board for the TPS61052
+ regulator
+Message-ID: <20110308114731.GA20944@opensource.wolfsonmicro.com>
+References: <1299577444-31480-1-git-send-email-linus.walleij@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299577444-31480-1-git-send-email-linus.walleij@stericsson.com>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now have CONFIG_FRAME_POINTER=y by default, it would be better
-use the frame pointer for the stack backtrace rather than scanning
-whole stack blindly.
+On Tue, Mar 08, 2011 at 10:44:04AM +0100, Linus Walleij wrote:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/x86/kernel/dumpstack.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> +struct regulator_init_data tps61052_regulator = {
+> +	.constraints = {
+> +		.name = "vaudio-hf",
+> +		.min_uV = 4500000,
+> +		.max_uV = 4500000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
+> +		REGULATOR_CHANGE_STATUS,
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 38b74a5e59aba..56db27d36858 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -170,7 +170,11 @@ static const struct stacktrace_ops print_trace_ops = {
- 	.warning_symbol		= print_trace_warning_symbol,
- 	.stack			= print_trace_stack,
- 	.address		= print_trace_address,
-+#ifdef CONFIG_FRAME_POINTER
-+	.walk_stack		= walk_context_stack_bp,
-+#else
- 	.walk_stack		= walk_context_stack,
-+#endif
- };
- 
- void
--- 
-1.7.4
-
+You've got _CHANGE_VOLTAGE here but only one voltage is possible.
