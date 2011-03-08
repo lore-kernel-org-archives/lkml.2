@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab1CHVmk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 16:42:40 -0500
-Received: from nm14-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.38]:23293 "HELO
-	nm14-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756815Ab1CHVmh (ORCPT
+	id S1756865Ab1CHVqC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 16:46:02 -0500
+Received: from router-fw.net-space.pl ([89.174.63.77]:35867 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756772Ab1CHVp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 16:42:37 -0500
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 783417.32617.bm@omp1006.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=J1rKtJ3NPyfcGhmVhOlhy2FSsVcG0cVgsRu+yMiYP7jA0aD1o+MdJGUqEWBYh4pd/0+x6C/35x93xWA1yWQM2BltsZhCdea7HhwyW/TRqNrc5tUrcFZ4uh+ws3BPYAvPKo0nhG3TqjRclAt6vUMpJvLHSuRFHAPW5ECeCnfS0Vw=;
-Message-ID: <349127.5691.qm@web181212.mail.ne1.yahoo.com>
-X-YMail-OSG: c4FucUoVM1kmR_Ay379vB3vV0TlZ9Iw0VljLvUIeJKhhI1R
- 4Z8QqK_YkrJgBoxilpyx4_Sr2qrhd30scNW.WEvj1bnWqrEwc_XzW5x07Rra
- VGMZX89KPvdGL_.D48gMq7p3_Nb5C8ZMYhYYbrNttq2U4ZqphDhxxUmbwVfd
- fFkXyZ.dmDXy2LsthQ2kbllYNbICb59t8Ze0sIZcl8UsTKWFmFq2.qb625G2
- 9f7mLDKpgDTSJ2s0kC05p2Um3SlHhIBVlTyZs_arsZuJ3mL1Y5_FbTciutiJ
- OhZvA6BEhzRwMiV.nyBtHdujkiCJ5l5k6tU1K7a0dTp.LlJ8yIl2TtwBkRr8
- 7R1W_2EXW9qbzxdEqEh_l4z8jxuII2UQxp9ZkUasktnMUy9GT3vIBj4DxokB
- QZ4oJ79OUJqAoFv9P7I3xkcxbsmnkGX2PveG2NqMb14d9urSLkJOjtu2jeFO
- Tqbm6UrjhiWaxjwww4SJ4.cPovRRfwsviYLvtaosZ_wXcPjOkmVcA7uxg6sj
- bHetaX6deHQrLcbUP5UDg.5PW.KZAlTLF5FkvKf0KpqLtJBaXdJfhXya8qgI
- sJzGda7P8u4LlE0sD_27pYIyqE5c8Cc5AV9rfb0M5QemwxJgSppyI2O7m_AI
- TEiBuv0NLwLNBxQdUpzYKLz1Qs7RhsjM5L90H1v_2Tcpg_9tY167B5FxDTMj
- D9bmEtTVO1cTKOnzDbnyz5RzDaCKb7.GxpP9WQHQNuY6c8Q1WNyHJxGh5F0E
- QDyB1uUiPiR6dgHJtb1ybmWpr09nKoqBON_1m0Vi3yPQlj.vFErJ5wUqYApS
- mU6.XOAKM3JRr1DquPjgEgy4gtHN499AIWF6XW9Q0uqLyPoDrhf3eeBYbyHB
- sx4GXVHIV6Hdlrc9Butd5okPAecFg8UIECUKZVcI6HDRfN_upeSEZamw35Rz
- HfzWaDoF5Auvz9bODdpHvI2LLmzSNop0FwJrV.3xS9snj0jTAZ187IiZCKl7
- qwT4dV1SIXdr.kRnEQ0c5k.xlrdTsXIqw.NdvdBqV7aJ5EYSgF1sM.5eVKRU
- i_KHk.5sEOOoyEg_jRs7b.ZzT76glKVOI0JqRZbsuGRhOLESxcLOQ.fMXVso
- JL3IpO..N0LAvY5Jy.99qfr45.xA2V_Al4CSMqo1U5GL8vRbMYx3wSxT0yIJ
- zCRUN8fVkV9tMZjM_L2azOK1Z2Ku1D5SmaYlIZXHQjI_9aMQ6ItiyvPkw7Jk
- 13iK8RywycGgcyaNo_VwUBn3Kd27n6vG.nGkOWy5nNHtZjVNFUuzIIZr3ofY
- uXq6t422Q6ncqsPVHtCHJHVPhOS_r_jjTezZUqxNVDiOls9.gJaI3wScw.8I
- a.nZmymv.nwWkcR.8lKx2pwecTjUdgaczMpju08tMY67ZeaBKwlde.Y2a884
- 75j4GvyELYR1l.DHVjbD.peqkGrqjx.n4Ot0qjBXPj1Qlsyhv9btnBvXO6ml
- j7g1i9rbfa1br4elKRm7g0p6Kd5zzoE7W5BGhHYz9TiKGBwuk6LiusAYeN47
- xxDDYfymefv12nKCdfjBIQx0RNGWQiip9VM1aYnCaYUxgBXWi8UgMIBYyhzk
- KKRD1pyU8LgoK_TdauffmoDDxgzPv.LiQZgApQllVZ_W9Vtj44366bHn_Qm8
- vT.BdU3MCwseeSuEhX3IRVgwvCyOhbYQZx36xUIcDlTZYpuAcC2T2DVT5s5o
- a43kETppXzC4F3b6kdBHlayeDlCi5gS7XZtqRVtFAZS8d3INJrpPr.YriArR
- TW2U4YqjAmsL2I2oA4MEepB.O8VFEgV4E.OKluIH3s5XQ_gLKSlB4NT8vK43
- D.gAsgoHnafQt3igtw2W1n_eCzhHjcYC2IoE5RMxINgkq6WIReGxq62seGDe
- sl6wc5LNCq1TwFwTzvevB2nWc9mhxYF_y1riyHpl6y8R7o8zw9PTJ6ECFqII
- ge5CTTh2yq_eeAHaL.0Dsp_NbPeakMMLkZ6WQ_bWhSE1irdtaT4RVEdNDO7w
- 5miWLdgMU.shqEDKGQRK4dgH93Jlm3SPqNlJsay3nrFK2LJrMHqKXtetoPRr
- dzYTdjc_BP4j5ChKb5ZUq3zSL44ACl4I0oIko5y3lR7i4_EWAotu7RCfva6o
- MTPVQXXS919j7OWVQqIUxNbEQ_ucf8Ecu2EbETDYsHYk6Lf85Gm4vgGF5Kjl
- .iv7271zasjoXxEwkibnGna3xfPBnKq1x8xYEv0W1GVCa2tY5t_WbMUY5adk
- ve8Y490cfTWnPMsc55k8LFXXrXTaNgssollkKL5ezp5MKpm.NfaJ7jQIwedn
- u_EOdyac8Iy5N2lxAecSSFatsKbcXy1shKINaO8qQ0REQz08BkPodOX3a._t
- a3Pj93OilISY9hrU5szWMoYkGE6kkDsGg9gvjRkuDJm9tSBvLo3t_O.ke.Az
- .1IQc1whMSKUJsq4emMldJocmOIdNP2K.up6b.paDmpazRNKxAsr9xrYeaEf
- 8ZZcAdyZFVRy2PvPaJgndiHdDahj4RdqH55opcA60muBi1fEhdJiQ33jsc3p
- TaDDBlPRFg4LAG_9fLe1lR2wzN9pLepzhpleFLOux5YjdsIgoZMzWhXHu_g8
- 3OtaqEjJJiMUFeDXHk0EYOPeesCYnop2yBOGddaXBvXOu.BSpwHpcj9Oih2F
- GB86MvN9VWdDvVRUfDDk08a8wuP2qMuYxeizegZb6r_XRW4USLv9CCpim_AF
- EU83r_gWC2043HYcEVY_POGI.kvwXDznvzmU97pgnm3x7pzWzyPuJoBGRVMC
- Nz0Tb5liYtVM1aAfJol9JoCUAP58TE85avWu9T802ISK5swNVJHiX664JOKq
- AQtk3JNmVLdRyRMejAGLaHByrS9RDu_9PaV7XYSheqQjwsD6fW5Zsc4WkcvQ
- jv9opl2ykkij2AcwPyfnBOgTt6X2cMEKJkVkN8pjyJUR1juJbJFfBQmIJKiv
- v7TWOCB0aCk42_vJw8VW9IqY5J9HeEKY3M7NMXk9DrFtcwB969clW7hAfxMa
- Fm4LxY4qgMYcrRxyxzA2NSq40KRyKTJQO.Ag3E_vUHywUE0KrHlNsD3H7w7n
- gw1QgsgCZLEVySKBLAEmFcwg.GPhbig7h66h0XAuYVtNl0jPdPsL7Zu8IWe5
- RayyZbp2hIs8WW3Wc5MEH4ZumDKBSATYfIB8wqSstBmjMAla10fDSpRyKiJg
- nbLicmSfJ2BPFSukwdZhhfUlzIyPLXPtMLTNA_JKUrsY_SgwzrnMy8w.nnR2
- 3MKbDyURZUMHgKbJ68fF0zAT_7oB8UjzRhKoCpRde3yZoOtEL2gCOFhklyNi
- E_Ij0viaYYNKA7pWpLqfS6Z7NKoTv_ekIWpnRE1g3fay.O3NVtLU1iaMLDHR
- Wo7KnaaKrl_zqmpGZFeZoxM3r1GsbEb8U37uXIctlKYbqgk8MbCHO5IWMdov
- QyqJdkXzw2Sk8s05lxZ1wZagIKn0iW2sH3_IqkEUQPWkH_l6bdFZ62rR5vVv
- 8yODxYjvW23U5bRaXfb.ipFf30A5nO7Ru_yibkGJepuphvSjd1eogv_Kja3j
- yes2AhJAX3lc6SVMP7uHq02D7mhR5cVO4qxofeuLeQuPqQwj9rUMDE841mqn
- nk4O0SkMdqI8ViSz.S3z5ehz809OnGGmrTVNltaLLvmdwKDvAWQ_xCpvdkPl
- eA6SlWTC95W9.vMFFXlcyQbEwmKhKhLh7fcVo6EoZ84ypi670J.AKAYQQPbt
- 6lkfR.5gykzxhUppmalhW0BP81BcmPLsYGh1m8UbU
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.292656
-Date: Tue, 8 Mar 2011 13:42:36 -0800 (PST)
-From: Money Transfer <1---mafia@sbcglobal.net>
-Reply-To: w_unionfundtransfa@9.cn
-Subject: Money Transfer
-To: undisclosed recipients:;
-MIME-Version: 1.0
+	Tue, 8 Mar 2011 16:45:58 -0500
+Date: Tue, 8 Mar 2011 22:45:46 +0100
+From: Daniel Kiper <dkiper@net-space.pl>
+To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH R4 1/7] xen/balloon: Removal of driver_pages
+Message-ID: <20110308214546.GB27331@router-fw-old.local.net-space.pl>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have $85,000USD in cash credit by the International Monetary Funds(IMF) via western union.Confirm this receipt by replying the due process unit officer.
-Fill the details:FullName,Address,Tel,Occupation
+Removal of driver_pages (I do not have seen any references to it).
+
+Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+---
+ arch/x86/xen/mmu.c    |    3 +--
+ drivers/xen/balloon.c |    8 --------
+ 2 files changed, 1 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 5e92b61..e7c378e 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -78,8 +78,7 @@
+ 
+ /*
+  * Protects atomic reservation decrease/increase against concurrent increases.
+- * Also protects non-atomic updates of current_pages and driver_pages, and
+- * balloon lists.
++ * Also protects non-atomic updates of current_pages and balloon lists.
+  */
+ DEFINE_SPINLOCK(xen_reservation_lock);
+ 
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index 43f9f02..b4206fd 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -70,11 +70,6 @@ struct balloon_stats {
+ 	/* We aim for 'current allocation' == 'target allocation'. */
+ 	unsigned long current_pages;
+ 	unsigned long target_pages;
+-	/*
+-	 * Drivers may alter the memory reservation independently, but they
+-	 * must inform the balloon driver so we avoid hitting the hard limit.
+-	 */
+-	unsigned long driver_pages;
+ 	/* Number of pages in high- and low-memory balloons. */
+ 	unsigned long balloon_low;
+ 	unsigned long balloon_high;
+@@ -404,7 +399,6 @@ static int __init balloon_init(void)
+ 	balloon_stats.target_pages  = balloon_stats.current_pages;
+ 	balloon_stats.balloon_low   = 0;
+ 	balloon_stats.balloon_high  = 0;
+-	balloon_stats.driver_pages  = 0UL;
+ 
+ 	init_timer(&balloon_timer);
+ 	balloon_timer.data = 0;
+@@ -462,7 +456,6 @@ module_exit(balloon_exit);
+ BALLOON_SHOW(current_kb, "%lu\n", PAGES2KB(balloon_stats.current_pages));
+ BALLOON_SHOW(low_kb, "%lu\n", PAGES2KB(balloon_stats.balloon_low));
+ BALLOON_SHOW(high_kb, "%lu\n", PAGES2KB(balloon_stats.balloon_high));
+-BALLOON_SHOW(driver_kb, "%lu\n", PAGES2KB(balloon_stats.driver_pages));
+ 
+ static ssize_t show_target_kb(struct sys_device *dev, struct sysdev_attribute *attr,
+ 			      char *buf)
+@@ -531,7 +524,6 @@ static struct attribute *balloon_info_attrs[] = {
+ 	&attr_current_kb.attr,
+ 	&attr_low_kb.attr,
+ 	&attr_high_kb.attr,
+-	&attr_driver_kb.attr,
+ 	NULL
+ };
+ 
+-- 
+1.5.6.5
