@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab1CHNxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 08:53:35 -0500
-Received: from 210513-www4.sumeffect.com ([98.129.86.238]:46938 "EHLO
-	210513-www4.sumeffect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab1CHNxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 08:53:34 -0500
-To: linux-kernel@vger.kernel.org
-Subject: Spirituality
-From: income2011@yahoo.com
-Reply-To: income2011@yahoo.com
-Content-Type: text/plain; charset=UTF-8
-Message-Id: <20110308135333.55E2A52C1C@210513-www4.sumeffect.com>
-Date: Tue,  8 Mar 2011 07:53:33 -0600 (CST)
+	id S1755236Ab1CHN7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 08:59:30 -0500
+Received: from kroah.org ([198.145.64.141]:58953 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754870Ab1CHN73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 08:59:29 -0500
+Date: Tue, 8 Mar 2011 05:59:09 -0800
+From: Greg KH <greg@kroah.com>
+To: Minkyu Kang <mk7.kang@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, kyungmin.park@samsung.com,
+        Ben Dooks <ben-i2c@fluff.org>
+Subject: Re: [PATCH v3] misc: adds support the FSA9480 USB Switch
+Message-ID: <20110308135909.GA7519@kroah.com>
+References: <4D75D338.9070801@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D75D338.9070801@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Name: Catherine Thomas
-Email: income2011@yahoo.com
-Dear Friend,
+On Tue, Mar 08, 2011 at 03:56:56PM +0900, Minkyu Kang wrote:
+> --- /dev/null
+> +++ b/include/linux/fsa9480.h
 
-Commission Crusher Makes Money Right Now!!!
- 
-Take Your Easy $600 Commissions Now!!!
+Why do you need a .h file for this driver?
 
-It's Easy To Make Money Everyday From Home With This Website...Even If
-You're Starting From Scratch With Zero Knowledge, Experience Or Budget!
-I'll Show You Exactly How.
+If it's just for platform data, please put it in
+include/linux/platform_data/ instead.
 
-We've Start putting New 24 Members in YOUR TEAM for the March 1-8/2011
-commission  cycle... and  GROWING everyday earn by $600 a day.
-This Program Is HandsFree Once you are advance to set up your membership
-you are Secure to access the monthly Commission!!!  
+If it's not, then please just move it to your driver's .c file.
 
-IMPORTANT: March  8, 2011 is the Cut-Off day to lock in your
-position then faster you act the higher commission you  will earn!!!
+thanks,
 
-Go Here To Secure not less than $600 commission Now and it still growing
-as  many people joining under you. if you secure your position right away:
-
-Your commission will Arrive online Through your Paypal or Credit Card On April 20 2011    
-Next month. Hurry'this limited time, only 8 days remaining Positions are available Now.
-
-You will access your money in any ATM in your town when follow the instructions you receive.
- 
-Click below!!
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2948274&referrer=profit2010
- 
-Easy makes Money Every Day In All Countrys If You Join Early Hurry!!!
-  >>>>>>>> This Screen Snapshots Easy Working w/in Oneday 
+greg k-h
