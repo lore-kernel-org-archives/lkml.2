@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1CHVVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 16:21:43 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:1937 "EHLO
+	id S1756306Ab1CHVVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 16:21:45 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:1941 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab1CHVVj (ORCPT
+	with ESMTP id S1755332Ab1CHVVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 16:21:39 -0500
+	Tue, 8 Mar 2011 16:21:40 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=Fll9toCW0LLqzVvKL3wVzrlvwvt4mnybTGbtjaO270VLMXeCFm2tMTVH6fk2LZ9HF
-	e82hkCaMk1SbRC8iv2QFg==
+	b=fPcnkVxHFUg1wyQiis4rgIMiOf69kDLOt7sH+YceqbjdpSJT366Pv0J6y8fun1Jwc
+	OVphJ8aCEAntgupoW3Z0Q==
 From: Justin TerAvest <teravest@google.com>
 To: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, vgoyal@redhat.com
 Cc: linux-kernel@vger.kernel.org, ryov@valinux.co.jp, taka@valinux.co.jp,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, ryov@valinux.co.jp, taka@valinux.co.jp,
         guijianfeng@cn.fujitsu.com, balbir@linux.vnet.ibm.com,
         ctalbott@google.com, nauman@google.com, mrubin@google.com,
         Justin TerAvest <teravest@google.com>
-Subject: [PATCH 1/6] Add IO cgroup tracking for buffered writes.
-Date: Tue,  8 Mar 2011 13:20:51 -0800
-Message-Id: <1299619256-12661-2-git-send-email-teravest@google.com>
+Subject: [PATCH 3/6] Modify CFQ to use IO tracking information.
+Date: Tue,  8 Mar 2011 13:20:53 -0800
+Message-Id: <1299619256-12661-4-git-send-email-teravest@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1299619256-12661-1-git-send-email-teravest@google.com>
 References: <1299619256-12661-1-git-send-email-teravest@google.com>
@@ -28,805 +28,443 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds IO tracking code in the mm/ tree so that the block layer
-can provide isolation for buffered writes. I've left modifying the
-page_cgroup structure as simple as possible; I'm happy to change this to
-using bits as part of the "flags" structure to reduce overhead.
+IO tracking bits are used to send IOs to the right async
+queue. Current task is still used to identify the cgroup of the
+synchronous IO. Current task is also used if IO tracking is disabled.
 
 Signed-off-by: Justin TerAvest <teravest@google.com>
 ---
- block/blk-cgroup.c          |  184 +++++++++++++++++++++++++++++++++++++++++++
- fs/buffer.c                 |    2 +
- fs/direct-io.c              |    2 +
- include/linux/blkio-track.h |   89 +++++++++++++++++++++
- include/linux/iocontext.h   |    1 +
- include/linux/memcontrol.h  |    6 ++
- include/linux/mmzone.h      |    4 +-
- include/linux/page_cgroup.h |   12 +++-
- init/Kconfig                |   16 ++++
- mm/Makefile                 |    3 +-
- mm/bounce.c                 |    2 +
- mm/filemap.c                |    2 +
- mm/memcontrol.c             |    6 ++
- mm/memory.c                 |    6 ++
- mm/page-writeback.c         |   14 +++-
- mm/page_cgroup.c            |   29 +++++---
- mm/swap_state.c             |    2 +
- 17 files changed, 363 insertions(+), 17 deletions(-)
- create mode 100644 include/linux/blkio-track.h
+ block/blk-cgroup.c       |    6 +-
+ block/blk-core.c         |    7 +-
+ block/cfq-iosched.c      |  169 ++++++++++++++++++++++++++++++++++++++++-----
+ block/elevator.c         |    5 +-
+ include/linux/elevator.h |    6 +-
+ 5 files changed, 165 insertions(+), 28 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 455768a..80d88ec 100644
+index 80d88ec..0f147aa 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -19,6 +19,8 @@
- #include <linux/slab.h>
- #include "blk-cgroup.h"
- #include <linux/genhd.h>
-+#include <linux/blkio-track.h>
-+#include <linux/mm_inline.h>
+@@ -111,6 +111,9 @@ blkio_policy_search_node(const struct blkio_cgroup *blkcg, dev_t dev,
  
- #define MAX_KEY_LEN 100
- 
-@@ -175,6 +177,12 @@ static inline void blkio_update_group_iops(struct blkio_group *blkg,
- 	}
+ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+ {
++	if (!cgroup)
++		return &blkio_root_cgroup;
++
+ 	return container_of(cgroup_subsys_state(cgroup, blkio_subsys_id),
+ 			    struct blkio_cgroup, css);
  }
- 
-+static inline struct blkio_cgroup *blkio_cgroup_from_task(struct task_struct *p)
-+{
-+	return container_of(task_subsys_state(p, blkio_subsys_id),
-+					struct blkio_cgroup, css);
-+}
-+
- /*
-  * Add to the appropriate stat variable depending on the request type.
-  * This should be called with the blkg->stats_lock held.
-@@ -1233,8 +1241,20 @@ blkiocg_file_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
- 	return 0;
+@@ -1537,6 +1540,7 @@ unsigned long get_blkio_cgroup_id(struct bio *bio)
+ 		id = pc->blkio_cgroup_id;
+ 	return id;
  }
- 
-+/* Read the ID of the specified blkio cgroup. */
-+static u64 blkio_id_read(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
-+
-+	return (u64)css_id(&blkcg->css);
-+}
-+
- struct cftype blkio_files[] = {
- 	{
-+		.name = "id",
-+		.read_u64 = blkio_id_read,
-+	},
-+	{
- 		.name = "weight_device",
- 		.private = BLKIOFILE_PRIVATE(BLKIO_POLICY_PROP,
- 				BLKIO_PROP_weight_device),
-@@ -1385,6 +1405,170 @@ struct cftype blkio_files[] = {
- #endif
- };
- 
-+/* Block IO tracking related functions */
-+
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+
-+/*
-+ * The block I/O tracking mechanism is implemented on the cgroup memory
-+ * controller framework. It helps to find the the owner of an I/O request
-+ * because every I/O request has a target page and the owner of the page
-+ * can be easily determined on the framework.
-+ */
-+
-+/**
-+ * blkio_cgroup_set_owner() - set the owner ID of a page.
-+ * @page:	the page we want to tag
-+ * @mm:		the mm_struct of a page owner
-+ *
-+ * Make a given page have the blkio-cgroup ID of the owner of this page.
-+ */
-+void blkio_cgroup_set_owner(struct page *page, struct mm_struct *mm)
-+{
-+	struct blkio_cgroup *blkcg;
-+	struct page_cgroup *pc;
-+
-+	if (blkio_cgroup_disabled())
-+		return;
-+	pc = lookup_page_cgroup(page);
-+	if (unlikely(!pc))
-+		return;
-+
-+	pc->blkio_cgroup_id = 0;	/* 0: default blkio_cgroup id */
-+	if (!mm)
-+		return;
-+	/*
-+	 * Locking "pc" isn't necessary here since the current process is
-+	 * the only one that can access the members related to blkio_cgroup.
-+	 */
-+	rcu_read_lock();
-+	blkcg = blkio_cgroup_from_task(rcu_dereference(mm->owner));
-+	if (unlikely(!blkcg))
-+		goto out;
-+	/*
-+	 * css_get(&bio->css) isn't called to increment the reference
-+	 * count of this blkio_cgroup "blkcg" so pc->blkio_cgroup_id
-+	 * might turn invalid even if this page is still active.
-+	 * This approach is chosen to minimize the overhead.
-+	 */
-+	pc->blkio_cgroup_id = css_id(&blkcg->css);
-+out:
-+	rcu_read_unlock();
-+}
-+
-+/**
-+ * blkio_cgroup_reset_owner() - reset the owner ID of a page
-+ * @page:	the page we want to tag
-+ * @mm:		the mm_struct of a page owner
-+ *
-+ * Change the owner of a given page if necessary.
-+ */
-+void blkio_cgroup_reset_owner(struct page *page, struct mm_struct *mm)
-+{
-+	/*
-+	 * A little trick:
-+	 * Just call blkio_cgroup_set_owner() for pages which are already
-+	 * active since the blkio_cgroup_id member of page_cgroup can be
-+	 * updated without any locks. This is because an integer type of
-+	 * variable can be set a new value at once on modern cpus.
-+	 */
-+	blkio_cgroup_set_owner(page, mm);
-+}
-+
-+/**
-+ * blkio_cgroup_reset_owner_pagedirty() - reset the owner ID of a pagecache page
-+ * @page:	the page we want to tag
-+ * @mm:		the mm_struct of a page owner
-+ *
-+ * Change the owner of a given page if the page is in the pagecache.
-+ */
-+void blkio_cgroup_reset_owner_pagedirty(struct page *page, struct mm_struct *mm)
-+{
-+	if (!page_is_file_cache(page))
-+		return;
-+	if (current->flags & PF_MEMALLOC)
-+		return;
-+
-+	blkio_cgroup_reset_owner(page, mm);
-+}
-+
-+/**
-+ * blkio_cgroup_copy_owner() - copy the owner ID of a page into another page
-+ * @npage:	the page where we want to copy the owner
-+ * @opage:	the page from which we want to copy the ID
-+ *
-+ * Copy the owner ID of @opage into @npage.
-+ */
-+void blkio_cgroup_copy_owner(struct page *npage, struct page *opage)
-+{
-+	struct page_cgroup *npc, *opc;
-+
-+	if (blkio_cgroup_disabled())
-+		return;
-+	npc = lookup_page_cgroup(npage);
-+	if (unlikely(!npc))
-+		return;
-+	opc = lookup_page_cgroup(opage);
-+	if (unlikely(!opc))
-+		return;
-+
-+	/*
-+	 * Do this without any locks. The reason is the same as
-+	 * blkio_cgroup_reset_owner().
-+	 */
-+	npc->blkio_cgroup_id = opc->blkio_cgroup_id;
-+}
-+
-+/**
-+ * get_blkio_cgroup_id() - determine the blkio-cgroup ID
-+ * @bio:	the &struct bio which describes the I/O
-+ *
-+ * Returns the blkio-cgroup ID of a given bio. A return value zero
-+ * means that the page associated with the bio belongs to default_blkio_cgroup.
-+ */
-+unsigned long get_blkio_cgroup_id(struct bio *bio)
-+{
-+	struct page_cgroup *pc;
-+	struct page *page = bio_iovec_idx(bio, 0)->bv_page;
-+	unsigned long id = 0;
-+
-+	pc = lookup_page_cgroup(page);
-+	if (pc)
-+		id = pc->blkio_cgroup_id;
-+	return id;
-+}
-+
-+/**
-+ * get_cgroup_from_page() - determine the cgroup from a page.
-+ * @page:	the page to be tracked
-+ *
-+ * Returns the cgroup of a given page. A return value zero means that
-+ * the page associated with the page belongs to default_blkio_cgroup.
-+ *
-+ * Note:
-+ * This function must be called under rcu_read_lock().
-+ */
-+struct cgroup *get_cgroup_from_page(struct page *page)
-+{
-+	struct page_cgroup *pc;
-+	struct cgroup_subsys_state *css;
-+
-+	pc = lookup_page_cgroup(page);
-+	if (!pc)
-+		return NULL;
-+
-+	css = css_lookup(&blkio_subsys, pc->blkio_cgroup_id);
-+	if (!css)
-+		return NULL;
-+
-+	return css->cgroup;
-+}
-+
 +EXPORT_SYMBOL(get_blkio_cgroup_id);
-+EXPORT_SYMBOL(get_cgroup_from_page);
-+
-+#endif /* CONFIG_CGROUP_BLKIOTRACK */
-+
- static int blkiocg_populate(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+ 
+ /**
+  * get_cgroup_from_page() - determine the cgroup from a page.
+@@ -1563,8 +1567,6 @@ struct cgroup *get_cgroup_from_page(struct page *page)
+ 
+ 	return css->cgroup;
+ }
+-
+-EXPORT_SYMBOL(get_blkio_cgroup_id);
+ EXPORT_SYMBOL(get_cgroup_from_page);
+ 
+ #endif /* CONFIG_CGROUP_BLKIOTRACK */
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 2f4002f..48c1f00 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -671,7 +671,8 @@ static inline void blk_free_request(struct request_queue *q, struct request *rq)
+ }
+ 
+ static struct request *
+-blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
++blk_alloc_request(struct request_queue *q, struct bio *bio, int flags, int priv,
++					gfp_t gfp_mask)
  {
- 	return cgroup_add_files(cgroup, subsys, blkio_files,
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 2219a76..1e911dd 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -36,6 +36,7 @@
- #include <linux/buffer_head.h>
- #include <linux/task_io_accounting_ops.h>
- #include <linux/bio.h>
-+#include <linux/blkio-track.h>
- #include <linux/notifier.h>
- #include <linux/cpu.h>
- #include <linux/bitops.h>
-@@ -667,6 +668,7 @@ static void __set_page_dirty(struct page *page,
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(warn && !PageUptodate(page));
- 		account_page_dirtied(page, mapping);
-+		blkio_cgroup_reset_owner_pagedirty(page, current->mm);
- 		radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 	}
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index b044705..2e8d5aa 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -33,6 +33,7 @@
- #include <linux/err.h>
- #include <linux/blkdev.h>
- #include <linux/buffer_head.h>
-+#include <linux/blkio-track.h>
- #include <linux/rwsem.h>
- #include <linux/uio.h>
- #include <asm/atomic.h>
-@@ -852,6 +853,7 @@ static int do_direct_IO(struct dio *dio)
- 			ret = PTR_ERR(page);
- 			goto out;
+ 	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
+ 
+@@ -683,7 +684,7 @@ blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
+ 	rq->cmd_flags = flags | REQ_ALLOCED;
+ 
+ 	if (priv) {
+-		if (unlikely(elv_set_request(q, rq, gfp_mask))) {
++		if (unlikely(elv_set_request(q, rq, bio, gfp_mask))) {
+ 			mempool_free(rq, q->rq.rq_pool);
+ 			return NULL;
  		}
-+		blkio_cgroup_reset_owner(page, current->mm);
+@@ -824,7 +825,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 		rw_flags |= REQ_IO_STAT;
+ 	spin_unlock_irq(q->queue_lock);
  
- 		while (block_in_page < blocks_per_page) {
- 			unsigned offset_in_page = block_in_page << blkbits;
-diff --git a/include/linux/blkio-track.h b/include/linux/blkio-track.h
-new file mode 100644
-index 0000000..aedf780
---- /dev/null
-+++ b/include/linux/blkio-track.h
-@@ -0,0 +1,89 @@
-+#include <linux/cgroup.h>
-+#include <linux/mm.h>
-+#include <linux/page_cgroup.h>
-+
-+#ifndef _LINUX_BIOTRACK_H
-+#define _LINUX_BIOTRACK_H
-+
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+
-+struct block_device;
-+
-+/**
-+ * __init_blkio_page_cgroup() - initialize a blkio_page_cgroup
-+ * @pc:		page_cgroup of the page
-+ *
-+ * Reset the owner ID of a page.
-+ */
-+static inline void __init_blkio_page_cgroup(struct page_cgroup *pc)
-+{
-+	pc->blkio_cgroup_id = 0;
-+}
-+
-+/**
-+ * blkio_cgroup_disabled() - check whether blkio_cgroup is disabled
-+ *
-+ * Returns true if disabled, false if not.
-+ */
-+static inline bool blkio_cgroup_disabled(void)
-+{
-+	if (blkio_subsys.disabled)
-+		return true;
-+	return false;
-+}
-+
-+extern void blkio_cgroup_set_owner(struct page *page, struct mm_struct *mm);
-+extern void blkio_cgroup_reset_owner(struct page *page, struct mm_struct *mm);
-+extern void blkio_cgroup_reset_owner_pagedirty(struct page *page,
-+						 struct mm_struct *mm);
-+extern void blkio_cgroup_copy_owner(struct page *page, struct page *opage);
-+
-+extern unsigned long get_blkio_cgroup_id(struct bio *bio);
-+extern struct cgroup *get_cgroup_from_page(struct page *page);
-+
-+#else /* !CONFIG_CGROUP_BLKIOTRACK */
-+
-+struct blkiotrack_cgroup;
-+
-+static inline void __init_blkio_page_cgroup(struct page_cgroup *pc)
-+{
-+}
-+
-+static inline bool blkio_cgroup_disabled(void)
-+{
-+	return true;
-+}
-+
-+static inline void blkio_cgroup_set_owner(struct page *page,
-+						struct mm_struct *mm)
-+{
-+}
-+
-+static inline void blkio_cgroup_reset_owner(struct page *page,
-+						struct mm_struct *mm)
-+{
-+}
-+
-+static inline void blkio_cgroup_reset_owner_pagedirty(struct page *page,
-+						struct mm_struct *mm)
-+{
-+}
-+
-+static inline void blkio_cgroup_copy_owner(struct page *page,
-+						struct page *opage)
-+{
-+}
-+
-+static inline unsigned long get_blkio_cgroup_id(struct bio *bio)
-+{
-+	return 0;
-+}
-+
-+static inline struct cgroup *get_cgroup_from_page(struct page *page)
-+{
-+	return NULL;
-+}
-+
-+#endif /* CONFIG_CGROUP_BLKIOTRACK */
-+
-+#endif /* _LINUX_BIOTRACK_H */
-diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
-index b2eee89..3e70b21 100644
---- a/include/linux/iocontext.h
-+++ b/include/linux/iocontext.h
-@@ -76,6 +76,7 @@ int put_io_context(struct io_context *ioc);
- void exit_io_context(struct task_struct *task);
- struct io_context *get_io_context(gfp_t gfp_flags, int node);
- struct io_context *alloc_io_context(gfp_t gfp_flags, int node);
-+void copy_io_context(struct io_context **pdst, struct io_context **psrc);
- #else
- static inline void exit_io_context(struct task_struct *task)
- {
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index f512e18..a8a7cf0 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -49,6 +49,8 @@ extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
-  * (Of course, if memcg does memory allocation in future, GFP_KERNEL is sane.)
-  */
+-	rq = blk_alloc_request(q, rw_flags, priv, gfp_mask);
++	rq = blk_alloc_request(q, bio, rw_flags, priv, gfp_mask);
+ 	if (unlikely(!rq)) {
+ 		/*
+ 		 * Allocation failed presumably due to memory. Undo anything
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 1ca9fac..75902b1 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -14,6 +14,7 @@
+ #include <linux/rbtree.h>
+ #include <linux/ioprio.h>
+ #include <linux/blktrace_api.h>
++#include <linux/blkio-track.h>
+ #include "cfq.h"
  
-+extern void __init_mem_page_cgroup(struct page_cgroup *pc);
-+
- extern int mem_cgroup_newpage_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask);
- /* for swap handling */
-@@ -153,6 +155,10 @@ void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail);
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
- struct mem_cgroup;
- 
-+static inline void __init_mem_page_cgroup(struct page_cgroup *pc)
-+{
-+}
-+
- static inline int mem_cgroup_newpage_charge(struct page *page,
- 					struct mm_struct *mm, gfp_t gfp_mask)
- {
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 02ecb01..a04c37a 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -615,7 +615,7 @@ typedef struct pglist_data {
- 	int nr_zones;
- #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
- 	struct page *node_mem_map;
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+#ifdef CONFIG_CGROUP_PAGE
- 	struct page_cgroup *node_page_cgroup;
- #endif
- #endif
-@@ -975,7 +975,7 @@ struct mem_section {
- 
- 	/* See declaration of similar field in struct zone */
- 	unsigned long *pageblock_flags;
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+#ifdef CONFIG_CGROUP_PAGE
- 	/*
- 	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
- 	 * section. (see memcontrol.h/page_cgroup.h about this.)
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 6d6cb7a..c3e66fd 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -1,7 +1,7 @@
- #ifndef __LINUX_PAGE_CGROUP_H
- #define __LINUX_PAGE_CGROUP_H
- 
--#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+#ifdef CONFIG_CGROUP_PAGE
- #include <linux/bit_spinlock.h>
  /*
-  * Page Cgroup can be considered as an extended mem_map.
-@@ -11,10 +11,15 @@
-  * then the page cgroup for pfn always exists.
-  */
- struct page_cgroup {
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
- 	unsigned long flags;
- 	struct mem_cgroup *mem_cgroup;
- 	struct page *page;
- 	struct list_head lru;		/* per cgroup LRU list */
-+#endif
-+#ifdef CONFIG_CGROUP_BLKIOTRACK
-+	unsigned long blkio_cgroup_id;
-+#endif
+@@ -303,6 +304,10 @@ struct cfq_data {
  };
  
- void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
-@@ -33,6 +38,8 @@ static inline void __init page_cgroup_init(void)
+ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
++static struct cfq_group *cfq_get_cfqg_bio(struct cfq_data *cfqd,
++				   struct bio *bio, int create);
++static struct cfq_queue **
++cfq_async_queue_prio(struct cfq_group *cfqg, int ioprio_class, int ioprio);
  
- struct page_cgroup *lookup_page_cgroup(struct page *page);
- 
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+
- enum {
- 	/* flags for mem_cgroup */
- 	PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
-@@ -131,8 +138,9 @@ static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
- 	bit_spin_unlock(PCG_MOVE_LOCK, &pc->flags);
- 	local_irq_restore(*flags);
+ static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
+ 					    enum wl_prio_t prio,
+@@ -445,7 +450,7 @@ static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
  }
-+#endif
  
--#else /* CONFIG_CGROUP_MEM_RES_CTLR */
-+#else /* CONFIG_CGROUP_PAGE */
- struct page_cgroup;
+ static void cfq_dispatch_insert(struct request_queue *, struct request *);
+-static struct cfq_queue *cfq_get_queue(struct cfq_data *, bool,
++static struct cfq_queue *cfq_get_queue(struct cfq_data *, struct bio*, bool,
+ 				       struct io_context *, gfp_t);
+ static struct cfq_io_context *cfq_cic_lookup(struct cfq_data *,
+ 						struct io_context *);
+@@ -457,9 +462,55 @@ static inline struct cfq_queue *cic_to_cfqq(struct cfq_io_context *cic,
+ 	return cic->cfqq[is_sync];
+ }
  
- static inline void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
-diff --git a/init/Kconfig b/init/Kconfig
-index be788c0..256041f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -742,6 +742,22 @@ config DEBUG_BLK_CGROUP
- 	Enable some debugging help. Currently it exports additional stat
- 	files in a cgroup which can be useful for debugging.
- 
-+config CGROUP_BLKIOTRACK
-+	bool
-+	depends on CGROUPS && BLOCK
-+	select MM_OWNER
-+	default n
-+	---help---
-+	  Provides a Resource Controller which enables to track the onwner
-+	  of every Block I/O requests.
-+	  The information this subsystem provides can be used from any
-+	  kind of module such as dm-ioband device mapper modules or
-+	  the cfq-scheduler.
-+
-+config CGROUP_PAGE
-+	def_bool y
-+	depends on CGROUP_MEM_RES_CTLR || CGROUP_BLKIOTRACK
-+
- endif # CGROUPS
- 
- menuconfig NAMESPACES
-diff --git a/mm/Makefile b/mm/Makefile
-index 2b1b575..7da3bc8 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -38,7 +38,8 @@ obj-$(CONFIG_FS_XIP) += filemap_xip.o
- obj-$(CONFIG_MIGRATION) += migrate.o
- obj-$(CONFIG_QUICKLIST) += quicklist.o
- obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
--obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
-+obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o
-+obj-$(CONFIG_CGROUP_PAGE) += page_cgroup.o
- obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
- obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
- obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 1481de6..64980fb 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -14,6 +14,7 @@
- #include <linux/init.h>
- #include <linux/hash.h>
- #include <linux/highmem.h>
-+#include <linux/blkio-track.h>
- #include <asm/tlbflush.h>
- 
- #include <trace/events/block.h>
-@@ -211,6 +212,7 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- 		to->bv_len = from->bv_len;
- 		to->bv_offset = from->bv_offset;
- 		inc_zone_page_state(to->bv_page, NR_BOUNCE);
-+		blkio_cgroup_copy_owner(to->bv_page, page);
- 
- 		if (rw == WRITE) {
- 			char *vto, *vfrom;
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83a45d3..ab9b53a 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -33,6 +33,7 @@
- #include <linux/cpuset.h>
- #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
- #include <linux/memcontrol.h>
-+#include <linux/blkio-track.h>
- #include <linux/mm_inline.h> /* for page_is_file_cache() */
- #include "internal.h"
- 
-@@ -407,6 +408,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 					gfp_mask & GFP_RECLAIM_MASK);
- 	if (error)
- 		goto out;
-+	blkio_cgroup_set_owner(page, current->mm);
- 
- 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (error == 0) {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index da53a25..e11c2cd 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -359,6 +359,12 @@ static void mem_cgroup_put(struct mem_cgroup *mem);
- static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *mem);
- static void drain_all_stock_async(void);
- 
-+void __meminit __init_mem_page_cgroup(struct page_cgroup *pc)
++/*
++ * Determine the cfq queue bio should go in. This is primarily used by
++ * front merge and allow merge functions.
++ *
++ * Currently this function takes the ioprio and iprio_class from task
++ * submitting async bio. Later save the task information in the page_cgroup
++ * and retrieve task's ioprio and class from there.
++ */
++static struct cfq_queue *cic_bio_to_cfqq(struct cfq_data *cfqd,
++		struct cfq_io_context *cic, struct bio *bio, int is_sync)
 +{
-+	pc->mem_cgroup = NULL;
-+	INIT_LIST_HEAD(&pc->lru);
++	struct cfq_queue *cfqq = cic_to_cfqq(cic, is_sync);
++
++#ifdef CONFIG_CGROUP_BLKIOTRACK
++	if (!cfqq && !is_sync) {
++		const int ioprio = task_ioprio(cic->ioc);
++		const int ioprio_class = task_ioprio_class(cic->ioc);
++		struct cfq_group *cfqg;
++		struct cfq_queue **async_cfqq;
++		/*
++		 * async bio tracking is enabled and we are not caching
++		 * async queue pointer in cic.
++		 */
++		cfqg = cfq_get_cfqg_bio(cfqd, bio, 0);
++		if (!cfqg) {
++			/*
++			 * May be this is first rq/bio and io group has not
++			 * been setup yet.
++			 */
++			return NULL;
++		}
++		async_cfqq = cfq_async_queue_prio(cfqg, ioprio_class, ioprio);
++		return *async_cfqq;
++	}
++#endif
++	return cfqq;
 +}
 +
- static struct mem_cgroup_per_zone *
- mem_cgroup_zoneinfo(struct mem_cgroup *mem, int nid, int zid)
+ static inline void cic_set_cfqq(struct cfq_io_context *cic,
+ 				struct cfq_queue *cfqq, bool is_sync)
  {
-diff --git a/mm/memory.c b/mm/memory.c
-index 31250fa..4735c3c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -52,6 +52,7 @@
- #include <linux/init.h>
- #include <linux/writeback.h>
- #include <linux/memcontrol.h>
-+#include <linux/blkio-track.h>
- #include <linux/mmu_notifier.h>
- #include <linux/kallsyms.h>
- #include <linux/swapops.h>
-@@ -2403,6 +2404,7 @@ gotten:
- 		 */
- 		ptep_clear_flush(vma, address, page_table);
- 		page_add_new_anon_rmap(new_page, vma, address);
-+		blkio_cgroup_set_owner(new_page, mm);
- 		/*
- 		 * We call the notify macro here because, when using secondary
- 		 * mmu page tables (such as kvm shadow page tables), we want the
-@@ -2828,6 +2830,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	flush_icache_page(vma, page);
- 	set_pte_at(mm, address, page_table, pte);
- 	do_page_add_anon_rmap(page, vma, address, exclusive);
-+	blkio_cgroup_reset_owner(page, mm);
- 	/* It's better to call commit-charge after rmap is established */
- 	mem_cgroup_commit_charge_swapin(page, ptr);
++#ifdef CONFIG_CGROUP_BLKIOTRACK
++	/*
++	 * Don't cache async queue pointer as now one io context might
++	 * be submitting async io for various different async queues
++	 */
++	if (!is_sync)
++		return;
++#endif
+ 	cic->cfqq[is_sync] = cfqq;
+ }
  
-@@ -2959,6 +2962,8 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -1028,7 +1079,9 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+ 	unsigned int major, minor;
  
- 	inc_mm_counter_fast(mm, MM_ANONPAGES);
- 	page_add_new_anon_rmap(page, vma, address);
-+	/* Not setting the owner for special pages */
-+	blkio_cgroup_set_owner(page, mm);
- setpte:
- 	set_pte_at(mm, address, page_table, entry);
- 
-@@ -3114,6 +3119,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (anon) {
- 			inc_mm_counter_fast(mm, MM_ANONPAGES);
- 			page_add_new_anon_rmap(page, vma, address);
-+			blkio_cgroup_set_owner(page, mm);
- 		} else {
- 			inc_mm_counter_fast(mm, MM_FILEPAGES);
- 			page_add_file_rmap(page);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 2cb01f6..b2a8f81 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -23,6 +23,7 @@
- #include <linux/init.h>
- #include <linux/backing-dev.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/blkio-track.h>
- #include <linux/blkdev.h>
- #include <linux/mpage.h>
- #include <linux/rmap.h>
-@@ -1153,7 +1154,8 @@ EXPORT_SYMBOL(account_page_writeback);
-  * We take care to handle the case where the page was truncated from the
-  * mapping by re-checking page_mapping() inside tree_lock.
+ 	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+-	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
++	if (!bdi || !bdi->dev || !dev_name(bdi->dev))
++		goto done;
++	if (cfqg && !cfqg->blkg.dev) {
+ 		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+ 		cfqg->blkg.dev = MKDEV(major, minor);
+ 		goto done;
+@@ -1079,16 +1132,28 @@ done:
+  * Search for the cfq group current task belongs to. If create = 1, then also
+  * create the cfq group if it does not exist. request_queue lock must be held.
   */
--int __set_page_dirty_nobuffers(struct page *page)
-+int __set_page_dirty_nobuffers_track_owner(struct page *page,
-+					   int update_owner)
+-static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
++static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, struct page *page,
++				      int create)
  {
- 	if (!TestSetPageDirty(page)) {
- 		struct address_space *mapping = page_mapping(page);
-@@ -1168,6 +1170,9 @@ int __set_page_dirty_nobuffers(struct page *page)
- 			BUG_ON(mapping2 != mapping);
- 			WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
- 			account_page_dirtied(page, mapping);
-+			if (update_owner)
-+				blkio_cgroup_reset_owner_pagedirty(page,
-+								current->mm);
- 			radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 		}
-@@ -1180,6 +1185,11 @@ int __set_page_dirty_nobuffers(struct page *page)
- 	}
- 	return 0;
- }
+ 	struct cgroup *cgroup;
+ 	struct cfq_group *cfqg = NULL;
+ 
+ 	rcu_read_lock();
+-	cgroup = task_cgroup(current, blkio_subsys_id);
 +
-+int __set_page_dirty_nobuffers(struct page *page)
++	if (!page)
++		cgroup = task_cgroup(current, blkio_subsys_id);
++	else
++		cgroup = get_cgroup_from_page(page);
++
++	if (!cgroup) {
++		cfqg = &cfqd->root_group;
++		goto out;
++	}
++
+ 	cfqg = cfq_find_alloc_cfqg(cfqd, cgroup, create);
+ 	if (!cfqg && create)
+ 		cfqg = &cfqd->root_group;
++out:
+ 	rcu_read_unlock();
+ 	return cfqg;
+ }
+@@ -1099,6 +1164,32 @@ static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
+ 	return cfqg;
+ }
+ 
++struct cfq_group *cfq_get_cfqg_bio(struct cfq_data *cfqd,
++					struct bio *bio, int create)
 +{
-+	return __set_page_dirty_nobuffers_track_owner(page, 1);
-+}
- EXPORT_SYMBOL(__set_page_dirty_nobuffers);
- 
- /*
-@@ -1190,7 +1200,7 @@ EXPORT_SYMBOL(__set_page_dirty_nobuffers);
- int redirty_page_for_writepage(struct writeback_control *wbc, struct page *page)
- {
- 	wbc->pages_skipped++;
--	return __set_page_dirty_nobuffers(page);
-+	return __set_page_dirty_nobuffers_track_owner(page, 0);
- }
- EXPORT_SYMBOL(redirty_page_for_writepage);
- 
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 5bffada..78f5425 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -10,14 +10,17 @@
- #include <linux/cgroup.h>
- #include <linux/swapops.h>
- #include <linux/kmemleak.h>
-+#include <linux/blkio-track.h>
- 
- static void __meminit
- __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
- {
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
- 	pc->flags = 0;
--	pc->mem_cgroup = NULL;
- 	pc->page = pfn_to_page(pfn);
--	INIT_LIST_HEAD(&pc->lru);
++	struct page *page = NULL;
++
++	/*
++	 * Determine the group from task context. Even calls from
++	 * blk_get_request() which don't have any bio info will be mapped
++	 * to the task's group
++	 */
++	if (!bio)
++		goto sync;
++
++#ifdef CONFIG_CGROUP_BLKIOTRACK
++	/* Map the sync bio to the right group using task context */
++	if (cfq_bio_sync(bio))
++		goto sync;
++
++	/* Determine the group from info stored in page */
++	page = bio_iovec_idx(bio, 0)->bv_page;
 +#endif
-+	__init_mem_page_cgroup(pc);
-+	__init_blkio_page_cgroup(pc);
++
++sync:
++	return cfq_get_cfqg(cfqd, page, create);
++}
++
+ static void cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg)
+ {
+ 	cfqq->cfqg = cfqg;
+@@ -1176,7 +1267,8 @@ void cfq_unlink_blkio_group(void *key, struct blkio_group *blkg)
  }
- static unsigned long total_usage;
  
-@@ -75,7 +78,7 @@ void __init page_cgroup_init_flatmem(void)
+ #else /* GROUP_IOSCHED */
+-static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
++static struct cfq_group *cfq_get_cfqg_bio(struct cfq_data *cfqd,
++					  struct bio *bio, int create)
+ {
+ 	return &cfqd->root_group;
+ }
+@@ -1481,7 +1573,7 @@ cfq_find_rq_fmerge(struct cfq_data *cfqd, struct bio *bio)
+ 	if (!cic)
+ 		return NULL;
  
- 	int nid, fail;
+-	cfqq = cic_to_cfqq(cic, cfq_bio_sync(bio));
++	cfqq = cic_bio_to_cfqq(cfqd, cic, bio, cfq_bio_sync(bio));
+ 	if (cfqq) {
+ 		sector_t sector = bio->bi_sector + bio_sectors(bio);
  
--	if (mem_cgroup_disabled())
-+	if (mem_cgroup_disabled() && blkio_cgroup_disabled())
- 		return;
+@@ -1605,7 +1697,7 @@ static int cfq_allow_merge(struct request_queue *q, struct request *rq,
+ 	if (!cic)
+ 		return false;
  
- 	for_each_online_node(nid)  {
-@@ -84,12 +87,13 @@ void __init page_cgroup_init_flatmem(void)
- 			goto fail;
+-	cfqq = cic_to_cfqq(cic, cfq_bio_sync(bio));
++	cfqq = cic_bio_to_cfqq(cfqd, cic, bio, cfq_bio_sync(bio));
+ 	return cfqq == RQ_CFQQ(rq);
+ }
+ 
+@@ -2816,14 +2908,10 @@ static void changed_ioprio(struct io_context *ioc, struct cfq_io_context *cic)
+ 	spin_lock_irqsave(cfqd->queue->queue_lock, flags);
+ 
+ 	cfqq = cic->cfqq[BLK_RW_ASYNC];
++
+ 	if (cfqq) {
+-		struct cfq_queue *new_cfqq;
+-		new_cfqq = cfq_get_queue(cfqd, BLK_RW_ASYNC, cic->ioc,
+-						GFP_ATOMIC);
+-		if (new_cfqq) {
+-			cic->cfqq[BLK_RW_ASYNC] = new_cfqq;
+-			cfq_put_queue(cfqq);
+-		}
++		cic_set_cfqq(cic, NULL, BLK_RW_ASYNC);
++		cfq_put_queue(cfqq);
  	}
- 	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
--	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
--	" don't want memory cgroups\n");
-+	printk(KERN_INFO "please try 'cgroup_disable=memory,blkio' option"
-+	" if you don't want memory and blkio cgroups\n");
- 	return;
- fail:
- 	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
--	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
-+	printk(KERN_CRIT
-+		"please try 'cgroup_disable=memory,blkio' boot option\n");
- 	panic("Out of memory");
+ 
+ 	cfqq = cic->cfqq[BLK_RW_SYNC];
+@@ -2863,6 +2951,7 @@ static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ static void changed_cgroup(struct io_context *ioc, struct cfq_io_context *cic)
+ {
+ 	struct cfq_queue *sync_cfqq = cic_to_cfqq(cic, 1);
++	struct cfq_queue *async_cfqq = cic_to_cfqq(cic, 0);
+ 	struct cfq_data *cfqd = cic_to_cfqd(cic);
+ 	unsigned long flags;
+ 	struct request_queue *q;
+@@ -2884,6 +2973,12 @@ static void changed_cgroup(struct io_context *ioc, struct cfq_io_context *cic)
+ 		cfq_put_queue(sync_cfqq);
+ 	}
+ 
++	if (async_cfqq != NULL) {
++		cfq_log_cfqq(cfqd, async_cfqq, "changed cgroup");
++		cic_set_cfqq(cic, NULL, 0);
++		cfq_put_queue(async_cfqq);
++	}
++
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
  }
  
-@@ -134,6 +138,7 @@ static int __init_refok init_section_page_cgroup(unsigned long pfn)
- 		 */
- 		kmemleak_not_leak(base);
- 	} else {
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
- 		/*
-  		 * We don't have to allocate page_cgroup again, but
- 		 * address of memmap may be changed. So, we have to initialize
-@@ -144,6 +149,9 @@ static int __init_refok init_section_page_cgroup(unsigned long pfn)
- 		/* check address of memmap is changed or not. */
- 		if (base->page == pfn_to_page(pfn))
- 			return 0;
+@@ -2906,6 +3001,24 @@ retry:
+ 	/* cic always exists here */
+ 	cfqq = cic_to_cfqq(cic, is_sync);
+ 
++#ifdef CONFIG_CGROUP_BLKIOTRACK
++	if (!cfqq && !is_sync) {
++		const int ioprio = task_ioprio(cic->ioc);
++		const int ioprio_class = task_ioprio_class(cic->ioc);
++		struct cfq_queue **async_cfqq;
++
++		/*
++		 * We have not cached async queue pointer as bio tracking
++		 * is enabled. Look into group async queue array using ioc
++		 * class and prio to see if somebody already allocated the
++		 * queue.
++		 */
++
++		async_cfqq = cfq_async_queue_prio(cfqg, ioprio_class, ioprio);
++		cfqq = *async_cfqq;
++	}
++#endif
++
+ 	/*
+ 	 * Always try a new alloc if we fell back to the OOM cfqq
+ 	 * originally, since it should just be a temporary situation.
+@@ -2960,14 +3073,14 @@ cfq_async_queue_prio(struct cfq_group *cfqg, int ioprio_class, int ioprio)
+ }
+ 
+ static struct cfq_queue *
+-cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
+-	      gfp_t gfp_mask)
++cfq_get_queue(struct cfq_data *cfqd, struct bio *bio, bool is_sync,
++	      struct io_context *ioc, gfp_t gfp_mask)
+ {
+ 	const int ioprio = task_ioprio(ioc);
+ 	const int ioprio_class = task_ioprio_class(ioc);
+ 	struct cfq_queue **async_cfqq = NULL;
+ 	struct cfq_queue *cfqq = NULL;
+-	struct cfq_group *cfqg = cfq_get_cfqg(cfqd, 1);
++	struct cfq_group *cfqg = cfq_get_cfqg_bio(cfqd, bio, 1);
+ 
+ 	if (!is_sync) {
+ 		async_cfqq = cfq_async_queue_prio(cfqg, ioprio_class,
+@@ -2986,7 +3099,24 @@ cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
+ 		*async_cfqq = cfqq;
+ 	}
+ 
++#ifdef CONFIG_CGROUP_BLKIOTRACK
++	/*
++	 * ioc reference. If async request queue/group is determined from the
++	 * original task/cgroup and not from submitter task, io context can
++	 * not cache the pointer to async queue and everytime a request comes,
++	 * it will be determined by going through the async queue array.
++	 *
++	 */
++	if (is_sync)
++		cfqq->ref++;
 +#else
-+		return 0;
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR */
- 	}
- 
- 	if (!base) {
-@@ -258,7 +266,7 @@ void __init page_cgroup_init(void)
- 	unsigned long pfn;
- 	int fail = 0;
- 
--	if (mem_cgroup_disabled())
-+	if (mem_cgroup_disabled() && blkio_cgroup_disabled())
- 		return;
- 
- 	for (pfn = 0; !fail && pfn < max_pfn; pfn += PAGES_PER_SECTION) {
-@@ -267,14 +275,15 @@ void __init page_cgroup_init(void)
- 		fail = init_section_page_cgroup(pfn);
- 	}
- 	if (fail) {
--		printk(KERN_CRIT "try 'cgroup_disable=memory' boot option\n");
-+		printk(KERN_CRIT
-+			"try 'cgroup_disable=memory,blkio' boot option\n");
- 		panic("Out of memory");
- 	} else {
- 		hotplug_memory_notifier(page_cgroup_callback, 0);
- 	}
- 	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
--	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you don't"
--	" want memory cgroups\n");
-+	printk(KERN_INFO "please try 'cgroup_disable=memory,blkio' option"
-+	" if you don't want memory and blkio cgroups\n");
++	/*
++	 * async requests are being attributed to task submitting
++	 * it, hence cic can cache async cfqq pointer. Take the
++	 * queue reference even for async queue.
++	 */
+ 	cfqq->ref++;
++#endif
+ 	return cfqq;
  }
  
- void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 5c8cfab..bd4c4e7 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -19,6 +19,7 @@
- #include <linux/pagevec.h>
- #include <linux/migrate.h>
- #include <linux/page_cgroup.h>
-+#include <linux/blkio-track.h>
+@@ -3652,7 +3782,8 @@ split_cfqq(struct cfq_io_context *cic, struct cfq_queue *cfqq)
+  * Allocate cfq data structures associated with this request.
+  */
+ static int
+-cfq_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
++cfq_set_request(struct request_queue *q, struct request *rq, struct bio *bio,
++				gfp_t gfp_mask)
+ {
+ 	struct cfq_data *cfqd = q->elevator->elevator_data;
+ 	struct cfq_io_context *cic;
+@@ -3673,7 +3804,7 @@ cfq_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
+ new_queue:
+ 	cfqq = cic_to_cfqq(cic, is_sync);
+ 	if (!cfqq || cfqq == &cfqd->oom_cfqq) {
+-		cfqq = cfq_get_queue(cfqd, is_sync, cic->ioc, gfp_mask);
++		cfqq = cfq_get_queue(cfqd, bio, is_sync, cic->ioc, gfp_mask);
+ 		cic_set_cfqq(cic, cfqq, is_sync);
+ 	} else {
+ 		/*
+diff --git a/block/elevator.c b/block/elevator.c
+index 2569512..9854cf6 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -752,12 +752,13 @@ struct request *elv_former_request(struct request_queue *q, struct request *rq)
+ 	return NULL;
+ }
  
- #include <asm/pgtable.h>
+-int elv_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
++int elv_set_request(struct request_queue *q, struct request *rq,
++			struct bio *bio, gfp_t gfp_mask)
+ {
+ 	struct elevator_queue *e = q->elevator;
  
-@@ -330,6 +331,7 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- 		/* May fail (-ENOMEM) if radix-tree node allocation failed. */
- 		__set_page_locked(new_page);
- 		SetPageSwapBacked(new_page);
-+		blkio_cgroup_set_owner(new_page, current->mm);
- 		err = __add_to_swap_cache(new_page, entry);
- 		if (likely(!err)) {
- 			radix_tree_preload_end();
+ 	if (e->ops->elevator_set_req_fn)
+-		return e->ops->elevator_set_req_fn(q, rq, gfp_mask);
++		return e->ops->elevator_set_req_fn(q, rq, bio, gfp_mask);
+ 
+ 	rq->elevator_private = NULL;
+ 	return 0;
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index 4d85797..496c182 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -25,7 +25,8 @@ typedef struct request *(elevator_request_list_fn) (struct request_queue *, stru
+ typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
+ typedef int (elevator_may_queue_fn) (struct request_queue *, int);
+ 
+-typedef int (elevator_set_req_fn) (struct request_queue *, struct request *, gfp_t);
++typedef int (elevator_set_req_fn) (struct request_queue *, struct request *,
++					struct bio *bio, gfp_t);
+ typedef void (elevator_put_req_fn) (struct request *);
+ typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
+ typedef void (elevator_deactivate_req_fn) (struct request_queue *, struct request *);
+@@ -119,7 +120,8 @@ extern void elv_unregister_queue(struct request_queue *q);
+ extern int elv_may_queue(struct request_queue *, int);
+ extern void elv_abort_queue(struct request_queue *);
+ extern void elv_completed_request(struct request_queue *, struct request *);
+-extern int elv_set_request(struct request_queue *, struct request *, gfp_t);
++extern int elv_set_request(struct request_queue *, struct request *,
++					struct bio *bio, gfp_t);
+ extern void elv_put_request(struct request_queue *, struct request *);
+ extern void elv_drain_elevator(struct request_queue *);
+ 
 -- 
 1.7.3.1
 
