@@ -1,244 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab1CHSfk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 13:35:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:46150 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439Ab1CHSfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 13:35:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,285,1297065600"; 
-   d="scan'208";a="717790767"
-Subject: [PATCH] x86: introduce pci_map_biosrom()
-To: hpa@zytor.com
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: dmilburn@redhat.com, Dave Jiang <dave.jiang@intel.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Tue, 08 Mar 2011 10:36:19 -0800
-Message-ID: <20110308183226.6246.90354.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15-7-g9bfb
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1754739Ab1CHSjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 13:39:22 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34556 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab1CHSjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 13:39:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Tsxuk6x4Ued890sp7V5pBTrHHQ/nBTaAQ1btwlMzNyaVZNaXoeNw6FO0rf6y2J2EJJ
+         ZVO8kgyMPGhb4fg348gAYJgKpeMUQgy35VHVCTj2RulGEP6slmwGutCY32Bw5Lz502cH
+         gIUTvO7H71dczdiCtSLdE+g/YDy57cnsi1IKM=
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Jan Beulich <JBeulich@novell.com>,
+        Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+Subject: [PATCH] x86: Fix mismatched ENTRY/END pair
+Date: Tue,  8 Mar 2011 19:39:03 +0100
+Message-Id: <1299609543-18549-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The isci driver needs to retrieve its preboot orom image which contains
-necessary runtime parameters like platform specific sas addresses and
-phy configuration.  There is no rom bar associated with this area,
-instead we need to scan legacy expansion rom space.
+With CONFIG_KVM_GUEST=y, the following part of entry_32.S causes this compile failure:
+[...]
+AS      arch/x86/kernel/entry_32.o
+arch/x86/kernel/entry_32.S: Assembler messages:
+arch/x86/kernel/entry_32.S:1421: Error: .size expression with symbol `apf_page_fault' does not evaluate to a constant
 
-1/ Promote the probe_roms_32 implementation to x86-64
-2/ Add a facility to find and map an adapter rom by pci device (according to
-   PCI Firmware Specification Revision 3.0)
+1409 #ifdef CONFIG_KVM_GUEST
+1410 ENTRY(async_page_fault)
+1411         RING0_EC_FRAME
+1412         pushl $do_async_page_fault
+1413         CFI_ADJUST_CFA_OFFSET 4
+1414         jmp error_code
+1415         CFI_ENDPROC
+1416 END(apf_page_fault)
+1417 #endif
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Replace apf_page_fault with async_page_fault, as intended.
+
+The problem occured with a binutils including PR gas/12519.
+An output like above can be seen with a binutils from upstream containing:
+commit b9521fc0be7945fc842ce1197e241a023378125d
+"Mention symbol name in non-constant .size expression."
+
+The issue was introduced by:
+commit 631bc4878220932fe67fc46fc7cf7cccdb1ec597
+"KVM: Handle async PF in a guest."
+
+Thanks Alexander for providing a more descriptive text.
+
+Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: H.J. Lu <hjl.tools@gmail.com>
+CC: Jan Beulich <JBeulich@novell.com>
+CC: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
 ---
+ arch/x86/kernel/entry_32.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Here is the updated rom scanning implementation as initially presented
-here [1].  Dave has been able to verify this implementation on his
-platform.  This is modelled loosely on the interface provided by
-pci_map_rom().
-
---
-Dan
-
-[1]: http://marc.info/?l=linux-scsi&m=129862745115270&w=2
-
- arch/x86/include/asm/probe_roms.h |    8 +++
- arch/x86/include/asm/setup.h      |    3 +
- arch/x86/kernel/Makefile          |    2 -
- arch/x86/kernel/head32.c          |    1 
- arch/x86/kernel/probe_roms.c      |  101 +++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/x86_init.c        |    2 -
- 6 files changed, 113 insertions(+), 4 deletions(-)
- create mode 100644 arch/x86/include/asm/probe_roms.h
- rename arch/x86/kernel/{probe_roms_32.c => probe_roms.c} (65%)
-
-diff --git a/arch/x86/include/asm/probe_roms.h b/arch/x86/include/asm/probe_roms.h
-new file mode 100644
-index 0000000..4950a0b
---- /dev/null
-+++ b/arch/x86/include/asm/probe_roms.h
-@@ -0,0 +1,8 @@
-+#ifndef _PROBE_ROMS_H_
-+#define _PROBE_ROMS_H_
-+struct pci_dev;
-+
-+extern void __iomem *pci_map_biosrom(struct pci_dev *pdev);
-+extern void pci_unmap_biosrom(void __iomem *rom);
-+extern size_t pci_biosrom_size(struct pci_dev *pdev);
-+#endif
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index ef292c7..52edb6d 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -93,10 +93,11 @@ void *extend_brk(size_t size, size_t align);
- 			: : "i" (sz));					\
- 	}
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 2878821..f7cffb2 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1412,7 +1412,7 @@ ENTRY(async_page_fault)
+ 	pushl_cfi $do_async_page_fault
+ 	jmp error_code
+ 	CFI_ENDPROC
+-END(apf_page_fault)
++END(async_page_fault)
+ #endif
  
-+extern void probe_roms(void);
-+
- #ifdef __i386__
- 
- void __init i386_start_kernel(void);
--extern void probe_roms(void);
- 
- #else
- void __init x86_64_start_kernel(char *real_mode);
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index fedf32a..f31ae9b 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -36,7 +36,7 @@ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
- obj-y			+= time.o ioport.o ldt.o dumpstack.o
- obj-y			+= setup.o x86_init.o i8259.o irqinit.o
- obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
--obj-$(CONFIG_X86_32)	+= probe_roms_32.o
-+obj-y			+= probe_roms.o
- obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
- obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
- obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index 784360c..e7605ed 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -21,7 +21,6 @@
- static void __init i386_default_early_setup(void)
- {
- 	/* Initialize 32bit specific setup functions */
--	x86_init.resources.probe_roms = probe_roms;
- 	x86_init.resources.reserve_resources = i386_reserve_resources;
- 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
- 
-diff --git a/arch/x86/kernel/probe_roms_32.c b/arch/x86/kernel/probe_roms.c
-similarity index 65%
-rename from arch/x86/kernel/probe_roms_32.c
-rename to arch/x86/kernel/probe_roms.c
-index 071e7fe..ba0a4cc 100644
---- a/arch/x86/kernel/probe_roms_32.c
-+++ b/arch/x86/kernel/probe_roms.c
-@@ -73,6 +73,107 @@ static struct resource video_rom_resource = {
- 	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
- };
- 
-+/* does this oprom support the given pci device, or any of the devices
-+ * that the driver supports?
-+ */
-+static bool match_id(struct pci_dev *pdev, unsigned short vendor, unsigned short device)
-+{
-+	struct pci_driver *drv = pdev->driver;
-+	const struct pci_device_id *id;
-+
-+	if (pdev->vendor == vendor && pdev->device == device)
-+		return true;
-+
-+	for (id = drv ? drv->id_table : NULL; id && id->vendor; id++)
-+		if (id->vendor == vendor && id->device == device)
-+			break;
-+
-+	return id && id->vendor;
-+}
-+
-+static bool probe_list(struct pci_dev *pdev, unsigned short vendor,
-+		       const unsigned char *rom_list)
-+{
-+	unsigned short device;
-+
-+	do {
-+		if (probe_kernel_address(rom_list, device) != 0)
-+			device = 0;
-+
-+		if (device && match_id(pdev, vendor, device))
-+			break;
-+
-+		rom_list += 2;
-+	} while (device);
-+
-+	return !!device;
-+}
-+
-+static struct resource *find_oprom(struct pci_dev *pdev)
-+{
-+	struct resource *oprom = NULL;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(adapter_rom_resources); i++) {
-+		struct resource *res = &adapter_rom_resources[i];
-+		unsigned short offset, vendor, device, list, rev;
-+		const unsigned char *rom;
-+
-+		if (res->end == 0)
-+			break;
-+
-+		rom = isa_bus_to_virt(res->start);
-+		if (probe_kernel_address(rom + 0x18, offset) != 0)
-+			continue;
-+
-+		if (probe_kernel_address(rom + offset + 0x4, vendor) != 0)
-+			continue;
-+
-+		if (probe_kernel_address(rom + offset + 0x6, device) != 0)
-+			continue;
-+
-+		if (match_id(pdev, vendor, device)) {
-+			oprom = res;
-+			break;
-+		}
-+
-+		if (probe_kernel_address(rom + offset + 0x8, list) == 0 &&
-+		    probe_kernel_address(rom + offset + 0xc, rev) == 0 &&
-+		    rev >= 3 && list &&
-+		    probe_list(pdev, vendor, rom + offset + list)) {
-+			oprom = res;
-+			break;
-+		}
-+	}
-+
-+	return oprom;
-+}
-+
-+void *pci_map_biosrom(struct pci_dev *pdev)
-+{
-+	struct resource *oprom = find_oprom(pdev);
-+
-+	if (!oprom)
-+		return NULL;
-+
-+	return ioremap(oprom->start, resource_size(oprom));
-+}
-+EXPORT_SYMBOL(pci_map_biosrom);
-+
-+void pci_unmap_biosrom(void __iomem *image)
-+{
-+	iounmap(image);
-+}
-+EXPORT_SYMBOL(pci_unmap_biosrom);
-+
-+size_t pci_biosrom_size(struct pci_dev *pdev)
-+{
-+	struct resource *oprom = find_oprom(pdev);
-+
-+	return oprom ? resource_size(oprom) : 0;
-+}
-+EXPORT_SYMBOL(pci_biosrom_size);
-+
- #define ROMSIGNATURE 0xaa55
- 
- static int __init romsignature(const unsigned char *rom)
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index cd6da6b..1bc104f 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -33,7 +33,7 @@ void iommu_shutdown_noop(void) { }
- struct x86_init_ops x86_init __initdata = {
- 
- 	.resources = {
--		.probe_roms		= x86_init_noop,
-+		.probe_roms		= probe_roms,
- 		.reserve_resources	= reserve_standard_io_resources,
- 		.memory_setup		= default_machine_specific_memory_setup,
- 	},
+ /*
+-- 
+1.7.4.1
 
