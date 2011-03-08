@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab1CHQhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 11:37:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12760 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab1CHQhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 11:37:13 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20110308152518.074d0996@lxorguk.ukuu.org.uk>
-References: <20110308152518.074d0996@lxorguk.ukuu.org.uk> <20110307160042.2ddc8e65@lxorguk.ukuu.org.uk> <20110307150208.28218.89348.stgit@warthog.procyon.org.uk> <20110307150218.28218.84916.stgit@warthog.procyon.org.uk> <14977.1299596999@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-arch@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate name service errors
-Date: Tue, 08 Mar 2011 16:37:01 +0000
-Message-ID: <17429.1299602221@redhat.com>
+	id S1755935Ab1CHQjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 11:39:08 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45825 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab1CHQjE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 11:39:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Bf1lNZMe8ejP4tK9KmDceuyb6gac3GVcXvF/CBB1QrOJAEFSnlpcZwrVxXGHRMSmyu
+         F686UD+CE2TJ0KGI5TMzcS8FHJNZg54zXz+E6XoWr4ze2TM6Jf8GZk2uYkNcfpiJtjP3
+         bxe+Z5vT+64p4KycL2+z0tXGdGGvzRv84b5VQ=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1103081203260.2968@kaball-desktop>
+References: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop>
+	<4D6D6980.7060304@kernel.org>
+	<alpine.DEB.2.00.1103071527500.2968@kaball-desktop>
+	<AANLkTi=aUGdjvtvy81FimMZB5PZNzASXHN0BZHWHUuLs@mail.gmail.com>
+	<alpine.DEB.2.00.1103081203260.2968@kaball-desktop>
+Date: Tue, 8 Mar 2011 08:39:03 -0800
+X-Google-Sender-Auth: 6Uo_ErtDeL95pP5z2rRh40NH9NE
+Message-ID: <AANLkTikmiKvdgzE_G1-w7PBqBf=kD5R5k5QZChHeiDCd@mail.gmail.com>
+Subject: Re: "x86-64, mm: Put early page table high" causes crash on Xen
+From: Yinghai Lu <yinghai@kernel.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On Tue, Mar 8, 2011 at 4:14 AM, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+>> > [    0.000000] DEBUG alloc low page(cf965000, 00001000)
+>>
+>> these are not mapped yet, and need to use early_ioremap.
+>
+> In fact we are mapping them inside alloc_low_page. No need for
+> map_low_page, right?
 
-> I was wondering if at least there was some co-ordination going on so that
-> functions like perror() produced sensible answers. Otherwise it's
-> debatable if its actually an improvement for the poor end user ?
+alloc_low_page return virtual address, but it can not be used to
+access that position right away.
+so in that case map_low_page is used to convert that virtual address
+to phy address and then to early map address.
 
-Fair point.  That's why I cc'd the messages to linux-api@, but I'm not sure who
-actually reads it, besides Michael Kerrisk.  I guess it's probably a good idea
-to wave my suggestions on the glibc list at least.
-
-David
+Yinghai
