@@ -1,74 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab1CHT5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 14:57:54 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47686 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170Ab1CHT5u convert rfc822-to-8bit (ORCPT
+	id S1755949Ab1CHT47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 14:56:59 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49360 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821Ab1CHT46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 14:57:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110303083035.GB14854@elte.hu>
-References: <4D6E8932.1010405@zytor.com> <alpine.LFD.2.00.1103022152420.2701@localhost6.localdomain6>
- <4D6EB07C.5040004@zytor.com> <alpine.LFD.2.00.1103022216180.2701@localhost6.localdomain6>
- <4D6ECBDB.6090307@zytor.com> <20110303083035.GB14854@elte.hu>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Tue, 8 Mar 2011 14:57:29 -0500
-Message-ID: <AANLkTik4aTN8+Ob_GVwF17v6pDNGg2DEZJubBazs2e3L@mail.gmail.com>
-Subject: Re: RFC: x86: kill binutils 2.16.x?
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        Kumar Gala <kumar.gala@freescale.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Mar 2011 14:56:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=h/AvXZ+Bf6I4MZ8xzvI155nYYQ4uGGaH8ILqjcAOvXJ5CB9Zl0Hy2avV2GjUXcdJha
+         sOnMg/MADDYTsCDZJlE3uSUNgkB+mgM03jgCd6crtQ1Gf75wCmjFb3YaJBn+GYvXR5G/
+         caZaTOiVUiuvBIZBldmcnFQIu1nNx4s5EQubg=
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
+        vda.linux@googlemail.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/8] job control: Don't set group_stop exit_code if re-entering job control stop
+Date: Tue,  8 Mar 2011 20:56:32 +0100
+Message-Id: <1299614199-25142-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299614199-25142-1-git-send-email-tj@kernel.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 03:30, Ingo Molnar <mingo@elte.hu> wrote:
-> This is how specific GAS functionality is tested in arch/powerpc:
->
->        @if ! /bin/echo dssall | $(AS) -many -o $(TOUT) >/dev/null 2>&1 ; then \
->                echo -n '*** ${VERSION}.${PATCHLEVEL} kernels no longer build ' ; \
->                echo 'correctly with old versions of binutils.' ; \
->                echo '*** Please upgrade your binutils to 2.12.1 or newer' ; \
->                false ; \
->        fi
->
-> This would also be a 'constructive' (and safest) way of blacklisting binutils: we'd
-> really only exclude binutils that is truly buggy.
+While ptraced, a task may be resumed while the containing process is
+still job control stopped.  If the task receives another stop signal
+in this state, it will still initiate group stop, which generates
+group_exit_code, which the real parent would be able to see once the
+ptracer detaches.
 
-Hrm... well... actually...
+In this scenario, the real parent may see two consecutive CLD_STOPPED
+events from two stop signals without intervening SIGCONT, which
+normally is impossible.
 
-It's funny that you brought up this particular case.  While I agree
-that it's good in general, it's causing problems for me building a
-kernel using a recent e500 gcc/binutils (triplet
-"powerpc-linux-gnuspe").
+Test case follows.
 
-Specifically the e500 doesn't have a normal PowerPC FPU, it has a
-custom FPU built using extended integer registers instead, and it
-happens to borrow the AltiVec opcode range to do it.
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
 
-When trying to port Debian to the platform we were getting SIGILL's
-all over the place until binutils got updated to reject all of the
-unsupported opcodes on this particular platform.  Now of course we get
-build errors, but that's a lot easier to debug and fix. :-D
+int main(void)
+{
+	pid_t tracee;
+	siginfo_t si;
 
-Basically, binutils no longer supports "-many" (because too many
-opcodes conflict), and the test itself would fail anyways (because
-"dssall" is not valid on "any" PowerPC).
+	tracee = fork();
+	if (!tracee)
+		while (1)
+			pause();
 
-So while I think that it is entirely reasonable to add a similar test
-for buggy x86 binutils, I'm actually about to send a patch to remove
-that particular check from the powerpc Makefile.  Since the "required"
-binutils 2.12.1 was released in May 2002 (almost 9 years ago) it's
-probably not even worth testing for anymore.
+	kill(tracee, SIGSTOP);
+	waitid(P_PID, tracee, &si, WSTOPPED);
 
-Cheers,
-Kyle Moffett
+	if (!fork()) {
+		ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
+		waitid(P_PID, tracee, &si, WSTOPPED);
+		ptrace(PTRACE_CONT, tracee, NULL, (void *)(long)si.si_status);
+		waitid(P_PID, tracee, &si, WSTOPPED);
+		ptrace(PTRACE_CONT, tracee, NULL, (void *)(long)si.si_status);
+		waitid(P_PID, tracee, &si, WSTOPPED);
+		ptrace(PTRACE_DETACH, tracee, NULL, NULL);
+		return 0;
+	}
+
+	while (1) {
+		si.si_pid = 0;
+		waitid(P_PID, tracee, &si, WSTOPPED | WNOHANG);
+		if (si.si_pid)
+			printf("st=%02d c=%02d\n", si.si_status, si.si_code);
+	}
+	return 0;
+}
+
+Before the patch, the latter waitid() in polling mode reports the
+second stopped event generated by the implied SIGSTOP of
+PTRACE_ATTACH.
+
+  st=19 c=05
+  ^C
+
+After the patch, the second event is not reported.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/signal.c |   23 ++++++++++++++++++++---
+ 1 files changed, 20 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index c146150..6130cb8 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1827,10 +1827,27 @@ static int do_signal_stop(int signr)
+ 		    unlikely(signal_group_exit(sig)))
+ 			return 0;
+ 		/*
+-		 * There is no group stop already in progress.
+-		 * We must initiate one now.
++		 * There is no group stop already in progress.  We must
++		 * initiate one now.
++		 *
++		 * While ptraced, a task may be resumed while group stop is
++		 * still in effect and then receive a stop signal and
++		 * initiate another group stop.  This deviates from the
++		 * usual behavior as two consecutive stop signals can't
++		 * cause two group stops when !ptraced.
++		 *
++		 * The condition can be distinguished by testing whether
++		 * SIGNAL_STOP_STOPPED is already set.  Don't generate
++		 * group_exit_code in such case.
++		 *
++		 * This is not necessary for SIGNAL_STOP_CONTINUED because
++		 * an intervening stop signal is required to cause two
++		 * continued events regardless of ptrace.
+ 		 */
+-		sig->group_exit_code = signr;
++		if (!(sig->flags & SIGNAL_STOP_STOPPED))
++			sig->group_exit_code = signr;
++		else
++			WARN_ON_ONCE(!task_ptrace(current));
+ 
+ 		current->group_stop &= ~GROUP_STOP_SIGMASK;
+ 		current->group_stop |= signr | gstop;
+-- 
+1.7.1
+
