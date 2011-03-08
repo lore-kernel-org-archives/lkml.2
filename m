@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab1CHMlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 07:41:08 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36590 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1CHMlH (ORCPT
+	id S1754842Ab1CHMlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 07:41:45 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:46193 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753689Ab1CHMlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 07:41:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=c5B5M4Hwl38DNx2EV6lnXbUHy3uGD6tFzsGemNMaHYSsRvZsf8LTjnPPkEdp0OYc9C
-         uUww8iwue1IFW+KlYQv1JGdkOw/8QHhCm2Dp4xpVyIhq1E0jjblfIb9kp1ARJEvLyh77
-         1MDCj2PNvNWwjZ8U9kWE44vc0aH7WpsiJaaWY=
+	Tue, 8 Mar 2011 07:41:44 -0500
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Mar 2011 07:41:44 EST
+X-Sasl-enc: 9UXKl9UDVvondCoZxr07vyUbmWlWe3y7KKXOOsgpTG1+ 1299587744
+Date: Tue, 8 Mar 2011 09:35:41 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thinkpad-acpi: module autoloading for newer Lenovo
+ ThinkPads.
+Message-ID: <20110308123541.GA11804@khazad-dum.debian.net>
+References: <1299540407-3779-1-git-send-email-manoj.iyer@canonical.com>
+ <1299540407-3779-2-git-send-email-manoj.iyer@canonical.com>
 MIME-Version: 1.0
-Date: Tue, 8 Mar 2011 15:41:04 +0300
-Message-ID: <AANLkTi=Abkovmq5nNGTgas2tu516y0pdrYZHov3m0onw@mail.gmail.com>
-Subject: Sound on developer board Mini2440
-From: Ilya Averyanov <esta1ien@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299540407-3779-2-git-send-email-manoj.iyer@canonical.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the new kernels for some reason the sound does not work in dev kit
-[www.friendlyarm.net]
+On Mon, 07 Mar 2011, Manoj Iyer wrote:
+> The newer Lenovo ThinkPads have HKEY HID of LEN0068 instead
+> of IBM0068. Added new HID so that thinkpad_acpi module will
+> auto load on these newer Lenovo ThinkPads.
+> 
+> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
 
-Tried to understand, but something does not work.
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-static struct platform_driver s3c24xx_uda134x_driver = {
-	.probe  = s3c24xx_uda134x_probe,
-	.remove = s3c24xx_uda134x_remove,
-	.driver = {
-		.name = "s3c24xx_uda134x",
-		.owner = THIS_MODULE,
-	},
-};
+> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+> index eb99223..125d891 100644
+> --- a/drivers/platform/x86/thinkpad_acpi.c
+> +++ b/drivers/platform/x86/thinkpad_acpi.c
+> @@ -128,7 +128,8 @@ enum {
+>  };
+>  
+>  /* ACPI HIDs */
+> -#define TPACPI_ACPI_HKEY_HID		"IBM0068"
+> +#define TPACPI_ACPI_IBM_HKEY_HID	"IBM0068"
+> +#define TPACPI_ACPI_LENOVO_HKEY_HID	"LEN0068"
+>  #define TPACPI_ACPI_EC_HID		"PNP0C09"
+>  
+>  /* Input IDs */
+> @@ -3879,7 +3880,8 @@ errexit:
+>  }
+>  
+>  static const struct acpi_device_id ibm_htk_device_ids[] = {
+> -	{TPACPI_ACPI_HKEY_HID, 0},
+> +	{TPACPI_ACPI_IBM_HKEY_HID, 0},
+> +	{TPACPI_ACPI_LENOVO_HKEY_HID, 0},
+>  	{"", 0},
+>  };
 
-static int __init s3c24xx_uda134x_init(void)
-{
-	return platform_driver_register(&s3c24xx_uda134x_driver);
-}
-
-Here everything is ok. s3c24xx_uda134x_probe called. Comes to
-snd_soc_instantiate_card (which in linux-2.6 \ sound \ sos \
-soc-core.c)
-But it comes up here
-
-for (i = 0; i < card->num_links; i++)
-		soc_bind_dai_link(card, i);
-
-//soc_bind_dai_link
-....
-find_platform:
-	/* do we already have the CODEC DAI for this link ? */
-	if (rtd->platform) {
-		goto out;
-	}
-	/* no, then find CPU DAI from registered DAIs*/
-	list_for_each_entry(platform, &platform_list, list) {
-		if (!strcmp(platform->name, dai_link->platform_name)) {
-			rtd->platform = platform;
-			goto out;
-		}
-	}
-...
-
-And here's the problem. platform_list empty. began to look like
-filled, found the file linux-2.6 \ sound \ soc \ samsung \ dma.c there
-
-.....
-static int __devinit samsung_asoc_platform_probe (struct platform_device * pdev)
-{
-/ / This function is no longer executes.
-	return snd_soc_register_platform(&pdev->dev, &samsung_asoc_platform);
-}
-
-static int __devexit samsung_asoc_platform_remove(struct platform_device *pdev)
-{
-	snd_soc_unregister_platform(&pdev->dev);
-	return 0;
-}
-
-static struct platform_driver asoc_dma_driver = {
-	.driver = {
-		.name = "samsung-audio",
-		.owner = THIS_MODULE,
-	},
-
-	.probe = samsung_asoc_platform_probe,
-	.remove = __devexit_p(samsung_asoc_platform_remove),
-};
-
-static int __init samsung_asoc_init(void)
-{
-//But this is performed
-	return platform_driver_register(&asoc_dma_driver);
-}
-module_init(samsung_asoc_init);
-....
-
-Where to look the problem?
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
