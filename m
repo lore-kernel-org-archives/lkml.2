@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1CHJi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 04:38:58 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55180 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab1CHJiz convert rfc822-to-8bit (ORCPT
+	id S1753175Ab1CHJkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 04:40:22 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:54653 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752626Ab1CHJkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 04:38:55 -0500
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, Shaohua Li <shli@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <4D754411.5010508@fusionio.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	 <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
-	 <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
-	 <20110303221353.GA10366@redhat.com>
-	 <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com>
-	 <20110304214359.GA18442@redhat.com> <4D715E8A.5070006@fusionio.com>
-	 <20110304222702.GB18921@redhat.com>  <4D72A302.6060008@fusionio.com>
-	 <1299493427.2308.11.camel@twins>  <4D753556.3020800@fusionio.com>
-	 <1299530500.2308.417.camel@twins>  <4D754411.5010508@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 08 Mar 2011 10:38:42 +0100
-Message-ID: <1299577122.2308.1201.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 8 Mar 2011 04:40:19 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <samuel.ortiz@intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/3] Driver for Texas Instruments TPS61050/61052 chips
+Date: Tue, 8 Mar 2011 10:39:57 +0100
+Message-ID: <1299577197-31261-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 21:46 +0100, Jens Axboe wrote:
-> 
-> Great, that'll work for me! Your patch should work as-is, then. Thanks
-> Peter.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Well I think it would be good to write it like:
+The TI TPS61050/TPS61052 chips can be used for various stuff,
+boost converter (for e.g. audio), LED flash gun, and white LED
+boost driver.
 
-  if (prev->state != TASK_RUNNING && blkneeds_flush(prev)) {
-    raw_spin_unlock(&rq->lock);
-    blk_flush_plug(prev);
-    raw_spin_lock(&rq->lock);
-  }
+If the patches are OK I would prefer to merge them all through
+the ux500-core tree so I can get the platform data in at the
+same time, so requesting ACK from the MFD and regulator
+subsystem maintainers if/when you are pleased with this.
 
-To avoid flipping that lock when we don't have to.
+Linus Walleij (3):
+  mfd: add a core driver for TI TPS61050/TPS61052 chips
+  regulator: add a subdriver for TI TPS6105x regulator portions
+  mach-ux500: configure board for the TPS61052 regulator
+
+ arch/arm/mach-ux500/board-mop500-regulators.c |   26 +++
+ arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
+ arch/arm/mach-ux500/board-mop500.c            |   14 ++
+ drivers/mfd/Kconfig                           |   12 ++
+ drivers/mfd/Makefile                          |    1 +
+ drivers/mfd/tps6105x.c                        |  251 +++++++++++++++++++++++++
+ drivers/regulator/Kconfig                     |    9 +
+ drivers/regulator/Makefile                    |    2 +-
+ drivers/regulator/tps6105x-regulator.c        |  220 ++++++++++++++++++++++
+ include/linux/mfd/tps6105x.h                  |  101 ++++++++++
+ 10 files changed, 636 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/mfd/tps6105x.c
+ create mode 100644 drivers/regulator/tps6105x-regulator.c
+ create mode 100644 include/linux/mfd/tps6105x.h
+
+-- 
+1.7.3.2
+
+Yours,
+Linus Walleij
