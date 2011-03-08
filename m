@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab1CHCGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 21:06:42 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56132 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab1CHCGl (ORCPT
+	id S932462Ab1CHCHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 21:07:45 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34325 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756817Ab1CHCHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 21:06:41 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=ABoCb2N1DRQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=zb5_ILVmYcTN2S5kA3MA:9 a=LQj4ebXQw0seyOYTyXAA:7 a=imCJT4yra4hDmiEL_nYp63LZxhwA:4 a=PUjeQqilurYA:10 a=x8gzFH9gYPwA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCHv2] trace: adding unstable sched clock note to the
- warning
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@elte.hu
-In-Reply-To: <20110307104513.GB3661@jolsa.redhat.com>
-References: <1296649698-6003-1-git-send-email-jolsa@redhat.com>
-	 <20110218145219.GD2604@jolsa.brq.redhat.com>
-	 <20110307104513.GB3661@jolsa.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 07 Mar 2011 21:06:38 -0500
-Message-ID: <1299549998.20306.48.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 7 Mar 2011 21:07:42 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] mm: skip zombie in OOM-killer
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1103061400170.23737@chino.kir.corp.google.com>
+References: <20110306193519.49DD.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1103061400170.23737@chino.kir.corp.google.com>
+Message-Id: <20110308105458.7EA2.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  8 Mar 2011 11:07:38 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 11:45 +0100, Jiri Olsa wrote:
-> hi,
-> any feedback?
+> On Sun, 6 Mar 2011, KOSAKI Motohiro wrote:
+> 
+> > > When we check that task has flag TIF_MEMDIE, we forgot check that
+> > > it has mm. A task may be zombie and a parent may wait a memor.
+> > > 
+> > > v2: Check that task doesn't have mm one time and skip it immediately
+> > > 
+> > > Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> > 
+> > This seems incorrect. Do you have a reprodusable testcasae?
+> > Your patch only care thread group leader state, but current code
+> > care all thread in the process. Please look at oom_badness() and 
+> > find_lock_task_mm(). 
+> > 
+> 
+> That's all irrelevant, the test for TIF_MEMDIE specifically makes the oom 
+> killer a complete no-op when an eligible task is found to have been oom 
+> killed to prevent needlessly killing additional tasks.  oom_badness() and 
+> find_lock_task_mm() have nothing to do with that check to return 
+> ERR_PTR(-1UL) from select_bad_process().
 
-I could pull it in.
-
-Thanks,
-
--- Steve
+I don't understand you think which task is eligible and unnecessary.
+But, Look! Andrey is not talking about zombie process case. But, this v2
+patch have factored out other tasks too. This IS the problem. No need
+unrelated talk.
 
 > 
-> thanks,
-> jirka
-> 
-> On Fri, Feb 18, 2011 at 03:52:19PM +0100, Jiri Olsa wrote:
-> > hi,
-> > 
-> > warning "Delta way too big" warning might appear on a system with
-> > unstable shed clock right after the system is resumed and tracing
-> > was enabled during the suspend.
-> > 
-> > Since it's not realy bug, and the unstable sched clock is working
-> > fast and reliable otherwise, Steven suggested to keep using the
-> > sched clock in any case and just to make note in the warning itself.
-> > 
-> > v2 changes:
-> > - added CONFIG_HAVE_UNSTABLE_SCHED_CLOCK dependency
-> > 
-> > wbr,
-> > jirka
-> > 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  kernel/trace/ring_buffer.c |   12 ++++++++++--
-> >  1 files changed, 10 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> > index bd1c35a..37c4d3e 100644
-> > --- a/kernel/trace/ring_buffer.c
-> > +++ b/kernel/trace/ring_buffer.c
-> > @@ -2162,11 +2162,19 @@ rb_reserve_next_event(struct ring_buffer *buffer,
-> >  	if (likely(ts >= cpu_buffer->write_stamp)) {
-> >  		delta = diff;
-> >  		if (unlikely(test_time_stamp(delta))) {
-> > +			int local_clock_stable = 1;
-> > +#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
-> > +			local_clock_stable = sched_clock_stable;
-> > +#endif
-> >  			WARN_ONCE(delta > (1ULL << 59),
-> > -				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n",
-> > +				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n%s",
-> >  				  (unsigned long long)delta,
-> >  				  (unsigned long long)ts,
-> > -				  (unsigned long long)cpu_buffer->write_stamp);
-> > +				  (unsigned long long)cpu_buffer->write_stamp,
-> > +				  local_clock_stable ? "" :
-> > +				  "If you just came from a suspend/resume,\n"
-> > +				  "please switch to the trace global clock:\n"
-> > +				  "  echo global > /sys/kernel/debug/tracing/trace_clock\n");
-> >  			add_timestamp = 1;
-> >  		}
-> >  	}
-> > -- 
-> > 1.7.1
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> Andrey is patching the case where an eligible TIF_MEMDIE process is found 
+> but it has already detached its ->mm.  In combination with the patch 
+> posted to linux-mm, oom: prevent unnecessary oom kills or kernel panics, 
+> which makes select_bad_process() iterate over all threads, it is an 
+> effective solution.
+
+Guys, It was alread NAKed. I've already talk kind explanation. Why do
+you bother to look actual code. Why do you continue to talk funny your
+dream?
+
 
 
