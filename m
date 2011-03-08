@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab1CHFP4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 00:15:56 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59524 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab1CHFPz (ORCPT
+	id S1753424Ab1CHF1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 00:27:11 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60959 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1CHF1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 00:15:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=J4xbONtmUN76THOlvedrobZLIRoaE5Il8/SqcZgQm7NFOZL67E3o/2TafQG0gJdZ8G
-         mJcIFuuIg4IolozlRkASQnWFd0kPOz5byw8DqEjpDiJtAfS4TQDQJQDggTC0BgZsses9
-         QFngo+pzTCoSTz4Gub6O2RwR97rH8Im6RqdC4=
+	Tue, 8 Mar 2011 00:27:09 -0500
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [RFC] introduce sys_syncfs to sync a single file system (v2)
+In-Reply-To: <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net> <20110303072223.GA28133@elie> <87bp1sziqn.fsf@linux.vnet.ibm.com> <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
+User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Tue, 08 Mar 2011 10:57:00 +0530
+Message-ID: <8762ruchcr.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110307150526.9afedd47.akpm@linux-foundation.org>
-References: <20110304154631.GB14672@darkstar>
-	<20110307150526.9afedd47.akpm@linux-foundation.org>
-Date: Tue, 8 Mar 2011 13:15:54 +0800
-Message-ID: <AANLkTimharU+iWRc9Mf_Sk6qnDyoAvuxxnL=3suvwT1j@mail.gmail.com>
-Subject: Re: [PATCH 02/04 v2] sysctl: change to use proc_dointvec_bool while needed
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p285G3f2016933
 
-On Tue, Mar 8, 2011 at 7:05 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 4 Mar 2011 23:46:31 +0800
-> Dave Young <hidave.darkstar@gmail.com> wrote:
->
->> @@ -374,9 +372,7 @@ static struct ctl_table kern_table[] = {
->> Â  Â  Â  Â  Â  Â  Â  .data Â  Â  Â  Â  Â  = &sysctl_sched_autogroup_enabled,
->> Â  Â  Â  Â  Â  Â  Â  .maxlen Â  Â  Â  Â  = sizeof(unsigned int),
->> Â  Â  Â  Â  Â  Â  Â  .mode Â  Â  Â  Â  Â  = 0644,
->> - Â  Â  Â  Â  Â  Â  .proc_handler Â  = proc_dointvec,
->> - Â  Â  Â  Â  Â  Â  .extra1 Â  Â  Â  Â  = &zero,
->> - Â  Â  Â  Â  Â  Â  .extra2 Â  Â  Â  Â  = &one,
->> + Â  Â  Â  Â  Â  Â  .proc_handler Â  = proc_dointvec_bool,
->> Â  Â  Â  },
->
-> This field has changed in linux-next, so I dropped this hunk.
->
+On Mon, 7 Mar 2011 15:17:57 -0800 (PST), Sage Weil <sage@newdream.net> wrote:
+> Changes:
+>  v1->v2: Rename, simplify to just take an fd.
+> 
+> It is frequently useful to sync a single file system, instead of all
+> mounted file systems via sync(2):
+> 
+>  - On machines with many mounts, it is not at all uncommon for some of
+>    them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
+>    those and may never get to the one you do care about (e.g., /).
+>  - Some applications write lots of data to the file system and then
+>    want to make sure it is flushed to disk.  Calling fsync(2) on each
+>    file introduces unnecessary ordering constraints that result in a large
+>    amount of sub-optimal writeback/flush/commit behavior by the file
+>    system.
+> 
+> There are currently two ways (that I know of) to sync a single super_block:
+> 
+>  - BLKFLSBUF ioctl on the block device: That also invalidates the bdev
+>    mapping, which isn't usually desirable, and doesn't work for non-block
+>    file systems.
+>  - 'mount -o remount,rw' will call sync_filesystem as an artifact of the
+>    current implemention.  Relying on this little-known side effect for
+>    something like data safety sounds foolish.
+> 
+> Both of these approaches require root privileges, which some applications
+> do not have (nor should they need?) given that sync(2) is an unprivileged
+> operation.
+> 
+> This patch introduces a new system call syncfs(2) that takes an fd and
+> syncs only the file system it references.  Maybe someday we can even
+> 
+>  $ sync /some/path
+> 
+> and not get
+> 
+>  sync: ignoring all arguments
+> 
+> The syscall is motivated by comments by Al and Christoph at the last LSF.
+> syncfs(2) seems like an appropriate name given statfs(2).
+> 
+> A similar ioctl was also proposed a while back, see
+> 	http://marc.info/?l=linux-fsdevel&m=127970513829285&w=2
+> 
+> Signed-off-by: Sage Weil <sage@newdream.net>
+> ---
+>  arch/x86/ia32/ia32entry.S          |    1 +
+>  arch/x86/include/asm/unistd_32.h   |    3 ++-
+>  arch/x86/include/asm/unistd_64.h   |    2 ++
+>  arch/x86/kernel/syscall_table_32.S |    1 +
+>  fs/sync.c                          |   24 ++++++++++++++++++++++++
+>  5 files changed, 30 insertions(+), 1 deletions(-)
 
-Thank you for updating the patch.
 
--- 
-Regards
-dave
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+include/asm-generic/unistd.h may also need an update.
+
+
+-aneesh
+
