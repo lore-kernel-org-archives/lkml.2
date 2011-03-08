@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab1CHUR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:17:57 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:58631 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab1CHUQT (ORCPT
+	id S1756724Ab1CHUSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:18:11 -0500
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:39185 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932138Ab1CHUSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 15:16:19 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        arnaud.patard@rtp-net.org
-Subject: [PATCH 13/15] staging: xgifb: vb_init: delete redundant declarations
-Date: Tue,  8 Mar 2011 22:16:18 +0200
-Message-Id: <1299615380-22922-14-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
+	Tue, 8 Mar 2011 15:18:07 -0500
+Date: Tue, 8 Mar 2011 21:17:29 +0100
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Milan Broz <mbroz@redhat.com>
+Cc: dm-crypt@saout.de, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [dm-crypt] dm-crypt: Performance Regression 2.6.37 ->
+ 2.6.38-rc8
+Message-ID: <20110308201729.GB8356@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Milan Broz <mbroz@redhat.com>, dm-crypt@saout.de,
+	linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+	Alasdair G Kergon <agk@redhat.com>
+References: <20110308164508.GA8729@darkside.kls.lan>
+ <4D7668C5.5050100@redhat.com>
+ <20110308192341.GA8356@darkside.kls.lan>
+ <4D768C6E.6010202@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SkvwRMAIpAhPCcCJ"
+Content-Disposition: inline
+In-Reply-To: <4D768C6E.6010202@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete redundant declarations.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/staging/xgifb/vb_init.c |   21 ---------------------
- 1 files changed, 0 insertions(+), 21 deletions(-)
+--SkvwRMAIpAhPCcCJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
-index a16827e..24dc00c 100644
---- a/drivers/staging/xgifb/vb_init.c
-+++ b/drivers/staging/xgifb/vb_init.c
-@@ -17,17 +17,6 @@
- 
- static unsigned char XGINew_ChannelAB, XGINew_DataBusWidth;
- 
--unsigned short XGINew_DRAMType[17][5] = {
--	{0x0C, 0x0A, 0x02, 0x40, 0x39}, {0x0D, 0x0A, 0x01, 0x40, 0x48},
--	{0x0C, 0x09, 0x02, 0x20, 0x35}, {0x0D, 0x09, 0x01, 0x20, 0x44},
--	{0x0C, 0x08, 0x02, 0x10, 0x31}, {0x0D, 0x08, 0x01, 0x10, 0x40},
--	{0x0C, 0x0A, 0x01, 0x20, 0x34}, {0x0C, 0x09, 0x01, 0x08, 0x32},
--	{0x0B, 0x08, 0x02, 0x08, 0x21}, {0x0C, 0x08, 0x01, 0x08, 0x30},
--	{0x0A, 0x08, 0x02, 0x04, 0x11}, {0x0B, 0x0A, 0x01, 0x10, 0x28},
--	{0x09, 0x08, 0x02, 0x02, 0x01}, {0x0B, 0x09, 0x01, 0x08, 0x24},
--	{0x0B, 0x08, 0x01, 0x04, 0x20}, {0x0A, 0x08, 0x01, 0x02, 0x10},
--	{0x09, 0x08, 0x01, 0x01, 0x00} };
--
- static unsigned short XGINew_SDRDRAM_TYPE[13][5] = {
- 	{ 2, 12, 9, 64, 0x35},
- 	{ 1, 13, 9, 64, 0x44},
-@@ -73,12 +62,10 @@ void     XGINew_SetDRAMSize_340(struct xgi_hw_device_info *, struct vb_device_in
- void     XGINew_SetDRAMSize_310(struct xgi_hw_device_info *, struct vb_device_info *);
- void     XGINew_SetMemoryClock(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *);
- void     XGINew_SetDRAMModeRegister(struct vb_device_info *);
--void     XGINew_SetDRAMModeRegister340(struct xgi_hw_device_info *HwDeviceExtension);
- void XGINew_SetDRAMDefaultRegister340(struct xgi_hw_device_info *HwDeviceExtension,
- 				      unsigned long, struct vb_device_info *);
- unsigned char XGINew_GetXG20DRAMType(struct xgi_hw_device_info *HwDeviceExtension,
- 				     struct vb_device_info *pVBInfo);
--unsigned char XGIInitNew(struct xgi_hw_device_info *HwDeviceExtension);
- 
- int      XGINew_DDRSizing340(struct xgi_hw_device_info *, struct vb_device_info *);
- void     XGINew_DisableRefresh(struct xgi_hw_device_info *, struct vb_device_info *) ;
-@@ -87,19 +74,11 @@ int      XGINew_SDRSizing(struct vb_device_info *);
- int      XGINew_DDRSizing(struct vb_device_info *);
- void     XGINew_EnableRefresh(struct xgi_hw_device_info *, struct vb_device_info *);
- static int      XGINew_RAMType;		/*int      ModeIDOffset,StandTable,CRT1Table,ScreenOffset,REFIndex;*/
--#if 0
--static unsigned long	 UNIROM;
--#endif
--unsigned char  ChkLFB(struct vb_device_info *);
--void     XGINew_Delay15us(unsigned long);
- void     SetPowerConsume(struct xgi_hw_device_info *HwDeviceExtension,
- 			 unsigned long XGI_P3d4Port);
- void     ReadVBIOSTablData(unsigned char ChipType, struct vb_device_info *pVBInfo);
- void     XGINew_DDR1x_MRS_XG20(unsigned long P3c4, struct vb_device_info *pVBInfo);
--void     XGINew_SetDRAMModeRegister_XG20(struct xgi_hw_device_info *HwDeviceExtension);
--void     XGINew_SetDRAMModeRegister_XG27(struct xgi_hw_device_info *HwDeviceExtension);
- void     XGINew_ChkSenseStatus(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo) ;
--void     XGINew_SetModeScratch(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo) ;
- void     XGINew_GetXG21Sense(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo) ;
- unsigned char    GetXG21FPBits(struct vb_device_info *pVBInfo);
- void     XGINew_GetXG27Sense(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo) ;
--- 
-1.5.6.5
+On Tue, Mar 08, 2011 at 09:07:10PM +0100, Milan Broz wrote:
+> Could you please try also writes? I get better results than reads here.
 
+No, I can't, sorry. I don't have *that* spare devices to try with.
+However, if you are able to reproduce my read-results your write-results
+should be similar to what I'd get.
+
+
+Mario
+--=20
+The secret that the NSA could read the Iranian secrets was more
+important than any specific Iranian secrets that the NSA could
+read.                           -- Bruce Schneier
+
+--SkvwRMAIpAhPCcCJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUBTXaO2RS+e2HeSPbpAQK39Af/ZpGIvLn3CRIrHf5uqOjkDg8iDUqGE5Jg
+6nNEBENNEk7/J7W4fOTgfi9En2TgqxpdJmOcI/+oJPNBZMpI5OBgaw6aey6Hcds9
+eeT1MGAH0XyVw0ZYbtRIy5gyLnHMIf27Ip24W4Jz2DevMcJ68T1fuEhVWB/h/d5B
+zxtuiXRP/FpCSti+owK9if2pKzPN8d3ZDiveeY+v3/703iDAAhQSTH1xw5OKT0HQ
+25tTUjyUiSvQoQUJopFMhz2hasYtvF7LrzOEtujdtVC+7eyPXhYmkV15wNIcxE9y
+7tl2ZvIH6ytzm7m0wEGVse5m90onWUC96PRklo/zIXnz2ORffhI4aQ==
+=6CDx
+-----END PGP SIGNATURE-----
+
+--SkvwRMAIpAhPCcCJ--
