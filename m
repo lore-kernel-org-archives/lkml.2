@@ -1,149 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab1CHA5T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 19:57:19 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59378 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab1CHA5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 19:57:18 -0500
-Date: Mon, 7 Mar 2011 16:57:06 -0800
-From: Nishanth Aravamudan <nacc@us.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Petr Holasek <pholasek@redhat.com>, linux-kernel@vger.kernel.org,
-        emunson@mgebm.net, anton@redhat.com, Andi Kleen <ak@linux.intel.com>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] hugetlb: /proc/meminfo shows data for all sizes of
- hugepages
-Message-ID: <20110308005706.GB5169@us.ibm.com>
-References: <1299503155-6210-1-git-send-email-pholasek@redhat.com>
- <1299527214.8493.13263.camel@nimitz>
- <20110307145149.97e6676e.akpm@linux-foundation.org>
- <20110307231448.GA2946@spritzera.linux.bs1.fc.nec.co.jp>
- <20110307152516.fee931bb.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1103071543460.22274@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103071543460.22274@chino.kir.corp.google.com>
-X-Operating-System: Linux 2.6.35-27-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1756528Ab1CHBAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 20:00:36 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:28415 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab1CHBAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 20:00:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=XXEu/xd85PZmr30cwios/cBXIrORnUSe5VsHzoG5lH6n77CtO9JVeLP6PnOmdHcXt+
+         XnEEoeJhwFzDFiLeWMag==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Rik van Riel <riel@redhat.com>, Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] sched: next buddy hint on sleep and preempt path - v1
+Date: Mon,  7 Mar 2011 16:59:57 -0800
+Message-Id: <1299545997-26304-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <AANLkTi=hy8mHp=RLkKbfc2nw0VGX65ZCmk89r3U-rb4-@mail.gmail.com>
+References: <AANLkTi=hy8mHp=RLkKbfc2nw0VGX65ZCmk89r3U-rb4-@mail.gmail.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+When a task in a taskgroup sleeps, pick_next_task starts all the way back at
+the root and picks the task/taskgroup with the min vruntime across all
+runnable tasks. But, when there are many frequently sleeping tasks
+across different taskgroups, it makes better sense to stay with same taskgroup
+for its slice period (or until all tasks in the taskgroup sleeps) instead of
+switching cross taskgroup on each sleep after a short runtime.
+This helps specifically where taskgroups corresponds to a process with
+multiple threads. The change reduces the number of CR3 switches in this case.
 
-On 07.03.2011 [15:47:23 -0800], David Rientjes wrote:
-> On Mon, 7 Mar 2011, Andrew Morton wrote:
-> 
-> > > > > On Mon, 2011-03-07 at 14:05 +0100, Petr Holasek wrote:
-> > > > > > +       for_each_hstate(h)
-> > > > > > +               seq_printf(m,
-> > > > > > +                               "HugePages_Total:   %5lu\n"
-> > > > > > +                               "HugePages_Free:    %5lu\n"
-> > > > > > +                               "HugePages_Rsvd:    %5lu\n"
-> > > > > > +                               "HugePages_Surp:    %5lu\n"
-> > > > > > +                               "Hugepagesize:   %8lu kB\n",
-> > > > > > +                               h->nr_huge_pages,
-> > > > > > +                               h->free_huge_pages,
-> > > > > > +                               h->resv_huge_pages,
-> > > > > > +                               h->surplus_huge_pages,
-> > > > > > +                               1UL << (huge_page_order(h) + PAGE_SHIFT - 10));
-> > > > > >  }
-> > > > >
-> > > > > It sounds like now we'll get a meminfo that looks like:
-> > > > >
-> > > > > ...
-> > > > > AnonHugePages:    491520 kB
-> > > > > HugePages_Total:       5
-> > > > > HugePages_Free:        2
-> > > > > HugePages_Rsvd:        3
-> > > > > HugePages_Surp:        1
-> > > > > Hugepagesize:       2048 kB
-> > > > > HugePages_Total:       2
-> > > > > HugePages_Free:        1
-> > > > > HugePages_Rsvd:        1
-> > > > > HugePages_Surp:        1
-> > > > > Hugepagesize:    1048576 kB
-> > > > > DirectMap4k:       12160 kB
-> > > > > DirectMap2M:     2082816 kB
-> > > > > DirectMap1G:     2097152 kB
-> > > > >
-> > > > > At best, that's a bit confusing.  There aren't any other entries in
-> > > > > meminfo that occur more than once.  Plus, this information is available
-> > > > > in the sysfs interface.  Why isn't that sufficient?
-> > > > >
-> > > > > Could we do something where we keep the default hpage_size looking like
-> > > > > it does now, but append the size explicitly for the new entries?
-> > > > >
-> > > > > HugePages_Total(1G):       2
-> > > > > HugePages_Free(1G):        1
-> > > > > HugePages_Rsvd(1G):        1
-> > > > > HugePages_Surp(1G):        1
-> > > > >
-> > > >
-> > > > Let's not change the existing interface, please.
-> > > >
-> > > > Adding new fields: OK.
-> > > > Changing the way in whcih existing fields are calculated: OKish.
-> > > > Renaming existing fields: not OK.
-> > > 
-> > > How about lining up multiple values in each field like this?
-> > > 
-> > >   HugePages_Total:       5 2
-> > >   HugePages_Free:        2 1
-> > >   HugePages_Rsvd:        3 1
-> > >   HugePages_Surp:        1 1
-> > >   Hugepagesize:       2048 1048576 kB
-> > >   ...
-> > > 
-> > > This doesn't change the field names and the impact for user space
-> > > is still small?
-> > 
-> > It might break some existing parsers, dunno.
-> > 
-> > It was a mistake to assume that all hugepages will have the same size
-> > for all time, and we just have to live with that mistake.
-> > 
-> 
-> I'm not sure it was a mistake: the kernel has a default hugepage size and 
-> that's what the global /proc/sys/vm/nr_hugepages tunable uses, so it seems 
-> appropriate that its statistics are exported in the global /proc/meminfo.
+Example:
+Two taskgroups with 2 threads each which are running for 2ms and
+sleeping for 1ms. Looking at sched:sched_switch shows -
 
-Yep, the intent was for meminfo to (continue to) document the default
-hugepage size's usage, and for any other size's statistics to be
-accessed by the appropriate sysfs entries.
+BEFORE: taskgroup_1 threads [5004, 5005], taskgroup_2 threads [5016, 5017]
+      cpu-soaker-5004  [003]  3683.391089
+      cpu-soaker-5016  [003]  3683.393106
+      cpu-soaker-5005  [003]  3683.395119
+      cpu-soaker-5017  [003]  3683.397130
+      cpu-soaker-5004  [003]  3683.399143
+      cpu-soaker-5016  [003]  3683.401155
+      cpu-soaker-5005  [003]  3683.403168
+      cpu-soaker-5017  [003]  3683.405170
 
-> > I'd suggest that we leave meminfo alone, just ensuring that its output
-> > makes some sense.  Instead create a new interface which presents all
-> > the required info in a sensible fashion and migrate usersapce reporting
-> > tools over to that interface.  Just let the meminfo field die a slow
-> > death.
-> > 
-> 
-> (Adding Nishanth to the cc)
-> 
-> It's already there, all this data is available for all the configured
-> hugepage sizes via /sys/kernel/mm/hugepages/hugepages-<size>kB/ as
-> described by Documentation/ABI/testing/sysfs-kernel-mm-hugepages.
-> 
-> It looks like Nishanth and others put quite a bit of effort into
-> making as stable of an API as possible for this information.
+AFTER: taskgroup_1 threads [21890, 21891], taskgroup_2 threads [21934, 21935]
+      cpu-soaker-21890 [003]   865.895494
+      cpu-soaker-21935 [003]   865.897506
+      cpu-soaker-21934 [003]   865.899520
+      cpu-soaker-21935 [003]   865.901532
+      cpu-soaker-21934 [003]   865.903543
+      cpu-soaker-21935 [003]   865.905546
+      cpu-soaker-21891 [003]   865.907548
+      cpu-soaker-21890 [003]   865.909560
+      cpu-soaker-21891 [003]   865.911571
+      cpu-soaker-21890 [003]   865.913582
+      cpu-soaker-21891 [003]   865.915594
+      cpu-soaker-21934 [003]   865.917606
 
-I'm not sure if libhugetlbfs already has a tool for parsing the values
-there (i.e., to give an end-user a quick'n'dirty snapshot of overall
-current hugepage usage). Eric? If not, probably something worth having.
-I believe we also have the per-node information in sysfs too, in case
-that's relevant to tooling.
+Similar problem is there when there are multiple taskgroups and say a task A
+preempts currently running task B of taskgroup_1. On schedule, pick_next_task
+can pick an unrelated task on taskgroup_2. Here it would be better to give some
+preference to task B on pick_next_task.
 
-Thanks,
-Nish
+A simple (may be extreme case) benchmark I tried was tbench with 2 tbench
+client processes with 2 threads each running on a single CPU. Avg throughput
+across 5 50 sec runs was -
+BEFORE: 105.84 MB/sec
+AFTER: 112.42 MB/sec
 
+Changes from v0:
+* Always pass task se to set_next_buddy
+* Avoid repeated set_next_buddy in check_preempt_wakeup
+* Minor flag cleanup in dequeue_task_fair
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ kernel/sched_fair.c |   41 ++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 38 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 3a88dee..cbe442e 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1339,6 +1339,20 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	hrtick_update(rq);
+ }
+ 
++static struct sched_entity *pick_next_taskse_on_cfsrq(struct cfs_rq *cfs_rq)
++{
++	struct sched_entity *se;
++
++	do {
++		se = pick_next_entity(cfs_rq);
++		cfs_rq = group_cfs_rq(se);
++	} while (cfs_rq);
++
++	return se;
++}
++
++static void set_next_buddy(struct sched_entity *se);
++
+ /*
+  * The dequeue_task method is called before nr_running is
+  * decreased. We remove the task from the rbtree and
+@@ -1348,14 +1362,25 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 	struct sched_entity *se = &p->se;
++	int task_sleep = flags & DEQUEUE_SLEEP;
+ 
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		dequeue_entity(cfs_rq, se, flags);
+ 
+ 		/* Don't dequeue parent if it has other entities besides us */
+-		if (cfs_rq->load.weight)
++		if (cfs_rq->load.weight) {
++			/*
++			 * Bias pick_next to pick a task from this cfs_rq, as
++			 * p is sleeping when it is within its sched_slice.
++			 */
++			if (task_sleep) {
++				struct sched_entity *next_se;
++				next_se = pick_next_taskse_on_cfsrq(cfs_rq);
++				set_next_buddy(next_se);
++			}
+ 			break;
++		}
+ 		flags |= DEQUEUE_SLEEP;
+ 	}
+ 
+@@ -1856,12 +1881,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	struct sched_entity *se = &curr->se, *pse = &p->se;
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
+ 	int scale = cfs_rq->nr_running >= sched_nr_latency;
++	int next_buddy_marked = 0;
+ 
+ 	if (unlikely(se == pse))
+ 		return;
+ 
+-	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK))
++	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK)) {
+ 		set_next_buddy(pse);
++		next_buddy_marked = 1;
++	}
+ 
+ 	/*
+ 	 * We can come here with TIF_NEED_RESCHED already set from new task
+@@ -1887,8 +1915,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	update_curr(cfs_rq);
+ 	find_matching_se(&se, &pse);
+ 	BUG_ON(!pse);
+-	if (wakeup_preempt_entity(se, pse) == 1)
++	if (wakeup_preempt_entity(se, pse) == 1) {
++		/*
++		 * Bias pick_next to pick the task that is
++		 * triggering this preemption.
++		 */
++		if (!next_buddy_marked)
++			set_next_buddy(&p->se);
+ 		goto preempt;
++	}
+ 
+ 	return;
+ 
 -- 
-Nishanth Aravamudan <nacc@us.ibm.com>
-IBM Linux Technology Center
+1.7.3.1
+
