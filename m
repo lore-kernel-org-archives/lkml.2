@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab1CHUSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:18:52 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:58631 "EHLO
+	id S1756775Ab1CHUSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:18:53 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:58628 "EHLO
 	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab1CHUQR (ORCPT
+	with ESMTP id S1756484Ab1CHUQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Mar 2011 15:16:17 -0500
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         arnaud.patard@rtp-net.org
-Subject: [PATCH 11/15] staging: xgifb: vb_ext: delete unused functions
-Date: Tue,  8 Mar 2011 22:16:16 +0200
-Message-Id: <1299615380-22922-12-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 03/15] staging: xgifb: delete offscreen memory management
+Date: Tue,  8 Mar 2011 22:16:08 +0200
+Message-Id: <1299615380-22922-4-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
@@ -20,487 +20,480 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete unused functions.
+The offscreen memory area currently conflicts with the video memory
+exported to the framebuffer layer. The driver does not utilize offscreen
+memory, so the functionality can be deleted.
+
+The patch also eliminates the one last memory leak when the driver
+is unloaded.
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/vb_ext.c |  437 ----------------------------------------
- drivers/staging/xgifb/vb_ext.h |    3 -
- 2 files changed, 0 insertions(+), 440 deletions(-)
+ drivers/staging/xgifb/XGI_main.h    |   47 -----
+ drivers/staging/xgifb/XGI_main_26.c |  319 -----------------------------------
+ drivers/staging/xgifb/XGIfb.h       |    1 -
+ 3 files changed, 0 insertions(+), 367 deletions(-)
 
-diff --git a/drivers/staging/xgifb/vb_ext.c b/drivers/staging/xgifb/vb_ext.c
-index e1f9188..cc78815 100644
---- a/drivers/staging/xgifb/vb_ext.c
-+++ b/drivers/staging/xgifb/vb_ext.c
-@@ -34,28 +34,6 @@ static unsigned char XGINew_Is301B(struct vb_device_info *pVBInfo)
- 		return 1;
+diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
+index 2c55faa..b27623a 100644
+--- a/drivers/staging/xgifb/XGI_main.h
++++ b/drivers/staging/xgifb/XGI_main.h
+@@ -65,9 +65,6 @@ MODULE_DEVICE_TABLE(pci, xgifb_pci_table);
+ 
+ #define MAX_ROM_SCAN              0x10000
+ 
+-#define OH_ALLOC_SIZE             4000
+-#define SENTINEL                  0x7fffffff
+-
+ #define SEQ_ADR                   0x14
+ #define SEQ_DATA                  0x15
+ #define DAC_ADR                   0x18
+@@ -315,7 +312,6 @@ static int XGIfb_userom = 0;
+ /* global flags */
+ static int XGIfb_registered;
+ static int XGIfb_tvmode = 0;
+-static int XGIfb_mem = 0;
+ static int XGIfb_pdc = 0;
+ static int enable_dstn = 0;
+ static int XGIfb_ypan = -1;
+@@ -538,31 +534,6 @@ static const struct _chswtable {
+ 	{ 0,      0,      ""       , ""       }
+ };
+ 
+-typedef struct _XGI_OH {
+-	struct _XGI_OH *poh_next;
+-	struct _XGI_OH *poh_prev;
+-	unsigned long offset;
+-	unsigned long size;
+-} XGI_OH;
+-
+-typedef struct _XGI_OHALLOC {
+-	struct _XGI_OHALLOC *poha_next;
+-	XGI_OH aoh[1];
+-} XGI_OHALLOC;
+-
+-typedef struct _XGI_HEAP {
+-	XGI_OH oh_free;
+-	XGI_OH oh_used;
+-	XGI_OH *poh_freelist;
+-	XGI_OHALLOC *poha_chain;
+-	unsigned long max_freesize;
+-} XGI_HEAP;
+-
+-static unsigned long XGIfb_heap_start;
+-static unsigned long XGIfb_heap_end;
+-static unsigned long XGIfb_heap_size;
+-static XGI_HEAP      XGIfb_heap;
+-
+ // Eden Chen
+ static const struct _XGI_TV_filter {
+ 	u8 filter[9][4];
+@@ -766,15 +737,6 @@ static int      XGIfb_do_set_var(struct fb_var_screeninfo *var, int isactive,
+ static void     XGIfb_pre_setmode(void);
+ static void     XGIfb_post_setmode(void);
+ 
+-struct XGI_memreq {
+-	unsigned long offset;
+-	unsigned long size;
+-};
+-
+-/* XGI-specific Export functions */
+-void            XGI_malloc(struct XGI_memreq *req);
+-void            XGI_free(unsigned long base);
+-
+ /* Internal hardware access routines */
+ void            XGIfb_set_reg4(u16 port, unsigned long data);
+ u32             XGIfb_get_reg3(u16 port);
+@@ -788,15 +750,6 @@ static void     XGIfb_get_VB_type(void);
+ static int      XGIfb_has_VB(void);
+ 
+ 
+-/* Internal heap routines */
+-static int      XGIfb_heap_init(void);
+-static XGI_OH   *XGIfb_poh_new_node(void);
+-static XGI_OH   *XGIfb_poh_allocate(unsigned long size);
+-static void     XGIfb_delete_node(XGI_OH *poh);
+-static void     XGIfb_insert_node(XGI_OH *pohList, XGI_OH *poh);
+-static XGI_OH   *XGIfb_poh_free(unsigned long base);
+-static void     XGIfb_free_node(XGI_OH *poh);
+-
+ /* Internal routines to access PCI configuration space */
+ unsigned char XGIfb_query_VGA_config_space(struct xgi_hw_device_info *pXGIhw_ext,
+ 					   unsigned long offset,
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 08551e9..aeccdee 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -1495,16 +1495,6 @@ static int XGIfb_get_fix(struct fb_fix_screeninfo *fix, int con,
+ 
+ 	fix->smem_len = xgi_video_info.video_size;
+ 
+-	/*        if((!XGIfb_mem) || (XGIfb_mem > (xgi_video_info.video_size/1024))) {
+-	 if (xgi_video_info.video_size > 0x1000000) {
+-	 fix->smem_len = 0xD00000;
+-	 } else if (xgi_video_info.video_size > 0x800000)
+-	 fix->smem_len = 0x800000;
+-	 else
+-	 fix->smem_len = 0x400000;
+-	 } else
+-	 fix->smem_len = XGIfb_mem * 1024;
+-	 */
+ 	fix->type = video_type;
+ 	fix->type_aux = 0;
+ 	if (xgi_video_info.video_bpp == 8)
+@@ -1883,297 +1873,6 @@ void XGI_Sense30x(void)
+ 	outXGIIDXREG(XGIPART4, 0x0d, backupP4_0d);
  }
  
--unsigned char XGI_Is301C(struct vb_device_info *pVBInfo)
+-/* ------------------------ Heap routines -------------------------- */
+-
+-static int XGIfb_heap_init(void)
 -{
--	if ((XGINew_GetReg1(pVBInfo->Part4Port, 0x01) & 0xF0) == 0xC0)
+-	XGI_OH *poh;
+-
+-	/* TW: The heap start is either set manually using the "mem" parameter, or
+-	 *     defaults as follows:
+-	 *     -) If more than 16MB videoRAM available, let our heap start at 12MB.
+-	 *     -) If more than  8MB videoRAM available, let our heap start at  8MB.
+-	 *     -) If 4MB or less is available, let it start at 4MB.
+-	 *     This is for avoiding a clash with X driver which uses the beginning
+-	 *     of the videoRAM. To limit size of X framebuffer, use Option MaxXFBMem
+-	 *     in XF86Config-4.
+-	 *     The heap start can also be specified by parameter "mem" when starting the XGIfb
+-	 *     driver. XGIfb mem=1024 lets heap starts at 1MB, etc.
+-	 */
+-	if ((!XGIfb_mem) || (XGIfb_mem > (xgi_video_info.video_size / 1024))) {
+-		if (xgi_video_info.video_size > 0x1000000)
+-			xgi_video_info.heapstart = 0xD00000;
+-		else if (xgi_video_info.video_size > 0x800000)
+-			xgi_video_info.heapstart = 0x800000;
+-		else
+-			xgi_video_info.heapstart = 0x400000;
+-	} else {
+-		xgi_video_info.heapstart = XGIfb_mem * 1024;
+-	}
+-	XGIfb_heap_start = (unsigned long) (xgi_video_info.video_vbase
+-			+ xgi_video_info.heapstart);
+-	printk(KERN_INFO "XGIfb: Memory heap starting at %dK\n",
+-			(int)(xgi_video_info.heapstart / 1024));
+-
+-	XGIfb_heap_end = (unsigned long) xgi_video_info.video_vbase
+-			+ xgi_video_info.video_size;
+-	XGIfb_heap_size = XGIfb_heap_end - XGIfb_heap_start;
+-
+-	XGIfb_heap.poha_chain = NULL;
+-	XGIfb_heap.poh_freelist = NULL;
+-
+-	poh = XGIfb_poh_new_node();
+-
+-	if (poh == NULL)
 -		return 1;
 -
--	if (XGINew_GetReg1(pVBInfo->Part4Port, 0x01) >= 0xD0) {
--		if (XGINew_GetReg1(pVBInfo->Part4Port, 0x39) == 0xE0)
--			return 1;
--	}
+-	poh->poh_next = &XGIfb_heap.oh_free;
+-	poh->poh_prev = &XGIfb_heap.oh_free;
+-	poh->size = XGIfb_heap_end - XGIfb_heap_start + 1;
+-	poh->offset = XGIfb_heap_start - (unsigned long) xgi_video_info.video_vbase;
+-
+-	DPRINTK("XGIfb: Heap start:0x%p, end:0x%p, len=%dk\n",
+-		(char *) XGIfb_heap_start, (char *) XGIfb_heap_end,
+-		(unsigned int) poh->size / 1024);
+-
+-	DPRINTK("XGIfb: First Node offset:0x%x, size:%dk\n",
+-		(unsigned int) poh->offset, (unsigned int) poh->size / 1024);
+-
+-	XGIfb_heap.oh_free.poh_next = poh;
+-	XGIfb_heap.oh_free.poh_prev = poh;
+-	XGIfb_heap.oh_free.size = 0;
+-	XGIfb_heap.max_freesize = poh->size;
+-
+-	XGIfb_heap.oh_used.poh_next = &XGIfb_heap.oh_used;
+-	XGIfb_heap.oh_used.poh_prev = &XGIfb_heap.oh_used;
+-	XGIfb_heap.oh_used.size = SENTINEL;
 -
 -	return 0;
 -}
 -
--unsigned char XGI_Is301LV(struct vb_device_info *pVBInfo)
+-static XGI_OH *XGIfb_poh_new_node(void)
 -{
--	if (XGINew_GetReg1(pVBInfo->Part4Port, 0x01) >= 0xD0) {
--		if (XGINew_GetReg1(pVBInfo->Part4Port, 0x39) == 0xFF)
--			return 1;
+-	int i;
+-	unsigned long cOhs;
+-	XGI_OHALLOC *poha;
+-	XGI_OH *poh;
+-
+-	if (XGIfb_heap.poh_freelist == NULL) {
+-		poha = kmalloc(OH_ALLOC_SIZE, GFP_KERNEL);
+-		if (!poha)
+-			return NULL;
+-
+-		poha->poha_next = XGIfb_heap.poha_chain;
+-		XGIfb_heap.poha_chain = poha;
+-
+-		cOhs = (OH_ALLOC_SIZE - sizeof(XGI_OHALLOC)) / sizeof(XGI_OH)
+-				+ 1;
+-
+-		poh = &poha->aoh[0];
+-		for (i = cOhs - 1; i != 0; i--) {
+-			poh->poh_next = poh + 1;
+-			poh = poh + 1;
+-		}
+-
+-		poh->poh_next = NULL;
+-		XGIfb_heap.poh_freelist = &poha->aoh[0];
 -	}
--	return 0;
+-
+-	poh = XGIfb_heap.poh_freelist;
+-	XGIfb_heap.poh_freelist = poh->poh_next;
+-
+-	return poh;
 -}
 -
- unsigned char XGINew_Sense(unsigned short tempbx, unsigned short tempcx, struct vb_device_info *pVBInfo)
- {
- 	unsigned short temp, i, tempch;
-@@ -80,190 +58,6 @@ unsigned char XGINew_Sense(unsigned short tempbx, unsigned short tempcx, struct
- 		return 0;
- }
- 
--void XGISetDPMS(struct xgi_hw_device_info *pXGIHWDE, unsigned long VESA_POWER_STATE)
+-static XGI_OH *XGIfb_poh_allocate(unsigned long size)
 -{
--	unsigned short ModeNo, ModeIdIndex;
--	unsigned char temp;
--	struct vb_device_info VBINF;
--	struct vb_device_info *pVBInfo = &VBINF;
--	pVBInfo->BaseAddr = (unsigned long) pXGIHWDE->pjIOAddress;
--	pVBInfo->ROMAddr = pXGIHWDE->pjVirtualRomBase;
+-	XGI_OH *pohThis;
+-	XGI_OH *pohRoot;
+-	int bAllocated = 0;
 -
--	pVBInfo->IF_DEF_LVDS = 0;
--	pVBInfo->IF_DEF_CH7005 = 0;
--	pVBInfo->IF_DEF_HiVision = 1;
--	pVBInfo->IF_DEF_LCDA = 1;
--	pVBInfo->IF_DEF_CH7017 = 0;
--	pVBInfo->IF_DEF_YPbPr = 1;
--	pVBInfo->IF_DEF_CRT2Monitor = 0;
--	pVBInfo->IF_DEF_VideoCapture = 0;
--	pVBInfo->IF_DEF_ScaleLCD = 0;
--	pVBInfo->IF_DEF_OEMUtil = 0;
--	pVBInfo->IF_DEF_PWD = 0;
--
--	InitTo330Pointer(pXGIHWDE->jChipType, pVBInfo);
--	ReadVBIOSTablData(pXGIHWDE->jChipType, pVBInfo);
--
--	pVBInfo->P3c4 = pVBInfo->BaseAddr + 0x14;
--	pVBInfo->P3d4 = pVBInfo->BaseAddr + 0x24;
--	pVBInfo->P3c0 = pVBInfo->BaseAddr + 0x10;
--	pVBInfo->P3ce = pVBInfo->BaseAddr + 0x1e;
--	pVBInfo->P3c2 = pVBInfo->BaseAddr + 0x12;
--	pVBInfo->P3ca = pVBInfo->BaseAddr + 0x1a;
--	pVBInfo->P3c6 = pVBInfo->BaseAddr + 0x16;
--	pVBInfo->P3c7 = pVBInfo->BaseAddr + 0x17;
--	pVBInfo->P3c8 = pVBInfo->BaseAddr + 0x18;
--	pVBInfo->P3c9 = pVBInfo->BaseAddr + 0x19;
--	pVBInfo->P3da = pVBInfo->BaseAddr + 0x2A;
--	pVBInfo->Part0Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_00;
--	pVBInfo->Part1Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_04;
--	pVBInfo->Part2Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_10;
--	pVBInfo->Part3Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_12;
--	pVBInfo->Part4Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_14;
--	pVBInfo->Part5Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_14 + 2;
--
--	if (pXGIHWDE->jChipType == XG27) {
--		if ((XGINew_GetReg1(pVBInfo->P3d4, 0x38) & 0xE0) == 0xC0) {
--			if (XGINew_GetReg1(pVBInfo->P3d4, 0x30) & 0x20)
--				pVBInfo->IF_DEF_LVDS = 1;
--		}
+-	if (size > XGIfb_heap.max_freesize) {
+-		DPRINTK("XGIfb: Can't allocate %dk size on offscreen\n",
+-				(unsigned int) size / 1024);
+-		return NULL;
 -	}
 -
--	if (pVBInfo->IF_DEF_CH7007 == 0)
--		XGINew_SetModeScratch(pXGIHWDE, pVBInfo);
+-	pohThis = XGIfb_heap.oh_free.poh_next;
 -
--	XGINew_SetReg1(pVBInfo->P3c4, 0x05, 0x86); /* 1.Openkey */
--	XGI_UnLockCRT2(pXGIHWDE, pVBInfo);
--	ModeNo = XGINew_GetReg1(pVBInfo->P3d4, 0x34);
--	XGI_SearchModeID(ModeNo, &ModeIdIndex, pVBInfo);
--	XGI_GetVGAType(pXGIHWDE, pVBInfo);
--
--	if ((pXGIHWDE->ujVBChipID == VB_CHIP_301) || (pXGIHWDE->ujVBChipID == VB_CHIP_302) || (pVBInfo->IF_DEF_CH7007 == 1)) {
--		XGI_GetVBType(pVBInfo);
--		XGI_GetVBInfo(ModeNo, ModeIdIndex, pXGIHWDE, pVBInfo);
--		XGI_GetTVInfo(ModeNo, ModeIdIndex, pVBInfo);
--		XGI_GetLCDInfo(ModeNo, ModeIdIndex, pVBInfo);
+-	while (pohThis != &XGIfb_heap.oh_free) {
+-		if (size <= pohThis->size) {
+-			bAllocated = 1;
+-			break;
+-		}
+-		pohThis = pohThis->poh_next;
 -	}
 -
--	if (VESA_POWER_STATE == 0x00000400)
--		XGINew_SetReg1(pVBInfo->Part4Port, 0x31, (unsigned char) (XGINew_GetReg1(pVBInfo->Part4Port, 0x31) & 0xFE));
--	else
--		XGINew_SetReg1(pVBInfo->Part4Port, 0x31, (unsigned char) (XGINew_GetReg1(pVBInfo->Part4Port, 0x31) | 0x01));
--
--	temp = (unsigned char) XGINew_GetReg1(pVBInfo->P3c4, 0x1f);
--	temp &= 0x3f;
--	switch (VESA_POWER_STATE) {
--	case 0x00000000: /* on */
--		if ((pXGIHWDE->ujVBChipID == VB_CHIP_301) || (pXGIHWDE->ujVBChipID == VB_CHIP_302)) {
--			XGINew_SetReg1(pVBInfo->P3c4, 0x1f, (unsigned char) (temp | 0x00));
--			XGI_EnableBridge(pXGIHWDE, pVBInfo);
--		} else {
--			if (pXGIHWDE->jChipType == XG21) {
--				if (pVBInfo->IF_DEF_LVDS == 1) {
--					XGI_XG21BLSignalVDD(0x01, 0x01, pVBInfo); /* LVDS VDD on */
--					XGI_XG21SetPanelDelay(2, pVBInfo);
--				}
--			}
--			if (pXGIHWDE->jChipType == XG27) {
--				if (pVBInfo->IF_DEF_LVDS == 1) {
--					XGI_XG27BLSignalVDD(0x01, 0x01, pVBInfo); /* LVDS VDD on */
--					XGI_XG21SetPanelDelay(2, pVBInfo);
--				}
--			}
--			XGINew_SetRegANDOR(pVBInfo->P3c4, 0x1F, ~0xC0, 0x00);
--			XGINew_SetRegAND(pVBInfo->P3c4, 0x01, ~0x20); /* CRT on */
--
--			if (pXGIHWDE->jChipType == XG21) {
--				temp = XGINew_GetReg1(pVBInfo->P3d4, 0x38);
--				if (temp & 0xE0) {
--					XGINew_SetRegANDOR(pVBInfo->P3c4, 0x09, ~0x80, 0x80); /* DVO ON */
--					XGI_SetXG21FPBits(pVBInfo);
--					XGINew_SetRegAND(pVBInfo->P3d4, 0x4A, ~0x20); /* Enable write GPIOF */
--					/* XGINew_SetRegANDOR(pVBInfo->P3d4, 0x48, ~0x20, 0x20); *//* LCD Display ON */
--				}
--				XGI_XG21BLSignalVDD(0x20, 0x20, pVBInfo); /* LVDS signal on */
--				XGI_DisplayOn(pXGIHWDE, pVBInfo);
--			}
--			if (pXGIHWDE->jChipType == XG27) {
--				temp = XGINew_GetReg1(pVBInfo->P3d4, 0x38);
--				if (temp & 0xE0) {
--					XGINew_SetRegANDOR(pVBInfo->P3c4, 0x09, ~0x80, 0x80); /* DVO ON */
--					XGI_SetXG27FPBits(pVBInfo);
--					XGINew_SetRegAND(pVBInfo->P3d4, 0x4A, ~0x20); /* Enable write GPIOF */
--					/* XGINew_SetRegANDOR(pVBInfo->P3d4, 0x48, ~0x20, 0x20); *//* LCD Display ON */
--				}
--				XGI_XG27BLSignalVDD(0x20, 0x20, pVBInfo); /* LVDS signal on */
--				XGI_DisplayOn(pXGIHWDE, pVBInfo);
--			}
--		}
--		break;
--
--	case 0x00000100: /* standby */
--		if (pXGIHWDE->jChipType >= XG21)
--			XGI_DisplayOff(pXGIHWDE, pVBInfo);
--		XGINew_SetReg1(pVBInfo->P3c4, 0x1f, (unsigned char) (temp | 0x40));
--		break;
--
--	case 0x00000200: /* suspend */
--		if (pXGIHWDE->jChipType == XG21) {
--			XGI_DisplayOff(pXGIHWDE, pVBInfo);
--			XGI_XG21BLSignalVDD(0x20, 0x00, pVBInfo); /* LVDS signal off */
--		}
--		if (pXGIHWDE->jChipType == XG27) {
--			XGI_DisplayOff(pXGIHWDE, pVBInfo);
--			XGI_XG27BLSignalVDD(0x20, 0x00, pVBInfo); /* LVDS signal off */
--		}
--		XGINew_SetReg1(pVBInfo->P3c4, 0x1f, (unsigned char) (temp | 0x80));
--		break;
--
--	case 0x00000400: /* off */
--		if ((pXGIHWDE->ujVBChipID == VB_CHIP_301) || (pXGIHWDE->ujVBChipID == VB_CHIP_302)) {
--			XGINew_SetReg1(pVBInfo->P3c4, 0x1f, (unsigned char) (temp | 0xc0));
--			XGI_DisableBridge(pXGIHWDE, pVBInfo);
--		} else {
--			if (pXGIHWDE->jChipType == XG21) {
--				XGI_DisplayOff(pXGIHWDE, pVBInfo);
--
--				XGI_XG21BLSignalVDD(0x20, 0x00, pVBInfo); /* LVDS signal off */
--
--				temp = XGINew_GetReg1(pVBInfo->P3d4, 0x38);
--				if (temp & 0xE0) {
--					XGINew_SetRegAND(pVBInfo->P3c4, 0x09, ~0x80); /* DVO Off */
--					XGINew_SetRegAND(pVBInfo->P3d4, 0x4A, ~0x20); /* Enable write GPIOF */
--					/* XGINew_SetRegAND(pVBInfo->P3d4, 0x48, ~0x20); *//* LCD Display OFF */
--				}
--			}
--			if (pXGIHWDE->jChipType == XG27) {
--				XGI_DisplayOff(pXGIHWDE, pVBInfo);
--
--				XGI_XG27BLSignalVDD(0x20, 0x00, pVBInfo); /* LVDS signal off */
--
--				temp = XGINew_GetReg1(pVBInfo->P3d4, 0x38);
--				if (temp & 0xE0)
--					XGINew_SetRegAND(pVBInfo->P3c4, 0x09, ~0x80); /* DVO Off */
--			}
--			XGINew_SetRegANDOR(pVBInfo->P3c4, 0x1F, ~0xC0, 0xC0);
--			XGINew_SetRegOR(pVBInfo->P3c4, 0x01, 0x20); /* CRT Off */
--
--			if ((pXGIHWDE->jChipType == XG21) && (pVBInfo->IF_DEF_LVDS == 1)) {
--				XGI_XG21SetPanelDelay(4, pVBInfo);
--				XGI_XG21BLSignalVDD(0x01, 0x00, pVBInfo); /* LVDS VDD off */
--				XGI_XG21SetPanelDelay(5, pVBInfo);
--			}
--			if ((pXGIHWDE->jChipType == XG27) && (pVBInfo->IF_DEF_LVDS == 1)) {
--				XGI_XG21SetPanelDelay(4, pVBInfo);
--				XGI_XG27BLSignalVDD(0x01, 0x00, pVBInfo); /* LVDS VDD off */
--				XGI_XG21SetPanelDelay(5, pVBInfo);
--			}
--		}
--		break;
--
--	default:
--		break;
--	}
--	XGI_LockCRT2(pXGIHWDE, pVBInfo);
--}
--
- void XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
- {
- 	unsigned short tempax = 0, tempbx, tempcx, temp, P2reg0 = 0, SenseModeNo = 0,
-@@ -607,234 +401,3 @@ unsigned char XGINew_SenseHiTV(struct xgi_hw_device_info *HwDeviceExtension, str
- 			return 0;
- 	}
- }
--
--/* ----------------------------------------------------------------------------
-- *       Description: Get Panel support
-- *	O/P	   :
-- *            BL: Panel ID=81h for no scaler LVDS
-- *		     BH: Panel enhanced Mode Count
-- *		     CX: Panel H. resolution
-- *		     DX: PAnel V. resolution
-- * ----------------------------------------------------------------------------
-- */
--static void XGI_XG21Fun14Sub70(struct vb_device_info *pVBInfo, PX86_REGS pBiosArguments)
--{
--	unsigned short ModeIdIndex;
--	unsigned short ModeNo;
--
--	unsigned short EModeCount;
--	unsigned short lvdstableindex;
--
--	lvdstableindex = XGI_GetLVDSOEMTableIndex(pVBInfo);
--	pBiosArguments->h.bl = 0x81;
--	pBiosArguments->x.cx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSHDE;
--	pBiosArguments->x.dx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSVDE;
--	EModeCount = 0;
--
--	pBiosArguments->x.ax = 0x0014;
--	for (ModeIdIndex = 0;; ModeIdIndex++) {
--		ModeNo = pVBInfo->EModeIDTable[ModeIdIndex].Ext_ModeID;
--		if (pVBInfo->EModeIDTable[ModeIdIndex].Ext_ModeID == 0xFF) {
--			pBiosArguments->h.bh = (unsigned char) EModeCount;
--			return;
--		}
--		if (!XGI_XG21CheckLVDSMode(ModeNo, ModeIdIndex, pVBInfo))
--			continue;
--
--		EModeCount++;
--	}
--}
--
--/* ----------------------------------------------------------------------------
-- *
-- *       Description: Get Panel mode ID for enhanced mode
-- *	I/P	   : BH: EModeIndex ( which < Panel enhanced Mode Count )
-- *	O/P	   :
-- *            BL: Mode ID
-- *		     CX: H. resolution of the assigned by the index
-- *		     DX: V. resolution of the assigned by the index
-- *
-- * ----------------------------------------------------------------------------
-- */
--
--static void XGI_XG21Fun14Sub71(struct vb_device_info *pVBInfo, PX86_REGS pBiosArguments)
--{
--
--	unsigned short EModeCount;
--	unsigned short ModeIdIndex, resindex;
--	unsigned short ModeNo;
--	unsigned short EModeIndex = pBiosArguments->h.bh;
--
--	EModeCount = 0;
--	for (ModeIdIndex = 0;; ModeIdIndex++) {
--		ModeNo = pVBInfo->EModeIDTable[ModeIdIndex].Ext_ModeID;
--		if (pVBInfo->EModeIDTable[ModeIdIndex].Ext_ModeID == 0xFF) {
--			pBiosArguments->x.ax = 0x0114;
--			return;
--		}
--		if (!XGI_XG21CheckLVDSMode(ModeNo, ModeIdIndex, pVBInfo))
--			continue;
--
--		if (EModeCount == EModeIndex) {
--			resindex = XGI_GetResInfo(ModeNo, ModeIdIndex, pVBInfo);
--			pBiosArguments->h.bl = (unsigned char) ModeNo;
--			pBiosArguments->x.cx = pVBInfo->ModeResInfo[resindex].HTotal; /* xres->ax */
--			pBiosArguments->x.dx = pVBInfo->ModeResInfo[resindex].VTotal; /* yres->bx */
--			pBiosArguments->x.ax = 0x0014;
--		}
--		EModeCount++;
--
+-	if (!bAllocated) {
+-		DPRINTK("XGIfb: Can't allocate %dk size on offscreen\n",
+-				(unsigned int) size / 1024);
+-		return NULL;
 -	}
 -
--}
--
--/* ----------------------------------------------------------------------------
-- *
-- *       Description: Validate Panel modes ID support
-- *	I/P	   :
-- *            BL: ModeID
-- *	O/P	   :
-- *		     CX: H. resolution of the assigned by the index
-- *		     DX: V. resolution of the assigned by the index
-- *
-- * ----------------------------------------------------------------------------
-- */
--static void XGI_XG21Fun14Sub72(struct vb_device_info *pVBInfo, PX86_REGS pBiosArguments)
--{
--	unsigned short ModeIdIndex, resindex;
--	unsigned short ModeNo;
--
--	ModeNo = pBiosArguments->h.bl;
--	XGI_SearchModeID(ModeNo, &ModeIdIndex, pVBInfo);
--	if (!XGI_XG21CheckLVDSMode(ModeNo, ModeIdIndex, pVBInfo)) {
--		pBiosArguments->x.cx = 0;
--		pBiosArguments->x.dx = 0;
--		pBiosArguments->x.ax = 0x0114;
--		return;
--	}
--	resindex = XGI_GetResInfo(ModeNo, ModeIdIndex, pVBInfo);
--	if (ModeNo <= 0x13) {
--		pBiosArguments->x.cx = pVBInfo->StResInfo[resindex].HTotal;
--		pBiosArguments->x.dx = pVBInfo->StResInfo[resindex].VTotal;
+-	if (size == pohThis->size) {
+-		pohRoot = pohThis;
+-		XGIfb_delete_node(pohThis);
 -	} else {
--		pBiosArguments->x.cx = pVBInfo->ModeResInfo[resindex].HTotal; /* xres->ax */
--		pBiosArguments->x.dx = pVBInfo->ModeResInfo[resindex].VTotal; /* yres->bx */
+-		pohRoot = XGIfb_poh_new_node();
+-
+-		if (pohRoot == NULL)
+-			return NULL;
+-
+-		pohRoot->offset = pohThis->offset;
+-		pohRoot->size = size;
+-
+-		pohThis->offset += size;
+-		pohThis->size -= size;
 -	}
 -
--	pBiosArguments->x.ax = 0x0014;
+-	XGIfb_heap.max_freesize -= size;
 -
+-	pohThis = &XGIfb_heap.oh_used;
+-	XGIfb_insert_node(pohThis, pohRoot);
+-
+-	return pohRoot;
 -}
 -
--/* ----------------------------------------------------------------------------
-- *
-- *	Description: Get Customized Panel misc. information support
-- *	I/P	   : Select
-- *		     to get panel horizontal timing
-- *			 to get panel vertical timing
-- *			 to get channel clock parameter
-- *            to get panel misc information
-- *
-- *	O/P	   :
-- *		     BL: for input Select = 0 ;
-- *                       BX: *Value1 = Horizontal total
-- *                       CX: *Value2 = Horizontal front porch
-- *                       DX: *Value2 = Horizontal sync width
-- *		     BL: for input Select = 1 ;
-- *                       BX: *Value1 = Vertical total
-- *                       CX: *Value2 = Vertical front porch
-- *                       DX: *Value2 = Vertical sync width
-- *            BL: for input Select = 2 ;
-- *                       BX: Value1 = The first CLK parameter
-- *                       CX: Value2 = The second CLK parameter
-- *		     BL: for input Select = 4 ;
-- *                       BX[15]: *Value1 D[15] VESA V. Polarity
-- *                       BX[14]: *Value1 D[14] VESA H. Polarity
-- *                       BX[7]: *Value1 D[7] Panel V. Polarity
-- *                       BX[6]: *Value1 D[6] Panel H. Polarity
-- * ----------------------------------------------------------------------------
-- */
--static void XGI_XG21Fun14Sub73(struct vb_device_info *pVBInfo, PX86_REGS pBiosArguments)
+-static void XGIfb_delete_node(XGI_OH *poh)
 -{
--	unsigned char Select;
+-	XGI_OH *poh_prev;
+-	XGI_OH *poh_next;
 -
--	unsigned short lvdstableindex;
+-	poh_prev = poh->poh_prev;
+-	poh_next = poh->poh_next;
 -
--	lvdstableindex = XGI_GetLVDSOEMTableIndex(pVBInfo);
--	Select = pBiosArguments->h.bl;
+-	poh_prev->poh_next = poh_next;
+-	poh_next->poh_prev = poh_prev;
 -
--	switch (Select) {
--	case 0:
--		pBiosArguments->x.bx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSHT;
--		pBiosArguments->x.cx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSHFP;
--		pBiosArguments->x.dx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSHSYNC;
--		break;
--	case 1:
--		pBiosArguments->x.bx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSVT;
--		pBiosArguments->x.cx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSVFP;
--		pBiosArguments->x.dx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDSVSYNC;
--		break;
--	case 2:
--		pBiosArguments->x.bx = pVBInfo->XG21_LVDSCapList[lvdstableindex].VCLKData1;
--		pBiosArguments->x.cx = pVBInfo->XG21_LVDSCapList[lvdstableindex].VCLKData2;
--		break;
--	case 4:
--		pBiosArguments->x.bx = pVBInfo->XG21_LVDSCapList[lvdstableindex].LVDS_Capability;
--		break;
--	}
--
--	pBiosArguments->x.ax = 0x0014;
 -}
 -
--void XGI_XG21Fun14(struct xgi_hw_device_info *pXGIHWDE, PX86_REGS pBiosArguments)
+-static void XGIfb_insert_node(XGI_OH *pohList, XGI_OH *poh)
 -{
--	struct vb_device_info VBINF;
--	struct vb_device_info *pVBInfo = &VBINF;
+-	XGI_OH *pohTemp;
 -
--	pVBInfo->IF_DEF_LVDS = 0;
--	pVBInfo->IF_DEF_CH7005 = 0;
--	pVBInfo->IF_DEF_HiVision = 1;
--	pVBInfo->IF_DEF_LCDA = 1;
--	pVBInfo->IF_DEF_CH7017 = 0;
--	pVBInfo->IF_DEF_YPbPr = 1;
--	pVBInfo->IF_DEF_CRT2Monitor = 0;
--	pVBInfo->IF_DEF_VideoCapture = 0;
--	pVBInfo->IF_DEF_ScaleLCD = 0;
--	pVBInfo->IF_DEF_OEMUtil = 0;
--	pVBInfo->IF_DEF_PWD = 0;
+-	pohTemp = pohList->poh_next;
 -
--	InitTo330Pointer(pXGIHWDE->jChipType, pVBInfo);
--	ReadVBIOSTablData(pXGIHWDE->jChipType, pVBInfo);
+-	pohList->poh_next = poh;
+-	pohTemp->poh_prev = poh;
 -
--	pVBInfo->P3c4 = pVBInfo->BaseAddr + 0x14;
--	pVBInfo->P3d4 = pVBInfo->BaseAddr + 0x24;
--	pVBInfo->P3c0 = pVBInfo->BaseAddr + 0x10;
--	pVBInfo->P3ce = pVBInfo->BaseAddr + 0x1e;
--	pVBInfo->P3c2 = pVBInfo->BaseAddr + 0x12;
--	pVBInfo->P3ca = pVBInfo->BaseAddr + 0x1a;
--	pVBInfo->P3c6 = pVBInfo->BaseAddr + 0x16;
--	pVBInfo->P3c7 = pVBInfo->BaseAddr + 0x17;
--	pVBInfo->P3c8 = pVBInfo->BaseAddr + 0x18;
--	pVBInfo->P3c9 = pVBInfo->BaseAddr + 0x19;
--	pVBInfo->P3da = pVBInfo->BaseAddr + 0x2A;
--	pVBInfo->Part0Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_00;
--	pVBInfo->Part1Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_04;
--	pVBInfo->Part2Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_10;
--	pVBInfo->Part3Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_12;
--	pVBInfo->Part4Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_14;
--	pVBInfo->Part5Port = pVBInfo->BaseAddr + XGI_CRT2_PORT_14 + 2;
+-	poh->poh_prev = pohList;
+-	poh->poh_next = pohTemp;
+-}
 -
--	switch (pBiosArguments->x.ax) {
--	case 0x1470:
--		XGI_XG21Fun14Sub70(pVBInfo, pBiosArguments);
--		break;
--	case 0x1471:
--		XGI_XG21Fun14Sub71(pVBInfo, pBiosArguments);
--		break;
--	case 0x1472:
--		XGI_XG21Fun14Sub72(pVBInfo, pBiosArguments);
--		break;
--	case 0x1473:
--		XGI_XG21Fun14Sub73(pVBInfo, pBiosArguments);
--		break;
+-static XGI_OH *XGIfb_poh_free(unsigned long base)
+-{
+-	XGI_OH *pohThis;
+-	XGI_OH *poh_freed;
+-	XGI_OH *poh_prev;
+-	XGI_OH *poh_next;
+-	unsigned long ulUpper;
+-	unsigned long ulLower;
+-	int foundNode = 0;
+-
+-	poh_freed = XGIfb_heap.oh_used.poh_next;
+-
+-	while (poh_freed != &XGIfb_heap.oh_used) {
+-		if (poh_freed->offset == base) {
+-			foundNode = 1;
+-			break;
+-		}
+-
+-		poh_freed = poh_freed->poh_next;
+-	}
+-
+-	if (!foundNode)
+-		return NULL;
+-
+-	XGIfb_heap.max_freesize += poh_freed->size;
+-
+-	poh_prev = poh_next = NULL;
+-	ulUpper = poh_freed->offset + poh_freed->size;
+-	ulLower = poh_freed->offset;
+-
+-	pohThis = XGIfb_heap.oh_free.poh_next;
+-
+-	while (pohThis != &XGIfb_heap.oh_free) {
+-		if (pohThis->offset == ulUpper)
+-			poh_next = pohThis;
+-		else if ((pohThis->offset + pohThis->size) == ulLower)
+-			poh_prev = pohThis;
+-
+-		pohThis = pohThis->poh_next;
+-	}
+-
+-	XGIfb_delete_node(poh_freed);
+-
+-	if (poh_prev && poh_next) {
+-		poh_prev->size += (poh_freed->size + poh_next->size);
+-		XGIfb_delete_node(poh_next);
+-		XGIfb_free_node(poh_freed);
+-		XGIfb_free_node(poh_next);
+-		return poh_prev;
+-	}
+-
+-	if (poh_prev) {
+-		poh_prev->size += poh_freed->size;
+-		XGIfb_free_node(poh_freed);
+-		return poh_prev;
+-	}
+-
+-	if (poh_next) {
+-		poh_next->size += poh_freed->size;
+-		poh_next->offset = poh_freed->offset;
+-		XGIfb_free_node(poh_freed);
+-		return poh_next;
+-	}
+-
+-	XGIfb_insert_node(&XGIfb_heap.oh_free, poh_freed);
+-
+-	return poh_freed;
+-}
+-
+-static void XGIfb_free_node(XGI_OH *poh)
+-{
+-	if (poh == NULL)
+-		return;
+-
+-	poh->poh_next = XGIfb_heap.poh_freelist;
+-	XGIfb_heap.poh_freelist = poh;
+-
+-}
+-
+-void XGI_malloc(struct XGI_memreq *req)
+-{
+-	XGI_OH *poh;
+-
+-	poh = XGIfb_poh_allocate(req->size);
+-
+-	if (poh == NULL) {
+-		req->offset = 0;
+-		req->size = 0;
+-		DPRINTK("XGIfb: Video RAM allocation failed\n");
+-	} else {
+-		DPRINTK("XGIfb: Video RAM allocation succeeded: 0x%p\n",
+-				(char *) (poh->offset + (unsigned long) xgi_video_info.video_vbase));
+-
+-		req->offset = poh->offset;
+-		req->size = poh->size;
+-	}
+-
+-}
+-
+-void XGI_free(unsigned long base)
+-{
+-	XGI_OH *poh;
+-
+-	poh = XGIfb_poh_free(base);
+-
+-	if (poh == NULL) {
+-		DPRINTK("XGIfb: XGIfb_poh_free() failed at base 0x%x\n",
+-				(unsigned int) base);
 -	}
 -}
-diff --git a/drivers/staging/xgifb/vb_ext.h b/drivers/staging/xgifb/vb_ext.h
-index 5cc4d12..6824525 100644
---- a/drivers/staging/xgifb/vb_ext.h
-+++ b/drivers/staging/xgifb/vb_ext.h
-@@ -21,9 +21,6 @@ typedef union   _X86_REGS    {
-     struct  BYTEREGS h;
- } X86_REGS, *PX86_REGS;
+-
+ /* --------------------- SetMode routines ------------------------- */
  
--extern   void     XGI_XG21Fun14(struct xgi_hw_device_info *pXGIHWDE, PX86_REGS pBiosArguments);
--extern void XGISetDPMS(struct xgi_hw_device_info *pXGIHWDE,
--		       unsigned long VESA_POWER_STATE);
- extern   void     XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo);
- extern   void     XGINew_SetModeScratch(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo) ;
- extern void ReadVBIOSTablData(unsigned char ChipType,
+ static void XGIfb_pre_setmode(void)
+@@ -2434,8 +2133,6 @@ XGIINITSTATIC int __init XGIfb_setup(char *options)
+ 			XGIfb_search_tvstd(this_opt + 7);
+ 		} else if (!strncmp(this_opt, "tvstandard:", 11)) {
+ 			XGIfb_search_tvstd(this_opt + 7);
+-		} else if (!strncmp(this_opt, "mem:", 4)) {
+-			XGIfb_mem = simple_strtoul(this_opt + 4, NULL, 0);
+ 		} else if (!strncmp(this_opt, "dstn", 4)) {
+ 			enable_dstn = 1;
+ 			/* TW: DSTN overrules forcecrt2type */
+@@ -2686,9 +2383,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 	else
+ 		printk("Fail\n");
+ 
+-	if (XGIfb_heap_init())
+-		printk(KERN_WARNING "XGIfb: Failed to initialize offscreen memory heap\n");
+-
+ 	xgi_video_info.mtrr = (unsigned int) 0;
+ 
+ 	if ((xgifb_mode_idx < 0) || ((XGIbios_mode[xgifb_mode_idx].mode_no) != 0xFF)) {
+@@ -3074,15 +2768,6 @@ module_param(resetcard, int, 0);
+ module_param(videoram, int, 0);
+ #endif
+ 
+-MODULE_PARM_DESC(mem,
+-		"\nDetermines the beginning of the video memory heap in KB. This heap is used\n"
+-		"for video RAM management for eg. DRM/DRI. On 300 series, the default depends\n"
+-		"on the amount of video RAM available. If 8MB of video RAM or less is available,\n"
+-		"the heap starts at 4096KB, if between 8 and 16MB are available at 8192KB,\n"
+-		"otherwise at 12288KB. On 315 and Xabre series, the heap size is 32KB by default.\n"
+-		"The value is to be specified without 'KB' and must match the MaxXFBMem setting\n"
+-		"for XFree86 4.x/X.org 6.7 and later.\n");
+-
+ MODULE_PARM_DESC(noypan,
+ 		"\nIf set to anything other than 0, y-panning will be disabled and scrolling\n"
+ 		"will be performed by redrawing the screen. (default: 0)\n");
+@@ -3191,7 +2876,3 @@ module_init(xgifb_init_module);
+ module_exit(xgifb_remove_module);
+ 
+ #endif	/*  /MODULE  */
+-
+-EXPORT_SYMBOL(XGI_malloc);
+-EXPORT_SYMBOL(XGI_free);
+-
+diff --git a/drivers/staging/xgifb/XGIfb.h b/drivers/staging/xgifb/XGIfb.h
+index d6c3139..7813bbe 100644
+--- a/drivers/staging/xgifb/XGIfb.h
++++ b/drivers/staging/xgifb/XGIfb.h
+@@ -92,7 +92,6 @@ struct video_info{
+         char  *       mmio_vbase;
+         unsigned long vga_base;
+         unsigned long mtrr;
+-        unsigned long heapstart;
+ 
+         int    video_bpp;
+         int    video_cmap_len;
 -- 
 1.5.6.5
 
