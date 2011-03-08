@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab1CHBuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 20:50:10 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55837 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab1CHBuG convert rfc822-to-8bit (ORCPT
+	id S932086Ab1CHCEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 21:04:05 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:17336 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab1CHCEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 20:50:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=hnov6OBAlDKkxc1NMXGQit9xNuVLm6fR2slUROz5iUuFiH/h5IEmEEA1vO4TLlRrZv
-         EiMJngjYCg9CmbKelyh7c3I6ZPvV+zpjj2Ev8VCVM83Q1BGqyKKDJdywikJ7P2WlPK4N
-         wet/DQ+sCsLq3fHmBTk4qNMoVVPt9k4nfGYZI=
-MIME-Version: 1.0
-In-Reply-To: <20110305120302.GC30187@opensource.wolfsonmicro.com>
-References: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
-	<1299221427-4726-3-git-send-email-myungjoo.ham@samsung.com>
-	<20110305120302.GC30187@opensource.wolfsonmicro.com>
-Date: Tue, 8 Mar 2011 10:50:04 +0900
-X-Google-Sender-Auth: eOSZDoeBKGq0ShbE0U7b4ucrVPk
-Message-ID: <AANLkTik4cT3fbsCLFcsUcNMtia1Ymnhe8JFzzO+N+9sq@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] MAX8997/8966 PMIC Regulator Driver Initial Release
+	Mon, 7 Mar 2011 21:04:01 -0500
+Date: Tue, 08 Mar 2011 11:03:58 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
-        MyungJoo Ham <myungjoo.ham@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] Regulator: add suspend-finish API for regulator core.
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
+Message-id: <1299549838-9821-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 08 Mar 2011 02:03:59.0744 (UTC)
+ FILETIME=[16E71800:01CBDD35]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 5, 2011 at 9:03 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Mar 04, 2011 at 03:50:27PM +0900, MyungJoo Ham wrote:
+The regulator core had suspend-prepare that turns off the regulators
+when entering a system-wide suspend. However, it did not have
+suspend-finish that recovers the change made by suspend-prepare and
+depends on machine pm code or the regulator device or driver
+doing so.
 
-[]
+This patch adds regulator_suspend_finish that pairs with the
+previously-existed regulator_suspend_prepare. The function
+regulator_suspend_finish turns on the regulators that have always_on set
+or positive use_count so that we can recover the regulator states at
+resume.
 
->
->> +static int max8997_reg_enable_suspend(struct regulator_dev *rdev)
->> +{
->> +     return 0;
->> +}
->> +
->
-> This looks odd, especially since you have a disable operation?
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/regulator/core.c          |   24 ++++++++++++++++++++++++
+ include/linux/regulator/machine.h |    1 +
+ 2 files changed, 25 insertions(+), 0 deletions(-)
 
-The intention is to keep it enabled if it was enabled before entering
-sleep and not to enable if it has not been using while the system is
-running. Probably, we need three states for suspend-prepare for
-regulators: disable, enable, keep_state?
-
->
-
-[]
-
->
->> +static int max8997_resume(struct device *dev)
->> +{
->> +     struct platform_device *pdev = container_of(dev,
->> +                     struct platform_device, dev);
->> +     struct max8997_data *max8997 = platform_get_drvdata(pdev);
->> +     struct i2c_client *i2c = max8997->iodev->i2c;
->> +     struct regulator_dev *rdev;
->> +     int ret, reg, mask, pattern;
->> +     int i;
->> +     u8 val;
->> +
->> +     /* Show Error/Warning Messages for Inconsistency */
->> +     for (i = 0; i < MAX8997_REG_MAX; i++) {
->> +             if (max8997->saved_rdev[i]) {
->
-> We should put this into the regulator core rather than doing it in
-> drivers - it's not really driver specific and other regulators that
-> can't preserve state over suspend and resume will need it.
->
-
-This part was sort of "debug and test" part of the driver and removed
-in the recent version of the patch.
-However, the regulator core depends on calling
-regulator_suspend_prepare by machine/architecture pm code and the core
-does not have resume-related support. For that matter, I've made and
-been using "regulator_suspend_finish" locally. I will post that patch
-soon.
-
-
-
-Thanks.
-
-
-- MyungJoo
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 9fa2095..b1e71fd 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2653,6 +2653,30 @@ out:
+ EXPORT_SYMBOL_GPL(regulator_suspend_prepare);
+ 
+ /**
++ * regulator_suspend_prepare - resume regulators from system wide suspend
++ *
++ * Turn on regulators that might be turned off by regulator_suspend_prepare.
++ */
++int regulator_suspend_finish(void)
++{
++	struct regulator_dev *rdev;
++	int ret = 0, error;
++
++	mutex_lock(&regulator_list_mutex);
++	list_for_each_entry(rdev, &regulator_list, list) {
++		if ((rdev->use_count > 0  || rdev->constraints->always_on) &&
++				rdev->desc->ops->enable) {
++			error = rdev->desc->ops->enable(rdev);
++			if (error)
++				ret = error;
++		}
++	}
++	mutex_unlock(&regulator_list_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regulator_suspend_finish);
++
++/**
+  * regulator_has_full_constraints - the system has fully specified constraints
+  *
+  * Calling this function will cause the regulator API to disable all
+diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
+index 761c745..c4c4fc4 100644
+--- a/include/linux/regulator/machine.h
++++ b/include/linux/regulator/machine.h
+@@ -186,6 +186,7 @@ struct regulator_init_data {
+ };
+ 
+ int regulator_suspend_prepare(suspend_state_t state);
++int regulator_suspend_finish(void);
+ 
+ #ifdef CONFIG_REGULATOR
+ void regulator_has_full_constraints(void);
 -- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+1.7.1
+
