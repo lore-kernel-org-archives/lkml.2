@@ -1,171 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab1CHUYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:24:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57790 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab1CHUYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 15:24:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=PLfrxZk8Oogk347KX0/vaGse4e4qVhxLOhsLLorqseuB/o+ZtFGU25tCQGi/LY5HdL
-         LxxpGxZqBBMrr+ZrSeT9xoVlbpuKnmNZlmkpjfcskJJH9FWQ7smQwZx6+tBS6S0wFE1T
-         O7CFjIMGASs1lch28lx/K7VBgzzN2wOGjnHmk=
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
-        vda.linux@googlemail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/8] job control: Fix ptracer wait(2) hang and explain notask_error clearing
-Date: Tue,  8 Mar 2011 20:56:34 +0100
-Message-Id: <1299614199-25142-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299614199-25142-1-git-send-email-tj@kernel.org>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+	id S1756401Ab1CHU1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:27:32 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:60329 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752257Ab1CHU1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 15:27:31 -0500
+X-ASG-Debug-ID: 1299616049-01de284cf829880001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D76912C.9040705@fusionio.com>
+Date: Tue, 8 Mar 2011 21:27:24 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Mike Snitzer <snitzer@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com> <1295659049-2688-6-git-send-email-jaxboe@fusionio.com> <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com> <20110303221353.GA10366@redhat.com> <4D761E0D.8050200@fusionio.com> <20110308202100.GA31744@redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <20110308202100.GA31744@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299616049
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57437
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wait(2) and friends allow access to stopped/continued states through
-zombies, which is required as the states are process-wide and should
-be accessible whether the leader task is alive or undead.
-wait_consider_task() implements this by always clearing notask_error
-and going through wait_task_stopped/continued() for unreaped zombies.
+On 2011-03-08 21:21, Mike Snitzer wrote:
+> On Tue, Mar 08 2011 at  7:16am -0500,
+> Jens Axboe <jaxboe@fusionio.com> wrote:
+> 
+>> On 2011-03-03 23:13, Mike Snitzer wrote:
+>>> I'm now hitting a lockdep issue, while running a 'for-2.6.39/stack-plug'
+>>> kernel, when I try an fsync heavy workload to a request-based mpath
+>>> device (the kernel ultimately goes down in flames, I've yet to look at
+>>> the crashdump I took)
+>>
+>> Mike, can you re-run with the current stack-plug branch? I've fixed the
+>> !CONFIG_BLOCK and rebase issues, and also added a change for this flush
+>> on schedule event. It's run outside of the runqueue lock now, so
+>> hopefully that should solve this one.
+> 
+> Works for me, thanks.
 
-However, while ptraced, the stopped state is per-task and as such if
-the ptracee became a zombie, there's no further stopped event to
-listen to and wait(2) and friends should return -ECHILD on the tracee.
+Super, thanks! Out of curiousity, did you use dm/md?
 
-Fix it by clearing notask_error only if WCONTINUED is set for ptraced
-zombies.  While at it, document why clearing notask_error is safe for
-each case.
-
-Test case follows.
-
-  #include <stdio.h>
-  #include <unistd.h>
-  #include <pthread.h>
-  #include <time.h>
-  #include <sys/types.h>
-  #include <sys/ptrace.h>
-  #include <sys/wait.h>
-
-  static void *nooper(void *arg)
-  {
-	  pause();
-	  return NULL;
-  }
-
-  int main(void)
-  {
-	  const struct timespec ts1s = { .tv_sec = 1 };
-	  pid_t tracee, tracer;
-	  siginfo_t si;
-
-	  tracee = fork();
-	  if (tracee == 0) {
-		  pthread_t thr;
-
-		  pthread_create(&thr, NULL, nooper, NULL);
-		  nanosleep(&ts1s, NULL);
-		  printf("tracee exiting\n");
-		  pthread_exit(NULL);	/* let subthread run */
-	  }
-
-	  tracer = fork();
-	  if (tracer == 0) {
-		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
-		  while (1) {
-			  if (waitid(P_PID, tracee, &si, WSTOPPED) < 0) {
-				  perror("waitid");
-				  break;
-			  }
-			  ptrace(PTRACE_CONT, tracee, NULL,
-				 (void *)(long)si.si_status);
-		  }
-		  return 0;
-	  }
-
-	  waitid(P_PID, tracer, &si, WEXITED);
-	  kill(tracee, SIGKILL);
-	  return 0;
-  }
-
-Before the patch, after the tracee becomes a zombie, the tracer's
-waitid(WSTOPPED) never returns and the program doesn't terminate.
-
-  tracee exiting
-  ^C
-
-After the patch, tracee exiting triggers waitid() to fail.
-
-  tracee exiting
-  waitid: No child processes
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/exit.c |   44 ++++++++++++++++++++++++++++++++++----------
- 1 files changed, 34 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b4a935c..7171821 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1550,17 +1550,41 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
- 		return 0;
- 	}
- 
--	/*
--	 * We don't reap group leaders with subthreads.
--	 */
--	if (p->exit_state == EXIT_ZOMBIE && !delay_group_leader(p))
--		return wait_task_zombie(wo, p);
-+	/* slay zombie? */
-+	if (p->exit_state == EXIT_ZOMBIE) {
-+		/* we don't reap group leaders with subthreads */
-+		if (!delay_group_leader(p))
-+			return wait_task_zombie(wo, p);
- 
--	/*
--	 * It's stopped or running now, so it might
--	 * later continue, exit, or stop again.
--	 */
--	wo->notask_error = 0;
-+		/*
-+		 * Allow access to stopped/continued state via zombie by
-+		 * falling through.  Clearing of notask_error is complex.
-+		 *
-+		 * When !@ptrace:
-+		 *
-+		 * If WEXITED is set, notask_error should naturally be
-+		 * cleared.  If not, subset of WSTOPPED|WCONTINUED is set,
-+		 * so, if there are live subthreads, there are events to
-+		 * wait for.  If all subthreads are dead, it's still safe
-+		 * to clear - this function will be called again in finite
-+		 * amount time once all the subthreads are released and
-+		 * will then return without clearing.
-+		 *
-+		 * When @ptrace:
-+		 *
-+		 * Stopped state is per-task and thus can't change once the
-+		 * target task dies, so notask_error should be cleared only
-+		 * if WCONTINUED is set.
-+		 */
-+		if (likely(!ptrace) || (wo->wo_flags & WCONTINUED))
-+			wo->notask_error = 0;
-+	} else {
-+		/*
-+		 * @p is alive and it's gonna stop, continue or exit, so
-+		 * there always is something to wait for.
-+		 */
-+		wo->notask_error = 0;
-+	}
- 
- 	if (task_stopped_code(p, ptrace))
- 		return wait_task_stopped(wo, ptrace, p);
 -- 
-1.7.1
+Jens Axboe
 
