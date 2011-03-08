@@ -1,338 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1CHJpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 04:45:23 -0500
-Received: from hera.kernel.org ([140.211.167.34]:54200 "EHLO hera.kernel.org"
+	id S1752674Ab1CHJ7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 04:59:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51225 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754395Ab1CHJpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 04:45:19 -0500
-Date: Tue, 8 Mar 2011 09:44:42 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, wcohen@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, wcohen@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report tui: Improve multi event session support
-Message-ID: <tip-7f0030b211579939461468f25b80c73e293c46e0@git.kernel.org>
-Git-Commit-ID: 7f0030b211579939461468f25b80c73e293c46e0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Mar 2011 09:44:42 +0000 (UTC)
+	id S1751513Ab1CHJ7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 04:59:22 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, WANG Cong <amwang@redhat.com>,
+        Jay Vosburgh <fubar@us.ibm.com>, netdev@vger.kernel.org
+Subject: [Patch V2] bonding: fix netpoll in active-backup mode
+Date: Tue,  8 Mar 2011 17:58:56 +0800
+Message-Id: <1299578336-5888-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7f0030b211579939461468f25b80c73e293c46e0
-Gitweb:     http://git.kernel.org/tip/7f0030b211579939461468f25b80c73e293c46e0
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sun, 6 Mar 2011 13:07:30 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sun, 6 Mar 2011 13:14:53 -0300
+V2: avoid calling slave_diable_netpoll() with write_lock_bh() held.
 
-perf report tui: Improve multi event session support
+netconsole doesn't work in active-backup mode, because we don't do anything
+for nic failover in active-backup mode. We should disable netpoll on the
+failing slave when it is detected down and enable netpoll when it becomes
+the active slave.
 
-When multiple events were used in 'perf record', allow the user to
-choose which one is wanted before showing the per event histograms.
+Tested by ifdown the current active slave and ifup it again for several times,
+netconsole works well.
 
-Annotations will be performed on the chosen event.
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
 
-Allow going back and forth from event to event quickly using just the
-arrow keys and enter.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: William Cohen <wcohen@redhat.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c         |    7 +-
- tools/perf/util/hist.h              |   16 +---
- tools/perf/util/ui/browsers/hists.c |  147 +++++++++++++++++++++++++++++++----
- 3 files changed, 140 insertions(+), 30 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 1c399ea..e9b5d51 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -222,7 +222,8 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- 	return ret + fprintf(fp, "\n#\n");
+ drivers/net/bonding/bond_main.c |  236 +++++++++++++++++++++------------------
+ 1 files changed, 125 insertions(+), 111 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 0592e6d..102a558 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -907,6 +907,120 @@ static void bond_mc_list_flush(struct net_device *bond_dev,
+ 	}
  }
  
--static int hists__tty_browse_tree(struct perf_evlist *evlist, const char *help)
-+static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
-+					 const char *help)
- {
- 	struct perf_evsel *pos;
++/*--------------------------- Netpoll code ---------------------------*/
++#ifdef CONFIG_NET_POLL_CONTROLLER
++static inline int slave_enable_netpoll(struct slave *slave)
++{
++	struct netpoll *np;
++	int err = 0;
++
++	if (slave->np)
++		return 0;
++
++	np = kzalloc(sizeof(*np), GFP_KERNEL);
++	err = -ENOMEM;
++	if (!np)
++		goto out;
++
++	np->dev = slave->dev;
++	err = __netpoll_setup(np);
++	if (err) {
++		kfree(np);
++		goto out;
++	}
++	slave->np = np;
++out:
++	return err;
++}
++static inline void slave_disable_netpoll(struct slave *slave)
++{
++	struct netpoll *np = slave->np;
++
++	if (!np)
++		return;
++
++	slave->np = NULL;
++	synchronize_rcu_bh();
++	__netpoll_cleanup(np);
++	kfree(np);
++}
++static inline bool slave_dev_support_netpoll(struct net_device *slave_dev)
++{
++	if (slave_dev->priv_flags & IFF_DISABLE_NETPOLL)
++		return false;
++	if (!slave_dev->netdev_ops->ndo_poll_controller)
++		return false;
++	return true;
++}
++
++static void bond_poll_controller(struct net_device *bond_dev)
++{
++}
++
++static void __bond_netpoll_cleanup(struct bonding *bond)
++{
++	struct slave *slave;
++	int i;
++
++	bond_for_each_slave(bond, slave, i)
++		if (IS_UP(slave->dev))
++			slave_disable_netpoll(slave);
++}
++static void bond_netpoll_cleanup(struct net_device *bond_dev)
++{
++	struct bonding *bond = netdev_priv(bond_dev);
++
++	read_lock(&bond->lock);
++	__bond_netpoll_cleanup(bond);
++	read_unlock(&bond->lock);
++}
++
++static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
++{
++	struct bonding *bond = netdev_priv(dev);
++	struct slave *slave;
++	int i, err = 0;
++
++	read_lock(&bond->lock);
++	bond_for_each_slave(bond, slave, i) {
++		if (!IS_UP(slave->dev))
++			continue;
++		err = slave_enable_netpoll(slave);
++		if (err) {
++			__bond_netpoll_cleanup(bond);
++			break;
++		}
++	}
++	read_unlock(&bond->lock);
++	return err;
++}
++
++static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
++{
++	return bond->dev->npinfo;
++}
++
++#else
++static inline int slave_enable_netpoll(struct slave *slave)
++{
++	return 0;
++}
++static inline void slave_disable_netpoll(struct slave *slave)
++{
++}
++static void bond_netpoll_cleanup(struct net_device *bond_dev)
++{
++}
++static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
++{
++	return 0;
++}
++static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
++{
++	return NULL;
++}
++#endif
++
+ /*--------------------------- Active slave change ---------------------------*/
  
-@@ -304,9 +305,9 @@ static int __cmd_report(void)
- 	}
+ /*
+@@ -1159,6 +1273,7 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
+ 			bond_set_slave_inactive_flags(old_active);
  
- 	if (use_browser > 0)
--		hists__tui_browse_tree(session->evlist, help);
-+		perf_evlist__tui_browse_hists(session->evlist, help);
- 	else
--		hists__tty_browse_tree(session->evlist, help);
-+		perf_evlist__tty_browse_hists(session->evlist, help);
+ 		if (new_active) {
++			struct netpoll_info *ni;
+ 			bond_set_slave_active_flags(new_active);
  
- out_delete:
- 	/*
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 0d38b43..cb6858a 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -87,15 +87,9 @@ bool hists__new_col_len(struct hists *self, enum hist_column col, u16 len);
- struct perf_evlist;
+ 			if (bond->params.fail_over_mac)
+@@ -1174,6 +1289,13 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
+ 			}
  
- #ifdef NO_NEWT_SUPPORT
--static inline int hists__browse(struct hists *self __used,
--				const char *helpline __used,
--				const char *ev_name __used, int evidx __used)
+ 			write_unlock_bh(&bond->curr_slave_lock);
++
++			ni = bond_netpoll_info(bond);
++			if (ni) {
++				new_active->dev->npinfo = ni;
++				slave_enable_netpoll(new_active);
++			}
++
+ 			read_unlock(&bond->lock);
+ 
+ 			netdev_bonding_change(bond->dev, NETDEV_BONDING_FAILOVER);
+@@ -1280,116 +1402,6 @@ static void bond_detach_slave(struct bonding *bond, struct slave *slave)
+ 	bond->slave_cnt--;
+ }
+ 
+-#ifdef CONFIG_NET_POLL_CONTROLLER
+-static inline int slave_enable_netpoll(struct slave *slave)
+-{
+-	struct netpoll *np;
+-	int err = 0;
+-
+-	np = kzalloc(sizeof(*np), GFP_KERNEL);
+-	err = -ENOMEM;
+-	if (!np)
+-		goto out;
+-
+-	np->dev = slave->dev;
+-	err = __netpoll_setup(np);
+-	if (err) {
+-		kfree(np);
+-		goto out;
+-	}
+-	slave->np = np;
+-out:
+-	return err;
+-}
+-static inline void slave_disable_netpoll(struct slave *slave)
+-{
+-	struct netpoll *np = slave->np;
+-
+-	if (!np)
+-		return;
+-
+-	slave->np = NULL;
+-	synchronize_rcu_bh();
+-	__netpoll_cleanup(np);
+-	kfree(np);
+-}
+-static inline bool slave_dev_support_netpoll(struct net_device *slave_dev)
+-{
+-	if (slave_dev->priv_flags & IFF_DISABLE_NETPOLL)
+-		return false;
+-	if (!slave_dev->netdev_ops->ndo_poll_controller)
+-		return false;
+-	return true;
+-}
+-
+-static void bond_poll_controller(struct net_device *bond_dev)
+-{
+-}
+-
+-static void __bond_netpoll_cleanup(struct bonding *bond)
+-{
+-	struct slave *slave;
+-	int i;
+-
+-	bond_for_each_slave(bond, slave, i)
+-		if (IS_UP(slave->dev))
+-			slave_disable_netpoll(slave);
+-}
+-static void bond_netpoll_cleanup(struct net_device *bond_dev)
+-{
+-	struct bonding *bond = netdev_priv(bond_dev);
+-
+-	read_lock(&bond->lock);
+-	__bond_netpoll_cleanup(bond);
+-	read_unlock(&bond->lock);
+-}
+-
+-static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
+-{
+-	struct bonding *bond = netdev_priv(dev);
+-	struct slave *slave;
+-	int i, err = 0;
+-
+-	read_lock(&bond->lock);
+-	bond_for_each_slave(bond, slave, i) {
+-		if (!IS_UP(slave->dev))
+-			continue;
+-		err = slave_enable_netpoll(slave);
+-		if (err) {
+-			__bond_netpoll_cleanup(bond);
+-			break;
+-		}
+-	}
+-	read_unlock(&bond->lock);
+-	return err;
+-}
+-
+-static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
+-{
+-	return bond->dev->npinfo;
+-}
+-
+-#else
+-static inline int slave_enable_netpoll(struct slave *slave)
 -{
 -	return 0;
 -}
--
--static inline int hists__tui_browse_tree(struct perf_evlist *evlist __used,
--					 const char *help __used)
-+static inline
-+int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __used,
-+				  const char *help __used)
- {
- 	return 0;
- }
-@@ -109,14 +103,12 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
- #define KEY_RIGHT -2
- #else
- #include <newt.h>
--int hists__browse(struct hists *self, const char *helpline,
--		  const char *ev_name, int evidx);
- int hist_entry__tui_annotate(struct hist_entry *self, int evidx);
- 
- #define KEY_LEFT NEWT_KEY_LEFT
- #define KEY_RIGHT NEWT_KEY_RIGHT
- 
--int hists__tui_browse_tree(struct perf_evlist *evlist, const char *help);
-+int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help);
- #endif
- 
- unsigned int hists__sort_list_width(struct hists *self);
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index f3af4fe..798efdc 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -803,9 +803,11 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
- 	return printed;
- }
- 
--int hists__browse(struct hists *self, const char *helpline,
--		  const char *ev_name, int evidx)
-+static int perf_evsel__hists_browse(struct perf_evsel *evsel,
-+				    const char *helpline, const char *ev_name,
-+				    bool left_exits)
- {
-+	struct hists *self = &evsel->hists;
- 	struct hist_browser *browser = hist_browser__new(self);
- 	struct pstack *fstack;
- 	const struct thread *thread_filter = NULL;
-@@ -878,8 +880,14 @@ int hists__browse(struct hists *self, const char *helpline,
- 		case NEWT_KEY_LEFT: {
- 			const void *top;
- 
--			if (pstack__empty(fstack))
-+			if (pstack__empty(fstack)) {
-+				/*
-+				 * Go back to the perf_evsel_menu__run or other user
-+				 */
-+				if (left_exits)
-+					goto out_free_stack;
- 				continue;
-+			}
- 			top = pstack__pop(fstack);
- 			if (top == &dso_filter)
- 				goto zoom_out_dso;
-@@ -888,7 +896,8 @@ int hists__browse(struct hists *self, const char *helpline,
- 			continue;
- 		}
- 		case NEWT_KEY_ESCAPE:
--			if (!ui__dialog_yesno("Do you really want to exit?"))
-+			if (!left_exits &&
-+			    !ui__dialog_yesno("Do you really want to exit?"))
- 				continue;
- 			/* Fall thru */
- 		default:
-@@ -940,7 +949,7 @@ do_annotate:
- 			if (he == NULL)
- 				continue;
- 
--			hist_entry__tui_annotate(he, evidx);
-+			hist_entry__tui_annotate(he, evsel->idx);
- 		} else if (choice == browse_map)
- 			map__browse(browser->selection->map);
- 		else if (choice == zoom_dso) {
-@@ -989,15 +998,71 @@ out:
- 	return key;
- }
- 
--int hists__tui_browse_tree(struct perf_evlist *evlist, const char *help)
-+struct perf_evsel_menu {
-+	struct ui_browser b;
-+	struct perf_evsel *selection;
-+};
-+
-+static void perf_evsel_menu__write(struct ui_browser *browser,
-+				   void *entry, int row)
-+{
-+	struct perf_evsel_menu *menu = container_of(browser,
-+						    struct perf_evsel_menu, b);
-+	struct perf_evsel *evsel = list_entry(entry, struct perf_evsel, node);
-+	bool current_entry = ui_browser__is_current_entry(browser, row);
-+	unsigned long nr_events = evsel->hists.stats.nr_events[PERF_RECORD_SAMPLE];
-+	const char *ev_name = event_name(evsel);
-+	char bf[256], unit;
-+
-+	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
-+						       HE_COLORSET_NORMAL);
-+
-+	nr_events = convert_unit(nr_events, &unit);
-+	snprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
-+		 unit, unit == ' ' ? "" : " ", ev_name);
-+	slsmg_write_nstring(bf, browser->width);
-+
-+	if (current_entry)
-+		menu->selection = evsel;
-+}
-+
-+static int perf_evsel_menu__run(struct perf_evsel_menu *menu, const char *help)
- {
-+	int exit_keys[] = { NEWT_KEY_ENTER, NEWT_KEY_RIGHT, 0, };
-+	struct perf_evlist *evlist = menu->b.priv;
- 	struct perf_evsel *pos;
-+	const char *ev_name, *title = "Available samples";
-+	int key;
- 
--	pos = list_entry(evlist->entries.next, struct perf_evsel, node);
--	while (pos) {
--		struct hists *hists = &pos->hists;
--		const char *ev_name = event_name(pos);
--		int key = hists__browse(hists, help, ev_name, pos->idx);
-+	if (ui_browser__show(&menu->b, title,
-+			     "ESC: exit, ENTER|->: Browse histograms") < 0)
-+		return -1;
-+
-+	ui_browser__add_exit_keys(&menu->b, exit_keys);
-+
-+	while (1) {
-+		key = ui_browser__run(&menu->b);
-+
-+		switch (key) {
-+		case NEWT_KEY_RIGHT:
-+		case NEWT_KEY_ENTER:
-+			if (!menu->selection)
-+				continue;
-+			pos = menu->selection;
-+browse_hists:
-+			ev_name = event_name(pos);
-+			key = perf_evsel__hists_browse(pos, help, ev_name, true);
-+			ui_browser__show_title(&menu->b, title);
-+			break;
-+		case NEWT_KEY_LEFT:
-+			continue;
-+		case NEWT_KEY_ESCAPE:
-+			if (!ui__dialog_yesno("Do you really want to exit?"))
-+				continue;
-+			/* Fall thru */
-+		default:
-+			goto out;
-+		}
- 
- 		switch (key) {
- 		case NEWT_KEY_TAB:
-@@ -1005,17 +1070,69 @@ int hists__tui_browse_tree(struct perf_evlist *evlist, const char *help)
- 				pos = list_entry(evlist->entries.next, struct perf_evsel, node);
- 			else
- 				pos = list_entry(pos->node.next, struct perf_evsel, node);
--			break;
-+			goto browse_hists;
- 		case NEWT_KEY_UNTAB:
- 			if (pos->node.prev == &evlist->entries)
- 				pos = list_entry(evlist->entries.prev, struct perf_evsel, node);
- 			else
- 				pos = list_entry(pos->node.prev, struct perf_evsel, node);
--			break;
-+			goto browse_hists;
-+		case 'q':
-+		case CTRL('c'):
-+			goto out;
- 		default:
--			return key;
-+			break;
- 		}
- 	}
- 
+-static inline void slave_disable_netpoll(struct slave *slave)
+-{
+-}
+-static void bond_netpoll_cleanup(struct net_device *bond_dev)
+-{
+-}
+-static int bond_netpoll_setup(struct net_device *dev, struct netpoll_info *ni)
+-{
 -	return 0;
-+out:
-+	ui_browser__hide(&menu->b);
-+	return key;
-+}
-+
-+static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
-+					   const char *help)
-+{
-+	struct perf_evsel *pos;
-+	struct perf_evsel_menu menu = {
-+		.b = {
-+			.entries    = &evlist->entries,
-+			.refresh    = ui_browser__list_head_refresh,
-+			.seek	    = ui_browser__list_head_seek,
-+			.write	    = perf_evsel_menu__write,
-+			.nr_entries = evlist->nr_entries,
-+			.priv	    = evlist,
-+		},
-+	};
-+
-+	ui_helpline__push("Press ESC to exit");
-+
-+	list_for_each_entry(pos, &evlist->entries, node) {
-+		const char *ev_name = event_name(pos);
-+		size_t line_len = strlen(ev_name) + 7;
-+
-+		if (menu.b.width < line_len)
-+			menu.b.width = line_len;
-+		/*
-+		 * Cache the evsel name, tracepoints have a _high_ cost per
-+		 * event_name() call.
-+		 */
-+		if (pos->name == NULL)
-+			pos->name = strdup(ev_name);
-+	}
-+
-+	return perf_evsel_menu__run(&menu, help);
-+}
-+
-+int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help)
-+{
-+
-+	if (evlist->nr_entries == 1) {
-+		struct perf_evsel *first = list_entry(evlist->entries.next,
-+						      struct perf_evsel, node);
-+		const char *ev_name = event_name(first);
-+		return perf_evsel__hists_browse(first, help, ev_name, false);
-+	}
-+
-+	return __perf_evlist__tui_browse_hists(evlist, help);
- }
+-}
+-static struct netpoll_info *bond_netpoll_info(struct bonding *bond)
+-{
+-	return NULL;
+-}
+-#endif
+-
+ /*---------------------------------- IOCTL ----------------------------------*/
+ 
+ static int bond_sethwaddr(struct net_device *bond_dev,
+@@ -2532,8 +2544,10 @@ static void bond_miimon_commit(struct bonding *bond)
+ 				bond_alb_handle_link_change(bond, slave,
+ 							    BOND_LINK_DOWN);
+ 
+-			if (slave == bond->curr_active_slave)
++			if (slave == bond->curr_active_slave) {
++				slave_disable_netpoll(slave);
+ 				goto do_failover;
++			}
+ 
+ 			continue;
+ 
