@@ -1,184 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1CHJVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 04:21:23 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:34166 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab1CHJVT (ORCPT
+	id S1752337Ab1CHJXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 04:23:07 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38960 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab1CHJXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 04:21:19 -0500
-Date: Tue, 8 Mar 2011 18:18:32 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v2] memcg: fix leak on wrong LRU with FUSE
-Message-Id: <20110308181832.6386da5f.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Mar 2011 04:23:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PBGp8x3/SDZTQhYPgSwAmGB/t8K72Aokt/anXLuZzFg8JUVDt3pzN8nos7jBSL+azr
+         k2L6L8Sm/UHac1xOb6y1XDzuyvGpWdFFEWRlvKmgHjfUN7CtgegRQgNiSzAkGT+db0e6
+         QjkvUkkFxsC5vaOqIsNQ834VqIU+5l2lB+5d0=
+Date: Tue, 8 Mar 2011 11:22:54 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, bskeggs@redhat.com
+Subject: 2.6.38-rc8: lockdep vs nouveau
+Message-ID: <20110308092254.GA4909@p183.telecom.by>
+References: <AANLkTimG-1nSZw3P5q7LQbGmQch3ibsMPQ_duhAjhtQH@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimG-1nSZw3P5q7LQbGmQch3ibsMPQ_duhAjhtQH@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Mar 2011 13:56:12 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Happened at boot.
 
-> fs/fuse/dev.c::fuse_try_move_page() does
-> 
->    (1) remove a page by ->steal()
->    (2) re-add the page to page cache 
->    (3) link the page to LRU if it was not on LRU at (1)
-> 
-> This implies the page is _on_ LRU when it's added to radix-tree.
-> So, the page is added to  memory cgroup while it's on LRU.
-> because LRU is lazy and no one flushs it.
-> 
-> This is the same behavior as SwapCache and needs special care as
->  - remove page from LRU before overwrite pc->mem_cgroup.
->  - add page to LRU after overwrite pc->mem_cgroup.
-> 
-> And we need to taking care of pagevec.
-> 
-> If PageLRU(page) is set before we add PCG_USED bit, the page
-> will not be added to memcg's LRU (in short period).
-> So, regardlress of PageLRU(page) value before commit_charge(),
-> we need to check PageLRU(page) after commit_charge().
-> 
-> Changelog:
->   - clean up.
->   - cover !PageLRU() by pagevec case.
-> 
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   53 ++++++++++++++++++++++++++++++++++-------------------
->  1 file changed, 34 insertions(+), 19 deletions(-)
-> 
-> Index: mmotm-0303/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0303.orig/mm/memcontrol.c
-> +++ mmotm-0303/mm/memcontrol.c
-> @@ -926,13 +926,12 @@ void mem_cgroup_add_lru_list(struct page
->  }
->  
->  /*
-> - * At handling SwapCache, pc->mem_cgroup may be changed while it's linked to
-> - * lru because the page may.be reused after it's fully uncharged (because of
-> - * SwapCache behavior).To handle that, unlink page_cgroup from LRU when charge
-> - * it again. This function is only used to charge SwapCache. It's done under
-> - * lock_page and expected that zone->lru_lock is never held.
-> + * At handling SwapCache and other FUSE stuff, pc->mem_cgroup may be changed
-> + * while it's linked to lru because the page may be reused after it's fully
-> + * uncharged. To handle that, unlink page_cgroup from LRU when charge it again.
-> + * It's done under lock_page and expected that zone->lru_lock isnever held.
->   */
-> -static void mem_cgroup_lru_del_before_commit_swapcache(struct page *page)
-> +static void mem_cgroup_lru_del_before_commit(struct page *page)
->  {
->  	unsigned long flags;
->  	struct zone *zone = page_zone(page);
-> @@ -948,7 +947,7 @@ static void mem_cgroup_lru_del_before_co
->  	spin_unlock_irqrestore(&zone->lru_lock, flags);
->  }
->  
-> -static void mem_cgroup_lru_add_after_commit_swapcache(struct page *page)
-> +static void mem_cgroup_lru_add_after_commit(struct page *page)
->  {
->  	unsigned long flags;
->  	struct zone *zone = page_zone(page);
-> @@ -2431,9 +2430,28 @@ static void
->  __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
->  					enum charge_type ctype);
->  
-> +static void
-> +__mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *mem,
-> +					enum charge_type ctype)
-> +{
-> +	struct page_cgroup *pc = lookup_page_cgroup(page);
-> +	/*
-> +	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
-> +	 * is already on LRU. It means the page may on some other page_cgroup's
-> +	 * LRU. Take care of it.
-> +	 */
-> +	if (unlikely(PageLRU(page)))
-> +		mem_cgroup_lru_del_before_commit(page);
-> +	__mem_cgroup_commit_charge(mem, page, 1, pc, ctype);
-> +	if (unlikely(PageLRU(page)))
-> +		mem_cgroup_lru_add_after_commit(page);
-> +	return;
-> +}
-> +
->  int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
->  				gfp_t gfp_mask)
->  {
-> +	struct mem_cgroup *mem = NULL;
->  	int ret;
->  
->  	if (mem_cgroup_disabled())
-> @@ -2468,14 +2486,15 @@ int mem_cgroup_cache_charge(struct page 
->  	if (unlikely(!mm))
->  		mm = &init_mm;
->  
-> -	if (page_is_file_cache(page))
-> -		return mem_cgroup_charge_common(page, mm, gfp_mask,
-> -				MEM_CGROUP_CHARGE_TYPE_CACHE);
-> -
-> +	if (page_is_file_cache(page)) {
-> +		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &mem, true);
-> +		if (ret || !mem)
-> +			return ret;
-> +		__mem_cgroup_commit_charge_lrucare(page, mem,
-> +					MEM_CGROUP_CHARGE_TYPE_CACHE);
-> +	}
-We should do "return 0" here, or do:
+[drm] Initialized drm 1.1.0 20060810
+nouveau 0000:01:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+nouveau 0000:01:00.0: setting latency timer to 64
+[drm] nouveau 0000:01:00.0: Detected an NV50 generation card (0x450100a2)
+[drm] nouveau 0000:01:00.0: Attempting to load BIOS image from PRAMIN
+[drm] nouveau 0000:01:00.0: ... appears to be valid
+[drm] nouveau 0000:01:00.0: BIT BIOS found
+[drm] nouveau 0000:01:00.0: Bios version 60.80.13.00
+[drm] nouveau 0000:01:00.0: TMDS table version 2.0
+[drm] nouveau 0000:01:00.0: BIT table 'd' not found
+[drm] nouveau 0000:01:00.0: Found Display Configuration Block version 4.0
+[drm] nouveau 0000:01:00.0: Raw DCB entry 0: 04000320 00000028
+[drm] nouveau 0000:01:00.0: Raw DCB entry 1: 01000322 00000030
+[drm] nouveau 0000:01:00.0: Raw DCB entry 2: 02011310 00000028
+[drm] nouveau 0000:01:00.0: Raw DCB entry 3: 02011312 00000030
+[drm] nouveau 0000:01:00.0: Raw DCB entry 4: 010223f1 00c1c020
+[drm] nouveau 0000:01:00.0: DCB connector table: VHER 0x40 5 6 2
+[drm] nouveau 0000:01:00.0:   0: 0x00001030: type 0x30 idx 0 tag 0x07
+[drm] nouveau 0000:01:00.0:   1: 0x00002130: type 0x30 idx 1 tag 0x08
+[drm] nouveau 0000:01:00.0:   2: 0x00000210: type 0x10 idx 2 tag 0xff
+[drm] nouveau 0000:01:00.0:   3: 0x00000211: type 0x11 idx 3 tag 0xff
+[drm] nouveau 0000:01:00.0:   4: 0x00000213: type 0x13 idx 4 tag 0xff
+[drm] nouveau 0000:01:00.0: Parsing VBIOS init table 0 at offset 0xBC7E
+[drm] nouveau 0000:01:00.0: Parsing VBIOS init table 1 at offset 0xBE86
+[drm] nouveau 0000:01:00.0: Parsing VBIOS init table 2 at offset 0xD041
+[drm] nouveau 0000:01:00.0: Parsing VBIOS init table 3 at offset 0xD130
+[drm] nouveau 0000:01:00.0: Parsing VBIOS init table 4 at offset 0xD2E7
+[drm] nouveau 0000:01:00.0: Parsing VBIOS init table at offset 0xD34C
+[drm] nouveau 0000:01:00.0: 0xD34C: Condition still not met after 20ms, skipping following opcodes
+[drm] nouveau 0000:01:00.0: 1 available performance level(s)
+[drm] nouveau 0000:01:00.0: 0: memory 900MHz core 576MHz shader 1350MHz voltage 1300mV fanspeed 100%
+[drm] nouveau 0000:01:00.0: c: memory 396MHz core 198MHz shader 1188MHz
+[TTM] Zone  kernel: Available graphics memory: 4074414 kiB.
+[TTM] Zone   dma32: Available graphics memory: 2097152 kiB.
+[TTM] Initializing pool allocator.
+[drm] nouveau 0000:01:00.0: Detected 768MiB VRAM
+mtrr: type mismatch for d0000000,10000000 old: write-back new: write-combining
+[drm] nouveau 0000:01:00.0: 512 MiB GART (aperture)
+[drm] nouveau 0000:01:00.0: DCB encoder 1 unknown
+[drm] nouveau 0000:01:00.0: TV-1 has no encoders, removing
+[drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+[drm] No driver support for vblank timestamp query.
 
-} else {
-	/* shmem */
-	if (PageSwapCache(page)) {
-		..
-	} else {
-		..
-	}
-}
+=========================================================
+[ INFO: possible irq lock inversion dependency detected ]
+2.6.38-rc8 #9
+---------------------------------------------------------
+kworker/0:1/0 just changed the state of lock:
+ (&(&dev_priv->context_switch_lock)->rlock){-.....}, at: [<ffffffff812a6727>] nouveau_irq_handler+0x57/0x150
+but this lock took another, HARDIRQ-unsafe lock in the past:
+ (&(&dev_priv->ramin_lock)->rlock){+.+...}
 
-Otherwise, the page cache will be charged twice.
+and interrupts could create inverse lock ordering between them.
 
-Thanks,
-Daisuke Nishimura.
 
->  	/* shmem */
->  	if (PageSwapCache(page)) {
-> -		struct mem_cgroup *mem;
-> -
->  		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &mem);
->  		if (!ret)
->  			__mem_cgroup_commit_charge_swapin(page, mem,
-> @@ -2532,17 +2551,13 @@ static void
->  __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
->  					enum charge_type ctype)
->  {
-> -	struct page_cgroup *pc;
-> -
->  	if (mem_cgroup_disabled())
->  		return;
->  	if (!ptr)
->  		return;
->  	cgroup_exclude_rmdir(&ptr->css);
-> -	pc = lookup_page_cgroup(page);
-> -	mem_cgroup_lru_del_before_commit_swapcache(page);
-> -	__mem_cgroup_commit_charge(ptr, page, 1, pc, ctype);
-> -	mem_cgroup_lru_add_after_commit_swapcache(page);
-> +
-> +	__mem_cgroup_commit_charge_lrucare(page, ptr, ctype);
->  	/*
->  	 * Now swap is on-memory. This means this page may be
->  	 * counted both as mem and swap....double count.
-> 
+other info that might help us debug this:
+no locks held by kworker/0:1/0.
+
+the shortest dependencies between 2nd lock and 1st lock:
+ -> (&(&dev_priv->ramin_lock)->rlock){+.+...} ops: 24866 {
+    HARDIRQ-ON-W at:
+                                         [<ffffffff8109ba2e>] __lock_acquire+0xbee/0x1c40
+                                         [<ffffffff8109cada>] lock_acquire+0x5a/0x70
+                                         [<ffffffff814c5846>] _raw_spin_lock+0x36/0x50
+                                         [<ffffffff812a555b>] nouveau_gpuobj_new+0xab/0x2e0
+                                         [<ffffffff813011de>] nv50_instmem_init+0x12e/0x6d0
+                                         [<ffffffff812a0c86>] nouveau_card_init+0x446/0x1680
+                                         [<ffffffff812a22f3>] nouveau_load+0x433/0x700
+                                         [<ffffffff8128b08a>] drm_get_pci_dev+0x18a/0x2a0
+                                         [<ffffffff814bf023>] nouveau_pci_probe+0x10/0x12
+                                         [<ffffffff8120ffe2>] local_pci_probe+0x12/0x20
+                                         [<ffffffff812102a0>] pci_device_probe+0x80/0xb0
+                                         [<ffffffff81325c09>] driver_probe_device+0x89/0x1a0
+                                         [<ffffffff81325dbb>] __driver_attach+0x9b/0xa0
+                                         [<ffffffff813252f8>] bus_for_each_dev+0x68/0x90
+                                         [<ffffffff81325a49>] driver_attach+0x19/0x20
+                                         [<ffffffff81324b68>] bus_add_driver+0x1a8/0x270
+                                         [<ffffffff813260a8>] driver_register+0x78/0x140
+                                         [<ffffffff81210521>] __pci_register_driver+0x61/0xe0
+                                         [<ffffffff8128b26a>] drm_pci_init+0xca/0xe0
+                                         [<ffffffff81283f13>] drm_init+0x53/0x70
+                                         [<ffffffff818fc779>] nouveau_init+0x48/0x4a
+                                         [<ffffffff818de5f6>] do_one_initcall+0x7a/0x12e
+                                         [<ffffffff818de80c>] kernel_init+0x142/0x1c6
+                                         [<ffffffff81032f14>] kernel_thread_helper+0x4/0x10
+    SOFTIRQ-ON-W at:
+                                         [<ffffffff8109ba64>] __lock_acquire+0xc24/0x1c40
+                                         [<ffffffff8109cada>] lock_acquire+0x5a/0x70
+                                         [<ffffffff814c5846>] _raw_spin_lock+0x36/0x50
+                                         [<ffffffff812a555b>] nouveau_gpuobj_new+0xab/0x2e0
+                                         [<ffffffff813011de>] nv50_instmem_init+0x12e/0x6d0
+                                         [<ffffffff812a0c86>] nouveau_card_init+0x446/0x1680
+                                         [<ffffffff812a22f3>] nouveau_load+0x433/0x700
+                                         [<ffffffff8128b08a>] drm_get_pci_dev+0x18a/0x2a0
+                                         [<ffffffff814bf023>] nouveau_pci_probe+0x10/0x12
+                                         [<ffffffff8120ffe2>] local_pci_probe+0x12/0x20
+                                         [<ffffffff812102a0>] pci_device_probe+0x80/0xb0
+                                         [<ffffffff81325c09>] driver_probe_device+0x89/0x1a0
+                                         [<ffffffff81325dbb>] __driver_attach+0x9b/0xa0
+                                         [<ffffffff813252f8>] bus_for_each_dev+0x68/0x90
+                                         [<ffffffff81325a49>] driver_attach+0x19/0x20
+                                         [<ffffffff81324b68>] bus_add_driver+0x1a8/0x270
+                                         [<ffffffff813260a8>] driver_register+0x78/0x140
+                                         [<ffffffff81210521>] __pci_register_driver+0x61/0xe0
+                                         [<ffffffff8128b26a>] drm_pci_init+0xca/0xe0
+                                         [<ffffffff81283f13>] drm_init+0x53/0x70
+                                         [<ffffffff818fc779>] nouveau_init+0x48/0x4a
+                                         [<ffffffff818de5f6>] do_one_initcall+0x7a/0x12e
+                                         [<ffffffff818de80c>] kernel_init+0x142/0x1c6
+                                         [<ffffffff81032f14>] kernel_thread_helper+0x4/0x10
+    INITIAL USE at:
+                                        [<ffffffff8109b2fb>] __lock_acquire+0x4bb/0x1c40
+                                        [<ffffffff8109cada>] lock_acquire+0x5a/0x70
+                                        [<ffffffff814c5846>] _raw_spin_lock+0x36/0x50
+                                        [<ffffffff812a555b>] nouveau_gpuobj_new+0xab/0x2e0
+                                        [<ffffffff813011de>] nv50_instmem_init+0x12e/0x6d0
+                                        [<ffffffff812a0c86>] nouveau_card_init+0x446/0x1680
+                                        [<ffffffff812a22f3>] nouveau_load+0x433/0x700
+                                        [<ffffffff8128b08a>] drm_get_pci_dev+0x18a/0x2a0
+                                        [<ffffffff814bf023>] nouveau_pci_probe+0x10/0x12
+                                        [<ffffffff8120ffe2>] local_pci_probe+0x12/0x20
+                                        [<ffffffff812102a0>] pci_device_probe+0x80/0xb0
+                                        [<ffffffff81325c09>] driver_probe_device+0x89/0x1a0
+                                        [<ffffffff81325dbb>] __driver_attach+0x9b/0xa0
+                                        [<ffffffff813252f8>] bus_for_each_dev+0x68/0x90
+                                        [<ffffffff81325a49>] driver_attach+0x19/0x20
+                                        [<ffffffff81324b68>] bus_add_driver+0x1a8/0x270
+                                        [<ffffffff813260a8>] driver_register+0x78/0x140
+                                        [<ffffffff81210521>] __pci_register_driver+0x61/0xe0
+                                        [<ffffffff8128b26a>] drm_pci_init+0xca/0xe0
+                                        [<ffffffff81283f13>] drm_init+0x53/0x70
+                                        [<ffffffff818fc779>] nouveau_init+0x48/0x4a
+                                        [<ffffffff818de5f6>] do_one_initcall+0x7a/0x12e
+                                        [<ffffffff818de80c>] kernel_init+0x142/0x1c6
+                                        [<ffffffff81032f14>] kernel_thread_helper+0x4/0x10
+  }
+  ... key      at: [<ffffffff822bd7b8>] __key.40392+0x0/0x8
+  ... acquired at:
+   [<ffffffff8109cada>] lock_acquire+0x5a/0x70
+   [<ffffffff814c5846>] _raw_spin_lock+0x36/0x50
+   [<ffffffff81300bbd>] nv50_instmem_flush+0x1d/0x90
+   [<ffffffff812d2050>] nv50_fifo_create_context+0x260/0x340
+   [<ffffffff812a2f9d>] nouveau_channel_alloc+0x33d/0x6d0
+   [<ffffffff812a0dea>] nouveau_card_init+0x5aa/0x1680
+   [<ffffffff812a22f3>] nouveau_load+0x433/0x700
+   [<ffffffff8128b08a>] drm_get_pci_dev+0x18a/0x2a0
+   [<ffffffff814bf023>] nouveau_pci_probe+0x10/0x12
+   [<ffffffff8120ffe2>] local_pci_probe+0x12/0x20
+   [<ffffffff812102a0>] pci_device_probe+0x80/0xb0
+   [<ffffffff81325c09>] driver_probe_device+0x89/0x1a0
+   [<ffffffff81325dbb>] __driver_attach+0x9b/0xa0
+   [<ffffffff813252f8>] bus_for_each_dev+0x68/0x90
+   [<ffffffff81325a49>] driver_attach+0x19/0x20
+   [<ffffffff81324b68>] bus_add_driver+0x1a8/0x270
+   [<ffffffff813260a8>] driver_register+0x78/0x140
+   [<ffffffff81210521>] __pci_register_driver+0x61/0xe0
+   [<ffffffff8128b26a>] drm_pci_init+0xca/0xe0
+   [<ffffffff81283f13>] drm_init+0x53/0x70
+   [<ffffffff818fc779>] nouveau_init+0x48/0x4a
+   [<ffffffff818de5f6>] do_one_initcall+0x7a/0x12e
+   [<ffffffff818de80c>] kernel_init+0x142/0x1c6
+   [<ffffffff81032f14>] kernel_thread_helper+0x4/0x10
+
+-> (&(&dev_priv->context_switch_lock)->rlock){-.....} ops: 6 {
+   IN-HARDIRQ-W at:
+                                       [<ffffffff8109bb7c>] __lock_acquire+0xd3c/0x1c40
+                                       [<ffffffff8109cada>] lock_acquire+0x5a/0x70
+                                       [<ffffffff814c5961>] _raw_spin_lock_irqsave+0x41/0x60
+                                       [<ffffffff812a6727>] nouveau_irq_handler+0x57/0x150
+                                       [<ffffffff810adfca>] handle_IRQ_event+0x3a/0xe0
+                                       [<ffffffff810b0778>] handle_fasteoi_irq+0x78/0x100
+                                       [<ffffffff81034e3d>] handle_irq+0x1d/0x30
+                                       [<ffffffff81034338>] do_IRQ+0x58/0xd0
+                                       [<ffffffff814c66d3>] ret_from_intr+0x0/0x13
+                                       [<ffffffff8103129b>] cpu_idle+0xab/0x110
+                                       [<ffffffff8190ab59>] start_secondary+0x1e2/0x1e9
+   INITIAL USE at:
+                                      [<ffffffff8109b2fb>] __lock_acquire+0x4bb/0x1c40
+                                      [<ffffffff8109cada>] lock_acquire+0x5a/0x70
+                                      [<ffffffff814c5961>] _raw_spin_lock_irqsave+0x41/0x60
+                                      [<ffffffff812a667a>] nouveau_irq_register+0x3a/0x70
+                                      [<ffffffff8131b8ed>] nv50_gpio_init+0x7d/0x130
+                                      [<ffffffff812a0cc3>] nouveau_card_init+0x483/0x1680
+                                      [<ffffffff812a22f3>] nouveau_load+0x433/0x700
+                                      [<ffffffff8128b08a>] drm_get_pci_dev+0x18a/0x2a0
+                                      [<ffffffff814bf023>] nouveau_pci_probe+0x10/0x12
+                                      [<ffffffff8120ffe2>] local_pci_probe+0x12/0x20
+                                      [<ffffffff812102a0>] pci_device_probe+0x80/0xb0
+                                      [<ffffffff81325c09>] driver_probe_device+0x89/0x1a0
+                                      [<ffffffff81325dbb>] __driver_attach+0x9b/0xa0
+                                      [<ffffffff813252f8>] bus_for_each_dev+0x68/0x90
+                                      [<ffffffff81325a49>] driver_attach+0x19/0x20
+                                      [<ffffffff81324b68>] bus_add_driver+0x1a8/0x270
+                                      [<ffffffff813260a8>] driver_register+0x78/0x140
+                                      [<ffffffff81210521>] __pci_register_driver+0x61/0xe0
+                                      [<ffffffff8128b26a>] drm_pci_init+0xca/0xe0
+                                      [<ffffffff81283f13>] drm_init+0x53/0x70
+                                      [<ffffffff818fc779>] nouveau_init+0x48/0x4a
+                                      [<ffffffff818de5f6>] do_one_initcall+0x7a/0x12e
+                                      [<ffffffff818de80c>] kernel_init+0x142/0x1c6
+                                      [<ffffffff81032f14>] kernel_thread_helper+0x4/0x10
+ }
+ ... key      at: [<ffffffff822bd798>] __key.41016+0x0/0x8
+ ... acquired at:
+   [<ffffffff81099cd2>] check_usage_forwards+0xa2/0x110
+   [<ffffffff810990b7>] mark_lock+0x1f7/0x630
+   [<ffffffff8109bb7c>] __lock_acquire+0xd3c/0x1c40
+   [<ffffffff8109cada>] lock_acquire+0x5a/0x70
+   [<ffffffff814c5961>] _raw_spin_lock_irqsave+0x41/0x60
+   [<ffffffff812a6727>] nouveau_irq_handler+0x57/0x150
+   [<ffffffff810adfca>] handle_IRQ_event+0x3a/0xe0
+   [<ffffffff810b0778>] handle_fasteoi_irq+0x78/0x100
+   [<ffffffff81034e3d>] handle_irq+0x1d/0x30
+   [<ffffffff81034338>] do_IRQ+0x58/0xd0
+   [<ffffffff814c66d3>] ret_from_intr+0x0/0x13
+   [<ffffffff8103129b>] cpu_idle+0xab/0x110
+   [<ffffffff8190ab59>] start_secondary+0x1e2/0x1e9
+
+
+stack backtrace:
+Pid: 0, comm: kworker/0:1 Not tainted 2.6.38-rc8 #9
+Call Trace:
+ <IRQ>  [<ffffffff81099c09>] ? print_irq_inversion_bug+0x139/0x160
+ [<ffffffff81099c30>] ? check_usage_forwards+0x0/0x110
+ [<ffffffff81099cd2>] ? check_usage_forwards+0xa2/0x110
+ [<ffffffff810990b7>] ? mark_lock+0x1f7/0x630
+ [<ffffffff8109bb7c>] ? __lock_acquire+0xd3c/0x1c40
+ [<ffffffff8109b2fb>] ? __lock_acquire+0x4bb/0x1c40
+ [<ffffffff81099755>] ? trace_hardirqs_on_caller+0x65/0x180
+ [<ffffffff810b244a>] ? check_for_new_grace_period+0xaa/0x120
+ [<ffffffff8109cada>] ? lock_acquire+0x5a/0x70
+ [<ffffffff812a6727>] ? nouveau_irq_handler+0x57/0x150
+ [<ffffffff814c5961>] ? _raw_spin_lock_irqsave+0x41/0x60
+ [<ffffffff812a6727>] ? nouveau_irq_handler+0x57/0x150
+ [<ffffffff812a6727>] ? nouveau_irq_handler+0x57/0x150
+ [<ffffffff810adfca>] ? handle_IRQ_event+0x3a/0xe0
+ [<ffffffff810b0778>] ? handle_fasteoi_irq+0x78/0x100
+ [<ffffffff81034e3d>] ? handle_irq+0x1d/0x30
+ [<ffffffff81034338>] ? do_IRQ+0x58/0xd0
+ [<ffffffff814c66d3>] ? ret_from_intr+0x0/0x13
+ <EOI>  [<ffffffff8103a749>] ? mwait_idle+0x89/0xc0
+ [<ffffffff8103a740>] ? mwait_idle+0x80/0xc0
+ [<ffffffff8103129b>] ? cpu_idle+0xab/0x110
+ [<ffffffff8190ab59>] ? start_secondary+0x1e2/0x1e9
+[drm] nouveau 0000:01:00.0: allocated 1280x1024 fb: 0x60000000, bo ffff88023f6e9120
+Console: switching to colour frame buffer device 160x64
+fb0: nouveaufb frame buffer device
+drm: registered panic notifier
+[drm] Initialized nouveau 0.0.16 20090420 for 0000:01:00.0 on minor 0
+	...
