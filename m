@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab1CHUSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 15:18:25 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:58628 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756516Ab1CHUQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 15:16:18 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        arnaud.patard@rtp-net.org
-Subject: [PATCH 12/15] staging: xgifb: vb_ext: make internal functions static
-Date: Tue,  8 Mar 2011 22:16:17 +0200
-Message-Id: <1299615380-22922-13-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1299615380-22922-1-git-send-email-aaro.koskinen@iki.fi>
+	id S1756766Ab1CHUSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 15:18:35 -0500
+Received: from www.tglx.de ([62.245.132.106]:33280 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756691Ab1CHUSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 15:18:33 -0500
+Date: Tue, 8 Mar 2011 21:17:11 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Michel Lespinasse <walken@google.com>
+cc: Darren Hart <darren@dvhart.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] futex: cmpxchg_futex_value_locked API change
+In-Reply-To: <20110307021127.GB31188@google.com>
+Message-ID: <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
+References: <20110307021127.GB31188@google.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make internal functions static.
+On Sun, 6 Mar 2011, Michel Lespinasse wrote:
+> The cmpxchg_futex_value_locked API was funny in that it returned either
+> the original, user-exposed futex value OR an error code such as -EFAULT.
+> This was confusing at best, and could be a source of livelocks in places
+> that retry the cmpxchg_futex_value_locked after trying to fix the issue
+> by running fault_in_user_writeable().
+> 
+> This change makes the cmpxchg_futex_value_locked API more similar to the
+> get_futex_value_locked one, returning an error code and updating the
+> original value through a reference argument.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/staging/xgifb/vb_ext.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+Ack.
 
-diff --git a/drivers/staging/xgifb/vb_ext.c b/drivers/staging/xgifb/vb_ext.c
-index cc78815..33a0635 100644
---- a/drivers/staging/xgifb/vb_ext.c
-+++ b/drivers/staging/xgifb/vb_ext.c
-@@ -9,13 +9,13 @@
- #include "vb_util.h"
- #include "vb_setmode.h"
- #include "vb_ext.h"
--unsigned char XGINew_GetPanelID(struct vb_device_info *pVBInfo);
--unsigned char XGINew_GetLCDDDCInfo(
-+static unsigned char XGINew_GetPanelID(struct vb_device_info *pVBInfo);
-+static unsigned char XGINew_GetLCDDDCInfo(
- 		struct xgi_hw_device_info *HwDeviceExtension,
- 		struct vb_device_info *pVBInfo);
--unsigned char XGINew_BridgeIsEnable(struct xgi_hw_device_info *,
-+static unsigned char XGINew_BridgeIsEnable(struct xgi_hw_device_info *,
- 		struct vb_device_info *pVBInfo);
--unsigned char XGINew_SenseHiTV(struct xgi_hw_device_info *HwDeviceExtension,
-+static unsigned char XGINew_SenseHiTV(struct xgi_hw_device_info *HwDeviceExtension,
- 		struct vb_device_info *pVBInfo);
- 
- /**************************************************************
-@@ -34,7 +34,7 @@ static unsigned char XGINew_Is301B(struct vb_device_info *pVBInfo)
- 		return 1;
- }
- 
--unsigned char XGINew_Sense(unsigned short tempbx, unsigned short tempcx, struct vb_device_info *pVBInfo)
-+static unsigned char XGINew_Sense(unsigned short tempbx, unsigned short tempcx, struct vb_device_info *pVBInfo)
- {
- 	unsigned short temp, i, tempch;
- 
-@@ -214,7 +214,7 @@ unsigned short XGINew_SenseLCD(struct xgi_hw_device_info *HwDeviceExtension, str
- 	return temp;
- }
- 
--unsigned char XGINew_GetLCDDDCInfo(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
-+static unsigned char XGINew_GetLCDDDCInfo(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
- {
- 	unsigned short temp;
- 
-@@ -256,7 +256,7 @@ unsigned char XGINew_GetLCDDDCInfo(struct xgi_hw_device_info *HwDeviceExtension,
- 	}
- }
- 
--unsigned char XGINew_GetPanelID(struct vb_device_info *pVBInfo)
-+static unsigned char XGINew_GetPanelID(struct vb_device_info *pVBInfo)
- {
- 	unsigned short PanelTypeTable[16] = { SyncNN | PanelRGB18Bit
- 			| Panel800x600  | _PanelType00, SyncNN | PanelRGB18Bit
-@@ -318,7 +318,7 @@ unsigned char XGINew_GetPanelID(struct vb_device_info *pVBInfo)
- 	}
- }
- 
--unsigned char XGINew_BridgeIsEnable(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
-+static unsigned char XGINew_BridgeIsEnable(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
- {
- 	unsigned short flag;
- 
-@@ -334,7 +334,7 @@ unsigned char XGINew_BridgeIsEnable(struct xgi_hw_device_info *HwDeviceExtension
- 	return 0;
- }
- 
--unsigned char XGINew_SenseHiTV(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
-+static unsigned char XGINew_SenseHiTV(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
- {
- 	unsigned short tempbx, tempcx, temp, i, tempch;
- 
--- 
-1.5.6.5
+>  static inline int
+> -futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
+> +futex_atomic_cmpxchg_inatomic(int *uval, int __user *uaddr,
+> +			      int oldval, int newval)
 
+Can we please change the arguments to u32 while at it? The futex core
+code uses u32 all over the place so those inlines should do the same.
+
+Thanks,
+
+	tglx
