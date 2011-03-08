@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab1CHIfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 03:35:08 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:44269 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756368Ab1CHIfG (ORCPT
+	id S1756398Ab1CHIlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 03:41:18 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62874 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab1CHIlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 03:35:06 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/HaxsE8knHG6FkznHnOBgRLN99OngaQIOBem35UK
-	3OOwUMv77W4Rfs
-Subject: Re: [patchlet] sched: fix rt throttle runtime borrowing
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <AANLkTinPuCg-fGBtOgYSwVf1_67dr9uzw7a-8TfxLUuW@mail.gmail.com>
-References: <1299486101.14465.25.camel@marge.simson.net>
-	 <AANLkTikOY2-_EAjYTBZG4Wb9HNHRxJ4Qcd+zbvbxzPbt@mail.gmail.com>
-	 <1299490414.14465.74.camel@marge.simson.net>
-	 <AANLkTinPuCg-fGBtOgYSwVf1_67dr9uzw7a-8TfxLUuW@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Mar 2011 09:28:12 +0100
-Message-ID: <1299572892.7949.16.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Tue, 8 Mar 2011 03:41:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=imtGQoTO1e2FP7KP+HK34v++pWQWaZ8CELSdEXQTjU0k+V/hojjHxJijGdUF5yS/RJ
+         KhpCifmUjhVPOCMvEqJG9WAiAKSeJIWOP/IKTSbpvfvyjMmSYRdGG389PmTkaExYL8k6
+         69r08SuJQ5v3dGVSu3zPM4soTl0575X5JRyqo=
+MIME-Version: 1.0
+In-Reply-To: <20110307190040.GI1873@nowhere>
+References: <201011181650.00152.roucaries.bastien@gmail.com>
+	<AANLkTik=+smaiGNwVw0pDBXexVd=trsz9aSawuqLZP6k@mail.gmail.com>
+	<20101223034229.GF1739@nowhere>
+	<201101300108.32383.roucaries.bastien@gmail.com>
+	<20110307190040.GI1873@nowhere>
+Date: Tue, 8 Mar 2011 09:41:15 +0100
+Message-ID: <AANLkTikMNw5yMxcUV3a-temcOdWa5gySZ+vTtfuBEAiD@mail.gmail.com>
+Subject: Re: Reiserfs deadlock in 2.6.36
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-08 at 16:19 +0800, Yong Zhang wrote:
-> On Mon, Mar 7, 2011 at 5:33 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > Well, it does prevent complete death, but you have to be pretty darn
-> > attentive to notice that the patient is still technically alive ;-)
-> >
-> > As such, turning borrowing off by default, and making borrowing up to
-> > within a micron of 100% CPU an opt-in feature likely makes more sense.
-> 
-> Another idea comes into my head is: disable runtime borrowing for
-> root_task_group forever by default, but keep current behavior
-> for the sub-groups :)
+On Mon, Mar 7, 2011 at 8:00 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> Hi Bastien,
 
-Yeah, that's one of the things I was pondering.  No parent, no
-borrowing.
+Cc: Ingo Molnar because he work a lot on soft lockup, and could have
+an idea to debug
+cc: andrew morton that trakc also "File/memory corruption in 2.6.37"
 
-	-Mike
+>> I take me more than two days of testing to reporduce this bugs with trace enabled. My filesystem was quite slow and this bugs seems
+>> to be timing related.
+>>
+>> One patern that trigger this bug is git. Doing a lot of git work of my desktop crash my machine.
+>>
+>> Moreover, trying to reproduce this bug lead to data loss. I have rebuilded twice my / partition using --rebuild-tree, and restored
+>> my home partition three times using backups.
+>>
+>> My log is here.
+>>
+>> Do you need more information?
+>
+> Yeah do you have CONFIG_REISERFS_CHECK? I just would
+> like to ensure we are not missing this important source of
+> information.
 
+Yes I have it
+> I'm puzzled because, given the traces, your opening and closing of the journal are
+> well balanced.
+>
+> You have a writer queued and stuck but I see no trace of it in the traces stream.
+> I only see well balanced journal operations, including journal closing that would have
+> woken your queued writer.
+>
+> A theory could be that your queued writer was waiting for someone to close the journal,
+> which finally happen but actually several minutes later, after there was many
+> journal opening/closing that overwrote the old trace containing the queueing of
+> the stuck writer.
+
+Doing a while true;do  sync && sleep1; done; help a lot
+
+>
+> I don't know what to do yet. I need to think more about it.
+>
+
+Could we do the stuff I have sugested at first ? use lockdep to track
+journal open,/close using fake lock ?
+
+BTW it seems that someone experiment this confition on ext3. I could
+do more testing if you want, and I will run xfstests in order to see
+if I could reproduce more quickly
+
+Bastien
