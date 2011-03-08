@@ -1,206 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab1CHAFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 19:05:06 -0500
-Received: from cantor.suse.de ([195.135.220.2]:43298 "EHLO mx1.suse.de"
+	id S932540Ab1CHAGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 19:06:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40171 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756789Ab1CHAFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 19:05:04 -0500
-Date: Tue, 8 Mar 2011 11:04:53 +1100
-From: NeilBrown <neilb@suse.de>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH] Fix over-zealous flush_disk when changing
- device size.
-Message-ID: <20110308110453.0047307d@notabene.brown>
-In-Reply-To: <1299538572.15955.90.camel@mulgrave.site>
-References: <20110217165057.5c50e566@notabene.brown>
-	<20110303143120.GA8134@infradead.org>
-	<20110304111624.4be27aaf@notabene.brown>
-	<1299259506.2118.24.camel@grinch>
-	<20110306174755.49404c8e@notabene.brown>
-	<1299471771.2228.11.camel@grinch>
-	<1299516418.15258.4.camel@mulgrave.site>
-	<20110308094412.1c45b277@notabene.brown>
-	<1299538572.15955.90.camel@mulgrave.site>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752121Ab1CHAGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 19:06:04 -0500
+Date: Mon, 7 Mar 2011 19:05:55 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Justin TerAvest <teravest@google.com>, Chad Talbott <ctalbott@google.com>,
+        Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>
+Subject: Re: RFC: default group_isolation to 1, remove option
+Message-ID: <20110308000555.GA22264@redhat.com>
+References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com>
+ <20110301142002.GB25699@redhat.com>
+ <4D6F0ED0.80804@kernel.dk>
+ <AANLkTin+TycqQxWGyxWOsuT+WOaEA0XhqFkJBMKe7-uY@mail.gmail.com>
+ <4D753488.6090808@kernel.dk>
+ <20110307202432.GH9540@redhat.com>
+ <4D7540F6.3080303@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7540F6.3080303@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Mar 2011 16:56:12 -0600 James Bottomley <James.Bottomley@suse.de>
-wrote:
-
-> On Tue, 2011-03-08 at 09:44 +1100, NeilBrown wrote:
-> > (linux-fsdevel added - seems relevant)
-> 
-> Heh, Christoph will be pleased.
-> 
-> > On Mon, 07 Mar 2011 10:46:58 -0600 James Bottomley <James.Bottomley@suse.de>
-> > wrote:
+On Mon, Mar 07, 2011 at 09:32:54PM +0100, Jens Axboe wrote:
+> On 2011-03-07 21:24, Vivek Goyal wrote:
+> > On Mon, Mar 07, 2011 at 08:39:52PM +0100, Jens Axboe wrote:
+> >> It's at least not my goal, it has nothing to do with isolation. Since we
+> >> have ->make_request_fn() drivers operating completely without queuing
+> >> limits, it may just be that we can drop the tracking completely on the
+> >> request side. Either one is currently broken, or both will work that
+> >> way. And if that is the case, then we don't have to do this ioc tracking
+> >> at all. With the additional complication of now needing
+> >> per-disk-per-process io contexts, that approach is looking a lot more
+> >> tasty right now.
 > > 
-> > > On Sun, 2011-03-06 at 21:22 -0700, Andrew Patterson wrote:
-> > > > On Sun, 2011-03-06 at 17:47 +1100, NeilBrown wrote:
-> > > > >  Would you be uncomfortable if I asked Linus to revert both my fix and your
-> > > > >  original patch??
-> > > > 
-> > > > James Bottomley wanted me to put this functionality in. I have no
-> > > > problem with reverting it myself, especially if it is causing other
-> > > > problems.  I would have to say that you need to ask him (or rather, I am
-> > > > not qualified to render an opinion here).
-> > > 
-> > > So it seems we have a couple of problems: the first being that
-> > > flush_disk() doesn't actually do what it says (flush the disk).  If it's
-> > > just discarding all data, dirty or clean, then its use in the
-> > > grow/shrink interface is definitely wrong.
-> > > 
-> > > The idea is that before we complete the grow/shrink, we make sure that
-> > > the device doesn't have any errors, so we want to try to write out all
-> > > dirty buffers to make sure they still have a home.  If flush_disk()
-> > > doesn't do that, then we need to use a different interface ... what's
-> > > the interface to flush a disk?
-> > > 
-> > 
-> > Hi James,
-> > 
-> > I *always* want to make sure that my device doesn't have any errors, not just
-> > when it changes size... but I'm not sure that regularly flushing out data is
-> > the right way to do it.
-> > But maybe I still misunderstand what the real point of this is.
+> > I am writting the code for per-disk-per-process io context and it is
+> > significant amount of code and as code size is growing I am also wondering
+> > if it worth the complication.
 > 
-> I actually have no idea what you're talking about now.  Let me start at
-> the beginning:
-
-Thanks!
-
+> Yep, I don't think we should do that.
 > 
-> The idea behind flushing a disk on size changes is to ensure we get
-> immediate detection of screw ups. (screw ups specifically means dirty
-> data in the lost region which we can no longer write back).
-> 
-> If the device is reducing in size and the FS supports this, some data
-> migrates from the soon to be lost blocks at the end.  The point about
-> running a full page cache flush for the device after it has been shrunk
-> is supposed to be to detect a screw up (i.e. a dirty page that just lost
-> its backing store).
-
-Make sense.  So what you *really* want to do is actively tell the filesystem
-that the device is now smaller and that is should complain loudly if that is
-a problem.
-You cannot directly do that, so a second best is to tell it to flush all
-data in the hope that if there is a problem, then this has at least some
-chance of causing it to be reported.
-
-So you don't need to purge any caches - just flush them.
-
-I'm having trouble seeing the relevant of the bit about "some data migrates
-from the soon to be lost blocks at the end".
-If you have previously requested the fs to resize downwards, then I would
-expect all of this to be fully completed - maybe you are trying to detect
-bugs in the filesystem's 'shrink' function?  Maybe it isn't directly relevant
-and you are just providing it as general context ??
-
-> 
-> My original thought was that this only needed to be done on shrink, but
-> HP had some pathological case where grow was implemented as shrink
-> first, so it got done on all size changes.
-
-I cannot see the relevance of this to the "flush caches" approach.
-If the size of the device shrinks and then grows while data is in a cache,
-and then you flush, it will simply result in random data appearing
-in the "new" part of the device, with no reason to expect errors.
-
-It could be relevant if you were purging caches as well as it makes sure
-you don't see stale data from before a shrink.
-
-So you seem to be saying that "purge" is important too - correct?
-
-> 
-> > As for the correct interface to flush a disk - there isn't one.
-> > One doesn't flush a storage device, one flushes a cache - to a storage
-> > device.  And there is not a 1-to-1 mapping.
+> > Currently request queue blocks a process if device is congested. It might
+> > happen that one process in a low weight cgroup is doing writes and has
+> > consumed all available request descriptors (it is really easy to produce)
+> > and now device is congested. Now any writes from high weight/prio cgroup
+> > will not even be submitted on request queue and hence they can not be
+> > given priority by CFQ.
 > > 
-> > A block device *is* associated with one cache - one which is used for
-> > caching accesses through /dev/XXX and also by some filesystems to cache some
-> > metadata.  You can flush this cache with sync_blockdev().  This just
-> > flushes out dirty pages in that cache, it doesn't discard clean pages.
-> > invalidate_bdev() can discard clean pages.  Call both, and get both outcomes.
+> >>
+> >> Or not get rid of limits completely, but do a lot more relaxed
+> >> accounting at the queue level still. That will not require any
+> >> additional tracking of io contexts etc, but still impose some limit on
+> >> the number of queued IOs.
 > > 
-> > If a filesystem is mounted directly on a given block_device, then it
-> > should have a valid s_bdev pointer and it is possible to find that filesystem
-> > from the block_device using get_active_super().  You could then call
-> > sync_filesystem() to flush out dirty data.  There isn't really a good
-> > interface to discard clean data. shrink_dcache_sb() does some of it, other
-> > bits of code do other bits.
+> > A lot more relaxed limit accounting should help a bit but it after a 
+> > while it might happen that slow movers eat up lots of request descriptors
+> > and making not much of progress.
 > > 
-> > Note that a block_device also can have a pointer to a super_block (bd_super).
-> > This does not seem to be widely used .... ext3 and ext4 use it so that memory
-> > pressure felt by the block-device cache can transmitted to the fs, so the
-> > fs can associate private data with the block device's cache I guess.
-> > I don't think bd_super is sufficiently persistent reference to be usable
-> > for sync_filesystems (it could race with unmount).
+> > Long back I had implemented this additional notion of q->nr_group_requests
+> > where we defined per group number of requests allowed submitter will
+> > be put to sleep. I also extended it to also export per bdi per group
+> > congestion notion. So a flusher thread can look at the page and cgroup
+> > of the page and determine if respective cgroup is congested or not. If
+> > cgroup is congested, flusher thread can move to next inode so that it
+> > is not put to sleep behind a slow mover.
 > > 
+> > Completely limitless queueu will solve the problem completely. But I guess
+> > then we can get that complain back that flusher thread submitted too much
+> > of IO to device.
 > > 
-> > But if the block device is within a dm or md device, or is an external
-> > journal for e.g. ext3, or is in some more complex relationship with a
-> > filesystem, then there is no way to request that any particular cache get
-> > flushed to the block device.  And if some user-space app has cached data
-> > for the device .... there is no way to get at that either.
-> > 
-> > If we wanted a "proper" solution for this we probably need to leverage
-> > the 'bd_claim' concept.  When a device is claimed, allow an 'operations'
-> > structure to be provided with operations like:
-> >    flush_caches  (writes out data)
-> >    purge_caches  (discards clean data)
-> >    discard_caches  (discards all data)
-> >    prepare_resize (is allowed to fail)
-> >    commit_resize
-> >    freeze_io
-> >    thaw_io
+> > So given then fact that per-ioc-per-disk accounting of request descriptors
+> > makes the accounting complicated and also makes it hard for block IO
+> > controller to use it, the other approach of implementing per group limit
+> > and per-group-per-bdi congested might be reasonable. Having said that, the
+> > patch I had written for per group descritor was also not necessarily very
+> > simple.
 > 
-> What makes you think we participate in the resize?  Most often we just
-> get notified.  There may or may not have been some preparation, but it's
-> mostly not something we participate in.
-
-You may not participate in the resize, but dm and md do and the
-"prepare_resize" part of the interface would be useful to them.  I agree
-that it might not be useful to SCSI devices.
-
+> So before all of this gets over designed a lot... If we get rid of the
+> one remaining direct buffered writeback in bdp(), then only the flusher
+> threads should be sending huge amounts of IO. So if we attack the
+> problem from that end instead, have it do that accounting in the bdi.
+> With that in place, I'm fairly confident that we can remove the request
+> limits.
 > 
-> > But flush_disk is definitely a wrong interface.  It has a meaningless name
-> > (as discussed above), and purges some caches while discarding others.
-> > 
-> > What do we *really* lose if we just revert that original patch?
-> 
-> Synchronous notification of errors.  If we don't try to write everything
-> back immediately after the size change, we don't see dirty pages in
-> zapped regions until the writeout/page cache management takes it into
-> its head to try to clean the pages.
-> 
+> Basically just replace the congestion_wait() in there with a bit of
+> accounting logic. Since it's per bdi anyway, we don't even have to
+> maintain that state in the bdi itself. It can remain in the thread
+> stack.
 
-So if you just want synchronous errors, I think you want:
-    fsync_bdev()
+I am wondering if we can make use of per BDI_WRITEBACK per bdi state
+to keep track of bdi state and do congestion_wait() accouting accordingly.
+It is percpu so we will introduce some inaccuracy but I guess the goal here
+is not to do very accurate nr_request accouting. That should atleast
+remove nr_request accouting from queue.
 
-which calls sync_filesystem() if it can find a filesystem, else
-sync_blockdev();  (sync_filesystem itself calls sync_blockdev too).
+For cgroup stuff, may be we can maintain some state in memory cgroups. For
+example, some kind of per bdi writeback in progress from that memory cgroup.
+If a BDI is congested then we can do some additional checks whether any
+IO from this cgroup is in progress or not a particular BDI. If yes, we 
+throttle the writeout otherwise we allow the thread to submit more IO.
 
-However this doesn't purge clean pages from the caches so there
-might be the stale data issue.
+So in practice q->nr_requests gets replaced with bdi->bdi_stat[BDI_WRITEBACK].
+That way nr_request moves out of request queue. As bdi_stat is per cpu,
+locking overhead should reduce overall. I think tricky part is how to
+keep track of per cgroup per bdi stat. We need some kind of simple
+approximation to allow IO from one cgroup to multiple bdi at the same
+time.
 
-Do you see that as a real issue?
-
-(Just a bit of clarification:  fsync_bdev flushes but does not purge.
- flush_disk purges but does not flush.  So with flush_disk there I don't
- think you will have been getting the errors you want.
- Also - fsync_bdev() takes a lot longer than flush_disk.  I hope
- revalidate_disk is only called from places where it is safe to block
- for FS writeout ... I think it is.).
-
-Thanks,
-NeilBrown
+Thanks
+Vivek
