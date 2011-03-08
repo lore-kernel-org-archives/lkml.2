@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab1CHFne (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 00:43:34 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56688 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab1CHFnc convert rfc822-to-8bit (ORCPT
+	id S1752157Ab1CHGIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 01:08:13 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47934 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1CHGIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 00:43:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=RvqqxYI+jjWY42E5fNhI2nuAjf4731U/fcsAQgxa2Ru7Nb71zs1HzCdWITnRxPe6Ut
-         VfCXMMqjTohs9ewkYwaM+NByOw9kYH4pDFCQ2udHOMs6WVQpOLEJytK6kGPikcRo/KPM
-         +92Zpc/61WHVKNFJJ/N/422KnsQSRLG5MKXk8=
+	Tue, 8 Mar 2011 01:08:09 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+Subject: Re: [PATCH V2] page-types.c: auto debugfs mount for hwpoison operation
+Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Clark Williams <williams@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+In-Reply-To: <4D75B815.2080603@linux.intel.com>
+References: <20110307113937.GB5080@localhost> <4D75B815.2080603@linux.intel.com>
+Message-Id: <20110308150824.7EC2.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=-PcbpBjWZuno1fjwZD-tGmC+JMxrzMr1FNwu7@mail.gmail.com>
-References: <201103072305.p27N5hKT000474@imap1.linux-foundation.org>
-	<20110307232655.GA7234@p183.telecom.by>
-	<AANLkTi=-PcbpBjWZuno1fjwZD-tGmC+JMxrzMr1FNwu7@mail.gmail.com>
-Date: Tue, 8 Mar 2011 13:43:31 +0800
-Message-ID: <AANLkTikxbAfpHCWzvLscdHccOju=Q1tN0pvcu_=jbeQ_@mail.gmail.com>
-Subject: Re: + sysctl-add-proc_dointvec_unsigned-handler.patch added to -mm tree
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  8 Mar 2011 15:08:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 1:15 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Tue, Mar 8, 2011 at 7:26 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
->> On Mon, Mar 07, 2011 at 03:05:43PM -0800, akpm@linux-foundation.org wrote:
->>> Add a proc_dointvec_unsigned() sysctl handler for positive value cases.
->>
->>> --- a/kernel/sysctl.c~sysctl-add-proc_dointvec_unsigned-handler
->>> +++ a/kernel/sysctl.c
->>
->>> +int proc_dointvec_unsigned(struct ctl_table *table, int write,
->>> +               void __user *buffer, size_t *lenp, loff_t *ppos)
->>> +{
->>> +     struct do_proc_dointvec_minmax_conv_param param = {
->>> +             .min = &zero,
->>> +     };
->>> +     return do_proc_dointvec(table, write, buffer, lenp, ppos,
->>> +                             do_proc_dointvec_minmax_conv, &param);
->>> +}
->>
->> This silently ignored max value in .extra2 .
->
-> Hi,
->
-> Good cache, should set .max = NULL here
+> page-types.c doesn't supply a way to specify the debugfs path and
+> the original debugfs path is not usual on most machines. This patch
+> supplies a way to auto mount debugfs if needed.
+> 
+> This patch is heavily inspired by tools/perf/utils/debugfs.c
+> 
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+> ---
+>   Documentation/vm/page-types.c |  105 
+> +++++++++++++++++++++++++++++++++++++++--
+>   1 files changed, 101 insertions(+), 4 deletions(-)
 
-Oh, c99 set default value to 0, isn't it?
 
-What do you mean silently ignore here?
+Cute!
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Let's see the code:
 
- if ((param->min && *param->min > val) ||
-                    (param->max && *param->max < val))
-                    return -EINVAL;
 
-There's no problem max == NULL
-
--- 
-Regards
-dave
