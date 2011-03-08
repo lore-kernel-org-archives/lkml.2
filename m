@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab1CHWPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:15:47 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37967 "EHLO ogre.sisk.pl"
+	id S1755079Ab1CHWQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:16:48 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37976 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754097Ab1CHWPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:15:46 -0500
+	id S1752329Ab1CHWQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:16:47 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Jiri Slaby <jirislaby@gmail.com>
 Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-Date: Tue, 8 Mar 2011 23:15:55 +0100
+Date: Tue, 8 Mar 2011 23:16:59 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
 Cc: Alan Stern <stern@rowland.harvard.edu>, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org,
@@ -20,7 +20,7 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103082315.55561.rjw@sisk.pl>
+Message-Id: <201103082316.59901.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -53,4 +53,6 @@ On Tuesday, March 08, 2011, Jiri Slaby wrote:
 > 
 > I don't know, maybe it's in suspend package which I don't have installed.
 
-It's there, yes.
+Hm.  So you use the in-kernel hibernate code?
+
+The one in the suspend package is generally faster.
