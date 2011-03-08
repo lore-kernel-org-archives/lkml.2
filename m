@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab1CHWKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 17:10:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1328 "EHLO mx1.redhat.com"
+	id S1754855Ab1CHWMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 17:12:24 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37942 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329Ab1CHWKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 17:10:10 -0500
-Date: Tue, 8 Mar 2011 17:10:02 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, NeilBrown <neilb@suse.de>
-Subject: blk-throttle: Use blk_plug in throttle code (Was: Re: [PATCH 05/10]
- block: remove per-queue plugging)
-Message-ID: <20110308221002.GJ27455@redhat.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
- <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
- <20110304040048.GA32404@redhat.com>
- <4D761FE1.20503@fusionio.com>
+	id S1753706Ab1CHWMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 17:12:23 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
+Date: Tue, 8 Mar 2011 23:12:26 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <Pine.LNX.4.44L0.1102221029100.1968-100000@iolanthe.rowland.org> <201103082025.38559.rjw@suse.com> <4D76920A.8070605@gmail.com>
+In-Reply-To: <4D76920A.8070605@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D761FE1.20503@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103082312.26675.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 01:24:01PM +0100, Jens Axboe wrote:
-> On 2011-03-04 05:00, Vivek Goyal wrote:
-> > On Sat, Jan 22, 2011 at 01:17:24AM +0000, Jens Axboe wrote:
+On Tuesday, March 08, 2011, Jiri Slaby wrote:
+> On 03/08/2011 08:25 PM, Rafael J. Wysocki wrote:
+> > On Tuesday, March 08, 2011, Jiri Slaby wrote:
+> >> On 02/22/2011 04:36 PM, Alan Stern wrote:
+> >>> By the way, are you booting with no_console_suspend?  And do you do 
+> >>> "echo 8 >/proc/sys/kernel/printk" (or equivalently, Alt-SysRq-8) before 
+> >>> suspending?
+> >>
+> >> Unfortunately there are no messages at all.
+> >>
+> >> Rafael, this is a Factory with intel gfx (modesetting). Do pm-utils
+> >> switch a console in such case? And if yes, to which one?
 > > 
-> > [..]
-> >>  mm/page-writeback.c                |    2 +-
-> >>  mm/readahead.c                     |   12 ---
-> >>  mm/shmem.c                         |    1 -
-> >>  mm/swap_state.c                    |    5 +-
-> >>  mm/swapfile.c                      |   37 --------
-> >>  mm/vmscan.c                        |    2 +-
-> >>  118 files changed, 153 insertions(+), 1248 deletions(-)
+> > pm-utils don't, but s2ram does, I'm not sure from the top of my head to
+> > which one, though.
 > > 
-> > block/blk-throttle.c also uses blk_unplug(). We need to get rid of that
-> > also.
+> > If you use a KMS driver (I get you do), please just "chmod a-x /usr/sbin/s2ram".
 > 
-> Done.
+> Yeah, I meant kernel modesetting, of course. Sorry for the confusion.
+> 
+> I don't have /usr/sbin/s2ram.
 
-Thanks Jens. Looking at the usage of blk_plug, i think it makes sense to
-make use of it in throttle dispatch also. Here is the patch.
-
-blk-throttle: Use blk_plug in throttle dispatch
-
-Use plug in throttle dispatch also as we are dispatching a bunch of
-bios in throttle context and some of them might merge.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-throttle.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-Index: linux-2.6-block/block/blk-throttle.c
-===================================================================
---- linux-2.6-block.orig/block/blk-throttle.c	2011-03-08 16:43:14.000000000 -0500
-+++ linux-2.6-block/block/blk-throttle.c	2011-03-08 16:59:44.359620804 -0500
-@@ -770,6 +770,7 @@ static int throtl_dispatch(struct reques
- 	unsigned int nr_disp = 0;
- 	struct bio_list bio_list_on_stack;
- 	struct bio *bio;
-+	struct blk_plug plug;
- 
- 	spin_lock_irq(q->queue_lock);
- 
-@@ -798,8 +799,10 @@ out:
- 	 * immediate dispatch
- 	 */
- 	if (nr_disp) {
-+		blk_start_plug(&plug);
- 		while((bio = bio_list_pop(&bio_list_on_stack)))
- 			generic_make_request(bio);
-+		blk_finish_plug(&plug);
- 	}
- 	return nr_disp;
- }
+Ah.  So it's gone from Factory?  Interesting.
