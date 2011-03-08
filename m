@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab1CHAQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 19:16:15 -0500
-Received: from okcforum.org ([173.8.189.10]:52838 "EHLO mail.okcforum.org"
+	id S1756496Ab1CHAS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 19:18:28 -0500
+Received: from cantor.suse.de ([195.135.220.2]:44355 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab1CHAQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 19:16:13 -0500
-X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Mar 2011 19:16:13 EST
-Message-ID: <4D75730F.1080905@okcforum.org>
-Date: Mon, 07 Mar 2011 16:06:39 -0800
-From: Nathan Grennan <edgan@okcforum.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@gmail.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] RT for v2.6.34.8 now available.
-References: <4D71668F.9050201@windriver.com>	<4D748070.1030502@localhost> <AANLkTikkGA6MUUm6yzHPcc7xktsyJzGmimQ0mbNQJ9vK@mail.gmail.com>
-In-Reply-To: <AANLkTikkGA6MUUm6yzHPcc7xktsyJzGmimQ0mbNQJ9vK@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750754Ab1CHAS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 19:18:26 -0500
+Subject: Re: [PATCH] [SCSI] bnx2fc: fix build error when !CONFIG_MODULES
+From: James Bottomley <James.Bottomley@suse.de>
+To: Bhanu Gollapudi <bprakash@broadcom.com>
+Cc: Mariusz Kozlowski <mk@lab.zgora.pl>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+In-Reply-To: <1299542075.5232.5.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
+References: <20110302182740.e4dfd79f.sfr@canb.auug.org.au>
+	 <1299103803-32594-1-git-send-email-mk@lab.zgora.pl>
+	 <20110307201610.GA9032@mako-laptop>
+	 <1299542075.5232.5.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Mar 2011 18:18:17 -0600
+Message-ID: <1299543497.15955.108.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2011 06:44 AM, Paul Gortmaker wrote:
-> On Mon, Mar 7, 2011 at 1:51 AM, Fernando Lopez-Lezcano
-> <nando@ccrma.stanford.edu>  wrote:
->> On 03/04/2011 02:24 PM, Paul Gortmaker wrote:
->>> As a value add to the 2.6.34 long term release, I'm happy to also
->>> announce the availability of 2.6.34-RT.
->>>
->>> You can find it in the v2.6.34-rt branch at:
->>>
->>>    git://git.kernel.org/pub/scm/linux/kernel/git/paulg/rt-patches.git
->> Great! Many thanks... Actually, impressive work.
->>
->> I'm trying to integrate/build it into my Fedora based rt packages for Planet
->> CCRMA. Warning: I'm doing this on top of the 2.6.34.8-68 fc13 koji build, so
->> rt is patched on top of the additional Fedora patches for that build (with a
->> few trivial tweaks to patch cleanly). So I don't know if the following
->> issues are due to that - I will investigate:
-> Thanks - I'm not surprised to see some fallout in new/updated drivers,
-> since they change so much per release and I didn't attempt to build every
-> driver under the sun - my core focus was on getting it stable with the main
-> defconfigs I could easily test.   I'll have a look and integrate accordingly.
->
-> P.
+On Mon, 2011-03-07 at 15:54 -0800, Bhanu Gollapudi wrote:
+> On Mon, 2011-03-07 at 12:16 -0800, Mariusz Kozlowski wrote: 
+> > On Wed, Mar 02, 2011 at 11:10:03PM +0100, Mariusz Kozlowski wrote:
+> > > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: dereferencing pointer to incomplete type
+> > > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
+> > 
+> > Hm. Still there in next-20110307. Is this patch wrong or..?
+> > 
+> 
+> James,
+> 
+> Here is my ack for this patch.
 
-drivers/net/bnx2x_main.c
-drivers/staging/comedi/drivers/quatech_daqp_cs.c
+OK, so the patch is actually wrong because adding #ifdefs on modules in
+files really impedes readability.  The bug is using a direct deref on
+module state instead of one of the APIs which work in the non-modular
+case, namely try_module_get(). That means the other two need to come out
+and be reworked (plus all the others in fcoe).
 
-These drivers didn't compile for me. bnx2x_main was an easy fix, but I 
-didn't bother with quatech_daqp_cs.
+Reworked looks like it might be a bigger item than bnx2fc.  If any of
+those tests is ever relevant, it means we have a race in the
+fcoe_transport because it shouldn't be calling function pointers on a
+dying module (unless it wants to trigger an oops).
+
+So, why are you trying to do this in the first place?
+
+James
+
+
