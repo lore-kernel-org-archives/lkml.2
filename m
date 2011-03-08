@@ -1,118 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab1CHLWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 06:22:19 -0500
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:39967 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754409Ab1CHLWQ (ORCPT
+	id S1754038Ab1CHLdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 06:33:18 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57139 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab1CHLdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 06:22:16 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D76119A.2030100@cam.ac.uk>
-Date: Tue, 08 Mar 2011 11:23:06 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: Moving staging:iio over to threaded interrupts.
-References: <4D6FCC99.6090202@cam.ac.uk> <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Mar 2011 06:33:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=dBky7+Ehr0g59Hm+56Ik5mqcjgz+tvlJZwz2eHafQTcVs7v91Z2zyF689aeWJawtK1
+         3RT/bX7OeqNA5oiEak2OrO246Y09UG8iDhDk2mQrkxaUTK7cTtXta6qlfSSzxjl7LCrI
+         azU32ZOljbZjujqD/VHpvz/xNXakHWInayQS0=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH 14/21 v2] staging: ft1000: Fix coding style in ft1000_submit_rx_urb function.
+Date: Tue,  8 Mar 2011 12:33:06 +0100
+Message-Id: <1299583986-2719-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299486086-7325-15-git-send-email-marek.belisko@open-nandra.com>
+References: <1299486086-7325-15-git-send-email-marek.belisko@open-nandra.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/11 10:30, Thomas Gleixner wrote:
-> On Thu, 3 Mar 2011, Jonathan Cameron wrote:
->> So to my mind two solutions exist.
->> 1) A single thread per trigger.  Everything prior to the work queue
->> calls is moved into a handler that goes in the 'fast' list which stays
->> in our top half handler.  The work queue bits are called one after
->> another in the bottom half.
->>
->> 2) Allow each consumer to attach it's own thread to the trigger
->> controller and basically implement our own variant of the core threaded
->> interrupt code that allows for a list of threads rather than a single one.
->>
->> I rather like the idea of 2.  It might even end up with different
->> devices being queried from different processor cores simultaneously
->> which is quite cute.  The question is whether a simple enough
->> implementation is possible that the originators of the threaded interrupt
->> code would be happy with it (as it bypasses or would mean additions to their
->> core code).
-> 
-> Don't implement another threading model. Look at the trigger irq as a
-> demultiplexing interrupt. So if you have several consumers of a single
-> trigger, then you can implement a pseudo irq_chip and register the sub
-> devices as separate interrupts.
-> 
-> That means your main trigger interrupt would look like this:
-> 
-> irqreturn_t hardirq_handler(int irq, void *dev)
-> {
->      iio_trigger_dev *idev = dev;
->      int i;
-> 
->      store_state_as_necessary(idev);
-> 
->      for (i = 0; i < idev->nr_subirqs; i++) {
->      	    if (idev->subirqs[i].enabled)
-> 		generic_handle_irq(idev->subirq_base + i);
->      }
-> }
-> 
-> And you'd have an irq_chip implementation which does:
-> 
-> static void subirq_mask(struct irq_data *d)
-> {
->      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
->      int idx = d->irq - idev->subirq_base;
-> 
->      idev->subirqs[idx].enabled = false;
-> }
-> 
-> static void subirq_unmask(struct irq_data *d)
-> {
->      iio_trigger_dev *idev = irq_data_get_irq_chip_data(d);
->      int idx = d->irq - idev->subirq_base;
-> 
->      idev->subirqs[idx].enabled = true;
-> }
-> 
-> static struct irq_chip subirq_chip = {
->        .name = "iiochip",
->        .mask = subirq_mask,
->        .unmask = subirq_unmask,
-> };
-> 
-> init()
-> {
-> 	for_each_subirq(i)
-> 		irq_set_chip_and_handler(i, &subirq_chip, handle_simple_irq);
-> }
-> 
-> So now you can request the interrupts for your subdevices with
-> request_irq or request_threaded_irq.
-> 
-> You can also implement #1 this way, you just mark the sub device
-> interrupts as IRQ_NESTED_THREAD, and then call the handlers from the
-> main trigger irq thread.
-Hi Thomas,
+Fix coding style and also replace printk with proper pr_err
+function.
 
-One issue here that I'm not quite sure how to overcome is that the trigger to
-device mapping tends to be dynamic.  That is we quite often switch around
-what device is triggered by which trigger at runtime.  All done via text label
-matching via sysfs.
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   46 ++++++++++++-------------
+ 1 files changed, 22 insertions(+), 24 deletions(-)
 
-I guess we could maintain this by a spot of indirection and pool of interrupts per
-trigger (with compile time control on how many). Any other approaches come to mind?
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index 8095dd2..8115e2c 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -1203,38 +1203,36 @@ static int ft1000_copy_up_pkt (struct urb *urb)
+ //---------------------------------------------------------------------------
+ static int ft1000_submit_rx_urb(struct ft1000_info *info)
+ {
+-    int result;
+-    struct ft1000_device *pFt1000Dev = info->pFt1000Dev;
++	int result;
++	struct ft1000_device *pFt1000Dev = info->pFt1000Dev;
+ 
++	//DEBUG ("ft1000_submit_rx_urb entered: sizeof rx_urb is %d\n", sizeof(*pFt1000Dev->rx_urb));
++	if (pFt1000Dev->status & FT1000_STATUS_CLOSING) {
++		DEBUG("network driver is closed, return\n");
++		//usb_kill_urb(pFt1000Dev->rx_urb); //mbelian
++		return -ENODEV;
++	}
+ 
+-    //DEBUG ("ft1000_submit_rx_urb entered: sizeof rx_urb is %d\n", sizeof(*pFt1000Dev->rx_urb));
+-    if ( pFt1000Dev->status & FT1000_STATUS_CLOSING)
+-    {
+-        DEBUG("network driver is closed, return\n");
+-        //usb_kill_urb(pFt1000Dev->rx_urb); //mbelian
+-	return -ENODEV;
+-    }
+-
+-    usb_fill_bulk_urb(pFt1000Dev->rx_urb,
+-            pFt1000Dev->dev,
+-            usb_rcvbulkpipe(pFt1000Dev->dev, pFt1000Dev->bulk_in_endpointAddr),
+-            pFt1000Dev->rx_buf,
+-            MAX_BUF_SIZE,
+-            (usb_complete_t)ft1000_copy_up_pkt,
+-            info);
+-
++	usb_fill_bulk_urb(pFt1000Dev->rx_urb,
++			  pFt1000Dev->dev,
++			  usb_rcvbulkpipe(pFt1000Dev->dev,
++					  pFt1000Dev->bulk_in_endpointAddr),
++			  pFt1000Dev->rx_buf, MAX_BUF_SIZE,
++			  (usb_complete_t) ft1000_copy_up_pkt, info);
+ 
+-    if((result = usb_submit_urb(pFt1000Dev->rx_urb, GFP_ATOMIC)))
+-    {
+-        printk("ft1000_submit_rx_urb: submitting rx_urb %d failed\n", result);
+-	return result;
+-    }
++	result = usb_submit_urb(pFt1000Dev->rx_urb, GFP_ATOMIC);
+ 
+-    //DEBUG("ft1000_submit_rx_urb exit: result=%d\n", result);
++	if (result) {
++		pr_err("ft1000_submit_rx_urb: submitting rx_urb %d failed\n",
++		       result);
++		return result;
++	}
++	//DEBUG("ft1000_submit_rx_urb exit: result=%d\n", result);
+ 
+ 	return 0;
+ }
+ 
++
+ //---------------------------------------------------------------------------
+ // Function:    ft1000_open
+ //
+-- 
+1.7.1
 
-Thanks,
-
-Jonathan
