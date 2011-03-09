@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab1CIAbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:31:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56105 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752734Ab1CIAbg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:31:36 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alan Modra <amodra@gmail.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1299630111.4146.15.camel@localhost>
-References: <1299630111.4146.15.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Mar 2011 00:31:16 +0000
-Message-ID: <1299630676.4146.23.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH 2/5] x86: Fix .size directive for async_page_fault
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+	id S1756811Ab1CIAbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:31:50 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:57716 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756740Ab1CIAbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:31:48 -0500
+Date: Tue, 8 Mar 2011 19:31:44 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        mrubin@google.com, Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH 10/15] ftrace: fix event alignment: jbd2:*
+Message-ID: <20110309003144.GA26548@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+	mrubin@google.com, Jiaying Zhang <jiayingz@google.com>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+ <1291421609-14665-11-git-send-email-dhsharp@google.com>
+ <1291427578.16223.12.camel@gandalf.stny.rr.com>
+ <1299629005.20306.101.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299629005.20306.101.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Modra <amodra@gmail.com>
+On Tue, Mar 08, 2011 at 07:03:25PM -0500, Steven Rostedt wrote:
+> Now I know why I was so late at adding this. I was waiting for
+> Acked-bys ;)
+> 
+> On Fri, 2010-12-03 at 20:52 -0500, Steven Rostedt wrote:
+> > [ Ccing Ted for Acked-by ]
+> 
+> Ted, Ping?
 
-[bwh: This is my summary.]
+A month or two ago I did an analysis using the pahole binary (part of
+the 'dwarves' package in Debian/Ubuntu) and noticed many more
+structures that were flagged as having 'holes' where there were
+optimization opportunities.
 
-gas used to accept (and ignore?) .size directives which referred to
-undefined symbols, as this does.  In binutils 2.21 these are treated
-as errors.
+In addition, (in an interesting example of synchronicity) just this
+afternoon, I had talked to Jiaying about a further optimization of the
+ext4 trace header files, since she pointed out to me that the 'perf'
+binary can actually handle the MAJOR() and MINOR() macros.  So we can
+replace 8 bytes of "int major, minor", with a 4 byte dev_t, and save
+another 4 bytes (assuming we can move the structure elements around so
+we can save a full 8 bytes to avoid structure padding).
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
-If this is already headed to Linus by some other route, sorry for the
-dupe.
+Jiaying was also going to send some patches to add some additional
+tracepoints to the upstream kernel.
 
-Alan: Care to add your S-o-b?  (I can't believe this is even subject to
-copyright, so I'm signing it off myself anyway.)
+So probably the best thing to do at this point is to drop the ext4 and
+jbd2 patches, since Jiaying is about to send me patches that to handle
+these optimizations plus some further ones --- and add some additional
+tracepoints.  Getting one patch from her that I'll feed in via the
+ext4 tree probably will be much simpler than coordinating patches to
+the same file from two different trees.
 
-Ben.
-
- arch/x86/kernel/entry_32.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..9ca3b0e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1413,7 +1413,7 @@ ENTRY(async_page_fault)
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
--END(apf_page_fault)
-+END(async_page_fault)
- #endif
- 
- /*
--- 
-1.7.4.1
-
-
-
+						- Ted
