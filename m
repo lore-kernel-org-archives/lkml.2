@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab1CIX43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 18:56:29 -0500
-Received: from gate.crashing.org ([63.228.1.57]:40021 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752390Ab1CIX42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 18:56:28 -0500
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Mar 2011 10:55:45 +1100
-Message-ID: <1299714945.22236.444.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752899Ab1CIX7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 18:59:13 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:17366 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab1CIX7I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 18:59:08 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=dYgSnszWIFsG8PuCf69QN3RA51orYr+547Hf6e2Jrotw/wTFzvZVAEtblEcGMMqAG
+	hGNaJGeAG8aDpHOmu0pkg==
+From: David Sharp <dhsharp@google.com>
+To: linux-kernel@vger.kernel.org, rostedt@goodmis.org
+Cc: mrubin@google.com, David Sharp <dhsharp@google.com>
+Subject: [PATCH trace-cmd 2/3] parse-events: support additional operators: '!', '~',  and '!='
+Date: Wed,  9 Mar 2011 15:58:56 -0800
+Message-Id: <1299715137-22768-2-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1299715137-22768-1-git-send-email-dhsharp@google.com>
+References: <1299715137-22768-1-git-send-email-dhsharp@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+Add support for the unary operators '!' and '~', and support '!=' so that
+it is differentiated from '!'.
 
-Here's a pair of regression fixes for 2.6.38. One fixes a 2.6.37
-regression (I'll send it to -stable separately) that breaks booting on
-legacy iSeries, and the other one disables a newly introduced features
-as it triggers nasty races in the scheduler that causes hangs and seem
-to be too much to fix for this release (working with PeterZ on it).
+Signed-off-by: David Sharp <dhsharp@google.com>
+---
+ parse-events.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-Cheers,
-Ben.
-
-The following changes since commit a5abba989deceb731047425812d268daf7536575:
-
-  Linux 2.6.38-rc8 (2011-03-07 21:09:37 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-Benjamin Herrenschmidt (2):
-      powerpc/iseries: Fix early init access to lppaca
-      powerpc/pseries: Disable VPNH feature
-
- arch/powerpc/include/asm/lppaca.h      |   16 ++++++++++++++++
- arch/powerpc/kernel/paca.c             |   14 --------------
- arch/powerpc/mm/numa.c                 |    3 ++-
- arch/powerpc/platforms/iseries/dt.c    |    6 +++---
- arch/powerpc/platforms/iseries/setup.c |    1 +
- 5 files changed, 22 insertions(+), 18 deletions(-)
-
+diff --git a/parse-events.c b/parse-events.c
+index bfb7ff5..507621b 100644
+--- a/parse-events.c
++++ b/parse-events.c
+@@ -1564,6 +1564,9 @@ static int get_op_prio(char *op)
+ {
+ 	if (!op[1]) {
+ 		switch (op[0]) {
++		case '~':
++		case '!':
++			return 4;
+ 		case '*':
+ 		case '/':
+ 		case '%':
+@@ -1642,6 +1645,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 			goto out_free;
+ 		}
+ 		switch (token[0]) {
++		case '~':
+ 		case '!':
+ 		case '+':
+ 		case '-':
+@@ -2981,6 +2985,21 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		left = eval_num_arg(data, size, event, arg->op.left);
+ 		right = eval_num_arg(data, size, event, arg->op.right);
+ 		switch (arg->op.op[0]) {
++		case '!':
++			switch (arg->op.op[1]) {
++			case 0:
++				val = !right;
++				break;
++			case '=':
++				val = left != right;
++				break;
++			default:
++				die("unknown op '%s'", arg->op.op);
++			}
++			break;
++		case '~':
++			val = ~right;
++			break;
+ 		case '|':
+ 			if (arg->op.op[1])
+ 				val = left || right;
+-- 
+1.7.3.1
 
