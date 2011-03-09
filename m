@@ -1,426 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab1CIOh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 09:37:57 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:39384 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab1CIOhz (ORCPT
+	id S932643Ab1CIOiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 09:38:55 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47856 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988Ab1CIOix convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 09:37:55 -0500
-From: Alexander Shishkin <virtuoso@slind.org>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Ken MacLeod <ken@bitsko.slc.ut.us>,
-        Shaun Reich <predator106@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-Date: Wed,  9 Mar 2011 16:36:51 +0200
-Message-Id: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
-X-Mailer: git-send-email 1.7.2.1.45.gb66c2
+	Wed, 9 Mar 2011 09:38:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ey8a7CZxN2ADYqhFfee8dzA3mkUKvC+F7cvrhg8EN2PLIqvn+X/BRizOnWOdZJIz1x
+         YHTIWkmfpG1JGOoNSYqONUFitZE2HZpOyax2pSNmjocfCM7bNnZcirepF1fV9gSMW7kH
+         XRnoRvFwfnJskGPTNN1tqxzhJiAw4vO9yyUWo=
+MIME-Version: 1.0
+In-Reply-To: <1299165837-27817-1-git-send-email-ming.m.lin@intel.com>
+References: <1299165837-27817-1-git-send-email-ming.m.lin@intel.com>
+Date: Wed, 9 Mar 2011 22:38:52 +0800
+Message-ID: <AANLkTikMi0TR9pUSG3bWdRvEOwKdFQ-5Ex5trjGEQBx0@mail.gmail.com>
+Subject: Re: [PATCH] perf: Avoid resolving [kernel.kallsyms] to real path for
+ buildid cache
+From: Lin Ming <minggr@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>
+Cc: Han Pingtian <phan@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-perf-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v3:
- - changed timerfd_settime() semantics (see below)
-Changes since v2:
- - replaced sysfs interface with a syscall
- - added sysctl/procfs handle to set a limit to the number of users
- - fixed issues pointed out by Greg.
-Changes since v1:
- - updated against 2.6.36-rc1,
- - added notification/filtering options,
- - added Documentation/ABI/sysfs-kernel-time-notify interface description.
+Hi, Arnaldo
 
-Certain userspace applications (like "clock" desktop applets or cron or
-systemd) might want to be notified when some other application changes
-the system time. There are several known to me reasons for this:
- - avoiding periodic wakeups to poll time changes;
- - rearming CLOCK_REALTIME timers when said changes happen;
- - changing system timekeeping policy for system-wide time management
-   programs;
- - keeping guest applications/operating systems running in emulators
-   up to date;
- - recalculation of traffic signal cycles in Advanced Traffic Controllers
-   (ATC), which is part of ATC API requirements [1] as developed by ATC
-   working group of the U.S. Institute of Transportation Engineers (ITE).
+Could you have a look at this patch?
 
-The major change since the previous version is the new semantics of
-timerfd_settime() when it's called on a time change notification
-descriptor: it will set the system time to utmr.it_value if the time
-change counter is zero, otherwise it will return EBUSY, this is required
-to prevent a race between setting the time and reading the counter, when
-the time controlling procees changes the time immediately after another
-process in the system did the same (the counter is greater than one),
-that process' time change will be lost. Thus, the time controlling
-process should use timerfd_settime() instead of clock_settime() or
-settimeofday() to ensure that other processes' time changes don't get
-lost.
+Thanks,
+Lin Ming
 
-This is another attempt to approach notifying userspace about system
-clock changes. The other one is using an eventfd and a syscall [1]. In
-the course of discussing the necessity of a syscall for this kind of
-notifications, it was suggested that this functionality can be achieved
-via timers [2] (and timerfd in particular [3]). This idea got quite
-some support [4], [5], [6] and some vague criticism [7], so I decided
-to try and go a bit further with it.
-
-[1] http://www.ite.org/standards/atcapi/version2.asp
-[2] http://marc.info/?l=linux-kernel&m=128950389423614&w=2
-[3] http://marc.info/?l=linux-kernel&m=128951020831573&w=2
-[4] http://marc.info/?l=linux-kernel&m=128951588006157&w=2
-[5] http://marc.info/?l=linux-kernel&m=128951503205111&w=2
-[6] http://marc.info/?l=linux-kernel&m=128955890118477&w=2
-[7] http://marc.info/?l=linux-kernel&m=129002967031104&w=2
-[8] http://marc.info/?l=linux-kernel&m=129002672227263&w=2
-
-Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Feng Tang <feng.tang@intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Michael Tokarev <mjt@tls.msk.ru>
-CC: Marcelo Tosatti <mtosatti@redhat.com>
-CC: John Stultz <johnstul@us.ibm.com>
-CC: Chris Friesen <chris.friesen@genband.com>
-CC: Kay Sievers <kay.sievers@vrfy.org>
-CC: Kirill A. Shutemov <kirill@shutemov.name>
-CC: Artem Bityutskiy <dedekind1@gmail.com>
-CC: Davide Libenzi <davidel@xmailserver.org>
-CC: linux-fsdevel@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
----
- fs/timerfd.c            |   94 ++++++++++++++++++++++++++++++++++++++++++-----
- include/linux/hrtimer.h |    6 +++
- include/linux/timerfd.h |    3 +-
- kernel/compat.c         |    5 ++-
- kernel/hrtimer.c        |    4 ++
- kernel/time.c           |   11 ++++-
- 6 files changed, 109 insertions(+), 14 deletions(-)
-
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index 8c4fc14..6170f61 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -22,6 +22,7 @@
- #include <linux/anon_inodes.h>
- #include <linux/timerfd.h>
- #include <linux/syscalls.h>
-+#include <linux/security.h>
- 
- struct timerfd_ctx {
- 	struct hrtimer tmr;
-@@ -30,8 +31,13 @@ struct timerfd_ctx {
- 	u64 ticks;
- 	int expired;
- 	int clockid;
-+	struct list_head notifiers_list;
- };
- 
-+/* TFD_NOTIFY_CLOCK_SET timers go here */
-+static DEFINE_SPINLOCK(notifiers_lock);
-+static LIST_HEAD(notifiers_list);
-+
- /*
-  * This gets called when the timer event triggers. We set the "expired"
-  * flag, but we do not re-arm the timer (in case it's necessary,
-@@ -51,10 +57,31 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
- 	return HRTIMER_NORESTART;
- }
- 
-+void timerfd_clock_was_set(clockid_t clockid)
-+{
-+	struct timerfd_ctx *ctx;
-+	unsigned long flags;
-+
-+	spin_lock(&notifiers_lock);
-+	list_for_each_entry(ctx, &notifiers_list, notifiers_list) {
-+		spin_lock_irqsave(&ctx->wqh.lock, flags);
-+		if (ctx->tmr.base->index == clockid) {
-+			ctx->ticks++;
-+			wake_up_locked(&ctx->wqh);
-+		}
-+		spin_unlock_irqrestore(&ctx->wqh.lock, flags);
-+	}
-+	spin_unlock(&notifiers_lock);
-+}
-+
- static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
- {
- 	ktime_t remaining;
- 
-+	/* for notification timers, return current time */
-+	if (!list_empty(&ctx->notifiers_list))
-+		return timespec_to_ktime(current_kernel_time());
-+
- 	remaining = hrtimer_expires_remaining(&ctx->tmr);
- 	return remaining.tv64 < 0 ? ktime_set(0, 0): remaining;
- }
-@@ -72,6 +99,12 @@ static void timerfd_setup(struct timerfd_ctx *ctx, int flags,
- 	ctx->expired = 0;
- 	ctx->ticks = 0;
- 	ctx->tintv = timespec_to_ktime(ktmr->it_interval);
-+
-+	if (flags & TFD_NOTIFY_CLOCK_SET) {
-+		list_add(&ctx->notifiers_list, &notifiers_list);
-+		return;
-+	}
-+
- 	hrtimer_init(&ctx->tmr, ctx->clockid, htmode);
- 	hrtimer_set_expires(&ctx->tmr, texp);
- 	ctx->tmr.function = timerfd_tmrproc;
-@@ -83,7 +116,12 @@ static int timerfd_release(struct inode *inode, struct file *file)
- {
- 	struct timerfd_ctx *ctx = file->private_data;
- 
--	hrtimer_cancel(&ctx->tmr);
-+	if (!list_empty(&ctx->notifiers_list)) {
-+		spin_lock(&notifiers_lock);
-+		list_del(&ctx->notifiers_list);
-+		spin_unlock(&notifiers_lock);
-+	} else
-+		hrtimer_cancel(&ctx->tmr);
- 	kfree(ctx);
- 	return 0;
- }
-@@ -113,6 +151,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
- 
- 	if (count < sizeof(ticks))
- 		return -EINVAL;
-+
- 	spin_lock_irq(&ctx->wqh.lock);
- 	if (file->f_flags & O_NONBLOCK)
- 		res = -EAGAIN;
-@@ -120,7 +159,8 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
- 		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
- 	if (ctx->ticks) {
- 		ticks = ctx->ticks;
--		if (ctx->expired && ctx->tintv.tv64) {
-+		if (ctx->expired && ctx->tintv.tv64 &&
-+		    list_empty(&ctx->notifiers_list)) {
- 			/*
- 			 * If tintv.tv64 != 0, this is a periodic timer that
- 			 * needs to be re-armed. We avoid doing it in the timer
-@@ -184,6 +224,8 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
- 	ctx->clockid = clockid;
- 	hrtimer_init(&ctx->tmr, clockid, HRTIMER_MODE_ABS);
- 
-+	INIT_LIST_HEAD(&ctx->notifiers_list);
-+
- 	ufd = anon_inode_getfd("[timerfd]", &timerfd_fops, ctx,
- 			       O_RDWR | (flags & TFD_SHARED_FCNTL_FLAGS));
- 	if (ufd < 0)
-@@ -196,18 +238,24 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 		const struct itimerspec __user *, utmr,
- 		struct itimerspec __user *, otmr)
- {
-+	int ret = 0;
- 	struct file *file;
- 	struct timerfd_ctx *ctx;
- 	struct itimerspec ktmr, kotmr;
- 
--	if (copy_from_user(&ktmr, utmr, sizeof(ktmr)))
--		return -EFAULT;
--
--	if ((flags & ~TFD_SETTIME_FLAGS) ||
--	    !timespec_valid(&ktmr.it_value) ||
--	    !timespec_valid(&ktmr.it_interval))
-+	if (flags & ~TFD_SETTIME_FLAGS)
- 		return -EINVAL;
- 
-+	/* utmr may be NULL for notification timerfd */
-+	if (!(flags & TFD_NOTIFY_CLOCK_SET) || utmr) {
-+		if (copy_from_user(&ktmr, utmr, sizeof(ktmr)))
-+			return -EFAULT;
-+
-+		if (!timespec_valid(&ktmr.it_value) ||
-+		    !timespec_valid(&ktmr.it_interval))
-+			return -EINVAL;
-+	}
-+
- 	file = timerfd_fget(ufd);
- 	if (IS_ERR(file))
- 		return PTR_ERR(file);
-@@ -218,10 +266,12 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 	 * it to the new values.
- 	 */
- 	for (;;) {
-+		spin_lock(&notifiers_lock);
- 		spin_lock_irq(&ctx->wqh.lock);
--		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
-+		if (!list_empty(&notifiers_list) || hrtimer_try_to_cancel(&ctx->tmr) >= 0)
- 			break;
- 		spin_unlock_irq(&ctx->wqh.lock);
-+		spin_unlock(&notifiers_lock);
- 		cpu_relax();
- 	}
- 
-@@ -238,16 +288,39 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
- 	kotmr.it_interval = ktime_to_timespec(ctx->tintv);
- 
- 	/*
-+	 * for the notification timerfd, set current time to it_value
-+	 * if the timer hasn't expired; otherwise someone has changed
-+	 * the system time to the value that we don't know
-+	 */
-+	if (!list_empty(&ctx->notifiers_list) && utmr) {
-+		if (ctx->ticks) {
-+			ret = -EBUSY;
-+			goto out;
-+		}
-+
-+		ret = security_settime(&ktmr.it_value, NULL);
-+		if (ret)
-+			goto out;
-+
-+		spin_unlock_irq(&ctx->wqh.lock);
-+		ret = do_settimeofday(&ktmr.it_value);
-+		goto out1;
-+	}
-+
-+	/*
- 	 * Re-program the timer to the new value ...
- 	 */
- 	timerfd_setup(ctx, flags, &ktmr);
- 
-+out:
- 	spin_unlock_irq(&ctx->wqh.lock);
-+out1:
-+	spin_unlock(&notifiers_lock);
- 	fput(file);
- 	if (otmr && copy_to_user(otmr, &kotmr, sizeof(kotmr)))
- 		return -EFAULT;
- 
--	return 0;
-+	return ret;
- }
- 
- SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
-@@ -273,6 +346,7 @@ SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
- 	spin_unlock_irq(&ctx->wqh.lock);
- 	fput(file);
- 
-+out:
- 	return copy_to_user(otmr, &kotmr, sizeof(kotmr)) ? -EFAULT: 0;
- }
- 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 6bc1804..991e8d9 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -248,6 +248,12 @@ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
- 	return ktime_sub(timer->node.expires, timer->base->get_time());
- }
- 
-+#ifdef CONFIG_TIMERFD
-+extern void timerfd_clock_was_set(clockid_t clockid);
-+#else
-+static inline void timerfd_clock_was_set(clockid_t clockid) {}
-+#endif
-+
- #ifdef CONFIG_HIGH_RES_TIMERS
- struct clock_event_device;
- 
-diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
-index 2d07929..c3ddad9 100644
---- a/include/linux/timerfd.h
-+++ b/include/linux/timerfd.h
-@@ -19,6 +19,7 @@
-  * shared O_* flags.
-  */
- #define TFD_TIMER_ABSTIME (1 << 0)
-+#define TFD_NOTIFY_CLOCK_SET (1 << 1)
- #define TFD_CLOEXEC O_CLOEXEC
- #define TFD_NONBLOCK O_NONBLOCK
- 
-@@ -26,6 +27,6 @@
- /* Flags for timerfd_create.  */
- #define TFD_CREATE_FLAGS TFD_SHARED_FCNTL_FLAGS
- /* Flags for timerfd_settime.  */
--#define TFD_SETTIME_FLAGS TFD_TIMER_ABSTIME
-+#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_NOTIFY_CLOCK_SET)
- 
- #endif /* _LINUX_TIMERFD_H */
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 38b1d2c..b1cf3e1 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -995,7 +995,10 @@ asmlinkage long compat_sys_stime(compat_time_t __user *tptr)
- 	if (err)
- 		return err;
- 
--	do_settimeofday(&tv);
-+	err = do_settimeofday(&tv);
-+	if (!err)
-+		timerfd_clock_was_set(CLOCK_REALTIME);
-+
- 	return 0;
- }
- 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 2c3d6e5..469eef6 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -663,6 +663,7 @@ void clock_was_set(void)
- {
- 	/* Retrigger the CPU local events everywhere */
- 	on_each_cpu(retrigger_next_event, NULL, 1);
-+
- }
- 
- /*
-@@ -675,6 +676,9 @@ void hres_timers_resume(void)
- 		  KERN_INFO "hres_timers_resume() called with IRQs enabled!");
- 
- 	retrigger_next_event(NULL);
-+
-+	/* Trigger timerfd notifiers */
-+	timerfd_clock_was_set(CLOCK_MONOTONIC);
- }
- 
- /*
-diff --git a/kernel/time.c b/kernel/time.c
-index 6430a75..b06f759 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -92,7 +92,10 @@ SYSCALL_DEFINE1(stime, time_t __user *, tptr)
- 	if (err)
- 		return err;
- 
--	do_settimeofday(&tv);
-+	err = do_settimeofday(&tv);
-+	if (!err)
-+		timerfd_clock_was_set(CLOCK_REALTIME);
-+
- 	return 0;
- }
- 
-@@ -177,7 +180,11 @@ int do_sys_settimeofday(const struct timespec *tv, const struct timezone *tz)
- 		/* SMP safe, again the code in arch/foo/time.c should
- 		 * globally block out interrupts when it runs.
- 		 */
--		return do_settimeofday(tv);
-+		error = do_settimeofday(tv);
-+		if (!error)
-+			timerfd_clock_was_set(CLOCK_REALTIME);
-+
-+		return error;
- 	}
- 	return 0;
- }
--- 
-1.7.2.1.45.gb66c2
-
+On Thu, Mar 3, 2011 at 11:23 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> kallsyms has a virtual file name [kernel.kallsyms].
+> Currently, it can't be added to buildid cache successfully
+> because the code(build_id_cache__add_s) tries to resolve
+> [kernel.kallsyms]to a real absolute pathname and that fails.
+>
+> Fixes it by not resolving it and just use the name [kernel.kallsyms].
+> So dir ~/.debug/[kernel.kallsyms] is created.
+>
+> Original bug report at:
+> https://lkml.org/lkml/2011/3/1/524
+>
+> Tested-by: Han Pingtian <phan@redhat.com>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  tools/perf/util/header.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 72c124d..1f8883b 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -271,11 +271,15 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+>                          const char *name, bool is_kallsyms)
+>  {
+>        const size_t size = PATH_MAX;
+> -       char *realname = realpath(name, NULL),
+> -            *filename = malloc(size),
+> +       char *realname, *filename = malloc(size),
+>             *linkname = malloc(size), *targetname;
+>        int len, err = -1;
+>
+> +       if (is_kallsyms)
+> +               realname = (char *)name;
+> +       else
+> +               realname = realpath(name, NULL);
+> +
+>        if (realname == NULL || filename == NULL || linkname == NULL)
+>                goto out_free;
+>
+> @@ -307,7 +311,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+>        if (symlink(targetname, linkname) == 0)
+>                err = 0;
+>  out_free:
+> -       free(realname);
+> +       if (!is_kallsyms)
+> +               free(realname);
+>        free(filename);
+>        free(linkname);
+>        return err;
+> --
+> 1.7.2.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
