@@ -1,153 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab1CIP5X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:57:23 -0500
-Received: from mga09.intel.com ([134.134.136.24]:3728 "EHLO mga09.intel.com"
+	id S1757233Ab1CIP5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:57:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49916 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757010Ab1CIP5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:57:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,291,1297065600"; 
-   d="scan'208";a="718234174"
-Date: Wed, 09 Mar 2011 15:56:52 +0000
-From: tadeusz.struk@intel.com
-To: herbert@gondor.hengli.com.au
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        aidan.o.mahony@intel.com, gabriele.paoloni@intel.com,
-        adrian.hoban@intel.com, tadeusz.struk@intel.com
-Subject: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets that
- are not multiple of 64bytes
-Message-ID: <4d77a344.ufBJ2BimO/o2UpKI%tadeusz.struk@intel.com>
-User-Agent: nail 11.25 7/29/05
+	id S1757010Ab1CIP5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 10:57:49 -0500
+Date: Wed, 9 Mar 2011 12:57:24 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Lin Ming <minggr@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Han Pingtian <phan@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Franck Bui-Huu <fbuihuu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH] perf: Avoid resolving [kernel.kallsyms] to real path
+	for buildid cache
+Message-ID: <20110309155724.GB14438@ghostprotocols.net>
+References: <1299165837-27817-1-git-send-email-ming.m.lin@intel.com> <AANLkTikMi0TR9pUSG3bWdRvEOwKdFQ-5Ex5trjGEQBx0@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikMi0TR9pUSG3bWdRvEOwKdFQ-5Ex5trjGEQBx0@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tadeusz Struk <tadeusz.struk@intel.com>
-Date: Wed, 9 Mar 2011 15:01:06 +0000
-Subject: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets that are not multiple of 64bytes
+Em Wed, Mar 09, 2011 at 10:38:52PM +0800, Lin Ming escreveu:
+> Hi, Arnaldo
+> 
+> Could you have a look at this patch?
+> 
+> Thanks,
+> Lin Ming
 
-Hi Herbert,
-This patch fixes problem with packets that are not multiple of 64bytes.
-Regards,
-Tadeusz
+Seems ok, problem was introduced in:
 
+commit 68a7a771ad0e2959983729bf88cbc74a7014438f
+Author: Franck Bui-Huu <fbuihuu@gmail.com>
+Date:   Fri Dec 10 22:06:26 2010 +0100
 
-Signed-off-by: Adrian Hoban <adrian.hoban@intel.com>
-Signed-off-by: Aidan O'Mahony <aidan.o.mahony@intel.com>
-Signed-off-by: Gabriele Paoloni <gabriele.paoloni@intel.com>
-Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
----
- arch/x86/crypto/aesni-intel_asm.S  |    5 ++++-
- arch/x86/crypto/aesni-intel_glue.c |   14 ++++++++++++--
- 2 files changed, 16 insertions(+), 3 deletions(-)
+    perf buildid-cache: Fix symbolic link handling
+    
+    This was broken since link(2) doesn't dereference symbolic
+    links. Instead 'filename' becomes a symbolic link to the same file
+    that 'name' refers to.
+    
+    This had the bad effect to create dangling symlinks in the case that
+    even can't be removed with perf-buildid-cache(1).
+    
+    LKML-Reference: <m38vzxxrql.fsf@gmail.com>
+    Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-diff --git a/arch/x86/crypto/aesni-intel_asm.S b/arch/x86/crypto/aesni-intel_asm.S
-index 8fe2a49..4faa3b2 100644
---- a/arch/x86/crypto/aesni-intel_asm.S
-+++ b/arch/x86/crypto/aesni-intel_asm.S
-@@ -1612,6 +1612,7 @@ _zero_cipher_left_encrypt:
-         movdqa SHUF_MASK(%rip), %xmm10
- 	PSHUFB_XMM %xmm10, %xmm0
+[acme@emilia linux]$ git describe 68a7a771
+v2.6.37-rc5-71-g68a7a77
+
+So I'll add a CC: stable@kernel.org when pushing to perf/urgent.
+
+- Arnaldo
+
  
-+
- 	ENCRYPT_SINGLE_BLOCK	%xmm0, %xmm1        # Encrypt(K, Yn)
- 	sub $16, %r11
- 	add %r13, %r11
-@@ -1634,7 +1635,9 @@ _zero_cipher_left_encrypt:
- 	# GHASH computation for the last <16 byte block
- 	sub	%r13, %r11
- 	add	$16, %r11
--	PSHUFB_XMM %xmm10, %xmm1
-+
-+	movdqa SHUF_MASK(%rip), %xmm10
-+	PSHUFB_XMM %xmm10, %xmm0
- 
- 	# shuffle xmm0 back to output as ciphertext
- 
-diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
-index e0e6340..2577613 100644
---- a/arch/x86/crypto/aesni-intel_glue.c
-+++ b/arch/x86/crypto/aesni-intel_glue.c
-@@ -828,9 +828,15 @@ static int rfc4106_init(struct crypto_tfm *tfm)
- 	struct cryptd_aead *cryptd_tfm;
- 	struct aesni_rfc4106_gcm_ctx *ctx = (struct aesni_rfc4106_gcm_ctx *)
- 		PTR_ALIGN((u8 *)crypto_tfm_ctx(tfm), AESNI_ALIGN);
-+	struct crypto_aead *cryptd_child;
-+	struct aesni_rfc4106_gcm_ctx *child_ctx;
- 	cryptd_tfm = cryptd_alloc_aead("__driver-gcm-aes-aesni", 0, 0);
- 	if (IS_ERR(cryptd_tfm))
- 		return PTR_ERR(cryptd_tfm);
-+
-+	cryptd_child = cryptd_aead_child(cryptd_tfm);
-+	child_ctx = aesni_rfc4106_gcm_ctx_get(cryptd_child);
-+	memcpy(child_ctx, ctx, sizeof(*ctx));
- 	ctx->cryptd_tfm = cryptd_tfm;
- 	tfm->crt_aead.reqsize = sizeof(struct aead_request)
- 		+ crypto_aead_reqsize(&cryptd_tfm->base);
-@@ -923,6 +929,9 @@ static int rfc4106_set_key(struct crypto_aead *parent, const u8 *key,
- 	int ret = 0;
- 	struct crypto_tfm *tfm = crypto_aead_tfm(parent);
- 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(parent);
-+	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
-+	struct aesni_rfc4106_gcm_ctx *child_ctx =
-+                                 aesni_rfc4106_gcm_ctx_get(cryptd_child);
- 	u8 *new_key_mem = NULL;
- 
- 	if (key_len < 4) {
-@@ -966,6 +975,7 @@ static int rfc4106_set_key(struct crypto_aead *parent, const u8 *key,
- 		goto exit;
- 	}
- 	ret = rfc4106_set_hash_subkey(ctx->hash_subkey, key, key_len);
-+	memcpy(child_ctx, ctx, sizeof(*ctx));
- exit:
- 	kfree(new_key_mem);
- 	return ret;
-@@ -997,7 +1007,6 @@ static int rfc4106_encrypt(struct aead_request *req)
- 	int ret;
- 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
- 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
--	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
- 
- 	if (!irq_fpu_usable()) {
- 		struct aead_request *cryptd_req =
-@@ -1006,6 +1015,7 @@ static int rfc4106_encrypt(struct aead_request *req)
- 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
- 		return crypto_aead_encrypt(cryptd_req);
- 	} else {
-+		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
- 		kernel_fpu_begin();
- 		ret = cryptd_child->base.crt_aead.encrypt(req);
- 		kernel_fpu_end();
-@@ -1018,7 +1028,6 @@ static int rfc4106_decrypt(struct aead_request *req)
- 	int ret;
- 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
- 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
--	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
- 
- 	if (!irq_fpu_usable()) {
- 		struct aead_request *cryptd_req =
-@@ -1027,6 +1036,7 @@ static int rfc4106_decrypt(struct aead_request *req)
- 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
- 		return crypto_aead_decrypt(cryptd_req);
- 	} else {
-+		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
- 		kernel_fpu_begin();
- 		ret = cryptd_child->base.crt_aead.decrypt(req);
- 		kernel_fpu_end();
--- 
-1.7.4
-
---------------------------------------------------------------
-Intel Shannon Limited
-Registered in Ireland
-Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
-Registered Number: 308263
-Business address: Dromore House, East Park, Shannon, Co. Clare
-
-This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
-
-
+> On Thu, Mar 3, 2011 at 11:23 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > kallsyms has a virtual file name [kernel.kallsyms].
+> > Currently, it can't be added to buildid cache successfully
+> > because the code(build_id_cache__add_s) tries to resolve
+> > [kernel.kallsyms]to a real absolute pathname and that fails.
+> >
+> > Fixes it by not resolving it and just use the name [kernel.kallsyms].
+> > So dir ~/.debug/[kernel.kallsyms] is created.
+> >
+> > Original bug report at:
+> > https://lkml.org/lkml/2011/3/1/524
+> >
+> > Tested-by: Han Pingtian <phan@redhat.com>
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >  tools/perf/util/header.c |   11 ++++++++---
+> >  1 files changed, 8 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> > index 72c124d..1f8883b 100644
+> > --- a/tools/perf/util/header.c
+> > +++ b/tools/perf/util/header.c
+> > @@ -271,11 +271,15 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+> >                          const char *name, bool is_kallsyms)
+> >  {
+> >        const size_t size = PATH_MAX;
+> > -       char *realname = realpath(name, NULL),
+> > -            *filename = malloc(size),
+> > +       char *realname, *filename = malloc(size),
+> >             *linkname = malloc(size), *targetname;
+> >        int len, err = -1;
+> >
+> > +       if (is_kallsyms)
+> > +               realname = (char *)name;
+> > +       else
+> > +               realname = realpath(name, NULL);
+> > +
+> >        if (realname == NULL || filename == NULL || linkname == NULL)
+> >                goto out_free;
+> >
+> > @@ -307,7 +311,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+> >        if (symlink(targetname, linkname) == 0)
+> >                err = 0;
+> >  out_free:
+> > -       free(realname);
+> > +       if (!is_kallsyms)
+> > +               free(realname);
+> >        free(filename);
+> >        free(linkname);
+> >        return err;
+> > --
+> > 1.7.2.3
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
