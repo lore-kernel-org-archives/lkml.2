@@ -1,193 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab1CIHyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 02:54:25 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55622 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1CIHyY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 02:54:24 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 9 Mar 2011 16:48:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [PATCH v3] memcg: fix leak on wrong LRU with FUSE
-Message-Id: <20110309164801.3a4c8d10.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110309150750.d570798c.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110308181832.6386da5f.nishimura@mxp.nes.nec.co.jp>
-	<20110309150750.d570798c.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756032Ab1CIIDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 03:03:52 -0500
+Received: from compulab.co.il ([67.18.134.219]:58371 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab1CIIDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 03:03:51 -0500
+Message-ID: <4D77345F.8040706@compulab.co.il>
+Date: Wed, 09 Mar 2011 10:03:43 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.13) Gecko/20101211 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+CC: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
+Subject: Re: [PATCH v2] Regulator: add suspend-finish API for regulator core.
+References: <20110308133817.GE20944@opensource.wolfsonmicro.com> <1299638225-29162-1-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1299638225-29162-1-git-send-email-myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Mar 2011 15:07:50 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> > } else {
-> > 	/* shmem */
-> > 	if (PageSwapCache(page)) {
-> > 		..
-> > 	} else {
-> > 		..
-> > 	}
-> > }
-> > 
-> > Otherwise, the page cache will be charged twice.
-> > 
-> 
-> Ahh, thanks. I'll send v3.
-> 
-
-Okay, this is a fixed one.
-==
-
-fs/fuse/dev.c::fuse_try_move_page() does
-
-   (1) remove a page by ->steal()
-   (2) re-add the page to page cache 
-   (3) link the page to LRU if it was not on LRU at (1)
-
-This implies the page is _on_ LRU when it's added to radix-tree.
-So, the page is added to  memory cgroup while it's on LRU.
-because LRU is lazy and no one flushs it.
-
-This is the same behavior as SwapCache and needs special care as
- - remove page from LRU before overwrite pc->mem_cgroup.
- - add page to LRU after overwrite pc->mem_cgroup.
-
-And we need to taking care of pagevec.
-
-If PageLRU(page) is set before we add PCG_USED bit, the page
-will not be added to memcg's LRU (in short period).
-So, regardlress of PageLRU(page) value before commit_charge(),
-we need to check PageLRU(page) after commit_charge().
-
-Changelog v2=>v3:
-  - fixed double accounting.
-
-Changelog v1=>v2:
-  - clean up.
-  - cover !PageLRU() by pagevec case.
+Hi,
 
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   54 +++++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 35 insertions(+), 19 deletions(-)
+just a minor comment issue...
 
-Index: mmotm-0303/mm/memcontrol.c
-===================================================================
---- mmotm-0303.orig/mm/memcontrol.c
-+++ mmotm-0303/mm/memcontrol.c
-@@ -926,13 +926,12 @@ void mem_cgroup_add_lru_list(struct page
- }
- 
- /*
-- * At handling SwapCache, pc->mem_cgroup may be changed while it's linked to
-- * lru because the page may.be reused after it's fully uncharged (because of
-- * SwapCache behavior).To handle that, unlink page_cgroup from LRU when charge
-- * it again. This function is only used to charge SwapCache. It's done under
-- * lock_page and expected that zone->lru_lock is never held.
-+ * At handling SwapCache and other FUSE stuff, pc->mem_cgroup may be changed
-+ * while it's linked to lru because the page may be reused after it's fully
-+ * uncharged. To handle that, unlink page_cgroup from LRU when charge it again.
-+ * It's done under lock_page and expected that zone->lru_lock isnever held.
-  */
--static void mem_cgroup_lru_del_before_commit_swapcache(struct page *page)
-+static void mem_cgroup_lru_del_before_commit(struct page *page)
- {
- 	unsigned long flags;
- 	struct zone *zone = page_zone(page);
-@@ -948,7 +947,7 @@ static void mem_cgroup_lru_del_before_co
- 	spin_unlock_irqrestore(&zone->lru_lock, flags);
- }
- 
--static void mem_cgroup_lru_add_after_commit_swapcache(struct page *page)
-+static void mem_cgroup_lru_add_after_commit(struct page *page)
- {
- 	unsigned long flags;
- 	struct zone *zone = page_zone(page);
-@@ -2431,9 +2430,28 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype);
- 
-+static void
-+__mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *mem,
-+					enum charge_type ctype)
-+{
-+	struct page_cgroup *pc = lookup_page_cgroup(page);
-+	/*
-+	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
-+	 * is already on LRU. It means the page may on some other page_cgroup's
-+	 * LRU. Take care of it.
-+	 */
-+	if (unlikely(PageLRU(page)))
-+		mem_cgroup_lru_del_before_commit(page);
-+	__mem_cgroup_commit_charge(mem, page, 1, pc, ctype);
-+	if (unlikely(PageLRU(page)))
-+		mem_cgroup_lru_add_after_commit(page);
-+	return;
-+}
-+
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask)
- {
-+	struct mem_cgroup *mem = NULL;
- 	int ret;
- 
- 	if (mem_cgroup_disabled())
-@@ -2468,14 +2486,16 @@ int mem_cgroup_cache_charge(struct page 
- 	if (unlikely(!mm))
- 		mm = &init_mm;
- 
--	if (page_is_file_cache(page))
--		return mem_cgroup_charge_common(page, mm, gfp_mask,
--				MEM_CGROUP_CHARGE_TYPE_CACHE);
--
-+	if (page_is_file_cache(page)) {
-+		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &mem, true);
-+		if (ret || !mem)
-+			return ret;
-+		__mem_cgroup_commit_charge_lrucare(page, mem,
-+					MEM_CGROUP_CHARGE_TYPE_CACHE);
-+		return ret;
-+	}
- 	/* shmem */
- 	if (PageSwapCache(page)) {
--		struct mem_cgroup *mem;
--
- 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &mem);
- 		if (!ret)
- 			__mem_cgroup_commit_charge_swapin(page, mem,
-@@ -2532,17 +2552,13 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype)
- {
--	struct page_cgroup *pc;
--
- 	if (mem_cgroup_disabled())
- 		return;
- 	if (!ptr)
- 		return;
- 	cgroup_exclude_rmdir(&ptr->css);
--	pc = lookup_page_cgroup(page);
--	mem_cgroup_lru_del_before_commit_swapcache(page);
--	__mem_cgroup_commit_charge(ptr, page, 1, pc, ctype);
--	mem_cgroup_lru_add_after_commit_swapcache(page);
-+
-+	__mem_cgroup_commit_charge_lrucare(page, ptr, ctype);
- 	/*
- 	 * Now swap is on-memory. This means this page may be
- 	 * counted both as mem and swap....double count.
+
+On 03/09/11 04:37, MyungJoo Ham wrote:
+
+> The regulator core had suspend-prepare that turns off the regulators
+> when entering a system-wide suspend. However, it did not have
+> suspend-finish that pairs with suspend-prepare and the regulator core
+> has assumed that the regulator devices and their drivers support
+> autonomous recover at resume.
+>
+> This patch adds regulator_suspend_finish that pairs with the
+> previously-existed regulator_suspend_prepare. The function
+> regulator_suspend_finish turns on the regulators that have always_on set
+> or positive use_count so that we can reset the regulator states
+> appropriately at resume.
+>
+> In regulator_suspend_finish, if has_full_constraints, it disables
+> unnecessary regulators.
+>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/regulator/core.c          |   40 +++++++++++++++++++++++++++++++++++++
+>  include/linux/regulator/machine.h |    1 +
+>  2 files changed, 41 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> index 9fa2095..4d34cc0 100644
+> --- a/drivers/regulator/core.c
+> +++ b/drivers/regulator/core.c
+> @@ -2653,6 +2653,46 @@ out:
+>  EXPORT_SYMBOL_GPL(regulator_suspend_prepare);
+>  
+>  /**
+> + * regulator_suspend_prepare - resume regulators from system wide suspend
+
+s/prepare/finish/
+
+> + *
+> + * Turn on regulators that might be turned off by regulator_suspend_prepare.
+> + */
+> +int regulator_suspend_finish(void)
+> +{
+> +	struct regulator_dev *rdev;
+> +	int ret = 0, error;
+> +
+> +	mutex_lock(&regulator_list_mutex);
+> +	list_for_each_entry(rdev, &regulator_list, list) {
+> +		struct regulator_ops *ops = rdev->desc->ops;
+> +
+> +		mutex_lock(&rdev->mutex);
+> +		if ((rdev->use_count > 0  || rdev->constraints->always_on) &&
+> +				ops->enable) {
+> +			error = ops->enable(rdev);
+> +			if (error)
+> +				ret = error;
+> +		} else {
+> +			if (!has_full_constraints)
+> +				goto unlock;
+> +			if (!ops->disable)
+> +				goto unlock;
+> +			if (ops->is_enabled && !ops->is_enabled(rdev))
+> +				goto unlock;
+> +
+> +			error = ops->disable(rdev);
+> +			if (error)
+> +				ret = error;
+> +		}
+> +unlock:
+> +		mutex_unlock(&rdev->mutex);
+> +	}
+> +	mutex_unlock(&regulator_list_mutex);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(regulator_suspend_finish);
+> +
+> +/**
+>   * regulator_has_full_constraints - the system has fully specified constraints
+>   *
+>   * Calling this function will cause the regulator API to disable all
+> diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
+> index 761c745..c4c4fc4 100644
+> --- a/include/linux/regulator/machine.h
+> +++ b/include/linux/regulator/machine.h
+> @@ -186,6 +186,7 @@ struct regulator_init_data {
+>  };
+>  
+>  int regulator_suspend_prepare(suspend_state_t state);
+> +int regulator_suspend_finish(void);
+>  
+>  #ifdef CONFIG_REGULATOR
+>  void regulator_has_full_constraints(void);
+
+-- 
+Regards,
+Igor.
 
