@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab1CIRj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:39:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab1CIRjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 12:39:25 -0500
-Date: Wed, 9 Mar 2011 18:30:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: PTRACE_SEIZE/INTERRUPT: [RFC] Proposal for ptrace improvements
-Message-ID: <20110309173042.GA2936@redhat.com>
-References: <20110301152457.GE26074@htj.dyndns.org> <20110307150803.GA16521@redhat.com> <20110309094119.GB27010@htj.dyndns.org>
+	id S932822Ab1CIRlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:41:02 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:45467 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757121Ab1CIRlA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 12:41:00 -0500
+X-IronPort-AV: E=Sophos;i="4.62,291,1297036800"; 
+   d="scan'208";a="4703512"
+Subject: [GIT PATCH 0/14] xen: events: cleanups + ween off nr_irqs
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 9 Mar 2011 17:40:59 +0000
+Message-ID: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110309094119.GB27010@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+The following series makes a few cleanups to the Xen IRQ infrastructure.
+The most important thing is that it removes the need to know about
+nr_irqs and in particular the reliance on nr_irqs being static.
 
-On 03/09, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Mon, Mar 07, 2011 at 04:08:03PM +0100, Oleg Nesterov wrote:
-> > Now that we more or less agree with Tejun's ideas,
->
-> Yay! I finally succeeded at wearing down everyone.  :-)
+Apart from being generally a good thing this is needed because in 2.6.39
+nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
+"genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
+at 2.6.39.
 
-Yes, thanks for correcting me, this is what I actually meant ;)
+Dynamically growing nr_irqs also allows us to remove the workaround
+which eats into GSI space if a dynamic IRQ cannot be allocated.
 
-> > And I think there are other reasons. Say, suppose we want to add
-> > the options for ATTACH/INTERRUPT. Right now I do not see the need,
-> > but who knows.
->
-> I think it would actually be better to share the option flags.  The
-> two operations (whether implemented as separate operations or not)
-> share the interrupting aspect and I think using separate set of
-> options can be a bit confusing.  Hmmm... maybe it's actually better to
-> make them have different prefixes and let the attach also accept the
-> interrupt flags.
+There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
+have gone in before, but the penultimate patch really needed to be
+simultaneous) so I haven't bothered to try and pull anything from tip
+into this branch -- it should all be resolved during the merge window
+and bisection won't be too broken since the "eat into GSI space"
+workaround only appears to be needed on a small number of older
+platforms (qemu being the main exception).
 
-Perhaps, I agree with everything. As I said, I don't have a strong
-opinion, just some random thoughts.
+I have tested:
+      * Domain 0 on real h/w and under qemu
+      * PV guest, including migration and passthrough of both VF and PF.
+      * PVHVM guest, including migration and passthrough of both VF and
+        PF.
 
-> > Final note... Previously I thought that we should not (I meant, can
-> > not) change the current behaviour of PTRACE_O_TRACECLONE/etc which
-> > sends SIGSTOP during the auto-attach. Now I am not sure, probably
-> > we can avoid SIGSTOP if the forking task was PTRACE_SEIZE'ed. IOW,
-> > perhaps the new ATTACH can have other "side effects". But, otoh,
-> > this can complicate the transition to the new requests. Say, you
-> > can't simply change strace to use PTRACE_SEIZE without auditing
-> > the "-f" code.
->
-> We can add attach option SIGSTOP_ON_AUTOATTACH to help the transition
-> but then again it requires userland application change anyway so I
-> think it would be better to simply enforce the new behavior when the
-> new attach is used.  It's not like lack of SIGSTOP is gonna be super
-> subtle.
+The git pull is a branch on top of konrad/stable/irq.cleanup. However
+there is an interaction with konrad/devel/xen-pciback-0.4.driver (the
+addition of the domid parameter) so for convenience I have also produced
+an irq-pciback branch at the same location which has
+konrad/devel/xen-pciback-0.4.driver merged into this branch.
 
-Agreed.
+Note that this series obsoletes an older patcho f mine "xen: events:
+mark cpu_evtchn_mask_p as __refdata" by virtue of removing the code in
+question...
 
-> > And. This is off-topic, but we can also add PTRACE_DETACH_XXX which
-> > does not require the stopped tracee. strace certainly needs it,
-> > although INTERRUPT can solve most of the problems.
->
-> I don't know.  The thing is that guaranteeing the tracee is in
-> TASK_TRACED on attach/detach prevents a lot of subtle corner cases.
+The following changes since commit c5ae07bb307b658c8458f29ca77d237aec0f9327:
+  Ian Campbell (1):
+        xen: events: remove dom0 specific xen_create_msi_irq
 
-Agreed, but detach is different. It has to work with the running
-tracee anyway.
+are available in the git repository at:
 
-However,
+  git://xenbits.xen.org/people/ianc/linux-2.6.git irq
 
-> Unless there are pretty compelling reasons, I'd like to keep that
-> invariant intact.  What else does strace require that can't be
-> provided by INTERRUPT + DETACH?
+Ian Campbell (14):
+      xen: events: separate two unrelated halves of if condition
+      xen: events: fix xen_map_pirq_gsi error return
+      xen: events: simplify comment
+      xen: events: remove unused public functions
+      xen: events: rename restore_cpu_pirqs -> restore_pirqs
+      xen: events: refactor GSI pirq bindings functions
+      xen: events: use per-cpu variable for cpu_evtchn_mask
+      xen: events: turn irq_info constructors into initialiser functions
+      xen: events: push setup of irq<->{evtchn,ipi,virq,pirq} maps into irq_info init functions
+      xen: events: maintain a list of Xen interrupts
+      xen: events: dynamically allocate irq info structures
+      xen: events: remove use of nr_irqs as upper bound on number of pirqs
+      xen: events: do not workaround too-small nr_irqs
+      xen: events: propagate irq allocation failure instead of panicking
 
-Yes, probably INTERRUPT + DETACH is enough. At least this certainly
-solves the most annoying problems. IIRC. Denys can correct me.
+ arch/x86/pci/xen.c   |   40 ++++--
+ drivers/xen/events.c |  357 ++++++++++++++++++++++++++------------------------
+ include/xen/events.h |   24 ++--
+ 3 files changed, 225 insertions(+), 196 deletions(-)
 
-Oleg.
 
