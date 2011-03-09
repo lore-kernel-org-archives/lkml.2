@@ -1,128 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab1CIPKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:10:40 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:57183 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757072Ab1CIPKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:10:37 -0500
-Date: Wed, 9 Mar 2011 10:10:36 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <roger.quadros@nokia.com>
-cc: gregkh@suse.de, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] usb: gadget: storage: Add fsg_get_toc helper
-In-Reply-To: <1299673300-16726-2-git-send-email-roger.quadros@nokia.com>
-Message-ID: <Pine.LNX.4.44L0.1103091005570.1965-100000@iolanthe.rowland.org>
+	id S1757188Ab1CIPLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:11:52 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58796 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab1CIPLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 10:11:49 -0500
+Date: Wed, 9 Mar 2011 16:11:34 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Borislav Petkov <bp@alien8.de>, Arnd Bergmann <arnd@arndb.de>,
+        Sam Ravnborg <sam@ravnborg.org>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, bp@amd64.org
+Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
+Message-ID: <20110309151134.GA15730@elte.hu>
+References: <20110301083529.GA767@liondog.tnic>
+ <20110309144504.GA1096@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110309144504.GA1096@sepie.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Mar 2011, Roger Quadros wrote:
 
-> fsg_get_toc can be used by both storage gadgets to build a CD-ROM
-> Table of Contents which can be used as data for READ_TOC command.
-> Currently fsg_get_toc supports two TOC formats, i.e.
-> format 0: Formatted TOC and format 2: Raw TOC.
+* Michal Marek <mmarek@suse.cz> wrote:
+
+> On Tue, Mar 01, 2011 at 09:35:29AM +0100, Borislav Petkov wrote:
+> > Add a 'W=1' Makefile switch which adds additional checking per build
+> > object.
+> > 
+> > The idea behind this option is targeted at developers who, in the
+> > process of writing their code, want to do the occasional
+> > 
+> > make W=1 [target.o]
+> > 
+> > and let gcc do more extensive code checking for them. Then, they
+> > could eyeball the output for valid gcc warnings about various
+> > bugs/discrepancies which are not reported during the normal build
+> > process.
+> > 
+> > For more background information and a use case, read through this
+> > thread: http://marc.info/?l=kernel-janitors&m=129802065918147&w=2
+> > 
+> > -v5: Document internal kbuild variable which is introduced by this.
+> > Simplify assignment.
 > 
-> Raw TOC is required for CD-ROM emulation to work with Mac OS-X.
+> Thanks, applied to kbuild-2.6.git#packaging. If someone comes up with a
+> good selection of warnings for W=1 and W=2, we can change it later.
 
-In addition to the things Sergei mentioned...
+Another, related, very nice kbuild feature would be to allow for arch maintainers to 
+mark certain files as "should only build fine without warnings" - i.e. -Werror 
+should be the default. There would be a Kconfig feature to opt out of this, 
+CONFIG_CC_IGNORE_WARNINGS=y or so. This would allow for people to still build the 
+kernel with old (or buggy) versions of GCC.
 
-> +/*
-> + * put_toc() - Builds a TOC with required format @format.
-> + * @curlun: The LUN for which the TOC has to be built
-> + * @msf: Min Sec Frame format or LBA format for address
-> + * @format: TOC format code
-> + * @buf: the buffer into which the TOC is built
-> + *
-> + * Builds a Table of Content which can be used as data for READ_TOC command.
-> + * The TOC simulates a single session, single track CD-ROM mode 1 disc.
-> + *
-> + * Returns number of bytes written to @buf, -EINVAL if format not supported.
-> + */
-> +static int fsg_get_toc(struct fsg_lun *curlun, int msf, int format, u8 *buf)
-> +{
-> +	switch (format) {
-> +	case 0:
-> +		/* Formatted TOC */
-> +		memset(buf, 0, 20);
-> +		buf[1] = (20-2);	/* TOC data length */
-> +		buf[2] = 1;		/* First track number */
-> +		buf[3] = 1;		/* Last track number */
-> +		buf[5] = 0x16;		/* Data track, copying allowed */
-> +		buf[6] = 0x01;		/* Only track is number 1 */
-> +		store_cdrom_address(&buf[8], msf, 0);
-> +
-> +		buf[13] = 0x16;		/* Lead-out track is data */
-> +		buf[14] = 0xAA;		/* Lead-out track number */
-> +		store_cdrom_address(&buf[16], msf, curlun->num_sectors);
-> +		return 20;
-> +		break;
-> +
-> +	case 2:
-> +		/* Raw TOC */
-> +		memset(buf, 0, 37);	/* Header + A0, A1 & A2 descriptors */
-> +		buf[1] = 37;		/* 4 + 3*11 */
+arch/x86/ would start using this by gradually marking more and more files as -Werror 
+by default. Some architectures like arch/sparc/ and arch/powerpc/ already build with 
+-Werror enabled - but for arch/x86/ we cannot force this (we cannot break the build 
+for who knows how many people) so we want to do it gradually and with a way out for 
+users with buggy compilers.
 
-There's no reason to do it this way.  The compiler is a lot better than 
-you are at addition.  Just put 4 + 3*11 in the assignment statement, 
-and in the comment explain what the numbers mean.
+Thanks,
 
-> +		buf[2] = 1;		/* First complete session */
-> +		buf[3] = 2;		/* Last complete session */
-> +
-> +		buf += 4;
-> +		/* A0 point */
-> +		buf[0] = 1;		/* Session number */
-> +		buf[1] = 0x16;		/* Data track, copying alowed */
-> +		/* 2 - Track number 0 -> TOC */
-> +		buf[3] = 0xA0;		/* Point A0 */
-> +		/* 4, 5, 6 - Min, sec, frame is zero */
-> +		/* 7 - zero */
-> +		buf[8] = 1;		/* Pmin: 1st track number */
-> +		/* 9 - disc type 0: CD-ROM/DA with 1st track in mode 1 */
-> +		/* 10 - pframe 0 */
-> +
-> +		buf += 11;
-> +		/* A1 point*/
-> +		buf[0] = 1;		/* Session number */
-> +		buf[1] = 0x16;		/* Data track, copying alowed */
-> +		/* 2 - Track number 0 -> TOC */
-> +		buf[3] = 0xA1;		/* Point A1 */
-> +		/* 4, 5, 6 - Min, sec, frame is zero */
-> +		/* 7, zero */
-> +		buf[8] = 1;		/* Pmin: last track number */
-> +		/* 9, 10 - pmin and pframe are 0 */
-> +
-> +		buf += 11;
-> +		/* A2 point*/
-> +		buf[0] = 1;		/* Session number */
-> +		buf[1] = 0x16;		/* Data track, copying alowed */
-> +		/* 2 - Track number 0 -> TOC */
-> +		buf[3] = 0xA2;		/* Point A2 */
-> +		/* 4, 5, 6 - Min, sec, frame is zero */
-> +		/* 7, 8, 9, 10 - zero, Pmin, Psec, Pframe of Lead out */
-> +		store_cdrom_address(&buf[7], msf, curlun->num_sectors);
-
-These things could be put into a loop, instead of a separate function.
-
-> +		return 37;
-
-It might be a good idea to use a variable instead of having all these 
-"37"s floating around.  It would make future updates more reliable.
-
-> +		break;
-> +	default:
-> +		/* Multi-session, PMA, ATIP, CD-TEXT not supported/required */
-> +		return -EINVAL;
-> +		break;
-> +	}
-> +}
-
-Alan Stern
-
+	Ingo
