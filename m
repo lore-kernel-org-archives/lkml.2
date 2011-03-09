@@ -1,63 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab1CIXQE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 18:16:04 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41045 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1CIXQA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 18:16:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=oYCalHKYqaCZSNV7emKM+cTLAaqwWb/ihS2S+HIYWaqp/4Phu2Y2qEAMuOdVy2RMnC
-         JuELCPwMLv5Gcx94d7z9I1gX+0yPQnfeQ5mDdZEuX72EpVntVhMNVn7MdNXNfAYzM/8l
-         HxzvxPuYQLLVkGkxWJu9Wd/AxV9HUxoW/9t4U=
-From: Wang Lei <f3d27b@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
-References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
-	<201103091141.28396.rjw@sisk.pl>
-	<4d77806c.0bf98e0a.28c5.7cc5@mx.google.com>
-	<201103092125.43950.rjw@sisk.pl>
-Date: Thu, 10 Mar 2011 07:16:14 +0800
-In-Reply-To: <201103092125.43950.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Wed, 9 Mar 2011 21:25:43 +0100")
-Message-ID: <4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1752038Ab1CIXQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 18:16:19 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:46705 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751675Ab1CIXQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 18:16:17 -0500
+Message-ID: <4D780A36.60303@free.fr>
+Date: Thu, 10 Mar 2011 00:16:06 +0100
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>,
+        linux-security-module@vger.kernel.org
+Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX protection
+ for kernel data)
+References: <1290410581.2405.24.camel@minggr.sh.intel.com>	 <1290431008.2072.119.camel@laptop>	<1290443379.4cea9a73cd9ce@imp.free.fr>	 <1290443758.2072.318.camel@laptop>	<20101122164247.GC21836@basil.fritz.box>	 <20101123235527.54293b59@mat-laptop>  <20101126183144.300a71a4@mat-laptop>	 <1291093230.2405.191.camel@minggr.sh.intel.com>	 <1291116438.32004.649.camel@laptop> <1291162504.2405.216.camel@minggr.sh.intel.com> <4D3C7C36.903@free.fr> <4D3DFBB0.90402@free.fr>
+In-Reply-To: <4D3DFBB0.90402@free.fr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+Hi,
 
-> On Wednesday, March 09, 2011, Wang Lei wrote:
->> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->> 
->> >
->> > There was only one commit in that area since 2.6.38-rc6, but it shouldn't
->> > affect the functionality this way.
->> >
->> > Is yout thermal management controlled by ACPI?
->> >
->> > Rafael
->> 
->> Thanks for your reply!
->> 
->> How could I know that?
->
-> What does "ls -l /sys/class/thermal/cooling_device0/device" say?
->
-> Rafael
+matthieu castet a écrit :
+> matthieu castet a écrit :
+>> Lin Ming a écrit :
+>>> On Tue, 2010-11-30 at 19:27 +0800, Peter Zijlstra wrote:
+>>>> On Tue, 2010-11-30 at 13:00 +0800, Lin Ming wrote:
+>>>>> echo 0 > /sys/devices/system/cpu/cpu1/online;
+>>>>> echo 1 > /sys/devices/system/cpu/cpu1/online;
+>>>>>
+>>>>> then machine just reboots...
+>>>>>
+>> I tried to do the same thing on qemu, and the same behavior happened 
+>> (ie reboot when resuming cpu1).
+>>
+>> After enabling qemu log, I found that a triple fault was happening at 
+>> the beginning of secondary_startup_64
+>> when doing "addq phys_base(%rip), %rax".
+>>
+>> Why ?
+>> I suppose because we access data set to NX, but we don't have enabled 
+>> yet NX in the msr. So the cpu crash due to "reserved bit check".
+>>
+>> If we enable NX before reading data, there is no more crash (patch 
+>> attached).
+>>
+>> Now I am not sure this is the correct fix. I think the problem is that 
+>> trampoline using kernel page table
+>> is very dangerous. The kernel can have modified them atfer booting !
+>> May be all the paging stuff should have been done in head_64.S. A 
+>> first one with identity mapping, and the second one for
+>> the real kernel stuff.
+>>
+> Lin, could you try this patch on your x64 machine.
+> 
+> 
+I updated the patch to last tip. I tested on a 64 bits config and everything works.
 
-[~]$ ls -l /sys/class/thermal/cooling_device0/device
-lrwxrwxrwx 1 root root 0 Mar 10 07:13 /sys/class/thermal/cooling_device0/device -> ../../../LNXSYSTM:00/device:47/PNP0C0B:00
-[~]$
+Any comment on it ?
 
+
+Thanks
+
+
+Matthieu
+
+
+From: Matthieu CASTET <castet.matthieu@free.fr>
+Date: Thu, 10 Mar 2011 00:10:01 +0100
+Subject: [PATCH] x86 : Add NX protection for kernel data on 64 bit
+
+This fix the cpu hotplug support, by allocating dedicated page table
+for ident mapping in trampoline.
+This is need because kernel set NX flag in level3_ident_pgt and
+level3_kernel_pgt, and made it unusable from trampoline.
+
+We also set the Low kernel Mapping to NX.
+
+Finaly we apply nx in free_init_pages only when we switch to NX mode in order
+to preserve large page mapping.
+
+mapping now look like :
+---[ Low Kernel Mapping ]---
+0xffff880000000000-0xffff880000200000           2M     RW             GLB NX pte
+0xffff880000200000-0xffff880001000000          14M     RW         PSE GLB NX pmd
+0xffff880001000000-0xffff880001200000           2M     ro         PSE GLB NX pmd
+0xffff880001200000-0xffff8800012ae000         696K     ro             GLB NX pte
+0xffff8800012ae000-0xffff880001400000        1352K     RW             GLB NX pte
+0xffff880001400000-0xffff880001503000        1036K     ro             GLB NX pte
+0xffff880001503000-0xffff880001600000        1012K     RW             GLB NX pte
+0xffff880001600000-0xffff880007e00000         104M     RW         PSE GLB NX pmd
+0xffff880007e00000-0xffff880007ffd000        2036K     RW             GLB NX pte
+0xffff880007ffd000-0xffff880008000000          12K                           pte
+0xffff880008000000-0xffff880040000000         896M                           pmd
+0xffff880040000000-0xffff888000000000         511G                           pud
+0xffff888000000000-0xffffc90000000000       66048G                           pgd
+---[ vmalloc() Area ]---
+[...]
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff81000000          16M                           pmd
+0xffffffff81000000-0xffffffff81400000           4M     ro         PSE GLB x  pmd
+0xffffffff81400000-0xffffffff81600000           2M     ro         PSE GLB NX pmd
+0xffffffff81600000-0xffffffff81800000           2M     RW         PSE GLB NX pmd
+0xffffffff81800000-0xffffffffa0000000         488M                           pmd
+---[ Modules ]---
+
+Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
+
+Conflicts:
+
+	arch/x86/kernel/head_64.S
+---
+ arch/x86/kernel/head_64.S       |   15 +++++++++++++++
+ arch/x86/kernel/trampoline_64.S |    4 ++--
+ arch/x86/mm/init.c              |    6 ++++--
+ arch/x86/mm/init_64.c           |    6 +++++-
+ 4 files changed, 26 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index e11e394..e261354 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -140,6 +140,9 @@ ident_complete:
+ 	addq	%rbp, trampoline_level4_pgt + 0(%rip)
+ 	addq	%rbp, trampoline_level4_pgt + (511*8)(%rip)
+ 
++	addq	%rbp, trampoline_level3_ident_pgt + 0(%rip)
++	addq	%rbp, trampoline_level3_ident_pgt + (L3_START_KERNEL*8)(%rip)
++
+ 	/* Due to ENTRY(), sometimes the empty space gets filled with
+ 	 * zeros. Better take a jmp than relying on empty space being
+ 	 * filled with 0x90 (nop)
+@@ -395,6 +398,18 @@ NEXT_PAGE(level2_kernel_pgt)
+ NEXT_PAGE(level2_spare_pgt)
+ 	.fill   512, 8, 0
+ 
++NEXT_PAGE(trampoline_level3_ident_pgt)
++	.quad	trampoline_level2_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
++	.fill	L3_START_KERNEL-1,8,0
++	.quad	trampoline_level2_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
++	.fill	511-L3_START_KERNEL,8,0
++
++
++NEXT_PAGE(trampoline_level2_ident_pgt)
++	/* Since I easily can, map the first 1G.
++	 * Don't set NX because code runs from these pages.
++	 */
++	PMDS(0, __PAGE_KERNEL_IDENT_LARGE_EXEC, PTRS_PER_PMD)
+ #undef PMDS
+ #undef NEXT_PAGE
+ 
+diff --git a/arch/x86/kernel/trampoline_64.S b/arch/x86/kernel/trampoline_64.S
+index 09ff517..8723e47 100644
+--- a/arch/x86/kernel/trampoline_64.S
++++ b/arch/x86/kernel/trampoline_64.S
+@@ -164,8 +164,8 @@ trampoline_stack:
+ 	.org 0x1000
+ trampoline_stack_end:
+ ENTRY(trampoline_level4_pgt)
+-	.quad	level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
++	.quad	trampoline_level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
+ 	.fill	510,8,0
+-	.quad	level3_kernel_pgt - __START_KERNEL_map + _KERNPG_TABLE
++	.quad	trampoline_level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
+ 
+ ENTRY(trampoline_end)
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 286d289..98dd5fa 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -338,8 +338,10 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 	 * we are going to free part of that, we need to make that
+ 	 * writeable and non-executable first.
+ 	 */
+-	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
+-	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
++	if (kernel_set_to_readonly) {
++		set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
++		set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
++	}
+ 
+ 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 470cc47..e9bb29d 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -832,6 +832,7 @@ void mark_rodata_ro(void)
+ 	unsigned long rodata_start =
+ 		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
+ 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
++	unsigned long kernel_end = (((unsigned long)&__init_end + HPAGE_SIZE) & HPAGE_MASK);
+ 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
+ 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
+ 	unsigned long data_start = (unsigned long) &_sdata;
+@@ -842,11 +843,14 @@ void mark_rodata_ro(void)
+ 
+ 	kernel_set_to_readonly = 1;
+ 
++	/* make low level mapping NX */
++	set_memory_nx(PAGE_OFFSET, (PMD_PAGE_SIZE*PTRS_PER_PMD) >> PAGE_SHIFT);
++
+ 	/*
+ 	 * The rodata section (but not the kernel text!) should also be
+ 	 * not-executable.
+ 	 */
+-	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
++	set_memory_nx(rodata_start, (kernel_end - rodata_start) >> PAGE_SHIFT);
+ 
+ 	rodata_test();
+ 
 -- 
-Regards,
-Lei
+1.7.4.1
