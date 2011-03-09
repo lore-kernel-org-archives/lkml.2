@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab1CIV2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 16:28:07 -0500
-Received: from cantor.suse.de ([195.135.220.2]:41910 "EHLO mx1.suse.de"
+	id S1753424Ab1CIV3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 16:29:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897Ab1CIV2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 16:28:02 -0500
-Date: Wed, 9 Mar 2011 13:27:35 -0800
-From: Greg KH <gregkh@suse.de>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v3][RESEND] Check for immutable/append flag in fallocate
- path
-Message-ID: <20110309212735.GB27747@suse.de>
-References: <4D6221B8.9040303@gmail.com>
- <4D6F5473.2070709@gmail.com>
- <4D720469.1010101@gmail.com>
- <AANLkTinyK0G=tfZob4u7XBj7Gna3FbZnLrqswz2oajwn@mail.gmail.com>
- <4D720C0B.1050300@gmail.com>
- <4D77D821.7090003@gmail.com>
+	id S1753077Ab1CIV3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 16:29:50 -0500
+Message-ID: <4D77F149.8020906@redhat.com>
+Date: Wed, 09 Mar 2011 16:29:45 -0500
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D77D821.7090003@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+CC: KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: [PATCH] add missing guest clock update removed by	e48672fa25e879f7ae21785c7efd187738139593
+References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz>
+In-Reply-To: <20110309193003.GB1762@pcnci.linuxbox.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 08:42:25PM +0100, Marco Stornelli wrote:
-> Il 05/03/2011 11:10, Marco Stornelli ha scritto:
-> > From: Marco Stornelli <marco.stornelli@gmail.com>
-> > 
-> > In the fallocate path the kernel doesn't check for the immutable/append
-> > flag. It's possible to have a race condition in this scenario: an
-> > application open a file in read/write and it does something, meanwhile
-> > root set the immutable flag on the file, the application at that point
-> > can call fallocate with success. In addition, we don't allow to do any
-> > unreserve operation on an append only file but only the reserve one.
-> > 
-> > Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> 
-> Al, can you apply this patch please? I add Greg in cc, because maybe he
-> could be interested about stable tree.
+On 03/09/2011 02:30 PM, Nikola Ciprich wrote:
+>> Can you try moving the kvm_make_request() inside the if conditional and
+>> see if it that also fixes it?
+>>      
+> yes, changing to:
+> if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+> 	kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> 	/* Make sure TSC doesn't go backwards */
+> 	s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+>
+> is also OK.
+>
+> what about changing:
+> if (check_tsc_unstable()) {
+> 	kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+> 	vcpu->arch.tsc_catchup = 1;
+> 	kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> }
+>
+> to:
+>
+> if (check_tsc_unstable()) {
+> 	kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+> 	vcpu->arch.tsc_catchup = 1;
+> }
+> kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>
+> this fixes thinks for me as well..
+> n.
+> ?
+>    
 
-Please read Documentation/stable_kernel_rules.txt for how to get patches
-into stable kernel releases (hint, emailing me like this is not the way
-to do it...)
+Can you send a patch which does that?  I think this is the correct fix.
 
-thanks,
+Thanks,
 
-greg k-h
+Zach
