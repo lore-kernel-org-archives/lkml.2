@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab1CIDEu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 22:04:50 -0500
-Received: from mail.wildpark.net ([217.77.208.132]:54179 "EHLO
-	mail.wildpark.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab1CIDEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 22:04:50 -0500
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Mar 2011 22:04:49 EST
-Message-ID: <20de17b9b09bc28fc763b1b94a92ee36.squirrel@webmail.wildpark.net>
-Date: Wed, 9 Mar 2011 04:56:31 +0200
-Subject: 
-From: "Mr. Mukhtar Hussain" <nastuha24@mksat.net>
-Reply-To: mrmukhtar-hussain@xd.ae
-User-Agent: SquirrelMail/1.4.21
+	id S932175Ab1CIDOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 22:14:35 -0500
+Received: from tundra.namei.org ([65.99.196.166]:39207 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756032Ab1CIDOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 22:14:31 -0500
+Date: Wed, 9 Mar 2011 14:14:29 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: John Johansen <john.johansen@canonical.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [AppArmor 0/3] Cleanups to AppArmor's build
+In-Reply-To: <4D76D785.8060408@canonical.com>
+Message-ID: <alpine.LRH.2.00.1103091414100.29338@tundra.namei.org>
+References: <1299610989-3917-1-git-send-email-john.johansen@canonical.com> <alpine.LRH.2.00.1103091025130.28443@tundra.namei.org> <4D76D785.8060408@canonical.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 8 Mar 2011, John Johansen wrote:
 
+> The following changes since commit eae61f3c829439f8f9121b5cd48a14be04df451f:
+> 
+>   TOMOYO: Fix memory leak upon file open. (2011-03-03 10:13:26 +1100)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jj/apparmor-dev.git security-next
+> 
 
+Applied.
 
-Hello...
-I am Mr. Mukhtar M Hussain, GBS, JP Chairman of the Hong Kong and Shanghai
-Banking Corporation Limited.; I have a sensitive, confidential brief from
-UAE and I am asking for your partnership in re- profiling funds.
-
-What I require from you is your honest co-operation and I guarantee that
-this will be executed under a legitimate arrangement that will protect you
-and I from any breach of the law. Please accept my apologies, keep my
-confidence and disregard this email if you do not appreciate this
-proposition I have offered you.
-
-All confirmable documents to back up this fund shall be made available to
-you, as soon as I receive your reply via e-mail:mrmukhtar-hussain@xd.ae
-
-I shall let you know what is required of you.
-Regards from,
-Mr. Mukhtar Hussain
-
+-- 
+James Morris
+<jmorris@namei.org>
