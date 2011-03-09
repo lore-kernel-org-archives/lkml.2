@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab1CIAov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:44:51 -0500
-Received: from mout.perfora.net ([74.208.4.195]:51542 "EHLO mout.perfora.net"
+	id S1756969Ab1CIAp2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:45:28 -0500
+Received: from mout.perfora.net ([74.208.4.195]:51644 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756210Ab1CIAot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:44:49 -0500
+	id S1756520Ab1CIAp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:45:26 -0500
 From: Stephen Wilson <wilsons@start.ca>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -18,70 +18,52 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Michel Lespinasse <walken@google.com>,
         Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
         Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH 3/6] mm: implement access_remote_vm
-Date: Tue,  8 Mar 2011 19:42:20 -0500
-Message-Id: <1299631343-4499-4-git-send-email-wilsons@start.ca>
+Subject: [PATCH 6/6] proc: enable writing to /proc/pid/mem
+Date: Tue,  8 Mar 2011 19:42:23 -0500
+Message-Id: <1299631343-4499-7-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1299631343-4499-1-git-send-email-wilsons@start.ca>
 References: <1299631343-4499-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:T11KkO3GGiwtKCtIvUp/+qwJS8Ev3mSJqH/LjlTAnb8
- rvVH/fns9WsJgvy26wIgEHF135peSGluf1vlSBQRKnobqInwo2
- jXejRHUwIQeH03a7LncFAhKulonMJcNl1DaJkDYvXplr54OlhP
- 7qqkuhWqUTu4IHNbd7VGS/2zQUn1lMmnftLfVqZzGny2kpUrxj
- nMm5mcq34NdVS2uDJquccmPhd2lREC/ueKv9IrTC9s=
+X-Provags-ID: V02:K0:6yau1/NDEJdGFBipobRjnjPRvFCT5jOWIR6eUIL8wkw
+ JrVfswv4lleLeC/wItwaCsAsZONdGNc2PKfugfaXpxP8IYRKWz
+ Dy+6AmyRyv3MlmAXNNlW26ZxLLuw/oZlFV9/Dw0FZi4jfbr+cg
+ bjG3w/Swb8HXEXg9ZurHZvL7upSVmteEZcj3tzWR59Qdj9UuZ8
+ b9RsznyGwYjC5rJWElIjY+IowRVXRyvYAK3WScgjK4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide an alternative to access_process_vm that allows the caller to obtain a
-reference to the supplied mm_struct.
+With recent changes there is no longer a security hazard with writing to
+/proc/pid/mem.  Remove the #ifdef.
 
 Signed-off-by: Stephen Wilson <wilsons@start.ca>
 ---
- include/linux/mm.h |    2 ++
- mm/memory.c        |   16 ++++++++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ fs/proc/base.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 694512d..e5fde8a 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -964,6 +964,8 @@ static inline int handle_mm_fault(struct mm_struct *mm,
- 
- extern int make_pages_present(unsigned long addr, unsigned long end);
- extern int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write);
-+extern int access_remote_vm(struct mm_struct *mm, unsigned long addr,
-+		void *buf, int len, int write);
- 
- int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			unsigned long start, int nr_pages, int write, int force,
-diff --git a/mm/memory.c b/mm/memory.c
-index 68eec4f..c26e4f9 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3654,6 +3654,22 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
- 	return buf - old_buf;
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 5ffc927..41d9c46 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -833,10 +833,6 @@ out_no_task:
+ 	return ret;
  }
  
-+/**
-+ * @access_remote_vm - access another process' address space
-+ * @mm:		the mm_struct of the target address space
-+ * @addr:	start address to access
-+ * @buf:	source or destination buffer
-+ * @len:	number of bytes to transfer
-+ * @write:	whether the access is a write
-+ *
-+ * The caller must hold a reference on @mm.
-+ */
-+int access_remote_vm(struct mm_struct *mm, unsigned long addr,
-+		void *buf, int len, int write)
-+{
-+	return __access_remote_vm(NULL, mm, addr, buf, len, write);
-+}
-+
- /*
-  * Access another process' address space.
-  * Source/target buffer must be kernel space,
+-#define mem_write NULL
+-
+-#ifndef mem_write
+-/* This is a security hazard */
+ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 			 size_t count, loff_t *ppos)
+ {
+@@ -894,7 +890,6 @@ out:
+ out_no_task:
+ 	return copied;
+ }
+-#endif
+ 
+ loff_t mem_lseek(struct file *file, loff_t offset, int orig)
+ {
 -- 
 1.7.3.5
 
