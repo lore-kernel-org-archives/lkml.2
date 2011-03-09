@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402Ab1CIRgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:36:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40216 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757066Ab1CIRgI (ORCPT
+	id S932811Ab1CIRhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:37:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42332 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932275Ab1CIRhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 12:36:08 -0500
-Message-ID: <4D77BA82.5020708@monstr.eu>
-Date: Wed, 09 Mar 2011 18:36:02 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Wed, 9 Mar 2011 12:37:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=HpP0UKeWGMkLQe8QFS3mNnUMdkmI1NonPE21dgbz7ax5HN0orx2vDxSmVoVpKmL6LL
+         9xdWBTj6fkl4XjjHpBovJbjY5qAepes9AO7GpbJYkKh22gYxYOCd8UCDyYqmSqDhDbNQ
+         asBQ918hcYlrJcwlZLWbmUZvFwnZ6oOWXlGMg=
+Date: Wed, 9 Mar 2011 20:36:28 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Vinay Sawal <vinaysawal@gmail.com>
+Cc: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Staging: bcm: Bcmnet: fixed 'checkpatch.pl' issues
+Message-ID: <20110309173628.GG3416@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Vinay Sawal <vinaysawal@gmail.com>, greg@kroah.com,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1299653902-27644-1-git-send-email-vinaysawal@gmail.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: Revert "irq: Add tracepoint to softirq_raise" - microblaze build
-References: <4D77708F.1000800@monstr.eu>	 <1299689179.15854.255.camel@gandalf.stny.rr.com>	 <4D77B267.3020307@monstr.eu> <1299690748.15854.264.camel@gandalf.stny.rr.com>
-In-Reply-To: <1299690748.15854.264.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299653902-27644-1-git-send-email-vinaysawal@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Wed, 2011-03-09 at 18:01 +0100, Michal Simek wrote:
->> Steven Rostedt wrote:
->>> On Wed, 2011-03-09 at 13:20 +0100, Michal Simek wrote:
->>>> Hi Frederic,
->>>>
->>>> I have compiled ftrace support for Microblaze and I have reached a compilation failure.
->>>>
->>>> I bisected it and I found that
->>>> "irq: Add tracepoint to softirq_raise"
->>>> (sha1:2bf2160d8805de64308e2e7c3cd97813cb58ed2f)
->>>> caused it.
->>>>
->>>> I also found one thread which could be related.
->>>> http://kerneltrap.org/mailarchive/linux-kernel/2010/9/8/4616941
->>>>
->>>> It is likely any missing header or so.
->>>>
->>>> Do you know what can be wrong?
->>>>
->>>> Thanks,
->>>> Michal
->>>>
->>>>
->>>> [ALL  ]   CC      kernel/trace/power-traces.o
->>>> [ALL  ] In file included from 
->>>> /mnt/projects/petalinux-v1.00-devel/software/linux-2.6.x/arch/microblaze/include/asm/irq.h:15,
->>> Is there a reason that arch/microblaze/include/asm/irq.h includes
->>> "linux/interrupt.h"?
->> Yep, it is. I tried to add some headers not remove them.
+On Tue, Mar 08, 2011 at 10:58:22PM -0800, Vinay Sawal wrote:
+> Fixed all issues reported by 'checkpatch.pl' for this file.
 > 
-> 
-> Do you mean it is not needed? And removing it fixes the problem?
+> Signed-off-by: Vinay Sawal <vinaysawal@gmail.com>
+> ---
+> +
+> +#define __NO_VERSION__
 
-yes, removing that header fixed the problem. I will do more testing tomorrow.
+What do these __NO_VERSION__ defines do?
 
-> 
-> I rather not add patches to systems that I can't build, boot and test.
-> 
-> If removing the header works, just add a:
-> 
-> Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+>  #include "headers.h"
 
-ok.
-
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+regards,
+dan carpenter
