@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab1CICfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 21:35:14 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50247 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab1CICfL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 21:35:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=CnFNPX8gkdeOlrBggBbvinO5yCbuS6g7n9aPdgVw7p02e9BVztQINzMSFExox/ZhsJ
-         faagsRIW6vf/AKrv7frbR+Yr54M3vkH0RLQw4a+EDmRFlrcbSizqvL7ieogvBcSFEMtD
-         mjgiIV7Y5mTIhuUfOxSDPGxf1EHJFCpBr5z3E=
-MIME-Version: 1.0
-In-Reply-To: <20110308133817.GE20944@opensource.wolfsonmicro.com>
-References: <1299549838-9821-1-git-send-email-myungjoo.ham@samsung.com>
-	<20110308133817.GE20944@opensource.wolfsonmicro.com>
-Date: Wed, 9 Mar 2011 11:35:09 +0900
-X-Google-Sender-Auth: -UVuX4Qh8icxie5Pp74rAsJvd4U
-Message-ID: <AANLkTi=iXSMU4yH2xV_dYO5nf4E_zTRww1Y+32U7GQbs@mail.gmail.com>
-Subject: Re: [PATCH] Regulator: add suspend-finish API for regulator core.
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        kyungmin.park@samsung.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932162Ab1CICmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 21:42:43 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:57658 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932073Ab1CICml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 21:42:41 -0500
+Date: Wed, 9 Mar 2011 13:42:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Emil Tantilov <emil.s.tantilov@intel.com>,
+        Stephen Ko <stephen.s.ko@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-Id: <20110309134234.32cd09b7.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 10:38 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Mar 08, 2011 at 11:03:58AM +0900, MyungJoo Ham wrote:
->> The regulator core had suspend-prepare that turns off the regulators
->> when entering a system-wide suspend. However, it did not have
->> suspend-finish that recovers the change made by suspend-prepare and
->> depends on machine pm code or the regulator device or driver
->> doing so.
->
-> This is a good idea, thanks for working on it.
+--Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Welcome.
+Hi all,
 
->
-> Your commit message is sligtly inaccurate as this isn't what
-> suspend_prepare() is for, suspend_prepare() is for matching the suspend
-> mode configuration of regulators that support that with the suspend mode
-> Linux is using (RAM, disk and so on).  There is no need for this to
-> recover the pre-suspend state as hardware implementing suspend mode
-> configuration should be able to do so autonomously.
->
-> Of course not all hardware supports a distinct suspend mode and for
-> hardware that doesn't we should be doing pretty much this - it's a
-> bit of a hole in our regulator support at the minute.  It should really
-> be coupled with a soft suspend mode implementation which can put the
-> regulators into an appropriate state for suspend on the way down.
+After merging the net tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Yes. It'd be more accurate to describe that the patch is to set states
-of the regulators according to their state-related regulator values
-(use_count, always_on) at resume.
+drivers/net/ixgbe/ixgbe_mbx.c: In function 'ixgbe_init_mbx_params_pf':
+drivers/net/ixgbe/ixgbe_mbx.c:456: error: 'struct ixgbe_mbx_info' has no me=
+mber named 'udelay'
 
->
->> +               if ((rdev->use_count > 0  || rdev->constraints->always_on) &&
->> +                               rdev->desc->ops->enable) {
->> +                       error = rdev->desc->ops->enable(rdev);
->> +                       if (error)
->> +                               ret = error;
->
-> We should probably also be turning off regulators that shouldn't be on -
-> a regulator may default to being enabled when we don't want it.
-> Thinking about it we can probably share most if not all of the code with
-> regulator_init_complete()...
->
-> Ideally we'd also restore voltages but that can always be added later.
+Caused by commit d7c8a29fc8bd20ba45ec2f52577ed04a988a9500 ("ixgbe:
+improve logic in ixgbe_init_mbx_params_pf").
 
-Agreed. I'll add rdev->desc->ops->disable(rdev) for the else statement
-of that if statement.
+I am wondering if that was ever built ...
 
->
->> +       return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(regulator_suspend_finish);
->
-> Hrm, I'd really expect the core to be arranging for this to happen
-> rather than exporting the function?  Though the sequencing so it gets
-> called at the right time might be a bit tricky and I've not actually
-> looked at the isues here.
->
+I have used the net tree from next-20110308 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Currently, it depends on machine's pm code calling
-regulator_suspend_prepare. And, that's why I made
-regulator_suspend_finish to be called by someone else. This appears to
-be odd to me as well; however, probably, like
-regulator_init_complete() is optional, some systems cannot allow
-regulators to be controlled by regulator_suspend_prepare by default or
-the executed position (after suspend_ops->prepare, right before
-suspend_ops->enter, or ...) may vary. If we are to let the core
-arrange regulator_suspend_prepare/finish, do you think putting it
-right after "suspend_ops->prepare" and right before
-"suspend_ops->enter"?
+--Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Version-2 Patch is incoming. (with disable feature at suspend_finish)
+iQEcBAEBAgAGBQJNdukaAAoJEDMEi1NhKgbsr+kIAJQ7ZguNcXxFFkWSh8s6gl97
+8tSqQWUKb+4s2otmNCFhxS2WcLsdwVZu3lcGZ2H3qBYw5Z8z8z+0nPQbN4q6q2Vj
+WVcdUxyIQATkIyHIKTaoD30Oa7cfxoLkUht7Dbfle8C4g+EGczORU+egYo/1klQw
+Y1Z6VnsJ13qEnHUbWCHlLihIUyxShUNLYshP1XIToItD4sRzFqM0exSLJu0GsvFB
+qlVlqpiEwMhnQV1BtsDfcITTSMAkASbdiii9V0a2TKHoc/Id2m8rp7kfTVRzFz03
+Uvn233opF4GO6//RDmdV8aUw1oFmw3zBQCXobrgW7CQ3qPfSG8WkIKNuh3o9G0c=
+=ZqgV
+-----END PGP SIGNATURE-----
 
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+--Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn--
