@@ -1,78 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1CIWL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 17:11:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34953 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab1CIWLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 17:11:22 -0500
-Subject: Re: [PATCH -v2] capabilites: allow the application of capability
- limits to usermode helpers
-From: Eric Paris <eparis@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        dhowells@redhat.com, jmorris@namei.org, serge.hallyn@canonical.com,
-        morgan@kernel.org
-In-Reply-To: <20110309213813.GA28009@kroah.com>
-References: <20110309193330.12181.92080.stgit@paris.rdu.redhat.com>
-	 <20110309213813.GA28009@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Mar 2011 17:11:12 -0500
-Message-ID: <1299708672.17577.42.camel@unknown001a4b0c2895>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754038Ab1CIWLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 17:11:45 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58485 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab1CIWLk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 17:11:40 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "Igor M. Liplianin" <liplianin@me.by>
+Subject: Re: Kernelspace firmware loaders (was: linux-next: manual merge of the staging tree with the v4l-dvb tree)
+Date: Wed, 9 Mar 2011 23:11:39 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r1; KDE/4.6.1; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Ben Gamari <bgamari.foss@gmail.com>
+References: <20110304163905.ed6dd630.sfr@canb.auug.org.au> <201103071751.28477.laurent.pinchart@ideasonboard.com> <201103071940.29074.liplianin@me.by>
+In-Reply-To: <201103071940.29074.liplianin@me.by>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103092311.42936.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 13:38 -0800, Greg KH wrote:
-> On Wed, Mar 09, 2011 at 02:33:31PM -0500, Eric Paris wrote:
-> > There is no way to limit the capabilities of usermodehelpers. This problem
-> > reared its head recently when someone complained that any user with
-> > cap_net_admin was able to load arbitrary kernel modules, even though the user
-> > didn't have cap_sys_module.  The reason is because the actual load is done by
-> > a usermode helper and those always have the full cap set.  This patch addes new
-> > sysctls which allow us to bound the permissions of usermode helpers.
+Hi Igor,
+
+On Monday 07 March 2011 18:40:28 Igor M. Liplianin wrote:
+> В сообщении от 7 марта 2011 18:51:27 автор Laurent Pinchart написал:
+> > On Monday 07 March 2011 17:16:58 Greg KH wrote:
+> > > On Mon, Mar 07, 2011 at 03:07:36PM +0100, Laurent Pinchart wrote:
+> > > > On Friday 04 March 2011 18:54:24 Mauro Carvalho Chehab wrote:
+> > > > > Em 04-03-2011 14:13, Greg KH escreveu:
+> > > > > > On Fri, Mar 04, 2011 at 04:39:05PM +1100, Stephen Rothwell wrote:
+> > > > > >> Today's linux-next merge of the staging tree got a conflict in
+> > > > > >> drivers/staging/Kconfig between commit
+> > > > > >> a1256092a1e87511c977a3d0ef96151cda77e5c9 ("[media] Altera FPGA
+> > > > > >> firmware download module") from the v4l-dvb tree and commit
+> > > > > >> 0867b42113ec4eb8646eb361b15cbcfb741ddf5b ("staging: gma500:
+> > > > > >> Intel GMA500 staging driver") from the staging tree.
+> > > > > >> 
+> > > > > >> I fixed it up (see below) and can carry the fix as necessary.
+> > > > > > 
+> > > > > > That looks correct.
+> > > > > > 
+> > > > > > Mauro, what is this driver and why is it added to the staging
+> > > > > > tree?
+> > > > > 
+> > > > > This driver implements the FPGA programming logic for a firmware
+> > > > > required by a DVB driver, and was proposed initially for 2.6.37
+> > > > > inclusion. During the 2.6.38 development cycle, it suffered several
+> > > > > revisions, based on our input at the media and lkml mailing lists,
+> > > > > where Igor fixed all CodingStyle issues.
+> > > > > 
+> > > > > In the last minute, during 2.6.38 merge window, two developers
+> > > > > (Laurent and Ben) [1] complained against adding a driver for
+> > > > > loading FPGA firmware as-is. So, I decided to add it, for now, at
+> > > > > staging, to avoid needing to postpone a long series of patches
+> > > > > again just because of that, especially since a series of DVB-C
+> > > > > devices are without support on Linux without this patch series,
+> > > > > and there are very few DVB-C devices currently supported.
+> > > > > 
+> > > > > The Altera driver is compliant with CodingStyle, and, from my side,
+> > > > > it is ok to move it to drivers/others, but it doesn't hurt to give
+> > > > > some time for Ben and Laurent to propose alternative way of
+> > > > > implementing the firmware request logic.
+> > > > > 
+> > > > > If nothing happens until 2.6.40 merge window, I think we should go
+> > > > > forward and move it to the proper place.
+> > > > 
+> > > > What's the policy regarding firmware loaders in kernelspace vs.
+> > > > userspace ? JTAG is a quite complex protocol, and we already have
+> > > > lots of JTAG libraries in userspace (http://urjtag.org/ seems to be
+> > > > the most popular one). We also have userspace firmware loaders (such
+> > > > as fxload for the Cypress EZ USB microcontrollers). Do we need a
+> > > > kernelspace JTAG implementation ?
+> > > > 
+> > > > > [1]
+> > > > > http://www.mail-archive.com/linux-media@vger.kernel.org/msg26422.ht
+> > > > > ml
+> > > 
+> > > If the code is just a "pass-through" to the hardware, I have no
+> > > objection to the driver being in the kernel, if it needs to be in order
+> > > to control the hardware properly.
 > > 
-> > /proc/sys/kernel/usermodehelper/bset
-> > /proc/sys/kernel/usermodehelper/inheritable
+> > The code implements a JTAG TAP state machine with a bit-banging
+> > algorithm, including direct parallel port (LPT) access, and a bitcode
+> > interpreter for
 > 
-> Shouldn't these be documented somewhere?  Documentation/ABI?
+> LPT access procedure included for historical reason, on early development
+> stages it was used for program FPGA, then we swithed to cx23885 GPIO's.
+> Developer can choose(develop) his own procedure for JTAG pins access.
 
-Yes, they should.  Will do.
+Shouldn't LPT support be removed then ?
 
-> > You must have CAP_SYS_MODULE to change these (changes are &= ONLY).
+> > the files generated by the Altera FPGA proprietary development tools.
 > 
-> Why that permission?  Just because 'modprobe' is usually run from this
-> callback?  Or some other reason?
+> So, we used this tools. And the code is from widely opened sources.
 
-I don't have a good answer for this.  I was originally looking at this
-thinking about modprobe.  Since it's a purely restrictive interface I
-probably don't need something quite so strong.  I'm trying to decide
-what the implications are of usemode helpers being forced to run with
-reduced permissions.  Andrew, do you have thoughts?
+Are we going to add support for all proprietary (and standard ?) FPGA file 
+formats, with FPGA programming algorithms from multiple vendors, and TAP 
+access support at various levels (not all JTAG interfaces can be controlled at 
+the bit-banging level, some use higher level commands) to the kernel ? That 
+would be a big amount of complex code, for very little benefit.
 
-> > When the kernel launches a usermodehelper it will do so with these as
-> > the bset and pI.
-> 
-> Shouldn't the caller of these functions be the ones dictating the
-> capabilities it should be run with?
+You could simplify this by going for a single file format across multiple 
+devices from multiple vendors, such as XSVF, but I'm not sure it's a good 
+solution either.
 
-Yes. And no.  It depends what you mean.  The caps of the 'caller' task
-are irrelevant.  If I run ifconfig ipv6 I need CAP_NET_ADMIN but the
-upcall needs CAP_SYS_MODULE.  If I plug in a USB drive there is no
-'caller' task which makes sense.
+-- 
+Regards,
 
-Now if by 'caller' you mean 'call site' then yes, we could probably
-launch usermodehelpers with reduced privileged sets.  We know in the
-code when we are asking to launch modprobe that we are going to need
-CAP_SYS_MODULE and don't need caps like CAP_SYS_RAWIO and CAP_MAC_ADMIN.
-We know when we upcall to hotplug we don't really need any priv, since
-it's another task that is going to do the real work.  So yeah, there
-might be some value in another patch to address this....
-
-But neither solves the problem of being able to eliminate capabilities
-from a machine globally.  In olden times we had a global cap-bound but
-it was dropped in favor of an inheritance from init type mechanism.
-Since kthreads don't inherit from init we still end up with this patch.
-
+Laurent Pinchart
