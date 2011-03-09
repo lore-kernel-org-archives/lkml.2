@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab1CIBRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 20:17:21 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:52091 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755563Ab1CIBRU (ORCPT
+	id S1756520Ab1CIB1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 20:27:39 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:41803 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559Ab1CIB1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 20:17:20 -0500
-Date: Tue, 8 Mar 2011 20:17:16 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        chris <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH][RFC] tracing: Enable tracepoints via module parameters
-Message-ID: <20110309011716.GB3664@Krystal>
-References: <1299622684.20306.77.camel@gandalf.stny.rr.com> <20110308232258.GA25987@Krystal> <1299627175.20306.96.camel@gandalf.stny.rr.com> <20110309000753.GA27729@Krystal> <1299629657.20306.105.camel@gandalf.stny.rr.com> <20110309002921.GA744@Krystal> <1299631924.20306.122.camel@gandalf.stny.rr.com>
+	Tue, 8 Mar 2011 20:27:38 -0500
+Message-ID: <4D76D785.8060408@canonical.com>
+Date: Tue, 08 Mar 2011 17:27:33 -0800
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299631924.20306.122.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:06:34 up 105 days,  6:09,  1 user,  load average: 0.13, 0.11,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: James Morris <jmorris@namei.org>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [AppArmor 0/3] Cleanups to AppArmor's build
+References: <1299610989-3917-1-git-send-email-john.johansen@canonical.com> <alpine.LRH.2.00.1103091025130.28443@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.00.1103091025130.28443@tundra.namei.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Tue, 2011-03-08 at 19:29 -0500, Mathieu Desnoyers wrote:
-> > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > On Tue, 2011-03-08 at 19:07 -0500, Mathieu Desnoyers wrote:
-> > > 
-> > > > So what you are saying here is that modifying /etc/modprobe.d/ is the actual
-> > > > interface you propose presenting to the end-users to control their tracepoints ?
-> > > 
-> > > If you want to have them enabled on boot, sure.
-> > 
-> > No, I'm not talking about enabling tracepoints on boot here. Let's think about a
-> > basic use-case: a distro packages a tracer, and provides a "default" set of
-> > tracepoints that can be enabled when tracing is needed. Therefore, these
-> > tracepoints are not enabled at boot -- they are rather enabled when tracing
-> > starts. Some of these tracepoints are in dynamically loaded modules. Some of
-> > these modules are automatically loaded by the distro (e.g. when a USB device is
-> > plugged in).
+On 03/08/2011 03:32 PM, James Morris wrote:
+> On Tue, 8 Mar 2011, John Johansen wrote:
 > 
-> What distro are we talking about? What distro provides a "default" set
-> of tracepoints?
-
-I'm afraid I cannot say, at this point, which distro I am refering to, because
-that would be a little forward of me to push news before official feature
-announcements.
-
-And about the "default" tracepoints, let's mainly think about tracepoints that
-would be specified from a trace control application. E.g. the user wants a type
-of tracing that collects all information required to solve a category of
-problem, and they get enabled automatically.
-
-> > 
-> > The specific module tracepoints should therefore only be enabled when both of
-> > the following conditions are true:
-> > 
-> > A - the end-user want to trace
-> > B - the module is loaded
-> > 
-> > But it looks like hooking on modinfo will only let you unconditionally enable
-> > the module tracepoints during normal system operations (even when tracing is
-> > off), or not at all unless you previously load the module (which does not fit
-> > with the reality of distributions automagically loading modules on demand while
-> > tracing runs).
+>> The following three patches have all been out to the lkml/lsm and have sat in
+>> the AppArmor tree for a while.
+>>
+>> The following changes since commit eae61f3c829439f8f9121b5cd48a14be04df451f:
+>>
+>>   TOMOYO: Fix memory leak upon file open. (2011-03-03 10:13:26 +1100)
+>>
+>> are available in the git repository at:
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/jj/apparmor-dev.git security-next
+>>
+>> John Johansen (3):
+>>       AppArmor: Cleanup make file to remove cruft and make it easier to read
+>>       AppArmor: cleanup generated files correctly
+>>       AppArmor: kill unused macros in lsm.c
 > 
-> Lets keep it simple please. Right now my proposal does more than what we
-> currently have. Perhaps we could change the enabling to only enable if
-> "tracing is on", or some /proc/sys/kernel/X flag is set.
-
-Well, thinking a little more about it, I won't be using this way of enabling
-tracepoints in my tracer, so please feel free to make it as simple as you like.
-I'm just providing feedback on what the ftrace/perf end user experience will
-look like and, sadly, it does not look good at all by the look of this proposal.
-
+> These patches are showing up here with you as the author (not the original 
+> authors).  If applying raw patches, you'll need to set GIT_AUTHOR_EMAIL 
+> and GIT_AUTHOR_NAME, or more simply, use git-am -s on mailbox format files 
+> exported from your mailer.
 > 
-> 
-> > > 
-> > > > Maybe I am missing something, but this interface seems to lack the layer of
-> > > > finish we might want to put into a user-visible API. I don't really see how
-> > > > distributions can hope to automate any of this for their end-user without making
-> > > > a mess of the /etc/modprobe.d/ they ship with.
-> > > 
-> > > What distros enable tracepoints by default?
-> > 
-> > Do you mean enable as having a probe connected, or just CONFIG_TRACEPOINTS=y ?
-> 
-> I mean having the probe connected as distros already have
-> CONFIG_TRACEPOINTS on. What was your meaning when you said "distro
-> specifying a basic set of tracepoints to enable"?
+Ah yep sorry about that, I've reimported and pushed it up.
 
-I meant that distros can contain packages that are interested in a specific set
-of tracepoints (views/analysis are tracepoint data consumers), so they can
-specify a set of tracepoints to enable when tracing is activated.
+The following changes since commit eae61f3c829439f8f9121b5cd48a14be04df451f:
 
-> 
-> 
-> > 
-> > > 
-> > > If you want to enable a tracepoint on module load simply do:
-> > > 
-> > >  modprobe mymod trace_my_tracepoint=1
-> > > 
-> > > Otherwise modify your modprobe.d directory. This is the way users have
-> > > been doing module parameters for years.
-> > > 
-> > > That's pretty simple to me.
-> > 
-> > Everything is always so much easier when your end-user target is yourself.
-> > What are users for anyway ? :-P
-> 
-> Users are for testing code ;)
-> 
-> But that's a good question. As I wrote this because I'm purging my inbox
-> and came across Yuanhan Liu's patch set. I'm curios to what Yuanhan's
-> motivation for this change was.
+  TOMOYO: Fix memory leak upon file open. (2011-03-03 10:13:26 +1100)
 
-Yep.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jj/apparmor-dev.git security-next
 
-Hopefully my feedback can be of some use.
+John Johansen (1):
+      AppArmor: Cleanup make file to remove cruft and make it easier to read
 
-Thanks,
+Michal Hocko (1):
+      AppArmor: cleanup generated files correctly
 
-Mathieu
+Shan Wei (1):
+      AppArmor: kill unused macros in lsm.c
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+ security/apparmor/Makefile |   38 +++++++++++++++++++++++++++++++++-----
+ security/apparmor/lsm.c    |    2 --
+ 2 files changed, 33 insertions(+), 7 deletions(-)
