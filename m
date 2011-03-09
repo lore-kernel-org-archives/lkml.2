@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319Ab1CIQoo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 11:44:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43541 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756306Ab1CIQom (ORCPT
+	id S1757331Ab1CIQps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 11:45:48 -0500
+Received: from polaris.galacticasoftware.com ([216.55.199.131]:32994 "EHLO
+	polaris.galacticasoftware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753175Ab1CIQpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 11:44:42 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=Qq7vIXD-ciIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=b8VgSBC0AAAA:8 a=xW7rBovET4Y6dF-fHFYA:9 a=DM7K0KiaRN4KRdfrWsuk29oiB3AA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [BUG] WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x83/0x95
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg KH <gregkh@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org
-In-Reply-To: <s5hfwqwnt9s.wl%tiwai@suse.de>
-References: <1299685189.15854.182.camel@gandalf.stny.rr.com>
-	 <20110309155309.GA30598@suse.de>
-	 <1299687658.15854.227.camel@gandalf.stny.rr.com>
-	 <s5hfwqwnt9s.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 09 Mar 2011 11:44:39 -0500
-Message-ID: <1299689079.15854.251.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Mar 2011 11:45:46 -0500
+Date: Wed, 9 Mar 2011 10:44:49 -0600
+From: Adam Majer <adamm@zombino.com>
+To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: netdev@vger.kernel.org,
+        Stephen Hemminger <shemminger@linux-foundation.org>,
+        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Issue NETDEV_CHANGE notification when bridge
+ changes state
+Message-ID: <20110309164448.GA2364@mira.lan.galacticasoftware.com>
+References: <20110306051833.GA3098@mira.lan.galacticasoftware.com>
+ <20110309150949.GE16951@cr0.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110309150949.GE16951@cr0.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 17:38 +0100, Takashi Iwai wrote:
-> At Wed, 09 Mar 2011 11:20:58 -0500,
-> Steven Rostedt wrote:
-> > 
-> > On Wed, 2011-03-09 at 07:53 -0800, Greg KH wrote:
-> > 
-> > > > This was for a 386 build. I could give a .config and full dmesg if
-> > > > needed.
-> > > 
-> > > I think the sound developers (now on CC: would probably like to see
-> > > that.)
-> > 
-> > http://rostedt.homelinux.com/private/mitest-boot-randconfig-fail-20110209042837/config
-> > 
-> > http://rostedt.homelinux.com/private/mitest-boot-randconfig-fail-20110209042837/dmesg
+On Wed, Mar 09, 2011 at 11:09:49PM +0800, Américo Wang wrote:
+> On Sat, Mar 05, 2011 at 11:18:33PM -0600, Adam Majer wrote:
+> >
+> >IPv6 address autoconfiguration relies on an UP interface to processes
+> >traffic normally. A bridge that is UP enters LEARNING state and this
+> >state "eats" any Router Advertising packets sent to the
+> >bridge. Issuing a NETDEV_CHANGE notification on the bridge interface
+> >when it changes state allows autoconfiguration code to retry
+> >querying router information.
+> >
+> ...
 > 
-> Could you try the patch below?  Totally untested.
+> >+static void br_port_change_notifier_handler(struct work_struct *work)
+> >+{
+> >+	struct net_bridge *br = container_of(work,
+> >+					     struct net_bridge,
+> >+					     change_notification_worker);
+> >+
+> >+	rtnl_lock();
+> >+	netdev_state_change(br->dev);
+> >+	rtnl_unlock();
+> >+}
+> >+
 > 
+> Do you really want user-space to get this notification too?
+> Why do you put it into a workqueue? Maybe it has to be called in
+> process-context?
 
-Will do, but first I'll make sure that this is reproducible on every
-boot.
+Stephen Hemminger's patch (posted as a reply in this thread but only
+on the netdev mailing list) is much better as it only brings the link
+up on the bridge interface when the bridge enters forwarding mode.
 
-Thanks,
+Effectively it does similar thing via NETDEV_CHANGE but requires no
+other hacks in other code. It should make userland much happier too.
 
--- Steve
 
+As for my patch, I've put that in the workqueue because the
+notification cannot be called in interrupt context. Is there a better
+way of calling code that can sleep from interrupt context?
 
+- Adam
+
+-- 
+Adam Majer
+adamm@zombino.com
