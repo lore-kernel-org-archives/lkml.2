@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab1CIJEC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 04:04:02 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:1852 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756909Ab1CIJDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 04:03:55 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-To: "gregkh@suse.de" <gregkh@suse.de>,
-        "Francis Moreau" <francis.moro@gmail.com>
-cc: "Brett Rudley" <brudley@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: brcm80211: the system freezes if booted with laptop wifi
- switch to OFF
-References: <AANLkTinhThfS587rkX4y1UbJLQzQKEWGfrFArUVGD3Ew@mail.gmail.com>
-Date: Wed, 9 Mar 2011 10:03:41 +0100
+	id S932168Ab1CIJGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 04:06:30 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54203 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756811Ab1CIJG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 04:06:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=fgBJm7d/xAcchBystS6yhm+PylX7uEblbieTZbqIMcDND0joVgv6dI0y7+FMOjX/fP
+         rB1sVp+5OYBRzJTUiyamwdQdyspsL1V2XUrF9iqbbqZuxrouotQFG78N3jdl3VvVbvL7
+         snUTe9jezihPzPxcO5VlcSzJs5KJ6LYUknW6E=
+Date: Wed, 9 Mar 2011 10:06:22 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: MD-raid broken in 2.6.37.3?
+Message-ID: <20110309090622.GA3570@localhost>
 MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vr2jgfwg3ri7v4@arend-laptop>
-In-Reply-To: <AANLkTinhThfS587rkX4y1UbJLQzQKEWGfrFArUVGD3Ew@mail.gmail.com>
-User-Agent: Opera Mail/11.01 (Linux)
-X-WSS-ID: 61699C8C3T84510251-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 05 Mar 2011 18:11:20 +0100, Francis Moreau  
-<francis.moro@gmail.com> wrote:
+Hi Greg and Neil,
 
-> Hi,
->
-> I'm currently running 2.6.38-rc6, and if I boot with my WIFI switch
-> set to off position, the system freezes entirely when bringing up the
-> wlan0 interface.
->
-> There's no trace so I don't really know how I can help to debug this  
-> further.
->
-> Thanks
+I updated from 2.6.37.2 to 2.6.37.3 yesterday only to find that my
+raid-0 partitions are no longer recognised. The raid-1 ones still are,
+though. They did not show up after a reboot. (It has happened once
+fairly recently that these exact partitions were not recognised but a
+reboot fixed it -- blamed my disks.)
 
-Hi Greg,
+Today I mistakenly booted into 2.6.37.3 again -- still missing. No
+problems with 2.6.37.2.
 
-A while ago I submitted a patch for this issue and it was marked as new  
-functionality so only to be included in the staging-next branch. However,  
-as the system freezes without this patch it might be a good idea to submit  
-the patch for staging-linus branch as well to include it in linus tree. Do  
-you agree? If so I will prepare a backported version of the patch and send  
-it to you.
+Browsing the changelog I found f663ed60892c3e1d4490b079a45d9e546271c40c
+(md: Fix - again - partition detection when array becomes active) and
+other md-related changes so I figure one of these could perhaps be to
+blame?
 
-Gr. AvS
--- 
-"The most merciful thing in the world, I think, is the inability of the  
-human
-mind to correlate all its contents." - "The Call of Cthulhu"
+As it is my personal/production machine I feel uncomfortable bisecting
+this at this point, but maybe Neil has an idea of what might be going
+on?
 
+Thanks,
+Johan
