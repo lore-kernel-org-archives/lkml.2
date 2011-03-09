@@ -1,122 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab1CIPxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:53:24 -0500
-Received: from cantor.suse.de ([195.135.220.2]:59425 "EHLO mx1.suse.de"
+	id S1757195Ab1CIP5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:57:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:3728 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755636Ab1CIPxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:53:23 -0500
-Date: Wed, 9 Mar 2011 07:53:09 -0800
-From: Greg KH <gregkh@suse.de>
-To: Steven Rostedt <rostedt@goodmis.org>, Takashi Iwai <tiwai@suse.de>,
-        Jaroslav Kysela <perex@perex.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org
-Subject: Re: [BUG] WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x83/0x95
-Message-ID: <20110309155309.GA30598@suse.de>
-References: <1299685189.15854.182.camel@gandalf.stny.rr.com>
+	id S1757010Ab1CIP5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 10:57:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,291,1297065600"; 
+   d="scan'208";a="718234174"
+Date: Wed, 09 Mar 2011 15:56:52 +0000
+From: tadeusz.struk@intel.com
+To: herbert@gondor.hengli.com.au
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        aidan.o.mahony@intel.com, gabriele.paoloni@intel.com,
+        adrian.hoban@intel.com, tadeusz.struk@intel.com
+Subject: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets that
+ are not multiple of 64bytes
+Message-ID: <4d77a344.ufBJ2BimO/o2UpKI%tadeusz.struk@intel.com>
+User-Agent: nail 11.25 7/29/05
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299685189.15854.182.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 10:39:49AM -0500, Steven Rostedt wrote:
-> Not sure who to send this to, but last night on v2.6.38-rc8 ktest
-> triggered this warning:
-> 
-> 
-> [   32.062538] YM3812 and OPL-3 driver Copyright (C) by Hannu Savolainen, Rob Hooft 1993-1996
-> [   32.071305] PM: Adding info for No Bus:timer
-> [   32.075864] PM: Adding info for platform:snd_dummy.0^M
-> [   32.081232] PM: Adding info for No Bus:card0
-> [   32.085853] PM: Adding info for No Bus:pcmC0D0p
-> [   32.090650] PM: Adding info for No Bus:pcmC0D0c
-> [   32.095667] PM: Adding info for No Bus:dsp
-> [   32.099918] ------------[ cut here ]------------
-> [   32.104531] WARNING: at /home/rostedt/work/autotest/nobackup/linux-test.git/fs/sysfs/dir.c:455 sysfs_add_one+0x83/0x95()
-> [   32.115379] Hardware name:         
-> [   32.118859] sysfs: cannot create duplicate filename '/dev/char/14:4'
+From: Tadeusz Struk <tadeusz.struk@intel.com>
+Date: Wed, 9 Mar 2011 15:01:06 +0000
+Subject: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets that are not multiple of 64bytes
 
-Two modules wanted to create the same minor number, that's not good.
-
-14:4 is the OSS /dev/audio node.
-
-> [   32.125197] Modules linked in:
-> [   32.128255] Pid: 1, comm: swapper Not tainted 2.6.38-rc8-test #1
-> [   32.134247] Call Trace:^M
-> [   32.136693]  [<c044d095>] ? warn_slowpath_common+0x7c/0x91
-> [   32.142168]  [<c0552d35>] ? sysfs_add_one+0x83/0x95
-> [   32.147036]  [<c0552d35>] ? sysfs_add_one+0x83/0x95
-> [   32.151904]  [<c044d135>] ? warn_slowpath_fmt+0x33/0x35
-> [   32.157120]  [<c0552d35>] ? sysfs_add_one+0x83/0x95
-> [   32.161989]  [<c055393d>] ? sysfs_do_create_link+0xdf/0x181^M
-> [   32.167550]  [<c073637f>] ? vsnprintf+0x22c/0x266
-> [   32.172246]  [<c0553a0f>] ? sysfs_create_link+0x17/0x1c
-> [   32.177462]  [<c0950ce4>] ? device_add+0x183/0x573
-> [   32.182245]  [<c0958474>] ? device_pm_init+0x5d/0x61
-> [   32.187200]  [<c09510eb>] ? device_register+0x17/0x1a
-> [   32.192243]  [<c0951165>] ? device_create_vargs+0x77/0x98
-> [   32.197631]  [<c09511b3>] ? device_create+0x2d/0x2f
-> [   32.202501]  [<c0dc5caa>] ? sound_insert_unit+0x1ba/0x1d5
-> [   32.207891]  [<c0dc5e8e>] ? register_sound_special_device+0x103/0x11c
-> [   32.214319]  [<c0dd7875>] ? snd_register_oss_device+0x10a/0x169
-> [   32.220229]  [<c0de6cd6>] ? register_oss_dsp+0x62/0xb5
-
-Yup, sound subsystem...
+Hi Herbert,
+This patch fixes problem with packets that are not multiple of 64bytes.
+Regards,
+Tadeusz
 
 
-> [   32.225358]  [<c046b95c>] ? sched_clock_cpu+0x16a/0x17a
-> [   32.230575]  [<c04778f2>] ? mark_held_locks+0x43/0x5b
-> [   32.235616]  [<c0fa124c>] ? __mutex_lock_common+0x39f/0x3c7
-> [   32.241177]  [<c04776d2>] ? mark_lock+0x1e/0x1fb
-> [   32.245787]  [<c04778f2>] ? mark_held_locks+0x43/0x5b
-> [   32.250838]  [<c0fa0cff>] ? __mutex_unlock_slowpath+0x137/0x153
-> [   32.256745]  [<c0de6d69>] ? snd_pcm_oss_register_minor+0x40/0xe3
-> [   32.262737]  [<c0fa0d28>] ? mutex_unlock+0xd/0xf
-> [   32.267345]  [<c0dd96b7>] ? snd_timer_dev_register+0x10d/0x117
-> [   32.273165]  [<c0dd6db9>] ? snd_device_register+0x67/0xd2
-> [   32.278551]  [<c07363d5>] ? sprintf+0x1c/0x1e^M
-> [   32.282900]  [<c0de2db7>] ? snd_pcm_timer_init+0xba/0xef
-> [   32.288201]  [<c0ddb426>] ? snd_pcm_dev_register+0x1e8/0x224
-> [   32.293848]  [<c0951000>] ? device_add+0x49f/0x573
-> [   32.298630]  [<c0dd6d32>] ? snd_device_register_all+0x5e/0x7e
-> [   32.304363]  [<c09511b3>] ? device_create+0x2d/0x2f
-> [   32.309230]  [<c0dd32d3>] ? snd_card_register+0x92/0x1af
-> [   32.314531]  [<c0f87b9b>] ? snd_dummy_probe+0x322/0x3b2
-> [   32.319745]  [<c0953f57>] ? platform_drv_probe+0x14/0x16
-> [   32.325046]  [<c0953154>] ? driver_probe_device+0x116/0x1ed
-> [   32.330606]  [<c073b414>] ? do_raw_spin_unlock+0x8f/0x94
-> [   32.335906]  [<c09532c5>] ? __device_attach+0x2f/0x33^M
-> [   32.340946]  [<c09524ab>] ? bus_for_each_drv+0x44/0x6e
-> [   32.346073]  [<c095334e>] ? device_attach+0x61/0x7e^M
-> [   32.350941]  [<c0953296>] ? __device_attach+0x0/0x33
-> [   32.355895]  [<c09522e8>] ? bus_probe_device+0x23/0x38
-> [   32.361023]  [<c0950f61>] ? device_add+0x400/0x573
-> [   32.365805]  [<c0730ac4>] ? kobject_set_name_vargs+0x46/0x4c
-> [   32.371453]  [<c0954624>] ? platform_device_add+0x139/0x182
-> [   32.377015]  [<c095487d>] ? platform_device_register_resndata+0x4f/0x65
-> [   32.383616]  [<c17e2210>] ? alsa_card_dummy_init+0xcc/0x121
-> [   32.389177]  [<c0403096>] ? do_one_initcall+0x8c/0x161
-> [   32.394305]  [<c17e2144>] ? alsa_card_dummy_init+0x0/0x121
-> [   32.399780]  [<c17843cf>] ? kernel_init+0x12c/0x1c2
-> [   32.404646]  [<c17842a3>] ? kernel_init+0x0/0x1c2
-> [   32.409340]  [<c040a8c2>] ? kernel_thread_helper+0x6/0x10
-> [   32.414782] ---[ end trace 5d9e7ab86ca08fa1 ]---
-> [   32.419772] PM: Adding info for No Bus:controlC0
-> [   32.424867] PM: Adding info for isa:es18xx.0
-> [   32.429167] PM: Removing info for isa:es18xx.0
-> 
-> 
-> This was for a 386 build. I could give a .config and full dmesg if
-> needed.
+Signed-off-by: Adrian Hoban <adrian.hoban@intel.com>
+Signed-off-by: Aidan O'Mahony <aidan.o.mahony@intel.com>
+Signed-off-by: Gabriele Paoloni <gabriele.paoloni@intel.com>
+Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
+---
+ arch/x86/crypto/aesni-intel_asm.S  |    5 ++++-
+ arch/x86/crypto/aesni-intel_glue.c |   14 ++++++++++++--
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
-I think the sound developers (now on CC: would probably like to see
-that.)
+diff --git a/arch/x86/crypto/aesni-intel_asm.S b/arch/x86/crypto/aesni-intel_asm.S
+index 8fe2a49..4faa3b2 100644
+--- a/arch/x86/crypto/aesni-intel_asm.S
++++ b/arch/x86/crypto/aesni-intel_asm.S
+@@ -1612,6 +1612,7 @@ _zero_cipher_left_encrypt:
+         movdqa SHUF_MASK(%rip), %xmm10
+ 	PSHUFB_XMM %xmm10, %xmm0
+ 
++
+ 	ENCRYPT_SINGLE_BLOCK	%xmm0, %xmm1        # Encrypt(K, Yn)
+ 	sub $16, %r11
+ 	add %r13, %r11
+@@ -1634,7 +1635,9 @@ _zero_cipher_left_encrypt:
+ 	# GHASH computation for the last <16 byte block
+ 	sub	%r13, %r11
+ 	add	$16, %r11
+-	PSHUFB_XMM %xmm10, %xmm1
++
++	movdqa SHUF_MASK(%rip), %xmm10
++	PSHUFB_XMM %xmm10, %xmm0
+ 
+ 	# shuffle xmm0 back to output as ciphertext
+ 
+diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
+index e0e6340..2577613 100644
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -828,9 +828,15 @@ static int rfc4106_init(struct crypto_tfm *tfm)
+ 	struct cryptd_aead *cryptd_tfm;
+ 	struct aesni_rfc4106_gcm_ctx *ctx = (struct aesni_rfc4106_gcm_ctx *)
+ 		PTR_ALIGN((u8 *)crypto_tfm_ctx(tfm), AESNI_ALIGN);
++	struct crypto_aead *cryptd_child;
++	struct aesni_rfc4106_gcm_ctx *child_ctx;
+ 	cryptd_tfm = cryptd_alloc_aead("__driver-gcm-aes-aesni", 0, 0);
+ 	if (IS_ERR(cryptd_tfm))
+ 		return PTR_ERR(cryptd_tfm);
++
++	cryptd_child = cryptd_aead_child(cryptd_tfm);
++	child_ctx = aesni_rfc4106_gcm_ctx_get(cryptd_child);
++	memcpy(child_ctx, ctx, sizeof(*ctx));
+ 	ctx->cryptd_tfm = cryptd_tfm;
+ 	tfm->crt_aead.reqsize = sizeof(struct aead_request)
+ 		+ crypto_aead_reqsize(&cryptd_tfm->base);
+@@ -923,6 +929,9 @@ static int rfc4106_set_key(struct crypto_aead *parent, const u8 *key,
+ 	int ret = 0;
+ 	struct crypto_tfm *tfm = crypto_aead_tfm(parent);
+ 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(parent);
++	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
++	struct aesni_rfc4106_gcm_ctx *child_ctx =
++                                 aesni_rfc4106_gcm_ctx_get(cryptd_child);
+ 	u8 *new_key_mem = NULL;
+ 
+ 	if (key_len < 4) {
+@@ -966,6 +975,7 @@ static int rfc4106_set_key(struct crypto_aead *parent, const u8 *key,
+ 		goto exit;
+ 	}
+ 	ret = rfc4106_set_hash_subkey(ctx->hash_subkey, key, key_len);
++	memcpy(child_ctx, ctx, sizeof(*ctx));
+ exit:
+ 	kfree(new_key_mem);
+ 	return ret;
+@@ -997,7 +1007,6 @@ static int rfc4106_encrypt(struct aead_request *req)
+ 	int ret;
+ 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
+ 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
+-	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
+ 
+ 	if (!irq_fpu_usable()) {
+ 		struct aead_request *cryptd_req =
+@@ -1006,6 +1015,7 @@ static int rfc4106_encrypt(struct aead_request *req)
+ 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
+ 		return crypto_aead_encrypt(cryptd_req);
+ 	} else {
++		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
+ 		kernel_fpu_begin();
+ 		ret = cryptd_child->base.crt_aead.encrypt(req);
+ 		kernel_fpu_end();
+@@ -1018,7 +1028,6 @@ static int rfc4106_decrypt(struct aead_request *req)
+ 	int ret;
+ 	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
+ 	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
+-	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
+ 
+ 	if (!irq_fpu_usable()) {
+ 		struct aead_request *cryptd_req =
+@@ -1027,6 +1036,7 @@ static int rfc4106_decrypt(struct aead_request *req)
+ 		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
+ 		return crypto_aead_decrypt(cryptd_req);
+ 	} else {
++		struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
+ 		kernel_fpu_begin();
+ 		ret = cryptd_child->base.crt_aead.decrypt(req);
+ 		kernel_fpu_end();
+-- 
+1.7.4
 
-thanks,
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
 
-greg k-h
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
+
+
