@@ -1,174 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab1CIRmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:42:25 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:36468 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932933Ab1CIRlx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 12:41:53 -0500
+	id S932980Ab1CIRmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:42:44 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:8739 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932927Ab1CIRlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 12:41:51 -0500
 X-IronPort-AV: E=Sophos;i="4.62,291,1297054800"; 
-   d="scan'208";a="139432638"
+   d="scan'208";a="139432633"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 12/14] xen: events: remove use of nr_irqs as upper bound on number of pirqs
-Date: Wed,  9 Mar 2011 17:41:24 +0000
-Message-Id: <1299692486-28634-12-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 11/14] xen: events: dynamically allocate irq info structures
+Date: Wed,  9 Mar 2011 17:41:23 +0000
+Message-Id: <1299692486-28634-11-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
 References: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 09 Mar 2011 17:41:52.0196 (UTC) FILETIME=[464F9840:01CBDE81]
+X-OriginalArrivalTime: 09 Mar 2011 17:41:50.0586 (UTC) FILETIME=[4559EDA0:01CBDE81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There isn't really much relationship between the two, other than
-nr_irqs often being the larger of the two.
-
-Allows us to remove a nr_irqs sized array, the only users of this
-array are MSI setup and restore, neither of which are particularly
-performance critical.
+Removes nr_irq sized array allocation at start of day.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 ---
- drivers/xen/events.c |   59 +++++++++++++++++++++----------------------------
- 1 files changed, 25 insertions(+), 34 deletions(-)
+ drivers/xen/events.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 002283e..b07f5bb 100644
+index e119989..002283e 100644
 --- a/drivers/xen/events.c
 +++ b/drivers/xen/events.c
-@@ -107,8 +107,6 @@ struct irq_info
+@@ -107,7 +107,6 @@ struct irq_info
  #define PIRQ_NEEDS_EOI	(1 << 0)
  #define PIRQ_SHAREABLE	(1 << 1)
  
--static int *pirq_to_irq;
--
+-static struct irq_info *irq_info;
+ static int *pirq_to_irq;
+ 
  static int *evtchn_to_irq;
- 
- static DEFINE_PER_CPU(unsigned long [NR_EVENT_CHANNELS/BITS_PER_LONG],
-@@ -196,8 +194,6 @@ static void xen_irq_info_pirq_init(unsigned irq,
- 	info->u.pirq.gsi = gsi;
- 	info->u.pirq.vector = vector;
- 	info->u.pirq.flags = flags;
--
--	pirq_to_irq[pirq] = irq;
- }
- 
- /*
-@@ -247,16 +243,6 @@ static unsigned pirq_from_irq(unsigned irq)
- 	return info->u.pirq.pirq;
- }
- 
--static unsigned gsi_from_irq(unsigned irq)
--{
--	struct irq_info *info = info_for_irq(irq);
--
--	BUG_ON(info == NULL);
--	BUG_ON(info->type != IRQT_PIRQ);
--
--	return info->u.pirq.gsi;
--}
--
- static enum xen_irq_type type_from_irq(unsigned irq)
+@@ -125,7 +124,7 @@ static struct irq_chip xen_pirq_chip;
+ /* Get info for IRQ */
+ static struct irq_info *info_for_irq(unsigned irq)
  {
- 	return info_for_irq(irq)->type;
-@@ -653,12 +639,6 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+-	return &irq_info[irq];
++	return get_irq_data(irq);
+ }
+ 
+ /* Constructors for packed IRQ information. */
+@@ -309,7 +308,7 @@ static void bind_evtchn_to_cpu(unsigned int chn, unsigned int cpu)
+ 	clear_bit(chn, per_cpu(cpu_evtchn_mask, cpu_from_irq(irq)));
+ 	set_bit(chn, per_cpu(cpu_evtchn_mask, cpu));
+ 
+-	irq_info[irq].cpu = cpu;
++	info_for_irq(irq)->cpu = cpu;
+ }
+ 
+ static void init_evtchn_cpu_bindings(void)
+@@ -328,7 +327,6 @@ static void init_evtchn_cpu_bindings(void)
+ 	for_each_possible_cpu(i)
+ 		memset(per_cpu(cpu_evtchn_mask, i),
+ 		       (i == 0) ? ~0 : 0, sizeof(*per_cpu(cpu_evtchn_mask, i)));
+-
+ }
+ 
+ static inline void clear_evtchn(int port)
+@@ -411,10 +409,14 @@ static void xen_irq_init(unsigned irq)
+ 	/* By default all event channels notify CPU#0. */
+ 	cpumask_copy(desc->irq_data.affinity, cpumask_of(0));
+ 
+-	info = &irq_info[irq];
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (info == NULL)
++		panic("Unable to allocate metadata for IRQ%d\n", irq);
+ 
+ 	info->type = IRQT_UNBOUND;
+ 
++	set_irq_data(irq, info);
++
+ 	list_add_tail(&info->list, &xen_irq_list_head);
+ }
+ 
+@@ -481,12 +483,14 @@ static int xen_allocate_irq_gsi(unsigned gsi)
+ 
+ static void xen_free_irq(unsigned irq)
+ {
+-	struct irq_info *info = &irq_info[irq];
+-
+-	info->type = IRQT_UNBOUND;
++	struct irq_info *info = get_irq_data(irq);
+ 
+ 	list_del(&info->list);
+ 
++	set_irq_data(irq, NULL);
++
++	kfree(info);
++
+ 	/* Legacy IRQ descriptors are managed by the arch. */
+ 	if (irq < NR_IRQS_LEGACY)
+ 		return;
+@@ -649,10 +653,9 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
  
  	spin_lock(&irq_mapping_update_lock);
  
--	if (pirq > nr_irqs) {
--		printk(KERN_WARNING "xen_map_pirq_gsi: pirq %d > nr_irqs %d!\n",
--		       pirq, nr_irqs);
--		goto out;
--	}
--
- 	irq = find_irq_by_gsi(gsi);
- 	if (irq != -1) {
- 		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
-@@ -758,7 +738,6 @@ int xen_destroy_irq(int irq)
- 			goto out;
- 		}
+-	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
+-		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
+-			pirq > nr_irqs ? "pirq" :"",
+-			gsi > nr_irqs ? "gsi" : "");
++	if (pirq > nr_irqs) {
++		printk(KERN_WARNING "xen_map_pirq_gsi: pirq %d > nr_irqs %d!\n",
++		       pirq, nr_irqs);
+ 		goto out;
  	}
--	pirq_to_irq[info->u.pirq.pirq] = -1;
+ 
+@@ -889,7 +892,7 @@ static void unbind_from_irq(unsigned int irq)
+ 		evtchn_to_irq[evtchn] = -1;
+ 	}
+ 
+-	BUG_ON(irq_info[irq].type == IRQT_UNBOUND);
++	BUG_ON(info_for_irq(irq)->type == IRQT_UNBOUND);
  
  	xen_free_irq(irq);
  
-@@ -769,7 +748,24 @@ out:
- 
- int xen_irq_from_pirq(unsigned pirq)
- {
--	return pirq_to_irq[pirq];
-+	int irq;
-+
-+	struct irq_info *info;
-+
-+	spin_lock(&irq_mapping_update_lock);
-+
-+	list_for_each_entry(info, &xen_irq_list_head, list) {
-+		if (info == NULL || info->type != IRQT_PIRQ)
-+			continue;
-+		irq = info->irq;
-+		if (info->u.pirq.pirq == pirq)
-+			goto out;
-+	}
-+	irq = -1;
-+out:
-+	spin_lock(&irq_mapping_update_lock);
-+
-+	return -1;
- }
- 
- int bind_evtchn_to_irq(unsigned int evtchn)
-@@ -1269,15 +1265,18 @@ static void restore_pirqs(void)
- {
- 	int pirq, rc, irq, gsi;
- 	struct physdev_map_pirq map_irq;
-+	struct irq_info *info;
- 
--	for (pirq = 0; pirq < nr_irqs; pirq++) {
--		irq = pirq_to_irq[pirq];
--		if (irq == -1)
-+	list_for_each_entry(info, &xen_irq_list_head, list) {
-+		if (info->type != IRQT_PIRQ)
- 			continue;
- 
-+		pirq = info->u.pirq.pirq;
-+		gsi = info->u.pirq.gsi;
-+		irq = info->irq;
-+
- 		/* save/restore of PT devices doesn't work, so at this point the
- 		 * only devices present are GSI based emulated devices */
--		gsi = gsi_from_irq(irq);
- 		if (!gsi)
- 			continue;
- 
-@@ -1291,7 +1290,6 @@ static void restore_pirqs(void)
- 			printk(KERN_WARNING "xen map irq failed gsi=%d irq=%d pirq=%d rc=%d\n",
- 					gsi, irq, pirq, rc);
- 			xen_free_irq(irq);
--			pirq_to_irq[pirq] = -1;
- 			continue;
- 		}
- 
-@@ -1512,13 +1510,6 @@ void __init xen_init_IRQ(void)
+@@ -1509,8 +1512,6 @@ void __init xen_init_IRQ(void)
  {
  	int i;
  
--	/* We are using nr_irqs as the maximum number of pirq available but
--	 * that number is actually chosen by Xen and we don't know exactly
--	 * what it is. Be careful choosing high pirq numbers. */
--	pirq_to_irq = kcalloc(nr_irqs, sizeof(*pirq_to_irq), GFP_KERNEL);
--	for (i = 0; i < nr_irqs; i++)
--		pirq_to_irq[i] = -1;
+-	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
 -
- 	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
- 				    GFP_KERNEL);
- 	for (i = 0; i < NR_EVENT_CHANNELS; i++)
+ 	/* We are using nr_irqs as the maximum number of pirq available but
+ 	 * that number is actually chosen by Xen and we don't know exactly
+ 	 * what it is. Be careful choosing high pirq numbers. */
 -- 
 1.5.6.5
 
