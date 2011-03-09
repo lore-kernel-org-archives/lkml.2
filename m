@@ -1,139 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab1CISbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 13:31:42 -0500
-Received: from 29.mail-out.ovh.net ([87.98.216.213]:33207 "HELO
-	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752596Ab1CISbj (ORCPT
+	id S1754559Ab1CISbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 13:31:46 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57646 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab1CISbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 13:31:39 -0500
-From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
-Subject: [PATCH v2 1/2] n_gsm: add a documentation
-Date: Wed,  9 Mar 2011 19:24:48 +0100
-Message-Id: <1299695089-2994-1-git-send-email-eric@eukrea.com>
-X-Mailer: git-send-email 1.7.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 14264588871616605464
-X-Ovh-Remote: 82.233.81.124 (tal33-3-82-233-81-124.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Wed, 9 Mar 2011 13:31:43 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Han Pingtian <phan@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 04/10] perf top: Fix events overflow in top command
+Date: Wed,  9 Mar 2011 15:31:25 -0300
+Message-Id: <1299695491-15786-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1299695491-15786-1-git-send-email-acme@infradead.org>
+References: <1299695491-15786-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* this documentation gives some details on how to get the n_gsm
-line discipline to work with modems supporting 07.10 basic option.
+From: Jiri Olsa <jolsa@redhat.com>
 
-* it was tested on Telit and Simcom modems.
+The snprintf function returns number of printed characters even if it
+cross the size parameter. So passing enough events via '-e' parameter
+will cause segmentation fault.
 
-Signed-off-by: Eric Bénard <eric@eukrea.com>
+It's reproduced by following command:
+
+perf top -e `perf list | grep Tracepoint | awk -F'[' '\
+{gsub(/[[:space:]]+/,"",$1);array[FNR]=$1}END{outputs=array[1];\
+for (i=2;i<=FNR;i++){ outputs=outputs "," array[i];};print outputs}'`
+
+Attached patch is adding SNPRINTF macro that provides the overflow check
+and returns actuall number of printed characters.
+
+Reported-by: Han Pingtian <phan@redhat.com>
+Cc: Han Pingtian <phan@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1299528821-17521-2-git-send-email-jolsa@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-v2 : small updates following Michal's review
+ tools/perf/util/top.c |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
- Documentation/serial/n_gsm.txt |   89 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 89 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/serial/n_gsm.txt
-
-diff --git a/Documentation/serial/n_gsm.txt b/Documentation/serial/n_gsm.txt
-new file mode 100644
-index 0000000..397f41a
---- /dev/null
-+++ b/Documentation/serial/n_gsm.txt
-@@ -0,0 +1,89 @@
-+n_gsm.c GSM 0710 tty multiplexor HOWTO
-+===================================================
+diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
+index 70a9c13..4f869da 100644
+--- a/tools/perf/util/top.c
++++ b/tools/perf/util/top.c
+@@ -61,6 +61,12 @@ static void rb_insert_active_sym(struct rb_root *tree, struct sym_entry *se)
+ 	rb_insert_color(&se->rb_node, tree);
+ }
+ 
++#define SNPRINTF(buf, size, fmt, args...) \
++({ \
++	size_t r = snprintf(buf, size, fmt, ## args); \
++	r > size ?  size : r; \
++})
 +
-+This line discipline implements the GSM 07.10 multiplexing protocol
-+detailed in the following 3GPP document :
-+http://www.3gpp.org/ftp/Specs/archive/07_series/07.10/0710-720.zip
-+
-+This document give some hints on how to use this driver with GPRS and 3G
-+modems connected to a physical serial port.
-+
-+How to use it
-+-------------
-+1- initialize the modem in 0710 mux mode (usually AT+CMUX= command) through
-+its serial port. Depending on the modem used, you can pass more or less
-+parameters to this command,
-+2- switch the serial line to using the n_gsm line discipline by using
-+TIOCSETD ioctl,
-+3- configure the mux using GSMIOC_GETCONF / GSMIOC_SETCONF ioctl,
-+
-+Major parts of the initialization program :
-+(a good starting point is util-linux-ng/sys-utils/ldattach.c)
-+#include <linux/gsmmux.h>
-+#define N_GSM0710	21	/* GSM 0710 Mux */
-+#define DEFAULT_SPEED	B115200
-+#define SERIAL_PORT	/dev/ttyS0
-+
-+	int ldisc = N_GSM0710;
-+	struct gsm_config c;
-+	struct termios configuration;
-+
-+	/* open the serial port connected to the modem */
-+	fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NDELAY);
-+
-+	/* configure the serial port : speed, flow control ... */
-+
-+	/* send the AT commands to switch the modem to CMUX mode
-+	   and check that it's succesful (should return OK) */
-+	write(fd, "AT+CMUX=0\r", 10);
-+
-+	/* experience showed that some modems need some time before
-+	   being able to answer to the first MUX packet so a delay
-+	   may be needed here in some case */
-+	sleep(3);
-+
-+	/* use n_gsm line discipline */
-+	ioctl(fd, TIOCSETD, &ldisc);
-+
-+	/* get n_gsm configuration */
-+	ioctl(fd, GSMIOC_GETCONF, &c);
-+	/* we are initiator and need encoding 0 (basic) */
-+	c.initiator = 1;
-+	c.encapsulation = 0;
-+	/* our modem defaults to a maximum size of 127 bytes */
-+	c.mru = 127;
-+	c.mtu = 127;
-+	/* set the new configuration */
-+	ioctl(fd, GSMIOC_SETCONF, &c);
-+
-+	/* and wait for ever to keep the line discipline enabled */
-+	daemon(0,0);
-+	pause();
-+
-+4- create the devices corresponding to the "virtual" serial ports (take care,
-+each modem has its configuration and some DLC have dedicated functions,
-+for example GPS), starting with minor 1 (DLC0 is reserved for the management
-+of the mux)
-+
-+MAJOR=`cat /proc/devices |grep gsmtty | awk '{print $1}`
-+for i in `seq 1 4`; do
-+	mknod /dev/ttygsm$i c $MAJOR $i
-+done
-+
-+5- use these devices as plain serial ports.
-+for example, it's possible :
-+- and to use gnokii to send / receive SMS on ttygsm1
-+- to use ppp to establish a datalink on ttygsm2
-+
-+6- first close all virtual ports before closing the physical port.
-+
-+Additional Documentation
-+------------------------
-+More practical details on the protocol and how it's supported by industrial
-+modems can be found in the following documents :
-+http://www.telit.com/module/infopool/download.php?id=616
-+http://www.u-blox.com/images/downloads/Product_Docs/LEON-G100-G200-MuxImplementation_ApplicationNote_%28GSM%20G1-CS-10002%29.pdf
-+http://www.sierrawireless.com/Support/Downloads/AirPrime/WMP_Series/~/media/Support_Downloads/AirPrime/Application_notes/CMUX_Feature_Application_Note-Rev004.ashx
-+http://wm.sim.com/sim/News/photo/2010721161442.pdf
-+
-+11-03-08 - Eric Bénard - <eric@eukrea.com>
+ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ {
+ 	struct perf_evsel *counter;
+@@ -70,7 +76,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 	size_t ret = 0;
+ 
+ 	if (!perf_guest) {
+-		ret = snprintf(bf, size,
++		ret = SNPRINTF(bf, size,
+ 			       "   PerfTop:%8.0f irqs/sec  kernel:%4.1f%%"
+ 			       "  exact: %4.1f%% [", samples_per_sec,
+ 			       100.0 - (100.0 * ((samples_per_sec - ksamples_per_sec) /
+@@ -81,7 +87,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 		float guest_kernel_samples_per_sec = top->guest_kernel_samples / top->delay_secs;
+ 		float guest_us_samples_per_sec = top->guest_us_samples / top->delay_secs;
+ 
+-		ret = snprintf(bf, size,
++		ret = SNPRINTF(bf, size,
+ 			       "   PerfTop:%8.0f irqs/sec  kernel:%4.1f%% us:%4.1f%%"
+ 			       " guest kernel:%4.1f%% guest us:%4.1f%%"
+ 			       " exact: %4.1f%% [", samples_per_sec,
+@@ -101,38 +107,38 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 	if (top->evlist->nr_entries == 1 || !top->display_weighted) {
+ 		struct perf_evsel *first;
+ 		first = list_entry(top->evlist->entries.next, struct perf_evsel, node);
+-		ret += snprintf(bf + ret, size - ret, "%" PRIu64 "%s ",
++		ret += SNPRINTF(bf + ret, size - ret, "%" PRIu64 "%s ",
+ 				(uint64_t)first->attr.sample_period,
+ 				top->freq ? "Hz" : "");
+ 	}
+ 
+ 	if (!top->display_weighted) {
+-		ret += snprintf(bf + ret, size - ret, "%s",
++		ret += SNPRINTF(bf + ret, size - ret, "%s",
+ 				event_name(top->sym_evsel));
+ 	} else list_for_each_entry(counter, &top->evlist->entries, node) {
+-		ret += snprintf(bf + ret, size - ret, "%s%s",
++		ret += SNPRINTF(bf + ret, size - ret, "%s%s",
+ 				counter->idx ? "/" : "", event_name(counter));
+ 	}
+ 
+-	ret += snprintf(bf + ret, size - ret, "], ");
++	ret += SNPRINTF(bf + ret, size - ret, "], ");
+ 
+ 	if (top->target_pid != -1)
+-		ret += snprintf(bf + ret, size - ret, " (target_pid: %d",
++		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %d",
+ 				top->target_pid);
+ 	else if (top->target_tid != -1)
+-		ret += snprintf(bf + ret, size - ret, " (target_tid: %d",
++		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %d",
+ 				top->target_tid);
+ 	else
+-		ret += snprintf(bf + ret, size - ret, " (all");
++		ret += SNPRINTF(bf + ret, size - ret, " (all");
+ 
+ 	if (top->cpu_list)
+-		ret += snprintf(bf + ret, size - ret, ", CPU%s: %s)",
++		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
+ 				top->evlist->cpus->nr > 1 ? "s" : "", top->cpu_list);
+ 	else {
+ 		if (top->target_tid != -1)
+-			ret += snprintf(bf + ret, size - ret, ")");
++			ret += SNPRINTF(bf + ret, size - ret, ")");
+ 		else
+-			ret += snprintf(bf + ret, size - ret, ", %d CPU%s)",
++			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
+ 					top->evlist->cpus->nr,
+ 					top->evlist->cpus->nr > 1 ? "s" : "");
+ 	}
 -- 
-1.7.4
+1.6.2.5
 
