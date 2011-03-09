@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab1CIKA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 05:00:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42944 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757109Ab1CIKA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 05:00:57 -0500
-Date: Wed, 9 Mar 2011 10:00:55 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Cliff Cai <cliffcai.sh@gmail.com>
-Cc: Mike Frysinger <vapier.adi@gmail.com>, cliff.cai@analog.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org, akpm@linux-foundation.org,
-        lrg@slimlogic.co.uk
-Subject: Re: [alsa-devel] [Device-drivers-devel] [PATCH] Add driver for
- Analog Devices ADAU1701 SigmaDSP
-Message-ID: <20110309100055.GB6923@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com>
- <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
- <20110307121502.GG13471@opensource.wolfsonmicro.com>
- <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
- <AANLkTik=wEyCEY5xsrdGJw6t_VHH9ByKt4mX348P8uD7@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik=wEyCEY5xsrdGJw6t_VHH9ByKt4mX348P8uD7@mail.gmail.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757150Ab1CIKDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 05:03:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57102 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757123Ab1CIKDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 05:03:03 -0500
+Date: Wed, 9 Mar 2011 21:02:51 +1100
+From: NeilBrown <neilb@suse.de>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: MD-raid broken in 2.6.37.3?
+Message-ID: <20110309210251.744ef954@notabene.brown>
+In-Reply-To: <20110309090622.GA3570@localhost>
+References: <20110309090622.GA3570@localhost>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 03:25:05PM +0800, Cliff Cai wrote:
-> On Mon, Mar 7, 2011 at 8:29 PM, Mike Frysinger <vapier.adi@gmail.com> wrote:
+On Wed, 9 Mar 2011 10:06:22 +0100 Johan Hovold <jhovold@gmail.com> wrote:
 
-> > i dont see the issue here.  the firmware is *optional* and does not
-> > impair basic audio output.  further, the firmware is fully
-> > written/compiled/maintained by the end customer, just like the
-> > application.  which means there is no "magic" here -- the end customer
-> > is the wizard.
+> Hi Greg and Neil,
+> 
+> I updated from 2.6.37.2 to 2.6.37.3 yesterday only to find that my
+> raid-0 partitions are no longer recognised. The raid-1 ones still are,
+> though. They did not show up after a reboot. (It has happened once
+> fairly recently that these exact partitions were not recognised but a
+> reboot fixed it -- blamed my disks.)
+> 
+> Today I mistakenly booted into 2.6.37.3 again -- still missing. No
+> problems with 2.6.37.2.
+> 
+> Browsing the changelog I found f663ed60892c3e1d4490b079a45d9e546271c40c
+> (md: Fix - again - partition detection when array becomes active) and
+> other md-related changes so I figure one of these could perhaps be to
+> blame?
+> 
+> As it is my personal/production machine I feel uncomfortable bisecting
+> this at this point, but maybe Neil has an idea of what might be going
+> on?
 
-> it's a DSP,so firmware is not optional,actually there is default
-> internal program can be used
-> if no external firmware is downloaded,of cause, the internal program
-> is only used to test analog audio pass-through.
+Hi Johan,
 
-If there is default firmware then even if it's not particularly useful
-the kernel should probably not *require* that additional firmware is
-provided during driver startup - the system may wish to wait until later
-in the boot to provide it, for example because it needs to mount media
-to get to the firmware or because it needs to do additional work to
-decide what firmware is required for the current system setup.
+ could you please be a bit more specific about the problem that you
+experienced.
+What, exactly, was "no longer recognised"?
+
+Was it that the array (e.g. /dev/md1) didn't appear, or was it that the
+array did appear, but that it has a partition table, and the partitions
+(e.g. /dev/md1p1, /dev/md1p2) did not appear?
+
+If you still have the boot-log from when you booted 2.6.37.3 (or can
+recreated) and can get a similar log for 2.6.37.2, then it might be useful to
+compare them.
+
+Thanks,
+NeilBrown
