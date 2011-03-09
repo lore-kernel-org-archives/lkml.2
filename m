@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab1CIPlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:41:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63430 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab1CIPlD (ORCPT
+	id S1757160Ab1CIPqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:46:45 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:40508 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab1CIPqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:41:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UrjneMrhFW4wmJcy5V4OBE63kDkedFCFoqJ+4gcZom/mgRXFNc8njolo1qVvtD3VCi
-         GumVtacrGnyg66pwbY3Od1nKWXeCCubMmJdNLsMHxEP8/HIdy+SNFZMvQiC1gOkE8xWd
-         eGymdjKaUeVsps7+eAsx8CUgERsdtrRGyM9ZA=
-Date: Wed, 9 Mar 2011 16:38:59 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, hch@infradead.org
-Subject: block: Fix oops caused by __blkdev_get() calling
- disk_unblock_events() with invalid @disk
-Message-ID: <20110309153859.GD27010@htj.dyndns.org>
-References: <1299662016-7721-1-git-send-email-tj@kernel.org>
- <4D774641.3070806@kernel.dk>
- <4D779396.7050905@fusionio.com>
+	Wed, 9 Mar 2011 10:46:43 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6279"; a="78934361"
+Message-ID: <a4755347806be2bd3d2bc8bdda498e6b.squirrel@www.codeaurora.org>
+In-Reply-To: <AANLkTimDgPxUP1PbT8g9V99kA_KTbQkz6ssz=+UKksKk@mail.gmail.com>
+References: <1299608733-28514-1-git-send-email-sheetals@codeaurora.org>
+    <AANLkTimDgPxUP1PbT8g9V99kA_KTbQkz6ssz=+UKksKk@mail.gmail.com>
+Date: Wed, 9 Mar 2011 07:46:22 -0800 (PST)
+Subject: Re: [PATCH v3 2/3] [ARM] perfevents: Add support for Scorpion 
+     performance monitors
+From: "Sheetal Sahasrabudhe" <sheetals@codeaurora.org>
+To: "Jean Pihet" <jean.pihet@newoldbits.com>
+Cc: "Sheetal Sahasrabudhe" <sheetals@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com,
+        jamie.iles@picochip.com, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D779396.7050905@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 57c966b8b2 (block: Don't check events while open is in
-progress) made __blkdev_get() block events around open calls; however,
-it used invalid @disk pointer in the following cases.
+Hi Jean,
 
-* When ->open() returns -ERESTARTSYS, disk_unblock_events() is called
-  after @disk is put.  @disk may be invalid by the time unblock is
-  called.
+On Wed, March 9, 2011 12:44 am, Jean Pihet wrote:
+> Thanks for the update.
+> I still have some nitpicking comments below.
 
-  This is fixed by moving references after disk_unblock_events().
+I have fixed the multi-line comments and added spaces as per your feedback.
+I will be sending out the updated patch shortly.
 
-* When there are multiple openers, @disk is cleared to %NULL and later
-  disk_unblock_disk() is called with %NULL @disk causing oops.
+Thanks,
+Sheetal
 
-  This is fixed by moving reference putting after open success is
-  determined and not clearing @disk to %NULL.  On success, @disk is
-  valid because there is another opener holding reference to it.  On
-  failure, the references are put after disk_unblock_events() is
-  called.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Jens Axboe <axboe@kernel.dk>
----
-Ah, sorry about that.  My test setup didn't include a device with
-multiple partitions on it so the more than one opener case never
-triggered.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Thanks.
 
- fs/block_dev.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
 
-Index: work/fs/block_dev.c
-===================================================================
---- work.orig/fs/block_dev.c
-+++ work/fs/block_dev.c
-@@ -1109,11 +1109,11 @@ static int __blkdev_get(struct block_dev
- 					 */
- 					disk_put_part(bdev->bd_part);
- 					bdev->bd_part = NULL;
--					module_put(disk->fops->owner);
--					put_disk(disk);
- 					bdev->bd_disk = NULL;
- 					mutex_unlock(&bdev->bd_mutex);
- 					disk_unblock_events(disk);
-+					module_put(disk->fops->owner);
-+					put_disk(disk);
- 					goto restart;
- 				}
- 				if (ret)
-@@ -1150,9 +1150,6 @@ static int __blkdev_get(struct block_dev
- 			bd_set_size(bdev, (loff_t)bdev->bd_part->nr_sects << 9);
- 		}
- 	} else {
--		module_put(disk->fops->owner);
--		put_disk(disk);
--		disk = NULL;
- 		if (bdev->bd_contains == bdev) {
- 			if (bdev->bd_disk->fops->open) {
- 				ret = bdev->bd_disk->fops->open(bdev, mode);
-@@ -1162,6 +1159,9 @@ static int __blkdev_get(struct block_dev
- 			if (bdev->bd_invalidated)
- 				rescan_partitions(bdev->bd_disk, bdev);
- 		}
-+		/* only one opener holds refs to the module and disk */
-+		module_put(disk->fops->owner);
-+		put_disk(disk);
- 	}
- 	bdev->bd_openers++;
- 	if (for_part)
-@@ -1182,8 +1182,7 @@ static int __blkdev_get(struct block_dev
- 	mutex_unlock(&bdev->bd_mutex);
- 	disk_unblock_events(disk);
-  out:
--	if (disk)
--		module_put(disk->fops->owner);
-+	module_put(disk->fops->owner);
- 	put_disk(disk);
- 	bdput(bdev);
- 
