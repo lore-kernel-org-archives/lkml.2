@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab1CIQ7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 11:59:37 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45728 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab1CIQ7f (ORCPT
+	id S932643Ab1CIRBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:01:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60860 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab1CIRBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 11:59:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=L5hYv0HSUPc/QP0JPoLUNmdm5unWw8688FTHFrBhSFJ+P35f7HUek1BhZodT3AVrGD
-         dTBO6FS7MhOKZeABES0x+ivPiQ4jR9f7KFHwXIQe66nnUE9hmRuEhDFh2e+Rs187g7Tr
-         aNjF63xlAaEBgKfWcWublikSkuisDDydfliz0=
-Date: Wed, 9 Mar 2011 17:58:58 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Pete Zaitcev <zaitcev@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org
-Subject: Re: [PATCH 10/16] ub: Convert to bdops->check_events()
-Message-ID: <20110309165858.GE27010@htj.dyndns.org>
-References: <1299662016-7721-1-git-send-email-tj@kernel.org>
- <1299662016-7721-11-git-send-email-tj@kernel.org>
- <20110309094658.29c7fa54@lembas.zaitcev.lan>
+	Wed, 9 Mar 2011 12:01:32 -0500
+Message-ID: <4D77B267.3020307@monstr.eu>
+Date: Wed, 09 Mar 2011 18:01:27 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110309094658.29c7fa54@lembas.zaitcev.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: Revert "irq: Add tracepoint to softirq_raise" - microblaze build
+References: <4D77708F.1000800@monstr.eu> <1299689179.15854.255.camel@gandalf.stny.rr.com>
+In-Reply-To: <1299689179.15854.255.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 09:46:58AM -0700, Pete Zaitcev wrote:
-> On Wed,  9 Mar 2011 10:13:30 +0100
-> Tejun Heo <tj@kernel.org> wrote:
+Steven Rostedt wrote:
+> On Wed, 2011-03-09 at 13:20 +0100, Michal Simek wrote:
+>> Hi Frederic,
+>>
+>> I have compiled ftrace support for Microblaze and I have reached a compilation failure.
+>>
+>> I bisected it and I found that
+>> "irq: Add tracepoint to softirq_raise"
+>> (sha1:2bf2160d8805de64308e2e7c3cd97813cb58ed2f)
+>> caused it.
+>>
+>> I also found one thread which could be related.
+>> http://kerneltrap.org/mailarchive/linux-kernel/2010/9/8/4616941
+>>
+>> It is likely any missing header or so.
+>>
+>> Do you know what can be wrong?
+>>
+>> Thanks,
+>> Michal
+>>
+>>
+>> [ALL  ]   CC      kernel/trace/power-traces.o
+>> [ALL  ] In file included from 
+>> /mnt/projects/petalinux-v1.00-devel/software/linux-2.6.x/arch/microblaze/include/asm/irq.h:15,
 > 
-> > +++ b/drivers/block/ub.c
-> > @@ -1788,7 +1788,8 @@ static int ub_bd_revalidate(struct gendisk *disk)
-> >   *
-> >   * The return code is bool!
-> >   */
-> > -static int ub_bd_media_changed(struct gendisk *disk)
-> > +static unsigned int ub_bd_check_events(struct gendisk *disk,
-> > +				       unsigned int clearing)
-> 
-> > -	return lun->changed;
-> > +	return lun->changed ? DISK_EVENT_MEDIA_CHANGE : 0;
-> >  }
-> 
-> Return code is not so bool anymore. The comment meant that usually
-> "int" means "return 0 on success, -1 on failure, maybe some integer
-> for a tricky condition" but not here. I'll have the comment fixed up,
-> or if you want you do it.
+> Is there a reason that arch/microblaze/include/asm/irq.h includes
+> "linux/interrupt.h"?
 
-Ooh, right.  Please go ahead and fix that up.
+Yep, it is. I tried to add some headers not remove them.
 
-Thank you.
+Thanks,
+Michal
+
+P.S.: Do you want to create proper patch? If not, I will do it.
 
 -- 
-tejun
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
