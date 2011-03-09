@@ -1,323 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab1CIEeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 23:34:31 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53209 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158Ab1CIEe3 (ORCPT
+	id S932220Ab1CIEhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 23:37:51 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12427 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158Ab1CIEhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 23:34:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Winh7hYpV6GlmfagGyvkTi+cvhpdORfX9Z+yYaYGnjWmuBaw+OyRbZzJx3IdzX6G/1
-         wPu85knGGAQqIxWVf3sA9WwIf19D7r4sexq89hBFGqopTYiO6S44JmR6JF8dW4x0EA71
-         EOn3gOZ5513w9k9XoX83TQq9EQFBwF/Gj87GE=
-Message-ID: <4D770178.9070908@gmail.com>
-Date: Tue, 08 Mar 2011 20:26:32 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101220 Thunderbird/3.1.7
+	Tue, 8 Mar 2011 23:37:47 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6279"; a="78840169"
+Message-ID: <4D770416.2020505@codeaurora.org>
+Date: Tue, 08 Mar 2011 20:37:42 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: <IRQ> [<ffffffff810c9204>] ? __alloc_pages_nodemask+0x622/0x696
-References: <AANLkTikaLb_xan2ePfo9JCZ1w7RZ76wF8NUT2tYr0ZD=@mail.gmail.com> <alpine.DEB.2.00.1103051847100.8779@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1103051847100.8779@chino.kir.corp.google.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux-arm-msm@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: CONFIG_ARM_DMA_MEM_BUFFERABLE and readl/writel weirdness
+References: <4D6D9C03.2080906@codeaurora.org>	<20110302083904.GA4493@n2100.arm.linux.org.uk>	<4D6F481B.8000700@codeaurora.org> <1299147117.22540.25.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1299147117.22540.25.camel@e102109-lin.cambridge.arm.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2011 06:50 PM, David Rientjes wrote:
-> On Sat, 5 Mar 2011, Justin Mattock wrote:
->
->> [  339.787008] SLUB: Unable to allocate memory on node -1 (gfp=0x20)
->> [  339.787008]   cache: kmalloc-8192, object size: 8192, buffer size:
->> 8264, default order: 3, min order: 2
->> [  339.787008]   kmalloc-8192 debugging increased min order, use
->> slub_debug=O to disable.
->> [  339.787008]   node 0: slabs: 181, objs: 543, free: 0
->> [  339.790575] skbuff alloc of size 3904 failed
->> [  339.823775] swapper: page allocation failure. order:2, mode:0x4020
->> [  339.823781] Pid: 0, comm: swapper Not tainted 2.6.38-rc7-00143-gd1b152c #7
->> [  339.823783] Call Trace:
->> [  339.823786]<IRQ>   [<ffffffff810c9204>] ? __alloc_pages_nodemask+0x622/0x696
->> [  339.823811]  [<ffffffffa015a077>] ? ath_rxbuf_alloc+0x29/0x9a [ath]
->> [  339.823815]  [<ffffffff810f67cf>] ? new_slab+0x7b/0x1c6
->> [  339.823819]  [<ffffffffa015a077>] ? ath_rxbuf_alloc+0x29/0x9a [ath]
->> [  339.823823]  [<ffffffff810f6dd6>] ? T.925+0x163/0x29c
->> [  339.823827]  [<ffffffff810c4ecc>] ? mempool_destroy+0xf/0x17
->> [  339.823832]  [<ffffffffa015a077>] ? ath_rxbuf_alloc+0x29/0x9a [ath]
->> [  339.823836]  [<ffffffff810f895a>] ? __kmalloc_track_caller+0xfe/0x190
+Discussed this further with our resident ARM expert. The rest of the 
+email is me understanding his comments and rephrasing them to suit this 
+thread.
+
+On 03/03/2011 02:11 AM, Catalin Marinas wrote:
+> On Thu, 2011-03-03 at 07:49 +0000, Saravana Kannan wrote:
+>> On 03/02/2011 12:39 AM, Russell King - ARM Linux wrote:
+>>> On Tue, Mar 01, 2011 at 05:23:15PM -0800, Saravana Kannan wrote:
+>>>> If I'm not missing some magic, this would mean that
+>>>> "CONFIG_ARM_DMA_MEM_BUFFERABLE" determines if readl(s)/writel(s) get to
+>>>> have a built in mb() or not.
+> [...]
+>>> I think you misunderstand what's going on.  IO accesses are always ordered
+>>> with respect to themselves.  The barriers are there to ensure ordering
+>>> between DMA coherent memory (normal non-cached memory) and IO accesses
+>>> (device).
 >>
+>> Unfortunately this is not correct. The ARM spec doesn't guarantee that
+>> all IO accesses should be ordered with respect to themselves. It only
+>> requires that the ordering should be guaranteed at least within a 1KB
+>> region.
 >
-> Order-2 atomic allocations are always going to be difficult since we can't
-> do synchronous compaction or reclaim, but I'd try the suggestion shown
-> above: boot with slub_debug=O or disable slub debugging so that
-> kmalloc-8192 is actually order-1 like it should be.
+> That's because the CPU does not have control of the delays on various
+> buses. But a device connected to the same bus receives the accesses in
+> order.
+
+ From the ARM spec, at the least, we have established that IO accesses 
+are not guaranteed to be ordered with respect to all IO accesses. So, I 
+kindly request that we no longer perpetuate the incorrect statement that 
+IO accesses are ordered wrt to all IO accesses.
+
+The only continuing disagreement is on whether the minimum limit is 1KB 
+or "the entire address space of a given device". More on that below.
+
+>> And the most critical point is hidden in a comment that goes:
+>> "The size of a memory mapped peripheral, or a block of memory, is
+>> IMPLEMENTATION DEFINED, but is not smaller than 1KByte."
+>>
+>> I guess most of the confusion is due to the ARM spec not being very
+>> obvious about the 1KB limitation.
 >
+> What that means is that the hardware shouldn't have two different buses
+> (possibly with different delays) within a 1KB range.
 
-man O man.. didnt have a chance to use the boot options yet due to other 
-things I have been doing, anyways this popped up may/maynot be related:
+Rephrasing comments from our resident expert:
+This 1KB limit is not really tied to there being different "speeds" on 
+the buses.  Rather it is a fundamental topological issue.  It has to do 
+with how the "core" interleaves the interconnect. If the interleave is 
+at the 1KB level, there are two different bus interfaces at the 1KB 
+interleave.  So even if the downstream "device" has a single *input* 
+bus, the processor and the interconnect have two different paths to get 
+to that device, if the address space spans 1KB. So there is no 
+guaranteed order across the 1KB boundary, even if in concept the two 
+sides of the boundary are talking to the same "device".
 
-[ 7603.339047] 
-=============================================================================
-[ 7603.339053] BUG radix_tree_node: Padding overwritten. 
-0xffff88000008fe00-0xffff88000008fe32
-[ 7603.339055] 
------------------------------------------------------------------------------
-[ 7603.339056]
-[ 7603.339059] INFO: Slab 0xffffea0000001ea0 objects=25 used=25 fp=0x 
-        (null) flags=0x4081
-[ 7603.339063] Pid: 0, comm: swapper Not tainted 
-2.6.38-rc7-00164-gcdf1389 #8
-[ 7603.339066] Call Trace:
-[ 7603.339068]  <IRQ>  [<ffffffff810f4df9>] ? slab_err+0x8a/0x98
-[ 7603.339083]  [<ffffffff81446ea2>] ? _raw_spin_unlock+0x9/0xb
-[ 7603.339088]  [<ffffffff810c7904>] ? free_one_page+0x2d4/0x2e3
-[ 7603.339091]  [<ffffffff810f52df>] ? slab_pad_check+0xc4/0x102
-[ 7603.339096]  [<ffffffff811f6382>] ? radix_tree_node_rcu_free+0x3b/0x3d
-[ 7603.339099]  [<ffffffff810f53a7>] ? check_slab+0x8a/0x91
-[ 7603.339102]  [<ffffffff810f5d9e>] ? free_debug_processing+0x22/0x208
-[ 7603.339105]  [<ffffffff810f60b4>] ? __slab_free+0x130/0x145
-[ 7603.339108]  [<ffffffff810f6a93>] ? kmem_cache_free+0x8e/0xd4
-[ 7603.339112]  [<ffffffff811f6382>] ? radix_tree_node_rcu_free+0x3b/0x3d
-[ 7603.339118]  [<ffffffff810a75c5>] ? __rcu_process_callbacks+0x186/0x28b
-[ 7603.339121]  [<ffffffff810a76ed>] ? rcu_process_callbacks+0x23/0x44
-[ 7603.339126]  [<ffffffff81067253>] ? __do_softirq+0xc7/0x1a4
-[ 7603.339132]  [<ffffffff8102fd79>] ? timer_interrupt+0x19/0x20
-[ 7603.339135]  [<ffffffff8102e15c>] ? call_softirq+0x1c/0x28
-[ 7603.339139]  [<ffffffff8102f635>] ? do_softirq+0x41/0x7e
-[ 7603.339142]  [<ffffffff810670ea>] ? irq_exit+0x36/0x78
-[ 7603.339145]  [<ffffffff8102ed0e>] ? do_IRQ+0x98/0xaf
-[ 7603.339148]  [<ffffffff81447253>] ? ret_from_intr+0x0/0x15
-[ 7603.339150]  <EOI>  [<ffffffff810337d5>] ? native_sched_clock+0x2d/0x60
-[ 7603.339183]  [<ffffffffa001a661>] ? acpi_idle_enter_bm+0x2b9/0x2f1 
-[processor]
-[ 7603.339189]  [<ffffffffa001a65a>] ? acpi_idle_enter_bm+0x2b2/0x2f1 
-[processor]
-[ 7603.339195]  [<ffffffff81336a52>] ? menu_select+0x175/0x2a8
-[ 7603.339198]  [<ffffffff81335c3a>] ? cpuidle_idle_call+0x118/0x1be
-[ 7603.339202]  [<ffffffff8102c691>] ? cpu_idle+0x60/0x97
-[ 7603.339206]  [<ffffffff814308b4>] ? rest_init+0x68/0x6a
-[ 7603.339211]  [<ffffffff81705c3c>] ? start_kernel+0x2fc/0x307
-[ 7603.339215]  [<ffffffff8170527b>] ? x86_64_start_reservations+0x82/0x86
-[ 7603.339218]  [<ffffffff81705385>] ? x86_64_start_kernel+0x106/0x115
-[ 7603.339221]  Padding 0xffff88000008fbeb:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339234]  Padding 0xffff88000008fbfb:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339247]  Padding 0xffff88000008fc0b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339260]  Padding 0xffff88000008fc1b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339273]  Padding 0xffff88000008fc2b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339285]  Padding 0xffff88000008fc3b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339298]  Padding 0xffff88000008fc4b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339311]  Padding 0xffff88000008fc5b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339324]  Padding 0xffff88000008fc6b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339337]  Padding 0xffff88000008fc7b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339349]  Padding 0xffff88000008fc8b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339362]  Padding 0xffff88000008fc9b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339375]  Padding 0xffff88000008fcab:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339387]  Padding 0xffff88000008fcbb:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339400]  Padding 0xffff88000008fccb:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339413]  Padding 0xffff88000008fcdb:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339426]  Padding 0xffff88000008fceb:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339439]  Padding 0xffff88000008fcfb:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339451]  Padding 0xffff88000008fd0b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339464]  Padding 0xffff88000008fd1b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339477]  Padding 0xffff88000008fd2b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339490]  Padding 0xffff88000008fd3b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339503]  Padding 0xffff88000008fd4b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339516]  Padding 0xffff88000008fd5b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339529]  Padding 0xffff88000008fd6b:  00 00 00 00 00 cc cc cc cc 
-cc cc cc cc 00 00 00 .....ÌÌÌÌÌÌÌÌ...
-[ 7603.339542]  Padding 0xffff88000008fd7b:  00 00 00 00 00 29 6e 1f 81 
-ff ff ff ff 00 00 00 .....)n..ÿÿÿÿ...
-[ 7603.339555]  Padding 0xffff88000008fd8b:  00 c2 0a 00 00 44 ec 0a 00 
-01 00 00 00 00 00 00 .Â...Dì.........
-[ 7603.339568]  Padding 0xffff88000008fd9b:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339581]  Padding 0xffff88000008fdab:  00 00 00 00 00 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a .....ZZZZZZZZZZZ
-[ 7603.339593]  Padding 0xffff88000008fdbb:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.339606]  Padding 0xffff88000008fdcb:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.339619]  Padding 0xffff88000008fddb:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.339632]  Padding 0xffff88000008fdeb:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.339645]  Padding 0xffff88000008fdfb:  5a 5a 5a 5a 5a 00 5a 5a 5a 
-10 b0 08 3f 00 80 00 ZZZZZ.ZZZ.°.?...
-[ 7603.339658]  Padding 0xffff88000008fe0b:  00 c7 60 ed 3f 3f 00 10 df 
-ed 3f ff 07 10 c0 ed .Ç`í??..ßí?ÿ..Àí
-[ 7603.339671]  Padding 0xffff88000008fe1b:  3f fa 33 c9 33 d2 b8 3c fe 
-08 00 0f 01 c8 b8 31 ?ú3É3Ò¸<þ....È¸1
-[ 7603.339684]  Padding 0xffff88000008fe2b:  00 00 00 0f 01 c9 eb e9 
-                      .....Éëé
-[ 7603.339698] FIX radix_tree_node: Restoring 
-0xffff88000008fbeb-0xffff88000008fe32=0x5a
-[ 7603.339699]
-[ 7603.339791] 
-=============================================================================
-[ 7603.339793] BUG radix_tree_node: Redzone overwritten
-[ 7603.339795] 
------------------------------------------------------------------------------
-[ 7603.339796]
-[ 7603.339799] INFO: 0xffff88000008fd70-0xffff88000008fd77. First byte 
-0x5a instead of 0xcc
-[ 7603.339805] INFO: Allocated in 0x5a5a5a5a5a5a5a5a 
-age=11936128522584921681 cpu=1515870810 pid=1515870810
-[ 7603.339809] INFO: Freed in 0x5a5a5a5a5a5a5a5a 
-age=11936128522584921681 cpu=1515870810 pid=1515870810
-[ 7603.339812] INFO: Slab 0xffffea0000001ea0 objects=25 used=1 
-fp=0xffff88000008f8c8 flags=0x4081
-[ 7603.339815] INFO: Object 0xffff88000008fb40 @offset=15168 
-fp=0x5a5a5a5a5a5a5a5a
-[ 7603.339816]
-[ 7603.339818] Bytes b4 0xffff88000008fb30:  ab 70 6f 00 01 00 00 00 5a 
-5a 5a 5a 5a 5a 5a 5a «po.....ZZZZZZZZ
-[ 7603.339832]   Object 0xffff88000008fb40:  01 00 00 00 00 00 00 00 08 
-80 10 00 00 88 ff ff ..............ÿÿ
-[ 7603.339845]   Object 0xffff88000008fb50:  47 63 1f 81 ff ff ff ff 00 
-00 00 00 00 00 00 00 Gc..ÿÿÿÿ........
-[ 7603.339857]   Object 0xffff88000008fb60:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339870]   Object 0xffff88000008fb70:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339883]   Object 0xffff88000008fb80:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339896]   Object 0xffff88000008fb90:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339908]   Object 0xffff88000008fba0:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339921]   Object 0xffff88000008fbb0:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339934]   Object 0xffff88000008fbc0:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339946]   Object 0xffff88000008fbd0:  00 00 00 00 00 00 00 00 00 
-00 00 00 00 00 00 00 ................
-[ 7603.339959]   Object 0xffff88000008fbe0:  00 00 00 00 00 00 00 00 00 
-00 00 5a 5a 5a 5a 5a ...........ZZZZZ
-[ 7603.339972]   Object 0xffff88000008fbf0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.339985]   Object 0xffff88000008fc00:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.339998]   Object 0xffff88000008fc10:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340010]   Object 0xffff88000008fc20:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fc30:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fc40:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fc50:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fc60:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fc70:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fc80:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fc90:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fca0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fcb0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fcc0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fcd0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fce0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fcf0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fd00:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fd10:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fd20:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fd30:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fd40:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fd50:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]   Object 0xffff88000008fd60:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-[ 7603.340018]  Redzone 0xffff88000008fd70:  5a 5a 5a 5a 5a 5a 5a 5a 
-                      ZZZZZZZZ
-[ 7603.340018]  Padding 0xffff88000008fdb0:  5a 5a 5a 5a 5a 5a 5a 5a 
-                      ZZZZZZZZ
-[ 7603.340018] Pid: 0, comm: swapper Not tainted 
-2.6.38-rc7-00164-gcdf1389 #8
-[ 7603.340018] Call Trace:
-[ 7603.340018]  <IRQ>  [<ffffffff810f4f35>] ? print_trailer+0x12e/0x137
-[ 7603.340018]  [<ffffffff811f63cc>] ? __lookup_tag+0x39/0xf0
-[ 7603.340018]  [<ffffffff810f5463>] ? check_bytes_and_report+0xb5/0xe6
-[ 7603.340018]  [<ffffffff811f63cc>] ? __lookup_tag+0x39/0xf0
-[ 7603.340018]  [<ffffffff810f54dd>] ? check_object+0x49/0x1eb
-[ 7603.340018]  [<ffffffff811f6382>] ? radix_tree_node_rcu_free+0x3b/0x3d
-[ 7603.340018]  [<ffffffff810f5e4a>] ? free_debug_processing+0xce/0x208
-[ 7603.340018]  [<ffffffff810f60b4>] ? __slab_free+0x130/0x145
-[ 7603.340018]  [<ffffffff810f6a93>] ? kmem_cache_free+0x8e/0xd4
-[ 7603.340018]  [<ffffffff811f6382>] ? radix_tree_node_rcu_free+0x3b/0x3d
-[ 7603.340018]  [<ffffffff810a75c5>] ? __rcu_process_callbacks+0x186/0x28b
-[ 7603.340018]  [<ffffffff810a76ed>] ? rcu_process_callbacks+0x23/0x44
-[ 7603.340018]  [<ffffffff81067253>] ? __do_softirq+0xc7/0x1a4
-[ 7603.340018]  [<ffffffff8102fd79>] ? timer_interrupt+0x19/0x20
-[ 7603.340018]  [<ffffffff8102e15c>] ? call_softirq+0x1c/0x28
-[ 7603.340018]  [<ffffffff8102f635>] ? do_softirq+0x41/0x7e
-[ 7603.340018]  [<ffffffff810670ea>] ? irq_exit+0x36/0x78
-[ 7603.340018]  [<ffffffff8102ed0e>] ? do_IRQ+0x98/0xaf
-[ 7603.340018]  [<ffffffff81447253>] ? ret_from_intr+0x0/0x15
-[ 7603.340018]  <EOI>  [<ffffffff810337d5>] ? native_sched_clock+0x2d/0x60
-[ 7603.340018]  [<ffffffffa001a661>] ? acpi_idle_enter_bm+0x2b9/0x2f1 
-[processor]
-[ 7603.340018]  [<ffffffffa001a65a>] ? acpi_idle_enter_bm+0x2b2/0x2f1 
-[processor]
-[ 7603.340018]  [<ffffffff81336a52>] ? menu_select+0x175/0x2a8
-[ 7603.340018]  [<ffffffff81335c3a>] ? cpuidle_idle_call+0x118/0x1be
-[ 7603.340018]  [<ffffffff8102c691>] ? cpu_idle+0x60/0x97
-[ 7603.340018]  [<ffffffff814308b4>] ? rest_init+0x68/0x6a
-[ 7603.340018]  [<ffffffff81705c3c>] ? start_kernel+0x2fc/0x307
-[ 7603.340018]  [<ffffffff8170527b>] ? x86_64_start_reservations+0x82/0x86
-[ 7603.340018]  [<ffffffff81705385>] ? x86_64_start_kernel+0x106/0x115
-[ 7603.340018] FIX radix_tree_node: Restoring 
-0xffff88000008fd70-0xffff88000008fd77=0xcc
-[ 7603.340018]
-[ 7747.730540] cfg80211: Calling CRDA to update world regulatory domain
-[ 7750.272336] wlan0: authenticate with 00:21:55:b4:20:20 (try 1)
-[ 7750.275393] wlan0: authenticated
+> Even if accesses to all peripherals are ordered, you still cannot
+> guarantee that a writel() would change the state of a device (and that's
+> specific to all architectures). Sometimes if you want to make sure the
+> device state changed you need a readl() back.
 
+Yes, a device might take much longer to change the state or process the 
+command after the write completes. I realize that has nothing to do with 
+memory barriers.
 
-full dmesg here:
-http://fpaste.org/aVFd/
+>> So, going back to my point, I think it's wrong for
+>> CONFIG_ARM_DMA_MEM_BUFFERABLE to control how stuff unrelated to DMA behaves.
+>
+> In an ideal world, all driver authors know what memory ordering is and
+> add the necessary barriers. But since that's not the case, the only way
+> to get ordering between Normal Non-cacheable access (DMA buffer) and
+> Device access (via writel) is to add the mb() in the I/O accessors.
+>
+> This has been discussed at length on several occasions on linux-arch and
+> LKML. We don't have other solution since adding barriers to drivers
+> wasn't found feasible by others. Of course, if you can optimised your
+> driver to use the relaxed accessors and add explicit barriers.
 
-Justin P. Mattock
+I think my comment for clean up was misunderstood to be more that what I 
+intend. I will address this at the end of this email.
+
+>> I have also encountered a few people who kept went "but readl/writel was
+>> recently changed to add mem barriers, so we can all remove the mb()s in
+>> our driver (unrelated to DMA) code".
+>
+> But why did they have those barriers around I/O accessors in the first
+> place? As you say, nothing related to DMA. If you access two different
+> devices and want to ensure an ordering of the state changes, I doubt a
+> barrier would help. Most likely you need a read back from the device.
+
+These barriers were needed because the device spanned more than 1KB of 
+address space. See below.
+
+>> That would have made their code incorrect for two reasons:
+>> 1. readl/writel doesn't always have a mem barrier because of config that
+>> can be turned off.
+>> 2. In cases where readl/writel didn't have mb(), there is not enough
+>> ordering guarantee without an explicit mb().
+>
+> See my comment above, what do they try to achieve by using mb() around
+> already ordered I/O accessors?
+>
+>> I think as a community, we should stop saying that readl/writel ensures
+>> ordering with respect to all IO accesses. It doesn't even guarantee
+>> ordering within the same device (when their register regions are>  1KB).
+ >
+> It definitely guarantees ordering to the same device. The 1KB is a
+> minimum limit but there is no upper bound (and it should definitely
+> cover a single device).
+
+Rephrasing comments from our resident expert:
+That is not true.  It only guarantees ordering to the 1KB boundary. 
+That is the implementation-defined limit of what constitutes a "device". 
+  Any "device" which crosses that boundary is viewed as two separate 
+devices from the core's perspective, and there is no guaranteed order, 
+absent an explicit barrier operation.
+
+The 1KB is the minimum size that the architecture allows the hardware to 
+establish as its limit for guaranteed ordering.
+
+It is not true that the hardware is obligated to go *above* that limit 
+just because a given "device" happens to have address space that crosses 
+the boundary.  As soon as you have two separate interconnect ports and 
+thus two separate paths to get to the device, because it crossed the 1KB 
+boundary, then you have the potential of being out-of-order.  Software 
+is obligated to use explicit barriers on accesses that cross that 
+threshold, regardless of whether *physically* the accesses end up at the 
+same downstream "device".
+
+>> After reading the above, please let me know if a patch to decouple the
+>> "readl/writel with builtin mb()" from CONFIG_ARM_DMA_MEM_BUFFERABLE
+>> would be accepted. If so, I can go ahead and send it out soon.
+>
+> No, I don't think this would be acceptable. I can point you to past
+> discussion where Linus stated that Normal Non-cacheable memory and I/O
+> accesses should be ordered.
+>
+> What you can do actually is make sure that all architectures support the
+> relaxed accessors and change the drivers to use these instead.
+
+There were a couple of reason for starting this thread:
+* Check if my understanding of CONFIG_ARM_DMA_MEM_BUFFERABLE's effect on 
+readl/writl were correct and if I was missing anything.
+Result: Yes, I was missing some stuff about the config affecting DMA 
+memory mapping, but I did understand the point about having mb()s in 
+readl/writel correctly.
+
+* Bring to attention that the ARM spec doesn't guarantee all IO accesses 
+are ordered wrt each other and have the community update it's 
+understanding of IO access ordering.
+Result: It think we agree on this update. At least Russell seems to. The 
+ARM spec is very clear on this. The only part we disagree on is the 1KB 
+limit.
+
+* If my understanding about how CONFIG_ARM_DMA_MEM_BUFFERABLE affects 
+readl/writel was correct and we agree on the IO access ordering update, 
+then it would show that mb()s matter for more than just DMA. In which 
+case, I wanted to split that single config into two and clean up the 
+names while still leaving CONFIG_ARM_DMA_MEM_BUFFERABLE functionally the 
+same.
+Result?: After the above discussion, I hope the community agrees that 
+it's reasonable to reorganize and rename the config to make the config 
+more understandable and less confusing to developers. Less confusion == 
+less bugs in my opinion. I will send out a patch sometime this week to 
+show what I mean.
+
+But modifying the behaviour of DMA was not my intention. I will of 
+course read the discussion you mention (will ping you if I can't find 
+it) to get a better understanding of the DMA stuff.
+
+Catalin,
+
+To summarize,
+Our internal ARM expert continues to state that the 1KB is the minimum 
+limit even within a single device. Judging his expertise based on my 
+previous interactions with him, I'm inclined to believe him. I think at 
+the least we should give him the benefit of the doubt. Looks like a 
+definitive way to settle this disagreement would be to check with the 
+author of those updates/comment I referred to in the ARMv7 ARM.
+
+If the 1KB limit is correct, it would certainly help improving the 
+correctness of drivers for the ARM kernel. If the 1KB limit is wrong, we 
+don't lose anything.
+
+So, if you don't mind, could you please check with the author of those 
+updates and comments in the ARMv7 ARM?
+
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
