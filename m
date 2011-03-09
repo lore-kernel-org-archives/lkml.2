@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab1CIAbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:31:50 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:57716 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756740Ab1CIAbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:31:48 -0500
-Date: Tue, 8 Mar 2011 19:31:44 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com, Jiaying Zhang <jiayingz@google.com>
-Subject: Re: [PATCH 10/15] ftrace: fix event alignment: jbd2:*
-Message-ID: <20110309003144.GA26548@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-	mrubin@google.com, Jiaying Zhang <jiayingz@google.com>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
- <1291421609-14665-11-git-send-email-dhsharp@google.com>
- <1291427578.16223.12.camel@gandalf.stny.rr.com>
- <1299629005.20306.101.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299629005.20306.101.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1756785Ab1CIAcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:32:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34610 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754905Ab1CIAck convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:32:40 -0500
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1299630111.4146.15.camel@localhost>
+References: <1299630111.4146.15.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 09 Mar 2011 00:32:36 +0000
+Message-ID: <1299630756.4146.25.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: [PATCH 4/5] avr32: Fix .size directive for cpu_enter_idle
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 07:03:25PM -0500, Steven Rostedt wrote:
-> Now I know why I was so late at adding this. I was waiting for
-> Acked-bys ;)
-> 
-> On Fri, 2010-12-03 at 20:52 -0500, Steven Rostedt wrote:
-> > [ Ccing Ted for Acked-by ]
-> 
-> Ted, Ping?
+gas used to accept (and ignore?) .size directives which referred to
+undefined symbols, as this does.  In binutils 2.21 these are treated
+as errors.
 
-A month or two ago I did an analysis using the pahole binary (part of
-the 'dwarves' package in Debian/Ubuntu) and noticed many more
-structures that were flagged as having 'holes' where there were
-optimization opportunities.
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/avr32/mach-at32ap/pm-at32ap700x.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-In addition, (in an interesting example of synchronicity) just this
-afternoon, I had talked to Jiaying about a further optimization of the
-ext4 trace header files, since she pointed out to me that the 'perf'
-binary can actually handle the MAJOR() and MINOR() macros.  So we can
-replace 8 bytes of "int major, minor", with a 4 byte dev_t, and save
-another 4 bytes (assuming we can move the structure elements around so
-we can save a full 8 bytes to avoid structure padding).
+diff --git a/arch/avr32/mach-at32ap/pm-at32ap700x.S b/arch/avr32/mach-at32ap/pm-at32ap700x.S
+index 17503b0..f868f4c 100644
+--- a/arch/avr32/mach-at32ap/pm-at32ap700x.S
++++ b/arch/avr32/mach-at32ap/pm-at32ap700x.S
+@@ -53,7 +53,7 @@ cpu_enter_idle:
+ 	st.w	r8[TI_flags], r9
+ 	unmask_interrupts
+ 	sleep	CPU_SLEEP_IDLE
+-	.size	cpu_idle_sleep, . - cpu_idle_sleep
++	.size	cpu_enter_idle, . - cpu_enter_idle
+ 
+ 	/*
+ 	 * Common return path for PM functions that don't run from
+-- 
+1.7.4.1
 
-Jiaying was also going to send some patches to add some additional
-tracepoints to the upstream kernel.
 
-So probably the best thing to do at this point is to drop the ext4 and
-jbd2 patches, since Jiaying is about to send me patches that to handle
-these optimizations plus some further ones --- and add some additional
-tracepoints.  Getting one patch from her that I'll feed in via the
-ext4 tree probably will be much simpler than coordinating patches to
-the same file from two different trees.
 
-						- Ted
