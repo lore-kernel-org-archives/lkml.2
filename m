@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab1CIQck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 11:32:40 -0500
-Received: from void.printf.net ([89.145.121.20]:60269 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099Ab1CIQci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 11:32:38 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: MMC fix for 2.6.38
-Date: Wed, 09 Mar 2011 11:30:17 -0500
-Message-ID: <m3wrk8mf3a.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757301Ab1CIQek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 11:34:40 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:40751 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755612Ab1CIQei convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 11:34:38 -0500
+Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>, Russell King <rmk@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+In-Reply-To: <1299685689.2308.3113.camel@twins>
+References: <20110302175928.022902359@chello.nl>
+	 <20110302180259.109909335@chello.nl>
+	 <AANLkTimbRS++SCcKGrUcL5xKsCO+1ygkg+83x7F+2S4i@mail.gmail.com>
+	 <1299683964.2308.3075.camel@twins>
+	 <1299684963.19820.344.camel@e102109-lin.cambridge.arm.com>
+	 <1299685150.2308.3097.camel@twins>  <1299685689.2308.3113.camel@twins>
+Organization: ARM Limited
+Date: Wed, 09 Mar 2011 16:34:15 +0000
+Message-ID: <1299688455.19820.401.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 09 Mar 2011 16:34:25.0071 (UTC) FILETIME=[DA0953F0:01CBDE77]
+X-MC-Unique: 111030916343104901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, 2011-03-09 at 15:48 +0000, Peter Zijlstra wrote:
+> On Wed, 2011-03-09 at 16:39 +0100, Peter Zijlstra wrote:
+> >
+> > Ok, will try and sort that out.
+> 
+> We could do something like the below and use the end passed down, which
+> because it goes top down should be clipped at the appropriate size, just
+> means touching all the p??_free_tlb() implementations ;-)
 
-Please pull from:
+Looks fine to me (apart from the hassle to change the p??_free_tlb()
+definitions).
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
-
-for a final MMC regression fix against -rc1.  Thanks.
-
-The following changes since commit 214d93b02c4fe93638ad268613c9702a81ed9192:
-  Linus Torvalds (1):
-        Merge branch 'omap-fixes-for-linus' of git://git.kernel.org/.../tmlind/linux-omap-2.6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
-
-Ohad Ben-Cohen (1):
-      mmc: fix CONFIG_MMC_UNSAFE_RESUME regression
-
- drivers/mmc/core/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 8 Mar 2011 23:32:02 +0200
-Subject: [PATCH] mmc: fix CONFIG_MMC_UNSAFE_RESUME regression
-
-30201e7f3 ("mmc: skip detection of nonremovable cards on rescan")
-allowed skipping detection of nonremovable cards on mmc_rescan().
-The intention was to only skip detection of hardwired cards that
-cannot be removed, so make sure this is indeed the case by directly
-checking for (lack of) MMC_CAP_NONREMOVABLE, instead of using
-mmc_card_is_removable(), which is overloaded with
-CONFIG_MMC_UNSAFE_RESUME semantics.
-
-The user-visible symptom of the bug this patch fixes is that no
-"mmc: card XXXX removed" message appears in dmesg when a card is
-removed and CONFIG_MMC_UNSAFE_RESUME=y.
-
-Reported-and-tested-by: Dmitry Shmidt <dimitrysh@google.com>
-Reported-and-tested-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/core/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 6625c05..150b5f3 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1529,7 +1529,7 @@ void mmc_rescan(struct work_struct *work)
- 	 * still present
- 	 */
- 	if (host->bus_ops && host->bus_ops->detect && !host->bus_dead
--	    && mmc_card_is_removable(host))
-+	    && !(host->caps & MMC_CAP_NONREMOVABLE))
- 		host->bus_ops->detect(host);
- 
- 	/*
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Catalin
+
+
