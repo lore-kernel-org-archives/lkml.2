@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab1CIAL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:11:28 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:46964 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756548Ab1CIAL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:11:26 -0500
-Date: Wed, 9 Mar 2011 11:11:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Dmitry Kravkov" <dmitry@broadcom.com>
-Cc: "David Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eilon Greenstein" <eilong@broadcom.com>,
-        "Vladislav Zolotarov" <vladz@broadcom.com>
-Subject: Re: linux-next: manual merge of the net tree with the net-current
- tree
-Message-Id: <20110309111113.883972ba.sfr@canb.auug.org.au>
-In-Reply-To: <1299577473.17233.41.camel@lb-tlvb-dmitry>
-References: <20110308140957.8a894312.sfr@canb.auug.org.au>
-	<1299577473.17233.41.camel@lb-tlvb-dmitry>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1756880Ab1CIAOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:14:20 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47965 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab1CIAOT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:14:19 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=KpzchuzAFZgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=SQUREDfjPc81AOHo7vgA:9 a=U0RwUkSzpZnA77j_QQtcISW_4hIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH][RFC] tracing: Enable tracepoints via module parameters
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        chris <chris@chris-wilson.co.uk>
+In-Reply-To: <20110309000753.GA27729@Krystal>
+References: <1299622684.20306.77.camel@gandalf.stny.rr.com>
+	 <20110308232258.GA25987@Krystal>
+	 <1299627175.20306.96.camel@gandalf.stny.rr.com>
+	 <20110309000753.GA27729@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 08 Mar 2011 19:14:17 -0500
+Message-ID: <1299629657.20306.105.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-03-08 at 19:07 -0500, Mathieu Desnoyers wrote:
 
-Hi Dmitry,
+> So what you are saying here is that modifying /etc/modprobe.d/ is the actual
+> interface you propose presenting to the end-users to control their tracepoints ?
 
-On Tue, 8 Mar 2011 11:44:33 +0200 "Dmitry Kravkov" <dmitry@broadcom.com> wr=
-ote:
->
-> You are correct it's just an addition and it does not really matter
-> where to do this. But the merge pushed new code in the middle
-> of MAC configuration between MAC and multicast list.
-> It's clearer to put it at the end of MAC/ML/UL block:
-> ---
->  drivers/net/bnx2x/bnx2x_cmn.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/net/bnx2x/bnx2x_cmn.c b/drivers/net/bnx2x/bnx2x_cmn.c
-> index b01b622..9e37675 100644
-> --- a/drivers/net/bnx2x/bnx2x_cmn.c
-> +++ b/drivers/net/bnx2x/bnx2x_cmn.c
-> @@ -1498,6 +1498,11 @@ int bnx2x_nic_load(struct bnx2x *bp, int load_mode)
->  	/* Clear UC lists configuration */
->  	bnx2x_invalidate_uc_list(bp);
-> =20
-> +	if (bp->pending_max) {
-> +		bnx2x_update_max_mf_config(bp, bp->pending_max);
-> +		bp->pending_max =3D 0;
-> +	}
-> +
->  	if (bp->port.pmf)
->  		bnx2x_initial_phy_init(bp, load_mode);
+If you want to have them enabled on boot, sure.
 
-OK, thanks.  I have changed the conflict resolution to do that.
+> Maybe I am missing something, but this interface seems to lack the layer of
+> finish we might want to put into a user-visible API. I don't really see how
+> distributions can hope to automate any of this for their end-user without making
+> a mess of the /etc/modprobe.d/ they ship with.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+What distros enable tracepoints by default?
 
---Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8
-Content-Type: application/pgp-signature
+If you want to enable a tracepoint on module load simply do:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ modprobe mymod trace_my_tracepoint=1
 
-iQEcBAEBAgAGBQJNdsWhAAoJEDMEi1NhKgbs59YH/ifwsP88QypKpEWACWH2Ca8N
-E0cT0cxrM6dHRcAvV0WhJbDu3PUzgcPjN9/Fum3xGkm00XfB4rgSGEsPfYh3/phX
-7wdpN70O0dG+WEs3ZioFY8BGYJ4pKyDtmVw1J4d6wkdr2lVRvriUqkabbHHl+3un
-LM5a1Gqs+tKlf8UjSftNGkuU8xMYuKXoVIwZwNAqpOMoxIRy/6f2gJkaAKT/tlmu
-Bksig3NMTJj8ohsUHk8hMNHD/OswYK/spOEjerGY8QKLfCJZM1oQ+XTXDuRIIl0O
-XDS3ZRsF1TC1K4PrqheRF1loQwGPtj08dZlVtDMiHHJgmmvjuZAvzqI6Uwba+78=
-=OasS
------END PGP SIGNATURE-----
+Otherwise modify your modprobe.d directory. This is the way users have
+been doing module parameters for years.
 
---Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8--
+That's pretty simple to me.
+
+-- Steve
+
+
