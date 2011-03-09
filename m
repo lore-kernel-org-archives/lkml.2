@@ -1,136 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1CIHjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 02:39:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51027 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab1CIHjF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 02:39:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VM04MKfno9ZUd+BIM6XFMhbLKI8RGpwVatrP/MJ5oE9btTgYILOL1ICqV7o5HRhvWA
-         u+lDV1zeLUsJsLZT8g0/RB6UMnpNOV/dHFQnfAiN/QSBRnNySdRbNdh/GGe3KvDMibAK
-         QcAUj+kQvPm1FR+C+EuCJhpAE9sbYdZ8Jp+M0=
+	id S1753857Ab1CIHkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 02:40:11 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57546 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750908Ab1CIHkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 02:40:09 -0500
+Message-ID: <4D772F10.3020302@cn.fujitsu.com>
+Date: Wed, 09 Mar 2011 15:41:04 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim6bQGKCuzAgxNS93LQkq2iqxjcCW49NBArafK1@mail.gmail.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
-	<20110307114142.GB13471@opensource.wolfsonmicro.com>
-	<AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
-	<20110307121502.GG13471@opensource.wolfsonmicro.com>
-	<AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
-	<20110307145931.GK13471@opensource.wolfsonmicro.com>
-	<AANLkTi=e1xDz6fhBU7NL32DXL1J9Y1CDD2bHQVL6oASw@mail.gmail.com>
-	<20110307155508.GM13471@opensource.wolfsonmicro.com>
-	<AANLkTim6bQGKCuzAgxNS93LQkq2iqxjcCW49NBArafK1@mail.gmail.com>
-Date: Wed, 9 Mar 2011 15:39:03 +0800
-Message-ID: <AANLkTikVjp1GJoAKKad7z+M_fyO1VzLTajKJP6ofWvtx@mail.gmail.com>
-Subject: Re: [alsa-devel] [Device-drivers-devel] [PATCH] Add driver for Analog
- Devices ADAU1701 SigmaDSP
-From: Cliff Cai <cliffcai.sh@gmail.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, cliff.cai@analog.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org, akpm@linux-foundation.org,
-        lrg@slimlogic.co.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 1/4] KVM: fix rcu usage in init_rmode_* functions
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-09 15:38:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-09 15:38:54,
+	Serialize complete at 2011-03-09 15:38:54
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 9, 2011 at 2:08 PM, Mike Frysinger <vapier.adi@gmail.com> wrote:
-> On Mon, Mar 7, 2011 at 10:55, Mark Brown wrote:
->> On Mon, Mar 07, 2011 at 10:33:25AM -0500, Mike Frysinger wrote:
->>> On Mon, Mar 7, 2011 at 09:59, Mark Brown wrote:
->>> > I'd expect that the driver would at least error out if the user tried to
->>> > do the wrong thing here, like I say currently the firmware code is just
->>> > not joined up with anything else at all.
->>
->>> i dont see how the driver can detect a "wrong" thing.  the driver has
->>> no idea what arbitrary code the user is going to load and what that
->>> code is going to do, or validate the code in any way.  this is why the
->>> firmware has a small crc header on it -- we only make sure that what
->>> the user compiled at build time matches what is loaded into the
->>> hardware.
->>
->> At a bare minimum suddenly stopping and starting the firmware while
->> audio is going through it is unlikely to work well (you'd most likely
->> get a hard stop of the audio followed by a sudden hard start which sound
->> very unpleasant to listeners) and so should be prevented.  There's a
->> bunch of options for doing this (including refusing to change, ensuring
->> the DSP output is muted during the change or routing around the DSP
->> while doing the change).
->
-> you would probably get the "normal" clicks and pops, but i guess your
-> view of "wrong" is much more strict than mine ;).  i'm not sure our
-> parts allow routing around the DSP (Cliff would have to comment).  as
-> for the rest, i think it'd be best to let the user space app dictate
-> how they want to handle things.  perhaps clicks/pops are fine with
-> them.  or they arent, and so the userspace app would make sure to
-> pause/mute/whatever the stream.  either way, this sounds like a policy
-> that shouldnt be hard coded in the codec driver.
+fix:
+[ 3494.671786] stack backtrace:
+[ 3494.671789] Pid: 10527, comm: qemu-system-x86 Not tainted 2.6.38-rc6+ #23
+[ 3494.671790] Call Trace:
+[ 3494.671796]  [] ? lockdep_rcu_dereference+0x9d/0xa5
+[ 3494.671826]  [] ? kvm_memslots+0x6b/0x73 [kvm]
+[ 3494.671834]  [] ? gfn_to_memslot+0x16/0x4f [kvm]
+[ 3494.671843]  [] ? gfn_to_hva+0x16/0x27 [kvm]
+[ 3494.671851]  [] ? kvm_write_guest_page+0x31/0x83 [kvm]
+[ 3494.671861]  [] ? kvm_clear_guest_page+0x1a/0x1c [kvm]
+[ 3494.671867]  [] ? vmx_set_tss_addr+0x83/0x122 [kvm_intel]
 
-again,this part is a DSP itself not an audio codec like adau1761 whose DSP
-core can be bypassed.
+and:
+[ 8328.789599] stack backtrace:
+[ 8328.789601] Pid: 18736, comm: qemu-system-x86 Not tainted 2.6.38-rc6+ #23
+[ 8328.789603] Call Trace:
+[ 8328.789609]  [] ? lockdep_rcu_dereference+0x9d/0xa5
+[ 8328.789621]  [] ? kvm_memslots+0x6b/0x73 [kvm]
+[ 8328.789628]  [] ? gfn_to_memslot+0x16/0x4f [kvm]
+[ 8328.789635]  [] ? gfn_to_hva+0x16/0x27 [kvm]
+[ 8328.789643]  [] ? kvm_write_guest_page+0x31/0x83 [kvm]
+[ 8328.789699]  [] ? kvm_clear_guest_page+0x1a/0x1c [kvm]
+[ 8328.789713]  [] ? vmx_create_vcpu+0x316/0x3c8 [kvm_intel]
 
->>> > systems) there's no reason they shouldn't be able to rely on standard
->>> > tools for managing their audio configurations.
->>
->>> if the standard tools existed today, i'd of course agree.  but as you
->>> indicated there's nothing right now for us to bug off of.  so how
->>> userspace "probes" for existing data would be however the end user
->>> chooses to manage things.  it's not like the standard tools could
->>> really provide anything other than a simple string that indicates
->>> "some blob exists with name xxx".  the meaning/metadata that surrounds
->>> xxx isnt really relevant from the kernel's pov.
->>
->> The standard tools should also be able to manage the mechanics of
->> actually getting the new data into the kernel at appropriate moments.
->> This includes both offering control via UIs such as alsamixer and being
->> able to include configuration of the data in UCM configurations.
->
-> exposing this via alsamixer and friends would be a useful debugging
-> tool so people can toy around with known working configurations.  and
-> have code examples to see how to do it.
->
->>> > At present userspace can enumerate and change the runtime configuration
->>> > the system offers via the ALSA APIs (and this will get even better once
->>> > the media controller API starts being used).  This means that you can
->>> > fairly easily write a userspace that'll run on pretty much any Linux
->>> > audio hardware, adapting with pure configuration for which you can
->>> > provide point and click tuning (realistically by allowing the user to
->>> > configure via standard ALSA tools and offering a "save as use case" type
->>> > interface).  If we start adding backdoors to drivers we're taking a step
->>> > back from where we are currently by requiring that the application layer
->>> > know magic stuff about individual systems in order to work with them.
->>
->>> from how we've seen people using these codecs, this scenario doesnt
->>> make much sense.  the different algorithms would be loaded on the fly
->>> by the application and its current operating needs, not a single
->>> algorithm selected by the ender user that wouldnt change for the life
->>> of the app.  not saying the scenario would never come up, just that it
->>> isnt the one we'd be focused on.
->>
->> I'm not sure you're following what's being said here.  The above control
->> discussed above full system configuration of all the control offered by
->> the system, not tuning the parameters of an individual algorithm.  This
->> includes volume controls, routing controls, algorithms, coefficients and
->> anything else that can be changed.  A scenario where you want to change
->> the set of algorithms the hardware can support is certainly included in
->> that.
->
-> i just meant that the use cases we've been dealing with involve the
-> people developing the application taking care of picking which
-> firmwares to load at any particular time.  having the end user (the
-> guy who buys the actual device) select firmwares doesnt make much
-> sense.  but this particular qualification probably is irrelevant to
-> the framework you're proposing in the end.
-> -mike
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
->
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/vmx.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 3febb76..d8475a2 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2397,11 +2397,12 @@ static bool guest_state_valid(struct kvm_vcpu *vcpu)
+ 
+ static int init_rmode_tss(struct kvm *kvm)
+ {
+-	gfn_t fn = rmode_tss_base(kvm) >> PAGE_SHIFT;
++	gfn_t fn;
+ 	u16 data = 0;
+-	int ret = 0;
+-	int r;
++	int r, idx, ret = 0;
+ 
++	idx = srcu_read_lock(&kvm->srcu);
++	fn = rmode_tss_base(kvm) >> PAGE_SHIFT;
+ 	r = kvm_clear_guest_page(kvm, fn, 0, PAGE_SIZE);
+ 	if (r < 0)
+ 		goto out;
+@@ -2425,12 +2426,13 @@ static int init_rmode_tss(struct kvm *kvm)
+ 
+ 	ret = 1;
+ out:
++	srcu_read_unlock(&kvm->srcu, idx);
+ 	return ret;
+ }
+ 
+ static int init_rmode_identity_map(struct kvm *kvm)
+ {
+-	int i, r, ret;
++	int i, idx, r, ret;
+ 	pfn_t identity_map_pfn;
+ 	u32 tmp;
+ 
+@@ -2445,6 +2447,7 @@ static int init_rmode_identity_map(struct kvm *kvm)
+ 		return 1;
+ 	ret = 0;
+ 	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
++	idx = srcu_read_lock(&kvm->srcu);
+ 	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
+ 	if (r < 0)
+ 		goto out;
+@@ -2460,6 +2463,7 @@ static int init_rmode_identity_map(struct kvm *kvm)
+ 	kvm->arch.ept_identity_pagetable_done = true;
+ 	ret = 1;
+ out:
++	srcu_read_unlock(&kvm->srcu, idx);
+ 	return ret;
+ }
+ 
+-- 
+1.7.4
