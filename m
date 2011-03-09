@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab1CISAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 13:00:40 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:34007 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755546Ab1CISAi (ORCPT
+	id S1757271Ab1CISCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 13:02:44 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43240 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757128Ab1CISCm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 13:00:38 -0500
-Date: Wed, 9 Mar 2011 19:00:37 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Joe Perches <joe@perches.com>
-Cc: Douglas Mencken <dougmencken@gmail.com>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
-        Ingo Molnar <mingo@elte.hu>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: problem with ccflags := -Werror in Makefiles when building
-	with gcc 4.6.0
-Message-ID: <20110309180037.GA29233@merkur.ravnborg.org>
-References: <AANLkTi=3xRFt-p+HUMWwTUcUzFaxY6y9bovJiqdHTwrn@mail.gmail.com> <1299691370.20104.127.camel@Joe-Laptop>
+	Wed, 9 Mar 2011 13:02:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GTfp4wGFfyBlsSB3Q9OLRnNj1P525lpicq2gWsj+X3TiazMv7+rTkmpEHJDhIKjis5
+         2kwg/TA/qW9lEDm3owEmnduwcRscILDbNrX/e5d0mr5x9s1u9CYM8GOyaqsmeYMl3mp6
+         iJbmHV+kpQBhHWq8AzUjOAt4a/jOVusqAytJM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299691370.20104.127.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <op.vr27erd63ri7v4@arend-laptop>
+References: <AANLkTinhThfS587rkX4y1UbJLQzQKEWGfrFArUVGD3Ew@mail.gmail.com>
+	<op.vr2jgfwg3ri7v4@arend-laptop>
+	<20110309160046.GA30821@suse.de>
+	<op.vr27erd63ri7v4@arend-laptop>
+Date: Wed, 9 Mar 2011 19:02:41 +0100
+Message-ID: <AANLkTinT0Ke_c4O3+EkCAo01O-X8E5-3jET6MT7aX0Ne@mail.gmail.com>
+Subject: Re: brcm80211: the system freezes if booted with laptop wifi switch
+ to OFF
+From: Francis Moreau <francis.moro@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Greg KH <gregkh@suse.de>, Brett Rudley <brudley@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 09:22:50AM -0800, Joe Perches wrote:
-> On Wed, 2011-03-09 at 17:28 +0100, Douglas Mencken wrote:
-> > When building with gcc 4.6.0 with the new type of warnings introduced,
-> > -Wunused-but-set-variable, many directories with ccflags set to
-> > -Werror in Makefile fail to build.
-> 
-> After the kbuild W=<level> gets accepted,
-> it might be reasonable to add another W
-> level to make warnings fatal and remove
-> all -Werror entries from the various Makefiles.
+On Wed, Mar 9, 2011 at 6:41 PM, Arend van Spriel <arend@broadcom.com> wrote:
+> On Wed, 09 Mar 2011 17:00:46 +0100, Greg KH <gregkh@suse.de> wrote:
+>
+>> Sure, but I will wait and add it to the stable releases when it goes
+>> into Linus's tree.  Sound ok?
+>
+> fine by me. Will sent the patch later today.
+>
 
-It does not make sense to remove -Werror.
-They are there by default.
+please Cc me so I could give it a test.
 
-It is just plain wrong to go removing -Werror that has been there for ages.
-Either we fix the warnings or we tell gcc to shut up.
-
-	Sam
+-- 
+Francis
