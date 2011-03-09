@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1CIWGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 17:06:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33733 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab1CIWGm (ORCPT
+	id S1753497Ab1CIWHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 17:07:39 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32861 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751529Ab1CIWHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 17:06:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Q6UsfF+xTrsctnfUQEaYhs3pkRoigzewtyT24mkrmxcXABPPkQLMSkOBhu+uQZpIZm
-         C+Fdf1iDkdPUHt7zKK2iciVp/OeEwlhP1jfXvwG55PJ80FCb1zmu7AlwcKS1gn35rOJM
-         UZEyjdS+O6IpLtBPqD5AlBtwlGUYoTAjJ/kmw=
-Date: Thu, 10 Mar 2011 01:06:34 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mirqus@gmail.com,
-        netdev@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
-        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
-        eugene@redhat.com, dan.j.rosenberg@gmail.com
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
- kernel modules
-Message-ID: <20110309220633.GA14750@albatros>
-References: <1299010390.2529.30.camel@bwh-desktop>
- <20110301213313.GA6507@albatros>
- <4D6DEE7C.6020700@msgid.tls.msk.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6DEE7C.6020700@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 9 Mar 2011 17:07:38 -0500
+Date: Wed, 9 Mar 2011 14:07:12 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, Hong Liu <hong.liu@intel.com>
+Subject: Re: [PATCH, RESEND] Putting the device into runtime suspend after
+ resume()/probe() is handled
+Message-Id: <20110309140712.2500862d.akpm@linux-foundation.org>
+In-Reply-To: <20110309215932.08183cfd@lxorguk.ukuu.org.uk>
+References: <20110309123916.19908.78417.stgit@bob.linux.org.uk>
+	<20110309134504.6d850802.akpm@linux-foundation.org>
+	<20110309215932.08183cfd@lxorguk.ukuu.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 10:15 +0300, Michael Tokarev wrote:
-> 02.03.2011 00:33, Vasiliy Kulikov wrote:
-> > Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
-> > CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
-> > that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are
-> > limited to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't
-> > allow anybody load any module not related to networking.
-> > 
-> > This patch restricts an ability of autoloading modules to netdev modules
-> > with explicit aliases.  This fixes CVE-2011-1019.
-> []
-> > Reference: https://lkml.org/lkml/2011/2/24/203
-> > 
-> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+On Wed, 9 Mar 2011 21:59:32 +0000
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+
+> On Wed, 9 Mar 2011 13:45:04 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
 > 
-> This looks much saner :)
+> > On Wed, 09 Mar 2011 12:39:34 +0000
+> > Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > 
+> > > From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> > > To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+> > > Subject: [PATCH, RESEND] Putting the device into runtime suspend after resume()/probe() is handled
+> > > Date: Wed, 09 Mar 2011 12:39:34 +0000
+> > > User-Agent: StGIT/0.14.3
+> > > 
+> > > From: Hong Liu <hong.liu@intel.com>
+> > > 
+> > > by the PM core and the device core code. No need to manually add them in
+> > > each single driver. And correct the runtime state in remove().
+> > > 
+> > > Signed-off-by: Hong Liu <hong.liu@intel.com>
+> > > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> > 
+> > I'd merged this a while back but was awaiting info on why v1 had a
+> > cc:stable so the changelog could be updated to indicate why a -stable
+> > backport was needed.
+> > 
+> > I see that the cc:stable has been removed so that settles that.  But
+> > it's still unclear how serious the bugs-which-were fixed are.  Oh well,
+> > a bug's a bug.  I put it in my 2.6.38 queue anyway.
 > 
-> Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
+> Don't think anything there is that important. Also anyone actually using
+> the driver would I'm pretty sure currently be running an Intel spun
+> kernel not a generic 2.6.older unless someone is also now relying on it
+> for another platform anyway.
 
-Is there any reason why it is not yet merged?  I've answered to Jake
-Edge that it is not a regression.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+OK, thanks.  Let's shoot for 2.6.39 then.
