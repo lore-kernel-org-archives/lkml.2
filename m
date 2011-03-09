@@ -1,187 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab1CILUQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 06:20:16 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:36298 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751758Ab1CILUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 06:20:14 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 9 Mar 2011 12:22:55 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] hid-multitouch: Auto detection of maxcontacts
-Message-ID: <20110309112255.GA9020@polaris.bitmath.org>
-References: <1299601979-4871-1-git-send-email-benjamin.tissoires@enac.fr>
- <1299601979-4871-2-git-send-email-benjamin.tissoires@enac.fr>
+	id S1756790Ab1CILWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 06:22:46 -0500
+Received: from hera.kernel.org ([140.211.167.34]:35104 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751758Ab1CILWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 06:22:41 -0500
+Date: Wed, 9 Mar 2011 11:22:17 GMT
+From: tip-bot for Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        stable@kernel.org, nagananda.chumbalkar@hp.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, nagananda.chumbalkar@hp.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+References: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Don't check for BIOS corruption in first 64K when there's no need to
+Message-ID: <tip-acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3@git.kernel.org>
+Git-Commit-ID: acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1299601979-4871-2-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1PxHR2-0002Xz-Cj.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PxHR2-0002Xz-Cj 0c8844da1a2633033272990ed27ec13c
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Mar 2011 11:22:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 05:32:56PM +0100, Benjamin Tissoires wrote:
-> This patch enables support of autodetection of maxcontacts.
-> We can still manually provide maxcontact in case the device
-> lies on it.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> ---
->  drivers/hid/hid-multitouch.c |   43 ++++++++++++++++++++++++++++-------------
->  1 files changed, 29 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 65e7f20..363ca08 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -38,6 +38,8 @@ MODULE_LICENSE("GPL");
->  #define MT_QUIRK_VALID_IS_INRANGE	(1 << 4)
->  #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 5)
->  
-> +#define MT_CONTACTMAX_DEFAULT	11
-> +
+Commit-ID:  acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3
+Gitweb:     http://git.kernel.org/tip/acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3
+Author:     Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+AuthorDate: Fri, 25 Feb 2011 20:31:55 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 9 Mar 2011 10:34:21 +0100
 
-I think this one can be removed, se below.
+x86: Don't check for BIOS corruption in first 64K when there's no need to
 
->  struct mt_slot {
->  	__s32 x, y, p, w, h;
->  	__s32 contactid;	/* the device ContactID assigned to this slot */
-> @@ -53,8 +55,9 @@ struct mt_device {
->  	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
->  	__u8 num_received;	/* how many contacts we received */
->  	__u8 num_expected;	/* expected last contact index */
-> +	__u8 maxcontacts;
->  	bool curvalid;		/* is the current contact valid? */
-> -	struct mt_slot slots[0];	/* first slot */
-> +	struct mt_slot *slots;
->  };
->  
->  struct mt_class {
-> @@ -87,12 +90,12 @@ static int cypress_compute_slot(struct mt_device *td)
->  static int find_slot_from_contactid(struct mt_device *td)
->  {
->  	int i;
-> -	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-> +	for (i = 0; i < td->maxcontacts; ++i) {
->  		if (td->slots[i].contactid == td->curdata.contactid &&
->  			td->slots[i].touch_state)
->  			return i;
->  	}
-> -	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-> +	for (i = 0; i < td->maxcontacts; ++i) {
->  		if (!td->slots[i].seen_in_this_frame &&
->  			!td->slots[i].touch_state)
->  			return i;
-> @@ -105,8 +108,7 @@ static int find_slot_from_contactid(struct mt_device *td)
->  
->  struct mt_class mt_classes[] = {
->  	{ .name = MT_CLS_DEFAULT,
-> -		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
-> -		.maxcontacts = 10 },
-> +		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP },
+Due to commit 781c5a67f152c17c3e4a9ed9647f8c0be6ea5ae9 it is
+likely that the number of areas to scan for BIOS corruption is 0
+ -- especially when the first 64K is already reserved
+(X86_RESERVE_LOW is 64K by default).
 
-Keeping .maxcontacts at two here seems sensible
+If that's the case then don't set up the scan.
 
->  	{ .name = MT_CLS_DUAL_INRANGE_CONTACTID,
->  		.quirks = MT_QUIRK_VALID_IS_INRANGE |
->  			MT_QUIRK_SLOT_IS_CONTACTID,
-> @@ -126,9 +128,22 @@ struct mt_class mt_classes[] = {
->  static void mt_feature_mapping(struct hid_device *hdev,
->  		struct hid_field *field, struct hid_usage *usage)
->  {
-> -	if (usage->hid == HID_DG_INPUTMODE) {
-> -		struct mt_device *td = hid_get_drvdata(hdev);
-> +	struct mt_device *td = hid_get_drvdata(hdev);
-> +
-> +	switch (usage->hid) {
-> +	case HID_DG_INPUTMODE:
->  		td->inputmode = field->report->id;
-> +		break;
-> +	case HID_DG_CONTACTMAX:
-> +		td->maxcontacts = *(field->value);
-> +		if (td->mtclass->maxcontacts)
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Cc: <stable@kernel.org>
+LKML-Reference: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/check.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-if (td->mtclass->maxcontacts > td->maxcontacts)
-
-> +			/* check if the maxcontacts is given by the class */
-> +			td->maxcontacts = td->mtclass->maxcontacts;
-> +
-> +		if (!td->maxcontacts)
-> +			td->maxcontacts = MT_CONTACTMAX_DEFAULT;
-
-this part can be then dropped
-
-> +
-> +		break;
->  	}
->  }
->  
-> @@ -186,8 +201,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  			td->last_slot_field = usage->hid;
->  			return 1;
->  		case HID_DG_CONTACTID:
-> -			input_mt_init_slots(hi->input,
-> -					td->mtclass->maxcontacts);
-> +			input_mt_init_slots(hi->input, td->maxcontacts);
->  			td->last_slot_field = usage->hid;
->  			return 1;
->  		case HID_DG_WIDTH:
-> @@ -268,7 +282,7 @@ static void mt_complete_slot(struct mt_device *td)
->  	if (td->curvalid) {
->  		int slotnum = mt_compute_slot(td);
->  
-> -		if (slotnum >= 0 && slotnum < td->mtclass->maxcontacts)
-> +		if (slotnum >= 0 && slotnum < td->maxcontacts)
->  			td->slots[slotnum] = td->curdata;
->  	}
->  	td->num_received++;
-> @@ -283,7 +297,7 @@ static void mt_emit_event(struct mt_device *td, struct input_dev *input)
->  {
->  	int i;
->  
-> -	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-> +	for (i = 0; i < td->maxcontacts; ++i) {
->  		struct mt_slot *s = &(td->slots[i]);
->  		if ((td->mtclass->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP) &&
->  			!s->seen_in_this_frame) {
-> @@ -415,9 +429,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  	 */
->  	hdev->quirks |= HID_QUIRK_NO_INPUT_SYNC;
->  
-> -	td = kzalloc(sizeof(struct mt_device) +
-> -				mtclass->maxcontacts * sizeof(struct mt_slot),
-> -				GFP_KERNEL);
-> +	td = kzalloc(sizeof(struct mt_device), GFP_KERNEL);
->  	if (!td) {
->  		dev_err(&hdev->dev, "cannot allocate multitouch data\n");
->  		return -ENOMEM;
-> @@ -434,6 +446,9 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  	if (ret)
->  		goto fail;
->  
-> +	td->slots = kzalloc(td->maxcontacts * sizeof(struct mt_slot),
-> +				GFP_KERNEL);
-> +
-
-Don't we have a race problem here?  It seems the device is started at
-this point, so I worry that events will be handled when slots is still
-NULL.
-
->  	mt_set_input_mode(hdev);
->  
->  	return 0;
-> -- 
-> 1.7.4
-> 
-
-Thanks,
-Henrik
+diff --git a/arch/x86/kernel/check.c b/arch/x86/kernel/check.c
+index 13a3891..bfd59ea 100644
+--- a/arch/x86/kernel/check.c
++++ b/arch/x86/kernel/check.c
+@@ -106,8 +106,8 @@ void __init setup_bios_corruption_check(void)
+ 		addr += size;
+ 	}
+ 
+-	printk(KERN_INFO "Scanning %d areas for low memory corruption\n",
+-	       num_scan_areas);
++	if (num_scan_areas)
++		printk(KERN_INFO "Scanning %d areas for low memory " "corruption\n", num_scan_areas);
+ }
+ 
+ 
+@@ -143,12 +143,12 @@ static void check_corruption(struct work_struct *dummy)
+ {
+ 	check_for_bios_corruption();
+ 	schedule_delayed_work(&bios_check_work,
+-		round_jiffies_relative(corruption_check_period*HZ)); 
++		round_jiffies_relative(corruption_check_period*HZ));
+ }
+ 
+ static int start_periodic_check_for_corruption(void)
+ {
+-	if (!memory_corruption_check || corruption_check_period == 0)
++	if (!num_scan_areas || !memory_corruption_check || corruption_check_period == 0)
+ 		return 0;
+ 
+ 	printk(KERN_INFO "Scanning for low memory corruption every %d seconds\n",
