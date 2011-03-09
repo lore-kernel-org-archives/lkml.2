@@ -1,249 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887Ab1CIIwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 03:52:07 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50920 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752874Ab1CIIwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 03:52:05 -0500
-Date: Wed, 9 Mar 2011 09:51:50 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        linux-next <linux-next@vger.kernel.org>, psomas@cslab.ece.ntua.gr,
-        Jan Beulich <JBeulich@novell.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for March 8 (BROKEN:
- arch/x86/kernel/entry_32.S? Debian's binutils/as?)
-Message-ID: <20110309085150.GC21294@elte.hu>
-References: <AANLkTin2H9=NWp5G6N6_e=bxBTh2eS1dbUxOjT6xX98C@mail.gmail.com>
- <AANLkTik_Cb7tXheZNOBjqnoQc4MSL1LnDtFGFP5mqZRi@mail.gmail.com>
- <AANLkTinBv__n7k3Z=EJWv1fdQScyB7AJV0SsYJE0mCwQ@mail.gmail.com>
- <AANLkTiknsT1iQzUQ_oBiOORaqWBFyk2BaLq_xu9C5E_G@mail.gmail.com>
- <1299605269.29313.1427511237@webmail.messagingengine.com>
- <AANLkTi=6YstJxad41knR4Q9WN3wYKikPv-g1i3kg3HS1@mail.gmail.com>
- <1299615939.25628.1427572905@webmail.messagingengine.com>
- <AANLkTimBMP1jiuEEUwmKKVNZcZnrkFxFA_YBcLmkEFJM@mail.gmail.com>
- <AANLkTikpMAXfG5aNWo8x7pKKppaQiE-U8qjFaG0B2azV@mail.gmail.com>
+	id S1756905Ab1CIJDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 04:03:50 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47119 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756811Ab1CIJDr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 04:03:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=JVr/OpsB2wddxNvHaOw5GvudQ18wZfneWXps+tvOqHl4Li13RIL32CeBRDxNvNtKuE
+         T2+CnjCMwqkn0X3UNcMOr6LFkWRvCWiiDut7CCCGWOFPHyVygBE7AIv5nIWLuCkZqs7B
+         PJ5fU4ld3TFn9z53f55RFJeUAkCYRMeEOoJKI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikpMAXfG5aNWo8x7pKKppaQiE-U8qjFaG0B2azV@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110309084222.GA3569@polaris.bitmath.org>
+References: <1299601979-4871-1-git-send-email-benjamin.tissoires@enac.fr>
+	<1299601979-4871-2-git-send-email-benjamin.tissoires@enac.fr>
+	<20110309084222.GA3569@polaris.bitmath.org>
+Date: Wed, 9 Mar 2011 10:03:45 +0100
+X-Google-Sender-Auth: 5lOWmb1yb37DfhhZ5UYwk4xiWa8
+Message-ID: <AANLkTin4KsPWRfFEEYXkjWdnEnXyiMyDGc6eEWFA_kWx@mail.gmail.com>
+Subject: Re: [PATCH 1/4] hid-multitouch: Auto detection of maxcontacts
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 9, 2011 at 09:42, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> This patch enables support of autodetection of maxcontacts.
+>> We can still manually provide maxcontact in case the device
+>> lies on it.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>
+> It seems quite alright to let the classes contain the expected number
+> of contacts, so I do not really see the reason for that part of the
+> patch. How about keeping the maxcontacts in the class, and then do
+> max(hid-provided-maxcontacts, default-maxcontacts)?
+>
 
-* H.J. Lu <hjl.tools@gmail.com> wrote:
+Yep, I've got three particular reasons:
+- 3M: there are two devices now, 1968 and 2256. The first one is a 10
+touches only, whereas the second one is a 60 touches.
+- autodetection of multitouch devices. I have some patches on my tree
+(that we do not want to go upstream right now for some reasons) that
+allows us to plug any unknown multitouch devices and to let
+hid-multitouch handling it. As most of the devices are 2 touches only,
+and as the generic way to work with a multitouch devices is to iterate
+over all the slots, using 10 touches by default infers a lot of
+instructions that can be avoided.
+- finally, it simplifies the writing of the new CLS (we just need to
+know how the device works to add the right quirks).
 
-> On Tue, Mar 8, 2011 at 12:33 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> > On Tue, Mar 8, 2011 at 9:25 PM, Alexander van Heukelum
-> > <heukelum@fastmail.fm> wrote:
-> >> On Tue, 08 Mar 2011 18:53 +0100, "Sedat Dilek" <sedat.dilek@googlemail.com> wrote:
-> >>> On Tue, Mar 8, 2011 at 6:27 PM, Alexander van Heukelum
-> >>> <heukelum@fastmail.fm> wrote:
-> >>> > On Tue, 08 Mar 2011 16:42 +0100, "Sedat Dilek" <sedat.dilek@googlemail.com> wrote:
-> >>> >> On 3/8/11, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> >>> >> > On 3/8/11, H.J. Lu <hjl.tools@gmail.com> wrote:
-> >>> >> >> On Tue, Mar 8, 2011 at 2:44 AM, Sedat Dilek <sedat.dilek@googlemail.com>
-> >>> >> >> wrote:
-> >>> >> >>> Hi,
-> >>> >> >>>
-> >>> >> >>> my build of linux-next (next-20110308, the same with the one from
-> >>> >> >>> yesterday) is broken.
-> >>> >> >>> (I translated the German output.)
-> >>> >> >>>
-> >>> >> >>> [ build.log ]
-> >>> >> >>>  AS      arch/x86/kernel/entry_32.o
-> >>> >> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
-> >>> >> >>> Assembler messages:
-> >>> >> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
-> >>> >> >>> Error: .size expression does not evaluate to a constant
-> >>> >> >>> make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1 (Error 1)
-> >>> >> >>> make[5]: *** [arch/x86/kernel] Fehler 2 (Error 2)
-> >>> >> >>> make[4]: *** [arch/x86] Fehler 2 (Error 2)
-> >>> >> >>> make[4]: *** Warte auf noch nicht beendete Prozesse... (Waiting for
-> >>> >> >>> unfinished jobs...)
-> >>> >> >>>
-> >>> >> >>
-> >>> >> >> This is a kernel bug.  Please use the latest binutils from CVS.
-> >>> >> >> It will tell you which symbol causes this.
-> >>> >> >>
-> >>> >> >>
-> >>> >> >> --
-> >>> >> >> H.J.
-> >>> >> >>
-> >>> >> >
-> >>> >> > Yeah, I have cherry-picked these two upstream commits before you have
-> >>> >> > mentionned it...
-> >>> >> >
-> >>> >> > 0001-Mention-symbol-name-in-non-constant-.size-expression.patch
-> >>> >> >        (Cherry-picked from commit b9521fc0be7945fc842ce1197e241a023378125d)
-> >>> >> > 0002-Revert-the-last-change-on-gas-elf-bad-size.err.patch
-> >>> >> >        (Cherry-picked from commit cbd141bb69f791de7ea1581abe7afb34f0c61288)
-> >>> >> >
-> >>> >> > ... and have built with them a new binutils Debian package.
-> >>> >> >
-> >>> >> > The error looks now like this (sorry for the German output):
-> >>> >> > ...
-> >>> >> >   AS      arch/x86/kernel/entry_32.o
-> >>> >> > /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
-> >>> >> > Assembler messages:
-> >>> >> > /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
-> >>> >> > Error: .size expression with symbol `apf_page_fault' does not evaluate
-> >>> >> > to a constant
-> >>> >> > make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1
-> >>> >> > make[5]: *** [arch/x86/kernel] Fehler 2
-> >>> >> > make[5]: *** Warte auf noch nicht beendete Prozesse...
-> >>> >> >
-> >>> >> > Anyway, before more riddling around it would be very helpful to have a
-> >>> >> > clear pointer if there is a fix around... That building, testing and
-> >>> >> > installing took me now several hours.
-> >>> >> > And... yeah, backports to 2.21-branch appreciated.
-> >>> >> >
-> >>> >> > - Sedat -
-> >>> >> >
-> >>> >>
-> >>> >> After a quick look into the source, it seems attached patch fixes the
-> >>> >> issue.
-> >>> >> Is that OK?
-> >>> >
-> >>> > Hi Sedat,
-> >>> >
-> >>> > The patch ( https://lkml.org/lkml/2011/3/8/203 ) is ok, feel free to add
-> >>> > Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>
-> >>> >
-> >>> > Better description might be something like:
-> >>> >
-> >>> > i386: Fix mismatched ENTRY/END pair.
-> >>> >
-> >>> > Under CONFIG_KVM_GUEST=y, the following part of entry_32.S causes a compile failure.
-> >>> >
-> >>> > 1409 #ifdef CONFIG_KVM_GUEST
-> >>> > 1410 ENTRY(async_page_fault)
-> >>> > 1411         RING0_EC_FRAME
-> >>> > 1412         pushl $do_async_page_fault
-> >>> > 1413         CFI_ADJUST_CFA_OFFSET 4
-> >>> > 1414         jmp error_code
-> >>> > 1415         CFI_ENDPROC
-> >>> > 1416 END(apf_page_fault)
-> >>> > 1417 #endif
-> >>> >
-> >>> > Replace apf_page_fault with async_page_fault, as intended.
-> >>> >
-> >>> > Greetings,
-> >>> >    Alexander
-> >>> >
-> >>> >> - Sedat -
-> >>> >>
-> >>> >> Email had 1 attachment:
-> >>> >> + 0001-x86-Fix-build-failure-with-binutils-as-from-upstream.patch
-> >>> >>   1k (text/x-patch)
-> >>> >
-> >>>
-> >>> As I said, quick view on the code, quick fix :-).
-> >>>
-> >>> Your description is definitive more meaningful.
-> >>> I can refresh my patch and add your ACK.
-> >>>
-> >>> Anyway, I continued after dinner and with the above patch I ran into
-> >>> the next problem:
-> >>> [ build.log ]
-> >>> ...
-> >>>   AS      arch/x86/kernel/acpi/wakeup_rm.o
-> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/acpi/wakeup_rm.S:
-> >>> Assembler messages:
-> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/acpi/wakeup_rm.S:12:
-> >>> Error: .size expression with symbol `wakeup_code_start' does not
-> >>> evaluate to a constant
-> >>
-> >> No idea what's wrong there. But my version of wakeup_rm.S has only 10 lines...
-> >>
-> >>     1  /*
-> >>     2   * Wrapper script for the realmode binary as a transport object
-> >>     3   * before copying to low memory.
-> >>     4   */
-> >>     5          .section ".rodata","a"
-> >>     6          .globl  wakeup_code_start, wakeup_code_end
-> >>     7  wakeup_code_start:
-> >>     8          .incbin "arch/x86/kernel/acpi/realmode/wakeup.bin"
-> >>     9  wakeup_code_end:
-> >>    10          .size   wakeup_code_start, .-wakeup_code_start
-> >>
-> >> And it compiles just fine.
-> >> The fix for entry_32.S is valid, though, and necessary for mainline.
-> >>
-> >> Greetings,
-> >>    Alexander
-> >>
-> >>> I am unsure how to fix that and open for feedback.
-> >>>
-> >>> - Sedat -
-> >>>
-> >>
-> >
-> > The file in linux-next (next-20110308) looks different (the above code
-> > looks more logical to me)
-> >
-> > [ arch/x86/kernel/acpi/wakeup_rm.S ]
-> >
-> > /*
-> >  * Wrapper script for the realmode binary as a transport object
-> >  * before copying to low memory.
-> >  */
-> > #include <asm/page_types.h>
-> >
-> >        .section ".x86_trampoline","a"
-> >        .balign PAGE_SIZE
-> >        .globl  acpi_wakeup_code
-> > acpi_wakeup_code:
-> >        .incbin "arch/x86/kernel/acpi/realmode/wakeup.bin"
-> >        .size   wakeup_code_start, .-wakeup_code_start
-> >
-> 
-> Those are simply wrong.  2.6.38-rc8 is OK.
-
-2.6.37-rc8 is not OK: for example commit 631bc4878220932fe67fc46fc7cf7cccdb1ec597 is 
-already upstream and if you enable KVM you see a broken kernel build with new 
-binutils. This is from 2.6.38-rc8:
-
- #ifdef CONFIG_KVM_GUEST
- ENTRY(async_page_fault)
-        RING0_EC_FRAME
-        pushl $do_async_page_fault
-        CFI_ADJUST_CFA_OFFSET 4
-        jmp error_code
-        CFI_ENDPROC
- END(apf_page_fault)
- #endif
-
-Yes, the .size directive not matching up is technically a bug, but it was not 
-checked by binutils before, for *years* - and you cannot just flip a switch and 
-break who knows how much code.
-
-You need to at least emit a warning for some time to give people a *chance* to fix 
-bugs - not just stuff an incompatible binutils down their throat and break the 
-kernel build for thousands of commits and break bisection.
-
-This binutils change is breaking numerous upstream kernel builds (and is making 
-bisection with new binutils impossible) for no particular good reason: binutils was 
-capable to figure out the symbol name before this change.
-
-At minimum you need to *understand* that what you are doing is an incompatible 
-change and is disruptive to others ...
-
-Thanks,
-
-	Ingo
+Cheers,
+Benjamin
