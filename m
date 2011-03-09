@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab1CIKic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 05:38:32 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:38411 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757138Ab1CIKib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 05:38:31 -0500
-Date: Wed, 9 Mar 2011 05:38:28 -0500
-From: "hch@infradead.org" <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "hch@infradead.org" <hch@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] fs: make generic file read/write functions plug
-Message-ID: <20110309103828.GA26181@infradead.org>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
- <1295659049-2688-8-git-send-email-jaxboe@fusionio.com>
- <20110304040907.GB32404@redhat.com>
- <4D70E78D.9000402@fusionio.com>
- <20110304132551.GA2407@infradead.org>
- <4D762330.8000003@fusionio.com>
+	id S1753486Ab1CIKl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 05:41:29 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39943 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577Ab1CIKl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 05:41:28 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Wang Lei <f3d27b@gmail.com>
+Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
+Date: Wed, 9 Mar 2011 11:41:28 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
+In-Reply-To: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D762330.8000003@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103091141.28396.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 01:38:08PM +0100, Jens Axboe wrote:
-> -#define DP_UNPLUG             8 /* equals REQ_UNPLUG  */
-> +#define DP_UNPLUG             8 /* not used anymore   */
+On Wednesday, March 09, 2011, Wang Lei wrote:
+> Hi, hackers!
+> 
+> I have ever reported some bugs, always got kind help, even though one
+> thing is not fixed yet, leaving my SBx00 sound card no voice.
+> 
+> Recently, i encounter another problem, after startup all fans keep
+> running. I guess it's a bug. I first saw this at v2.6.38-rc7. It still
+> exists at v2.6.38-rc8. The version I'm running now, v2.6.38-rc6+, is OK.
+> 
+> I cat /sys/class/thermal/thermal_zone0/trip_point_*_temp at the latest
+> v2.6.38-rc8, get this output:
+> 
+> [~]$ cat /sys/class/thermal/thermal_zone0/trip_point_*_temp
+> 105000
+> 15900
+> 15900
+> 15900
+> 15900
+> 15900
+> [~]$ 
+> 
+> This is the output at v2.6.38-rc6+:
+> 
+> [~]$ cat /sys/class/thermal/thermal_zone0/trip_point_*_temp
+> 105000
+> 95000
+> 75000
+> 65000
+> 55000
+> 40000
+> [~]$
+> 
+> Any help is appreciated.
 
-The way this is used might need some more review.  It seems like DRBD is
-trying to propagate unplug requests over the wire, which is
-functionality we lose now.
+There was only one commit in that area since 2.6.38-rc6, but it shouldn't
+affect the functionality this way.
 
-> + * The various wait functions, such as wait_on_writeback_range() will
-> + * ultimately call sync_page() which will ultimately call
-> + * blk_run_backing_dev(), which will end up unplugging the device queue.
+Is yout thermal management controlled by ACPI?
 
-This comment describes code that doesn't exist anymore on your branch.
-
+Rafael
