@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab1CIPfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:35:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4723 "EHLO mx1.redhat.com"
+	id S1756713Ab1CIPfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:35:24 -0500
+Received: from smtp.nokia.com ([147.243.1.47]:59956 "EHLO mgw-sa01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab1CIPfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:35:11 -0500
-Message-ID: <4D779DE2.5030908@redhat.com>
-Date: Wed, 09 Mar 2011 16:33:54 +0100
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1755471Ab1CIPfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 10:35:20 -0500
+Message-ID: <4D779EC0.5010702@nokia.com>
+Date: Wed, 9 Mar 2011 17:37:36 +0200
+From: Roger Quadros <roger.quadros@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.14) Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: scameron@beardog.cce.hp.com
-CC: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH 2/2] hpsa: export resettable_on_kexec host attribute
-References: <20110308230749.22291.56200.stgit@beardog.cce.hp.com> <20110308231003.22291.20417.stgit@beardog.cce.hp.com> <4D777249.10400@redhat.com> <20110309151457.GI12760@beardog.cce.hp.com>
-In-Reply-To: <20110309151457.GI12760@beardog.cce.hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: ext Alan Stern <stern@rowland.harvard.edu>
+CC: <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] usb: gadget: storage: Add fsg_get_toc helper
+References: <Pine.LNX.4.44L0.1103091005570.1965-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1103091005570.1965-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.21.24.199]
+X-OriginalArrivalTime: 09 Mar 2011 15:34:56.0455 (UTC) FILETIME=[8AF9BD70:01CBDE6F]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2011 04:14 PM, scameron@beardog.cce.hp.com wrote:
-> On Wed, Mar 09, 2011 at 01:27:53PM +0100, Tomas Henzl wrote:
->   
->> On 03/09/2011 12:10 AM, Stephen M. Cameron wrote:
->>     
->>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
->>>
->>> This attribute, requested by Redhat, allows kexec-tools to know
->>> whether the controller can honor the reset_devices kernel parameter
->>>       
->>     
-> [...]
->
->   
->> and actually reset the controller.  For kdump to work properly it
->> Hi Stephen,
->>
->> thanks for posting this.
->> Some of the devices are served by the cciss driver by default - I guess
->> a very similar patch for cciss is needed too.
->> Shouldn't be the 0x409C0E11 and 0x409D0E11 (640x boards) also added to the list?
->> (And the 'unknown' devices.)
->>     
-> There's a bit of a fine point here regarding the unknown devices.
->
-> If hpsa_allow_any=1 module parameter is set, then the unknown device
-> is considered to be resettable (as it's unknown, it's obviously not
-> on the list of known unresettable controllers).  If hpsa_allow_any
-> is not set, then the unknown devices are not reset -- and the driver
-> doesn't even try to do anything with them.  
->
-> So, the patch is consistent with this, in that if hpsa_allow_any is
-> not set, then there won't be any corresponding sysfs entries at all
-> for those devices because those devices won't be service by hpsa
-> at all.  And if hpsa_allow_any is set, then those devices will be
-> marked as resettable, and the reset code will attempt to reset them.
->
-> I think we've got all the unresettable devices listed (when I add the 6400
-> boards to the list of course) and I think we're going to try pretty hard to
-> make sure new boards are resettable, so, that's probably ok, right?
->   
-> Or, do you want to be extra safe, and say that new, unknown boards are assumed
-> to be non-resettable?  (Since new boards generally mean driver changes to make
-> sure the driver knows those boards, that's not such a big deal -- except for
-> people who want to continue to use old OSes on new hardware, which, there seem
-> to be quite a few of those people.)
->   
-My comment has targeted the new unknown boards, to resolve this it would be easier
-to have a list of resettable controllers. (complement to what it is now).
+On 03/09/2011 05:10 PM, ext Alan Stern wrote:
 
-Fact is, that I forgot that a hpsa_allow_any option has to be set before you can
-use an 'unknown' controller and combined with your promise 
-> we're going to try pretty hard to make sure new boards are resettable
-I'm fine with the original approach.
-
--- tomash
-
-
-> I think my preference would be to assume that unknown boards are resettable
-> if hpsa_allow_any=1, and assume unresettable otherwise (and for purposes of
-> sysfs attributes, this is what the patch already does.)
+>> +	case 2:
+>> +		/* Raw TOC */
+>> +		memset(buf, 0, 37);	/* Header + A0, A1&  A2 descriptors */
+>> +		buf[1] = 37;		/* 4 + 3*11 */
 >
-> -- steve
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   
+> There's no reason to do it this way.  The compiler is a lot better than
+> you are at addition.  Just put 4 + 3*11 in the assignment statement,
+> and in the comment explain what the numbers mean.
 
+OK.
+
+>
+>> +		buf[2] = 1;		/* First complete session */
+>> +		buf[3] = 2;		/* Last complete session */
+>> +
+>> +		buf += 4;
+>> +		/* A0 point */
+>> +		buf[0] = 1;		/* Session number */
+>> +		buf[1] = 0x16;		/* Data track, copying alowed */
+>> +		/* 2 - Track number 0 ->  TOC */
+>> +		buf[3] = 0xA0;		/* Point A0 */
+>> +		/* 4, 5, 6 - Min, sec, frame is zero */
+>> +		/* 7 - zero */
+>> +		buf[8] = 1;		/* Pmin: 1st track number */
+>> +		/* 9 - disc type 0: CD-ROM/DA with 1st track in mode 1 */
+>> +		/* 10 - pframe 0 */
+>> +
+>> +		buf += 11;
+>> +		/* A1 point*/
+>> +		buf[0] = 1;		/* Session number */
+>> +		buf[1] = 0x16;		/* Data track, copying alowed */
+>> +		/* 2 - Track number 0 ->  TOC */
+>> +		buf[3] = 0xA1;		/* Point A1 */
+>> +		/* 4, 5, 6 - Min, sec, frame is zero */
+>> +		/* 7, zero */
+>> +		buf[8] = 1;		/* Pmin: last track number */
+>> +		/* 9, 10 - pmin and pframe are 0 */
+>> +
+>> +		buf += 11;
+>> +		/* A2 point*/
+>> +		buf[0] = 1;		/* Session number */
+>> +		buf[1] = 0x16;		/* Data track, copying alowed */
+>> +		/* 2 - Track number 0 ->  TOC */
+>> +		buf[3] = 0xA2;		/* Point A2 */
+>> +		/* 4, 5, 6 - Min, sec, frame is zero */
+>> +		/* 7, 8, 9, 10 - zero, Pmin, Psec, Pframe of Lead out */
+>> +		store_cdrom_address(&buf[7], msf, curlun->num_sectors);
+>
+> These things could be put into a loop, instead of a separate function.
+
+Yes loop is better than function for this case.
+
+>
+>> +		return 37;
+>
+> It might be a good idea to use a variable instead of having all these
+> "37"s floating around.  It would make future updates more reliable.
+
+OK.
+
+-- 
+regards,
+-roger
