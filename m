@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab1CIR43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:56:29 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:33411 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757128Ab1CIR42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 12:56:28 -0500
-Date: Wed, 9 Mar 2011 18:56:25 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Michal Marek <mmarek@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        Arnd Bergmann <arnd@arndb.de>, torvalds@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, bp@amd64.org
-Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
-Message-ID: <20110309175625.GA29181@merkur.ravnborg.org>
-References: <20110301083529.GA767@liondog.tnic> <20110309144504.GA1096@sepie.suse.cz> <20110309151134.GA15730@elte.hu>
+	id S1757254Ab1CIR5f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:57:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32673 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188Ab1CIR5e (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 9 Mar 2011 12:57:34 -0500
+Date: Wed, 9 Mar 2011 12:56:21 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: linux-kernel@vger.kernel.org, yinghai@kernel.org
+Subject: Re: [PATCH] xen: update mask_rw_pte after kernel page tables init
+ changes
+Message-ID: <20110309175621.GI8049@dumpdata.com>
+References: <alpine.DEB.2.00.1103091429300.2968@kaball-desktop>
+ <20110309174335.GH8049@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110309151134.GA15730@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110309174335.GH8049@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0205.4D77BF48.014F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Another, related, very nice kbuild feature would be to allow for arch maintainers to 
-> mark certain files as "should only build fine without warnings" - i.e. -Werror 
-> should be the default. There would be a Kconfig feature to opt out of this, 
-> CONFIG_CC_IGNORE_WARNINGS=y or so. This would allow for people to still build the 
-> kernel with old (or buggy) versions of GCC.
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> Also pls apply my SOB to "xen: set max_pfn_mapped to the last pfn mapped"
+> 
 
-To add -Werror for all files conditionally you can do:
-
-    ccflags-$(CONFIG_WERROR) += -Werror
-
-For individual files we can then drop -Werror like this:
-
-    CFLAGS_REMOVE_foobar.o := -Werror
-
-So it should be doable with the existing infrastructure.
-
-	Sam
+Ooops. Please convert those SOBs to Acked-by.
