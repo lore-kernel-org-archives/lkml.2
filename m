@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1CIXog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 18:44:36 -0500
-Received: from kroah.org ([198.145.64.141]:45197 "EHLO coco.kroah.org"
+	id S1752896Ab1CIXom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 18:44:42 -0500
+Received: from kroah.org ([198.145.64.141]:45209 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab1CIXoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 18:44:34 -0500
-Date: Wed, 9 Mar 2011 15:39:46 -0800
+	id S1752694Ab1CIXoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 18:44:38 -0500
+Date: Wed, 9 Mar 2011 15:42:38 -0800
 From: Greg KH <greg@kroah.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: dbrownell@users.sourceforge.net, gregkh@suse.de, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb-gadget: unlock data->lock mutex on error path in
- ep_read()
-Message-ID: <20110309233946.GA31857@kroah.com>
-References: <4D772F2B.6030209@ispras.ru>
+To: Denis Turischev <denis@compulab.co.il>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: [PATCH v2] pch_uart: reference clock on CM-iTC
+Message-ID: <20110309234238.GA4071@kroah.com>
+References: <4D74A600.7070302@compulab.co.il>
+ <20110307200733.GA18849@kroah.com>
+ <4D761F7F.2030908@compulab.co.il>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D772F2B.6030209@ispras.ru>
+In-Reply-To: <4D761F7F.2030908@compulab.co.il>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 10:41:31AM +0300, Alexey Khoroshilov wrote:
-> ep_read() acquires data->lock mutex in get_ready_ep() and releases it on
-> all paths except for one: when usb_endpoint_xfer_isoc() failed. The
-> patch adds mutex_unlock(&data->lock) at that path.
+On Tue, Mar 08, 2011 at 02:22:23PM +0200, Denis Turischev wrote:
+> Default clock source for UARTs on Topcliff is external UART_CLK.
+> On CM-iTC USB_48MHz is used instead. After VCO2PLL and DIV
+> manipulations UARTs will receive 192 MHz.
+> Clock manipulations on Topcliff are controlled in pch_phub.c
 > 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov<khoroshilov@ispras.ru>
+> v2: redone against the linux-next tree
 
-Need a space after your name and before the email address.
+Are you sure?  I still get the following conflicts when applying it:
+	patching file drivers/misc/pch_phub.c
+	Hunk #2 succeeded at 42 with fuzz 2 (offset -5 lines).
+	Hunk #3 FAILED at 626.
+	1 out of 3 hunks FAILED -- saving rejects to file drivers/misc/pch_phub.c.rej
+	patching file drivers/tty/serial/pch_uart.c
+	Hunk #1 succeeded at 21 (offset 1 line).
+	Hunk #2 succeeded at 1405 (offset 1 line).
 
-Anyway, your patch is still line-wrapped and the leading spaces stripped
-off, making it impossible to apply.  After hand-editing it, it still
-fails, are you sure you made this against the linux-next tree?
-
-Care to try again?
-
-thanks,
+confused,
 
 greg k-h
