@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab1CIUND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 15:13:03 -0500
+	id S1752732Ab1CIUNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 15:13:30 -0500
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:49866 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab1CIUM4 (ORCPT
+	with ESMTP id S1752291Ab1CIUM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 15:12:56 -0500
+	Wed, 9 Mar 2011 15:12:58 -0500
 From: Bill Gatliff <bgat@billgatliff.com>
 To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
 Cc: Bill Gatliff <bgat@billgatliff.com>
-Subject: [PWM v7 2/3] PWM: GPIO+hrtimer device emulation
-Date: Wed,  9 Mar 2011 14:13:15 -0600
-Message-Id: <1299701596-24665-3-git-send-email-bgat@billgatliff.com>
+Subject: [PWM v7 3/3] PWM: Atmel PWMC driver
+Date: Wed,  9 Mar 2011 14:13:16 -0600
+Message-Id: <1299701596-24665-4-git-send-email-bgat@billgatliff.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1299701596-24665-1-git-send-email-bgat@billgatliff.com>
 References: <1299701596-24665-1-git-send-email-bgat@billgatliff.com>
@@ -20,88 +20,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emulates a PWM device using a GPIO pin and an hrtimer.  Subject
-to CPU, scheduler and hardware limitations, can support many
-PWM outputs, e.g. as many as you have GPIO pins available for.
-
-On a 200 MHz ARM9 processor, a PWM frequency of 100 Hz can be attained
-with this code so long as the duty cycle remains between about 20-80%.
-At higher or lower duty cycles, the transition events may arrive too
-close for the scheduler and CPU to reliably service.
-
-This driver supports creation of new GPIO+hrtimer PWM devices via
-configfs:
-
-   # mount config /config -t configfs
-   # mkdir /config/gpio-pwm/<gpio number>
-
-The new PWM device will appear as /sys/class/pwm/gpio-pwm.<gpio number>.
-
-Caveats:
-   * The GPIO pin number must be valid, not already in use
-   * The output state of the GPIO pin is configured when the PWM starts
-     running i.e. not immediately upon request, because the polarity of
-     the inactive state of the pin isn't known until the pwm device's
-     'polarity' attribute is configured
-   * After creating and binding the pwm device, you must then request
-     it by writing to /sys/class/pwm/gpio-pwm.<gpio number>/export
-
-Unbind and destroy the pwm device by first stopping and unexporting
-the pwm device under sysfs as usual; then do:
-
-   # rm -rf /config/gpio-pwm/<gpio number>
+Driver to allow the Atmel PWMC peripheral found on various
+AT91 SoCs to be controlled using the Generic PWM framework.
+Tested on the AT91SAM9263.
 
 Signed-off-by: Bill Gatliff <bgat@billgatliff.com>
 ---
- drivers/pwm/Kconfig     |   11 ++
- drivers/pwm/Makefile    |    2 +
- drivers/pwm/gpio-pwm.c  |  336 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pwm/pwm.h |    3 +
- 4 files changed, 352 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pwm/gpio-pwm.c
+ drivers/pwm/Kconfig      |    8 +
+ drivers/pwm/Makefile     |    1 +
+ drivers/pwm/atmel-pwmc.c |  449 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 458 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pwm/atmel-pwmc.c
 
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index bc550f7..476de67 100644
+index 476de67..560324a 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
-@@ -8,3 +8,14 @@ menuconfig GENERIC_PWM
- 	  Enables PWM device support implemented via a generic
- 	  framework.  If unsure, say N.
+@@ -19,3 +19,11 @@ config GPIO_PWM
  
-+config GPIO_PWM
-+       tristate "GPIO+hrtimer PWM device emulation"
-+       depends on GENERIC_PWM
-+       help
-+         When enabled, this feature emulates single-channel PWM
-+	 devices using high-resolution timers and GPIO pins.  You may
-+	 create as many of these devices as desired, subject to CPU
-+	 throughput limitations and GPIO pin availability.
+ 	 To compile this feature as a module, chose M here; the module
+ 	 will be called gpio-pwm.  If unsure, say N.
 +
-+	 To compile this feature as a module, chose M here; the module
-+	 will be called gpio-pwm.  If unsure, say N.
++config ATMEL_PWMC
++       tristate "Atmel AT32/AT91 PWMC support"
++       depends on GENERIC_PWM && (AVR32 || ARCH_AT91SAM9263 || ARCH_AT91SAM9RL || ARCH_AT91CAP9)
++       help
++         This option enables support under the generic PWM
++	 framework for PWMC peripheral channels found on
++	 certain Atmel microcontrollers.  If unsure, say N.
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 7baa201..ecec3e4 100644
+index ecec3e4..d274fa0 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
-@@ -2,3 +2,5 @@
- # Makefile for pwm devices
- #
+@@ -4,3 +4,4 @@
  obj-$(CONFIG_GENERIC_PWM) := pwm.o
-+
-+obj-$(CONFIG_GPIO_PWM)		+= gpio-pwm.o
-diff --git a/drivers/pwm/gpio-pwm.c b/drivers/pwm/gpio-pwm.c
+ 
+ obj-$(CONFIG_GPIO_PWM)		+= gpio-pwm.o
++obj-$(CONFIG_ATMEL_PWMC)	+= atmel-pwmc.o
+diff --git a/drivers/pwm/atmel-pwmc.c b/drivers/pwm/atmel-pwmc.c
 new file mode 100644
-index 0000000..9a7ce33
+index 0000000..cd71005
 --- /dev/null
-+++ b/drivers/pwm/gpio-pwm.c
-@@ -0,0 +1,336 @@
++++ b/drivers/pwm/atmel-pwmc.c
+@@ -0,0 +1,449 @@
 +/*
-+ * Emulates a PWM device using an hrtimer and GPIO pin
++ * Atmel PWMC peripheral driver
 + *
 + * Copyright (C) 2011 Bill Gatliff <bgat@billgatliff.com>
++ * Copyright (C) 2007 David Brownell
 + *
 + * This program is free software; you may redistribute and/or modify
-+ * it under the terms of the GNU General Public License Version 2, as
++ * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
 + * This program is distributed in the hope that it will be useful, but
@@ -114,335 +83,435 @@ index 0000000..9a7ce33
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 + * USA
 + */
-+
 +#include <linux/module.h>
 +#include <linux/init.h>
-+#include <linux/hrtimer.h>
-+#include <linux/err.h>
-+#include <linux/workqueue.h>
-+#include <linux/gpio.h>
 +#include <linux/slab.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
 +#include <linux/completion.h>
-+#include <linux/configfs.h>
 +#include <linux/pwm/pwm.h>
 +
-+#define DRIVER_NAME KBUILD_MODNAME
++enum {
++	/* registers common to the PWMC peripheral */
++	PWMC_MR = 0,
++	PWMC_ENA = 4,
++	PWMC_DIS = 8,
++	PWMC_SR = 0xc,
++	PWMC_IER = 0x10,
++	PWMC_IDR = 0x14,
++	PWMC_IMR = 0x18,
++	PWMC_ISR = 0x1c,
 +
-+struct gpio_pwm {
-+	struct pwm_device pwm;
-+	struct hrtimer t;
-+	struct work_struct work;
-+	spinlock_t lock;
-+	struct completion complete;
-+	int gpio;
-+	int callback;
-+	unsigned long polarity : 1;
-+	unsigned long active : 1;
++	/* registers per each PWMC channel */
++	PWMC_CMR = 0,
++	PWMC_CDTY = 4,
++	PWMC_CPRD = 8,
++	PWMC_CCNT = 0xc,
++	PWMC_CUPD = 0x10,
++
++	/* how to find each channel */
++	PWMC_CHAN_BASE = 0x200,
++	PWMC_CHAN_STRIDE = 0x20,
++
++	/* CMR bits of interest */
++	PWMC_CMR_CPD = 10,
++	PWMC_CMR_CPOL = 9,
++	PWMC_CMR_CALG = 8,
++	PWMC_CMR_CPRE_MASK = 0xf,
 +};
 +
-+static inline struct gpio_pwm *to_gpio_pwm(const struct pwm_device *p)
++/* TODO: NCHAN==4 only for certain AT91-ish parts! */
++#define NCHAN 4
++struct atmel_pwmc {
++	struct pwm_device p[NCHAN];
++	struct pwm_device_ops ops;
++	spinlock_t lock;
++	struct completion complete;
++	void __iomem *iobase;
++	struct clk *clk;
++	u32 ccnt_mask;
++};
++
++/* TODO: debugfs attributes for peripheral register values */
++
++static inline void pwmc_writel(const struct atmel_pwmc *p, unsigned offset, u32 val)
 +{
-+	return container_of(p, struct gpio_pwm, pwm);
++	__raw_writel(val, p->iobase + offset);
 +}
 +
-+static void gpio_pwm_work(struct work_struct *work)
++static inline u32 pwmc_readl(const struct atmel_pwmc *p, unsigned offset)
 +{
-+	struct gpio_pwm *gp = container_of(work, struct gpio_pwm, work);
-+
-+	gpio_direction_output(gp->gpio, !(!!gp->polarity ^ !!gp->active));
++	return __raw_readl(p->iobase + offset);
 +}
 +
-+static enum hrtimer_restart gpio_pwm_timeout(struct hrtimer *t)
++static void pwmc_chan_writel(const struct pwm_device *p,
++			     u32 offset, u32 val)
 +{
-+	struct gpio_pwm *gp = container_of(t, struct gpio_pwm, t);
-+	struct pwm_device *p = &gp->pwm;
++	const struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	int chan = p - &ap->p[0];
 +
-+	if (unlikely(p->duty_ticks == 0))
-+		gp->active = 0;
-+	else if (unlikely(p->duty_ticks == p->period_ticks))
-+		gp->active = 1;
++	if (PWMC_CMR == offset)
++		val &= ((1 << PWMC_CMR_CPD)
++			| (1 << PWMC_CMR_CPOL)
++			| (1 << PWMC_CMR_CALG)
++			| (PWMC_CMR_CPRE_MASK));
 +	else
-+		gp->active ^= 1;
++		val &= ap->ccnt_mask;
 +
-+	if (gpio_cansleep(gp->gpio))
-+		schedule_work(&gp->work);
++	pwmc_writel(ap, offset + PWMC_CHAN_BASE
++		    + (chan * PWMC_CHAN_STRIDE), val);
++}
++
++static u32 pwmc_chan_readl(const struct pwm_device *p, u32 offset)
++{
++	const struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	int chan = p - &ap->p[0];
++
++	return pwmc_readl(ap, offset + PWMC_CHAN_BASE
++			  + (chan * PWMC_CHAN_STRIDE));
++}
++
++static int __atmel_pwmc_is_on(struct pwm_device *p)
++{
++	struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	int chan = p - &ap->p[0];
++
++	return (pwmc_readl(ap, PWMC_SR) & BIT(chan)) ? 1 : 0;
++}
++
++static void __atmel_pwmc_stop(struct pwm_device *p)
++{
++	struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	int chan = p - &ap->p[0];
++
++	pwmc_writel(ap, PWMC_DIS, BIT(chan));
++}
++
++static void __atmel_pwmc_start(struct pwm_device *p)
++{
++	struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	int chan = p - &ap->p[0];
++
++	pwmc_writel(ap, PWMC_ENA, BIT(chan));
++}
++
++static void __atmel_pwmc_config_polarity(struct pwm_device *p,
++					 struct pwm_config *c)
++{
++	unsigned long cmr = pwmc_chan_readl(p, PWMC_CMR);
++
++	if (c->polarity)
++		clear_bit(PWMC_CMR_CPOL, &cmr);
 +	else
-+		gpio_pwm_work(&gp->work);
++		set_bit(PWMC_CMR_CPOL, &cmr);
++	pwmc_chan_writel(p, PWMC_CMR, cmr);
++	p->polarity = c->polarity ? 1 : 0;
 +
-+	if (unlikely(!gp->active && test_bit(FLAG_STOP, &p->flags))) {
-+		clear_bit(FLAG_STOP, &p->flags);
-+		complete_all(&gp->complete);
-+		goto done;
++	dev_dbg(p->dev, "polarity %d\n", c->polarity);
++}
++
++static void __atmel_pwmc_config_duty_ticks(struct pwm_device *p,
++					   struct pwm_config *c)
++{
++	unsigned long cmr, cprd, cpre, cdty;
++
++	cmr = pwmc_chan_readl(p, PWMC_CMR);
++	cprd = pwmc_chan_readl(p, PWMC_CPRD);
++
++	cpre = cmr & PWMC_CMR_CPRE_MASK;
++	clear_bit(PWMC_CMR_CPD, &cmr);
++
++	cdty = cprd - (c->duty_ticks >> cpre);
++
++	p->duty_ticks = c->duty_ticks;
++
++	if (__atmel_pwmc_is_on(p)) {
++		pwmc_chan_writel(p, PWMC_CMR, cmr);
++		pwmc_chan_writel(p, PWMC_CUPD, cdty);
++	} else
++		pwmc_chan_writel(p, PWMC_CDTY, cdty);
++
++	dev_dbg(p->dev, "duty_ticks = %lu cprd = %lx"
++		" cdty = %lx cpre = %lx\n", p->duty_ticks,
++		cprd, cdty, cpre);
++}
++
++static int __atmel_pwmc_config_period_ticks(struct pwm_device *p,
++					    struct pwm_config *c)
++{
++	u32 cmr, cprd, cpre;
++
++	cpre = fls(c->period_ticks);
++	if (cpre < 16)
++		cpre = 0;
++	else {
++		cpre -= 15;
++		if (cpre > 10)
++			return -EINVAL;
 +	}
 +
-+	if (gp->active)
-+		hrtimer_forward_now(&gp->t, ktime_set(0, p->duty_ticks));
-+	else
-+		hrtimer_forward_now(&gp->t, ktime_set(0, p->period_ticks
-+						      - p->duty_ticks));
++	cmr = pwmc_chan_readl(p, PWMC_CMR);
++	cmr &= ~PWMC_CMR_CPRE_MASK;
++	cmr |= cpre;
 +
-+done:
-+	return HRTIMER_RESTART;
++	cprd = c->period_ticks >> cpre;
++
++	pwmc_chan_writel(p, PWMC_CMR, cmr);
++	pwmc_chan_writel(p, PWMC_CPRD, cprd);
++	p->period_ticks = c->period_ticks;
++
++	dev_dbg(p->dev, "period_ticks = %lu cprd = %x cpre = %x\n",
++		 p->period_ticks, cprd, cpre);
++	return 0;
 +}
 +
-+static void gpio_pwm_start(struct pwm_device *p)
++static int atmel_pwmc_config_nosleep(struct pwm_device *p, struct pwm_config *c)
 +{
-+	struct gpio_pwm *gp = to_gpio_pwm(p);
-+
-+	gp->active = 0;
-+	hrtimer_start(&gp->t, ktime_set(0, p->period_ticks - p->duty_ticks),
-+		      HRTIMER_MODE_REL);
-+	set_bit(FLAG_RUNNING, &p->flags);
-+}
-+
-+static int gpio_pwm_config_nosleep(struct pwm_device *p, struct pwm_config *c)
-+{
-+	struct gpio_pwm *gp = to_gpio_pwm(p);
++	struct atmel_pwmc *ap = pwm_get_drvdata(p);
 +	int ret = 0;
 +	unsigned long flags;
 +
-+	spin_lock_irqsave(&gp->lock, flags);
++	spin_lock_irqsave(&ap->lock, flags);
 +
 +	switch (c->config_mask) {
 +
 +	case BIT(PWM_CONFIG_DUTY_TICKS):
-+		p->duty_ticks = c->duty_ticks;
++		__atmel_pwmc_config_duty_ticks(p, c);
++		break;
++
++	case BIT(PWM_CONFIG_STOP):
++		__atmel_pwmc_stop(p);
 +		break;
 +
 +	case BIT(PWM_CONFIG_START):
-+		if (!hrtimer_active(&gp->t)) {
-+			gpio_pwm_start(p);
-+		}
++		__atmel_pwmc_start(p);
 +		break;
++
++	case BIT(PWM_CONFIG_POLARITY):
++		__atmel_pwmc_config_polarity(p, c);
++		break;
++
 +	default:
 +		ret = -EINVAL;
 +		break;
 +	}
 +
-+	spin_unlock_irqrestore(&gp->lock, flags);
++	spin_unlock_irqrestore(&ap->lock, flags);
 +	return ret;
 +}
 +
-+static int gpio_pwm_stop_sync(struct pwm_device *p)
++static int atmel_pwmc_stop_sync(struct pwm_device *p)
 +{
-+	struct gpio_pwm *gp = to_gpio_pwm(p);
++	struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	int was_on = __atmel_pwmc_is_on(p);
++	int chan = p - &ap->p[0];
 +	int ret;
-+	int was_on = hrtimer_active(&gp->t);
 +
-+	if (was_on) {
-+		do {
-+			init_completion(&gp->complete);
-+			set_bit(FLAG_STOP, &p->flags);
-+			ret = wait_for_completion_interruptible(&gp->complete);
-+			if (ret)
-+				return ret;
-+		} while (test_bit(FLAG_STOP, &p->flags));
-+	}
++	if (!was_on)
++		return 0;
 +
-+	clear_bit(FLAG_RUNNING, &p->flags);
++	do {
++		init_completion(&ap->complete);
++		set_bit(FLAG_STOP, &p->flags);
++		pwmc_writel(ap, PWMC_IER, BIT(chan));
 +
-+	return was_on;
++		dev_dbg(p->dev, "waiting on stop_sync completion...\n");
++
++		ret = wait_for_completion_interruptible(&ap->complete);
++
++		dev_dbg(p->dev, "stop_sync complete (%d)\n", ret);
++
++		if (ret)
++			return ret;
++	} while (test_bit(FLAG_STOP, &p->flags));
++
++	return 1;
 +}
 +
-+static int gpio_pwm_config(struct pwm_device *p, struct pwm_config *c)
++static int atmel_pwmc_config(struct pwm_device *p, struct pwm_config *c)
 +{
-+	struct gpio_pwm *gp = to_gpio_pwm(p);
 +	int was_on = 0;
++	int ret;
 +
-+	if (!gpio_pwm_config_nosleep(p, c))
-+		return 0;
++	if (p->ops->config_nosleep) {
++		if (!p->ops->config_nosleep(p, c))
++			return 0;
++	}
 +
 +	might_sleep();
 +
-+	was_on = gpio_pwm_stop_sync(p);
++	dev_dbg(p->dev, "config_mask %lx\n", c->config_mask);
++
++	was_on = atmel_pwmc_stop_sync(p);
 +	if (was_on < 0)
 +		return was_on;
-+	
-+	if (test_bit(PWM_CONFIG_PERIOD_TICKS, &c->config_mask))
-+		p->period_ticks = c->period_ticks;
++
++	if (test_bit(PWM_CONFIG_PERIOD_TICKS, &c->config_mask)) {
++		ret = __atmel_pwmc_config_period_ticks(p, c);
++		if (ret)
++			return ret;
++
++		if (!test_bit(PWM_CONFIG_DUTY_TICKS, &c->config_mask)) {
++			struct pwm_config d = {
++				.config_mask = PWM_CONFIG_DUTY_TICKS,
++				.duty_ticks = p->duty_ticks,
++			};
++			__atmel_pwmc_config_duty_ticks(p, &d);
++		}
++	}
++
 +	if (test_bit(PWM_CONFIG_DUTY_TICKS, &c->config_mask))
-+		p->duty_ticks = c->duty_ticks;
++		__atmel_pwmc_config_duty_ticks(p, c);
++
 +	if (test_bit(PWM_CONFIG_POLARITY, &c->config_mask))
-+		gp->polarity = !!c->polarity;
++		__atmel_pwmc_config_polarity(p, c);
 +
 +	if (test_bit(PWM_CONFIG_START, &c->config_mask)
 +	    || (was_on && !test_bit(PWM_CONFIG_STOP, &c->config_mask)))
-+		gpio_pwm_start(p);
++		__atmel_pwmc_start(p);
 +
 +	return 0;
 +}
 +
-+static int gpio_pwm_request(struct pwm_device *p)
++static int atmel_pwmc_request(struct pwm_device *p)
 +{
-+	p->tick_hz = 1000000000UL;
++	struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	unsigned long flags;
++
++	spin_lock_irqsave(&ap->lock, flags);
++	clk_enable(ap->clk);
++	p->tick_hz = clk_get_rate(ap->clk);
++	__atmel_pwmc_stop(p);
++	spin_unlock_irqrestore(&ap->lock, flags);
++
 +	return 0;
 +}
 +
-+static const struct pwm_device_ops gpio_pwm_device_ops = {
-+	.config		= gpio_pwm_config,
-+	.config_nosleep	= gpio_pwm_config_nosleep,
-+	.request	= gpio_pwm_request,
-+};
-+
-+struct pwm_device *gpio_pwm_create(int gpio)
++static void atmel_pwmc_release(struct pwm_device *p)
 +{
-+	struct gpio_pwm *gp;
++	struct atmel_pwmc *ap = pwm_get_drvdata(p);
++	clk_disable(ap->clk);
++}
++
++static int __devinit atmel_pwmc_probe(struct platform_device *pdev)
++{
++	struct atmel_pwmc *ap;
++	struct resource *r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	int chan;
 +	int ret = 0;
 +
-+	if (!gpio_is_valid(gpio))
-+		return ERR_PTR(-EINVAL);
++	ap = kzalloc(sizeof *ap, GFP_KERNEL);
++	if (!ap) {
++		ret = -ENOMEM;
++		goto err_atmel_pwmc_alloc;
++	}
 +
-+	if (gpio_request(gpio, DRIVER_NAME))
-+		return ERR_PTR(-EBUSY);
++	spin_lock_init(&ap->lock);
++	init_completion(&ap->complete);
++	platform_set_drvdata(pdev, ap);
 +
-+	gp = kzalloc(sizeof(*gp), GFP_KERNEL);
-+	if (!gp)
-+		goto err_alloc;
++	/* TODO: the datasheets are unclear as to how large CCNT
++	 * actually is across all adopters of the PWMC; sixteen bits
++	 * seems a safe assumption for now */
++	ap->ccnt_mask = 0xffffUL;
 +
-+	pwm_set_drvdata(&gp->pwm, gp);
-+	gp->pwm.ops = &gpio_pwm_device_ops;
-+	gp->gpio = gpio;
++	ap->ops.request = atmel_pwmc_request;
++	ap->ops.release = atmel_pwmc_release;
++	ap->ops.config_nosleep = atmel_pwmc_config_nosleep;
++	ap->ops.config = atmel_pwmc_config;
 +
-+	INIT_WORK(&gp->work, gpio_pwm_work);
-+	init_completion(&gp->complete);
-+	hrtimer_init(&gp->t, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	gp->t.function = gpio_pwm_timeout;
++	ap->clk = clk_get(&pdev->dev, "pwm_clk");
++	if (IS_ERR(ap->clk)) {
++		ret = -ENODEV;
++		goto err_clk_get;
++	}
 +
-+	ret = pwm_register_vargs(&gp->pwm, NULL, "%s:%d", DRIVER_NAME, gpio);
-+	if (ret)
-+		goto err_pwm_register;
++	ap->iobase = ioremap_nocache(r->start, resource_size(r));
++	if (!ap->iobase) {
++		ret = -ENODEV;
++		goto err_ioremap;
++	}
 +
-+	return &gp->pwm;
++	clk_enable(ap->clk);
++	pwmc_writel(ap, PWMC_DIS, -1);
++	pwmc_writel(ap, PWMC_IDR, -1);
++	clk_disable(ap->clk);
++
++	for (chan = 0; chan < NCHAN; chan++) {
++		ap->p[chan].ops = &ap->ops;
++		pwm_set_drvdata(&ap->p[chan], ap);
++		ret = pwm_register(&ap->p[chan], &pdev->dev, chan);
++		if (ret)
++			goto err_pwm_register;
++	}
++
++	return 0;
 +
 +err_pwm_register:
-+	kfree(gp);
-+err_alloc:
-+	gpio_free(gpio);
-+	return ERR_PTR(ret);
++	while (--chan > 0)
++		pwm_unregister(&ap->p[chan]);
++
++	iounmap(ap->iobase);
++err_ioremap:
++	clk_put(ap->clk);
++err_clk_get:
++	platform_set_drvdata(pdev, NULL);
++	kfree(ap);
++err_atmel_pwmc_alloc:
++	dev_dbg(&pdev->dev, "%s: error, returning %d\n", __func__, ret);
++	return ret;
 +}
-+EXPORT_SYMBOL(gpio_pwm_create);
 +
-+int gpio_pwm_destroy(struct pwm_device *p)
++static int __devexit atmel_pwmc_remove(struct platform_device *pdev)
 +{
-+	struct gpio_pwm *gp = pwm_get_drvdata(p);
++	struct atmel_pwmc *ap = platform_get_drvdata(pdev);
++	int chan;
 +
-+	if (pwm_is_requested(&gp->pwm)) {
-+		if (pwm_is_running(&gp->pwm))
-+			pwm_stop(&gp->pwm);
-+		pwm_release(&gp->pwm);
-+	}
-+	hrtimer_cancel(&gp->t);
-+	cancel_work_sync(&gp->work);
++	for (chan = 0; chan < NCHAN; chan++)
++		pwm_unregister(&ap->p[chan]);
 +
-+	pwm_unregister(&gp->pwm);
-+	gpio_free(gp->gpio);
-+	kfree(gp);
++	clk_enable(ap->clk);
++	pwmc_writel(ap, PWMC_IDR, -1);
++	pwmc_writel(ap, PWMC_DIS, -1);
++	clk_disable(ap->clk);
++
++	clk_put(ap->clk);
++	iounmap(ap->iobase);
++
++	kfree(ap);
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL(gpio_pwm_destroy);
 +
-+#ifdef CONFIG_CONFIGFS_FS
-+struct gpio_pwm_target {
-+	struct config_item item;
-+	struct pwm_device *p;
-+};
-+
-+static struct config_item_type gpio_pwm_item_type = {
-+	.ct_owner = THIS_MODULE,
-+};
-+
-+static struct config_item *make_gpio_pwm_target(struct config_group *group,
-+						const char *name)
-+{
-+	struct gpio_pwm_target *t;
-+	unsigned long gpio;
-+	int ret;
-+
-+	t = kzalloc(sizeof(*t), GFP_KERNEL);
-+	if (!t)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ret = strict_strtoul(name, 10, &gpio);
-+	if (ret || !gpio_is_valid(gpio)) {
-+		ret = -EINVAL;
-+		goto err_invalid_gpio;
-+	}
-+
-+	config_item_init_type_name(&t->item, name, &gpio_pwm_item_type);
-+
-+	t->p = gpio_pwm_create(gpio);
-+	if (IS_ERR_OR_NULL(t->p))
-+		goto err_gpio_pwm_create;
-+
-+	return &t->item;
-+
-+err_gpio_pwm_create:
-+err_invalid_gpio:
-+	kfree(t);
-+	return ERR_PTR(ret);
-+}
-+
-+static void drop_gpio_pwm_target(struct config_group *group,
-+				 struct config_item *item)
-+{
-+	struct gpio_pwm_target *t =
-+		container_of(item, struct gpio_pwm_target, item);
-+
-+	gpio_pwm_destroy(t->p);
-+	config_item_put(&t->item);
-+	kfree(t);
-+}
-+
-+static struct configfs_group_operations gpio_pwm_subsys_group_ops = {
-+	.make_item = make_gpio_pwm_target,
-+	.drop_item = drop_gpio_pwm_target,
-+};
-+
-+static struct config_item_type gpio_pwm_subsys_type = {
-+	.ct_group_ops = &gpio_pwm_subsys_group_ops,
-+	.ct_owner = THIS_MODULE,
-+};
-+
-+static struct configfs_subsystem gpio_pwm_subsys = {
-+	.su_group = {
-+		.cg_item = {
-+			.ci_name = DRIVER_NAME,
-+			.ci_type = &gpio_pwm_subsys_type,
-+		},
++static struct platform_driver atmel_pwmc_driver = {
++	.driver = {
++		/* note: this name has to match the one in at91*_devices.c */
++		.name = "atmel_pwmc",
++		.owner = THIS_MODULE,
 +	},
++	.probe = atmel_pwmc_probe,
++	.remove = __devexit_p(atmel_pwmc_remove),
 +};
 +
-+static int __init gpio_pwm_init(void)
++static int __init atmel_pwmc_init(void)
 +{
-+	config_group_init(&gpio_pwm_subsys.su_group);
-+	mutex_init(&gpio_pwm_subsys.su_mutex);
-+	return configfs_register_subsystem(&gpio_pwm_subsys);
++	return platform_driver_register(&atmel_pwmc_driver);
 +}
-+module_init(gpio_pwm_init);
++module_init(atmel_pwmc_init);
 +
-+static void __exit gpio_pwm_exit(void)
++static void __exit atmel_pwmc_exit(void)
 +{
-+	configfs_unregister_subsystem(&gpio_pwm_subsys);
++	platform_driver_unregister(&atmel_pwmc_driver);
 +}
-+module_exit(gpio_pwm_exit);
-+#endif
++module_exit(atmel_pwmc_exit);
 +
 +MODULE_AUTHOR("Bill Gatliff <bgat@billgatliff.com>");
-+MODULE_DESCRIPTION("PWM channel emulator using GPIO and a high-resolution timer");
++MODULE_DESCRIPTION("Driver for Atmel PWMC peripheral");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/pwm/pwm.h b/include/linux/pwm/pwm.h
-index ff3eae7..6c4b49d 100644
---- a/include/linux/pwm/pwm.h
-+++ b/include/linux/pwm/pwm.h
-@@ -137,4 +137,7 @@ int pwm_config(struct pwm_device *p, struct pwm_config *c);
- int pwm_synchronize(struct pwm_device *p, struct pwm_device *to_p);
- int pwm_unsynchronize(struct pwm_device *p, struct pwm_device *from_p);
- 
-+struct pwm_device *gpio_pwm_create(int gpio);
-+int gpio_pwm_destroy(struct pwm_device *p);
-+
- #endif
++MODULE_ALIAS("platform:atmel_pwmc");
 -- 
 1.7.2.3
 
