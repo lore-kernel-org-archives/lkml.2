@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab1CIQTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 11:19:39 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53443 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932321Ab1CIQTi (ORCPT
+	id S1757285Ab1CIQVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 11:21:03 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39212 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757203Ab1CIQVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 11:19:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <4D752BAF.4010406@metafoo.de>
-References: <1299385050-13674-1-git-send-email-bgat@billgatliff.com>
-	<1299385050-13674-2-git-send-email-bgat@billgatliff.com>
-	<4D7326B0.6050706@metafoo.de>
-	<AANLkTimZXSL9swHgqjsOxoCF8VopM8rkdgFjY-Wyi5Kb@mail.gmail.com>
-	<4D752BAF.4010406@metafoo.de>
-Date: Wed, 9 Mar 2011 10:19:37 -0600
-Message-ID: <AANLkTinZNTY=o7VCgMZv6G1eNW9qk6b60Z4-45ZtV3Sj@mail.gmail.com>
-Subject: Re: [PWM v6 1/3] PWM: Implement a generic PWM framework
-From: Bill Gatliff <bgat@billgatliff.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Mar 2011 11:21:00 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=Qq7vIXD-ciIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=b8VgSBC0AAAA:8 a=0lDTlH6vNTKFcsA5QRoA:9 a=7YExo_m6hfe_pRhy5ILj2WzH37sA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [BUG] WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x83/0x95
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org
+In-Reply-To: <20110309155309.GA30598@suse.de>
+References: <1299685189.15854.182.camel@gandalf.stny.rr.com>
+	 <20110309155309.GA30598@suse.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 09 Mar 2011 11:20:58 -0500
+Message-ID: <1299687658.15854.227.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 7, 2011 at 1:02 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->
-> There is both. There is 'class_attrs' which are only created once for the class
-> and there is 'dev_attrs' which are created on a per device basis.
+On Wed, 2011-03-09 at 07:53 -0800, Greg KH wrote:
 
-Got it.  Fixed.  :)
+> > This was for a 386 build. I could give a .config and full dmesg if
+> > needed.
+> 
+> I think the sound developers (now on CC: would probably like to see
+> that.)
+
+http://rostedt.homelinux.com/private/mitest-boot-randconfig-fail-20110209042837/config
+
+http://rostedt.homelinux.com/private/mitest-boot-randconfig-fail-20110209042837/dmesg
+
+-- Steve
 
 
-b.g.
--- 
-Bill Gatliff
-bgat@billgatliff.com
