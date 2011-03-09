@@ -1,326 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab1CIXAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 18:00:22 -0500
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:17172 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab1CIXAN (ORCPT
+	id S1752235Ab1CIXDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 18:03:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48247 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750908Ab1CIXDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 18:00:13 -0500
-Subject: [PATCH 1/2] hpsa: move device attributes to avoid forward declarations
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        smcameron@yahoo.com, thenzl@redhat.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com
-Date: Wed, 09 Mar 2011 17:00:01 -0600
-Message-ID: <20110309230001.26877.90949.stgit@beardog.cce.hp.com>
-In-Reply-To: <20110309225822.26877.94051.stgit@beardog.cce.hp.com>
-References: <20110309225822.26877.94051.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Wed, 9 Mar 2011 18:03:09 -0500
+Date: Wed, 9 Mar 2011 15:03:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: make struct proc_dir_entry::namelen unsigned int
+Message-Id: <20110309150306.90369913.akpm@linux-foundation.org>
+In-Reply-To: <20110308105428.GA5767@p183.telecom.by>
+References: <20110308105428.GA5767@p183.telecom.by>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Tue, 8 Mar 2011 12:54:28 +0200
+Alexey Dobriyan <adobriyan@gmail.com> wrote:
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/scsi/hpsa.c |  253 ++++++++++++++++++++++++---------------------------
- 1 files changed, 120 insertions(+), 133 deletions(-)
+> Space is not really conserved, because of natural alignment for the next field.
+> sizeof(struct proc_dir_entry) remains the same.
+> 
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 09a529e..dcabef4 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -155,21 +155,7 @@ static int hpsa_eh_device_reset_handler(struct scsi_cmnd *scsicmd);
- static int hpsa_slave_alloc(struct scsi_device *sdev);
- static void hpsa_slave_destroy(struct scsi_device *sdev);
- 
--static ssize_t raid_level_show(struct device *dev,
--	struct device_attribute *attr, char *buf);
--static ssize_t lunid_show(struct device *dev,
--	struct device_attribute *attr, char *buf);
--static ssize_t unique_id_show(struct device *dev,
--	struct device_attribute *attr, char *buf);
--static ssize_t host_show_firmware_revision(struct device *dev,
--	     struct device_attribute *attr, char *buf);
--static ssize_t host_show_commands_outstanding(struct device *dev,
--	     struct device_attribute *attr, char *buf);
--static ssize_t host_show_transport_mode(struct device *dev,
--	struct device_attribute *attr, char *buf);
- static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno);
--static ssize_t host_store_rescan(struct device *dev,
--	 struct device_attribute *attr, const char *buf, size_t count);
- static int check_for_unit_attention(struct ctlr_info *h,
- 	struct CommandList *c);
- static void check_ioctl_unit_attention(struct ctlr_info *h,
-@@ -190,53 +176,6 @@ static int __devinit hpsa_wait_for_board_state(struct pci_dev *pdev,
- #define BOARD_NOT_READY 0
- #define BOARD_READY 1
- 
--static DEVICE_ATTR(raid_level, S_IRUGO, raid_level_show, NULL);
--static DEVICE_ATTR(lunid, S_IRUGO, lunid_show, NULL);
--static DEVICE_ATTR(unique_id, S_IRUGO, unique_id_show, NULL);
--static DEVICE_ATTR(rescan, S_IWUSR, NULL, host_store_rescan);
--static DEVICE_ATTR(firmware_revision, S_IRUGO,
--	host_show_firmware_revision, NULL);
--static DEVICE_ATTR(commands_outstanding, S_IRUGO,
--	host_show_commands_outstanding, NULL);
--static DEVICE_ATTR(transport_mode, S_IRUGO,
--	host_show_transport_mode, NULL);
--
--static struct device_attribute *hpsa_sdev_attrs[] = {
--	&dev_attr_raid_level,
--	&dev_attr_lunid,
--	&dev_attr_unique_id,
--	NULL,
--};
--
--static struct device_attribute *hpsa_shost_attrs[] = {
--	&dev_attr_rescan,
--	&dev_attr_firmware_revision,
--	&dev_attr_commands_outstanding,
--	&dev_attr_transport_mode,
--	NULL,
--};
--
--static struct scsi_host_template hpsa_driver_template = {
--	.module			= THIS_MODULE,
--	.name			= "hpsa",
--	.proc_name		= "hpsa",
--	.queuecommand		= hpsa_scsi_queue_command,
--	.scan_start		= hpsa_scan_start,
--	.scan_finished		= hpsa_scan_finished,
--	.change_queue_depth	= hpsa_change_queue_depth,
--	.this_id		= -1,
--	.use_clustering		= ENABLE_CLUSTERING,
--	.eh_device_reset_handler = hpsa_eh_device_reset_handler,
--	.ioctl			= hpsa_ioctl,
--	.slave_alloc		= hpsa_slave_alloc,
--	.slave_destroy		= hpsa_slave_destroy,
--#ifdef CONFIG_COMPAT
--	.compat_ioctl		= hpsa_compat_ioctl,
--#endif
--	.sdev_attrs = hpsa_sdev_attrs,
--	.shost_attrs = hpsa_shost_attrs,
--};
--
- static inline struct ctlr_info *sdev_to_hba(struct scsi_device *sdev)
- {
- 	unsigned long *priv = shost_priv(sdev->host);
-@@ -334,83 +273,11 @@ static ssize_t host_show_transport_mode(struct device *dev,
- 			"performant" : "simple");
- }
- 
--/* Enqueuing and dequeuing functions for cmdlists. */
--static inline void addQ(struct list_head *list, struct CommandList *c)
--{
--	list_add_tail(&c->list, list);
--}
--
--static inline u32 next_command(struct ctlr_info *h)
--{
--	u32 a;
--
--	if (unlikely(!(h->transMethod & CFGTBL_Trans_Performant)))
--		return h->access.command_completed(h);
--
--	if ((*(h->reply_pool_head) & 1) == (h->reply_pool_wraparound)) {
--		a = *(h->reply_pool_head); /* Next cmd in ring buffer */
--		(h->reply_pool_head)++;
--		h->commands_outstanding--;
--	} else {
--		a = FIFO_EMPTY;
--	}
--	/* Check for wraparound */
--	if (h->reply_pool_head == (h->reply_pool + h->max_commands)) {
--		h->reply_pool_head = h->reply_pool;
--		h->reply_pool_wraparound ^= 1;
--	}
--	return a;
--}
--
--/* set_performant_mode: Modify the tag for cciss performant
-- * set bit 0 for pull model, bits 3-1 for block fetch
-- * register number
-- */
--static void set_performant_mode(struct ctlr_info *h, struct CommandList *c)
--{
--	if (likely(h->transMethod & CFGTBL_Trans_Performant))
--		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
--}
--
--static void enqueue_cmd_and_start_io(struct ctlr_info *h,
--	struct CommandList *c)
--{
--	unsigned long flags;
--
--	set_performant_mode(h, c);
--	spin_lock_irqsave(&h->lock, flags);
--	addQ(&h->reqQ, c);
--	h->Qdepth++;
--	start_io(h);
--	spin_unlock_irqrestore(&h->lock, flags);
--}
--
--static inline void removeQ(struct CommandList *c)
--{
--	if (WARN_ON(list_empty(&c->list)))
--		return;
--	list_del_init(&c->list);
--}
--
--static inline int is_hba_lunid(unsigned char scsi3addr[])
--{
--	return memcmp(scsi3addr, RAID_CTLR_LUNID, 8) == 0;
--}
--
- static inline int is_logical_dev_addr_mode(unsigned char scsi3addr[])
- {
- 	return (scsi3addr[3] & 0xC0) == 0x40;
- }
- 
--static inline int is_scsi_rev_5(struct ctlr_info *h)
--{
--	if (!h->hba_inquiry_data)
--		return 0;
--	if ((h->hba_inquiry_data[2] & 0x07) == 5)
--		return 1;
--	return 0;
--}
--
- static const char *raid_label[] = { "0", "4", "1(1+0)", "5", "5+1", "ADG",
- 	"UNKNOWN"
- };
-@@ -502,6 +369,126 @@ static ssize_t unique_id_show(struct device *dev,
- 			sn[12], sn[13], sn[14], sn[15]);
- }
- 
-+static DEVICE_ATTR(raid_level, S_IRUGO, raid_level_show, NULL);
-+static DEVICE_ATTR(lunid, S_IRUGO, lunid_show, NULL);
-+static DEVICE_ATTR(unique_id, S_IRUGO, unique_id_show, NULL);
-+static DEVICE_ATTR(rescan, S_IWUSR, NULL, host_store_rescan);
-+static DEVICE_ATTR(firmware_revision, S_IRUGO,
-+	host_show_firmware_revision, NULL);
-+static DEVICE_ATTR(commands_outstanding, S_IRUGO,
-+	host_show_commands_outstanding, NULL);
-+static DEVICE_ATTR(transport_mode, S_IRUGO,
-+	host_show_transport_mode, NULL);
-+
-+static struct device_attribute *hpsa_sdev_attrs[] = {
-+	&dev_attr_raid_level,
-+	&dev_attr_lunid,
-+	&dev_attr_unique_id,
-+	NULL,
-+};
-+
-+static struct device_attribute *hpsa_shost_attrs[] = {
-+	&dev_attr_rescan,
-+	&dev_attr_firmware_revision,
-+	&dev_attr_commands_outstanding,
-+	&dev_attr_transport_mode,
-+	NULL,
-+};
-+
-+static struct scsi_host_template hpsa_driver_template = {
-+	.module			= THIS_MODULE,
-+	.name			= "hpsa",
-+	.proc_name		= "hpsa",
-+	.queuecommand		= hpsa_scsi_queue_command,
-+	.scan_start		= hpsa_scan_start,
-+	.scan_finished		= hpsa_scan_finished,
-+	.change_queue_depth	= hpsa_change_queue_depth,
-+	.this_id		= -1,
-+	.use_clustering		= ENABLE_CLUSTERING,
-+	.eh_device_reset_handler = hpsa_eh_device_reset_handler,
-+	.ioctl			= hpsa_ioctl,
-+	.slave_alloc		= hpsa_slave_alloc,
-+	.slave_destroy		= hpsa_slave_destroy,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl		= hpsa_compat_ioctl,
-+#endif
-+	.sdev_attrs = hpsa_sdev_attrs,
-+	.shost_attrs = hpsa_shost_attrs,
-+};
-+
-+
-+/* Enqueuing and dequeuing functions for cmdlists. */
-+static inline void addQ(struct list_head *list, struct CommandList *c)
-+{
-+	list_add_tail(&c->list, list);
-+}
-+
-+static inline u32 next_command(struct ctlr_info *h)
-+{
-+	u32 a;
-+
-+	if (unlikely(!(h->transMethod & CFGTBL_Trans_Performant)))
-+		return h->access.command_completed(h);
-+
-+	if ((*(h->reply_pool_head) & 1) == (h->reply_pool_wraparound)) {
-+		a = *(h->reply_pool_head); /* Next cmd in ring buffer */
-+		(h->reply_pool_head)++;
-+		h->commands_outstanding--;
-+	} else {
-+		a = FIFO_EMPTY;
-+	}
-+	/* Check for wraparound */
-+	if (h->reply_pool_head == (h->reply_pool + h->max_commands)) {
-+		h->reply_pool_head = h->reply_pool;
-+		h->reply_pool_wraparound ^= 1;
-+	}
-+	return a;
-+}
-+
-+/* set_performant_mode: Modify the tag for cciss performant
-+ * set bit 0 for pull model, bits 3-1 for block fetch
-+ * register number
-+ */
-+static void set_performant_mode(struct ctlr_info *h, struct CommandList *c)
-+{
-+	if (likely(h->transMethod & CFGTBL_Trans_Performant))
-+		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
-+}
-+
-+static void enqueue_cmd_and_start_io(struct ctlr_info *h,
-+	struct CommandList *c)
-+{
-+	unsigned long flags;
-+
-+	set_performant_mode(h, c);
-+	spin_lock_irqsave(&h->lock, flags);
-+	addQ(&h->reqQ, c);
-+	h->Qdepth++;
-+	start_io(h);
-+	spin_unlock_irqrestore(&h->lock, flags);
-+}
-+
-+static inline void removeQ(struct CommandList *c)
-+{
-+	if (WARN_ON(list_empty(&c->list)))
-+		return;
-+	list_del_init(&c->list);
-+}
-+
-+static inline int is_hba_lunid(unsigned char scsi3addr[])
-+{
-+	return memcmp(scsi3addr, RAID_CTLR_LUNID, 8) == 0;
-+}
-+
-+static inline int is_scsi_rev_5(struct ctlr_info *h)
-+{
-+	if (!h->hba_inquiry_data)
-+		return 0;
-+	if ((h->hba_inquiry_data[2] & 0x07) == 5)
-+		return 1;
-+	return 0;
-+}
-+
- static int hpsa_find_target_lun(struct ctlr_info *h,
- 	unsigned char scsi3addr[], int bus, int *target, int *lun)
- {
+What is the reason for this patch??
 
