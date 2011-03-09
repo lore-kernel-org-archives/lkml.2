@@ -1,315 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab1CIPbT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:31:19 -0500
-Received: from portal.weinmann.de ([62.8.140.122]:56770 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab1CIPbS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:31:18 -0500
-X-Greylist: delayed 974 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Mar 2011 10:31:17 EST
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'rtc-linux@googlegroups.com'" <rtc-linux@googlegroups.com>
-CC: "'Linux Kernel'" <linux-kernel@vger.kernel.org>
-Date: Wed, 9 Mar 2011 16:14:54 +0100
-Subject: [PATCH][RESENT] Add basic support for ST M41T93 SPI RTC
-Thread-Topic: [PATCH][RESENT] Add basic support for ST M41T93 SPI RTC
-Thread-Index: Act8wW76yYYdc2KtRm++LbQjEizoKg==
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D068D583CE0@wm021.weinmann.com>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755612Ab1CIPcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:32:07 -0500
+Received: from smtpbg55.qq.com ([64.71.138.44]:41702 "HELO smtpbg55.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755167Ab1CIPcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 10:32:03 -0500
+X-QQ-mid: esmtp10t1299684578t393t19582
+X-QQ-SSF: 00000000000000F0F6100F000000000
+Date: Wed, 9 Mar 2011 23:40:16 +0800
+From: "lulina_nuaa" <lulina_nuaa@foxmail.com>
+To: "Vivek Goyal" <vgoyal@redhat.com>
+Cc: "linux kernel mailing list" <linux-kernel@vger.kernel.org>
+References: <tencent_6A5F95FF2112DFE963C44E4E@qq.com>
+Subject: Re: Re: blk-throttle.c : When limit is changed, must start a new slice
+Message-ID: <201103092340154215777@foxmail.com>
+X-mailer: Foxmail 6, 15, 201, 23 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="gb2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>On 2011-03-09 04:54:43, Vivek Goyal wrote:
+>
+>On Tue, Mar 08, 2011 at 11:03:59PM +0800, lina wrote:
 
-any comments on this patch? Got no feedback so far.
+>[..]
+>> >>  Unfortunately, the following patch still has 5~10 seconds latency. I have no
+>> >>  idea to resolve this problem, it seens hard to find a more suitable func to
+>> >>  call throtl_start_new_slice().
+>> >
+>> >So are you saying that following patch did not solve the latnecy issue?
+>> >Resetting slice upon limit change did not work for you?
+>> >
+>>   
+>>  Yes, the following patch did not solve the latency issue. There is still 5~10
+>>  seconds latency when I change the limit from a very high value to low. From
+>>  blktrace, I find that the throtl_process_limit_change() is called after work 
+>>  queue delay.
+>>   
+>>  Thanks
+>>  Lina
+>
+>Ok,
+>
+>Can you try the attached patch. I think what was happening that after
+>changing limits, work was not being scheduled as there were no queued
+>bios hence no slice reset was taking place immediately.
+>
+>[..]
+>
+>Thanks
+>Vivek
+>
 
-Niko
+I have remove the HTML code, I'm sorry for the mail format!
 
------------------------------------------------------------------------------------
+Thank you very much for the following patch! I think it can solve the problem.
+I'll test it as soon as possible, and will inform you once get the result!
 
-This driver adds basic support for ST m41t93 SPI RTCs and has been tested with
-factory-new and with "run-in" species with and without backup batteries.
+Thanks
+Lina
 
-Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
----
- drivers/rtc/Kconfig      |    9 ++
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-m41t93.c |  225 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 235 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-m41t93.c
-
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 48ca713..230c1cd 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -349,6 +349,15 @@ comment "SPI RTC drivers"
+>---
+> block/blk-throttle.c |   24 +++++++++++++++++++++++-
+> 1 file changed, 23 insertions(+), 1 deletion(-)
+>
+>Index: linux-2.6/block/blk-throttle.c
+>===================================================================
+>--- linux-2.6.orig/block/blk-throttle.c	2011-03-04 13:59:45.000000000 -0500
+>+++ linux-2.6/block/blk-throttle.c	2011-03-08 15:41:19.384654732 -0500
+>@@ -757,6 +757,14 @@ static void throtl_process_limit_change(
+> 				" riops=%u wiops=%u", tg->bps[READ],
+> 				tg->bps[WRITE], tg->iops[READ],
+> 				tg->iops[WRITE]);
+>+			/*
+>+			 * Restart the slices for both READ and WRITES. It
+>+			 * might happen that a group's limit are dropped
+>+			 * suddenly and we don't want to account recently
+>+			 * dispatched IO with new low rate
+>+			 */
+>+			throtl_start_new_slice(td, tg, 0);
+>+			throtl_start_new_slice(td, tg, 1);
+> 			tg_update_disptime(td, tg);
+> 			tg->limits_changed = false;
+> 		}
+>@@ -825,7 +833,8 @@ throtl_schedule_delayed_work(struct thro
+> 
+> 	struct delayed_work *dwork = &td->throtl_work;
+> 
+>-	if (total_nr_queued(td) > 0) {
+>+	/* schedule work if limits changed even if no bio is queued */
+>+	if (total_nr_queued(td) > 0 || atomic_read(&td->limits_changed)) {
+> 		/*
+> 		 * We might have a work scheduled to be executed in future.
+> 		 * Cancel that and schedule a new one.
+>@@ -1023,6 +1032,19 @@ int blk_throtl_bio(struct request_queue 
+> 	/* Bio is with-in rate limit of group */
+> 	if (tg_may_dispatch(td, tg, bio, NULL)) {
+> 		throtl_charge_bio(tg, bio);
+>+
+>+		/*
+>+		 * We need to trim slice even when bios are not being queued
+>+		 * otherwise it might happen that a bio is not queued for
+>+		 * a long time and slice keeps on extending and trim is not
+>+		 * called for a long time. Now if limits are reduced suddenly
+>+		 * we take into account all the IO dispatched so far at new
+>+		 * low rate and * newly queued IO gets a really long dispatch
+>+		 * time.
+>+		 *
+>+		 * So keep on trimming slice even if bio is not queued.
+>+		 */
+>+		throtl_trim_slice(td, tg, rw);
+> 		goto out;
+> 	}
  
- if SPI_MASTER
- 
-+config RTC_DRV_M41T93
-+        tristate "ST M41T93"
-+        help
-+          If you say yes here you will get support for the
-+          ST M41T93 SPI RTC chip.
-+
-+          This driver can also be built as a module. If so, the module
-+          will be called rtc-m41t93.
-+
- config RTC_DRV_M41T94
- 	tristate "ST M41T94"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 0f207b3..70327e6 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -52,6 +52,7 @@ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
- obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
- obj-$(CONFIG_RTC_DRV_JZ4740)	+= rtc-jz4740.o
- obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
-+obj-$(CONFIG_RTC_DRV_M41T93)	+= rtc-m41t93.o
- obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
- obj-$(CONFIG_RTC_DRV_M48T35)	+= rtc-m48t35.o
- obj-$(CONFIG_RTC_DRV_M48T59)	+= rtc-m48t59.o
-diff --git a/drivers/rtc/rtc-m41t93.c b/drivers/rtc/rtc-m41t93.c
-new file mode 100644
-index 0000000..28d203a
---- /dev/null
-+++ b/drivers/rtc/rtc-m41t93.c
-@@ -0,0 +1,225 @@
-+/*
-+ *
-+ * Driver for ST M41T93 SPI RTC
-+ *
-+ * (c) 2010 Nikolaus Voss, Weinmann Medical GmbH
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/bcd.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/rtc.h>
-+#include <linux/spi/spi.h>
-+
-+#define M41T93_REG_SSEC			0
-+#define M41T93_REG_ST_SEC		1
-+#define M41T93_REG_MIN			2
-+#define M41T93_REG_CENT_HOUR		3
-+#define M41T93_REG_WDAY			4
-+#define M41T93_REG_DAY			5
-+#define M41T93_REG_MON			6
-+#define M41T93_REG_YEAR			7
-+
-+
-+#define M41T93_REG_ALM_HOUR_HT		0xc
-+#define M41T93_REG_FLAGS		0xf
-+
-+#define M41T93_FLAG_ST			(1 << 7)
-+#define M41T93_FLAG_OF			(1 << 2)
-+#define M41T93_FLAG_BL			(1 << 4)
-+#define M41T93_FLAG_HT			(1 << 6)
-+
-+static inline int m41t93_set_reg(struct spi_device *spi, u8 addr, u8 data)
-+{
-+	u8 buf[2];
-+
-+	/* MSB must be '1' to write */
-+	buf[0] = addr | 0x80;
-+	buf[1] = data;
-+
-+	return spi_write(spi, buf, sizeof(buf));
-+}
-+
-+static int m41t93_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	u8 buf[9] = {0x80};        /* write cmd + 8 data bytes */
-+	u8 * const data = &buf[1]; /* ptr to first data byte */
-+
-+	dev_dbg(dev, "%s secs=%d, mins=%d, "
-+		"hours=%d, mday=%d, mon=%d, year=%d, wday=%d\n",
-+		"write", tm->tm_sec, tm->tm_min,
-+		tm->tm_hour, tm->tm_mday,
-+		tm->tm_mon, tm->tm_year, tm->tm_wday);
-+
-+	if (tm->tm_year < 100) {
-+		dev_warn(&spi->dev, "unsupported date (before 2000-01-01).\n");
-+		return -EINVAL;
-+	}
-+
-+	data[M41T93_REG_SSEC]		= 0;
-+	data[M41T93_REG_ST_SEC]		= bin2bcd(tm->tm_sec);
-+	data[M41T93_REG_MIN]		= bin2bcd(tm->tm_min);
-+	data[M41T93_REG_CENT_HOUR]	= bin2bcd(tm->tm_hour) |
-+						((tm->tm_year/100-1) << 6);
-+	data[M41T93_REG_DAY]		= bin2bcd(tm->tm_mday);
-+	data[M41T93_REG_WDAY]		= bin2bcd(tm->tm_wday + 1);
-+	data[M41T93_REG_MON]		= bin2bcd(tm->tm_mon + 1);
-+	data[M41T93_REG_YEAR]		= bin2bcd(tm->tm_year % 100);
-+
-+	return spi_write(spi, buf, sizeof(buf));
-+}
-+
-+
-+static int m41t93_get_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	const u8 start_addr = 0;
-+	u8 buf[8];
-+	int century_after_1900;
-+	int tmp;
-+	int ret = 0;
-+
-+	/* Check status of clock. Two states must be considered:
-+	   1. halt bit (HT) is set: the clock is running but update of readout
-+	      registers has been disabled due to power failure. This is normal
-+	      case after poweron. Time is valid after resetting HT bit.
-+	   2. oscillator fail bit (OF) is set. Oscillator has be stopped and
-+	      time is invalid:
-+	      a) OF can be immeditely reset.
-+	      b) OF cannot be immediately reset: oscillator has to be restarted.
-+	*/
-+	tmp = spi_w8r8(spi, M41T93_REG_ALM_HOUR_HT);
-+	if (tmp < 0)
-+		return tmp;
-+
-+	if (tmp & M41T93_FLAG_HT) {
-+		dev_dbg(&spi->dev, "HT bit is set, reenable clock update.\n");
-+		m41t93_set_reg(spi, M41T93_REG_ALM_HOUR_HT,
-+			       tmp & ~M41T93_FLAG_HT);
-+	}
-+
-+	tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
-+	if (tmp < 0)
-+		return tmp;
-+
-+	if (tmp & M41T93_FLAG_OF) {
-+		ret = -EINVAL;
-+		dev_warn(&spi->dev, "OF bit is set, resetting.\n");
-+		m41t93_set_reg(spi, M41T93_REG_FLAGS, tmp & ~M41T93_FLAG_OF);
-+
-+		tmp = spi_w8r8(spi, M41T93_REG_FLAGS);
-+		if (tmp < 0)
-+			return tmp;
-+		else if (tmp & M41T93_FLAG_OF) {
-+			u8 reset_osc = buf[M41T93_REG_ST_SEC] | M41T93_FLAG_ST;
-+
-+			dev_warn(&spi->dev,
-+				 "OF bit is still set, kickstarting clock.\n");
-+			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
-+			reset_osc &= ~M41T93_FLAG_ST;
-+			m41t93_set_reg(spi, M41T93_REG_ST_SEC, reset_osc);
-+		}
-+	}
-+
-+	if (tmp & M41T93_FLAG_BL)
-+		dev_warn(&spi->dev, "BL bit is set, replace battery.\n");
-+
-+	/* read actual time/date */
-+	tmp = spi_write_then_read(spi, &start_addr, 1, buf, sizeof(buf));
-+	if (tmp < 0)
-+		return tmp;
-+
-+	tm->tm_sec	= bcd2bin(buf[M41T93_REG_ST_SEC]);
-+	tm->tm_min	= bcd2bin(buf[M41T93_REG_MIN]);
-+	tm->tm_hour	= bcd2bin(buf[M41T93_REG_CENT_HOUR] & 0x3f);
-+	tm->tm_mday	= bcd2bin(buf[M41T93_REG_DAY]);
-+	tm->tm_mon	= bcd2bin(buf[M41T93_REG_MON]) - 1;
-+	tm->tm_wday	= bcd2bin(buf[M41T93_REG_WDAY] & 0x0f) - 1;
-+
-+	century_after_1900 = (buf[M41T93_REG_CENT_HOUR] >> 6) + 1;
-+	tm->tm_year = bcd2bin(buf[M41T93_REG_YEAR]) + century_after_1900 * 100;
-+
-+	dev_dbg(dev, "%s secs=%d, mins=%d, "
-+		"hours=%d, mday=%d, mon=%d, year=%d, wday=%d\n",
-+		"read", tm->tm_sec, tm->tm_min,
-+		tm->tm_hour, tm->tm_mday,
-+		tm->tm_mon, tm->tm_year, tm->tm_wday);
-+
-+	return ret < 0 ? ret : rtc_valid_tm(tm);
-+}
-+
-+
-+static const struct rtc_class_ops m41t93_rtc_ops = {
-+	.read_time	= m41t93_get_time,
-+	.set_time	= m41t93_set_time,
-+};
-+
-+static struct spi_driver m41t93_driver;
-+
-+static int __devinit m41t93_probe(struct spi_device *spi)
-+{
-+	struct rtc_device *rtc;
-+	int res;
-+
-+	spi->bits_per_word = 8;
-+	spi_setup(spi);
-+
-+	res = spi_w8r8(spi, M41T93_REG_WDAY);
-+	if (res < 0 || (res & 0xf8) != 0) {
-+		dev_err(&spi->dev, "not found 0x%x.\n", res);
-+		return -ENODEV;
-+	}
-+
-+	rtc = rtc_device_register(m41t93_driver.driver.name,
-+		&spi->dev, &m41t93_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtc))
-+		return PTR_ERR(rtc);
-+
-+	dev_set_drvdata(&spi->dev, rtc);
-+
-+	return 0;
-+}
-+
-+
-+static int __devexit m41t93_remove(struct spi_device *spi)
-+{
-+	struct rtc_device *rtc = platform_get_drvdata(spi);
-+
-+	if (rtc)
-+		rtc_device_unregister(rtc);
-+
-+	return 0;
-+}
-+
-+static struct spi_driver m41t93_driver = {
-+	.driver = {
-+		.name	= "rtc-m41t93",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe	= m41t93_probe,
-+	.remove = __devexit_p(m41t93_remove),
-+};
-+
-+static __init int m41t93_init(void)
-+{
-+	return spi_register_driver(&m41t93_driver);
-+}
-+module_init(m41t93_init);
-+
-+static __exit void m41t93_exit(void)
-+{
-+	spi_unregister_driver(&m41t93_driver);
-+}
-+module_exit(m41t93_exit);
-+
-+MODULE_AUTHOR("Nikolaus Voss <n.voss@weinmann.de>");
-+MODULE_DESCRIPTION("Driver for ST M41T93 SPI RTC");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("spi:rtc-m41t93");
--- 
-1.5.4.3
 
