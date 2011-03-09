@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab1CITqc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 14:46:32 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50920 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab1CITq2 (ORCPT
+	id S1752051Ab1CITrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 14:47:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48717 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab1CITru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 14:46:28 -0500
+	Wed, 9 Mar 2011 14:47:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=X0NL1zktcGrtnxWRnsl2CIK0ChB/ocEckY7fQPS0dRJxm0Hkqm6unncKLveLjaafzU
-         whEV/zn3ALUK4HFZ2UwEr82QtnjlYjqsZDyCr0o/Lrqk3VHqf5rPH9L1JfIsI8K+39fZ
-         ATCHEWaDHwL4rKZYMX17fN2Bjw8LEhlPcPedE=
-Date: Wed, 9 Mar 2011 22:45:01 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        dhowells@redhat.com, jmorris@namei.org, serge.hallyn@canonical.com,
-        morgan@kernel.org
-Subject: Re: [PATCH -v2] capabilites: allow the application of capability
- limits to usermode helpers
-Message-ID: <20110309194501.GA9362@albatros>
-References: <20110309193330.12181.92080.stgit@paris.rdu.redhat.com>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=RD5HcpvCvFavFWb8QZLaNgNO4iC4F6mt58IkXaAhVfss+iVdYuvfsnde86zy2/lLyj
+         qdfNd/F8GzAuGoU6ob5k+9B0559L6E2oFE78oh/KivX1SLcaolrS40QF7GxPgpCRknTK
+         JO/Wums4TKOMSeRJIbtEW5CANeB22qmuXjoa8=
+Message-ID: <4D77D821.7090003@gmail.com>
+Date: Wed, 09 Mar 2011 20:42:25 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110309193330.12181.92080.stgit@paris.rdu.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: viro@zeniv.linux.org.uk
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH v3][RESEND] Check for immutable/append flag in fallocate
+ path
+References: <4D6221B8.9040303@gmail.com>	<4D6F5473.2070709@gmail.com>	<4D720469.1010101@gmail.com> <AANLkTinyK0G=tfZob4u7XBj7Gna3FbZnLrqswz2oajwn@mail.gmail.com> <4D720C0B.1050300@gmail.com>
+In-Reply-To: <4D720C0B.1050300@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric,
-
-On Wed, Mar 09, 2011 at 14:33 -0500, Eric Paris wrote:
-> someone complained that any user with
-> cap_net_admin was able to load arbitrary kernel modules, even though the user
-> didn't have cap_sys_module.  The reason is because the actual load is done by
-> a usermode helper and those always have the full cap set.
-
-AFAIU, your patch sets system-wide caps for _all_ usermode helpers,
-right?  Then it does nothing with cap_net_admin's problem as it should
-restrict caps of specific helpers spawned from specific networking code,
-but not touching anything related to another helpers.
-
-> sysctls which allow us to bound the permissions of usermode helpers.
+Il 05/03/2011 11:10, Marco Stornelli ha scritto:
+> From: Marco Stornelli <marco.stornelli@gmail.com>
 > 
-> /proc/sys/kernel/usermodehelper/bset
-> /proc/sys/kernel/usermodehelper/inheritable
+> In the fallocate path the kernel doesn't check for the immutable/append
+> flag. It's possible to have a race condition in this scenario: an
+> application open a file in read/write and it does something, meanwhile
+> root set the immutable flag on the file, the application at that point
+> can call fallocate with success. In addition, we don't allow to do any
+> unreserve operation on an append only file but only the reserve one.
 > 
-> You must have CAP_SYS_MODULE to change these (changes are &= ONLY).
-> When the kernel launches a usermodehelper it will do so with these as
-> the bset and pI.
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 
-Thanks,
+Al, can you apply this patch please? I add Greg in cc, because maybe he
+could be interested about stable tree.
 
--- 
-Vasiliy
+Marco
