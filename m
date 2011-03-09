@@ -1,98 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932Ab1CIIoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 03:44:37 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:55432 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756904Ab1CIIoZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 03:44:25 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 9 Mar 2011 09:46:45 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] hid-multitouch: migrate 3M PCT touch screens to the
- unified driver.
-Message-ID: <20110309084645.GB3569@polaris.bitmath.org>
-References: <1299601979-4871-1-git-send-email-benjamin.tissoires@enac.fr>
- <1299601979-4871-4-git-send-email-benjamin.tissoires@enac.fr>
+	id S1756861Ab1CIIuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 03:50:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752874Ab1CIIuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 03:50:14 -0500
+Message-ID: <4D773F3D.7080503@redhat.com>
+Date: Wed, 09 Mar 2011 10:50:05 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299601979-4871-4-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1PxEzv-0000nn-5y.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PxEzv-0000nn-5y 852b587071ad73e44d521cbcf05599e2
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        mrubin@google.com, kvm-devel <kvm@vger.kernel.org>
+Subject: Re: [PATCH 07/15] ftrace: fix event alignment: kvm:kvm_hv_hypercall
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>	 <1291421609-14665-8-git-send-email-dhsharp@google.com>	 <4CF9F7AB.8050802@redhat.com>	 <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com>	 <4CFDFCEF.3080708@redhat.com>	 <AANLkTinK7Zqh=GfFLeyJLxA4u2ozyVj-Ja435iBJPV13@mail.gmail.com>	 <4CFF4D4C.2070002@redhat.com> <1299628541.20306.99.camel@gandalf.stny.rr.com>
+In-Reply-To: <1299628541.20306.99.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+On 03/09/2011 01:55 AM, Steven Rostedt wrote:
+> Hi Avi,
+>
+> This patch set got lost in the shuffle, and I'm not looking to include
+> it.
 
-On Tue, Mar 08, 2011 at 05:32:58PM +0100, Benjamin Tissoires wrote:
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> ---
+Anything I need to do?
 
-Semms this patch is missing a commit message.
+-- 
+error compiling committee.c: too many arguments to function
 
-[...]
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index e7a4f83..f32bf46 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -5,6 +5,11 @@
->   *  Copyright (c) 2010-2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
->   *  Copyright (c) 2010-2011 Ecole Nationale de l'Aviation Civile, France
->   *
-> + *  based on hid-3m-pct.c copyrighted as follows:
-> + *    Copyright (c) 2009-2010 Stephane Chatty <chatty@enac.fr>
-> + *    Copyright (c) 2010      Henrik Rydberg <rydberg@euromail.se>
-> + *    Copyright (c) 2010      Canonical, Ltd.
-> + *
->   */
->  
->  /*
-> @@ -74,6 +79,7 @@ struct mt_class {
->  #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	3
->  #define MT_CLS_CYPRESS				4
->  #define MT_CLS_STANTUM				5
-> +#define MT_CLS_3M				6
->  
->  /*
->   * these device-dependent functions determine what slot corresponds
-> @@ -124,6 +130,11 @@ struct mt_class mt_classes[] = {
->  		.maxcontacts = 10 },
->  	{ .name = MT_CLS_STANTUM,
->  		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE },
-> +	{ .name = MT_CLS_3M,
-> +		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE |
-> +			MT_QUIRK_SLOT_IS_CONTACTID,
-> +		.sn_move = 2048,
-> +		.sn_pressure = 128 },
->  
->  	{ }
->  };
-> @@ -479,6 +490,14 @@ static void mt_remove(struct hid_device *hdev)
->  
->  static const struct hid_device_id mt_devices[] = {
->  
-> +	/* 3M panels */
-> +	{ .driver_data = MT_CLS_3M,
-> +		HID_USB_DEVICE(USB_VENDOR_ID_3M,
-> +			USB_DEVICE_ID_3M1968) },
-> +	{ .driver_data = MT_CLS_3M,
-> +		HID_USB_DEVICE(USB_VENDOR_ID_3M,
-> +			USB_DEVICE_ID_3M2256) },
-> +
->  	/* Cypress panel */
->  	{ .driver_data = MT_CLS_CYPRESS,
->  		HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS,
-
-The touch width correction from the original driver has gone missing
-here. Otherwise, looks good, but will defer testing to the next round.
-
-Cheers,
-Henrik
