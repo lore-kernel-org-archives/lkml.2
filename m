@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab1CITrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 14:47:53 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48717 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab1CITru (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 14:47:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=RD5HcpvCvFavFWb8QZLaNgNO4iC4F6mt58IkXaAhVfss+iVdYuvfsnde86zy2/lLyj
-         qdfNd/F8GzAuGoU6ob5k+9B0559L6E2oFE78oh/KivX1SLcaolrS40QF7GxPgpCRknTK
-         JO/Wums4TKOMSeRJIbtEW5CANeB22qmuXjoa8=
-Message-ID: <4D77D821.7090003@gmail.com>
-Date: Wed, 09 Mar 2011 20:42:25 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: viro@zeniv.linux.org.uk
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH v3][RESEND] Check for immutable/append flag in fallocate
- path
-References: <4D6221B8.9040303@gmail.com>	<4D6F5473.2070709@gmail.com>	<4D720469.1010101@gmail.com> <AANLkTinyK0G=tfZob4u7XBj7Gna3FbZnLrqswz2oajwn@mail.gmail.com> <4D720C0B.1050300@gmail.com>
-In-Reply-To: <4D720C0B.1050300@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752121Ab1CIUA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 15:00:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751514Ab1CIUAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 15:00:54 -0500
+Subject: Re: [PATCH -v2] capabilites: allow the application of capability
+ limits to usermode helpers
+From: Eric Paris <eparis@redhat.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        dhowells@redhat.com, jmorris@namei.org, serge.hallyn@canonical.com,
+        morgan@kernel.org
+Date: Wed, 09 Mar 2011 15:00:25 -0500
+In-Reply-To: <20110309194501.GA9362@albatros>
+References: <20110309193330.12181.92080.stgit@paris.rdu.redhat.com>
+	 <20110309194501.GA9362@albatros>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+Message-ID: <1299700826.3411.4.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/03/2011 11:10, Marco Stornelli ha scritto:
-> From: Marco Stornelli <marco.stornelli@gmail.com>
+On Wed, 2011-03-09 at 22:45 +0300, Vasiliy Kulikov wrote:
+> Eric,
 > 
-> In the fallocate path the kernel doesn't check for the immutable/append
-> flag. It's possible to have a race condition in this scenario: an
-> application open a file in read/write and it does something, meanwhile
-> root set the immutable flag on the file, the application at that point
-> can call fallocate with success. In addition, we don't allow to do any
-> unreserve operation on an append only file but only the reserve one.
+> On Wed, Mar 09, 2011 at 14:33 -0500, Eric Paris wrote:
+> > someone complained that any user with
+> > cap_net_admin was able to load arbitrary kernel modules, even though the user
+> > didn't have cap_sys_module.  The reason is because the actual load is done by
+> > a usermode helper and those always have the full cap set.
 > 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> AFAIU, your patch sets system-wide caps for _all_ usermode helpers,
+> right?  Then it does nothing with cap_net_admin's problem as it should
+> restrict caps of specific helpers spawned from specific networking code,
+> but not touching anything related to another helpers.
 
-Al, can you apply this patch please? I add Greg in cc, because maybe he
-could be interested about stable tree.
+I'm actually solving 2 problems at once and it just so happens the the
+CAP_NET_ADMIN brew-ha-ha came up more recently.  The original problem,
+and reason I wrote this patch, is because it's impossible on a modern
+Linux system to permanently and irrevocably drop capabilities system
+wide.  You can get very close by dropping capabilities from the bset
+before init is launched which means everything launched by userspace
+can't have the dropped capabilities.  But, khelper is still going to
+have the full set and thus usermodehelpers launched by the kernel will
+have the full set.  This patch allows one to control usermode helpers.
+How one chooses to use that, is up to them.
 
-Marco
+-Eric
+
