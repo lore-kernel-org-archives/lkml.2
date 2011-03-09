@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab1CITgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 14:36:44 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:37180 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab1CITgn (ORCPT
+	id S1751851Ab1CITqc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 14:46:32 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50920 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab1CITq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 14:36:43 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6280"; a="78793537"
-Message-ID: <4D77D6CB.402@codeaurora.org>
-Date: Wed, 09 Mar 2011 11:36:43 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 9 Mar 2011 14:46:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=X0NL1zktcGrtnxWRnsl2CIK0ChB/ocEckY7fQPS0dRJxm0Hkqm6unncKLveLjaafzU
+         whEV/zn3ALUK4HFZ2UwEr82QtnjlYjqsZDyCr0o/Lrqk3VHqf5rPH9L1JfIsI8K+39fZ
+         ATCHEWaDHwL4rKZYMX17fN2Bjw8LEhlPcPedE=
+Date: Wed, 9 Mar 2011 22:45:01 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        dhowells@redhat.com, jmorris@namei.org, serge.hallyn@canonical.com,
+        morgan@kernel.org
+Subject: Re: [PATCH -v2] capabilites: allow the application of capability
+ limits to usermode helpers
+Message-ID: <20110309194501.GA9362@albatros>
+References: <20110309193330.12181.92080.stgit@paris.rdu.redhat.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: hw_breakpoint: Fix newlines in WARNings
-References: <1298633466.32588.1.camel@e102144-lin.cambridge.arm.com> <1298693163-18269-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1298693163-18269-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110309193330.12181.92080.stgit@paris.rdu.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will,
+Eric,
 
-On 02/25/2011 08:06 PM, Stephen Boyd wrote:
-> Will Deacon wrote:
->>> I'd prefer the message text not to be line wrapped, even if it
->>> violates the general line length rule, because that makes it easier to
->>> grep for the message in the source code.
->> Ok, that's understandable. Moving the text onto its own line will limit
->> the damage to the line length too. Stephen - are you happy to make these
->> changes as part of your previous patch?
->
+On Wed, Mar 09, 2011 at 14:33 -0500, Eric Paris wrote:
+> someone complained that any user with
+> cap_net_admin was able to load arbitrary kernel modules, even though the user
+> didn't have cap_sys_module.  The reason is because the actual load is done by
+> a usermode helper and those always have the full cap set.
 
-Do you want to take this? I'm going to submit it to the patch tracker
-tomorrow otherwise.
+AFAIU, your patch sets system-wide caps for _all_ usermode helpers,
+right?  Then it does nothing with cap_net_admin's problem as it should
+restrict caps of specific helpers spawned from specific networking code,
+but not touching anything related to another helpers.
+
+> sysctls which allow us to bound the permissions of usermode helpers.
+> 
+> /proc/sys/kernel/usermodehelper/bset
+> /proc/sys/kernel/usermodehelper/inheritable
+> 
+> You must have CAP_SYS_MODULE to change these (changes are &= ONLY).
+> When the kernel launches a usermodehelper it will do so with these as
+> the bset and pI.
+
+Thanks,
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Vasiliy
