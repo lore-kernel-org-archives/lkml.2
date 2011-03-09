@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab1CIAWG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:22:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33500 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756706Ab1CIAWE (ORCPT
+	id S1756902Ab1CIAXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:23:15 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55636 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab1CIAXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:22:04 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, sparclinux@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-lCEVQB91eekdBOJnn8BY"
-Date: Wed, 09 Mar 2011 00:21:51 +0000
-Message-ID: <1299630111.4146.15.camel@localhost>
+	Tue, 8 Mar 2011 19:23:14 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=_hCqAiHmeU0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=x3E1kkhSYPxLioQU5EoA:9 a=9mNfTuyRNuQDEJZNQO4A:7 a=0FTZyzEvq42p2r-ZTPl90HNZSagA:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
+ events.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <1291421609-14665-14-git-send-email-dhsharp@google.com>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+	 <1291421609-14665-14-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 08 Mar 2011 19:23:13 -0500
+Message-ID: <1299630193.20306.112.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH 0/5] Fix build failures with binutils 2.21
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-12-03 at 16:13 -0800, David Sharp wrote:
+> This option will remove several fields from trace events to reduce the
+> payload size. Under heavy load, events can be produced faster than they
+> can possibly be written to disk or sent on the network. Shrinking the
+> payload size will enable fitting more traces in the ring buffer, which
+> therefore enables tracing for longer periods, at the cost of losing some
+> relatively unimportant details.
+> 
 
---=-lCEVQB91eekdBOJnn8BY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+OK, I'm trying to get all your patches in for 2.6.39 except the last 3.
+As this may break user interfaces. I would like a way to dynamically
+shrink the payload, but we need to figure out how to do that.
 
-gas has been silently ignoring .size directives with typos, but this was
-fixed in binutils 2.21, resulting in build failures with the new
-version.
+For example, currently trace-cmd looks at the event files know what data
+to record. Sure we could force it with a config option, but that is not
+a good solution for mainline. What we would want is something more
+dymanic. But then tools like trace-cmd, and I suspect perf will need to
+have a way to know how to parse the data. Especially perf which is user
+specific (where as trace-cmd is global). The change in events needs to
+be atomic per user. So one user changing what gets recorded in an event
+does not affect another user.
 
-I collected a couple of fixes for x86, then saw a similar failure on
-sparc and went hunting for more instances.  This series, based on
-2.6.38-rc8, should cover them all.  However, my changes are not even
-build-tested.
+Perhaps in the future we can figure something out. But for now, patches
+1-12 look good (with the exception of patch 3).
 
-Ben.
-
-Alan Modra (1):
-  x86: Fix .size directive for async_page_fault
-
-Ben Hutchings (3):
-  sparc: Fix .size directive for do_int_load
-  avr32: Fix .size directive for cpu_enter_idle
-  arm: Fix .size directives for __arm{7,9}tdmi_proc_info
-
-H.J. Lu (1):
-  x86: Fix .size directive for xen_do_hypervisor_callback
-
- arch/arm/mm/proc-arm7tdmi.S            |    2 +-
- arch/arm/mm/proc-arm9tdmi.S            |    2 +-
- arch/avr32/mach-at32ap/pm-at32ap700x.S |    2 +-
- arch/sparc/kernel/una_asm_64.S         |    2 +-
- arch/x86/kernel/entry_32.S             |    2 +-
- arch/x86/kernel/entry_64.S             |    2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
-
---=20
-1.7.4.1
+-- Steve
 
 
+> Google-Bug-Id: 3224547
+> 
+> Signed-off-by: David Sharp <dhsharp@google.com>
+> ---
+>  kernel/trace/Kconfig |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+> index ea37e2f..9c24fe5 100644
+> --- a/kernel/trace/Kconfig
+> +++ b/kernel/trace/Kconfig
+> @@ -403,6 +403,18 @@ config FUNCTION_PROFILER
+>  
+>  	  If in doubt, say N.
+>  
+> +config SMALL_TRACES
+> +	bool "Shrink trace events"
+> +	default n
+> +	help
+> +	  Minimize the size of trace events. Omits fields from trace event
+> +	  header like preempt_count, and lock_depth. Chooses smaller
+> +	  alternative event structures. Shrinking the payload size enables
+> +	  fitting more traces in the ring buffer, which enables tracing for
+> +	  longer periods when the buffer can not be read as fast as it is
+> +	  filled, at the cost of losing some details.
+> +
+> +
+>  config FTRACE_MCOUNT_RECORD
+>  	def_bool y
+>  	depends on DYNAMIC_FTRACE
 
---=-lCEVQB91eekdBOJnn8BY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATXbIEue/yOyVhhEJAQqMPxAAuw4TGiDdsPdPjPDoMIQvcjEbV/+uK6s5
-I7KXIK6LS8FGDlNDF7AZjrW5fonJXdafjKIAIq7OAQq0xAWysPHnb70pQ4E3dxdW
-431DhHz1ZDnNQMd4mKWI3ONR1Na0jER2bdTe5FGTqccMXb6TVMhxswvR38wlJspk
-fk3jwp2r7PMkWN1LLyWPudOEcwToJrmF8D/NIuFtkCm2q+sjvOSUcecoRYROEsib
-ZtxbF1WX8FzBzrfk+zBKdayUpMo1gZvzB36zsVaWJCLWs0lbyN2HJQ7vDyfiLrFs
-q09GZihLRA/0iEx9M1ZlqKsln+fP/icqjtvCrM616NioQP3aFyOdW9OxUfQMkI8q
-u3irjEydxZ/xw5gLfuoqxdJsYUZVvEia3ybe4qVksN1yNAmjaATmKs0OOqsJdUTJ
-5BLlvzq+a6BaAgXhfqys6g7SajwLHq4LI+D+pMnS6sNkpVoKAJkbphI0mvM/XguL
-3O8SXq8TmQI/7t2NgAQlJVDbQ57hlopkS2d9riaNSb2YJo+CgEL8X+QrtfA5Lq6i
-YRd51YRhgogVsTipV+GPT4OpmHvDHbVF1m7tbH7Vy3xv3lnYBdorq3INw/G2/vwk
-0zKTTn9pGlxUmGN2Isbg4sD+B5DCmPhgTvMafC3sKaFUmQBni375FB5K7/YKhRxR
-YCun04dSpRU=
-=bGlp
------END PGP SIGNATURE-----
-
---=-lCEVQB91eekdBOJnn8BY--
