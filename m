@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab1CINyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 08:54:53 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:56159 "EHLO
+	id S932573Ab1CIN4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 08:56:22 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:56182 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab1CINyw convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932208Ab1CIN4V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 08:54:52 -0500
-Subject: Re: [BUG] rebuild_sched_domains considered dangerous
-From: Peter Zijlstra <peterz@infradead.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Jesse Larrew <jlarrew@linux.vnet.ibm.com>
-In-Reply-To: <20110309144636.3f0899d1@mschwide.boeblingen.de.ibm.com>
-References: <1299639487.22236.256.camel@pasglop>
-	 <1299665998.2308.2753.camel@twins> <1299670429.2308.2834.camel@twins>
-	 <20110309141548.722e4f56@mschwide.boeblingen.de.ibm.com>
-	 <1299676769.2308.2944.camel@twins>
-	 <20110309143152.3cc6c191@mschwide.boeblingen.de.ibm.com>
-	 <1299677636.2308.2960.camel@twins>
-	 <20110309144636.3f0899d1@mschwide.boeblingen.de.ibm.com>
+	Wed, 9 Mar 2011 08:56:21 -0500
+Subject: Re: [PATCH 1/2] perf: Fix the software events state check
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <20110309135252.GB1730@nowhere>
+References: <1299529629-18280-1-git-send-email-fweisbec@gmail.com>
+	 <20110309092818.GC25004@elte.hu>  <20110309135252.GB1730@nowhere>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Mar 2011 14:54:39 +0100
-Message-ID: <1299678879.2308.2987.camel@twins>
+Date: Wed, 09 Mar 2011 14:55:59 +0100
+Message-ID: <1299678959.2308.2989.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 14:46 +0100, Martin Schwidefsky wrote:
-> On Wed, 09 Mar 2011 14:33:56 +0100
-> Peter Zijlstra <peterz@infradead.org> wrote:
+On Wed, 2011-03-09 at 14:52 +0100, Frederic Weisbecker wrote:
 > 
-> > On Wed, 2011-03-09 at 14:31 +0100, Martin Schwidefsky wrote:
-> > > > But if you don't also update the cpu->node memory mappings (which I
-> > > > think it near impossible) what good is it to change the scheduler
-> > > > topology?
-> > > 
-> > > The memory for the different LPARs is striped over all nodes (or books as we
-> > > call them). We heavily rely on the large shared cache between the books to hide
-> > > the different memory access latencies. 
-> > 
-> > Right, so effectively you don't have NUMA due to that striping. So why
-> > then change the CPU topology? Simply create a topology without NUMA and
-> > keep it static, that accurately reflects the memory topology.
+> It seems that ->stop() / ->start() are called from perf_adjust_period()
+> to update the hardware with the new settings of period_left. The events
+> are stopped to avoid any race with events triggering with a stale period_left
+> in the hardware level when the software one has been updated, I guess.
 > 
-> Well the CPU topology can change due to different grouping of logical CPUs
-> dependent on which LPARs are activated. And we effectively do not have a
-> memory topology, only CPU. Its basically all about caches, we want to
-> reflect the distance between CPUs over the up to 4 cache levels.
+> So it doesn't seem to fix any existing bug because for ->stop() and ->start()
+> are only useful for hardware events right now. But we may call ->stop() and
+> ->start() for further purpose later. In fact that paves the way for the event
+> exclusion patchset I'm about to post.
+> 
+> So it should be .39 material. But a confirmation from Peter would be nice. 
 
-Right, so I consider caches to be part of the memory topology, anyway,
-if this all is very rare then yeah, that works out.
+Yeah, that sounds about right, I've already queued these patches
+for .39.
