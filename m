@@ -1,137 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab1CIBDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 20:03:32 -0500
-Received: from nbd.name ([46.4.11.11]:42579 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756039Ab1CIBDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 20:03:31 -0500
-Message-ID: <4D76D1DB.4070404@openwrt.org>
-Date: Wed, 09 Mar 2011 02:03:23 +0100
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1756870Ab1CIBRV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 20:17:21 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:52091 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755563Ab1CIBRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 20:17:20 -0500
+Date: Tue, 8 Mar 2011 20:17:16 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        chris <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH][RFC] tracing: Enable tracepoints via module parameters
+Message-ID: <20110309011716.GB3664@Krystal>
+References: <1299622684.20306.77.camel@gandalf.stny.rr.com> <20110308232258.GA25987@Krystal> <1299627175.20306.96.camel@gandalf.stny.rr.com> <20110309000753.GA27729@Krystal> <1299629657.20306.105.camel@gandalf.stny.rr.com> <20110309002921.GA744@Krystal> <1299631924.20306.122.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Ben Greear <greearb@candelatech.com>, Brian Prodoehl <bprodoehl@gmail.com>,
-        Mohammed Shafi <shafi.wireless@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ath9k-devel@atheros.com
-Subject: Re: WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536 ath_stoprecv+0xc8/0xda
- [ath9k]()
-References: <AANLkTik9To0Rkq2FRqQFB2wNu0kyJ7CzyBek2jBp36Cb@mail.gmail.com>	<20110303135942.GA8969@tuxdriver.com>	<AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>	<20110307151201.GC2664@tuxdriver.com>	<AANLkTi=7RSdKhzGazQFUnBZqzMQskOSHq=7E08uan2vu@mail.gmail.com>	<4D767A4B.1060203@gmail.com>	<4D76833E.9010603@candelatech.com> <AANLkTikPQt+njjFPB6sJ-mEcsx6f-R6TAOhEd8egkqhH@mail.gmail.com> <4D768A9A.7090201@candelatech.com> <4D7699BF.1000602@gmail.com>
-In-Reply-To: <4D7699BF.1000602@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299631924.20306.122.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 20:06:34 up 105 days,  6:09,  1 user,  load average: 0.13, 0.11,
+	0.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-08 10:03 PM, Justin P. Mattock wrote:
-> On 03/08/2011 11:59 AM, Ben Greear wrote:
->> On 03/08/2011 11:45 AM, Brian Prodoehl wrote:
->>> On Tue, Mar 8, 2011 at 2:27 PM, Ben Greear<greearb@candelatech.com>
->>> wrote:
->>>> On 03/08/2011 10:49 AM, Justin P. Mattock wrote:
->>>>>
->>>>> On 03/07/2011 07:22 AM, Mohammed Shafi wrote:
->>>>>>
->>>>>> On Mon, Mar 7, 2011 at 8:42 PM, John W.
->>>>>> Linville<linville@tuxdriver.com> wrote:
->>>>>>>
->>>>>>> On Sun, Mar 06, 2011 at 12:47:05AM -0800, Justin Mattock wrote:
->>>>>>>
->>>>>>>> full dmesg here:
->>>>>>>> http://fpaste.org/5JQp/
->>>>>>>> let me know if I need to supply any info(also I can try a bisect,
->>>>>>>> but
->>>>>>>> am in the middle of changing residencies, so it might not be right
->>>>>>>> away)
->>>>>>>
->>>>>>> One of the Atheros guys suggested that you change a DMA timeout
->>>>>>> value.
->>>>>>> Did you try that?
->>>>>>
->>>>>> John it looks like increasing the timeout also does not seems to help.
->>>>>> A user reported this issue in ath9k developer list and he told that
->>>>>> increasing the timeout did not fix this issue.
->>>>>>
->>>>>>>
->>>>>>> John
->>>>>>> --
->>>>>>> John W. Linville Someday the world will need a hero, and you
->>>>>>> linville@tuxdriver.com might be all we have. Be ready.
->>>>>>> --
->>>>>>> To unsubscribe from this list: send the line "unsubscribe
->>>>>>> linux-wireless" in
->>>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>>>>>>
->>>>>>
->>>>>
->>>>> at barnes and noble, and I see this has fired off again. will see if I
->>>>> can reproduce and bisect.
->>>>
->>>> This problem goes way back, and the driver has had lots of fixes in the
->>>> last few months, so I'm not sure if bisecting is going to
->>>> do you any good.
->>>>
->>>> Thanks,
->>>> Ben
->>>
->>> The warnings have been around since you added the check for the
->>> problem, right? I remember initially it was a WARN_ON, and I'd get a
->>> steady flood of backtraces, and then it was switched to a
->>> WARN_ON_ONCE. I see these on every platform I have (x86_64, IXP425
->>> and AR71xx) with AR9002 and AR9003.
->>
->> I don't think I added the original check, but either way, it's
->> an old problem and bisecting it is unlikely to help.
->>
->> I can't believe that the Atheros guys really are unable reproduce
->> this, but I can believe that it might be very difficult to
->> actually understand and fix.
->>
->> At least in my testing, I see it quite often, but it doesn't
->> seem to cause any serious harm. We do occasionally see crashes,
->> especially on module unload for a heavily utilized system, or
->> one that is constantly trying and failing to associate,
->> so it could be related to this.
->>
->> Also, my patches to decrease scan and work_work related channel changes
->> made this harder to hit for our test cases.
->>
->> Thanks,
->> Ben
->>
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Tue, 2011-03-08 at 19:29 -0500, Mathieu Desnoyers wrote:
+> > * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > > On Tue, 2011-03-08 at 19:07 -0500, Mathieu Desnoyers wrote:
+> > > 
+> > > > So what you are saying here is that modifying /etc/modprobe.d/ is the actual
+> > > > interface you propose presenting to the end-users to control their tracepoints ?
+> > > 
+> > > If you want to have them enabled on boot, sure.
+> > 
+> > No, I'm not talking about enabling tracepoints on boot here. Let's think about a
+> > basic use-case: a distro packages a tracer, and provides a "default" set of
+> > tracepoints that can be enabled when tracing is needed. Therefore, these
+> > tracepoints are not enabled at boot -- they are rather enabled when tracing
+> > starts. Some of these tracepoints are in dynamically loaded modules. Some of
+> > these modules are automatically loaded by the distro (e.g. when a USB device is
+> > plugged in).
 > 
-> 
-> well I would do the bisect if I can easily reproduce this, but if this 
-> has been back since 2.6.2* or the initial release of ath9k then doing 
-> the bisect wont work.
-> 
-> as for the warning message itself, seems the system is fine after this 
-> hits(just fires of on certain locations).
-> 
-> Justin P. Mattock
-Please try this patch (posted to linux-wireless@) and see if it fixes
-this issue in your tests.
+> What distro are we talking about? What distro provides a "default" set
+> of tracepoints?
 
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-index cb559e3..a9c3f46 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -413,9 +413,7 @@ u32 ath_calcrxfilter(struct ath_softc *sc)
- 	 * mode interface or when in monitor mode. AP mode does not need this
- 	 * since it receives all in-BSS frames anyway.
- 	 */
--	if (((sc->sc_ah->opmode != NL80211_IFTYPE_AP) &&
--	     (sc->rx.rxfilter & FIF_PROMISC_IN_BSS)) ||
--	    (sc->sc_ah->is_monitoring))
-+	if (sc->sc_ah->is_monitoring)
- 		rfilt |= ATH9K_RX_FILTER_PROM;
- 
- 	if (sc->rx.rxfilter & FIF_CONTROL)
+I'm afraid I cannot say, at this point, which distro I am refering to, because
+that would be a little forward of me to push news before official feature
+announcements.
 
+And about the "default" tracepoints, let's mainly think about tracepoints that
+would be specified from a trace control application. E.g. the user wants a type
+of tracing that collects all information required to solve a category of
+problem, and they get enabled automatically.
+
+> > 
+> > The specific module tracepoints should therefore only be enabled when both of
+> > the following conditions are true:
+> > 
+> > A - the end-user want to trace
+> > B - the module is loaded
+> > 
+> > But it looks like hooking on modinfo will only let you unconditionally enable
+> > the module tracepoints during normal system operations (even when tracing is
+> > off), or not at all unless you previously load the module (which does not fit
+> > with the reality of distributions automagically loading modules on demand while
+> > tracing runs).
+> 
+> Lets keep it simple please. Right now my proposal does more than what we
+> currently have. Perhaps we could change the enabling to only enable if
+> "tracing is on", or some /proc/sys/kernel/X flag is set.
+
+Well, thinking a little more about it, I won't be using this way of enabling
+tracepoints in my tracer, so please feel free to make it as simple as you like.
+I'm just providing feedback on what the ftrace/perf end user experience will
+look like and, sadly, it does not look good at all by the look of this proposal.
+
+> 
+> 
+> > > 
+> > > > Maybe I am missing something, but this interface seems to lack the layer of
+> > > > finish we might want to put into a user-visible API. I don't really see how
+> > > > distributions can hope to automate any of this for their end-user without making
+> > > > a mess of the /etc/modprobe.d/ they ship with.
+> > > 
+> > > What distros enable tracepoints by default?
+> > 
+> > Do you mean enable as having a probe connected, or just CONFIG_TRACEPOINTS=y ?
+> 
+> I mean having the probe connected as distros already have
+> CONFIG_TRACEPOINTS on. What was your meaning when you said "distro
+> specifying a basic set of tracepoints to enable"?
+
+I meant that distros can contain packages that are interested in a specific set
+of tracepoints (views/analysis are tracepoint data consumers), so they can
+specify a set of tracepoints to enable when tracing is activated.
+
+> 
+> 
+> > 
+> > > 
+> > > If you want to enable a tracepoint on module load simply do:
+> > > 
+> > >  modprobe mymod trace_my_tracepoint=1
+> > > 
+> > > Otherwise modify your modprobe.d directory. This is the way users have
+> > > been doing module parameters for years.
+> > > 
+> > > That's pretty simple to me.
+> > 
+> > Everything is always so much easier when your end-user target is yourself.
+> > What are users for anyway ? :-P
+> 
+> Users are for testing code ;)
+> 
+> But that's a good question. As I wrote this because I'm purging my inbox
+> and came across Yuanhan Liu's patch set. I'm curios to what Yuanhan's
+> motivation for this change was.
+
+Yep.
+
+Hopefully my feedback can be of some use.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
