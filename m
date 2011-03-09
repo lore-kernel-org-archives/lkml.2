@@ -1,91 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab1CIAXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:23:15 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55636 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab1CIAXO (ORCPT
+	id S1755935Ab1CIA0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:26:45 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:4853 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab1CIA0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:23:14 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=_hCqAiHmeU0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=x3E1kkhSYPxLioQU5EoA:9 a=9mNfTuyRNuQDEJZNQO4A:7 a=0FTZyzEvq42p2r-ZTPl90HNZSagA:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
- events.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1291421609-14665-14-git-send-email-dhsharp@google.com>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
-	 <1291421609-14665-14-git-send-email-dhsharp@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 08 Mar 2011 19:23:13 -0500
-Message-ID: <1299630193.20306.112.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Mar 2011 19:26:44 -0500
+From: Thieu Le <thieule@chromium.org>
+To: tyhicks@linux.vnet.ibm.com
+Cc: kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
+        linux-kernel@vger.kernel.org, Thieu Le <thieule@chromium.org>
+Subject: [PATCH] ecryptfs: modify write path to encrypt page in writepage
+Date: Tue,  8 Mar 2011 16:26:03 -0800
+Message-Id: <1299630363-20897-1-git-send-email-thieule@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110307234321.GA27908@boyd.l.tihix.com>
+References: <20110307234321.GA27908@boyd.l.tihix.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-03 at 16:13 -0800, David Sharp wrote:
-> This option will remove several fields from trace events to reduce the
-> payload size. Under heavy load, events can be produced faster than they
-> can possibly be written to disk or sent on the network. Shrinking the
-> payload size will enable fitting more traces in the ring buffer, which
-> therefore enables tracing for longer periods, at the cost of losing some
-> relatively unimportant details.
-> 
+I've addressed the data corruption issue. I forgot to update ecryptfs_sops.drop_inode to point to NULL to indicate that ecryptfs now caches data and the cache data should be flushed to disk when the last reference to the inode is released.
 
-OK, I'm trying to get all your patches in for 2.6.39 except the last 3.
-As this may break user interfaces. I would like a way to dynamically
-shrink the payload, but we need to figure out how to do that.
+Commit message and updated patch below.
 
-For example, currently trace-cmd looks at the event files know what data
-to record. Sure we could force it with a config option, but that is not
-a good solution for mainline. What we would want is something more
-dymanic. But then tools like trace-cmd, and I suspect perf will need to
-have a way to know how to parse the data. Especially perf which is user
-specific (where as trace-cmd is global). The change in events needs to
-be atomic per user. So one user changing what gets recorded in an event
-does not affect another user.
+------------------------------------------------------------------------------
 
-Perhaps in the future we can figure something out. But for now, patches
-1-12 look good (with the exception of patch 3).
+Change the write path to encrypt the data only when the page is written to
+disk in ecryptfs_writepage. Previously, ecryptfs encrypts the page in
+ecryptfs_write_end which means that if there are multiple write requests to
+the same page, ecryptfs ends up re-encrypting that page over and over again.
+This patch minimizes the number of encryptions needed.
 
--- Steve
+Signed-off-by: Thieu Le <thieule@chromium.org>
+---
+ fs/ecryptfs/ecryptfs_kernel.h |    1 -
+ fs/ecryptfs/file.c            |    9 ++++++++-
+ fs/ecryptfs/main.c            |    2 --
+ fs/ecryptfs/mmap.c            |   41 +++++++++++++++++++++++++++--------------
+ fs/ecryptfs/read_write.c      |   12 ++----------
+ fs/ecryptfs/super.c           |    3 +--
+ 6 files changed, 38 insertions(+), 30 deletions(-)
 
-
-> Google-Bug-Id: 3224547
-> 
-> Signed-off-by: David Sharp <dhsharp@google.com>
-> ---
->  kernel/trace/Kconfig |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-> index ea37e2f..9c24fe5 100644
-> --- a/kernel/trace/Kconfig
-> +++ b/kernel/trace/Kconfig
-> @@ -403,6 +403,18 @@ config FUNCTION_PROFILER
->  
->  	  If in doubt, say N.
->  
-> +config SMALL_TRACES
-> +	bool "Shrink trace events"
-> +	default n
-> +	help
-> +	  Minimize the size of trace events. Omits fields from trace event
-> +	  header like preempt_count, and lock_depth. Chooses smaller
-> +	  alternative event structures. Shrinking the payload size enables
-> +	  fitting more traces in the ring buffer, which enables tracing for
-> +	  longer periods when the buffer can not be read as fast as it is
-> +	  filled, at the cost of losing some details.
-> +
-> +
->  config FTRACE_MCOUNT_RECORD
->  	def_bool y
->  	depends on DYNAMIC_FTRACE
-
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index dbc84ed..13517ac 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -297,7 +297,6 @@ struct ecryptfs_inode_info {
+ 	struct inode vfs_inode;
+ 	struct inode *wii_inode;
+ 	struct file *lower_file;
+-	struct mutex lower_file_mutex;
+ 	struct ecryptfs_crypt_stat crypt_stat;
+ };
+ 
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 81e10e6..9f7ce63 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -273,7 +273,14 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+ static int
+ ecryptfs_fsync(struct file *file, int datasync)
+ {
+-	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
++	int rc = 0;
++
++	rc = generic_file_fsync(file, datasync);
++	if (rc)
++		goto out;
++	rc = vfs_fsync(ecryptfs_file_to_lower(file), datasync);
++out:
++	return rc;
+ }
+ 
+ static int ecryptfs_fasync(int fd, struct file *file, int flag)
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 758323a..63e412c 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -122,7 +122,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+ 		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
+ 	int rc = 0;
+ 
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	if (!inode_info->lower_file) {
+ 		struct dentry *lower_dentry;
+ 		struct vfsmount *lower_mnt =
+@@ -138,7 +137,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+ 			inode_info->lower_file = NULL;
+ 		}
+ 	}
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	return rc;
+ }
+ 
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index cc64fca..d36829f 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -62,6 +62,18 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	int rc;
+ 
++	/*
++	 * Refuse to write the page out if we are called from reclaim context
++	 * since our writepage() path may potentially allocate memory when
++	 * calling into the lower fs vfs_write() which may in turn invoke
++	 * us again.
++	 */
++	if (current->flags & PF_MEMALLOC) {
++		redirty_page_for_writepage(wbc, page);
++		rc = 0;
++		goto out;
++	}
++
+ 	rc = ecryptfs_encrypt_page(page);
+ 	if (rc) {
+ 		ecryptfs_printk(KERN_WARNING, "Error encrypting "
+@@ -70,8 +82,8 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+ 		goto out;
+ 	}
+ 	SetPageUptodate(page);
+-	unlock_page(page);
+ out:
++	unlock_page(page);
+ 	return rc;
+ }
+ 
+@@ -486,6 +498,7 @@ static int ecryptfs_write_end(struct file *file,
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+ 		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+ 	int rc;
++	int need_unlock_page = 1;
+ 
+ 	if (crypt_stat->flags & ECRYPTFS_NEW_FILE) {
+ 		ecryptfs_printk(KERN_DEBUG, "ECRYPTFS_NEW_FILE flag set in "
+@@ -512,26 +525,26 @@ static int ecryptfs_write_end(struct file *file,
+ 			"zeros in page with index = [0x%.16lx]\n", index);
+ 		goto out;
+ 	}
+-	rc = ecryptfs_encrypt_page(page);
+-	if (rc) {
+-		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
+-				"index [0x%.16lx])\n", index);
+-		goto out;
+-	}
++	set_page_dirty(page);
++	unlock_page(page);
++	need_unlock_page = 0;
+ 	if (pos + copied > i_size_read(ecryptfs_inode)) {
+ 		i_size_write(ecryptfs_inode, pos + copied);
+ 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
+ 			"[0x%.16llx]\n",
+ 			(unsigned long long)i_size_read(ecryptfs_inode));
++		balance_dirty_pages_ratelimited(mapping);
++		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
++		if (rc) {
++			printk(KERN_ERR "Error writing inode size to metadata; "
++			       "rc = [%d]\n", rc);
++			goto out;
++		}
+ 	}
+-	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
+-	if (rc)
+-		printk(KERN_ERR "Error writing inode size to metadata; "
+-		       "rc = [%d]\n", rc);
+-	else
+-		rc = copied;
++	rc = copied;
+ out:
+-	unlock_page(page);
++	if (need_unlock_page)
++		unlock_page(page);
+ 	page_cache_release(page);
+ 	return rc;
+ }
+diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+index db184ef..85d4309 100644
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -44,15 +44,11 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
+ 	ssize_t rc;
+ 
+ 	inode_info = ecryptfs_inode_to_private(ecryptfs_inode);
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	BUG_ON(!inode_info->lower_file);
+-	inode_info->lower_file->f_pos = offset;
+ 	fs_save = get_fs();
+ 	set_fs(get_ds());
+-	rc = vfs_write(inode_info->lower_file, data, size,
+-		       &inode_info->lower_file->f_pos);
++	rc = vfs_write(inode_info->lower_file, data, size, &offset);
+ 	set_fs(fs_save);
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	mark_inode_dirty_sync(ecryptfs_inode);
+ 	return rc;
+ }
+@@ -234,15 +230,11 @@ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
+ 	mm_segment_t fs_save;
+ 	ssize_t rc;
+ 
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	BUG_ON(!inode_info->lower_file);
+-	inode_info->lower_file->f_pos = offset;
+ 	fs_save = get_fs();
+ 	set_fs(get_ds());
+-	rc = vfs_read(inode_info->lower_file, data, size,
+-		      &inode_info->lower_file->f_pos);
++	rc = vfs_read(inode_info->lower_file, data, size, &offset);
+ 	set_fs(fs_save);
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	return rc;
+ }
+ 
+diff --git a/fs/ecryptfs/super.c b/fs/ecryptfs/super.c
+index 3042fe1..e15ff06 100644
+--- a/fs/ecryptfs/super.c
++++ b/fs/ecryptfs/super.c
+@@ -55,7 +55,6 @@ static struct inode *ecryptfs_alloc_inode(struct super_block *sb)
+ 	if (unlikely(!inode_info))
+ 		goto out;
+ 	ecryptfs_init_crypt_stat(&inode_info->crypt_stat);
+-	mutex_init(&inode_info->lower_file_mutex);
+ 	inode_info->lower_file = NULL;
+ 	inode = &inode_info->vfs_inode;
+ out:
+@@ -198,7 +197,7 @@ static int ecryptfs_show_options(struct seq_file *m, struct vfsmount *mnt)
+ const struct super_operations ecryptfs_sops = {
+ 	.alloc_inode = ecryptfs_alloc_inode,
+ 	.destroy_inode = ecryptfs_destroy_inode,
+-	.drop_inode = generic_delete_inode,
++	.drop_inode = NULL,
+ 	.statfs = ecryptfs_statfs,
+ 	.remount_fs = NULL,
+ 	.evict_inode = ecryptfs_evict_inode,
+-- 
+1.7.3.1
 
