@@ -1,125 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab1CIHZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 02:25:12 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49439 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab1CIHZH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 02:25:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dZj2145ItCn8BW8nIav+ofeBCj1jWFL6Z9jgCafY9YcomC1tp4ULu3wHvxrFxBE5ah
-         ftelR+BsJFKDBe4XkJJwy4iG0OYjbPzbipuoPh+5Ho05Gnyz7KkRYDEzCJh4ZyOOzqbw
-         iTPa8JHw5XfvNSuhxTTT4KIKtE26xWvg+tjew=
+	id S1753731Ab1CIHZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 02:25:43 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:35604 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750980Ab1CIHZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 02:25:42 -0500
+X-ASG-Debug-ID: 1299655539-01de284cf82e840001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D772B70.1000709@fusionio.com>
+Date: Wed, 9 Mar 2011 08:25:36 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
-	<20110307114142.GB13471@opensource.wolfsonmicro.com>
-	<AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
-	<20110307121502.GG13471@opensource.wolfsonmicro.com>
-	<AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
-Date: Wed, 9 Mar 2011 15:25:05 +0800
-Message-ID: <AANLkTik=wEyCEY5xsrdGJw6t_VHH9ByKt4mX348P8uD7@mail.gmail.com>
-Subject: Re: [alsa-devel] [Device-drivers-devel] [PATCH] Add driver for Analog
- Devices ADAU1701 SigmaDSP
-From: Cliff Cai <cliffcai.sh@gmail.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, cliff.cai@analog.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org, akpm@linux-foundation.org,
-        lrg@slimlogic.co.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	<1295659049-2688-6-git-send-email-jaxboe@fusionio.com>	<AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>	<20110303221353.GA10366@redhat.com> <4D761E0D.8050200@fusionio.com>	<20110308202100.GA31744@redhat.com> <4D76912C.9040705@fusionio.com> <x4962rt47mn.fsf@segfault.boston.devel.redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <x4962rt47mn.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299655539
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57481
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 7, 2011 at 8:29 PM, Mike Frysinger <vapier.adi@gmail.com> wrote:
-> On Mon, Mar 7, 2011 at 07:15, Mark Brown wrote:
->> On Mon, Mar 07, 2011 at 06:50:15AM -0500, Mike Frysinger wrote:
->>> On Mon, Mar 7, 2011 at 06:41, Mark Brown wrote:
->>> > I can't apply this driver until it's merged into ASoC via some means
+On 2011-03-08 22:36, Jeff Moyer wrote:
+> Jens Axboe <jaxboe@fusionio.com> writes:
+> 
+>> On 2011-03-08 21:21, Mike Snitzer wrote:
+>>> On Tue, Mar 08 2011 at  7:16am -0500,
+>>> Jens Axboe <jaxboe@fusionio.com> wrote:
 >>>
->>> and andrew has been holding off on merging the firmware driver until
->>> something in mainline needs it.  once a driver gets to the point where
->>> you're fine with merging it, we can bug akpm to push the sigma
->>> firmware loader to linus.
+>>>> On 2011-03-03 23:13, Mike Snitzer wrote:
+>>>>> I'm now hitting a lockdep issue, while running a 'for-2.6.39/stack-plug'
+>>>>> kernel, when I try an fsync heavy workload to a request-based mpath
+>>>>> device (the kernel ultimately goes down in flames, I've yet to look at
+>>>>> the crashdump I took)
+>>>>
+>>>> Mike, can you re-run with the current stack-plug branch? I've fixed the
+>>>> !CONFIG_BLOCK and rebase issues, and also added a change for this flush
+>>>> on schedule event. It's run outside of the runqueue lock now, so
+>>>> hopefully that should solve this one.
+>>>
+>>> Works for me, thanks.
 >>
->> It'd seem easier to just merge the two patches together rather than
->> trying to deal with cross-tree issues.
->
-> that sounds like a terrible idea.  they're logically different
-> changesets and we shouldnt be squashing them together simply to work
-> around problems with process workflows.
->
->>> > More generally this doesn't seem like a great interface - apparently the
->>> > device requries that firmware be loaded but the whole firmware load
->>> > process isn't at all joined up with the driver code meaning that the
->>> > application layer has to figure out when firmware needs to be reloaded,
->>> > there's no understanding on the part of the driver of what the firmware
->>> > on the device is doing or how it's glued into the audio subsystem.
->>
->>> the API should allow for userspace to specify the firmware name, but
->>> that's about it.  it is up to the userspace application to arbitrarily
->>> load different firmware files on the fly into the codec without the
->>> codec caring what's going into it.  often times the firmware is DSP
->>> code to do different post processing on the audio stream (cleanup or
->>> whatever).
->>
->> Right, and this isn't a particularly unusual requirement especially if
->> the driver isn't going to have any ability to interact with the DSP (at
->> which point it's just coefficient data, the fact that it's a DSP program
->> is uninteresting).  The problem is that this isn't a great interface for
->> doing that.
->
-> i dont see suggestions of a better interface anywhere ...
->
->> At a really basic level the code is not at all integrated with either
->> power management or stream handling in ASoC meaning that the user could
->> try to download firmware in the middle of an active audio stream (which
->> isn't going to be ideal).  Obviously the driver doesn't really support
->> any kind of power management at the minute but if it were improved in
->> this area you'd also have issues with trying to download firmware while
->> the device is off which probably isn't going to work either.
->
-> wrt pm, that's a trivial programming issue that would be resolved in
-> the driver.  userspace need not care.
->
-> wrt stream flows, all the customers we've talked to are fine with this
-> -- having stream control be an application issue.  their application
-> is driving the codec directly and knows when it needs to change the
-> firmware, so it pauses its alsa flow, loads the new firmware, and
-> moves on.
->
-> that said, i dont see anything in asoc today to address this, so if
-> we're simply missing it, please highlight it for us.
->
->> It's also not an interface which offers any kind of discoverability or
->> enumerability, meaning that it's not suitable for integration into
->> application layer code such as the use case manager.  Applications need
->> to be hard coded to know that a particular magic sysfs file needs to be
->> poked.  This would be a big step backwards in terms of the ability to
->> run off the shelf application software.
->
-> i dont see the issue here.  the firmware is *optional* and does not
-> impair basic audio output.  further, the firmware is fully
-> written/compiled/maintained by the end customer, just like the
-> application.  which means there is no "magic" here -- the end customer
-> is the wizard.
+>> Super, thanks! Out of curiousity, did you use dm/md?
+> 
+> mm/memory-failure.c: In function 'hwpoison_user_mappings':
+> mm/memory-failure.c:948: error: implicit declaration of function 'lock_page_nosync'
+> 
+> You missed a conversion of lock_page_nosync -> lock_page.
 
-it's a DSP,so firmware is not optional,actually there is default
-internal program can be used
-if no external firmware is downloaded,of cause, the internal program
-is only used to test analog audio pass-through.
+Thanks Jeff, I guess I should run a full modconfig/yesconfig build again
+just to check that everyone is still uptodate.
 
-> there is no "stock" firmware that ADI or anyone provides for any of
-> these SigmaDSP audio codecs.
-> -mike
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
->
+-- 
+Jens Axboe
+
