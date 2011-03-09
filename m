@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932868Ab1CISdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 13:33:49 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47900 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab1CISbo (ORCPT
+	id S1751041Ab1CIS7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 13:59:17 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57181 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab1CIS7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 13:31:44 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Han Pingtian <phan@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/10] perf top: Don't let events to eat up whole header line
-Date: Wed,  9 Mar 2011 15:31:26 -0300
-Message-Id: <1299695491-15786-6-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1299695491-15786-1-git-send-email-acme@infradead.org>
-References: <1299695491-15786-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 9 Mar 2011 13:59:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZhqTZyRufgtZUiu/+bMF3VlcqG1NVCRzjjAPr3o4kAPG9L1dNYp4dDgroZ7TSgDJ4Z
+         8gUdkDz6JzVhNFL6TLGDFuWIilEDwCQE/GqVBNnMTx1sPblPRerE0Z+eDEWDApD+bmBA
+         upa2FW7kJOIf5g59Qp5mJ0fTyYfS0gBI9cKzo=
+Date: Wed, 9 Mar 2011 19:59:09 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kay.sievers@vrfy.org" <kay.sievers@vrfy.org>,
+        "hch@infradead.org" <hch@infradead.org>
+Subject: Re: block: Fix oops caused by __blkdev_get() calling
+ disk_unblock_events() with invalid @disk
+Message-ID: <20110309185909.GA13729@mtj.dyndns.org>
+References: <1299662016-7721-1-git-send-email-tj@kernel.org>
+ <4D774641.3070806@kernel.dk>
+ <4D779396.7050905@fusionio.com>
+ <20110309153859.GD27010@htj.dyndns.org>
+ <4D77C664.3080803@fusionio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D77C664.3080803@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On Wed, Mar 09, 2011 at 07:26:44PM +0100, Jens Axboe wrote:
+> >   This is fixed by moving reference putting after open success is
+> >   determined and not clearing @disk to %NULL.  On success, @disk is
+> >   valid because there is another opener holding reference to it.  On
+> >   failure, the references are put after disk_unblock_events() is
+> >   called.
+> 
+> Thanks, applied. A bit unfortunate to have a 100% crasher in the tree,
+> though. Will suck for bisects.
 
-Passing multiple events might force out information about pid/tid/cpu.
-Attached patch leaves 30 characters for this info at the expense of the
-events' names.
+Yeah, that does suck.  I folded in the fix to the offending commit and
+regenerated the tree in case you want to rebase the tree.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Han Pingtian <phan@redhat.com>
-LKML-Reference: <1299528821-17521-3-git-send-email-jolsa@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/top.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git disk-event-convert-fixed
 
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index 4f869da..75cfe4d 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -115,9 +115,23 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 	if (!top->display_weighted) {
- 		ret += SNPRINTF(bf + ret, size - ret, "%s",
- 				event_name(top->sym_evsel));
--	} else list_for_each_entry(counter, &top->evlist->entries, node) {
--		ret += SNPRINTF(bf + ret, size - ret, "%s%s",
--				counter->idx ? "/" : "", event_name(counter));
-+	} else {
-+		/*
-+		 * Don't let events eat all the space. Leaving 30 bytes
-+		 * for the rest should be enough.
-+		 */
-+		size_t last_pos = size - 30;
-+
-+		list_for_each_entry(counter, &top->evlist->entries, node) {
-+			ret += SNPRINTF(bf + ret, size - ret, "%s%s",
-+					counter->idx ? "/" : "",
-+					event_name(counter));
-+			if (ret > last_pos) {
-+				sprintf(bf + last_pos - 3, "..");
-+				ret = last_pos - 1;
-+				break;
-+			}
-+		}
- 	}
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "], ");
+Thank you.
+
 -- 
-1.6.2.5
-
+tejun
