@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab1CIMog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 07:44:36 -0500
-Received: from 85.f6.78ae.static.theplanet.com ([174.120.246.133]:35982 "EHLO
-	nsc.nscmx.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932179Ab1CIMof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 07:44:35 -0500
-X-Greylist: delayed 2093 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Mar 2011 07:44:35 EST
-Message-ID: <9c738b36be351f64e3024c4276a5ce25.squirrel@webmail.devlyn.com.mx>
-Date: Wed, 9 Mar 2011 06:08:15 -0600
-Subject: FW:
-From: "FedEx" <frank@devlyn.com.mx>
-Reply-To: fedex01@wildblue.net
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - nsc.nscmx.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - devlyn.com.mx
-To: unlisted-recipients:; (no To-header on input)
+	id S932314Ab1CIMrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 07:47:04 -0500
+Received: from ozlabs.org ([203.10.76.45]:50286 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932144Ab1CIMrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 07:47:01 -0500
+Date: Wed, 9 Mar 2011 23:46:57 +1100
+From: Anton Blanchard <anton@samba.org>
+To: =?ISO-8859-1?B?QW3pcmljbw==?= Wang <xiyou.wangcong@gmail.com>
+Cc: Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, akpm@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
+ overridden
+Message-ID: <20110309234657.264d3080@kryten>
+In-Reply-To: <20110309122046.GC16951@cr0.redhat.com>
+References: <20100825002258.GD28360@kryten>
+	<m139u37cii.fsf@fess.ebiederm.org>
+	<4D771EE6.5050404@linux.vnet.ibm.com>
+	<20110309122046.GC16951@cr0.redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Date: 8th  March, 2011.
-FedEx® Claims Dept.
+Hi,
 
-Data confirmation
+> The crashkernel region is specified via kernel cmdline, so why
+> not just drop a failure when it overlaps with RMO region?
+> Am I missing something?
 
-You have a registered package. CONTENT: Bank Draft of $920 000.00 USD in
-our custody. Registered by an Official of the United Nation (Protocal and
-Liaison Service). Reg.# R-2267544490000. For your information the VAT and
-COD have been paid. The only payment You are to make is $69 for the
-security keeping fees
+Unfortunately a ppc64 kernel requires a chunk of RMO memory. We would
+need the ability to specify multiple crashkernel regions - about 32MB
+in the RMO and the rest can be anywhere. That sounds pretty fragile for
+a user to configure successfully on the cmdline.
 
-Contact FedEx Delivery Department with details below:
+Thats why the ppc64 crashkernel region begins mid way through the RMO
+region. It means both kernels get a chunk of RMO and we only have to
+deal with one crashkernel reservation in all the tools and
+documentation.
 
-Name:  Mr . Larry Watts
-Email:fedexdeliveryservice11@wildblue.net
-Tel: +2348023111517
-
-You are to reconfirm your Postal address and telephone number for urgent
-service:
-
-Full Name:
-Address:
-City:
-Postal Address:
-Phone:
-Country:
-
-After confirmation of details our delivery team shall give you payment
-details For Customs clarification Form.
-
-Yours Faithfully,
-Mrs. Jose Saldanha
-©Federal Express Corporation
-All rights reserved. © 1995-2011 FedEx
-
-
-
-
+Anton
