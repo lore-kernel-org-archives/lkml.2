@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab1CILWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 06:22:46 -0500
-Received: from hera.kernel.org ([140.211.167.34]:35104 "EHLO hera.kernel.org"
+	id S1756895Ab1CILWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 06:22:50 -0500
+Received: from hera.kernel.org ([140.211.167.34]:35114 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758Ab1CILWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 06:22:41 -0500
-Date: Wed, 9 Mar 2011 11:22:17 GMT
-From: tip-bot for Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+	id S1751758Ab1CILWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 06:22:47 -0500
+Date: Wed, 9 Mar 2011 11:21:52 GMT
+From: tip-bot for Sedat Dilek <sedat.dilek@googlemail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        stable@kernel.org, nagananda.chumbalkar@hp.com, tglx@linutronix.de,
-        mingo@elte.hu
+        heukelum@fastmail.fm, sedat.dilek@googlemail.com, pavel@ucw.cz,
+        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu, sedat.dilek@gmail.com,
+        hjl.tools@gmail.com, len.brown@intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, nagananda.chumbalkar@hp.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
-References: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+        sedat.dilek@googlemail.com, heukelum@fastmail.fm, pavel@ucw.cz,
+        tglx@linutronix.de, rjw@sisk.pl, len.brown@intel.com,
+        hjl.tools@gmail.com, sedat.dilek@gmail.com, mingo@elte.hu
+In-Reply-To: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
+References: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Don't check for BIOS corruption in first 64K when there's no need to
-Message-ID: <tip-acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3@git.kernel.org>
-Git-Commit-ID: acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3
+Subject: [tip:x86/trampoline] x86: Fix binutils-2.21 symbol related build failures
+Message-ID: <tip-2ae9d293b14d17f35eff624272cfecac7979a2ee@git.kernel.org>
+Git-Commit-ID: 2ae9d293b14d17f35eff624272cfecac7979a2ee
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Mar 2011 11:22:18 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Mar 2011 11:21:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3
-Gitweb:     http://git.kernel.org/tip/acc45cf678528c8ebe20e9bb8b51c2ea1022e6d3
-Author:     Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-AuthorDate: Fri, 25 Feb 2011 20:31:55 +0000
+Commit-ID:  2ae9d293b14d17f35eff624272cfecac7979a2ee
+Gitweb:     http://git.kernel.org/tip/2ae9d293b14d17f35eff624272cfecac7979a2ee
+Author:     Sedat Dilek <sedat.dilek@googlemail.com>
+AuthorDate: Tue, 8 Mar 2011 22:39:24 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Mar 2011 10:34:21 +0100
+CommitDate: Wed, 9 Mar 2011 10:25:45 +0100
 
-x86: Don't check for BIOS corruption in first 64K when there's no need to
+x86: Fix binutils-2.21 symbol related build failures
 
-Due to commit 781c5a67f152c17c3e4a9ed9647f8c0be6ea5ae9 it is
-likely that the number of areas to scan for BIOS corruption is 0
- -- especially when the first 64K is already reserved
-(X86_RESERVE_LOW is 64K by default).
+New binutils version 2.21.0.20110302-1 started checking that the symbol
+parameter to the .size directive matches the entry name's
+symbol parameter, unearthing two mismatches:
 
-If that's the case then don't set up the scan.
+  AS      arch/x86/kernel/acpi/wakeup_rm.o
+  arch/x86/kernel/acpi/wakeup_rm.S: Assembler messages:
+  arch/x86/kernel/acpi/wakeup_rm.S:12: Error: .size expression with symbol `wakeup_code_start' does not evaluate to a constant
 
-Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Cc: <stable@kernel.org>
-LKML-Reference: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+  arch/x86/kernel/entry_32.S: Assembler messages:
+  arch/x86/kernel/entry_32.S:1421: Error: .size expression with
+  symbol `apf_page_fault' does not evaluate to a constant
+
+The problem was discovered while using Debian's binutils
+(2.21.0.20110302-1) and experimenting with binutils from
+upstream.
+
+Thanks Alexander and H.J. for the vital help.
+
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: H.J. Lu <hjl.tools@gmail.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+LKML-Reference: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/check.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/acpi/wakeup_rm.S |    2 +-
+ arch/x86/kernel/entry_32.S       |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/check.c b/arch/x86/kernel/check.c
-index 13a3891..bfd59ea 100644
---- a/arch/x86/kernel/check.c
-+++ b/arch/x86/kernel/check.c
-@@ -106,8 +106,8 @@ void __init setup_bios_corruption_check(void)
- 		addr += size;
- 	}
+diff --git a/arch/x86/kernel/acpi/wakeup_rm.S b/arch/x86/kernel/acpi/wakeup_rm.S
+index 6ce81ee..63b8ab5 100644
+--- a/arch/x86/kernel/acpi/wakeup_rm.S
++++ b/arch/x86/kernel/acpi/wakeup_rm.S
+@@ -9,4 +9,4 @@
+ 	.globl	acpi_wakeup_code
+ acpi_wakeup_code:
+ 	.incbin	"arch/x86/kernel/acpi/realmode/wakeup.bin"
+-	.size	wakeup_code_start, .-wakeup_code_start
++	.size	acpi_wakeup_code, .-acpi_wakeup_code
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index c8b4efa..9ca3b0e 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1413,7 +1413,7 @@ ENTRY(async_page_fault)
+ 	CFI_ADJUST_CFA_OFFSET 4
+ 	jmp error_code
+ 	CFI_ENDPROC
+-END(apf_page_fault)
++END(async_page_fault)
+ #endif
  
--	printk(KERN_INFO "Scanning %d areas for low memory corruption\n",
--	       num_scan_areas);
-+	if (num_scan_areas)
-+		printk(KERN_INFO "Scanning %d areas for low memory " "corruption\n", num_scan_areas);
- }
- 
- 
-@@ -143,12 +143,12 @@ static void check_corruption(struct work_struct *dummy)
- {
- 	check_for_bios_corruption();
- 	schedule_delayed_work(&bios_check_work,
--		round_jiffies_relative(corruption_check_period*HZ)); 
-+		round_jiffies_relative(corruption_check_period*HZ));
- }
- 
- static int start_periodic_check_for_corruption(void)
- {
--	if (!memory_corruption_check || corruption_check_period == 0)
-+	if (!num_scan_areas || !memory_corruption_check || corruption_check_period == 0)
- 		return 0;
- 
- 	printk(KERN_INFO "Scanning for low memory corruption every %d seconds\n",
+ /*
