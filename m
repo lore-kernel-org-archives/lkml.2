@@ -1,103 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab1CIJzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 04:55:12 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58760 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756933Ab1CIJzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 04:55:10 -0500
-Date: Wed, 9 Mar 2011 09:55:07 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
- ADAU1701 SigmaDSP
-Message-ID: <20110309095506.GA6923@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com>
- <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
- <20110307121502.GG13471@opensource.wolfsonmicro.com>
- <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
- <20110307145931.GK13471@opensource.wolfsonmicro.com>
- <AANLkTi=e1xDz6fhBU7NL32DXL1J9Y1CDD2bHQVL6oASw@mail.gmail.com>
- <20110307155508.GM13471@opensource.wolfsonmicro.com>
- <AANLkTim6bQGKCuzAgxNS93LQkq2iqxjcCW49NBArafK1@mail.gmail.com>
+	id S1757106Ab1CIKAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 05:00:30 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:58911 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757055Ab1CIKA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 05:00:29 -0500
+Date: Wed, 9 Mar 2011 11:00:20 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3] memcg: fix leak on wrong LRU with FUSE
+Message-ID: <20110309100020.GD30778@cmpxchg.org>
+References: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110308181832.6386da5f.nishimura@mxp.nes.nec.co.jp>
+ <20110309150750.d570798c.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110309164801.3a4c8d10.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim6bQGKCuzAgxNS93LQkq2iqxjcCW49NBArafK1@mail.gmail.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110309164801.3a4c8d10.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 01:08:03AM -0500, Mike Frysinger wrote:
-> On Mon, Mar 7, 2011 at 10:55, Mark Brown wrote:
+On Wed, Mar 09, 2011 at 04:48:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 9 Mar 2011 15:07:50 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > > } else {
+> > > 	/* shmem */
+> > > 	if (PageSwapCache(page)) {
+> > > 		..
+> > > 	} else {
+> > > 		..
+> > > 	}
+> > > }
+> > > 
+> > > Otherwise, the page cache will be charged twice.
+> > > 
+> > 
+> > Ahh, thanks. I'll send v3.
+> > 
+> 
+> Okay, this is a fixed one.
+> ==
+> 
+> fs/fuse/dev.c::fuse_try_move_page() does
+> 
+>    (1) remove a page by ->steal()
+>    (2) re-add the page to page cache 
+>    (3) link the page to LRU if it was not on LRU at (1)
+> 
+> This implies the page is _on_ LRU when it's added to radix-tree.
+> So, the page is added to  memory cgroup while it's on LRU.
+> because LRU is lazy and no one flushs it.
+> 
+> This is the same behavior as SwapCache and needs special care as
+>  - remove page from LRU before overwrite pc->mem_cgroup.
+>  - add page to LRU after overwrite pc->mem_cgroup.
+> 
+> And we need to taking care of pagevec.
+> 
+> If PageLRU(page) is set before we add PCG_USED bit, the page
+> will not be added to memcg's LRU (in short period).
+> So, regardlress of PageLRU(page) value before commit_charge(),
+> we need to check PageLRU(page) after commit_charge().
+> 
+> Changelog v2=>v3:
+>   - fixed double accounting.
+> 
+> Changelog v1=>v2:
+>   - clean up.
+>   - cover !PageLRU() by pagevec case.
+> 
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> > At a bare minimum suddenly stopping and starting the firmware while
-> > audio is going through it is unlikely to work well (you'd most likely
-> > get a hard stop of the audio followed by a sudden hard start which sound
-> > very unpleasant to listeners) and so should be prevented.  There's a
-> > bunch of options for doing this (including refusing to change, ensuring
-> > the DSP output is muted during the change or routing around the DSP
-> > while doing the change).
+Thanks for the fix.  I have a few comments below.  Only nitpicks
+though, the patch looks correct to me.
 
-> you would probably get the "normal" clicks and pops, but i guess your
-> view of "wrong" is much more strict than mine ;).  i'm not sure our
-> parts allow routing around the DSP (Cliff would have to comment).  as
-> for the rest, i think it'd be best to let the user space app dictate
-> how they want to handle things.  perhaps clicks/pops are fine with
-> them.  or they arent, and so the userspace app would make sure to
-> pause/mute/whatever the stream.  either way, this sounds like a policy
-> that shouldnt be hard coded in the codec driver.
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Muting the DSP output during firmware reboots seems like an entirely
-reasonable way of doing this if there's no ability to route round the
-DSP or otherwise deal with the issue, and given how cheap the
-mute/unmute is it's hard to see where a user would find that a problem.
-Either they'll want to deal with the issue or they won't care.
+> @@ -2431,9 +2430,28 @@ static void
+>  __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
+>  					enum charge_type ctype);
+>  
+> +static void
+> +__mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *mem,
+> +					enum charge_type ctype)
+> +{
+> +	struct page_cgroup *pc = lookup_page_cgroup(page);
+> +	/*
+> +	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
+> +	 * is already on LRU. It means the page may on some other page_cgroup's
+> +	 * LRU. Take care of it.
+> +	 */
+> +	if (unlikely(PageLRU(page)))
+> +		mem_cgroup_lru_del_before_commit(page);
 
-Bear in mind that people are trying to do things like run off the shelf
-PulseAudio as their system audio manager in embedded systems - the
-kernel should make some effort to behave sanely.
+Do we need the extra check?  mem_cgroup_lru_del_before_commit() will
+do the right thing if the page is not on the list.
 
-> > The standard tools should also be able to manage the mechanics of
-> > actually getting the new data into the kernel at appropriate moments.
-> > This includes both offering control via UIs such as alsamixer and being
-> > able to include configuration of the data in UCM configurations.
+> +	__mem_cgroup_commit_charge(mem, page, 1, pc, ctype);
+> +	if (unlikely(PageLRU(page)))
+> +		mem_cgroup_lru_add_after_commit(page);
 
-> exposing this via alsamixer and friends would be a useful debugging
-> tool so people can toy around with known working configurations.  and
-> have code examples to see how to do it.
+Same here, mem_cgroup_lru_add_after_commit() has its own check for
+PG_lru.
 
-The ALSA APIs are also the userspace interface to the audio subsystem,
-any userspace application interacting with the audio hardware is
-expected to use them.
+> @@ -2468,14 +2486,16 @@ int mem_cgroup_cache_charge(struct page 
+>  	if (unlikely(!mm))
+>  		mm = &init_mm;
+>  
+> -	if (page_is_file_cache(page))
+> -		return mem_cgroup_charge_common(page, mm, gfp_mask,
+> -				MEM_CGROUP_CHARGE_TYPE_CACHE);
+> -
+> +	if (page_is_file_cache(page)) {
+> +		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &mem, true);
+> +		if (ret || !mem)
+> +			return ret;
+> +		__mem_cgroup_commit_charge_lrucare(page, mem,
+> +					MEM_CGROUP_CHARGE_TYPE_CACHE);
 
-> > I'm not sure you're following what's being said here.  The above control
-> > discussed above full system configuration of all the control offered by
-> > the system, not tuning the parameters of an individual algorithm.  This
-> > includes volume controls, routing controls, algorithms, coefficients and
-> > anything else that can be changed.  A scenario where you want to change
-> > the set of algorithms the hardware can support is certainly included in
-> > that.
+I think the comment about why we need to take care of the LRU status
+would make more sense here (rather than in the _lrucare function),
+because it is here where you make handling the lru a consequence of
+the page being a file page.
 
-> i just meant that the use cases we've been dealing with involve the
-> people developing the application taking care of picking which
-> firmwares to load at any particular time.  having the end user (the
-> guy who buys the actual device) select firmwares doesnt make much
-> sense.  but this particular qualification probably is irrelevant to
-> the framework you're proposing in the end.
+How about this?
 
-In a modern Linux system the user will rarely see an application that
-exposes ALSA directly unless they go looking (in an embedded system they
-may not be able to go looking due to the limits of the UI), they'll see
-a higher level abstraction.  In the desktop case the primary interface
-the user has is with GUIs that control PulseAudio which abstract away
-the actual control offered by the drivers.  Embedded systems tend to
-either use Pulse or brew their own equivalent.
+		/*
+		 * FUSE reuses pages without going through the final
+		 * put that would remove them from the LRU list, make
+		 * sure that they get relinked properly.
+		 */
