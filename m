@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab1CIAni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:43:38 -0500
-Received: from mout.perfora.net ([74.208.4.195]:56200 "EHLO mout.perfora.net"
+	id S1756824Ab1CIAol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:44:41 -0500
+Received: from mout.perfora.net ([74.208.4.195]:58453 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756318Ab1CIAng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:43:36 -0500
+	id S1756210Ab1CIAoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:44:39 -0500
 From: Stephen Wilson <wilsons@start.ca>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -18,94 +18,186 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Michel Lespinasse <walken@google.com>,
         Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
         Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH 2/6] mm: factor out main logic of access_process_vm
-Date: Tue,  8 Mar 2011 19:42:19 -0500
-Message-Id: <1299631343-4499-3-git-send-email-wilsons@start.ca>
+Subject: [PATCH 5/6] proc: make check_mem_permission() return an mm_struct on success
+Date: Tue,  8 Mar 2011 19:42:22 -0500
+Message-Id: <1299631343-4499-6-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1299631343-4499-1-git-send-email-wilsons@start.ca>
 References: <1299631343-4499-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:iScwI5cb4GdnBtNk8nUswiD44ALEkz8J9K5M3PeCR9o
- NvuZZFNKGBZN+TBiQSNTAFM4K+lFLokitFmgAgRWDMaS1ZRwJs
- QLhxYxMlbUIHlsZrtwhxVuKjHzO14r9T8XYbcByhldhWCQQTKd
- +PghCOhJusERlcS79bK47S0UvNl7jXIjMkoRrRNVZigWsf7C2P
- 5Jztn4VyIqYA+0TZNF3AlF3gvy4ck6MNc3AiOWwQ7M=
+X-Provags-ID: V02:K0:MLszAcJBSrJ8SynjfmnflATeS+6HpCso3i5UNJw5BoL
+ 8E5oeNLD7+r/WCJiPNGpny26d+X4xcxP9ZoT4bKHEmo36OwEys
+ mn0ju3nd0DRoKj8LAW6OiaqJgemZQBrCy2HdfmtXe2YXcD5Q0X
+ bWkyE2dM+mPTCw0uECeGEOq4b7OObyT3GPUBU67t30kfvbm08f
+ IlVeZj8rDX55Df18Ua4f4nQg31H4dCiNpXyOowjUKc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce an internal helper __access_remote_vm and base access_process_vm on
-top of it.  This new method may be called with a NULL task_struct if page fault
-accounting is not desired.  This code will be shared with a new address space
-accessor that is independent of task_struct.
+This change allows us to take advantage of access_remote_vm(), which in turn
+enables a secure mem_write() implementation.
+
+The previous implementation of mem_write() was insecure since the target task
+could exec a setuid-root binary between the permission check and the actual
+write.  Holding a reference to the target mm_struct eliminates this
+vulnerability.
 
 Signed-off-by: Stephen Wilson <wilsons@start.ca>
 ---
- mm/memory.c |   35 +++++++++++++++++++++++++----------
- 1 files changed, 25 insertions(+), 10 deletions(-)
+ fs/proc/base.c |   54 ++++++++++++++++++++++++++++++++----------------------
+ 1 files changed, 32 insertions(+), 22 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 36445e3..68eec4f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3593,20 +3593,15 @@ int generic_access_phys(struct vm_area_struct *vma, unsigned long addr,
- #endif
- 
- /*
-- * Access another process' address space.
-- * Source/target buffer must be kernel space,
-- * Do not walk the page table directly, use get_user_pages
-+ * Access another process' address space as given in mm.  If non-NULL, use the
-+ * given task for page fault accounting.
-  */
--int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write)
-+static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
-+		unsigned long addr, void *buf, int len, int write)
- {
--	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
- 	void *old_buf = buf;
- 
--	mm = get_task_mm(tsk);
--	if (!mm)
--		return 0;
--
- 	down_read(&mm->mmap_sem);
- 	/* ignore errors, just check how much was successfully transferred */
- 	while (len) {
-@@ -3655,12 +3650,32 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, in
- 		addr += bytes;
- 	}
- 	up_read(&mm->mmap_sem);
--	mmput(mm);
- 
- 	return buf - old_buf;
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index e52702d..5ffc927 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -192,16 +192,23 @@ static int proc_root_link(struct inode *inode, struct path *path)
  }
  
  /*
-+ * Access another process' address space.
-+ * Source/target buffer must be kernel space,
-+ * Do not walk the page table directly, use get_user_pages
-+ */
-+int access_process_vm(struct task_struct *tsk, unsigned long addr,
-+		void *buf, int len, int write)
-+{
-+	struct mm_struct *mm;
-+	int ret;
-+
-+	mm = get_task_mm(tsk);
-+	if (!mm)
-+		return 0;
-+
-+	ret = __access_remote_vm(tsk, mm, addr, buf, len, write);
-+	mmput(mm);
-+
-+	return ret;
-+}
-+
-+/*
-  * Print the name of a VMA.
+- * Return zero if current may access user memory in @task, -error if not.
++ * If current may access user memory in @task return a reference to the
++ * corresponding mm, otherwise NULL.
   */
- void print_vma_addr(char *prefix, unsigned long ip)
+-static int check_mem_permission(struct task_struct *task)
++static struct mm_struct *check_mem_permission(struct task_struct *task)
+ {
++	struct mm_struct *mm;
++
++	mm = get_task_mm(task);
++	if (!mm)
++		return NULL;
++
+ 	/*
+ 	 * A task can always look at itself, in case it chooses
+ 	 * to use system calls instead of load instructions.
+ 	 */
+ 	if (task == current)
+-		return 0;
++		return mm;
+ 
+ 	/*
+ 	 * If current is actively ptrace'ing, and would also be
+@@ -213,13 +220,14 @@ static int check_mem_permission(struct task_struct *task)
+ 		match = (tracehook_tracer_task(task) == current);
+ 		rcu_read_unlock();
+ 		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
+-			return 0;
++			return mm;
+ 	}
+ 
+ 	/*
+ 	 * Noone else is allowed.
+ 	 */
+-	return -EPERM;
++	mmput(mm);
++	return NULL;
+ }
+ 
+ struct mm_struct *mm_for_maps(struct task_struct *task)
+@@ -775,24 +783,20 @@ static ssize_t mem_read(struct file * file, char __user * buf,
+ 	if (!task)
+ 		goto out_no_task;
+ 
+-	if (check_mem_permission(task))
++	ret = -EPERM;
++	mm = check_mem_permission(task);
++	if (!mm)
+ 		goto out;
+ 
+ 	ret = -ENOMEM;
+ 	page = (char *)__get_free_page(GFP_TEMPORARY);
+ 	if (!page)
+-		goto out;
+-
+-	ret = 0;
+- 
+-	mm = get_task_mm(task);
+-	if (!mm)
+-		goto out_free;
++		goto out_put;
+ 
+ 	ret = -EIO;
+  
+ 	if (file->private_data != (void*)((long)current->self_exec_id))
+-		goto out_put;
++		goto out_free;
+ 
+ 	ret = 0;
+  
+@@ -800,8 +804,8 @@ static ssize_t mem_read(struct file * file, char __user * buf,
+ 		int this_len, retval;
+ 
+ 		this_len = (count > PAGE_SIZE) ? PAGE_SIZE : count;
+-		retval = access_process_vm(task, src, page, this_len, 0);
+-		if (!retval || check_mem_permission(task)) {
++		retval = access_remote_vm(mm, src, page, this_len, 0);
++		if (!retval) {
+ 			if (!ret)
+ 				ret = -EIO;
+ 			break;
+@@ -819,10 +823,10 @@ static ssize_t mem_read(struct file * file, char __user * buf,
+ 	}
+ 	*ppos = src;
+ 
+-out_put:
+-	mmput(mm);
+ out_free:
+ 	free_page((unsigned long) page);
++out_put:
++	mmput(mm);
+ out:
+ 	put_task_struct(task);
+ out_no_task:
+@@ -838,6 +842,7 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ {
+ 	int copied;
+ 	char *page;
++	struct mm_struct *mm;
+ 	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+ 	unsigned long dst = *ppos;
+ 
+@@ -845,17 +850,19 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 	if (!task)
+ 		goto out_no_task;
+ 
+-	if (check_mem_permission(task))
++	copied = -EPERM;
++	mm = check_mem_permission(task);
++	if (!mm)
+ 		goto out;
+ 
+ 	copied = -EIO;
+ 	if (file->private_data != (void *)((long)current->self_exec_id))
+-		goto out;
++		goto out_put;
+ 
+ 	copied = -ENOMEM;
+ 	page = (char *)__get_free_page(GFP_TEMPORARY);
+ 	if (!page)
+-		goto out;
++		goto out_put;
+ 
+ 	copied = 0;
+ 	while (count > 0) {
+@@ -866,7 +873,7 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 			copied = -EFAULT;
+ 			break;
+ 		}
+-		retval = access_process_vm(task, dst, page, this_len, 1);
++		retval = access_remote_vm(mm, dst, page, this_len, 1);
+ 		if (!retval) {
+ 			if (!copied)
+ 				copied = -EIO;
+@@ -879,6 +886,9 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 	}
+ 	*ppos = dst;
+ 	free_page((unsigned long) page);
++
++out_put:
++	mmput(mm);
+ out:
+ 	put_task_struct(task);
+ out_no_task:
 -- 
 1.7.3.5
 
