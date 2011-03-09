@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1CIGer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 01:34:47 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34134 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1CIGeq (ORCPT
+	id S1753486Ab1CIGjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 01:39:15 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60564
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752732Ab1CIGjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 01:34:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=qiGzBbq2gFK3q8GhpHyNvaRu/WScd2DYHFQq0UIFcABo+iVwPiZ+DNUt+4Pn1i3EIx
-         n5PFSZ8K5R8t1tX7Uvp9HS9pdoPYjb5Rm4v8jmsM42+AI8i0o1jPGA5IneOgWp43fPeN
-         dXJkUa8Suf/AkVNyeVl0LgMqGkg2ifY3GA308=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] vmalloc: remove confusing comment on vwrite()
-Date: Wed,  9 Mar 2011 15:34:36 +0900
-Message-Id: <1299652476-5185-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
+	Wed, 9 Mar 2011 01:39:14 -0500
+Date: Tue, 08 Mar 2011 22:39:51 -0800 (PST)
+Message-Id: <20110308.223951.193722389.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com, dhsharp@google.com
+Subject: Re: [PATCH 04/15] ftrace: pack event structures.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1299627003.20306.94.camel@gandalf.stny.rr.com>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+	<1291421609-14665-5-git-send-email-dhsharp@google.com>
+	<1299627003.20306.94.camel@gandalf.stny.rr.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KM_USER1 is never used for vwrite() path so the caller
-doesn't need to guarantee it is not used. Only the caller
-should guarantee is KM_USER0 and it is commented already.
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Tue, 08 Mar 2011 18:30:03 -0500
 
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- mm/vmalloc.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+> I'm going back through this patch set and looking to incorporate it into
+> 2.6.39. But I know how touchy sparc is with "packed" data structures. Do
+> you see this patch as hurting sparc?
+> 
+> I wonder if we should change this to something like:
+> 
+> #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+> # define do_event_packed __attirbute__((packed))
+> #else
+> # define do_event_packed
+> #endif
+> 
+> and use "do_event_packed" instead?
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index f9b166732e70..2828b6122bd4 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1951,8 +1951,6 @@ finished:
-  *	should know vmalloc() area is valid and can use memcpy().
-  *	This is for routines which have to access vmalloc area without
-  *	any informaion, as /dev/kmem.
-- *
-- *	The caller should guarantee KM_USER1 is not used.
-  */
- 
- long vwrite(char *buf, char *addr, unsigned long count)
--- 
-1.7.4
+I think you should elide packed at all costs, and instead tell the compiler
+what your intentions are by exposing the real types using unions or
+similar instead of hiding it in an opaque way behind final char[] arrays.
 
