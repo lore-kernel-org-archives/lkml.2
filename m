@@ -1,111 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab1CIUqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 15:46:42 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:53807 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab1CIUqk (ORCPT
+	id S1752540Ab1CIUuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 15:50:07 -0500
+Received: from sj-iport-3.cisco.com ([171.71.176.72]:16164 "EHLO
+	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab1CIUuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 15:46:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=qxnUDndSg5BCUngykj+y825rLYBX2oh6ikx9qyxzLpdG4WXGU62XIhS2IGpUQ3R8ir
-         gHIN8AGnYKxyKFXwJbSsNn8qlgR7f7MMCa2VHZIs6HtHQ2uhcEgaeo6ZSJIcQGw+MH5d
-         DwvANPaKV9s7GJX1NQ41Ac8toDJrwvHcHiiZ4=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: ben-linux@fluff.org, perex@perex.cz, tiwai@suse.de
-Cc: broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH RFC] arm: mini2440: Fix uda134x codec problem.
-Date: Wed,  9 Mar 2011 21:46:20 +0100
-Message-Id: <1299703580-3957-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 9 Mar 2011 15:50:05 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAE52d02rR7Hu/2dsb2JhbACmcXSnTYtOh3EviGCFZQSFIocYhmQ
+X-IronPort-AV: E=Sophos;i="4.62,292,1297036800"; 
+   d="scan'208";a="275930167"
+From: Vinay Sawal <vinaysawal@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Vinay Sawal <vinaysawal@gmail.com>
+Subject: [PATCH] Staging: bcm: Bcmnet: fixed checkpatch script issues
+Date: Wed,  9 Mar 2011 12:50:01 -0800
+Message-Id: <1299703801-19378-1-git-send-email-vinaysawal@gmail.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ASoC audio for mini2440 platform in current kenrel doesn't work.
-First problem is samsung_asoc_dma device is missing in initialization.
-Next problem is with codec. Codec is initialized but never probed
-because no platform_device exist for codec driver. It leads to errors
-during codec binding to asoc dai. Next problem was platform data which
-was passed from board to asoc main driver but not passed to codec when
-called codec_soc_probe().
+Fixed all issues reported by checkpatch script on this file.
 
-Following patch should fix issues. But not sure if in correct way.
-Please review.
-
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+Signed-off-by: Vinay Sawal <vinaysawal@gmail.com>
 ---
- arch/arm/mach-s3c2440/mach-mini2440.c |    7 +++++++
- sound/soc/codecs/uda134x.c            |    3 ++-
- sound/soc/samsung/s3c24xx_uda134x.c   |    3 ++-
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/staging/bcm/Bcmnet.c |   51 +++++++++++++++++++++++++++++------------
+ 1 files changed, 36 insertions(+), 15 deletions(-)
 
-diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
-index f62bb4c..7c3fb07 100644
---- a/arch/arm/mach-s3c2440/mach-mini2440.c
-+++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -506,6 +506,11 @@ static struct i2c_board_info mini2440_i2c_devs[] __initdata = {
- 	},
- };
- 
-+static struct platform_device uda1340_codec = {
-+		.name = "uda134x-codec",
-+		.id = -1,
-+};
+diff --git a/drivers/staging/bcm/Bcmnet.c b/drivers/staging/bcm/Bcmnet.c
+index a6ce239..4e38a76 100644
+--- a/drivers/staging/bcm/Bcmnet.c
++++ b/drivers/staging/bcm/Bcmnet.c
+@@ -1,3 +1,23 @@
++/*
++    bcm/Bcmnet.c
++    Bcm network driver
 +
- static struct platform_device *mini2440_devices[] __initdata = {
- 	&s3c_device_ohci,
- 	&s3c_device_wdt,
-@@ -521,7 +526,9 @@ static struct platform_device *mini2440_devices[] __initdata = {
- 	&s3c_device_nand,
- 	&s3c_device_sdi,
- 	&s3c_device_iis,
-+	&uda1340_codec,
- 	&mini2440_audio,
-+	&samsung_asoc_dma,
++    This program is free software; you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation; either version 2 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program; if not, write to the Free Software
++    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++
++*/
++
+ #include "headers.h"
+ 
+ struct net_device *gblpnetdev;
+@@ -8,7 +28,7 @@ static INT bcm_open(struct net_device *dev)
+ 
+ 	if (Adapter->fw_download_done == FALSE) {
+ 		pr_notice(PFX "%s: link up failed (download in progress)\n",
+- 			  dev->name);
++			  dev->name);
+ 		return -EBUSY;
+ 	}
+ 
+@@ -50,7 +70,7 @@ static u16 bcm_select_queue(struct net_device *dev, struct sk_buff *skb)
+ * Description - This is the main transmit function for our virtual
+ *		interface(eth0). It handles the ARP packets. It
+ *		clones this packet and then Queue it to a suitable
+-* 		Queue. Then calls the transmit_packet().
++*		Queue. Then calls the transmit_packet().
+ *
+ * Parameter   -	 skb - Pointer to the socket buffer structure
+ *		 dev - Pointer to the virtual net device structure
+@@ -110,13 +130,13 @@ static netdev_tx_t bcm_transmit(struct sk_buff *skb, struct net_device *dev)
+ Register other driver entry points with the kernel
+ */
+ static const struct net_device_ops bcmNetDevOps = {
+-    .ndo_open		= bcm_open,
+-    .ndo_stop 		= bcm_close,
+-    .ndo_start_xmit	= bcm_transmit,
+-    .ndo_change_mtu	= eth_change_mtu,
+-    .ndo_set_mac_address = eth_mac_addr,
+-    .ndo_validate_addr	= eth_validate_addr,
+-    .ndo_select_queue	= bcm_select_queue,
++	.ndo_open		= bcm_open,
++	.ndo_stop		= bcm_close,
++	.ndo_start_xmit	        = bcm_transmit,
++	.ndo_change_mtu	        = eth_change_mtu,
++	.ndo_set_mac_address    = eth_mac_addr,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_select_queue	= bcm_select_queue,
  };
  
- static void __init mini2440_map_io(void)
-diff --git a/sound/soc/codecs/uda134x.c b/sound/soc/codecs/uda134x.c
-index e76847a..48ffd40 100644
---- a/sound/soc/codecs/uda134x.c
-+++ b/sound/soc/codecs/uda134x.c
-@@ -486,7 +486,8 @@ static struct snd_soc_dai_driver uda134x_dai = {
- static int uda134x_soc_probe(struct snd_soc_codec *codec)
+ static struct device_type wimax_type = {
+@@ -138,7 +158,8 @@ static int bcm_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	return 0;
+ }
+ 
+-static void bcm_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
++static void bcm_get_drvinfo(struct net_device *dev,
++			    struct ethtool_drvinfo *info)
  {
- 	struct uda134x_priv *uda134x;
--	struct uda134x_platform_data *pd = dev_get_drvdata(codec->card->dev);
-+	struct uda134x_platform_data *pd = codec->card->dev->platform_data;
+ 	PMINI_ADAPTER Adapter = GET_BCM_ADAPTER(dev);
+ 	PS_INTERFACE_ADAPTER psIntfAdapter = Adapter->pvInterfaceAdapter;
+@@ -160,14 +181,14 @@ static u32 bcm_get_link(struct net_device *dev)
+ 	return Adapter->LinkUpStatus;
+ }
+ 
+-static u32 bcm_get_msglevel (struct net_device *dev)
++static u32 bcm_get_msglevel(struct net_device *dev)
+ {
+ 	PMINI_ADAPTER Adapter = GET_BCM_ADAPTER(dev);
+ 
+ 	return Adapter->msg_enable;
+ }
+ 
+-static void bcm_set_msglevel (struct net_device *dev, u32 level)
++static void bcm_set_msglevel(struct net_device *dev, u32 level)
+ {
+ 	PMINI_ADAPTER Adapter = GET_BCM_ADAPTER(dev);
+ 
+@@ -177,7 +198,7 @@ static void bcm_set_msglevel (struct net_device *dev, u32 level)
+ static const struct ethtool_ops bcm_ethtool_ops = {
+ 	.get_settings	= bcm_get_settings,
+ 	.get_drvinfo	= bcm_get_drvinfo,
+-	.get_link 	= bcm_get_link,
++	.get_link	= bcm_get_link,
+ 	.get_msglevel	= bcm_get_msglevel,
+ 	.set_msglevel	= bcm_set_msglevel,
+ };
+@@ -206,7 +227,7 @@ int register_networkdev(PMINI_ADAPTER Adapter)
+ 	if (result != STATUS_SUCCESS) {
+ 		dev_err(&udev->dev,
+ 			PFX "Error in Reading the mac Address: %d", result);
+- 		return -EIO;
++		return -EIO;
+ 	}
+ 
+ 	result = register_netdev(net);
+@@ -233,6 +254,6 @@ void unregister_networkdev(PMINI_ADAPTER Adapter)
+ 	if (netif_msg_probe(Adapter))
+ 		dev_info(&udev->dev, PFX "%s: unregister usb-%s%s\n",
+ 			 net->name, xdev->bus->bus_name, xdev->devpath);
+- 
 +
- 	int ret;
- 
- 	printk(KERN_INFO "UDA134X SoC Audio Codec\n");
-diff --git a/sound/soc/samsung/s3c24xx_uda134x.c b/sound/soc/samsung/s3c24xx_uda134x.c
-index 2c09e93..86f1dc4 100644
---- a/sound/soc/samsung/s3c24xx_uda134x.c
-+++ b/sound/soc/samsung/s3c24xx_uda134x.c
-@@ -226,7 +226,7 @@ static struct snd_soc_ops s3c24xx_uda134x_ops = {
- static struct snd_soc_dai_link s3c24xx_uda134x_dai_link = {
- 	.name = "UDA134X",
- 	.stream_name = "UDA134X",
--	.codec_name = "uda134x-hifi",
-+	.codec_name = "uda134x-codec",
- 	.codec_dai_name = "uda134x-hifi",
- 	.cpu_dai_name = "s3c24xx-iis",
- 	.ops = &s3c24xx_uda134x_ops,
-@@ -321,6 +321,7 @@ static int s3c24xx_uda134x_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(s3c24xx_uda134x_snd_device,
- 			     &snd_soc_s3c24xx_uda134x);
-+	platform_device_add_data(s3c24xx_uda134x_snd_device, &s3c24xx_uda134x, sizeof(s3c24xx_uda134x));
- 	ret = platform_device_add(s3c24xx_uda134x_snd_device);
- 	if (ret) {
- 		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: Unable to add\n");
+ 	unregister_netdev(Adapter->dev);
+ }
 -- 
-1.7.1
+1.6.2.4
 
