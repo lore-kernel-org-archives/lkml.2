@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1CIXOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 18:14:01 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:25174 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab1CIXN5 (ORCPT
+	id S1751554Ab1CIXQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 18:16:04 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41045 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab1CIXQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 18:13:57 -0500
+	Wed, 9 Mar 2011 18:16:00 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=PaNhJ58fcBIk4GtP6QoUyPAJpzFrogPwZra4torW7uUzFc51eKFY8sLGiPhVSryQXb
-         9gU60vef8GgyjVZByVZw==
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=oYCalHKYqaCZSNV7emKM+cTLAaqwWb/ihS2S+HIYWaqp/4Phu2Y2qEAMuOdVy2RMnC
+         JuELCPwMLv5Gcx94d7z9I1gX+0yPQnfeQ5mDdZEuX72EpVntVhMNVn7MdNXNfAYzM/8l
+         HxzvxPuYQLLVkGkxWJu9Wd/AxV9HUxoW/9t4U=
+From: Wang Lei <f3d27b@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
+References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
+	<201103091141.28396.rjw@sisk.pl>
+	<4d77806c.0bf98e0a.28c5.7cc5@mx.google.com>
+	<201103092125.43950.rjw@sisk.pl>
+Date: Thu, 10 Mar 2011 07:16:14 +0800
+In-Reply-To: <201103092125.43950.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Wed, 9 Mar 2011 21:25:43 +0100")
+Message-ID: <4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1299704969-4485-1-git-send-email-emunson@mgebm.net>
-References: <1299704969-4485-1-git-send-email-emunson@mgebm.net>
-From: Paul Menage <menage@google.com>
-Date: Wed, 9 Mar 2011 15:13:34 -0800
-Message-ID: <AANLkTinW99M1FBp5gRA=+SsjUWSJBwByurqrsjXKgQ4=@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: cgroups: Add notes on removing PIDs from
- tasks and cgroups requiring setup
-To: Eric B Munson <emunson@mgebm.net>
-Cc: containers@lists.linux-foundation.org, rdunlap@xenotime.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 9, 2011 at 1:09 PM, Eric B Munson <emunson@mgebm.net> wrote:
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+
+> On Wednesday, March 09, 2011, Wang Lei wrote:
+>> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+>> 
+>> >
+>> > There was only one commit in that area since 2.6.38-rc6, but it shouldn't
+>> > affect the functionality this way.
+>> >
+>> > Is yout thermal management controlled by ACPI?
+>> >
+>> > Rafael
+>> 
+>> Thanks for your reply!
+>> 
+>> How could I know that?
 >
-> +Note: To remove a task from a cgroup you must write its PID to the root
-> +tasks file.
-> +
+> What does "ls -l /sys/class/thermal/cooling_device0/device" say?
+>
+> Rafael
 
-This isn't really accurate - the root cgroup is a cgroup like all the
-others. More accurate would be something like:
+[~]$ ls -l /sys/class/thermal/cooling_device0/device
+lrwxrwxrwx 1 root root 0 Mar 10 07:13 /sys/class/thermal/cooling_device0/device -> ../../../LNXSYSTM:00/device:47/PNP0C0B:00
+[~]$
 
-Since every task is always a member of exactly one cgroup in each
-mounted hierarchy, to remove a task from its current cgroup you must
-move it into a new cgroup (possibly the root cgroup) by writing to the
-new cgroup's tasks file.
-
-Paul
+-- 
+Regards,
+Lei
