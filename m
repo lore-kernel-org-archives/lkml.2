@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab1CILWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 06:22:50 -0500
-Received: from hera.kernel.org ([140.211.167.34]:35114 "EHLO hera.kernel.org"
+	id S1756934Ab1CILXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 06:23:16 -0500
+Received: from hera.kernel.org ([140.211.167.34]:35132 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758Ab1CILWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 06:22:47 -0500
-Date: Wed, 9 Mar 2011 11:21:52 GMT
-From: tip-bot for Sedat Dilek <sedat.dilek@googlemail.com>
+	id S1751758Ab1CILXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 06:23:12 -0500
+Date: Wed, 9 Mar 2011 11:22:40 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        heukelum@fastmail.fm, sedat.dilek@googlemail.com, pavel@ucw.cz,
-        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu, sedat.dilek@gmail.com,
-        hjl.tools@gmail.com, len.brown@intel.com
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sedat.dilek@googlemail.com, heukelum@fastmail.fm, pavel@ucw.cz,
-        tglx@linutronix.de, rjw@sisk.pl, len.brown@intel.com,
-        hjl.tools@gmail.com, sedat.dilek@gmail.com, mingo@elte.hu
-In-Reply-To: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
-References: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <4D7603DA02000078000351C1@vpn.id2.novell.com>
+References: <4D7603DA02000078000351C1@vpn.id2.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/trampoline] x86: Fix binutils-2.21 symbol related build failures
-Message-ID: <tip-2ae9d293b14d17f35eff624272cfecac7979a2ee@git.kernel.org>
-Git-Commit-ID: 2ae9d293b14d17f35eff624272cfecac7979a2ee
+Subject: [tip:x86/asm] x86: Remove dead config option X86_CPU
+Message-ID: <tip-c49aa5bd1376939b40759a6da5ba6cf701702721@git.kernel.org>
+Git-Commit-ID: c49aa5bd1376939b40759a6da5ba6cf701702721
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Mar 2011 11:21:54 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Mar 2011 11:22:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2ae9d293b14d17f35eff624272cfecac7979a2ee
-Gitweb:     http://git.kernel.org/tip/2ae9d293b14d17f35eff624272cfecac7979a2ee
-Author:     Sedat Dilek <sedat.dilek@googlemail.com>
-AuthorDate: Tue, 8 Mar 2011 22:39:24 +0100
+Commit-ID:  c49aa5bd1376939b40759a6da5ba6cf701702721
+Gitweb:     http://git.kernel.org/tip/c49aa5bd1376939b40759a6da5ba6cf701702721
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Tue, 8 Mar 2011 09:24:26 +0000
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Mar 2011 10:25:45 +0100
+CommitDate: Wed, 9 Mar 2011 10:39:36 +0100
 
-x86: Fix binutils-2.21 symbol related build failures
+x86: Remove dead config option X86_CPU
 
-New binutils version 2.21.0.20110302-1 started checking that the symbol
-parameter to the .size directive matches the entry name's
-symbol parameter, unearthing two mismatches:
+This isn't being referenced anywhere, and the selects done from
+it can be easily done together with all the other X86 ones.
 
-  AS      arch/x86/kernel/acpi/wakeup_rm.o
-  arch/x86/kernel/acpi/wakeup_rm.S: Assembler messages:
-  arch/x86/kernel/acpi/wakeup_rm.S:12: Error: .size expression with symbol `wakeup_code_start' does not evaluate to a constant
+ v2: Also adjust UML's Kconfig.x86.
 
-  arch/x86/kernel/entry_32.S: Assembler messages:
-  arch/x86/kernel/entry_32.S:1421: Error: .size expression with
-  symbol `apf_page_fault' does not evaluate to a constant
-
-The problem was discovered while using Debian's binutils
-(2.21.0.20110302-1) and experimenting with binutils from
-upstream.
-
-Thanks Alexander and H.J. for the vital help.
-
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-LKML-Reference: <1299620364-21644-1-git-send-email-sedat.dilek@gmail.com>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4D7603DA02000078000351C1@vpn.id2.novell.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/acpi/wakeup_rm.S |    2 +-
- arch/x86/kernel/entry_32.S       |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/um/Kconfig.x86  |    2 ++
+ arch/x86/Kconfig     |    2 ++
+ arch/x86/Kconfig.cpu |    5 -----
+ 3 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/wakeup_rm.S b/arch/x86/kernel/acpi/wakeup_rm.S
-index 6ce81ee..63b8ab5 100644
---- a/arch/x86/kernel/acpi/wakeup_rm.S
-+++ b/arch/x86/kernel/acpi/wakeup_rm.S
-@@ -9,4 +9,4 @@
- 	.globl	acpi_wakeup_code
- acpi_wakeup_code:
- 	.incbin	"arch/x86/kernel/acpi/realmode/wakeup.bin"
--	.size	wakeup_code_start, .-wakeup_code_start
-+	.size	acpi_wakeup_code, .-acpi_wakeup_code
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..9ca3b0e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1413,7 +1413,7 @@ ENTRY(async_page_fault)
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
--END(apf_page_fault)
-+END(async_page_fault)
- #endif
+diff --git a/arch/um/Kconfig.x86 b/arch/um/Kconfig.x86
+index 62f2115..02fb017 100644
+--- a/arch/um/Kconfig.x86
++++ b/arch/um/Kconfig.x86
+@@ -10,6 +10,8 @@ endmenu
  
- /*
+ config UML_X86
+ 	def_bool y
++	select GENERIC_FIND_FIRST_BIT
++	select GENERIC_FIND_NEXT_BIT
+ 
+ config 64BIT
+ 	bool
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d5ed94d..43214e3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -64,6 +64,8 @@ config X86
+ 	select HAVE_TEXT_POKE_SMP
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_SPARSE_IRQ
++	select GENERIC_FIND_FIRST_BIT
++	select GENERIC_FIND_NEXT_BIT
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 283c5a6..ed47e6e 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -294,11 +294,6 @@ config X86_GENERIC
+ 
+ endif
+ 
+-config X86_CPU
+-	def_bool y
+-	select GENERIC_FIND_FIRST_BIT
+-	select GENERIC_FIND_NEXT_BIT
+-
+ #
+ # Define implied options from the CPU selection here
+ config X86_INTERNODE_CACHE_SHIFT
