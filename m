@@ -1,68 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab1CIRl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:41:56 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:36468 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932922Ab1CIRly (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 12:41:54 -0500
+	id S932925Ab1CIRlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:41:49 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:8739 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932906Ab1CIRls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 12:41:48 -0500
 X-IronPort-AV: E=Sophos;i="4.62,291,1297054800"; 
-   d="scan'208";a="139432645"
+   d="scan'208";a="139432624"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 13/14] xen: events: do not workaround too-small nr_irqs
-Date: Wed,  9 Mar 2011 17:41:25 +0000
-Message-Id: <1299692486-28634-13-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 09/14] xen: events: push setup of irq<->{evtchn,ipi,virq,pirq} maps into irq_info init functions
+Date: Wed,  9 Mar 2011 17:41:21 +0000
+Message-Id: <1299692486-28634-9-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
 References: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 09 Mar 2011 17:41:53.0930 (UTC) FILETIME=[47582EA0:01CBDE81]
+X-OriginalArrivalTime: 09 Mar 2011 17:41:47.0211 (UTC) FILETIME=[4356F1B0:01CBDE81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This workaround was somewhat useful prior to the introduction of the
-core irq allocator and 026c9d2d0d75 "xen: events: allocate GSIs and
-dynamic IRQs from separate IRQ ranges." but should be unnecessary now.
-
-If nr_irqs turns out to be too small under Xen then we should increase
-nr_irqs rather than working around the core allocator in this way.
-
-In my configuration NR_IRQS ends up being 2304 with nr_irq_gsi 272
-which is sufficient.
+Encapsulate setup of XXX_to_irq array in the relevant
+xen_irq_info_*_init function.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 ---
- drivers/xen/events.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ drivers/xen/events.c |   42 +++++++++++++++++++++---------------------
+ 1 files changed, 21 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index b07f5bb..51c6a5b 100644
+index 72725fa..cf372d4 100644
 --- a/drivers/xen/events.c
 +++ b/drivers/xen/events.c
-@@ -423,15 +423,8 @@ static int xen_allocate_irq_dynamic(void)
- 		first = get_nr_irqs_gsi();
- #endif
+@@ -126,6 +126,7 @@ static struct irq_info *info_for_irq(unsigned irq)
  
--retry:
- 	irq = irq_alloc_desc_from(first, -1);
+ /* Constructors for packed IRQ information. */
+ static void xen_irq_info_common_init(struct irq_info *info,
++				     unsigned irq,
+ 				     enum xen_irq_type type,
+ 				     unsigned short evtchn,
+ 				     unsigned short cpu)
+@@ -136,6 +137,8 @@ static void xen_irq_info_common_init(struct irq_info *info,
+ 	info->type = type;
+ 	info->evtchn = evtchn;
+ 	info->cpu = cpu;
++
++	evtchn_to_irq[evtchn] = irq;
+ }
  
--	if (irq == -ENOMEM && first > NR_IRQS_LEGACY) {
--		printk(KERN_ERR "Out of dynamic IRQ space and eating into GSI space. You should increase nr_irqs\n");
--		first = max(NR_IRQS_LEGACY, first - NR_IRQS_LEGACY);
--		goto retry;
--	}
+ static void xen_irq_info_evtchn_init(unsigned irq,
+@@ -143,29 +146,35 @@ static void xen_irq_info_evtchn_init(unsigned irq,
+ {
+ 	struct irq_info *info = info_for_irq(irq);
+ 
+-	xen_irq_info_common_init(info, IRQT_EVTCHN, evtchn, 0);
++	xen_irq_info_common_init(info, irq, IRQT_EVTCHN, evtchn, 0);
+ }
+ 
+-static void xen_irq_info_ipi_init(unsigned irq,
++static void xen_irq_info_ipi_init(unsigned cpu,
++				  unsigned irq,
+ 				  unsigned short evtchn,
+ 				  enum ipi_vector ipi)
+ {
+ 	struct irq_info *info = info_for_irq(irq);
+ 
+-	xen_irq_info_common_init(info, IRQT_IPI, evtchn, 0);
++	xen_irq_info_common_init(info, irq, IRQT_IPI, evtchn, 0);
+ 
+ 	info->u.ipi = ipi;
++
++	per_cpu(ipi_to_irq, cpu)[ipi] = irq;
+ }
+ 
+-static void xen_irq_info_virq_init(unsigned irq,
++static void xen_irq_info_virq_init(unsigned cpu,
++				   unsigned irq,
+ 				   unsigned short evtchn,
+ 				   unsigned short virq)
+ {
+ 	struct irq_info *info = info_for_irq(irq);
+ 
+-	xen_irq_info_common_init(info, IRQT_VIRQ, evtchn, 0);
++	xen_irq_info_common_init(info, irq, IRQT_VIRQ, evtchn, 0);
+ 
+ 	info->u.virq = virq;
++
++	per_cpu(virq_to_irq, cpu)[virq] = irq;
+ }
+ 
+ static void xen_irq_info_pirq_init(unsigned irq,
+@@ -177,12 +186,14 @@ static void xen_irq_info_pirq_init(unsigned irq,
+ {
+ 	struct irq_info *info = info_for_irq(irq);
+ 
+-	xen_irq_info_common_init(info, IRQT_PIRQ, evtchn, 0);
++	xen_irq_info_common_init(info, irq, IRQT_PIRQ, evtchn, 0);
+ 
+ 	info->u.pirq.pirq = pirq;
+ 	info->u.pirq.gsi = gsi;
+ 	info->u.pirq.vector = vector;
+ 	info->u.pirq.flags = flags;
++
++	pirq_to_irq[pirq] = irq;
+ }
+ 
+ /*
+@@ -644,7 +655,6 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+ 
+ 	xen_irq_info_pirq_init(irq, 0, pirq, gsi, irq_op.vector,
+ 			       shareable ? PIRQ_SHAREABLE : 0);
+-	pirq_to_irq[pirq] = irq;
+ 
+ out:
+ 	spin_unlock(&irq_mapping_update_lock);
+@@ -682,7 +692,6 @@ int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 				      handle_level_irq, name);
+ 
+ 	xen_irq_info_pirq_init(irq, 0, pirq, 0, vector, 0);
+-	pirq_to_irq[pirq] = irq;
+ 	ret = set_irq_msi(irq, msidesc);
+ 	if (ret < 0)
+ 		goto error_irq;
+@@ -746,7 +755,6 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+ 		set_irq_chip_and_handler_name(irq, &xen_dynamic_chip,
+ 					      handle_fasteoi_irq, "event");
+ 
+-		evtchn_to_irq[evtchn] = irq;
+ 		xen_irq_info_evtchn_init(irq, evtchn);
+ 	}
+ 
+@@ -779,9 +787,7 @@ static int bind_ipi_to_irq(unsigned int ipi, unsigned int cpu)
+ 			BUG();
+ 		evtchn = bind_ipi.port;
+ 
+-		evtchn_to_irq[evtchn] = irq;
+-		xen_irq_info_ipi_init(irq, evtchn, ipi);
+-		per_cpu(ipi_to_irq, cpu)[ipi] = irq;
++		xen_irq_info_ipi_init(cpu, irq, evtchn, ipi);
+ 
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+ 	}
+@@ -814,10 +820,7 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
+ 			BUG();
+ 		evtchn = bind_virq.port;
+ 
+-		evtchn_to_irq[evtchn] = irq;
+-		xen_irq_info_virq_init(irq, evtchn, virq);
 -
- 	if (irq < 0)
- 		panic("No available IRQ to bind to: increase nr_irqs!\n");
+-		per_cpu(virq_to_irq, cpu)[virq] = irq;
++		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
  
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+ 	}
+@@ -1120,7 +1123,6 @@ void rebind_evtchn_irq(int evtchn, int irq)
+ 	   so there should be a proper type */
+ 	BUG_ON(info->type == IRQT_UNBOUND);
+ 
+-	evtchn_to_irq[evtchn] = irq;
+ 	xen_irq_info_evtchn_init(irq, evtchn);
+ 
+ 	spin_unlock(&irq_mapping_update_lock);
+@@ -1288,8 +1290,7 @@ static void restore_cpu_virqs(unsigned int cpu)
+ 		evtchn = bind_virq.port;
+ 
+ 		/* Record the new mapping. */
+-		evtchn_to_irq[evtchn] = irq;
+-		xen_irq_info_virq_init(irq, evtchn, virq);
++		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+ 	}
+ }
+@@ -1313,8 +1314,7 @@ static void restore_cpu_ipis(unsigned int cpu)
+ 		evtchn = bind_ipi.port;
+ 
+ 		/* Record the new mapping. */
+-		evtchn_to_irq[evtchn] = irq;
+-		xen_irq_info_ipi_init(irq, evtchn, ipi);
++		xen_irq_info_ipi_init(cpu, irq, evtchn, ipi);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+ 	}
+ }
 -- 
 1.5.6.5
 
