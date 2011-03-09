@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab1CIPQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:16:10 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52239 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757097Ab1CIPQI convert rfc822-to-8bit (ORCPT
+	id S1757212Ab1CIPSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:18:11 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64300 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757083Ab1CIPSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:16:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=P6VWCclgZ4J7iq5qsPa0Jmtj8crrlMvdC5tJdqFolXhIfyrgW8tirqYhQiPtBa+JT+
-         yCMcHaOdTX9NaqsVPIpH8Na65iIHFZJI0ZFMtRfS9WB0jnbvupMe98P7zXardL3Lo2US
-         XFCo1b87kDJAyW2cZdmF8uY09cxcLHywUe1rE=
-MIME-Version: 1.0
-In-Reply-To: <20110302180259.109909335@chello.nl>
-References: <20110302175928.022902359@chello.nl>
-	<20110302180259.109909335@chello.nl>
-Date: Wed, 9 Mar 2011 15:16:07 +0000
-X-Google-Sender-Auth: GgeUI2PwzGYwD4LyD9PoXMdBDt8
-Message-ID: <AANLkTimbRS++SCcKGrUcL5xKsCO+1ygkg+83x7F+2S4i@mail.gmail.com>
-Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>, Russell King <rmk@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Mar 2011 10:18:07 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=VOOo5lHdzEUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=-O8ovmbt_oh7YEivNtwA:9 a=pWvKQMcyC1QZHdXk0DwA:7 a=uEij4YNSPPj0OOPSFPVAuCSCFVIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 04/15] ftrace: pack event structures.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com, dhsharp@google.com
+In-Reply-To: <20110308.223951.193722389.davem@davemloft.net>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+	 <1291421609-14665-5-git-send-email-dhsharp@google.com>
+	 <1299627003.20306.94.camel@gandalf.stny.rr.com>
+	 <20110308.223951.193722389.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 09 Mar 2011 10:18:04 -0500
+Message-ID: <1299683884.15854.154.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Tue, 2011-03-08 at 22:39 -0800, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Tue, 08 Mar 2011 18:30:03 -0500
+> 
+> > I'm going back through this patch set and looking to incorporate it into
+> > 2.6.39. But I know how touchy sparc is with "packed" data structures. Do
+> > you see this patch as hurting sparc?
+> > 
+> > I wonder if we should change this to something like:
+> > 
+> > #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+> > # define do_event_packed __attirbute__((packed))
+> > #else
+> > # define do_event_packed
+> > #endif
+> > 
+> > and use "do_event_packed" instead?
+> 
+> I think you should elide packed at all costs, and instead tell the compiler
+> what your intentions are by exposing the real types using unions or
+> similar instead of hiding it in an opaque way behind final char[] arrays.
 
-On 2 March 2011 17:59, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> --- linux-2.6.orig/arch/arm/include/asm/tlb.h
-> +++ linux-2.6/arch/arm/include/asm/tlb.h
-[...]
-> +__pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte, unsigned long addr)
->  {
->        pgtable_page_dtor(pte);
-> -       tlb_add_flush(tlb, addr);
->        tlb_remove_page(tlb, pte);
->  }
+The problem here is not the issue of char[] but because of the way
+ftrace's header was 12 bytes and caused everything that had a 8byte word
+use another 4 bytes to align it. As I stated in another email, I think
+removing the "int lock_depth" from the ftrace header should solve this.
 
-I think we still need a tlb_track_range() call here. On the path to
-pte_free_tlb() (for example shift_arg_pages ... free_pte_range) there
-doesn't seem to be any code setting the tlb->start/end range. Did I
-miss anything?
+David (Sharp), the reason for the "packed" was because of that extra 4
+bytes in the ftrace header, right? So removing the lock_depth should fix
+the issues that you've seen?
 
-Thanks.
+-- Steve
 
--- 
-Catalin
+
+
