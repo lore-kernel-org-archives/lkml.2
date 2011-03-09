@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab1CIN1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 08:27:41 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36888 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab1CIN1k (ORCPT
+	id S1756960Ab1CIN2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 08:28:14 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52467 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756885Ab1CIN2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 08:27:40 -0500
+	Wed, 9 Mar 2011 08:28:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=SDdw6FkfVh+v8t7ZW627I8vojZ810sHU8F7IqKDmXtwdqwtl7EPcMWP6QKRQATeUFd
-         9J4oEZybNFCWMnMQ4IBqgNUTVNuf3sSh3VtIhspTliy5OpJtxncdz/48lbh1ECWZiKY9
-         tctVf8yw22o3JOGPLVXWDoFFTgB7fTauaBppI=
-From: Robin Becker <replabrobin@gmail.com>
-To: kernel@wantstofly.org, nico@fluxnic.net, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: replabrobin <robin@reportlab.com>
-Subject: [PATCH] stable: sheevaplug-setup.c fix LED color name and add support for second LED This is a patch to the sheevaplug-setup.c file that fixes the color name of the existing health LED. That LED gpio 49 is green when off and blue when on. The patch also adds support for the second LED that is green when off and red when on. Signed-off-by: Robin Becker <robin@reportlab.com>
-Date: Wed,  9 Mar 2011 13:27:19 +0000
-Message-Id: <1299677239-3352-1-git-send-email-robin@reportlab.com>
-X-Mailer: git-send-email 1.7.4.1
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=KyDQ78VuGJJKB4DT44sBeZDgOysamBaOO+lGnY4KV5gtoeQkouQlwgJ9fQ0Cg65BmD
+         eHYcLWn0qeN3z7aa5nYbyc9XW6ySf6T8CYm0pOOE1dqrpQsU/8dcw3SvUFNn3C6XpWy5
+         XXtXuNKUYYkHr+WJ0QUCrh6iuVxaTqdP8WIA4=
+From: Wang Lei <f3d27b@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
+References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
+	<201103091141.28396.rjw@sisk.pl>
+Date: Wed, 09 Mar 2011 21:28:21 +0800
+In-Reply-To: <201103091141.28396.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Wed, 9 Mar 2011 11:41:28 +0100")
+Message-ID: <4d77806c.0bf98e0a.28c5.7cc5@mx.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: replabrobin <robin@reportlab.com>
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
----
- arch/arm/mach-kirkwood/sheevaplug-setup.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+>
+> There was only one commit in that area since 2.6.38-rc6, but it shouldn't
+> affect the functionality this way.
+>
+> Is yout thermal management controlled by ACPI?
+>
+> Rafael
 
-diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-index d2eec35..40441da 100644
---- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
-+++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-@@ -58,7 +58,13 @@ static struct mvsdio_platform_data sheeva_esata_mvsdio_data = {
- 
- static struct gpio_led sheevaplug_led_pins[] = {
- 	{
--		.name			= "plug:green:health",
-+		.name			= "plug:red:misc",
-+		.default_trigger	= "none",
-+		.gpio			= 46,
-+		.active_low		= 1,
-+	},
-+	{
-+		.name			= "plug:blue:health",
- 		.default_trigger	= "default-on",
- 		.gpio			= 49,
- 		.active_low		= 1,
-@@ -80,13 +86,15 @@ static struct platform_device sheevaplug_leds = {
- 
- static unsigned int sheevaplug_mpp_config[] __initdata = {
- 	MPP29_GPIO,	/* USB Power Enable */
--	MPP49_GPIO,	/* LED */
-+	MPP46_GPIO,	/* RED LED */
-+	MPP49_GPIO,	/* BLUE LED */
- 	0
- };
- 
- static unsigned int sheeva_esata_mpp_config[] __initdata = {
- 	MPP29_GPIO,	/* USB Power Enable */
- 	MPP44_GPIO,	/* SD Write Protect */
-+	MPP46_GPIO,	/* RED LED */
- 	MPP47_GPIO,	/* SD Card Detect */
- 	MPP49_GPIO,	/* LED Green */
- 	0
+Thanks for your reply!
+
+How could I know that?
+
 -- 
-1.7.4.1
-
+Regards,
+Lei
