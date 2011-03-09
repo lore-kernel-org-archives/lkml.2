@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab1CIWQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 17:16:53 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38223
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752970Ab1CIWQw (ORCPT
+	id S1753928Ab1CIWRe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 17:17:34 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:51180 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab1CIWRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 17:16:52 -0500
-Date: Wed, 09 Mar 2011 14:17:29 -0800 (PST)
-Message-Id: <20110309.141729.35046292.davem@davemloft.net>
-To: tj@kernel.org
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 04/16] ide: Convert to bdops->check_events()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1299662016-7721-5-git-send-email-tj@kernel.org>
-References: <1299662016-7721-1-git-send-email-tj@kernel.org>
-	<1299662016-7721-5-git-send-email-tj@kernel.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Mar 2011 17:17:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Qt6DqWlgDIhDiMPLGdNnQrrjl4TwFFgr1Q5xsqFUUkEJ1aQIXBkYdelMRe636HL3fX
+         gskPC96VJJEiy9aHCM2Q==
+Date: Wed, 9 Mar 2011 14:17:18 -0800
+From: Michel Lespinasse <walken@google.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <darren@dvhart.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] futex: cmpxchg_futex_value_locked API change
+Message-ID: <20110309221718.GA28592@google.com>
+References: <20110307021127.GB31188@google.com>
+ <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
+ <20110309112550.GA3050@google.com>
+ <20110309160839.283e241a@mschwide.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110309160839.283e241a@mschwide.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Wed,  9 Mar 2011 10:13:24 +0100
-
-> Convert ->media_changed() to the new ->check_events() method.  The
-> conversion is mostly mechanical.  The only notable change is that
-> cdrom now doesn't generate any event if @slot_nr isn't CDSL_CURRENT.
-> It used to return -EINVAL which would be treated as media changed.  As
-> media changer isn't supported anyway, this doesn't make any
-> difference.
+On Wed, Mar 09, 2011 at 04:08:39PM +0100, Martin Schwidefsky wrote:
+> On Wed, 9 Mar 2011 03:25:50 -0800
+> Michel Lespinasse <walken@google.com> wrote:
+> > All right. Attaching updated version of the diff. I also fixed the s390
+> > issue reported by Martin Schwidefsky.
 > 
-> This makes ide emit the standard disk events and allows kernel event
-> polling.  Currently, only MEDIA_CHANGE event is implemented.  Adding
-> support for EJECT_REQUEST shouldn't be difficult; however, given that
-> ide driver is already deprecated, it probably is best to leave it
-> alone.
+> The inline assmeblies look good now but I get this compile error on s390:
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Jens Axboe <axboe@kernel.dk>
+>   CC      arch/s390/lib/uaccess_pt.o
+> arch/s390/lib/uaccess_pt.c:373: error: conflicting types for 'futex_atomic_cmpxchg_pt'
+> arch/s390/lib/uaccess.h:21: note: previous declaration of 'futex_atomic_cmpxchg_pt' was here
+> arch/s390/lib/uaccess_pt.c:403: warning: initialization from incompatible pointer type
+> make[1]: *** [arch/s390/lib/uaccess_pt.o] Error 1
 
-Acked-by: David S. Miller <davem@davemloft.net>
+My bad. Somehow I made the change in arch/s390/lib/uaccess_std.c but missed
+it in arch/s390/lib/uaccess_pt.c ... Attached patch below goes on top of
+the previous changes - Thomas, if you have picked the previous patch,
+please squash this one on top of it :)
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+
+diff --git a/arch/s390/lib/uaccess_pt.c b/arch/s390/lib/uaccess_pt.c
+index afc716a..7483383 100644
+--- a/arch/s390/lib/uaccess_pt.c
++++ b/arch/s390/lib/uaccess_pt.c
+@@ -370,8 +370,8 @@ static int __futex_atomic_cmpxchg_pt(u32 *uval, u32 __user *uaddr,
+ 	return ret;
+ }
+ 
+-int futex_atomic_cmpxchg_pt(int *uval, int __user *uaddr,
+-			    int oldval, int newval)
++int futex_atomic_cmpxchg_pt(u32 *uval, u32 __user *uaddr,
++			    u32 oldval, u32 newval)
+ {
+ 	int ret;
+ 
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
