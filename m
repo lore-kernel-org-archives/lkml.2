@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1CIVLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 16:11:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52970 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab1CIVLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 16:11:41 -0500
-Date: Wed, 9 Mar 2011 15:47:33 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: peterz@infradead.org
-Cc: hpa@zytor.com, mathieu.desnoyers@polymtl.ca, rostedt@goodmis.org,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Message-Id: <6f7d27756a9645173143d56a07dab410e45b46f3.1299702291.git.jbaron@redhat.com>
-In-Reply-To: <cover.1299702291.git.jbaron@redhat.com>
-References: <cover.1299702291.git.jbaron@redhat.com>
-Subject: [PATCH 2/2] dynamic debug: add jump label support
+	id S1752990Ab1CIVN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 16:13:28 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36932 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab1CIVN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 16:13:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Zob5IAa5o0PMPIxcn65m4k9pZZpWQLWD3KMR9zmeGwm9zjD0DKtau/ZeaXhGS77FLK
+         PhVtpNyIV+WvV/N6ec5uKIR27PhK05eRwvQ4at0akj7uH8axRJUGcK8DbOh3D5rsDF0u
+         bKGt9kErNwUU6kVZqP+PdLybn2ceng0ySA4sI=
+Date: Wed, 9 Mar 2011 22:13:20 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Jean-Francois Argentino <jf.argentino@osean.fr>
+Cc: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] ftdi_sio: adding support for OLIMEX ARM-USB-OCD-H
+Message-ID: <20110309211320.GB14009@localhost>
+References: <4D6BC4CB.6050602@osean.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6BC4CB.6050602@osean.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since jump labels make use of atomic_read(), and dynamic_debug.h
-gets included by kernel.h, the inclusion of atomic.h in
-dynamic_debug.h (to get atomic_read()), would cause a circular
-dependency since atomic.h requires kernel.h. Thus, for dynamic
-debug I am explicitly including jump_label.h when jump labels are
-configured, and making use of a regular reads (non-atomic), when
-jump labels are disabled.
+On Mon, Feb 28, 2011 at 04:52:43PM +0100, Jean-Francois Argentino wrote:
+> from JF Argentino <jf.argentino@free.fr>
+> 
+> Adding support for the OLIMEX ARM-USB-OCD-H JTAG device (id 15ba:002b) 
+> based on FTDI FT2232H
+> Signed-off-by: JF Argentino <jf.argentino@free.fr>
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- include/linux/dynamic_debug.h |   46 ++++++++++++++++++++++++++++++++++------
- lib/dynamic_debug.c           |    4 +-
- 2 files changed, 41 insertions(+), 9 deletions(-)
+Look good, but please send this patch directly to Greg KH and CC
+linux-usb as well.
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 8906d52..455cb3e 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -1,6 +1,26 @@
- #ifndef _DYNAMIC_DEBUG_H
- #define _DYNAMIC_DEBUG_H
- 
-+/*
-+ * When jump labels are disabled, they make use of atomic_read(). Since
-+ * dynamic_debug.h gets included by kernel.h, the inclusion of jump_label.h by
-+ * dynamic_debug.h and thus atomic.h (to get atomic_read()), would cause a
-+ * circular dependency since atomic.h requires kernel.h. Thus, for dynamic debug
-+ * we are explicitly including jump_label.h when jump labels are configured, and
-+ * making use of a regular reads (non-atomic), when jump labels are disabled.
-+ */
-+#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
-+#include <linux/jump_label.h>
-+#endif
-+
-+#ifdef HAVE_JUMP_LABEL
-+ #define dd_enable(dp) do { jump_label_inc(&dp->enabled); } while (0)
-+ #define dd_disable(dp) do { jump_label_dec(&dp->enabled); } while (0)
-+#else
-+ #define dd_enable(dp) do { dp->enabled = 1; } while (0)
-+ #define dd_disable(dp) do { dp->enabled = 0; } while (0)
-+#endif
-+
- /* dynamic_printk_enabled, and dynamic_printk_enabled2 are bitmasks in which
-  * bit n is set to 1 if any modname hashes into the bucket n, 0 otherwise. They
-  * use independent hash functions, to reduce the chance of false positives.
-@@ -31,7 +51,11 @@ struct _ddebug {
- #define _DPRINTK_FLAGS_PRINT   (1<<0)  /* printk() a message using the format */
- #define _DPRINTK_FLAGS_DEFAULT 0
- 	unsigned int flags:8;
--	char enabled;
-+#ifdef HAVE_JUMP_LABEL
-+	struct jump_label_key enabled;
-+#else
-+	int enabled;
-+#endif
- } __attribute__((aligned(8)));
- 
- 
-@@ -41,14 +65,22 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
- #if defined(CONFIG_DYNAMIC_DEBUG)
- extern int ddebug_remove_module(const char *mod_name);
- 
-+#ifdef HAVE_JUMP_LABEL
-+# define DDEBUG_INIT JUMP_LABEL_INIT
-+# define DDEBUG_BRANCH(enabled) static_branch(&enabled)
-+#else
-+# define DDEBUG_INIT 0
-+# define DDEBUG_BRANCH(enabled) unlikely(enabled)
-+#endif
-+
- #define dynamic_pr_debug(fmt, ...) do {					\
- 	static struct _ddebug descriptor				\
- 	__used								\
- 	__attribute__((section("__verbose"), aligned(8))) =		\
- 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
--		_DPRINTK_FLAGS_DEFAULT };				\
--	if (unlikely(descriptor.enabled))				\
--		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
-+		_DPRINTK_FLAGS_DEFAULT, DDEBUG_INIT };                   \
-+	if (DDEBUG_BRANCH(descriptor.enabled))				\
-+		printk(KERN_DEBUG pr_fmt(fmt),  ##__VA_ARGS__);         \
- 	} while (0)
- 
- 
-@@ -57,9 +89,9 @@ extern int ddebug_remove_module(const char *mod_name);
- 	__used								\
- 	__attribute__((section("__verbose"), aligned(8))) =		\
- 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
--		_DPRINTK_FLAGS_DEFAULT };				\
--	if (unlikely(descriptor.enabled))				\
--		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
-+		_DPRINTK_FLAGS_DEFAULT, DDEBUG_INIT };                  \
-+	if (DDEBUG_BRANCH(descriptor.enabled))                          \
-+		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);        \
- 	} while (0)
- 
- #else
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index b335acb..5973c53 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -142,9 +142,9 @@ static void ddebug_change(const struct ddebug_query *query,
- 				dt->num_enabled++;
- 			dp->flags = newflags;
- 			if (newflags)
--				dp->enabled = 1;
-+				dd_enable(dp);
- 			else
--				dp->enabled = 0;
-+				dd_disable(dp);
- 			if (verbose)
- 				printk(KERN_INFO
- 					"ddebug: changed %s:%d [%s]%s %s\n",
--- 
-1.7.1
+Thanks,
+Johan
 
+
+> --- linux-2.6.37.2/drivers/usb/serial/ftdi_sio_ids.h	2011-02-25 
+> 00:09:00.000000000 +0100
+> +++ linux/drivers/usb/serial/ftdi_sio_ids.h	2011-02-28 
+> 15:42:19.000000000 +0100
+> @@ -730,6 +730,7 @@
+>   /* Olimex */
+>   #define OLIMEX_VID			0x15BA
+>   #define OLIMEX_ARM_USB_OCD_PID		0x0003
+> +#define OLIMEX_ARM_USB_OCD_H_PID	0x002b
+> 
+>   /*
+>    * Telldus Technologies
+> --- linux-2.6.37.2/drivers/usb/serial/ftdi_sio.c	2011-02-25 
+> 00:09:00.000000000 +0100
+> +++ linux/drivers/usb/serial/ftdi_sio.c	2011-02-28 16:27:02.000000000 +0100
+> @@ -721,6 +721,8 @@ static struct usb_device_id id_table_com
+>   	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_JTAGCABLEII_PID) },
+>   	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_PID),
+>   		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+> +	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_H_PID),
+> +		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+>   	{ USB_DEVICE(FIC_VID, FIC_NEO1973_DEBUG_PID),
+>   		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+>   	{ USB_DEVICE(FTDI_VID, FTDI_OOCDLINK_PID),
