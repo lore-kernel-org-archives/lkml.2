@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab1CIIjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 03:39:53 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:60339 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756782Ab1CIIjw (ORCPT
+	id S1756838Ab1CIImE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 03:42:04 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:37326 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab1CIImC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 03:39:52 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 9 Mar 2011 09:42:22 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] hid-multitouch: Auto detection of maxcontacts
-Message-ID: <20110309084222.GA3569@polaris.bitmath.org>
-References: <1299601979-4871-1-git-send-email-benjamin.tissoires@enac.fr>
- <1299601979-4871-2-git-send-email-benjamin.tissoires@enac.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299601979-4871-2-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1PxEvp-0007vt-4T.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PxEvp-0007vt-4T 0ca16d0880921ab3d3c12d8626f50f31
+	Wed, 9 Mar 2011 03:42:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=I5TsnpJDGCJ2k7DykD9QQ1QA2urW+1kGNFpEpazF7X1LfrJ7861hMY5hr6d9ZP7kL6
+         QxUy5l/qi3P+Tp/dry9qTp1mzmTPjtkttOYib8Chss16Ns6bhawUsitEWY1BOhPsxm6S
+         xgtPShRQ7+DIzOF2R/8PtOanY9HPF0IQgqFX8=
+Subject: [PATCH] misc: hmc6352: fix wrong return value checking for
+	i2c_master_recv
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kalhan Trisal <kalhan.trisal@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain
+Date: Wed, 09 Mar 2011 16:41:56 +0800
+Message-Id: <1299660116.8255.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+i2c_master_recv() returns negative errno, or else the number of bytes read.
+Thus i2c_master_recv(client, i2c_data, 2) returns 2 instead of 1 in success case.
 
-> This patch enables support of autodetection of maxcontacts.
-> We can still manually provide maxcontact in case the device
-> lies on it.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/misc/hmc6352.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It seems quite alright to let the classes contain the expected number
-of contacts, so I do not really see the reason for that part of the
-patch. How about keeping the maxcontacts in the class, and then do
-max(hid-provided-maxcontacts, default-maxcontacts)?
+diff --git a/drivers/misc/hmc6352.c b/drivers/misc/hmc6352.c
+index 234bfca..3afc11e 100644
+--- a/drivers/misc/hmc6352.c
++++ b/drivers/misc/hmc6352.c
+@@ -86,7 +86,7 @@ static ssize_t compass_heading_data_show(struct device *dev,
+ 	msleep(10); /* sending 'A' cmd we need to wait for 7-10 millisecs */
+ 	ret = i2c_master_recv(client, i2c_data, 2);
+ 	mutex_unlock(&compass_mutex);
+-	if (ret != 1) {
++	if (ret < 0) {
+ 		dev_warn(dev, "i2c read data cmd failed\n");
+ 		return ret;
+ 	}
+-- 
+1.7.2
 
-Thanks,
-Henrik
+
+
