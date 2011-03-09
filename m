@@ -1,64 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab1CIMVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 07:21:01 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63662 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932198Ab1CIMVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 07:21:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Rmo1I+84l6VQVwvmxRVkFElEfIC1fRmmuvrlmwHKi8xrgQokJSBYdQbInXBsM8SFvH
-         3Zr00hgkOryYHLuIxrLhyOQu6Xpsb9joxOYXELAnjF/dUyIrE+Qs6UiQ4N1lkWiPndTr
-         Kdhla0/6+bg/w6qfXpGO86oyeInffbBxEvfWE=
-Date: Wed, 9 Mar 2011 20:20:46 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Anton Blanchard <anton@samba.org>, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
- overridden
-Message-ID: <20110309122046.GC16951@cr0.redhat.com>
-References: <20100825002258.GD28360@kryten>
- <m139u37cii.fsf@fess.ebiederm.org>
- <4D771EE6.5050404@linux.vnet.ibm.com>
+	id S932308Ab1CIM3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 07:29:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53852 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932198Ab1CIM3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 07:29:36 -0500
+Message-ID: <4D777249.10400@redhat.com>
+Date: Wed, 09 Mar 2011 13:27:53 +0100
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D771EE6.5050404@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+CC: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Subject: Re: [PATCH 2/2] hpsa: export resettable_on_kexec host attribute
+References: <20110308230749.22291.56200.stgit@beardog.cce.hp.com> <20110308231003.22291.20417.stgit@beardog.cce.hp.com>
+In-Reply-To: <20110308231003.22291.20417.stgit@beardog.cce.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 12:02:06PM +0530, Mahesh Jagannath Salgaonkar wrote:
->On 08/25/2010 06:07 AM, Eric W. Biederman wrote:
->> Anton Blanchard <anton@samba.org> writes:
->> 
->>> On ppc64 the crashkernel region almost always overlaps an area of firmware.
->>> This works fine except when using the sysfs interface to reduce the kdump
->>> region. If we free the firmware area we are guaranteed to crash.
->> 
->> That is ppc64 bug.  firmware should not be in the reserved region.  Any
->> random kernel like thing can be put in to that region at any valid
->> address and the fact that shrinking the region frees your firmware means
->> that using that region could also stomp your firmware (which I assume
->> would be a bad thing).
->The issue only happens while shrinking the region using sysfs interface.
->We already have checks in kexec for not to stomp over on the firmware
->overlap area while loading capture kernel. Currently we do a top-down
->allocation for the firmware region which means it sits at the top of the
->RMO, right in the middle of the crashdump region. We can not move the
->crashkernel region beyond firmware region because kernel needs its some
->of memory in RMO region.
+On 03/09/2011 12:10 AM, Stephen M. Cameron wrote:
+> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>
+> This attribute, requested by Redhat, allows kexec-tools to know
+> whether the controller can honor the reset_devices kernel parameter
+> and actually reset the controller.  For kdump to work properly it
+> is necessary that the reset_devices parameter be honored.  This
+> attribute enables kexec-tools to warn the user if they attempt to
+> designate a non-resettable controller as the dump device.
+>
+> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> ---
+>  drivers/scsi/hpsa.c |   41 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 41 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index dcabef4..1d4fe80 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -273,6 +273,44 @@ static ssize_t host_show_transport_mode(struct device *dev,
+>  			"performant" : "simple");
+>  }
+>  
+> +/* List of controllers which cannot be reset on kexec with reset_devices */
+> +static u32 unresettable_controller[] = {
+> +	0x324a103C, /* Smart Array P712m */
+> +	0x324b103C, /* SmartArray P711m */
+> +	0x3223103C, /* Smart Array P800 */
+> +	0x3234103C, /* Smart Array P400 */
+> +	0x3235103C, /* Smart Array P400i */
+> +	0x3211103C, /* Smart Array E200i */
+> +	0x3212103C, /* Smart Array E200 */
+> +	0x3213103C, /* Smart Array E200i */
+> +	0x3214103C, /* Smart Array E200i */
+> +	0x3215103C, /* Smart Array E200i */
+> +	0x3237103C, /* Smart Array E500 */
+> +	0x3223103C, /* Smart Array P800 */
+> +	0x3234103C, /* Smart Array P400 */
+> +	0x323D103C, /* Smart Array P700m */
+> +};
+>   
+Hi Stephen,
 
-The crashkernel region is specified via kernel cmdline, so why
-not just drop a failure when it overlaps with RMO region?
-Am I missing something?
+thanks for posting this.
+Some of the devices are served by the cciss driver by default - I guess
+a very similar patch for cciss is needed too.
+Shouldn't be the 0x409C0E11 and 0x409D0E11 (640x boards) also added to the list?
+(And the 'unknown' devices.)
 
-Thanks.
+Tomas
+
+> +
+> +static int resettable_on_kexec(struct ctlr_info *h)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(unresettable_controller); i++)
+> +		if (unresettable_controller[i] == h->board_id)
+> +			return 0;
+> +	return 1;
+> +}
+> +
+> +static ssize_t host_show_resettable_on_kexec(struct device *dev,
+> +	struct device_attribute *attr, char *buf)
+> +{
+> +	struct ctlr_info *h;
+> +	struct Scsi_Host *shost = class_to_shost(dev);
+> +
+> +	h = shost_to_hba(shost);
+> +	return snprintf(buf, 20, "%d\n", resettable_on_kexec(h));
+> +}
+> +
+>  static inline int is_logical_dev_addr_mode(unsigned char scsi3addr[])
+>  {
+>  	return (scsi3addr[3] & 0xC0) == 0x40;
+> @@ -379,6 +417,8 @@ static DEVICE_ATTR(commands_outstanding, S_IRUGO,
+>  	host_show_commands_outstanding, NULL);
+>  static DEVICE_ATTR(transport_mode, S_IRUGO,
+>  	host_show_transport_mode, NULL);
+> +static DEVICE_ATTR(resettable_on_kexec, S_IRUGO,
+> +	host_show_resettable_on_kexec, NULL);
+>  
+>  static struct device_attribute *hpsa_sdev_attrs[] = {
+>  	&dev_attr_raid_level,
+> @@ -392,6 +432,7 @@ static struct device_attribute *hpsa_shost_attrs[] = {
+>  	&dev_attr_firmware_revision,
+>  	&dev_attr_commands_outstanding,
+>  	&dev_attr_transport_mode,
+> +	&dev_attr_resettable_on_kexec,
+>  	NULL,
+>  };
+>  
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
+
