@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1CIVyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 16:54:32 -0500
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:44334 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752367Ab1CIVy3 (ORCPT
+	id S1753517Ab1CIVze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 16:55:34 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22432 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab1CIVzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 16:54:29 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: vhWv2.sVM1nHMbuoykM4Z2IDzik82.CZoBTmmPhDQjX9efe
- TK_ek6phCazT0Ju_rfSudcdaBuc4spAJYAny9gE5b7zhcSQdwOp9eHujm4Xe
- gAGL0Oak2lr3ntOj3k_QaB_1YeZkuIwaiab6BdXfSyazPfZlItsAs_zWO7ax
- IO6nTW3o3heinAHzLzpq0AxP6JHOZiRxyRsZdtkZhuW7vSFI8BryfQH36Q42
- 18vkAH2kqKNk-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 9 Mar 2011 15:54:24 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: David Rientjes <rientjes@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nick Piggin <npiggin@kernel.dk>, Dave Chinner <dchinner@redhat.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        Bob Copeland <me@bobcopeland.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: <IRQ> [<ffffffff810c9204>] ?
- __alloc_pages_nodemask+0x622/0x696
-In-Reply-To: <4D77EEB4.9090404@gmail.com>
-Message-ID: <alpine.DEB.2.00.1103091549020.16989@router.home>
-References: <AANLkTikaLb_xan2ePfo9JCZ1w7RZ76wF8NUT2tYr0ZD=@mail.gmail.com> <alpine.DEB.2.00.1103051847100.8779@chino.kir.corp.google.com> <4D770178.9070908@gmail.com> <alpine.DEB.2.00.1103091254540.13353@chino.kir.corp.google.com>
- <4D77EEB4.9090404@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 9 Mar 2011 16:55:33 -0500
+Date: Wed, 9 Mar 2011 22:55:05 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org, netdev@vger.kernel.org,
+        Wensong Zhang <wensong@linux-vs.org>, trivial@kernel.org
+Subject: [PATCH] Fix variable assignment in ip_vs_notrack
+Message-ID: <alpine.LNX.2.00.1103092250510.4471@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some more things from the syslog that may be of relevance. System went
-through multiple suspend and resume cycles.
+There's no sense to 'ct = ct = ' in ip_vs_notrack(). Just assign 
+nf_ct_get()'s return value directly to the pointer variable 'ct' once.
 
-Before the failure we have a wlan authentication and the ATH driver throws a fit.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ ip_vs.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[ 7339.673270] ll header: ff:ff:ff:ff:ff:ff:00:90:fb:1c:4f:5c:08:00
-[ 7340.076865] FIREWALL:INPUT IN=wlan0 OUT= MAC=00:19:e3:06:2c:16:00:90:fb:1c:4f:5c:08:00 SRC=192.168.5.1
-DST=192.168.5.11 LEN=48 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=251 SEQ=0
-[ 7416.743752] cfg80211: Calling CRDA to update world regulatory domain
-[ 7419.292521] wlan0: authenticate with 00:21:55:b4:20:20 (try 1)
-[ 7419.312690] wlan0: authenticated
-[ 7419.318325] wlan0: associate with 00:21:55:b4:20:20 (try 1)
-[ 7419.322764] wlan0: RX AssocResp from 00:21:55:b4:20:20 (capab=0x401 status=0 aid=218)
-[ 7419.322770] wlan0: associated
-[ 7427.161366] ath: Failed to stop TX DMA in 100 msec after killing last frame
-[ 7427.161432] ath: Failed to stop TX DMA!
-[ 7434.492398] ath: Failed to stop TX DMA in 100 msec after killing last frame
-[ 7434.492462] ath: Failed to stop TX DMA!
-[ 7603.339047]
-=============================================================================
-[ 7603.339053] BUG radix_tree_node: Padding overwritten. 0xffff88000008fe00-0xffff88000008fe32
-[ 7603.339055]
------------------------------------------------------------------------------
-[ 7603.339056]
+diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+index b7bbd6c..269d1ef 100644
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -1031,7 +1031,7 @@ static inline void ip_vs_notrack(struct sk_buff *skb)
+ {
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ 	enum ip_conntrack_info ctinfo;
+-	struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
++	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 
+ 	if (!ct || !nf_ct_is_untracked(ct)) {
+ 		nf_reset(skb);
 
 
-Could the ath driver corrupt memory if the TX DMA cannot be stopped?
-
-Maybe fix the driver first?
-
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
 
