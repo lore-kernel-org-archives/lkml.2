@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab1CIXJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 18:09:05 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:20825 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756Ab1CIXJD (ORCPT
+	id S1752732Ab1CIXOB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 18:14:01 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:25174 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab1CIXN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 18:09:03 -0500
-X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Mar 2011 18:09:03 EST
-Subject: [PATCH 0/2] hpsa: add resettable sysfs host attribute  
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        smcameron@yahoo.com, thenzl@redhat.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com
-Date: Wed, 09 Mar 2011 16:59:56 -0600
-Message-ID: <20110309225822.26877.94051.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Wed, 9 Mar 2011 18:13:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=PaNhJ58fcBIk4GtP6QoUyPAJpzFrogPwZra4torW7uUzFc51eKFY8sLGiPhVSryQXb
+         9gU60vef8GgyjVZByVZw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1299704969-4485-1-git-send-email-emunson@mgebm.net>
+References: <1299704969-4485-1-git-send-email-emunson@mgebm.net>
+From: Paul Menage <menage@google.com>
+Date: Wed, 9 Mar 2011 15:13:34 -0800
+Message-ID: <AANLkTinW99M1FBp5gRA=+SsjUWSJBwByurqrsjXKgQ4=@mail.gmail.com>
+Subject: Re: [PATCH] Documentation: cgroups: Add notes on removing PIDs from
+ tasks and cgroups requiring setup
+To: Eric B Munson <emunson@mgebm.net>
+Cc: containers@lists.linux-foundation.org, rdunlap@xenotime.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Redhat's request, this adds a sysfs host attribute to indicate whether
-the reset_devices kernel parameter can be honored by the device.  This enables 
-kexec tools to warn the user if they attempt to designate a non-resettable device
-as the dump device.  If the device is not resettable, kdump won't work.
+On Wed, Mar 9, 2011 at 1:09 PM, Eric B Munson <emunson@mgebm.net> wrote:
+>
+> +Note: To remove a task from a cgroup you must write its PID to the root
+> +tasks file.
+> +
 
----
+This isn't really accurate - the root cgroup is a cgroup like all the
+others. More accurate would be something like:
 
-Stephen M. Cameron (2):
-      hpsa: move device attributes to avoid forward declarations
-      hpsa: export resettable host attribute
+Since every task is always a member of exactly one cgroup in each
+mounted hierarchy, to remove a task from its current cgroup you must
+move it into a new cgroup (possibly the root cgroup) by writing to the
+new cgroup's tasks file.
 
-
- Documentation/scsi/hpsa.txt |   12 ++
- drivers/scsi/hpsa.c         |  276 ++++++++++++++++++++++++-------------------
- 2 files changed, 164 insertions(+), 124 deletions(-)
-
---
--- steve
-
+Paul
