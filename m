@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab1CJAFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:05:52 -0500
-Received: from mail.deathmatch.net ([72.66.92.28]:4839 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab1CJAFv (ORCPT
+	id S1752763Ab1CJAGB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:06:01 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:40918 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab1CJAF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:05:51 -0500
-Date: Wed, 9 Mar 2011 19:05:02 -0500
-From: Bob Copeland <me@bobcopeland.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nick Piggin <npiggin@kernel.dk>, Dave Chinner <dchinner@redhat.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: <IRQ> [<ffffffff810c9204>] ? __alloc_pages_nodemask+0x622/0x696
-Message-ID: <20110310000502.GA13763@hash.localnet>
-References: <AANLkTikaLb_xan2ePfo9JCZ1w7RZ76wF8NUT2tYr0ZD=@mail.gmail.com> <alpine.DEB.2.00.1103051847100.8779@chino.kir.corp.google.com> <4D770178.9070908@gmail.com> <alpine.DEB.2.00.1103091254540.13353@chino.kir.corp.google.com> <4D77EEB4.9090404@gmail.com> <alpine.DEB.2.00.1103091549020.16989@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103091549020.16989@router.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 9 Mar 2011 19:05:56 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=PxAoOJ8Hl3uq/IfpLi+CfvkXudZo2kcPLwpDJSW3OkI5OP09QL2PXMNMwL6AbNhOS
+	anc9HsTGuP3SbCQEKcEvg==
+From: David Sharp <dhsharp@google.com>
+To: linux-kernel@vger.kernel.org, rostedt@goodmis.org
+Cc: mrubin@google.com, David Sharp <dhsharp@google.com>
+Subject: [PATCH trace-cmd 1/3] parse-events: Add support for printing short fields.
+Date: Wed,  9 Mar 2011 15:58:55 -0800
+Message-Id: <1299715137-22768-1-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 03:54:24PM -0600, Christoph Lameter wrote:
-> [ 7419.322770] wlan0: associated
-> [ 7427.161366] ath: Failed to stop TX DMA in 100 msec after killing last frame
-> [ 7427.161432] ath: Failed to stop TX DMA!
-> [ 7434.492398] ath: Failed to stop TX DMA in 100 msec after killing last frame
-> [ 7434.492462] ath: Failed to stop TX DMA!
-> [ 7603.339047]
-> =============================================================================
-> [ 7603.339053] BUG radix_tree_node: Padding overwritten. 0xffff88000008fe00-0xffff88000008fe32
+Handle "%hd" etc. in pretty_print()
 
-> Could the ath driver corrupt memory if the TX DMA cannot be stopped?
+Signed-off-by: David Sharp <dhsharp@google.com>
+Google-Bug-Id: 3501052
+---
+ parse-events.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-Looks like ath_draintxq() can do something bad (e.g. DMA engine uses
-an old address from ath_tx_return_buffer()) if DMA is still active
-in ath_drain_all_txq().
-
-But this is ath9k which I'm not so familiar with, maybe Luis can say.
-
+diff --git a/parse-events.c b/parse-events.c
+index 3d59d92..bfb7ff5 100644
+--- a/parse-events.c
++++ b/parse-events.c
+@@ -3607,6 +3607,9 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 			case '#':
+ 				/* FIXME: need to handle properly */
+ 				goto cont_process;
++			case 'h':
++				ls--;
++				goto cont_process;
+ 			case 'l':
+ 				ls++;
+ 				goto cont_process;
+@@ -3687,6 +3690,18 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 						strcpy(format, "0x%llx");
+ 				}
+ 				switch (ls) {
++				case -2:
++					if (len_as_arg)
++						trace_seq_printf(s, format, len_arg, (char)val);
++					else
++						trace_seq_printf(s, format, (char)val);
++					break;
++				case -1:
++					if (len_as_arg)
++						trace_seq_printf(s, format, len_arg, (short)val);
++					else
++						trace_seq_printf(s, format, (short)val);
++					break;
+ 				case 0:
+ 					if (len_as_arg)
+ 						trace_seq_printf(s, format, len_arg, (int)val);
 -- 
-Bob Copeland %% www.bobcopeland.com
+1.7.3.1
 
