@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab1CIOvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 09:51:37 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:40282 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab1CIOvg (ORCPT
+	id S1757109Ab1CIPGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:06:35 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44251 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757069Ab1CIPGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 09:51:36 -0500
-Date: Wed, 9 Mar 2011 08:51:35 -0600
-From: scameron@beardog.cce.hp.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com, thenzl@redhat.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH 2/2] hpsa: export resettable_on_kexec host attribute
-Message-ID: <20110309145135.GH12760@beardog.cce.hp.com>
-References: <20110308230749.22291.56200.stgit@beardog.cce.hp.com> <20110308231003.22291.20417.stgit@beardog.cce.hp.com> <20110309143624.GB10346@redhat.com>
-Mime-Version: 1.0
+	Wed, 9 Mar 2011 10:06:32 -0500
+Date: Wed, 9 Mar 2011 16:06:18 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Borislav Petkov <bp@alien8.de>, Arnd Bergmann <arnd@arndb.de>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "bp@amd64.org" <bp@amd64.org>
+Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
+Message-ID: <20110309150618.GA2368@aftab>
+References: <20110301083529.GA767@liondog.tnic>
+ <20110309144504.GA1096@sepie.suse.cz>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110309143624.GB10346@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20110309144504.GA1096@sepie.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 09:36:24AM -0500, Vivek Goyal wrote:
-> On Tue, Mar 08, 2011 at 05:10:03PM -0600, Stephen M. Cameron wrote:
-> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Wed, Mar 09, 2011 at 09:45:04AM -0500, Michal Marek wrote:
+> On Tue, Mar 01, 2011 at 09:35:29AM +0100, Borislav Petkov wrote:
+> > Add a 'W=1' Makefile switch which adds additional checking per build
+> > object.
 > > 
-> > This attribute, requested by Redhat, allows kexec-tools to know
-> > whether the controller can honor the reset_devices kernel parameter
-> > and actually reset the controller.  For kdump to work properly it
-> > is necessary that the reset_devices parameter be honored.  This
-> > attribute enables kexec-tools to warn the user if they attempt to
-> > designate a non-resettable controller as the dump device.
+> > The idea behind this option is targeted at developers who, in the
+> > process of writing their code, want to do the occasional
 > > 
+> > make W=1 [target.o]
+> > 
+> > and let gcc do more extensive code checking for them. Then, they
+> > could eyeball the output for valid gcc warnings about various
+> > bugs/discrepancies which are not reported during the normal build
+> > process.
+> > 
+> > For more background information and a use case, read through this
+> > thread: http://marc.info/?l=kernel-janitors&m=129802065918147&w=2
+> > 
+> > -v5: Document internal kbuild variable which is introduced by this.
+> > Simplify assignment.
 > 
-> Hi Stephen,
-> 
-> Thinking more about it, can we make "resettable_on_kexec" name even more
-> generic. Kexec/kdump is just one of the users of this functionality.
-> 
-> So the idea is whether device is soft resettable or not by the driver.
-> May be "soft_resettable" or just "resettable" might be a better name.
+> Thanks, applied to kbuild-2.6.git#packaging. If someone comes up with a
+> good selection of warnings for W=1 and W=2, we can change it later.
 
-Sure.  "resettable" seems fine.
+Yeah, I was going to do that but am terribly busy at the moment. I'll do
+an initial proposal against your kbuild branch when I get a chance.
 
--- steve
+Thanks.
 
-> 
-> Thanks
-> Vivek
-> 
-> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > ---
-> >  drivers/scsi/hpsa.c |   41 +++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 41 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> > index dcabef4..1d4fe80 100644
-> > --- a/drivers/scsi/hpsa.c
-> > +++ b/drivers/scsi/hpsa.c
-> > @@ -273,6 +273,44 @@ static ssize_t host_show_transport_mode(struct device *dev,
-> >  			"performant" : "simple");
-> >  }
-> >  
-> > +/* List of controllers which cannot be reset on kexec with reset_devices */
-> > +static u32 unresettable_controller[] = {
-> > +	0x324a103C, /* Smart Array P712m */
-> > +	0x324b103C, /* SmartArray P711m */
-> > +	0x3223103C, /* Smart Array P800 */
-> > +	0x3234103C, /* Smart Array P400 */
-> > +	0x3235103C, /* Smart Array P400i */
-> > +	0x3211103C, /* Smart Array E200i */
-> > +	0x3212103C, /* Smart Array E200 */
-> > +	0x3213103C, /* Smart Array E200i */
-> > +	0x3214103C, /* Smart Array E200i */
-> > +	0x3215103C, /* Smart Array E200i */
-> > +	0x3237103C, /* Smart Array E500 */
-> > +	0x3223103C, /* Smart Array P800 */
-> > +	0x3234103C, /* Smart Array P400 */
-> > +	0x323D103C, /* Smart Array P700m */
-> > +};
-> > +
-> > +static int resettable_on_kexec(struct ctlr_info *h)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; i < ARRAY_SIZE(unresettable_controller); i++)
-> > +		if (unresettable_controller[i] == h->board_id)
-> > +			return 0;
-> > +	return 1;
-> > +}
-> > +
-> > +static ssize_t host_show_resettable_on_kexec(struct device *dev,
-> > +	struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct ctlr_info *h;
-> > +	struct Scsi_Host *shost = class_to_shost(dev);
-> > +
-> > +	h = shost_to_hba(shost);
-> > +	return snprintf(buf, 20, "%d\n", resettable_on_kexec(h));
-> > +}
-> > +
-> >  static inline int is_logical_dev_addr_mode(unsigned char scsi3addr[])
-> >  {
-> >  	return (scsi3addr[3] & 0xC0) == 0x40;
-> > @@ -379,6 +417,8 @@ static DEVICE_ATTR(commands_outstanding, S_IRUGO,
-> >  	host_show_commands_outstanding, NULL);
-> >  static DEVICE_ATTR(transport_mode, S_IRUGO,
-> >  	host_show_transport_mode, NULL);
-> > +static DEVICE_ATTR(resettable_on_kexec, S_IRUGO,
-> > +	host_show_resettable_on_kexec, NULL);
-> >  
-> >  static struct device_attribute *hpsa_sdev_attrs[] = {
-> >  	&dev_attr_raid_level,
-> > @@ -392,6 +432,7 @@ static struct device_attribute *hpsa_shost_attrs[] = {
-> >  	&dev_attr_firmware_revision,
-> >  	&dev_attr_commands_outstanding,
-> >  	&dev_attr_transport_mode,
-> > +	&dev_attr_resettable_on_kexec,
-> >  	NULL,
-> >  };
-> >  
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
