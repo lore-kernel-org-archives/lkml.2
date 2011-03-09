@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab1CIA3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:29:25 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:59895 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754739Ab1CIA3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:29:24 -0500
-Date: Tue, 8 Mar 2011 19:29:21 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        chris <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH][RFC] tracing: Enable tracepoints via module parameters
-Message-ID: <20110309002921.GA744@Krystal>
-References: <1299622684.20306.77.camel@gandalf.stny.rr.com> <20110308232258.GA25987@Krystal> <1299627175.20306.96.camel@gandalf.stny.rr.com> <20110309000753.GA27729@Krystal> <1299629657.20306.105.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299629657.20306.105.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 19:19:30 up 105 days,  5:22,  2 users,  load average: 0.14, 0.10,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756519Ab1CIAaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:30:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56084 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754739Ab1CIAaS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:30:18 -0500
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H.J. Lu" <hjl.tools@gmail.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1299630111.4146.15.camel@localhost>
+References: <1299630111.4146.15.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 09 Mar 2011 00:29:53 +0000
+Message-ID: <1299630593.4146.21.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: [PATCH 1/5] x86: Fix .size directive for xen_do_hypervisor_callback
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Tue, 2011-03-08 at 19:07 -0500, Mathieu Desnoyers wrote:
-> 
-> > So what you are saying here is that modifying /etc/modprobe.d/ is the actual
-> > interface you propose presenting to the end-users to control their tracepoints ?
-> 
-> If you want to have them enabled on boot, sure.
+From: H.J. Lu <hjl.tools@gmail.com>
 
-No, I'm not talking about enabling tracepoints on boot here. Let's think about a
-basic use-case: a distro packages a tracer, and provides a "default" set of
-tracepoints that can be enabled when tracing is needed. Therefore, these
-tracepoints are not enabled at boot -- they are rather enabled when tracing
-starts. Some of these tracepoints are in dynamically loaded modules. Some of
-these modules are automatically loaded by the distro (e.g. when a USB device is
-plugged in).
+[bwh: This is my summary.]
 
-The specific module tracepoints should therefore only be enabled when both of
-the following conditions are true:
+gas used to accept (and ignore?) .size directives which referred to
+undefined symbols, as this does.  In binutils 2.21 these are treated
+as errors.
 
-A - the end-user want to trace
-B - the module is loaded
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+If this is already headed to Linus by some other route, sorry for the
+dupe.
 
-But it looks like hooking on modinfo will only let you unconditionally enable
-the module tracepoints during normal system operations (even when tracing is
-off), or not at all unless you previously load the module (which does not fit
-with the reality of distributions automagically loading modules on demand while
-tracing runs).
+HJL: Care to add your S-o-b?  (I can't believe this is even subject to
+copyright, so I'm signing it off myself anyway.)
 
-> 
-> > Maybe I am missing something, but this interface seems to lack the layer of
-> > finish we might want to put into a user-visible API. I don't really see how
-> > distributions can hope to automate any of this for their end-user without making
-> > a mess of the /etc/modprobe.d/ they ship with.
-> 
-> What distros enable tracepoints by default?
+Ben.
 
-Do you mean enable as having a probe connected, or just CONFIG_TRACEPOINTS=y ?
+ arch/x86/kernel/entry_64.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
-> If you want to enable a tracepoint on module load simply do:
-> 
->  modprobe mymod trace_my_tracepoint=1
-> 
-> Otherwise modify your modprobe.d directory. This is the way users have
-> been doing module parameters for years.
-> 
-> That's pretty simple to me.
-
-Everything is always so much easier when your end-user target is yourself.
-What are users for anyway ? :-P
-
-Mathieu
-
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index aed1ffb..bbd5c80 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1248,7 +1248,7 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
+ 	decl PER_CPU_VAR(irq_count)
+ 	jmp  error_exit
+ 	CFI_ENDPROC
+-END(do_hypervisor_callback)
++END(xen_do_hypervisor_callback)
+ 
+ /*
+  * Hypervisor uses this for application faults while it executes.
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.4.1
+
+
+
