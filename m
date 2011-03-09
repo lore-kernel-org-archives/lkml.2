@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab1CIMUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 07:20:37 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38021 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab1CIMUf (ORCPT
+	id S932329Ab1CIMVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 07:21:01 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63662 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932198Ab1CIMVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 07:20:35 -0500
-Message-ID: <4D77708F.1000800@monstr.eu>
-Date: Wed, 09 Mar 2011 13:20:31 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Wed, 9 Mar 2011 07:21:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Rmo1I+84l6VQVwvmxRVkFElEfIC1fRmmuvrlmwHKi8xrgQokJSBYdQbInXBsM8SFvH
+         3Zr00hgkOryYHLuIxrLhyOQu6Xpsb9joxOYXELAnjF/dUyIrE+Qs6UiQ4N1lkWiPndTr
+         Kdhla0/6+bg/w6qfXpGO86oyeInffbBxEvfWE=
+Date: Wed, 9 Mar 2011 20:20:46 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Anton Blanchard <anton@samba.org>, akpm@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
+ overridden
+Message-ID: <20110309122046.GC16951@cr0.redhat.com>
+References: <20100825002258.GD28360@kryten>
+ <m139u37cii.fsf@fess.ebiederm.org>
+ <4D771EE6.5050404@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Revert "irq: Add tracepoint to softirq_raise" - microblaze build
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D771EE6.5050404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+On Wed, Mar 09, 2011 at 12:02:06PM +0530, Mahesh Jagannath Salgaonkar wrote:
+>On 08/25/2010 06:07 AM, Eric W. Biederman wrote:
+>> Anton Blanchard <anton@samba.org> writes:
+>> 
+>>> On ppc64 the crashkernel region almost always overlaps an area of firmware.
+>>> This works fine except when using the sysfs interface to reduce the kdump
+>>> region. If we free the firmware area we are guaranteed to crash.
+>> 
+>> That is ppc64 bug.  firmware should not be in the reserved region.  Any
+>> random kernel like thing can be put in to that region at any valid
+>> address and the fact that shrinking the region frees your firmware means
+>> that using that region could also stomp your firmware (which I assume
+>> would be a bad thing).
+>The issue only happens while shrinking the region using sysfs interface.
+>We already have checks in kexec for not to stomp over on the firmware
+>overlap area while loading capture kernel. Currently we do a top-down
+>allocation for the firmware region which means it sits at the top of the
+>RMO, right in the middle of the crashdump region. We can not move the
+>crashkernel region beyond firmware region because kernel needs its some
+>of memory in RMO region.
 
-I have compiled ftrace support for Microblaze and I have reached a compilation failure.
+The crashkernel region is specified via kernel cmdline, so why
+not just drop a failure when it overlaps with RMO region?
+Am I missing something?
 
-I bisected it and I found that
-"irq: Add tracepoint to softirq_raise"
-(sha1:2bf2160d8805de64308e2e7c3cd97813cb58ed2f)
-caused it.
-
-I also found one thread which could be related.
-http://kerneltrap.org/mailarchive/linux-kernel/2010/9/8/4616941
-
-It is likely any missing header or so.
-
-Do you know what can be wrong?
-
-Thanks,
-Michal
-
-
-[ALL  ]   CC      kernel/trace/power-traces.o
-[ALL  ] In file included from 
-/mnt/projects/petalinux-v1.00-devel/software/linux-2.6.x/arch/microblaze/include/asm/irq.h:15,
-[ALL  ]                  from include/linux/irq.h:27,
-[ALL  ]                  from include/asm-generic/hardirq.h:12,
-[ALL  ]                  from 
-/mnt/projects/petalinux-v1.00-devel/software/linux-2.6.x/arch/microblaze/include/asm/hardirq.h:15,
-[ALL  ]                  from include/linux/hardirq.h:7,
-[ALL  ]                  from include/linux/ftrace_event.h:7,
-[ALL  ]                  from include/trace/ftrace.h:19,
-[ALL  ]                  from include/trace/define_trace.h:96,
-[ALL  ]                  from include/trace/events/power.h:240,
-[ALL  ]                  from kernel/trace/power-traces.c:14:
-[ALL  ] include/linux/interrupt.h: In function '__raise_softirq_irqoff':
-[ERROR] include/linux/interrupt.h:413: error: implicit declaration of function 'trace_softirq_raise'
-[ALL  ] In file included from include/trace/ftrace.h:554,
-[ALL  ]                  from include/trace/define_trace.h:96,
-[ALL  ]                  from include/trace/events/power.h:240,
-[ALL  ]                  from kernel/trace/power-traces.c:14:
-[ALL  ] include/trace/events/irq.h: In function 'ftrace_test_probe_irq_handler_entry':
-[ERROR] include/trace/events/irq.h:37: error: implicit declaration of function 
-'check_trace_callback_type_irq_handler_entry'
-[ALL  ] include/trace/events/irq.h: In function 'ftrace_test_probe_irq_handler_exit':
-[ERROR] include/trace/events/irq.h:67: error: implicit declaration of function 
-'check_trace_callback_type_irq_handler_exit'
-[ALL  ] include/trace/events/irq.h: In function 'ftrace_test_probe_softirq_entry':
-[ERROR] include/trace/events/irq.h:112: error: implicit declaration of function 
-'check_trace_callback_type_softirq_entry'
-[ALL  ] include/trace/events/irq.h: In function 'ftrace_test_probe_softirq_exit':
-[ERROR] include/trace/events/irq.h:126: error: implicit declaration of function 
-'check_trace_callback_type_softirq_exit'
-[ALL  ] include/trace/events/irq.h: In function 'ftrace_test_probe_softirq_raise':
-[ERROR] include/trace/events/irq.h:140: error: implicit declaration of function 
-'check_trace_callback_type_softirq_raise'
-[ERROR] make[5]: *** [kernel/trace/power-traces.o] Error 1
-[ERROR] make[4]: *** [kernel/trace] Error 2
-[ERROR] make[3]: *** [kernel] Error 2
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Thanks.
