@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab1CIPNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:13:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:32411 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757057Ab1CIPNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:13:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,291,1297065600"; 
-   d="scan'208";a="718220672"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] perf: x86, SandyBridge PEBS events cleanup
-Date: Wed,  9 Mar 2011 23:21:28 +0800
-Message-Id: <1299684089-22835-2-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1299684089-22835-1-git-send-email-ming.m.lin@intel.com>
-References: <1299684089-22835-1-git-send-email-ming.m.lin@intel.com>
+	id S1757240Ab1CIPPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:15:00 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:3062 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab1CIPO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 10:14:58 -0500
+Date: Wed, 9 Mar 2011 09:14:57 -0600
+From: scameron@beardog.cce.hp.com
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Subject: Re: [PATCH 2/2] hpsa: export resettable_on_kexec host attribute
+Message-ID: <20110309151457.GI12760@beardog.cce.hp.com>
+References: <20110308230749.22291.56200.stgit@beardog.cce.hp.com> <20110308231003.22291.20417.stgit@beardog.cce.hp.com> <4D777249.10400@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D777249.10400@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use INTEL_EVENT_CONSTRAINT() for the events where all umasks support PEBS
+On Wed, Mar 09, 2011 at 01:27:53PM +0100, Tomas Henzl wrote:
+> On 03/09/2011 12:10 AM, Stephen M. Cameron wrote:
+> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> >
+> > This attribute, requested by Redhat, allows kexec-tools to know
+> > whether the controller can honor the reset_devices kernel parameter
+>
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   27 +++++----------------------
- 1 files changed, 5 insertions(+), 22 deletions(-)
+[...]
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index b95c66a..b72687f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -412,20 +412,9 @@ static struct event_constraint intel_snb_pebs_events[] = {
- 	PEBS_EVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
- 	PEBS_EVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
- 	PEBS_EVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
--	PEBS_EVENT_CONSTRAINT(0x01c4, 0xf), /* BR_INST_RETIRED.CONDITIONAL */
--	PEBS_EVENT_CONSTRAINT(0x02c4, 0xf), /* BR_INST_RETIRED.NEAR_CALL */
--	PEBS_EVENT_CONSTRAINT(0x04c4, 0xf), /* BR_INST_RETIRED.ALL_BRANCHES */
--	PEBS_EVENT_CONSTRAINT(0x08c4, 0xf), /* BR_INST_RETIRED.NEAR_RETURN */
--	PEBS_EVENT_CONSTRAINT(0x10c4, 0xf), /* BR_INST_RETIRED.NOT_TAKEN */
--	PEBS_EVENT_CONSTRAINT(0x20c4, 0xf), /* BR_INST_RETIRED.NEAR_TAKEN */
--	PEBS_EVENT_CONSTRAINT(0x40c4, 0xf), /* BR_INST_RETIRED.FAR_BRANCH */
--	PEBS_EVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
--	PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
--	PEBS_EVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
--	PEBS_EVENT_CONSTRAINT(0x10c5, 0xf), /* BR_MISP_RETIRED.NOT_TAKEN */
--	PEBS_EVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.TAKEN */
--	PEBS_EVENT_CONSTRAINT(0x01cd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
--	PEBS_EVENT_CONSTRAINT(0x02cd, 0x8), /* MEM_TRANS_RETIRED.PRECISE_STORE */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),  /* BR_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),  /* BR_MISP_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8),  /* MEM_TRANS_RETIRED.* */
- 	PEBS_EVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_LOADS */
- 	PEBS_EVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_STORES */
- 	PEBS_EVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOP_RETIRED.LOCK_LOADS */
-@@ -434,14 +423,8 @@ static struct event_constraint intel_snb_pebs_events[] = {
- 	PEBS_EVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOP_RETIRED.SPLIT_STORES */
- 	PEBS_EVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOP_RETIRED.ANY_LOADS */
- 	PEBS_EVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOP_RETIRED.ANY_STORES */
--	PEBS_EVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
--	PEBS_EVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
--	PEBS_EVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
--	PEBS_EVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
--	PEBS_EVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
--	PEBS_EVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
--	PEBS_EVENT_CONSTRAINT(0x04d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HITM */
--	PEBS_EVENT_CONSTRAINT(0x08d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_NONE */
-+	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),  /* MEM_LOAD_UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),  /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
- 	PEBS_EVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
- 	EVENT_CONSTRAINT_END
- };
--- 
-1.7.3
+> and actually reset the controller.  For kdump to work properly it
+> Hi Stephen,
+> 
+> thanks for posting this.
+> Some of the devices are served by the cciss driver by default - I guess
+> a very similar patch for cciss is needed too.
+> Shouldn't be the 0x409C0E11 and 0x409D0E11 (640x boards) also added to the list?
+> (And the 'unknown' devices.)
+
+There's a bit of a fine point here regarding the unknown devices.
+
+If hpsa_allow_any=1 module parameter is set, then the unknown device
+is considered to be resettable (as it's unknown, it's obviously not
+on the list of known unresettable controllers).  If hpsa_allow_any
+is not set, then the unknown devices are not reset -- and the driver
+doesn't even try to do anything with them.  
+
+So, the patch is consistent with this, in that if hpsa_allow_any is
+not set, then there won't be any corresponding sysfs entries at all
+for those devices because those devices won't be service by hpsa
+at all.  And if hpsa_allow_any is set, then those devices will be
+marked as resettable, and the reset code will attempt to reset them.
+
+I think we've got all the unresettable devices listed (when I add the 6400
+boards to the list of course) and I think we're going to try pretty hard to
+make sure new boards are resettable, so, that's probably ok, right?
+
+Or, do you want to be extra safe, and say that new, unknown boards are assumed
+to be non-resettable?  (Since new boards generally mean driver changes to make
+sure the driver knows those boards, that's not such a big deal -- except for
+people who want to continue to use old OSes on new hardware, which, there seem
+to be quite a few of those people.)
+
+I think my preference would be to assume that unknown boards are resettable
+if hpsa_allow_any=1, and assume unresettable otherwise (and for purposes of
+sysfs attributes, this is what the patch already does.)
+
+-- steve
 
