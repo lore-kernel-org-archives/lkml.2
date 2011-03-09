@@ -1,69 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab1CIPKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:10:07 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52914 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1CIPKE (ORCPT
+	id S1757197Ab1CIPKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:10:40 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:57183 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757072Ab1CIPKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:10:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=O7xxyWSdfAHOIT+Uh+aoIBEJMArLjyFG7Ezi+AYjogFoU7+IygYrewdAbW1eesDEEm
-         vXXQtfAhjZmzqpctQr8JeyH07ocP9AruZeePxK2IsiEio72DZc8r8QH46CME4ofGJr1x
-         tZ/Dmo6qhEr2GHW/CR/7W/c3PZd/EGLl17I0c=
-Date: Wed, 9 Mar 2011 23:09:49 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Adam Majer <adamm@zombino.com>
-Cc: netdev@vger.kernel.org,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, bridge@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Issue NETDEV_CHANGE notification when bridge changes
- state
-Message-ID: <20110309150949.GE16951@cr0.redhat.com>
-References: <20110306051833.GA3098@mira.lan.galacticasoftware.com>
+	Wed, 9 Mar 2011 10:10:37 -0500
+Date: Wed, 9 Mar 2011 10:10:36 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <roger.quadros@nokia.com>
+cc: gregkh@suse.de, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] usb: gadget: storage: Add fsg_get_toc helper
+In-Reply-To: <1299673300-16726-2-git-send-email-roger.quadros@nokia.com>
+Message-ID: <Pine.LNX.4.44L0.1103091005570.1965-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110306051833.GA3098@mira.lan.galacticasoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 05, 2011 at 11:18:33PM -0600, Adam Majer wrote:
->
->IPv6 address autoconfiguration relies on an UP interface to processes
->traffic normally. A bridge that is UP enters LEARNING state and this
->state "eats" any Router Advertising packets sent to the
->bridge. Issuing a NETDEV_CHANGE notification on the bridge interface
->when it changes state allows autoconfiguration code to retry
->querying router information.
->
-...
+On Wed, 9 Mar 2011, Roger Quadros wrote:
 
->+static void br_port_change_notifier_handler(struct work_struct *work)
->+{
->+	struct net_bridge *br = container_of(work,
->+					     struct net_bridge,
->+					     change_notification_worker);
->+
->+	rtnl_lock();
->+	netdev_state_change(br->dev);
->+	rtnl_unlock();
->+}
->+
+> fsg_get_toc can be used by both storage gadgets to build a CD-ROM
+> Table of Contents which can be used as data for READ_TOC command.
+> Currently fsg_get_toc supports two TOC formats, i.e.
+> format 0: Formatted TOC and format 2: Raw TOC.
+> 
+> Raw TOC is required for CD-ROM emulation to work with Mac OS-X.
 
-Do you really want user-space to get this notification too?
-Why do you put it into a workqueue? Maybe it has to be called in
-process-context?
+In addition to the things Sergei mentioned...
 
-Thanks.
+> +/*
+> + * put_toc() - Builds a TOC with required format @format.
+> + * @curlun: The LUN for which the TOC has to be built
+> + * @msf: Min Sec Frame format or LBA format for address
+> + * @format: TOC format code
+> + * @buf: the buffer into which the TOC is built
+> + *
+> + * Builds a Table of Content which can be used as data for READ_TOC command.
+> + * The TOC simulates a single session, single track CD-ROM mode 1 disc.
+> + *
+> + * Returns number of bytes written to @buf, -EINVAL if format not supported.
+> + */
+> +static int fsg_get_toc(struct fsg_lun *curlun, int msf, int format, u8 *buf)
+> +{
+> +	switch (format) {
+> +	case 0:
+> +		/* Formatted TOC */
+> +		memset(buf, 0, 20);
+> +		buf[1] = (20-2);	/* TOC data length */
+> +		buf[2] = 1;		/* First track number */
+> +		buf[3] = 1;		/* Last track number */
+> +		buf[5] = 0x16;		/* Data track, copying allowed */
+> +		buf[6] = 0x01;		/* Only track is number 1 */
+> +		store_cdrom_address(&buf[8], msf, 0);
+> +
+> +		buf[13] = 0x16;		/* Lead-out track is data */
+> +		buf[14] = 0xAA;		/* Lead-out track number */
+> +		store_cdrom_address(&buf[16], msf, curlun->num_sectors);
+> +		return 20;
+> +		break;
+> +
+> +	case 2:
+> +		/* Raw TOC */
+> +		memset(buf, 0, 37);	/* Header + A0, A1 & A2 descriptors */
+> +		buf[1] = 37;		/* 4 + 3*11 */
+
+There's no reason to do it this way.  The compiler is a lot better than 
+you are at addition.  Just put 4 + 3*11 in the assignment statement, 
+and in the comment explain what the numbers mean.
+
+> +		buf[2] = 1;		/* First complete session */
+> +		buf[3] = 2;		/* Last complete session */
+> +
+> +		buf += 4;
+> +		/* A0 point */
+> +		buf[0] = 1;		/* Session number */
+> +		buf[1] = 0x16;		/* Data track, copying alowed */
+> +		/* 2 - Track number 0 -> TOC */
+> +		buf[3] = 0xA0;		/* Point A0 */
+> +		/* 4, 5, 6 - Min, sec, frame is zero */
+> +		/* 7 - zero */
+> +		buf[8] = 1;		/* Pmin: 1st track number */
+> +		/* 9 - disc type 0: CD-ROM/DA with 1st track in mode 1 */
+> +		/* 10 - pframe 0 */
+> +
+> +		buf += 11;
+> +		/* A1 point*/
+> +		buf[0] = 1;		/* Session number */
+> +		buf[1] = 0x16;		/* Data track, copying alowed */
+> +		/* 2 - Track number 0 -> TOC */
+> +		buf[3] = 0xA1;		/* Point A1 */
+> +		/* 4, 5, 6 - Min, sec, frame is zero */
+> +		/* 7, zero */
+> +		buf[8] = 1;		/* Pmin: last track number */
+> +		/* 9, 10 - pmin and pframe are 0 */
+> +
+> +		buf += 11;
+> +		/* A2 point*/
+> +		buf[0] = 1;		/* Session number */
+> +		buf[1] = 0x16;		/* Data track, copying alowed */
+> +		/* 2 - Track number 0 -> TOC */
+> +		buf[3] = 0xA2;		/* Point A2 */
+> +		/* 4, 5, 6 - Min, sec, frame is zero */
+> +		/* 7, 8, 9, 10 - zero, Pmin, Psec, Pframe of Lead out */
+> +		store_cdrom_address(&buf[7], msf, curlun->num_sectors);
+
+These things could be put into a loop, instead of a separate function.
+
+> +		return 37;
+
+It might be a good idea to use a variable instead of having all these 
+"37"s floating around.  It would make future updates more reliable.
+
+> +		break;
+> +	default:
+> +		/* Multi-session, PMA, ATIP, CD-TEXT not supported/required */
+> +		return -EINVAL;
+> +		break;
+> +	}
+> +}
+
+Alan Stern
+
