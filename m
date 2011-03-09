@@ -1,118 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab1CIJNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 04:13:50 -0500
+	id S1756955Ab1CIJOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 04:14:32 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:63889 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab1CIJNq (ORCPT
+	with ESMTP id S1752604Ab1CIJNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 04:13:46 -0500
+	Wed, 9 Mar 2011 04:13:55 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:message-id:x-mailer;
-        b=GSMQqesASD1pwAFx4AkEVoG7SeUW+8vaTEeDAL4WO4xVxFtPuNvUU36bCQKKCzoHYz
-         +aMP6RRWgiy2UG4bm8BP4elzsZB3U0rpyS8Wlyotd2wswL8ligkep2zYBuRbFRPpi77W
-         S0NX3ZSaaa/yvwXntIux/eOCbgFKvY/9j7DlA=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=L3LZJsECL8mcd8ZfVdu5oQPwLrfUfjghxkqaVJimJMbZchWoECsazDfmoFqCsobkAN
+         ZDmI7nn96rYLeEx3kgirjTxu3N/UWT66CLhSqnNKRVHdDrTMa0tOgQ4mMBiN4PzJ3Gqz
+         slqJRMPccTukLprNuTqu/kMqlhJMwSJX5PXtc=
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
         hch@infradead.org
-Subject: [PATCHSET] block: Convert block drivers to ->check_events(), take#2
-Date: Wed,  9 Mar 2011 10:13:20 +0100
-Message-Id: <1299662016-7721-1-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Tim Waugh <tim@cyberelk.net>
+Subject: [PATCH 07/16] paride: Convert to bdops->check_events()
+Date: Wed,  9 Mar 2011 10:13:27 +0100
+Message-Id: <1299662016-7721-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299662016-7721-1-git-send-email-tj@kernel.org>
+References: <1299662016-7721-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Convert paride drivers from ->media_changed() to ->check_events().
 
-This is the second take of convert-block-drivers-to-check_events
-patchset.  Other than addition of Acked-by's and rebasing on top of
-the current block:for-2.6.39/core (df457f845e), nothing really
-changed.
+pcd and pd buffer and clear events after reporting; however, pf
+unconditionally reports MEDIA_CHANGE and will generate spurious events
+when polled.
 
-This patchset converts all in-kernel block drivers from
-->media_changed() to ->check_events().  Most conversions are fairly
-mechanical.  The only notable exceptions are,
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tim Waugh <tim@cyberelk.net>
+---
+ drivers/block/paride/pcd.c |   18 +++++++++++-------
+ drivers/block/paride/pd.c  |    7 ++++---
+ drivers/block/paride/pf.c  |   10 ++++++----
+ 3 files changed, 21 insertions(+), 14 deletions(-)
 
-* 0014-umem: media_changed was dummy.  As ->check_events() can be
-  omitted, just drop it.
-
-* 0015-pktcdvd: inherits and forwards ->check_events() instead of
-  ->media_changed() from the underlying device.
-
-This patchset contains the following sixteen patches.
-
- 0001-block-Don-t-implicitly-trigger-event-check-on-disk_u.patch
- 0002-block-Don-t-check-events-on-close-unless-it-was-bloc.patch
- 0003-block-Don-t-check-events-while-open-is-in-progress.patch
- 0004-ide-Convert-to-bdops-check_events.patch
- 0005-floppy-ami-ata-flop-Convert-to-bdops-check_events.patch
- 0006-gdrom-viocd-Convert-to-bdops-check_events.patch
- 0007-paride-Convert-to-bdops-check_events.patch
- 0008-dac960-Convert-to-bdops-check_events.patch
- 0009-swim-3-Convert-to-bdops-check_events.patch
- 0010-ub-Convert-to-bdops-check_events.patch
- 0011-xsysace-Convert-to-bdops-check_events.patch
- 0012-i2o_block-Convert-to-bdops-check_events.patch
- 0013-s390-tape_block-Convert-to-bdops-check_events.patch
- 0014-umem-Drop-dummy-media_changed.patch
- 0015-pktcdvd-Convert-to-bdops-check_events.patch
- 0016-staging-Convert-to-bdops-check_events.patch
-
-0001-0003 prepare for further conversions.  Some of the conversions
-are not very well behaved in that they may generate spurious events
-and allow event polling between event clearing check and the actual
-clearing.  These three patches modify the disk event check behavior
-such that such faults can be tolerated.
-
-0004-0016 convert all block drivers.  Conversions are mostly
-mechanical, all changes except for one of the staging driver are
-compile-tested and ide is verified to behave correctly after the
-conversion.
-
-This patchset is available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git disk-event-convert
-
-HEAD is 7904f29ceb3847e7bb8f3296b406c54b8856de56.  As git.korg may
-take some time to sync, if you're seeing an old commit, please pull
-from master.korg.
-
- ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git disk-event-convert
+diff --git a/drivers/block/paride/pcd.c b/drivers/block/paride/pcd.c
+index 62cec6a..2f2ccf6 100644
+--- a/drivers/block/paride/pcd.c
++++ b/drivers/block/paride/pcd.c
+@@ -172,7 +172,8 @@ module_param_array(drive3, int, NULL, 0);
+ static int pcd_open(struct cdrom_device_info *cdi, int purpose);
+ static void pcd_release(struct cdrom_device_info *cdi);
+ static int pcd_drive_status(struct cdrom_device_info *cdi, int slot_nr);
+-static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr);
++static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
++				     unsigned int clearing, int slot_nr);
+ static int pcd_tray_move(struct cdrom_device_info *cdi, int position);
+ static int pcd_lock_door(struct cdrom_device_info *cdi, int lock);
+ static int pcd_drive_reset(struct cdrom_device_info *cdi);
+@@ -257,10 +258,11 @@ static int pcd_block_ioctl(struct block_device *bdev, fmode_t mode,
+ 	return ret;
+ }
  
-diffstat follows.
+-static int pcd_block_media_changed(struct gendisk *disk)
++static unsigned int pcd_block_check_events(struct gendisk *disk,
++					   unsigned int clearing)
+ {
+ 	struct pcd_unit *cd = disk->private_data;
+-	return cdrom_media_changed(&cd->info);
++	return cdrom_check_events(&cd->info, clearing);
+ }
+ 
+ static const struct block_device_operations pcd_bdops = {
+@@ -268,14 +270,14 @@ static const struct block_device_operations pcd_bdops = {
+ 	.open		= pcd_block_open,
+ 	.release	= pcd_block_release,
+ 	.ioctl		= pcd_block_ioctl,
+-	.media_changed	= pcd_block_media_changed,
++	.check_events	= pcd_block_check_events,
+ };
+ 
+ static struct cdrom_device_ops pcd_dops = {
+ 	.open		= pcd_open,
+ 	.release	= pcd_release,
+ 	.drive_status	= pcd_drive_status,
+-	.media_changed	= pcd_media_changed,
++	.check_events	= pcd_check_events,
+ 	.tray_move	= pcd_tray_move,
+ 	.lock_door	= pcd_lock_door,
+ 	.get_mcn	= pcd_get_mcn,
+@@ -318,6 +320,7 @@ static void pcd_init_units(void)
+ 		disk->first_minor = unit;
+ 		strcpy(disk->disk_name, cd->name);	/* umm... */
+ 		disk->fops = &pcd_bdops;
++		disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ }
+ 
+@@ -502,13 +505,14 @@ static int pcd_packet(struct cdrom_device_info *cdi, struct packet_command *cgc)
+ 
+ #define DBMSG(msg)	((verbose>1)?(msg):NULL)
+ 
+-static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr)
++static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
++				     unsigned int clearing, int slot_nr)
+ {
+ 	struct pcd_unit *cd = cdi->handle;
+ 	int res = cd->changed;
+ 	if (res)
+ 		cd->changed = 0;
+-	return res;
++	return res ? DISK_EVENT_MEDIA_CHANGE : 0;
+ }
+ 
+ static int pcd_lock_door(struct cdrom_device_info *cdi, int lock)
+diff --git a/drivers/block/paride/pd.c b/drivers/block/paride/pd.c
+index c0ee155..21dfdb7 100644
+--- a/drivers/block/paride/pd.c
++++ b/drivers/block/paride/pd.c
+@@ -794,7 +794,7 @@ static int pd_release(struct gendisk *p, fmode_t mode)
+ 	return 0;
+ }
+ 
+-static int pd_check_media(struct gendisk *p)
++static unsigned int pd_check_events(struct gendisk *p, unsigned int clearing)
+ {
+ 	struct pd_unit *disk = p->private_data;
+ 	int r;
+@@ -803,7 +803,7 @@ static int pd_check_media(struct gendisk *p)
+ 	pd_special_command(disk, pd_media_check);
+ 	r = disk->changed;
+ 	disk->changed = 0;
+-	return r;
++	return r ? DISK_EVENT_MEDIA_CHANGE : 0;
+ }
+ 
+ static int pd_revalidate(struct gendisk *p)
+@@ -822,7 +822,7 @@ static const struct block_device_operations pd_fops = {
+ 	.release	= pd_release,
+ 	.ioctl		= pd_ioctl,
+ 	.getgeo		= pd_getgeo,
+-	.media_changed	= pd_check_media,
++	.check_events	= pd_check_events,
+ 	.revalidate_disk= pd_revalidate
+ };
+ 
+@@ -837,6 +837,7 @@ static void pd_probe_drive(struct pd_unit *disk)
+ 	p->fops = &pd_fops;
+ 	p->major = major;
+ 	p->first_minor = (disk - pd) << PD_BITS;
++	p->events = DISK_EVENT_MEDIA_CHANGE;
+ 	disk->gd = p;
+ 	p->private_data = disk;
+ 	p->queue = pd_queue;
+diff --git a/drivers/block/paride/pf.c b/drivers/block/paride/pf.c
+index 635f25d..7adeb1e 100644
+--- a/drivers/block/paride/pf.c
++++ b/drivers/block/paride/pf.c
+@@ -243,7 +243,8 @@ static struct pf_unit units[PF_UNITS];
+ static int pf_identify(struct pf_unit *pf);
+ static void pf_lock(struct pf_unit *pf, int func);
+ static void pf_eject(struct pf_unit *pf);
+-static int pf_check_media(struct gendisk *disk);
++static unsigned int pf_check_events(struct gendisk *disk,
++				    unsigned int clearing);
+ 
+ static char pf_scratch[512];	/* scratch block buffer */
+ 
+@@ -270,7 +271,7 @@ static const struct block_device_operations pf_fops = {
+ 	.release	= pf_release,
+ 	.ioctl		= pf_ioctl,
+ 	.getgeo		= pf_getgeo,
+-	.media_changed	= pf_check_media,
++	.check_events	= pf_check_events,
+ };
+ 
+ static void __init pf_init_units(void)
+@@ -293,6 +294,7 @@ static void __init pf_init_units(void)
+ 		disk->first_minor = unit;
+ 		strcpy(disk->disk_name, pf->name);
+ 		disk->fops = &pf_fops;
++		disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 		if (!(*drives[unit])[D_PRT])
+ 			pf_drive_count++;
+ 	}
+@@ -377,9 +379,9 @@ static int pf_release(struct gendisk *disk, fmode_t mode)
+ 
+ }
+ 
+-static int pf_check_media(struct gendisk *disk)
++static unsigned int pf_check_events(struct gendisk *disk, unsigned int clearing)
+ {
+-	return 1;
++	return DISK_EVENT_MEDIA_CHANGE;
+ }
+ 
+ static inline int status_reg(struct pf_unit *pf)
+-- 
+1.7.1
 
- block/genhd.c                                               |    2 -
- drivers/block/DAC960.c                                      |    8 +++--
- drivers/block/amiflop.c                                     |    9 +++---
- drivers/block/ataflop.c                                     |   14 +++++----
- drivers/block/floppy.c                                      |   10 ++++--
- drivers/block/paride/pcd.c                                  |   18 +++++++-----
- drivers/block/paride/pd.c                                   |    7 ++--
- drivers/block/paride/pf.c                                   |   10 ++++--
- drivers/block/pktcdvd.c                                     |   13 ++++++--
- drivers/block/swim.c                                        |    8 +++--
- drivers/block/swim3.c                                       |   11 ++++---
- drivers/block/ub.c                                          |   10 ++++--
- drivers/block/umem.c                                        |   10 ------
- drivers/block/xsysace.c                                     |    9 +++---
- drivers/cdrom/gdrom.c                                       |   16 ++++++----
- drivers/cdrom/viocd.c                                       |   17 ++++++-----
- drivers/ide/ide-cd.c                                        |   10 ++++--
- drivers/ide/ide-cd.h                                        |    3 +-
- drivers/ide/ide-cd_ioctl.c                                  |    8 ++---
- drivers/ide/ide-gd.c                                        |   14 +++++----
- drivers/message/i2o/i2o_block.c                             |   11 ++++---
- drivers/s390/char/tape_block.c                              |   11 ++++---
- drivers/staging/hv/blkvsc_drv.c                             |   11 ++++---
- drivers/staging/westbridge/astoria/block/cyasblkdev_block.c |   11 ++++---
- fs/block_dev.c                                              |   11 ++++---
- 25 files changed, 152 insertions(+), 110 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1081268
