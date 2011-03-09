@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab1CIEkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 23:40:31 -0500
-Received: from gate.crashing.org ([63.228.1.57]:34822 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932179Ab1CIEk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 23:40:28 -0500
-Message-ID: <62749.94.211.195.167.1299645589.squirrel@gate.crashing.org>
-In-Reply-To: <AANLkTikAnb39XhR0hdZAzTKGJ-P1rH+ZxtD+Dea7-364@mail.gmail.com>
-References: <4D6E8932.1010405@zytor.com>
-    <alpine.LFD.2.00.1103022152420.2701@localhost6.localdomain6>
-    <4D6EB07C.5040004@zytor.com>
-    <alpine.LFD.2.00.1103022216180.2701@localhost6.localdomain6>
-    <4D6ECBDB.6090307@zytor.com> <20110303083035.GB14854@elte.hu>
-    <AANLkTik4aTN8+Ob_GVwF17v6pDNGg2DEZJubBazs2e3L@mail.gmail.com>
-    <1299619716.22236.32.camel@pasglop>
-    <AANLkTikAnb39XhR0hdZAzTKGJ-P1rH+ZxtD+Dea7-364@mail.gmail.com>
-Date: Wed, 9 Mar 2011 05:39:49 +0100 (CET)
-Subject: Re: RFC: x86: kill binutils 2.16.x?
-From: "Segher Boessenkool" <segher@kernel.crashing.org>
-To: "Kyle Moffett" <kyle@moffetthome.net>
-Cc: "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "Ingo Molnar" <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "linux-kbuild" <linux-kbuild@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        "Kyle Moffett" <kyle.d.moffett@boeing.com>,
-        "Kumar Gala" <kumar.gala@freescale.com>
-User-Agent: SquirrelMail/1.4.10a-1.fc6
+	id S932224Ab1CIE53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 23:57:29 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55343 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144Ab1CIE51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 23:57:27 -0500
+Date: Wed, 9 Mar 2011 04:57:25 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] more vfs fixes
+Message-ID: <20110309045725.GA22723@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The problem is not with the kernel compile itself, but with the 2.12
-> "dssall" binutils test.  Basically, recent binutils treats e500 as
-> effectively a separate architecture that happens to share *most* of
-> the opcodes with regular PowerPC.  Any opcode which is not understood
-> by the e500 chip is either convert to an equivalent opcode which is
-> understood (IE: lwsync => sync), or failed with an error.  This means
-> that the kernel compile aborts early telling me to upgrade to a newer
-> version of binutils.
+	Several fixes for Nick's RCU stuff; open() without O_CREAT
+can be tricked into creating files, ->d_compare() in /proc/sys is trying
+and failing to be RCU-safe (strictly speaking not a regression, but only
+because it will be kicked out of RCU mode by ->permission() refusing
+to accept IPERM_FLAG_RCU) and spurious errors in open() and vfs_path_lookup()
+since we forget to set nd->inode on the LOOKUP_REVAL attempt.  More fixes
+tomorrow...  Please, pull from
 
-$ echo dssall | powerpc-linux-as -many -me500
-$ powerpc-linux-objdump -d a.out | grep 0:
-   0:   7e 00 06 6c     dssall
-$ powerpc-linux-as --version | head -1
-GNU assembler (GNU Binutils) 2.21.51.20110309
+git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
+Shortlog:
+Al Viro (3):
+      minimal fix for do_filp_open() race
+      unfuck proc_sysctl ->d_compare()
+      nd->inode is not set on the second attempt in path_walk()
 
-What version of binutils does not work?  (I also checked with
--me500x2, -me500mc, -mspe, and various combinations.  lwsync
-is indeed converted to a regular sync (well, "msync") for e500
-and e500x2).
-
-
-Segher
+Diffstat:
+ fs/namei.c             |   14 +++++++++++---
+ fs/proc/inode.c        |    8 ++++++--
+ fs/proc/proc_sysctl.c  |    7 +++++--
+ include/linux/sysctl.h |   14 ++++++++++----
+ kernel/sysctl.c        |   15 ++++++++++-----
+ 5 files changed, 42 insertions(+), 16 deletions(-)
 
