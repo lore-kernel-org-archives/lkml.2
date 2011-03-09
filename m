@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab1CIMjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 07:39:13 -0500
-Received: from mout.perfora.net ([74.208.4.195]:62561 "EHLO mout.perfora.net"
+	id S932288Ab1CIMmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 07:42:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4009 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab1CIMjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 07:39:10 -0500
-Date: Wed, 9 Mar 2011 07:38:34 -0500
-From: Stephen Wilson <wilsons@start.ca>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+	id S932198Ab1CIMmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 07:42:50 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110307021127.GB31188@google.com>
+References: <20110307021127.GB31188@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: dhowells@redhat.com, Darren Hart <dvhltc@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Ingo Molnar <mingo@elte.hu>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] mm: use mm_struct to resolve gate vma's in
-	__get_user_pages
-Message-ID: <20110309123834.GA8236@fibrous.localdomain>
-References: <1299631343-4499-1-git-send-email-wilsons@start.ca> <1299631343-4499-2-git-send-email-wilsons@start.ca> <20110309141208.03F7.A69D9226@jp.fujitsu.com> <20110309060617.GB22723@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110309060617.GB22723@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Provags-ID: V02:K0:AFzWxr9yuKRady11NkiVoYPkXaQ9F64f4HmM2NQKgue
- eKDfZLQ7kHwIj92Xz8kKGdFts0qYMApPKzq/rWKcsBeElM6Br8
- 3wqqQMIR0iXJDtdko6e0l4nI3CxEIS4giMMfQ+9Yuw4s1fzCP4
- PgB7pqeq+ApFJvfGUHees0j5oEMU9AF+txhKE1nxw0r0ujETrh
- 9R4ZuFRmCKvQ3r8mgSqUsNVC0g2ZHk6WtYSb+DnQ2k=
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] futex: cmpxchg_futex_value_locked API change
+Date: Wed, 09 Mar 2011 12:41:27 +0000
+Message-ID: <25669.1299674487@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 06:06:17AM +0000, Al Viro wrote:
-> On Wed, Mar 09, 2011 at 02:19:30PM +0900, KOSAKI Motohiro wrote:
+Michel Lespinasse <walken@google.com> wrote:
+
+> The cmpxchg_futex_value_locked API was funny in that it returned either
+> the original, user-exposed futex value OR an error code such as -EFAULT.
+> This was confusing at best, and could be a source of livelocks in places
+> that retry the cmpxchg_futex_value_locked after trying to fix the issue
+> by running fault_in_user_writeable().
 > 
-> > Hmm..
-> > Is this works? In exec() case task has two mm, old and new-borned. tsk has
-> > no enough information to detect gate area if 64bit process exec 32bit process
-> > or oppsite case. On Linux, 32bit and 64bit processes have perfectly different
-> > process vma layout.
-> > 
-> > Am I missing something?
+> This change makes the cmpxchg_futex_value_locked API more similar to the
+> get_futex_value_locked one, returning an error code and updating the
+> original value through a reference argument.
 > 
-> Patch series refered to in [0/6] ;-)  FWIW, that would probably be better
-> off as one mail thread - would be easier to find.
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-OK.  After the first half has gone thru review I will respin (with changes)
-as a single series.  I was actually hoping the split would make review a
-little bit easier, but in retrospect I could have accomplished the same
-thing by simply pointing out the two halves in the series "cover
-letter".
-
-
--- 
-steve
-
+Acked-by: David Howells <dhowells@redhat.com> [FRV]
