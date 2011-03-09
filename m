@@ -1,84 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab1CIPk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:40:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50236 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755451Ab1CIPkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753367Ab1CIPkY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:40:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36561 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757170Ab1CIPkS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Mar 2011 10:40:18 -0500
-Date: Wed, 9 Mar 2011 15:39:56 GMT
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <E1PxKBB-0005F0-3U@eag09.americas.sgi.com>
-References: <E1PxKBB-0005F0-3U@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, UV: Initialize the broadcast assist unit base destination node id properly
-Message-ID: <tip-5471262290a6695b3300903267e0a2584f721000@git.kernel.org>
-Git-Commit-ID: 5471262290a6695b3300903267e0a2584f721000
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jMfxs3WBrSjDVsRo3V8KzjaIgOjUBzyZFetvffcl5TyXn27FwX80LCyyqGWNTkxUZq
+         lldnOAgTVoKsIr9nqNeKnmtMoZiPv2tuY+j7SbDrZTxMGrATFca9elYZZwwRSF9j2RT8
+         sCqiX/DmQ+72KLMOSaMIaL2U5KtQtcl8u3fCc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Mar 2011 15:39:57 +0000 (UTC)
+In-Reply-To: <20110309085150.GC21294@elte.hu>
+References: <AANLkTin2H9=NWp5G6N6_e=bxBTh2eS1dbUxOjT6xX98C@mail.gmail.com>
+	<AANLkTik_Cb7tXheZNOBjqnoQc4MSL1LnDtFGFP5mqZRi@mail.gmail.com>
+	<AANLkTinBv__n7k3Z=EJWv1fdQScyB7AJV0SsYJE0mCwQ@mail.gmail.com>
+	<AANLkTiknsT1iQzUQ_oBiOORaqWBFyk2BaLq_xu9C5E_G@mail.gmail.com>
+	<1299605269.29313.1427511237@webmail.messagingengine.com>
+	<AANLkTi=6YstJxad41knR4Q9WN3wYKikPv-g1i3kg3HS1@mail.gmail.com>
+	<1299615939.25628.1427572905@webmail.messagingengine.com>
+	<AANLkTimBMP1jiuEEUwmKKVNZcZnrkFxFA_YBcLmkEFJM@mail.gmail.com>
+	<AANLkTikpMAXfG5aNWo8x7pKKppaQiE-U8qjFaG0B2azV@mail.gmail.com>
+	<20110309085150.GC21294@elte.hu>
+Date: Wed, 9 Mar 2011 07:40:16 -0800
+Message-ID: <AANLkTiks9o18LRS46CrYHBXzq_6U-v-CqK=0Fzc4Tuco@mail.gmail.com>
+Subject: Re: linux-next: Tree for March 8 (BROKEN: arch/x86/kernel/entry_32.S?
+ Debian's binutils/as?)
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        linux-next <linux-next@vger.kernel.org>, psomas@cslab.ece.ntua.gr,
+        Jan Beulich <JBeulich@novell.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5471262290a6695b3300903267e0a2584f721000
-Gitweb:     http://git.kernel.org/tip/5471262290a6695b3300903267e0a2584f721000
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Wed, 9 Mar 2011 08:15:57 -0600
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Mar 2011 16:36:16 +0100
+On Wed, Mar 9, 2011 at 12:51 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * H.J. Lu <hjl.tools@gmail.com> wrote:
+>
+>> On Tue, Mar 8, 2011 at 12:33 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>> > On Tue, Mar 8, 2011 at 9:25 PM, Alexander van Heukelum
+>> > <heukelum@fastmail.fm> wrote:
+>> >> On Tue, 08 Mar 2011 18:53 +0100, "Sedat Dilek" <sedat.dilek@googlemail.com> wrote:
+>> >>> On Tue, Mar 8, 2011 at 6:27 PM, Alexander van Heukelum
+>> >>> <heukelum@fastmail.fm> wrote:
+>> >>> > On Tue, 08 Mar 2011 16:42 +0100, "Sedat Dilek" <sedat.dilek@googlemail.com> wrote:
+>> >>> >> On 3/8/11, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>> >>> >> > On 3/8/11, H.J. Lu <hjl.tools@gmail.com> wrote:
+>> >>> >> >> On Tue, Mar 8, 2011 at 2:44 AM, Sedat Dilek <sedat.dilek@googlemail.com>
+>> >>> >> >> wrote:
+>> >>> >> >>> Hi,
+>> >>> >> >>>
+>> >>> >> >>> my build of linux-next (next-20110308, the same with the one from
+>> >>> >> >>> yesterday) is broken.
+>> >>> >> >>> (I translated the German output.)
+>> >>> >> >>>
+>> >>> >> >>> [ build.log ]
+>> >>> >> >>>  AS      arch/x86/kernel/entry_32.o
+>> >>> >> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
+>> >>> >> >>> Assembler messages:
+>> >>> >> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
+>> >>> >> >>> Error: .size expression does not evaluate to a constant
+>> >>> >> >>> make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1 (Error 1)
+>> >>> >> >>> make[5]: *** [arch/x86/kernel] Fehler 2 (Error 2)
+>> >>> >> >>> make[4]: *** [arch/x86] Fehler 2 (Error 2)
+>> >>> >> >>> make[4]: *** Warte auf noch nicht beendete Prozesse... (Waiting for
+>> >>> >> >>> unfinished jobs...)
+>> >>> >> >>>
+>> >>> >> >>
+>> >>> >> >> This is a kernel bug.  Please use the latest binutils from CVS.
+>> >>> >> >> It will tell you which symbol causes this.
+>> >>> >> >>
+>> >>> >> >>
+>> >>> >> >> --
+>> >>> >> >> H.J.
+>> >>> >> >>
+>> >>> >> >
+>> >>> >> > Yeah, I have cherry-picked these two upstream commits before you have
+>> >>> >> > mentionned it...
+>> >>> >> >
+>> >>> >> > 0001-Mention-symbol-name-in-non-constant-.size-expression.patch
+>> >>> >> >        (Cherry-picked from commit b9521fc0be7945fc842ce1197e241a023378125d)
+>> >>> >> > 0002-Revert-the-last-change-on-gas-elf-bad-size.err.patch
+>> >>> >> >        (Cherry-picked from commit cbd141bb69f791de7ea1581abe7afb34f0c61288)
+>> >>> >> >
+>> >>> >> > ... and have built with them a new binutils Debian package.
+>> >>> >> >
+>> >>> >> > The error looks now like this (sorry for the German output):
+>> >>> >> > ...
+>> >>> >> >   AS      arch/x86/kernel/entry_32.o
+>> >>> >> > /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:
+>> >>> >> > Assembler messages:
+>> >>> >> > /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/entry_32.S:1421:
+>> >>> >> > Error: .size expression with symbol `apf_page_fault' does not evaluate
+>> >>> >> > to a constant
+>> >>> >> > make[6]: *** [arch/x86/kernel/entry_32.o] Fehler 1
+>> >>> >> > make[5]: *** [arch/x86/kernel] Fehler 2
+>> >>> >> > make[5]: *** Warte auf noch nicht beendete Prozesse...
+>> >>> >> >
+>> >>> >> > Anyway, before more riddling around it would be very helpful to have a
+>> >>> >> > clear pointer if there is a fix around... That building, testing and
+>> >>> >> > installing took me now several hours.
+>> >>> >> > And... yeah, backports to 2.21-branch appreciated.
+>> >>> >> >
+>> >>> >> > - Sedat -
+>> >>> >> >
+>> >>> >>
+>> >>> >> After a quick look into the source, it seems attached patch fixes the
+>> >>> >> issue.
+>> >>> >> Is that OK?
+>> >>> >
+>> >>> > Hi Sedat,
+>> >>> >
+>> >>> > The patch ( https://lkml.org/lkml/2011/3/8/203 ) is ok, feel free to add
+>> >>> > Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>
+>> >>> >
+>> >>> > Better description might be something like:
+>> >>> >
+>> >>> > i386: Fix mismatched ENTRY/END pair.
+>> >>> >
+>> >>> > Under CONFIG_KVM_GUEST=y, the following part of entry_32.S causes a compile failure.
+>> >>> >
+>> >>> > 1409 #ifdef CONFIG_KVM_GUEST
+>> >>> > 1410 ENTRY(async_page_fault)
+>> >>> > 1411         RING0_EC_FRAME
+>> >>> > 1412         pushl $do_async_page_fault
+>> >>> > 1413         CFI_ADJUST_CFA_OFFSET 4
+>> >>> > 1414         jmp error_code
+>> >>> > 1415         CFI_ENDPROC
+>> >>> > 1416 END(apf_page_fault)
+>> >>> > 1417 #endif
+>> >>> >
+>> >>> > Replace apf_page_fault with async_page_fault, as intended.
+>> >>> >
+>> >>> > Greetings,
+>> >>> >    Alexander
+>> >>> >
+>> >>> >> - Sedat -
+>> >>> >>
+>> >>> >> Email had 1 attachment:
+>> >>> >> + 0001-x86-Fix-build-failure-with-binutils-as-from-upstream.patch
+>> >>> >>   1k (text/x-patch)
+>> >>> >
+>> >>>
+>> >>> As I said, quick view on the code, quick fix :-).
+>> >>>
+>> >>> Your description is definitive more meaningful.
+>> >>> I can refresh my patch and add your ACK.
+>> >>>
+>> >>> Anyway, I continued after dinner and with the above patch I ran into
+>> >>> the next problem:
+>> >>> [ build.log ]
+>> >>> ...
+>> >>>   AS      arch/x86/kernel/acpi/wakeup_rm.o
+>> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/acpi/wakeup_rm.S:
+>> >>> Assembler messages:
+>> >>> /home/sd/src/linux-2.6/linux-2.6.38-rc7/debian/build/source_i386_none/arch/x86/kernel/acpi/wakeup_rm.S:12:
+>> >>> Error: .size expression with symbol `wakeup_code_start' does not
+>> >>> evaluate to a constant
+>> >>
+>> >> No idea what's wrong there. But my version of wakeup_rm.S has only 10 lines...
+>> >>
+>> >>     1  /*
+>> >>     2   * Wrapper script for the realmode binary as a transport object
+>> >>     3   * before copying to low memory.
+>> >>     4   */
+>> >>     5          .section ".rodata","a"
+>> >>     6          .globl  wakeup_code_start, wakeup_code_end
+>> >>     7  wakeup_code_start:
+>> >>     8          .incbin "arch/x86/kernel/acpi/realmode/wakeup.bin"
+>> >>     9  wakeup_code_end:
+>> >>    10          .size   wakeup_code_start, .-wakeup_code_start
+>> >>
+>> >> And it compiles just fine.
+>> >> The fix for entry_32.S is valid, though, and necessary for mainline.
+>> >>
+>> >> Greetings,
+>> >>    Alexander
+>> >>
+>> >>> I am unsure how to fix that and open for feedback.
+>> >>>
+>> >>> - Sedat -
+>> >>>
+>> >>
+>> >
+>> > The file in linux-next (next-20110308) looks different (the above code
+>> > looks more logical to me)
+>> >
+>> > [ arch/x86/kernel/acpi/wakeup_rm.S ]
+>> >
+>> > /*
+>> >  * Wrapper script for the realmode binary as a transport object
+>> >  * before copying to low memory.
+>> >  */
+>> > #include <asm/page_types.h>
+>> >
+>> >        .section ".x86_trampoline","a"
+>> >        .balign PAGE_SIZE
+>> >        .globl  acpi_wakeup_code
+>> > acpi_wakeup_code:
+>> >        .incbin "arch/x86/kernel/acpi/realmode/wakeup.bin"
+>> >        .size   wakeup_code_start, .-wakeup_code_start
+>> >
+>>
+>> Those are simply wrong.  2.6.38-rc8 is OK.
+>
+> 2.6.37-rc8 is not OK: for example commit 631bc4878220932fe67fc46fc7cf7cccdb1ec597 is
+> already upstream and if you enable KVM you see a broken kernel build with new
+> binutils. This is from 2.6.38-rc8:
+>
+>  #ifdef CONFIG_KVM_GUEST
+>  ENTRY(async_page_fault)
+>        RING0_EC_FRAME
+>        pushl $do_async_page_fault
+>        CFI_ADJUST_CFA_OFFSET 4
+>        jmp error_code
+>        CFI_ENDPROC
+>  END(apf_page_fault)
+>  #endif
+>
+> Yes, the .size directive not matching up is technically a bug, but it was not
+> checked by binutils before, for *years* - and you cannot just flip a switch and
+> break who knows how much code.
+>
+> You need to at least emit a warning for some time to give people a *chance* to fix
+> bugs - not just stuff an incompatible binutils down their throat and break the
+> kernel build for thousands of commits and break bisection.
 
-x86, UV: Initialize the broadcast assist unit base destination node id properly
+If kernel doesn't use/need symbol size, don't put it in assembly code.
 
-The BAU's initialization of the broadcast description header is
-lacking the coherence domain (high bits) in the nasid.  This
-causes a catastrophic system failure when running on a system
-with multiple coherence domains.
+> This binutils change is breaking numerous upstream kernel builds (and is making
+> bisection with new binutils impossible) for no particular good reason: binutils was
+> capable to figure out the symbol name before this change.
+>
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-LKML-Reference: <E1PxKBB-0005F0-3U@eag09.americas.sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/uv/uv_bau.h |    2 +-
- arch/x86/platform/uv/tlb_uv.c    |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+That is totally false. The old assembler just generates incorrect size and
+It couldn't read the programmer's mind to find the correct symbol name.
 
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index ce1d54c..3e094af 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -176,7 +176,7 @@ struct bau_msg_payload {
- struct bau_msg_header {
- 	unsigned int dest_subnodeid:6;	/* must be 0x10, for the LB */
- 	/* bits 5:0 */
--	unsigned int base_dest_nodeid:15; /* nasid (pnode<<1) of */
-+	unsigned int base_dest_nodeid:15; /* nasid of the */
- 	/* bits 20:6 */			  /* first bit in uvhub map */
- 	unsigned int command:8;	/* message type */
- 	/* bits 28:21 */
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index df58e9c..a7b38d3 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1364,11 +1364,11 @@ uv_activation_descriptor_init(int node, int pnode)
- 		memset(bd2, 0, sizeof(struct bau_desc));
- 		bd2->header.sw_ack_flag = 1;
- 		/*
--		 * base_dest_nodeid is the nasid (pnode<<1) of the first uvhub
-+		 * base_dest_nodeid is the nasid of the first uvhub
- 		 * in the partition. The bit map will indicate uvhub numbers,
- 		 * which are 0-N in a partition. Pnodes are unique system-wide.
- 		 */
--		bd2->header.base_dest_nodeid = uv_partition_base_pnode << 1;
-+		bd2->header.base_dest_nodeid = UV_PNODE_TO_NASID(uv_partition_base_pnode);
- 		bd2->header.dest_subnodeid = 0x10; /* the LB */
- 		bd2->header.command = UV_NET_ENDPOINT_INTD;
- 		bd2->header.int_both = 1;
+
+-- 
+H.J.
