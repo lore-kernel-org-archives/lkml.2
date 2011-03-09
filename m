@@ -1,32 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab1CIQ1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 11:27:45 -0500
-Received: from kroah.org ([198.145.64.141]:36409 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757186Ab1CIQ1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 11:27:42 -0500
-Date: Wed, 9 Mar 2011 08:17:04 -0800
-From: Greg KH <greg@kroah.com>
-To: Vinay Sawal <vinaysawal@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: bcm: Bcmnet: fixed 'checkpatch.pl' issues
-Message-ID: <20110309161704.GA31138@kroah.com>
-References: <1299653902-27644-1-git-send-email-vinaysawal@gmail.com>
+	id S932482Ab1CIQ26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 11:28:58 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:34443 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab1CIQ2z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 11:28:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=jumeanoOR5FbM94kiZ4TY0qvjmF5YZ2TPwCzTggXdDKKdF/OWrXY4l66fuE77x+NgN
+         s6M8+HbXNUScSOg+NFd3T/g5dd2cDLQVMy5+SjZJygcN9FdMiq96+riwwY4XhOJnR7Rf
+         2wcJKaIuWvStKFgAks67/1WfisnGru6QL32ug=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299653902-27644-1-git-send-email-vinaysawal@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 9 Mar 2011 17:28:54 +0100
+Message-ID: <AANLkTi=3xRFt-p+HUMWwTUcUzFaxY6y9bovJiqdHTwrn@mail.gmail.com>
+Subject: problem with ccflags := -Werror in Makefiles when building with gcc 4.6.0
+From: Douglas Mencken <dougmencken@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 10:58:22PM -0800, Vinay Sawal wrote:
-> Fixed all issues reported by 'checkpatch.pl' for this file.
+When building with gcc 4.6.0 with the new type of warnings introduced,
+-Wunused-but-set-variable, many directories with ccflags set to
+-Werror in Makefile fail to build.
 
-Where is the 1/2 patch in this series?
+Example:
+> arch/powerpc/kernel/align.c:704:33: error: variable 'instruction' set but not used [-Werror=unused-but-set-variable]
+> cc1: all warnings being treated as errors
 
-confused,
+I'm currently using the following workaround to get rid of `-Werror':
 
-greg k-h
+list_of_makefiles=`find . -name Makefile -print0 | xargs -0 grep -H
+"ccflags" | grep "\-Werror" | \
+                   sed "s/Makefile:/Makefile@\t/g" | cut -d'@' -f1`
+echo "${list_of_makefiles}" | while read the_makefile
+do
+  sed -i 's/-Werror//g' "${the_makefile}"
+done
+
+I wish to be personally CC'ed the answers/comments posted to the list
+in response.
