@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab1CICmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 21:42:43 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57658 "EHLO smtps.tip.net.au"
+	id S932169Ab1CICre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 21:47:34 -0500
+Received: from mout.perfora.net ([74.208.4.195]:65533 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932073Ab1CICml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 21:42:41 -0500
-Date: Wed, 9 Mar 2011 13:42:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emil Tantilov <emil.s.tantilov@intel.com>,
-        Stephen Ko <stephen.s.ko@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20110309134234.32cd09b7.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn"
+	id S932075Ab1CICrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 21:47:33 -0500
+Date: Tue, 8 Mar 2011 21:47:08 -0500
+From: Stephen Wilson <wilsons@start.ca>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Ingo Molnar <mingo@elte.hu>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] enable writing to /proc/pid/mem
+Message-ID: <20110309024708.GA4941@fibrous.localdomain>
+References: <1299631343-4499-1-git-send-email-wilsons@start.ca> <20110309013017.GY22723@ZenIV.linux.org.uk> <20110309021524.GA4838@fibrous.localdomain> <20110309023303.GZ22723@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110309023303.GZ22723@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Provags-ID: V02:K0:etkbr6FHb74DVhKjUnB19Uf5sv0hBI5tvIX72HKm4Ml
+ E/cO8ebRIGW7GZ5P5Ko5EJmESap+rJ4rQYgZoNTWGMvmgYXXlP
+ yu+Fdt03mXMr0wvY3+kIhCa4qEFrFCZM+JRH8e5fr3af2OjgPJ
+ 1HiwSkaPucqTWYCeVGCzSTyc/FXM8GfgusC2uSz4fbizHwzjVd
+ bdcxPAmnPUTgUo9PnYPqXKwzG615EwTRGIon95EDVg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 09, 2011 at 02:33:04AM +0000, Al Viro wrote:
+> On Tue, Mar 08, 2011 at 09:15:25PM -0500, Stephen Wilson wrote:
+> 
+> > I think we could also remove the intermediate copy in both mem_read() and
+> > mem_write() as well, but I think such optimizations could be left for
+> > follow on patches.
+> 
+> How?  We do copy_.._user() in there; it can trigger page faults and
+> that's not something you want while holding mmap_sem on some mm.
 
-Hi all,
+Ah, OK.   I did not think thru that subtlety.  Was merely mentioning
+"things we might do afterwords" as opposed to a genuine proposal.
 
-After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> Looks like a deadlock country...  So we can't do that from inside
+> access_process_vm() or its analogs, which means buffering in caller.
 
-drivers/net/ixgbe/ixgbe_mbx.c: In function 'ixgbe_init_mbx_params_pf':
-drivers/net/ixgbe/ixgbe_mbx.c:456: error: 'struct ixgbe_mbx_info' has no me=
-mber named 'udelay'
+Thanks for the feed back -- I am certainly (relatively speaking) new to
+the code so your insights are most valuable.
 
-Caused by commit d7c8a29fc8bd20ba45ec2f52577ed04a988a9500 ("ixgbe:
-improve logic in ixgbe_init_mbx_params_pf").
+Thanks again!
 
-I am wondering if that was ever built ...
 
-I have used the net tree from next-20110308 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+-- 
+steve
 
---Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNdukaAAoJEDMEi1NhKgbsr+kIAJQ7ZguNcXxFFkWSh8s6gl97
-8tSqQWUKb+4s2otmNCFhxS2WcLsdwVZu3lcGZ2H3qBYw5Z8z8z+0nPQbN4q6q2Vj
-WVcdUxyIQATkIyHIKTaoD30Oa7cfxoLkUht7Dbfle8C4g+EGczORU+egYo/1klQw
-Y1Z6VnsJ13qEnHUbWCHlLihIUyxShUNLYshP1XIToItD4sRzFqM0exSLJu0GsvFB
-qlVlqpiEwMhnQV1BtsDfcITTSMAkASbdiii9V0a2TKHoc/Id2m8rp7kfTVRzFz03
-Uvn233opF4GO6//RDmdV8aUw1oFmw3zBQCXobrgW7CQ3qPfSG8WkIKNuh3o9G0c=
-=ZqgV
------END PGP SIGNATURE-----
-
---Signature=_Wed__9_Mar_2011_13_42_34_+1100_q_6aJhYADQy8Noqn--
