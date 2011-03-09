@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833Ab1CISdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 13:33:14 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:57667 "EHLO
+	id S932850Ab1CISda (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 13:33:30 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57664 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab1CISbt (ORCPT
+	with ESMTP id S1754716Ab1CISbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 13:31:49 -0500
+	Wed, 9 Mar 2011 13:31:48 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/10] perf script: Add support for dumping symbols
-Date: Wed,  9 Mar 2011 15:31:30 -0300
-Message-Id: <1299695491-15786-10-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 02/10] perf evsel: Assume rest of perf_header_attr functions
+Date: Wed,  9 Mar 2011 15:31:23 -0300
+Message-Id: <1299695491-15786-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1299695491-15786-1-git-send-email-acme@infradead.org>
 References: <1299695491-15786-1-git-send-email-acme@infradead.org>
@@ -27,251 +27,692 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <daahern@cisco.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-e.g., perf script -f comm,pid,tid,time,trace,sym
-
-swapper     0/0       537.037184: prev_comm=swapper prev_pid=0 prev_prio=120...
-        ffffffff81030350 perf_trace_sched_switch ([kernel.kallsyms])
-        ffffffff81382ac5 schedule ([kernel.kallsyms])
-        ffffffff8100134a cpu_idle ([kernel.kallsyms])
-        ffffffff81370b39 rest_init ([kernel.kallsyms])
-        ffffffff81696c23 start_kernel ([kernel.kallsyms].init.text)
-        ffffffff816962af x86_64_start_reservations ([kernel.kallsyms].init.text)
-        ffffffff816963b9 x86_64_start_kernel ([kernel.kallsyms].init.text)
-
-sshd  1675/1675    537.037309: prev_comm=sshd prev_pid=1675 prev_prio=120...
-        ffffffff81030350 perf_trace_sched_switch ([kernel.kallsyms])
-        ffffffff81382ac5 schedule ([kernel.kallsyms])
-        ffffffff813837aa schedule_hrtimeout_range_clock ([kernel.kallsyms])
-        ffffffff81383886 schedule_hrtimeout_range ([kernel.kallsyms])
-        ffffffff8110c4f9 poll_schedule_timeout ([kernel.kallsyms])
-        ffffffff8110cd20 do_select ([kernel.kallsyms])
-        ffffffff8110ced8 core_sys_select ([kernel.kallsyms])
-        ffffffff8110d00d sys_select ([kernel.kallsyms])
-        ffffffff81002bc2 system_call ([kernel.kallsyms])
-            7f1647e56e93 __GI_select (/lib64/libc-2.12.90.so)
-
-netstat  1692/1692    537.038664: prev_comm=netstat prev_pid=1692 prev_prio=...
-        ffffffff81030350 perf_trace_sched_switch ([kernel.kallsyms])
-        ffffffff81382ac5 schedule ([kernel.kallsyms])
-        ffffffff81002c3a sysret_careful ([kernel.kallsyms])
-            7f7a6cd1b210 __GI___libc_read (/lib64/libc-2.12.90.so)
+The append code in record can be made smarter, i.e. allowing merging of
+different sets of events, but that is left for the future.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LPU-Reference: <1299606342-26745-5-git-send-email-daahern@cisco.com>
-Signed-off-by: David Ahern <daahern@cisco.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-script.txt |   16 +++++++-
- tools/perf/builtin-script.c              |   28 +++++++++++++-
- tools/perf/util/session.c                |   61 ++++++++++++++++++++++++++++++
- tools/perf/util/session.h                |    4 ++
- 4 files changed, 107 insertions(+), 2 deletions(-)
+ tools/perf/builtin-record.c |   92 +++++++++----------------
+ tools/perf/util/evlist.c    |   26 +++++---
+ tools/perf/util/evlist.h    |    4 +-
+ tools/perf/util/evsel.c     |   21 +++++-
+ tools/perf/util/evsel.h     |    9 ++-
+ tools/perf/util/header.c    |  161 ++++++++++++------------------------------
+ tools/perf/util/header.h    |   30 ++-------
+ tools/perf/util/session.c   |   10 +---
+ 8 files changed, 128 insertions(+), 225 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index b73cf58..c64118a 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -115,7 +115,21 @@ OPTIONS
- -f::
- --fields
-         Comma separated list of fields to print. Options are:
--        comm, tid, pid, time, cpu, event, trace
-+        comm, tid, pid, time, cpu, event, trace, sym
-+
-+-k::
-+--vmlinux=<file>::
-+        vmlinux pathname
-+
-+--kallsyms=<file>::
-+        kallsyms pathname
-+
-+--symfs=<directory>::
-+        Look for files with symbols relative to this directory.
-+
-+-G::
-+--hide-call-graph::
-+        When printing symbols do not display call chain.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 9d236e8..81dbe27 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -31,7 +31,6 @@
+ #include <sys/mman.h>
  
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 089bdb9..31ead6e 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -19,6 +19,7 @@ static bool			debug_mode;
- static u64			last_timestamp;
- static u64			nr_unordered;
- extern const struct option	record_options[];
-+static bool			no_callchain;
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+-#define SID(e, x, y) xyarray__entry(e->id, x, y)
  
- enum perf_output_field {
-     PERF_OUTPUT_COMM            = 1U << 0,
-@@ -28,6 +29,7 @@ enum perf_output_field {
-     PERF_OUTPUT_CPU             = 1U << 4,
-     PERF_OUTPUT_EVNAME          = 1U << 5,
-     PERF_OUTPUT_TRACE           = 1U << 6,
-+    PERF_OUTPUT_SYM             = 1U << 7,
- };
- 
- struct output_option {
-@@ -41,6 +43,7 @@ struct output_option {
- 	{.str = "cpu",   .field = PERF_OUTPUT_CPU},
- 	{.str = "event", .field = PERF_OUTPUT_EVNAME},
- 	{.str = "trace", .field = PERF_OUTPUT_TRACE},
-+	{.str = "sym",   .field = PERF_OUTPUT_SYM},
- };
- 
- /* default set to maintain compatibility with current format */
-@@ -65,6 +68,8 @@ static void print_sample_start(struct perf_sample *sample,
- 	if (PRINT_FIELD(COMM)) {
- 		if (latency_format)
- 			printf("%8.8s ", thread->comm);
-+		else if (PRINT_FIELD(SYM) && !no_callchain)
-+			printf("%s ", thread->comm);
- 		else
- 			printf("%16s ", thread->comm);
- 	}
-@@ -112,6 +117,14 @@ static void process_event(union perf_event *event __unused,
- 		print_trace_event(sample->cpu, sample->raw_data,
- 				  sample->raw_size);
- 
-+	if (PRINT_FIELD(SYM)) {
-+		if (no_callchain)
-+			printf(" ");
-+		else
-+			printf("\n");
-+		perf_session__print_symbols(event, sample, session);
-+	}
-+
- 	printf("\n");
+ enum write_mode_t {
+ 	WRITE_FORCE,
+@@ -160,54 +159,6 @@ static void sig_atexit(void)
+ 	kill(getpid(), signr);
  }
  
-@@ -190,7 +203,10 @@ static int process_sample_event(union perf_event *event,
+-static struct perf_header_attr *get_header_attr(struct perf_event_attr *a, int nr)
+-{
+-	struct perf_header_attr *h_attr;
+-
+-	if (nr < session->header.attrs) {
+-		h_attr = session->header.attr[nr];
+-	} else {
+-		h_attr = perf_header_attr__new(a);
+-		if (h_attr != NULL)
+-			if (perf_header__add_attr(&session->header, h_attr) < 0) {
+-				perf_header_attr__delete(h_attr);
+-				h_attr = NULL;
+-			}
+-	}
+-
+-	return h_attr;
+-}
+-
+-static void create_counter(struct perf_evsel *evsel, int cpu)
+-{
+-	struct perf_event_attr *attr = &evsel->attr;
+-	struct perf_header_attr *h_attr;
+-	struct perf_sample_id *sid;
+-	int thread_index;
+-
+-	for (thread_index = 0; thread_index < evsel_list->threads->nr; thread_index++) {
+-		h_attr = get_header_attr(attr, evsel->idx);
+-		if (h_attr == NULL)
+-			die("nomem\n");
+-
+-		if (!file_new) {
+-			if (memcmp(&h_attr->attr, attr, sizeof(*attr))) {
+-				fprintf(stderr, "incompatible append\n");
+-				exit(-1);
+-			}
+-		}
+-
+-		sid = SID(evsel, cpu, thread_index);
+-		if (perf_header_attr__add_id(h_attr, sid->id) < 0) {
+-			pr_warning("Not enough memory to add id\n");
+-			exit(-1);
+-		}
+-	}
+-
+-	if (!sample_type)
+-		sample_type = attr->sample_type;
+-}
+-
+ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+@@ -278,10 +229,28 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+ 	}
+ }
  
- static struct perf_event_ops event_ops = {
- 	.sample		 = process_sample_event,
-+	.mmap		 = perf_event__process_mmap,
- 	.comm		 = perf_event__process_comm,
-+	.exit		 = perf_event__process_task,
-+	.fork		 = perf_event__process_task,
- 	.attr		 = perf_event__process_attr,
- 	.event_type	 = perf_event__process_event_type,
- 	.tracing_data	 = perf_event__process_tracing_data,
-@@ -722,8 +738,16 @@ static const struct option options[] = {
- 		    "input file name"),
- 	OPT_BOOLEAN('d', "debug-mode", &debug_mode,
- 		   "do various checks like samples ordering and lost events"),
-+	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
-+		   "file", "vmlinux pathname"),
-+	OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name,
-+		   "file", "kallsyms pathname"),
-+	OPT_BOOLEAN('G', "hide-call-graph", &no_callchain,
-+		    "When printing symbols do not display call chain"),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_CALLBACK('f', "fields", NULL, "str",
--		     "comma separated output fields. Options: comm,tid,pid,time,cpu,event,trace",
-+		     "comma separated output fields. Options: comm,tid,pid,time,cpu,event,trace,sym",
- 		     parse_output_fields),
++static bool perf_evlist__equal(struct perf_evlist *evlist,
++			       struct perf_evlist *other)
++{
++	struct perf_evsel *pos, *pair;
++
++	if (evlist->nr_entries != other->nr_entries)
++		return false;
++
++	pair = list_entry(other->entries.next, struct perf_evsel, node);
++
++	list_for_each_entry(pos, &evlist->entries, node) {
++		if (memcmp(&pos->attr, &pair->attr, sizeof(pos->attr) != 0))
++			return false;
++		pair = list_entry(pair->node.next, struct perf_evsel, node);
++	}
++
++	return true;
++}
++
+ static void open_counters(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *pos;
+-	int cpu;
  
- 	OPT_END()
-@@ -868,6 +892,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 		exit(-1);
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &pos->attr;
+@@ -364,10 +333,16 @@ try_again:
+ 	if (perf_evlist__mmap(evlist, mmap_pages, false) < 0)
+ 		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
+ 
+-	for (cpu = 0; cpu < evsel_list->cpus->nr; ++cpu) {
+-		list_for_each_entry(pos, &evlist->entries, node)
+-			create_counter(pos, cpu);
++	if (file_new)
++		session->evlist = evlist;
++	else {
++		if (!perf_evlist__equal(session->evlist, evlist)) {
++			fprintf(stderr, "incompatible append\n");
++			exit(-1);
++		}
+ 	}
++
++	sample_type = pos->attr.sample_type;
+ }
+ 
+ static int process_buildids(void)
+@@ -390,7 +365,7 @@ static void atexit_header(void)
+ 
+ 		if (!no_buildid)
+ 			process_buildids();
+-		perf_header__write(&session->header, evsel_list, output, true);
++		perf_session__write_header(session, evsel_list, output, true);
+ 		perf_session__delete(session);
+ 		perf_evlist__delete(evsel_list);
+ 		symbol__exit();
+@@ -600,8 +575,8 @@ static int __cmd_record(int argc, const char **argv)
+ 		if (err < 0)
+ 			return err;
+ 	} else if (file_new) {
+-		err = perf_header__write(&session->header, evsel_list,
+-					 output, false);
++		err = perf_session__write_header(session, evsel_list,
++						 output, false);
+ 		if (err < 0)
+ 			return err;
+ 	}
+@@ -611,9 +586,8 @@ static int __cmd_record(int argc, const char **argv)
+ 	perf_session__set_sample_id_all(session, sample_id_all_avail);
+ 
+ 	if (pipe_output) {
+-		err = perf_event__synthesize_attrs(&session->header,
+-						   process_synthesized_event,
+-						   session);
++		err = perf_session__synthesize_attrs(session,
++						     process_synthesized_event);
+ 		if (err < 0) {
+ 			pr_err("Couldn't synthesize attrs.\n");
+ 			return err;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 190c64c..d852cef 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -19,7 +19,7 @@
+ #include <linux/hash.h>
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+-#define SID(e, x, y) xyarray__entry(e->id, x, y)
++#define SID(e, x, y) xyarray__entry(e->sample_id, x, y)
+ 
+ void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
+ 		       struct thread_map *threads)
+@@ -106,8 +106,9 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
+ 	evlist->nr_fds++;
+ }
+ 
+-void perf_evlist__id_hash(struct perf_evlist *evlist, struct perf_evsel *evsel,
+-			  int cpu, int thread, u64 id)
++static void perf_evlist__id_hash(struct perf_evlist *evlist,
++				 struct perf_evsel *evsel,
++				 int cpu, int thread, u64 id)
+ {
+ 	int hash;
+ 	struct perf_sample_id *sid = SID(evsel, cpu, thread);
+@@ -118,9 +119,16 @@ void perf_evlist__id_hash(struct perf_evlist *evlist, struct perf_evsel *evsel,
+ 	hlist_add_head(&sid->node, &evlist->heads[hash]);
+ }
+ 
+-static int perf_evlist__id_hash_fd(struct perf_evlist *evlist,
+-				   struct perf_evsel *evsel,
+-				   int cpu, int thread, int fd)
++void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
++			 int cpu, int thread, u64 id)
++{
++	perf_evlist__id_hash(evlist, evsel, cpu, thread, id);
++	evsel->id[evsel->ids++] = id;
++}
++
++static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
++				  struct perf_evsel *evsel,
++				  int cpu, int thread, int fd)
+ {
+ 	u64 read_data[4] = { 0, };
+ 	int id_idx = 1; /* The first entry is the counter value */
+@@ -134,7 +142,7 @@ static int perf_evlist__id_hash_fd(struct perf_evlist *evlist,
+ 	if (evsel->attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+ 		++id_idx;
+ 
+-	perf_evlist__id_hash(evlist, evsel, cpu, thread, read_data[id_idx]);
++	perf_evlist__id_add(evlist, evsel, cpu, thread, read_data[id_idx]);
+ 	return 0;
+ }
+ 
+@@ -292,7 +300,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite)
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+-		    evsel->id == NULL &&
++		    evsel->sample_id == NULL &&
+ 		    perf_evsel__alloc_id(evsel, cpus->nr, threads->nr) < 0)
+ 			return -ENOMEM;
+ 
+@@ -308,7 +316,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite)
+ 					goto out_unmap;
+ 
+ 				if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+-				    perf_evlist__id_hash_fd(evlist, evsel, cpu, thread, fd) < 0)
++				    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
+ 					goto out_unmap;
+ 			}
+ 		}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 078d512..8b1cb7a 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -38,8 +38,8 @@ void perf_evlist__delete(struct perf_evlist *evlist);
+ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry);
+ int perf_evlist__add_default(struct perf_evlist *evlist);
+ 
+-void perf_evlist__id_hash(struct perf_evlist *evlist, struct perf_evsel *evsel,
+-			  int cpu, int thread, u64 id);
++void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
++			 int cpu, int thread, u64 id);
+ 
+ int perf_evlist__alloc_pollfd(struct perf_evlist *evlist);
+ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 8083d51..662596a 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -41,8 +41,18 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+ 
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
+-	evsel->id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
+-	return evsel->id != NULL ? 0 : -ENOMEM;
++	evsel->sample_id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
++	if (evsel->sample_id == NULL)
++		return -ENOMEM;
++
++	evsel->id = zalloc(ncpus * nthreads * sizeof(u64));
++	if (evsel->id == NULL) {
++		xyarray__delete(evsel->sample_id);
++		evsel->sample_id = NULL;
++		return -ENOMEM;
++	}
++
++	return 0;
+ }
+ 
+ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus)
+@@ -60,7 +70,9 @@ void perf_evsel__free_fd(struct perf_evsel *evsel)
+ 
+ void perf_evsel__free_id(struct perf_evsel *evsel)
+ {
+-	xyarray__delete(evsel->id);
++	xyarray__delete(evsel->sample_id);
++	evsel->sample_id = NULL;
++	free(evsel->id);
+ 	evsel->id = NULL;
+ }
+ 
+@@ -79,7 +91,8 @@ void perf_evsel__exit(struct perf_evsel *evsel)
+ {
+ 	assert(list_empty(&evsel->node));
+ 	xyarray__delete(evsel->fd);
+-	xyarray__delete(evsel->id);
++	xyarray__delete(evsel->sample_id);
++	free(evsel->id);
+ }
+ 
+ void perf_evsel__delete(struct perf_evsel *evsel)
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 281b60e..6710ab5 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -49,12 +49,17 @@ struct perf_evsel {
+ 	struct perf_event_attr	attr;
+ 	char			*filter;
+ 	struct xyarray		*fd;
+-	struct xyarray		*id;
++	struct xyarray		*sample_id;
++	u64			*id;
+ 	struct perf_counts	*counts;
+ 	int			idx;
++	int			ids;
+ 	struct hists		hists;
+ 	char			*name;
+-	void			*priv;
++	union {
++		void		*priv;
++		off_t		id_offset;
++	};
+ 	struct cgroup_sel	*cgrp;
+ };
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 3457ec6..40b10e4 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -20,89 +20,6 @@
+ 
+ static bool no_buildid_cache = false;
+ 
+-/*
+- * Create new perf.data header attribute:
+- */
+-struct perf_header_attr *perf_header_attr__new(struct perf_event_attr *attr)
+-{
+-	struct perf_header_attr *self = malloc(sizeof(*self));
+-
+-	if (self != NULL) {
+-		self->attr = *attr;
+-		self->ids  = 0;
+-		self->size = 1;
+-		self->id   = malloc(sizeof(u64));
+-		if (self->id == NULL) {
+-			free(self);
+-			self = NULL;
+-		}
+-	}
+-
+-	return self;
+-}
+-
+-void perf_header_attr__delete(struct perf_header_attr *self)
+-{
+-	free(self->id);
+-	free(self);
+-}
+-
+-int perf_header_attr__add_id(struct perf_header_attr *self, u64 id)
+-{
+-	int pos = self->ids;
+-
+-	self->ids++;
+-	if (self->ids > self->size) {
+-		int nsize = self->size * 2;
+-		u64 *nid = realloc(self->id, nsize * sizeof(u64));
+-
+-		if (nid == NULL)
+-			return -1;
+-
+-		self->size = nsize;
+-		self->id = nid;
+-	}
+-	self->id[pos] = id;
+-	return 0;
+-}
+-
+-int perf_header__init(struct perf_header *self)
+-{
+-	self->size = 1;
+-	self->attr = malloc(sizeof(void *));
+-	return self->attr == NULL ? -ENOMEM : 0;
+-}
+-
+-void perf_header__exit(struct perf_header *self)
+-{
+-	int i;
+-	for (i = 0; i < self->attrs; ++i)
+-                perf_header_attr__delete(self->attr[i]);
+-	free(self->attr);
+-}
+-
+-int perf_header__add_attr(struct perf_header *self,
+-			  struct perf_header_attr *attr)
+-{
+-	if (self->frozen)
+-		return -1;
+-
+-	if (self->attrs == self->size) {
+-		int nsize = self->size * 2;
+-		struct perf_header_attr **nattr;
+-
+-		nattr = realloc(self->attr, nsize * sizeof(void *));
+-		if (nattr == NULL)
+-			return -1;
+-
+-		self->size = nsize;
+-		self->attr = nattr;
+-	}
+-
+-	self->attr[self->attrs++] = attr;
+-	return 0;
+-}
+-
+ static int event_count;
+ static struct perf_trace_event_type *events;
+ 
+@@ -516,33 +433,41 @@ int perf_header__write_pipe(int fd)
+ 	return 0;
+ }
+ 
+-int perf_header__write(struct perf_header *self, struct perf_evlist *evlist,
+-		       int fd, bool at_exit)
++int perf_session__write_header(struct perf_session *session,
++			       struct perf_evlist *evlist,
++			       int fd, bool at_exit)
+ {
+ 	struct perf_file_header f_header;
+ 	struct perf_file_attr   f_attr;
+-	struct perf_header_attr	*attr;
+-	int i, err;
++	struct perf_header *self = &session->header;
++	struct perf_evsel *attr, *pair = NULL;
++	int err;
+ 
+ 	lseek(fd, sizeof(f_header), SEEK_SET);
+ 
+-	for (i = 0; i < self->attrs; i++) {
+-		attr = self->attr[i];
++	if (session->evlist != evlist)
++		pair = list_entry(session->evlist->entries.next, struct perf_evsel, node);
+ 
++	list_for_each_entry(attr, &evlist->entries, node) {
+ 		attr->id_offset = lseek(fd, 0, SEEK_CUR);
+ 		err = do_write(fd, attr->id, attr->ids * sizeof(u64));
+ 		if (err < 0) {
++out_err_write:
+ 			pr_debug("failed to write perf header\n");
+ 			return err;
+ 		}
++		if (session->evlist != evlist) {
++			err = do_write(fd, pair->id, pair->ids * sizeof(u64));
++			if (err < 0)
++				goto out_err_write;
++			attr->ids += pair->ids;
++			pair = list_entry(pair->node.next, struct perf_evsel, node);
++		}
  	}
  
-+	symbol_conf.use_callchain = no_callchain ? false : true;
+-
+ 	self->attr_offset = lseek(fd, 0, SEEK_CUR);
+ 
+-	for (i = 0; i < self->attrs; i++) {
+-		attr = self->attr[i];
+-
++	list_for_each_entry(attr, &evlist->entries, node) {
+ 		f_attr = (struct perf_file_attr){
+ 			.attr = attr->attr,
+ 			.ids  = {
+@@ -581,7 +506,7 @@ int perf_header__write(struct perf_header *self, struct perf_evlist *evlist,
+ 		.attr_size = sizeof(f_attr),
+ 		.attrs = {
+ 			.offset = self->attr_offset,
+-			.size   = self->attrs * sizeof(f_attr),
++			.size   = evlist->nr_entries * sizeof(f_attr),
+ 		},
+ 		.data = {
+ 			.offset = self->data_offset,
+@@ -918,7 +843,7 @@ int perf_session__read_header(struct perf_session *session, int fd)
+ 			if (perf_header__getbuffer64(self, fd, &f_id, sizeof(f_id)))
+ 				goto out_errno;
+ 
+-			perf_evlist__id_hash(session->evlist, evsel, 0, j, f_id);
++			perf_evlist__id_add(session->evlist, evsel, 0, j, f_id);
+ 		}
+ 
+ 		lseek(fd, tmp, SEEK_SET);
+@@ -1012,16 +937,13 @@ int perf_event__synthesize_attr(struct perf_event_attr *attr, u16 ids, u64 *id,
+ 	return err;
+ }
+ 
+-int perf_event__synthesize_attrs(struct perf_header *self,
+-				 perf_event__handler_t process,
+-				 struct perf_session *session)
++int perf_session__synthesize_attrs(struct perf_session *session,
++				   perf_event__handler_t process)
+ {
+-	struct perf_header_attr	*attr;
+-	int i, err = 0;
+-
+-	for (i = 0; i < self->attrs; i++) {
+-		attr = self->attr[i];
++	struct perf_evsel *attr;
++	int err = 0;
+ 
++	list_for_each_entry(attr, &session->evlist->entries, node) {
+ 		err = perf_event__synthesize_attr(&attr->attr, attr->ids,
+ 						  attr->id, process, session);
+ 		if (err) {
+@@ -1036,27 +958,36 @@ int perf_event__synthesize_attrs(struct perf_header *self,
+ int perf_event__process_attr(union perf_event *event,
+ 			     struct perf_session *session)
+ {
+-	struct perf_header_attr *attr;
+ 	unsigned int i, ids, n_ids;
++	struct perf_evsel *evsel;
+ 
+-	attr = perf_header_attr__new(&event->attr.attr);
+-	if (attr == NULL)
++	if (session->evlist == NULL) {
++		session->evlist = perf_evlist__new(NULL, NULL);
++		if (session->evlist == NULL)
++			return -ENOMEM;
++	}
 +
- 	if (rec_script_path)
- 		script_path = rec_script_path;
- 	if (rep_script_path)
++	evsel = perf_evsel__new(&event->attr.attr,
++				session->evlist->nr_entries);
++	if (evsel == NULL)
+ 		return -ENOMEM;
+ 
++	perf_evlist__add(session->evlist, evsel);
++
+ 	ids = event->header.size;
+ 	ids -= (void *)&event->attr.id - (void *)event;
+ 	n_ids = ids / sizeof(u64);
++	/*
++	 * We don't have the cpu and thread maps on the header, so
++	 * for allocating the perf_sample_id table we fake 1 cpu and
++	 * hattr->ids threads.
++	 */
++	if (perf_evsel__alloc_id(evsel, 1, n_ids))
++		return -ENOMEM;
+ 
+ 	for (i = 0; i < n_ids; i++) {
+-		if (perf_header_attr__add_id(attr, event->attr.id[i]) < 0) {
+-			perf_header_attr__delete(attr);
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	if (perf_header__add_attr(&session->header, attr) < 0) {
+-		perf_header_attr__delete(attr);
+-		return -ENOMEM;
++		perf_evlist__id_add(session->evlist, evsel, 0, i,
++				    event->attr.id[i]);
+ 	}
+ 
+ 	perf_session__update_sample_type(session);
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 73b84eb..4cc2675 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -9,13 +9,6 @@
+ 
+ #include <linux/bitmap.h>
+ 
+-struct perf_header_attr {
+-	struct perf_event_attr attr;
+-	int ids, size;
+-	u64 *id;
+-	off_t id_offset;
+-};
+-
+ enum {
+ 	HEADER_TRACE_INFO = 1,
+ 	HEADER_BUILD_ID,
+@@ -51,9 +44,7 @@ int perf_file_header__read(struct perf_file_header *self,
+ 
+ struct perf_header {
+ 	int			frozen;
+-	int			attrs, size;
+ 	bool			needs_swap;
+-	struct perf_header_attr **attr;
+ 	s64			attr_offset;
+ 	u64			data_offset;
+ 	u64			data_size;
+@@ -62,27 +53,17 @@ struct perf_header {
+ 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
+ };
+ 
+-int perf_header__init(struct perf_header *self);
+-void perf_header__exit(struct perf_header *self);
+-
+ struct perf_evlist;
+ 
+ int perf_session__read_header(struct perf_session *session, int fd);
+-int perf_header__write(struct perf_header *self, struct perf_evlist *evlist,
+-		       int fd, bool at_exit);
++int perf_session__write_header(struct perf_session *session,
++			       struct perf_evlist *evlist,
++			       int fd, bool at_exit);
+ int perf_header__write_pipe(int fd);
+ 
+-int perf_header__add_attr(struct perf_header *self,
+-			  struct perf_header_attr *attr);
+-
+ int perf_header__push_event(u64 id, const char *name);
+ char *perf_header__find_event(u64 id);
+ 
+-struct perf_header_attr *perf_header_attr__new(struct perf_event_attr *attr);
+-void perf_header_attr__delete(struct perf_header_attr *self);
+-
+-int perf_header_attr__add_id(struct perf_header_attr *self, u64 id);
+-
+ u64 perf_evlist__sample_type(struct perf_evlist *evlist);
+ bool perf_evlist__sample_id_all(const struct perf_evlist *evlist);
+ void perf_header__set_feat(struct perf_header *self, int feat);
+@@ -101,9 +82,8 @@ int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
+ int perf_event__synthesize_attr(struct perf_event_attr *attr, u16 ids, u64 *id,
+ 				perf_event__handler_t process,
+ 				struct perf_session *session);
+-int perf_event__synthesize_attrs(struct perf_header *self,
+-				 perf_event__handler_t process,
+-				 struct perf_session *session);
++int perf_session__synthesize_attrs(struct perf_session *session,
++				   perf_event__handler_t process);
+ int perf_event__process_attr(union perf_event *event, struct perf_session *session);
+ 
+ int perf_event__synthesize_event_type(u64 event_id, char *name,
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index f642615..51fac44 100644
+index 26b24c5..f642615 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -1145,3 +1145,64 @@ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
+@@ -137,9 +137,6 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 	if (self == NULL)
+ 		goto out;
  
- 	return ret;
- }
-+
-+void perf_session__print_symbols(union perf_event *event,
-+				struct perf_sample *sample,
-+				struct perf_session *session)
-+{
-+	struct addr_location al;
-+	const char *symname, *dsoname;
-+	struct callchain_cursor *cursor = &session->callchain_cursor;
-+	struct callchain_cursor_node *node;
-+
-+	if (perf_event__preprocess_sample(event, session, &al, sample,
-+					  NULL) < 0) {
-+		error("problem processing %d event, skipping it.\n",
-+			event->header.type);
-+		return;
-+	}
-+
-+	if (symbol_conf.use_callchain && sample->callchain) {
-+
-+		if (perf_session__resolve_callchain(session, al.thread,
-+						sample->callchain, NULL) != 0) {
-+			if (verbose)
-+				error("Failed to resolve callchain. Skipping\n");
-+			return;
-+		}
-+		callchain_cursor_commit(cursor);
-+
-+		while (1) {
-+			node = callchain_cursor_current(cursor);
-+			if (!node)
-+				break;
-+
-+			if (node->sym && node->sym->name)
-+				symname = node->sym->name;
-+			else
-+				symname = "";
-+
-+			if (node->map && node->map->dso && node->map->dso->name)
-+				dsoname = node->map->dso->name;
-+			else
-+				dsoname = "";
-+
-+			printf("\t%16" PRIx64 " %s (%s)\n", node->ip, symname, dsoname);
-+
-+			callchain_cursor_advance(cursor);
-+		}
-+
-+	} else {
-+		if (al.sym && al.sym->name)
-+			symname = al.sym->name;
-+		else
-+			symname = "";
-+
-+		if (al.map && al.map->dso && al.map->dso->name)
-+			dsoname = al.map->dso->name;
-+		else
-+			dsoname = "";
-+
-+		printf("%16" PRIx64 " %s (%s)", al.addr, symname, dsoname);
-+	}
-+}
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 05dd7bc..64369d3 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -161,4 +161,8 @@ static inline int perf_session__parse_sample(struct perf_session *session,
- 					session->sample_id_all, sample);
- }
+-	if (perf_header__init(&self->header) < 0)
+-		goto out_free;
+-
+ 	memcpy(self->filename, filename, len);
+ 	self->threads = RB_ROOT;
+ 	INIT_LIST_HEAD(&self->dead_threads);
+@@ -163,6 +160,7 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 	if (mode == O_RDONLY) {
+ 		if (perf_session__open(self, force) < 0)
+ 			goto out_delete;
++		perf_session__update_sample_type(self);
+ 	} else if (mode == O_WRONLY) {
+ 		/*
+ 		 * In O_RDONLY mode this will be performed when reading the
+@@ -172,8 +170,6 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 			goto out_delete;
+ 	}
  
-+void perf_session__print_symbols(union perf_event *event,
-+				 struct perf_sample *sample,
-+				 struct perf_session *session);
-+
- #endif /* __PERF_SESSION_H */
+-	perf_session__update_sample_type(self);
+-
+ 	if (ops && ops->ordering_requires_timestamps &&
+ 	    ops->ordered_samples && !self->sample_id_all) {
+ 		dump_printf("WARNING: No sample_id_all support, falling back to unordered processing\n");
+@@ -182,9 +178,6 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 
+ out:
+ 	return self;
+-out_free:
+-	free(self);
+-	return NULL;
+ out_delete:
+ 	perf_session__delete(self);
+ 	return NULL;
+@@ -215,7 +208,6 @@ static void perf_session__delete_threads(struct perf_session *self)
+ 
+ void perf_session__delete(struct perf_session *self)
+ {
+-	perf_header__exit(&self->header);
+ 	perf_session__destroy_kernel_maps(self);
+ 	perf_session__delete_dead_threads(self);
+ 	perf_session__delete_threads(self);
 -- 
 1.6.2.5
 
