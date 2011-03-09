@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab1CIRhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:37:16 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:49284 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757106Ab1CIRhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 12:37:14 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-        stable@kernel.org, Michael Poole <mdpoole@troilus.org>,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: [PATCH] HID: hid-magicmouse: Correct touch orientation direction
-Date: Wed,  9 Mar 2011 18:38:57 +0100
-Message-Id: <1299692337-1547-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.4.1
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1PxNJh-0003Kx-6H.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PxNJh-0003Kx-6H 49ced1d223f8efea2d34f8ee10f22fd7
+	id S932782Ab1CIRj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:39:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22990 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932108Ab1CIRjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 12:39:25 -0500
+Date: Wed, 9 Mar 2011 18:30:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: PTRACE_SEIZE/INTERRUPT: [RFC] Proposal for ptrace improvements
+Message-ID: <20110309173042.GA2936@redhat.com>
+References: <20110301152457.GE26074@htj.dyndns.org> <20110307150803.GA16521@redhat.com> <20110309094119.GB27010@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110309094119.GB27010@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The magic trackpad and mouse both report touch orientation in opposite
-direction to the bcm5974 driver and what is written in
-Documents/input/multi-touch-protocol.txt. This patch reverts the
-direction, so that all in-kernel devices with this feature behave the
-same way.
+Hi Tejun,
 
-Since no known application has been utilizing this information yet, it
-seems appropriate also for stable.
+On 03/09, Tejun Heo wrote:
+>
+> Hello, Oleg.
+>
+> On Mon, Mar 07, 2011 at 04:08:03PM +0100, Oleg Nesterov wrote:
+> > Now that we more or less agree with Tejun's ideas,
+>
+> Yay! I finally succeeded at wearing down everyone.  :-)
 
-Cc: stable@kernel.org
-Cc: Michael Poole <mdpoole@troilus.org>
-Cc: Chase Douglas <chase.douglas@canonical.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hid/hid-magicmouse.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Yes, thanks for correcting me, this is what I actually meant ;)
 
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index 698e645..318cc40 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -258,7 +258,7 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 		input_report_abs(input, ABS_MT_TRACKING_ID, id);
- 		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
- 		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
--		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
-+		input_report_abs(input, ABS_MT_ORIENTATION, -orientation);
- 		input_report_abs(input, ABS_MT_POSITION_X, x);
- 		input_report_abs(input, ABS_MT_POSITION_Y, y);
- 
-@@ -397,7 +397,7 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
- 		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
- 		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 4, 0);
- 		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 4, 0);
--		input_set_abs_params(input, ABS_MT_ORIENTATION, -32, 31, 1, 0);
-+		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
- 
- 		/* Note: Touch Y position from the device is inverted relative
- 		 * to how pointer motion is reported (and relative to how USB
--- 
-1.7.4.1
+> > And I think there are other reasons. Say, suppose we want to add
+> > the options for ATTACH/INTERRUPT. Right now I do not see the need,
+> > but who knows.
+>
+> I think it would actually be better to share the option flags.  The
+> two operations (whether implemented as separate operations or not)
+> share the interrupting aspect and I think using separate set of
+> options can be a bit confusing.  Hmmm... maybe it's actually better to
+> make them have different prefixes and let the attach also accept the
+> interrupt flags.
+
+Perhaps, I agree with everything. As I said, I don't have a strong
+opinion, just some random thoughts.
+
+> > Final note... Previously I thought that we should not (I meant, can
+> > not) change the current behaviour of PTRACE_O_TRACECLONE/etc which
+> > sends SIGSTOP during the auto-attach. Now I am not sure, probably
+> > we can avoid SIGSTOP if the forking task was PTRACE_SEIZE'ed. IOW,
+> > perhaps the new ATTACH can have other "side effects". But, otoh,
+> > this can complicate the transition to the new requests. Say, you
+> > can't simply change strace to use PTRACE_SEIZE without auditing
+> > the "-f" code.
+>
+> We can add attach option SIGSTOP_ON_AUTOATTACH to help the transition
+> but then again it requires userland application change anyway so I
+> think it would be better to simply enforce the new behavior when the
+> new attach is used.  It's not like lack of SIGSTOP is gonna be super
+> subtle.
+
+Agreed.
+
+> > And. This is off-topic, but we can also add PTRACE_DETACH_XXX which
+> > does not require the stopped tracee. strace certainly needs it,
+> > although INTERRUPT can solve most of the problems.
+>
+> I don't know.  The thing is that guaranteeing the tracee is in
+> TASK_TRACED on attach/detach prevents a lot of subtle corner cases.
+
+Agreed, but detach is different. It has to work with the running
+tracee anyway.
+
+However,
+
+> Unless there are pretty compelling reasons, I'd like to keep that
+> invariant intact.  What else does strace require that can't be
+> provided by INTERRUPT + DETACH?
+
+Yes, probably INTERRUPT + DETACH is enough. At least this certainly
+solves the most annoying problems. IIRC. Denys can correct me.
+
+Oleg.
 
