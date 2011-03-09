@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1CIWRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 17:17:34 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:51180 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab1CIWRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 17:17:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Qt6DqWlgDIhDiMPLGdNnQrrjl4TwFFgr1Q5xsqFUUkEJ1aQIXBkYdelMRe636HL3fX
-         gskPC96VJJEiy9aHCM2Q==
-Date: Wed, 9 Mar 2011 14:17:18 -0800
-From: Michel Lespinasse <walken@google.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Darren Hart <darren@dvhart.com>, Ingo Molnar <mingo@elte.hu>,
+	id S1754172Ab1CIWRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 17:17:45 -0500
+Received: from flusers.ccur.com ([173.221.59.2]:33745 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754067Ab1CIWRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 17:17:41 -0500
+Date: Wed, 9 Mar 2011 17:17:14 -0500
+From: Joe Korty <joe.korty@ccur.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] futex: cmpxchg_futex_value_locked API change
-Message-ID: <20110309221718.GA28592@google.com>
-References: <20110307021127.GB31188@google.com>
- <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
- <20110309112550.GA3050@google.com>
- <20110309160839.283e241a@mschwide.boeblingen.de.ibm.com>
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "loic.minier@linaro.org" <loic.minier@linaro.org>,
+        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        "houston.jim@comcast.net" <houston.jim@comcast.net>
+Subject: [PATCH 4/4] jrcu: add new stat to /sys/kernel/debug/rcu/rcudata
+Message-ID: <20110309221714.GD24670@tsunami.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+References: <4CD912E9.1080907@cn.fujitsu.com>
+ <20101110155419.GC5750@nowhere>
+ <1289410271.2084.25.camel@laptop>
+ <20101111041920.GD3134@linux.vnet.ibm.com>
+ <20101113223046.GB5445@nowhere>
+ <20101116012846.GV2555@linux.vnet.ibm.com>
+ <20101116135230.GA5362@nowhere>
+ <20101116155104.GB2497@linux.vnet.ibm.com>
+ <20101117005229.GC26243@nowhere>
+ <20110307203106.GA23002@tsunami.ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110309160839.283e241a@mschwide.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110307203106.GA23002@tsunami.ccur.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 04:08:39PM +0100, Martin Schwidefsky wrote:
-> On Wed, 9 Mar 2011 03:25:50 -0800
-> Michel Lespinasse <walken@google.com> wrote:
-> > All right. Attaching updated version of the diff. I also fixed the s390
-> > issue reported by Martin Schwidefsky.
-> 
-> The inline assmeblies look good now but I get this compile error on s390:
-> 
->   CC      arch/s390/lib/uaccess_pt.o
-> arch/s390/lib/uaccess_pt.c:373: error: conflicting types for 'futex_atomic_cmpxchg_pt'
-> arch/s390/lib/uaccess.h:21: note: previous declaration of 'futex_atomic_cmpxchg_pt' was here
-> arch/s390/lib/uaccess_pt.c:403: warning: initialization from incompatible pointer type
-> make[1]: *** [arch/s390/lib/uaccess_pt.o] Error 1
+jrcu: display #passes in /sys/kernel/debug/rcu/rcudata.
 
-My bad. Somehow I made the change in arch/s390/lib/uaccess_std.c but missed
-it in arch/s390/lib/uaccess_pt.c ... Attached patch below goes on top of
-the previous changes - Thomas, if you have picked the previous patch,
-please squash this one on top of it :)
+Sometimes, when things are not working right, you cannot
+tell if that is because the daemon is not running at all,
+or because it is running, but on every pass it decides
+to do no work.  With this change those two states can
+now be distinguished.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Joe Korty <joe.korty@ccur.com>
 
-diff --git a/arch/s390/lib/uaccess_pt.c b/arch/s390/lib/uaccess_pt.c
-index afc716a..7483383 100644
---- a/arch/s390/lib/uaccess_pt.c
-+++ b/arch/s390/lib/uaccess_pt.c
-@@ -370,8 +370,8 @@ static int __futex_atomic_cmpxchg_pt(u32 *uval, u32 __user *uaddr,
- 	return ret;
- }
+Index: b/kernel/jrcu.c
+===================================================================
+--- a/kernel/jrcu.c
++++ b/kernel/jrcu.c
+@@ -115,6 +115,7 @@ static struct rcu_data rcu_data[NR_CPUS]
  
--int futex_atomic_cmpxchg_pt(int *uval, int __user *uaddr,
--			    int oldval, int newval)
-+int futex_atomic_cmpxchg_pt(u32 *uval, u32 __user *uaddr,
-+			    u32 oldval, u32 newval)
- {
- 	int ret;
+ /* debug & statistics stuff */
+ static struct rcu_stats {
++	unsigned npasses;	/* #passes made */
+ 	unsigned nbatches;	/* #end-of-batches (eobs) seen */
+ 	atomic_t nbarriers;	/* #rcu barriers processed */
+ 	u64 ninvoked;		/* #invoked (ie, finished) callbacks */
+@@ -362,6 +363,7 @@ static void rcu_delimit_batches(void)
+ 	struct rcu_list pending;
  
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+ 	rcu_list_init(&pending);
++	rcu_stats.npasses++;
+ 
+ 	raw_local_irq_save(flags);
+ 	smp_rmb();
+@@ -529,6 +531,8 @@ static int rcu_debugfs_show(struct seq_f
+ 	msecs = div_s64(sched_clock() - rcu_timestamp, NSEC_PER_MSEC);
+ 	raw_local_irq_enable();
+ 
++	seq_printf(m, "%14u: #passes seen\n",
++		rcu_stats.npasses);
+ 	seq_printf(m, "%14u: #batches seen\n",
+ 		rcu_stats.nbatches);
+ 	seq_printf(m, "%14u: #barriers seen\n",
