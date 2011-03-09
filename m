@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab1CIJOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 04:14:39 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51822 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756513Ab1CIJN4 convert rfc822-to-8bit (ORCPT
+	id S1756969Ab1CIJOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 04:14:36 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49380 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756578Ab1CIJN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Mar 2011 04:13:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=mOoV7vQ054CJ15NKR8dWs5Sg3vgQdvNgXjm2APwyYDmEwdZg3GY+BCdTVc6lukVJk8
-         OC9Jex4uo4aHs9vZLck8UfJmCsMJ+OzGpB3SoPsmR2BmgwEgccrcWJugSkOJVhmAYLhX
-         6TZJDc9TgeJeiYYS9z5vMNL3caMCdDt8bbD9U=
-MIME-Version: 1.0
-In-Reply-To: <20110309084645.GB3569@polaris.bitmath.org>
-References: <1299601979-4871-1-git-send-email-benjamin.tissoires@enac.fr>
-	<1299601979-4871-4-git-send-email-benjamin.tissoires@enac.fr>
-	<20110309084645.GB3569@polaris.bitmath.org>
-Date: Wed, 9 Mar 2011 10:13:55 +0100
-X-Google-Sender-Auth: Cx7-AJtt5WkcrFCfwzSbUvMfFIM
-Message-ID: <AANLkTi=LHwdvpJOyeVqHrpFjikr5=uKsaa_T3LKgXtDP@mail.gmail.com>
-Subject: Re: [PATCH 3/4] hid-multitouch: migrate 3M PCT touch screens to the
- unified driver.
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=dzji7zHhtDocyTfVQ5f2LkZsd8Dv4qPAIk1/lIqPMKTTm1OM39fUwCL5Ykgk0ubSPH
+         FVasiQWJmfkrt9z30Bm0K6Ycrmvavjk7HL2aHnQDj25upyS7PnogIiHQ/GnQzJ3g5EoA
+         Ymmy3+xIPucAwdanYBgrb8KKvbamiFIPWIDTk=
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
+        hch@infradead.org
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 08/16] dac960: Convert to bdops->check_events()
+Date: Wed,  9 Mar 2011 10:13:28 +0100
+Message-Id: <1299662016-7721-9-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299662016-7721-1-git-send-email-tj@kernel.org>
+References: <1299662016-7721-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik
+Convert from ->media_changed() to ->check_events().
 
-On Wed, Mar 9, 2011 at 09:46, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
-> On Tue, Mar 08, 2011 at 05:32:58PM +0100, Benjamin Tissoires wrote:
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
->> ---
->
-> Semms this patch is missing a commit message.
+DAC960 media change notification seems to be one way (once set, never
+cleared) and will generate spurious events when polled once the
+condition triggers.
 
-You can copy/paste this point to the other patches as well.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+---
+ drivers/block/DAC960.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-How about:
-"3M PCT touch screens can be handled by the unified driver. This will
-ease future evolution. So, just move it."
+diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
+index 1f286ab..7988210 100644
+--- a/drivers/block/DAC960.c
++++ b/drivers/block/DAC960.c
+@@ -140,13 +140,14 @@ static int DAC960_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+ 	return 0;
+ }
+ 
+-static int DAC960_media_changed(struct gendisk *disk)
++static unsigned int DAC960_check_events(struct gendisk *disk,
++					unsigned int clearing)
+ {
+ 	DAC960_Controller_T *p = disk->queue->queuedata;
+ 	int drive_nr = (long)disk->private_data;
+ 
+ 	if (!p->LogicalDriveInitiallyAccessible[drive_nr])
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	return 0;
+ }
+ 
+@@ -163,7 +164,7 @@ static const struct block_device_operations DAC960_BlockDeviceOperations = {
+ 	.owner			= THIS_MODULE,
+ 	.open			= DAC960_open,
+ 	.getgeo			= DAC960_getgeo,
+-	.media_changed		= DAC960_media_changed,
++	.check_events		= DAC960_check_events,
+ 	.revalidate_disk	= DAC960_revalidate_disk,
+ };
+ 
+@@ -2546,6 +2547,7 @@ static bool DAC960_RegisterBlockDevice(DAC960_Controller_T *Controller)
+ 	disk->major = MajorNumber;
+ 	disk->first_minor = n << DAC960_MaxPartitionsBits;
+ 	disk->fops = &DAC960_BlockDeviceOperations;
++	disk->events = DISK_EVENT_MEDIA_CHANGE;
+    }
+   /*
+     Indicate the Block Device Registration completed successfully,
+-- 
+1.7.1
 
-Then I'll copy/paste for the others.
-
->
-> [...]
->> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
->> index e7a4f83..f32bf46 100644
->> --- a/drivers/hid/hid-multitouch.c
->> +++ b/drivers/hid/hid-multitouch.c
->> @@ -5,6 +5,11 @@
->>   *  Copyright (c) 2010-2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
->>   *  Copyright (c) 2010-2011 Ecole Nationale de l'Aviation Civile, France
->>   *
->> + *  based on hid-3m-pct.c copyrighted as follows:
->> + *    Copyright (c) 2009-2010 Stephane Chatty <chatty@enac.fr>
->> + *    Copyright (c) 2010      Henrik Rydberg <rydberg@euromail.se>
->> + *    Copyright (c) 2010      Canonical, Ltd.
->> + *
->>   */
->>
->>  /*
->> @@ -74,6 +79,7 @@ struct mt_class {
->>  #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER    3
->>  #define MT_CLS_CYPRESS                               4
->>  #define MT_CLS_STANTUM                               5
->> +#define MT_CLS_3M                            6
->>
->>  /*
->>   * these device-dependent functions determine what slot corresponds
->> @@ -124,6 +130,11 @@ struct mt_class mt_classes[] = {
->>               .maxcontacts = 10 },
->>       { .name = MT_CLS_STANTUM,
->>               .quirks = MT_QUIRK_VALID_IS_CONFIDENCE },
->> +     { .name = MT_CLS_3M,
->> +             .quirks = MT_QUIRK_VALID_IS_CONFIDENCE |
->> +                     MT_QUIRK_SLOT_IS_CONTACTID,
->> +             .sn_move = 2048,
->> +             .sn_pressure = 128 },
->>
->>       { }
->>  };
->> @@ -479,6 +490,14 @@ static void mt_remove(struct hid_device *hdev)
->>
->>  static const struct hid_device_id mt_devices[] = {
->>
->> +     /* 3M panels */
->> +     { .driver_data = MT_CLS_3M,
->> +             HID_USB_DEVICE(USB_VENDOR_ID_3M,
->> +                     USB_DEVICE_ID_3M1968) },
->> +     { .driver_data = MT_CLS_3M,
->> +             HID_USB_DEVICE(USB_VENDOR_ID_3M,
->> +                     USB_DEVICE_ID_3M2256) },
->> +
->>       /* Cypress panel */
->>       { .driver_data = MT_CLS_CYPRESS,
->>               HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS,
->
-> The touch width correction from the original driver has gone missing
-> here. Otherwise, looks good, but will defer testing to the next round.
-
-Oops, it's not missing, it has been transformed into sn_pressure...
-Will correct it.
-
-By looking at it, I just saw that we override values for HID_DG_HEIGHT
-to the range [0-1].
-I'll have to dig into.
-
-For the tests, I've tested it on the 1968.
-
-Thanks,
-Benjamin
