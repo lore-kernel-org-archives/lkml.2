@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab1CIF3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 00:29:19 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41635 "EHLO
+	id S1751476Ab1CIFng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 00:43:36 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53764 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1CIF3Q (ORCPT
+	with ESMTP id S1750842Ab1CIFnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 00:29:16 -0500
+	Wed, 9 Mar 2011 00:43:35 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 9 Mar 2011 14:22:37 +0900
+Date: Wed, 9 Mar 2011 14:37:04 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, vgoyal@redhat.com,
-        linux-kernel@vger.kernel.org, ryov@valinux.co.jp, taka@valinux.co.jp,
-        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
-        mrubin@google.com
-Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
-Message-Id: <20110309142237.6ab82523.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299619256-12661-1-git-send-email-teravest@google.com>
-References: <1299619256-12661-1-git-send-email-teravest@google.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Andrew Vagin <avagin@gmail.com>,
+        Andrey Vagin <avagin@openvz.org>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: check zone->all_unreclaimable in
+ all_unreclaimable()
+Message-Id: <20110309143704.194e8ee1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTinDhorLusBju=Gn3bh1VsH1jrv0qixbU3SGWiqa@mail.gmail.com>
+References: <1299325456-2687-1-git-send-email-avagin@openvz.org>
+	<20110305152056.GA1918@barrios-desktop>
+	<4D72580D.4000208@gmail.com>
+	<20110305155316.GB1918@barrios-desktop>
+	<4D7267B6.6020406@gmail.com>
+	<20110305170759.GC1918@barrios-desktop>
+	<20110307135831.9e0d7eaa.akpm@linux-foundation.org>
+	<AANLkTinDhorLusBju=Gn3bh1VsH1jrv0qixbU3SGWiqa@mail.gmail.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Mar 2011 13:20:50 -0800
-Justin TerAvest <teravest@google.com> wrote:
+On Tue, 8 Mar 2011 08:45:51 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> This patchset adds tracking to the page_cgroup structure for which cgroup has
-> dirtied a page, and uses that information to provide isolation between
-> cgroups performing writeback.
+> On Tue, Mar 8, 2011 at 6:58 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Sun, 6 Mar 2011 02:07:59 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > Any alternative proposals?  We should get the livelock fixed if possible..
+> >
 > 
-> I know that there is some discussion to remove request descriptor limits
-> entirely, but I included a patch to introduce per-cgroup limits to enable
-> this functionality. Without it, we didn't see much isolation improvement.
+> And we should avoid unnecessary OOM kill if possible.
 > 
-> I think most of this material has been discussed on lkml previously, this is
-> just another attempt to make a patchset that handles buffered writes for CFQ.
-> 
-> There was a lot of previous discussion at:
->   http://thread.gmane.org/gmane.linux.kernel/1007922
-> 
-> Thanks to Andrea Righi, Kamezawa Hiroyuki, Munehiro Ikeda, Nauman Rafique,
-> and Vivek Goyal for work on previous versions of these patches.
+> I think the problem is caused by (zone->pages_scanned <
+> zone_reclaimable_pages(zone) * 6). I am not sure (* 6) is a best. It
+> would be rather big on recent big DRAM machines.
 > 
 
-2 points from me.
+It means 3 times full-scan from the highest priority to the lowest
+and cannot freed any pages. I think big memory machine tend to have
+more cpus, so don't think it's big.
 
-1. If you know there is a thread, please join even if it's a bit little thread.
-2. In these days, I got many comments as 'page_cgroup is toooo big', so
-   I don't feel fun when I see a patch which increases size of page_cgroup.
+> I think it is a trade-off between latency and OOM kill.
+> If we decrease the magic value, maybe we should prevent the almost
+> livelock but happens unnecessary OOM kill.
+> 
 
-I don't like to increase size of page_cgroup but I think you can record 
-information without increasing size of page_cgroup.
+Hmm, should I support a sacrifice feature 'some signal(SIGINT?) will be sent by
+the kernel when it detects system memory is in short' in cgroup ?
+(For example, if full LRU scan is done in a zone, notifier
+ works and SIGINT will be sent.)
 
-A) As Andrea did, encode it to pc->flags.
-   But I'm afraid that there is a racy case because memory cgroup uses some
-   test_and_set() bits.
-B) I wonder why the information cannot be recorded in page->private.
-   When page has buffers, you can record the information to buffer struct.
-   About swapio (if you take care of), you can record information to bio.
+> And I think zone_reclaimable not fair.
+> For example, too many scanning makes reclaimable state to
+> unreclaimable state. Maybe it takes a very long time. But just some
+> page free makes unreclaimable state to reclaimabe with very easy. So
+> we need much painful reclaiming for changing reclaimable state with
+> unreclaimabe state. it would affect latency very much.
+> 
+> Maybe we need more smart zone_reclaimabe which is adaptive with memory pressure.
+> 
+I agree.
 
-Anyway, thank you for the work. And please join the discussion and explain
-"Without it, we didn't see much isolation improvement." with real data.
-
-Regards,
+Thanks,
 -Kame
-
-
-
-> 
->  Documentation/block/biodoc.txt |   10 +
->  block/blk-cgroup.c             |  204 +++++++++++++++++++++-
->  block/blk-cgroup.h             |    9 +-
->  block/blk-core.c               |  216 +++++++++++++++--------
->  block/blk-settings.c           |    2 +-
->  block/blk-sysfs.c              |   60 ++++---
->  block/cfq-iosched.c            |  390 +++++++++++++++++++++++++++++++---------
->  block/cfq.h                    |    6 +-
->  block/elevator.c               |   11 +-
->  fs/buffer.c                    |    2 +
->  fs/direct-io.c                 |    2 +
->  include/linux/blk_types.h      |    2 +
->  include/linux/blkdev.h         |   81 ++++++++-
->  include/linux/blkio-track.h    |   89 +++++++++
->  include/linux/elevator.h       |   14 ++-
->  include/linux/iocontext.h      |    1 +
->  include/linux/memcontrol.h     |    6 +
->  include/linux/mmzone.h         |    4 +-
->  include/linux/page_cgroup.h    |   12 +-
->  init/Kconfig                   |   16 ++
->  mm/Makefile                    |    3 +-
->  mm/bounce.c                    |    2 +
->  mm/filemap.c                   |    2 +
->  mm/memcontrol.c                |    6 +
->  mm/memory.c                    |    6 +
->  mm/page-writeback.c            |   14 ++-
->  mm/page_cgroup.c               |   29 ++-
->  mm/swap_state.c                |    2 +
->  28 files changed, 985 insertions(+), 216 deletions(-)
-> 
-> [PATCH 1/6] Add IO cgroup tracking for buffered writes.
-> [PATCH 2/6] Make async queues per cgroup.
-> [PATCH 3/6] Modify CFQ to use IO tracking information.
-> [PATCH 4/6] With per-cgroup async, don't special case queues.
-> [PATCH 5/6] Add stat for per cgroup writeout done by flusher.
-> [PATCH 6/6] Per cgroup request descriptor counts
-> 
 
