@@ -1,153 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab1CIR0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:26:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51214 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756900Ab1CIR0f (ORCPT
+	id S932796Ab1CIR2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 12:28:00 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:56433 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757120Ab1CIR16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 12:26:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=FmG/LPUF80scP1oUJRVJNdIwYlXngsMYu679KQp+SfP9sy7bgej5zGaDW6U/k7RYiA
-         mBn2qBlmQrmiytxi8j3NdrrQ4LUirnJRDeKMADh5ZhdnfGlxl5iwbiGGGqialmJcaYWY
-         bxx7BK2YqMZ5ybFpsceaPwSl90W4X9eInIy7k=
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
-        linux-kernel@vger.kernel.org, oakad@yahoo.com
-In-Reply-To: <1299464437.24051.13.camel@maxim-laptop>
-References: <1299212213-4255-2-git-send-email-maximlevitsky@gmail.com>
-	 <20110306162859E.fujita.tomonori@lab.ntt.co.jp>
-	 <1299424470.22378.9.camel@maxim-laptop>
-	 <20110307064900X.fujita.tomonori@lab.ntt.co.jp>
-	 <1299464437.24051.13.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Mar 2011 19:24:55 +0200
-Message-ID: <1299691495.27835.0.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Mar 2011 12:27:58 -0500
+From: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "eduardo.valentin@nokia.com" <eduardo.valentin@nokia.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ryan Mallon <ryan@bluewatersys.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: <maxime_coquelin@yahoo.fr>, ext Nishanth Menon <nm@ti.com>,
+        ext Tony Lindgren <tony@atomide.com>,
+        Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
+        Ambresh <a0393775@ti.com>, Jouni Hogander <jouni.hogander@nokia.com>,
+        Lee Jones <Lee.Jones@linaro.org>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas ABERG <jonas.aberg@stericsson.com>,
+        ext Kevin Hilman <khilman@deeprootsystems.com>,
+        David Brown <davidb@codeaurora.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Andrei Warkentin <andreiw@motorola.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
+Subject: [RFC PATCHv1 2/2] ux500: Export U8500 SoC info through sysfs
+Date: Wed, 9 Mar 2011 17:59:21 +0100
+Message-ID: <1299689961-5028-3-git-send-email-maxime.coquelin-nonst@stericsson.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299689961-5028-1-git-send-email-maxime.coquelin-nonst@stericsson.com>
+References: <1299689961-5028-1-git-send-email-maxime.coquelin-nonst@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 04:20 +0200, Maxim Levitsky wrote:
-> On Mon, 2011-03-07 at 06:49 +0900, FUJITA Tomonori wrote:
-> > On Sun, 06 Mar 2011 17:14:30 +0200
-> > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > 
-> > > On Sun, 2011-03-06 at 16:29 +0900, FUJITA Tomonori wrote:
-> > > > On Fri,  4 Mar 2011 06:16:50 +0200
-> > > > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > > > 
-> > > > > While developing memstick driver for legacy memsticks
-> > > > > I found the need in few helpers that I think should be
-> > > > > in common scatterlist library
-> > > > > 
-> > > > > The functions that were added:
-> > > > > 
-> > > > > * sg_nents/sg_total_len - iterate over scatterlist to figure
-> > > > > out total length of memory it covers / number of entries.
-> > > > 
-> > > > You should invent a data structure per I/O request, something like
-> > > > msb_request structure. Then you can store nents and total_len in
-> > > > that.
-> > > > 
-> > > > That's what block subsystems and drivers do. I took a look at your
-> > > > driver but I can't see why your driver can't do the same.
-> > > I also need to break the request into small grained chunks.
-> > > If I invent such structure, I will end up writing these helpers for it.
-> > > 
-> > > The I have this lifetime of a request:
-> > > 
-> > > I get arbitary sized request from block layer (I can of course control
-> > > maximum size/number of segments in it, etc).
-> > > 
-> > > I break it into eraseblock sized chunks, and for each I translate the
-> > > the LBA, into flash address.
-> > > 
-> > > Then I break it into flash page sized requests (512 bytes), and yet its
-> > > better not to assume that such requests always contained in one sg
-> > > entry.
-> > > 
-> > > Worse than that, I have to pass an sg list that spans always one 512
-> > > page to lowlevel driver, because thats how Alex defined the interface.
-> > 
-> > This restriction is due to hardware specification or the software
-> > design (e.g. memstick layer)? If it is due to the latter, why can't
-> > you fix that?
-> 
-> Yes.
-> I already tried addressing some shortcomings of memstick layer, no no, I
-> don't want to deal with its author, Alex Dubov again.
-> I think this code tries to be too clever/complex for the range of
-> devices/speeds it supports, but I rather leave it as is.
-> 
-> 
-> To be honest, the code in question is for >5 year old memstick standard
-> cards, thats hardly anybody uses.
-> It works, it is more or less simple, its not performance bound, its
-> testd, and thus I want to keep it as is _for_ now.
-> 
-> 
-> Why I break sg lists into chunks?
-> Because unlike vast majority of block devices, I need to do FTL in the
-> driver, thus its easier to work on eraseblock boundary.
-> Also unlike anything else, you can't just read/write a sector from a
-> memorystick (especially the legacy one), you have to perform full dance
-> of commands.
-> 
-> Not to mention error handling (like if you failed to write to block, you
-> must try to choose another one, etc...)
-> 
-> (Of course writes follow same rules as raw nand flash, thats is writes
-> only clear bits, and you can erase a eraseblock only).
-> 
-> 
-> 
-> > 
-> > Why can't the block layer split requests for you? It's better to let
-> > the block layer handle that.
-> You mean tell it not to give me more that one eraseblock to handle?
-> Could you explain that a bit more?
-> 
-> 
-> Anyway, could we merge the code?
-> I would happy to improve it later, but currently merge window is very
-> close, and the code is more or less agreed upon everyone, and written
-> more that 1/2 of year ago.
-> 
-> Andrew Morton, could you help me with this, Please?
-Ping (I really worry about this).
+ST-Ericsson's U8500 implementation.
+Register sysfs SoC interface, and export SoC ID, process and silicon revision
+number.
 
-> 
-> 
-> Best regards,
-> 	Maxim Levitsky
-> 
-> > 
-> > 
-> > > Folks, really what the status of this, when to expect it to be merged?
-> > > 
-> > > If you think some of helper functions don't belong to scatterlist.c,
-> > > just tell me to move them back to ms_block.c.
-> > > 
-> > > Andrew, please note again that richoh lowlevel driver doesn't need any
-> > > helper functions, its patch is standalone and thus should be merged
-> > > regardless.
-> > 
-> > I think that we need to make the design of the driver easily
-> > understandable to kernel developers and maintainable by them. I don't
-> > think that this is 'standalone or not' issue.
-> > 
-> > Adding a doc about why the driver is designed in such odd way would be
-> > helpful. But I still think that we could design the driver in a better
-> > way.
-> 
-> 
+Signed-off-by: Maxime COQUELIN <maxime.coquelin-nonst@stericsson.com>
+---
+ arch/arm/mach-ux500/id.c |   96 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 96 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/mach-ux500/id.c b/arch/arm/mach-ux500/id.c
+index d35122e..0d41c77 100644
+--- a/arch/arm/mach-ux500/id.c
++++ b/arch/arm/mach-ux500/id.c
+@@ -8,6 +8,8 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/sys_soc.h>
++#include <linux/slab.h>
+ 
+ #include <asm/cputype.h>
+ #include <asm/tlbflush.h>
+@@ -105,3 +107,97 @@ void __init ux500_map_io(void)
+ 
+ 	ux500_print_soc_info(asicid);
+ }
++
++
++#ifdef CONFIG_SYS_SOC
++#define U8500_BB_UID_BASE (U8500_BACKUPRAM1_BASE + 0xFC0)
++#define U8500_BB_UID_LENGTH 5
++
++#define UX500_SOC_INFO_SZ 64
++
++static char soc_id[UX500_SOC_INFO_SZ];
++static char revision[UX500_SOC_INFO_SZ];
++static char process[UX500_SOC_INFO_SZ];
++
++static char *ux500_get_soc_id(struct sys_soc_info *si)
++{
++	void __iomem *uid_base = __io_address(U8500_BB_UID_BASE);
++	int i, sz = 0;
++
++	if (dbx500_partnumber() == 0x8500) {
++		for (i = 0; i < U8500_BB_UID_LENGTH; i++)
++			sz += snprintf(soc_id + sz, UX500_SOC_INFO_SZ - sz, "%08x",
++					readl(uid_base + i * sizeof(u32)));
++	}
++	else {
++		/* Don't know where it is located for U5500 */
++		sprintf(soc_id, "N/A");
++	}
++
++	/*
++	 * As this key will never change, no need to read it anymore.
++	 */
++	si->info = soc_id;
++	return soc_id;
++}
++
++static char *ux500_get_revision(struct sys_soc_info *si)
++{
++	unsigned int rev = dbx500_revision();
++
++	if (rev == 0x01)
++		sprintf(revision, "%s", "ED");
++	else if (rev >= 0xA0)
++		sprintf(revision, "%d.%d" , (rev >> 4) - 0xA + 1, rev & 0xf);
++	else
++		sprintf(revision, "%s", "Unknown");
++
++	/*
++	 * As this key will never change, no need to read it anymore.
++	 */
++	si->info = revision;
++	return revision;
++}
++
++static char *ux500_get_process(struct sys_soc_info *si)
++{
++	if (dbx500_id.process == 0x00)
++		sprintf(process, "Standard");
++	else
++		sprintf(process, "%02xnm", dbx500_id.process);
++
++	/*
++	 * As this key will never change, no need to read it anymore.
++	 */
++	si->info = process;
++	return process;
++}
++
++static struct sys_soc_info soc_info[] = {
++	[0] = {
++		.name = "soc_id",
++		.get_info = ux500_get_soc_id,
++	},
++	[1] = {
++		.name = "revision",
++		.get_info = ux500_get_revision,
++	},
++	[2] = {
++		.name = "process",
++		.get_info = ux500_get_process,
++	},
++};
++
++static int __init ux500_sys_soc_init(void)
++{
++	char part_number[8];
++
++	sprintf(part_number, "DB%4x", dbx500_partnumber());
++	register_sys_soc(part_number, soc_info, ARRAY_SIZE(soc_info));
++
++	return 0;
++}
++
++module_init(ux500_sys_soc_init);
++#endif
++
+-- 
+1.7.1
 
