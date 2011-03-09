@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1CIUA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 15:00:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53708 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751514Ab1CIUAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 15:00:54 -0500
-Subject: Re: [PATCH -v2] capabilites: allow the application of capability
- limits to usermode helpers
-From: Eric Paris <eparis@redhat.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        dhowells@redhat.com, jmorris@namei.org, serge.hallyn@canonical.com,
-        morgan@kernel.org
-Date: Wed, 09 Mar 2011 15:00:25 -0500
-In-Reply-To: <20110309194501.GA9362@albatros>
-References: <20110309193330.12181.92080.stgit@paris.rdu.redhat.com>
-	 <20110309194501.GA9362@albatros>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1299700826.3411.4.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1752262Ab1CIUM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 15:12:56 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61219 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab1CIUMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 15:12:55 -0500
+From: Bill Gatliff <bgat@billgatliff.com>
+To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
+Cc: Bill Gatliff <bgat@billgatliff.com>
+Subject: [PWM v7 0/3] Implement a generic PWM framework
+Date: Wed,  9 Mar 2011 14:13:13 -0600
+Message-Id: <1299701596-24665-1-git-send-email-bgat@billgatliff.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 22:45 +0300, Vasiliy Kulikov wrote:
-> Eric,
-> 
-> On Wed, Mar 09, 2011 at 14:33 -0500, Eric Paris wrote:
-> > someone complained that any user with
-> > cap_net_admin was able to load arbitrary kernel modules, even though the user
-> > didn't have cap_sys_module.  The reason is because the actual load is done by
-> > a usermode helper and those always have the full cap set.
-> 
-> AFAIU, your patch sets system-wide caps for _all_ usermode helpers,
-> right?  Then it does nothing with cap_net_admin's problem as it should
-> restrict caps of specific helpers spawned from specific networking code,
-> but not touching anything related to another helpers.
+This patch series contains the seventh attempt at implementation of
+a generic PWM device interface framework.  Think gpiolib, but for
+devices and pseudo-devices that generate pulse-wave-modulated outputs.
 
-I'm actually solving 2 problems at once and it just so happens the the
-CAP_NET_ADMIN brew-ha-ha came up more recently.  The original problem,
-and reason I wrote this patch, is because it's impossible on a modern
-Linux system to permanently and irrevocably drop capabilities system
-wide.  You can get very close by dropping capabilities from the bset
-before init is launched which means everything launched by userspace
-can't have the dropped capabilities.  But, khelper is still going to
-have the full set and thus usermodehelpers launched by the kernel will
-have the full set.  This patch allows one to control usermode helpers.
-How one chooses to use that, is up to them.
+Compared to the previous version, this patch series:
 
--Eric
+ * Removes callback functionality
+ * Adds sysfs interface documentation
+ * Cleans up attribute management
+ * Various minor edits and bugfixes
+
+A git tree containing these patches may be found here:
+
+    http://git.billgatliff.com/pwm.git
+    git://git.billgatliff.com/pwm.git
+
+Functionally-speaking, this series has regressed somewhat from
+previous versions because I am currently focusing my attention on the
+API itself.  I include implementations only for GPIO+hrtimer devices
+and the Atmel PWMC peripheral as references in this series; I will
+post patches for LED drivers, PXA, Samsung, etc. devices once I know
+that the API itself is on its way to mainline.  (I believe that the
+two reference implementations sufficiently confirm the utility of the
+API itself).
+
+Conversion of existing machines and platforms to this API is
+relatively straightforward, but must be done in conjunction with the
+various users of PWM (LEDs, etc.) because PWM devices will now be
+referenced by struct pwm_device structures, rather than integers.
+Thus, there is potentially significant effort involved because
+platform data structures, etc. must be updated.  I have (re)started
+that effort twice already, and I prefer not to do so again until the
+target API is stable.
+
+The code in this series is significantly clearer and more
+straightforward than previous versions.  Thanks to everyone who helped
+me with this refactoring!  I'm pretty convinced that the code you see
+here is at last suitable for pulling into mainline.
+
+Finally, the attached code CAN be used to control devices that drive
+stepper motors and the like, but doing so is discouraged as I am
+anticipating a request to develop an API specifically for such
+situations.
+
+
+Regards,
+
+
+b.g.
+
+Bill Gatliff (3):
+  PWM: Implement a generic PWM framework
+  PWM: GPIO+hrtimer device emulation
+  PWM: Atmel PWMC driver
+
+ Documentation/pwm.txt    |  289 +++++++++++++++++++++
+ MAINTAINERS              |    8 +
+ drivers/Kconfig          |    2 +
+ drivers/Makefile         |    2 +
+ drivers/pwm/Kconfig      |   29 ++
+ drivers/pwm/Makefile     |    7 +
+ drivers/pwm/atmel-pwmc.c |  449 ++++++++++++++++++++++++++++++++
+ drivers/pwm/gpio-pwm.c   |  336 ++++++++++++++++++++++++
+ drivers/pwm/pwm.c        |  633 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pwm/pwm.h  |  153 +++++++++++
+ 10 files changed, 1908 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/pwm.txt
+ create mode 100644 drivers/pwm/Kconfig
+ create mode 100644 drivers/pwm/Makefile
+ create mode 100644 drivers/pwm/atmel-pwmc.c
+ create mode 100644 drivers/pwm/gpio-pwm.c
+ create mode 100644 drivers/pwm/pwm.c
+ create mode 100644 include/linux/pwm/pwm.h
+
+-- 
+1.7.2.3
 
