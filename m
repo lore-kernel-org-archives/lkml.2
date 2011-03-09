@@ -1,148 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757159Ab1CIKMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 05:12:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45498 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757090Ab1CIKMY (ORCPT
+	id S1757188Ab1CIKNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 05:13:12 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:3310 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757138Ab1CIKNJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 05:12:24 -0500
-Date: Wed, 9 Mar 2011 10:12:21 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Cliff Cai <cliffcai.sh@gmail.com>
-Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Subject: Re: [alsa-devel] [PATCH] Add driver for Analog Devices ADAU1701
- SigmaDSP
-Message-ID: <20110309101221.GC6923@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com>
- <AANLkTinmbJWAoFPPT9aNrJQ+E+eb-3a1F_cV-d2J3YGj@mail.gmail.com>
+	Wed, 9 Mar 2011 05:13:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=WuM35ZSSvF1uLlb2wFVwghffWtrgNqUZbSoAEjZj5ofbRhA/krqFR5QdbH6hcoub6B
+         RoABERX19ck4HfgFQMDw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinmbJWAoFPPT9aNrJQ+E+eb-3a1F_cV-d2J3YGj@mail.gmail.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110225050646.2828709c@jacob-laptop>
+References: <20110216031831.571628191@google.com> <20110224161111.7d83a884@jacob-laptop>
+ <AANLkTi=i-fgng0Pa2JDSy8RgqRs2mo2vc2CKbx12-=Ri@mail.gmail.com> <20110225050646.2828709c@jacob-laptop>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 9 Mar 2011 02:12:36 -0800
+Message-ID: <AANLkTi=_2ksYCMUuiq5dYo0t8AicyxN9ramEjgTdFgJq@mail.gmail.com>
+Subject: Re: [CFS Bandwidth Control v4 0/7] Introduction
+To: jacob pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matt Helsley <matthltc@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 03:04:03PM +0800, Cliff Cai wrote:
-> On Mon, Mar 7, 2011 at 7:41 PM, Mark Brown
-> > On Mon, Mar 07, 2011 at 09:11:42AM +0800, cliff.cai@analog.com wrote:
+On Fri, Feb 25, 2011 at 5:06 AM, jacob pan
+<jacob.jun.pan@linux.intel.com> wrote:
+> On Fri, 25 Feb 2011 02:03:54 -0800
+> Paul Turner <pjt@google.com> wrote:
+>
+>> On Thu, Feb 24, 2011 at 4:11 PM, jacob pan
+>> <jacob.jun.pan@linux.intel.com> wrote:
+>> > On Tue, 15 Feb 2011 19:18:31 -0800
+>> > Paul Turner <pjt@google.com> wrote:
+>> >
+>> >> Hi all,
+>> >>
+>> >> Please find attached v4 of CFS bandwidth control; while this rebase
+>> >> against some of the latest SCHED_NORMAL code is new, the features
+>> >> and methodology are fairly mature at this point and have proved
+>> >> both effective and stable for several workloads.
+>> >>
+>> >> As always, all comments/feedback welcome.
+>> >>
+>> >
+>> > Hi Paul,
+>> >
+>> > Your patches provide a very useful but slightly different feature
+>> > for what we need to manage idle time in order to save power. What we
+>> > need is kind of a quota/period in terms of idle time. I have been
+>> > playing with your patches and noticed that when the cgroup cpu usage
+>> > exceeds the quota the effect of throttling is similar to what I have
+>> > been trying to do with freezer subsystem. i.e. freeze and thaw at
+>> > given period and percentage runtime.
+>> > https://lkml.org/lkml/2011/2/15/314
+>> >
+>> > Have you thought about adding such feature (please see detailed
+>> > description in the link above) to your patches?
+>> >
+>>
+>> So reading the description it seems like rooting everything in a
+>> 'freezer' container and then setting up a quota of
+>>
+>> (1 - frozen_percentage)  * nr_cpus * frozen_period * sec_to_usec
+>>
+> I guess you meant frozen_percentage is less than 1, i.e. 90 is .90. my
+> code treat 90 as 90. just a clarification.
+>> on a period of
+>>
+>> frozen_period * sec_to_usec
+>>
+>> Would provide the same functionality.  Is there other unduplicated
+>> functionality beyond this?
 
-> > It loooks like the register length is hard coded in every location that
-> > the register is referenced. ?This doesn't seem ideal - it'd be much
-> > nicer to have the register I/O functions work this out without the
-> > callers needing to.
+Sorry -- I was out last week; comments inline.
 
-> I'm afraid it's not easy to do so.
+> Do you mean the same functionality as your patch? Not really, since my
+> approach will stop the tasks based on hard time slices
+>. But seems your
+> patch will allow them to run if they don't exceed the quota. Am i
+> missing something?
 
-What's the issue?  I'd expect something like a lookup table or switch
-statement going from register to register length - I'd be surprised if
-it were any more complicated than getting all the callers right.
+Right, this is what was discussed above.
 
-> >> +static int adau1701_pcm_prepare(struct snd_pcm_substream *substream,
-> >> +                             struct snd_soc_dai *dai)
-> >> +{
-> >> +     struct snd_soc_codec *codec = dai->codec;
-> >> +     int reg = 0;
+> That is the only functionality difference i know.
+>
+> Like the reviewer of freezer patch pointed out, it is a more logical
+> fit to implement such feature in scheduler/yours in stead of freezer. So
+> i am wondering if your patch can be expended to include limiting quota
+> on real time.
 
-> >> +     reg = SEROCTL_MASTER | SEROCTL_OBF16 | SEROCTL_OLF1024;
-> >> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, reg);
+The following two configurations should effectively exactly mirror the
+freezer behavior without modification.
 
-> >> +     return 0;
-> >> +}
+A) background while(1) thread on each cpu within the cgroup
+This will result in synchronous consumption / exhaustion of quota in a
+manor that duplicates the periodic freezing.
 
-> > This looks like some of it is DAI format and word length configuration?
+Given the goal is power-saving, this is obviously non-ideal.  However:
 
-> no,it makes the processor work in master mode.and output bit clock and
-> frame clock.
+B) A userspace daemon toggles quota at the desired interval
 
-This controls the CODEC, not the CPU?  Master/slave should be controlled
-by set_dai_fmt() rather than being hard coded.
+Supposing you wanted a freezer period of 100ms per second, then having
+a daemon wake up at 900ms into the interval and then setting a quota
+amount that is effectively zero will then "freeze" the group.  Said
+daemon can then release things by returning the group to an infinite
+quota in 100ms, and then sleeping for another 900ms.
 
-> >> +static void adau1701_shutdown(struct snd_pcm_substream *substream,
-> >> +                           struct snd_soc_dai *dai)
-> >> +{
-> >> +     struct snd_soc_codec *codec = dai->codec;
+Is there particular advantage of doing this in-kernel?
 
-> >> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, 0);
-> >> +}
 
-> > I suspect this isn't going to work for simultaneous playback and capture
-> > - it's not clear what the code does but I'd guess it will stop things
-> > completely.
+>
+> I did a comparison study between CFS BW and freezer patch on skype with
+> identical quota setting as you pointed out earlier. Both use 2 sec
+> period and .2 sec quota (10%). Skype typically uses 5% of the CPU on my
+> system when placing a call(below cfs quota) and it wakes up every 100ms
+> to do some quick checks. Then I run skype in cpu then freezer cgroup
+> (with all its children). Here is my result based on timechart and
+> powertop.
+>
+> patch name      wakeups         skype call?
+> ------------------------------------------------------------------
+> CFS BW          10/sec          yes
+> freezer         1/sec           no
+>
 
-> this SigmaDSP doesn't support duplex operation,it can choose either
-> ADCs or serial port as input source.
+Is this a true saving?  While the actual task wake-up has been hidden,
+the cpu is still coming out of a halt/idle state and processing the
+interrupt/etc.
 
-The driver should be enforcing this constraint, then.
+Have you had the chance to measure the actual comparative power-usage
+in this case?
 
-> >> +static int adau1701_set_bias_level(struct snd_soc_codec *codec,
-> >> +                              enum snd_soc_bias_level level)
-> >> +{
-> >> +     u16 reg;
-> >> +     switch (level) {
-> >> +     case SND_SOC_BIAS_ON:
-> >> +             reg = adau1701_read_register(codec, ADAU1701_AUXNPOW, 2);
-> >> +             reg &= ~(AUXNPOW_AAPD | AUXNPOW_D0PD | AUXNPOW_D1PD |  AUXNPOW_D2PD |
-> >> +                      AUXNPOW_D3PD | AUXNPOW_VBPD | AUXNPOW_VRPD);
-> >> +             adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, reg);
+> Skype might not be the best example to illustrate the real usage of the
+> feature, but we are targeting mobile device where they are mostly off or
+> often have only one application allowed in foreground. So we want to
+> reduce wakeups coming from the tasks that are not in the foreground.
+>
 
-> > You were also updating some of the same register bits in the mute
-> > function.  This looks buggy.
+If reducing wake-ups (at the userspace level) is proven to deliver
+performance improvements, then it might be more productive to approach
+that directly by considering strategies such as batching wakeups and
+processing them periodically.
 
-> the processor has no switchs to mute or unmute ADCS/DACs,only thing we
-> can do is turning them off or on.
+This would not have the negative performance impact of the current
+approach, as well as being more deterministic.
 
-If mute can't be implemented don't implement it.  Right now the code is
-clearly not going to do what's expected as you've got two different bits
-of code trying to control the same thing - at least one set of register
-updates isn't going to do anything?
+>> One thing that does seem undesirable about your approach is (as it
+>> seems to be described) threads will not be able to take advantage of
+>> naturally occurring idle cycles and will incur a potential performance
+>> penalty even at use << frozen_percentage.
+>>
+>> e.g. From your post
+>>
+>>        |  |<-- 90% frozen -     ->|  |
+>> |  | ____|  |________________x_|  |__________________|  |_____
+>>
+>>         |<---- 5 seconds     ---->|
+>>
+>>
+>> Suppose no threads active until the wake up at x, suppose there is an
+>> accompanying 1 second of work for that thread to do.  That execution
+>> time will be dilated to ~1.5 seconds (as it will span the 0.5 seconds
+>> the freezer will stall for).  But the true usage for this period is
+>> ~20% <<< 90%
+> I agree my approach does not consider the natural cycle. But I am not
+> sure if a thread can wake up at x when FROZEN.
+>
 
-> >> +     ret = adau1701_setprogram(codec);
-> >> +     if (ret < 0) {
-> >> +             printk(KERN_ERR "Loading program data failed\n");
-> >> +             goto error;
-> >> +     }
-> >> +     reg = DSPCTRL_DAM | DSPCTRL_ADM;
-> >> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
-> >> +     reg = 0x08;
-> >> +     adau1701_write_register(codec, ADAU1701_DSPRES, 1, reg);
-
-> > Should these DSP configuations things be part of downloading firmware?
-
-> these configurations above loading firmware mainly used to avoid pops/clicks
-> and cleanup some registers in the DSP core.
-
-Right, but is this something that's always useful when loading firmware
-(in which case the firmware load should just wrap it up so it always
-happens)?
-
-> >> +     adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, 0);
-> >> +     reg = AUXADCE_AAEN;
-> >> +     adau1701_write_register(codec, ADAU1701_AUXADCE, 2, reg);
-> >> +     reg = DACSET_DACEN;
-> >> +     adau1701_write_register(codec, ADAU1701_DACSET, 2, reg);
-> >> +     reg = DSPCTRL_DAM | DSPCTRL_ADM | DSPCTRL_CR;
-> >> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
-> >> +     /* Power-up the oscillator */
-> >> +     adau1701_write_register(codec, ADAU1701_OSCIPOW, 2, 0);
-
-> > This looks like it's all power management which I'd expect to see
-> > handled in either the bias management functions or ideally DAPM.  It
-> > also appears that the oscillator is an optional feature so it should be
-> > used conditionally.
-
-> the processor can receive MCLK either from external clock source or
-> crystal oscillator,
-> currently we use the on board crystal,and it can't be turned
-> off,otherwise the whole chip will be in an unpredicted status,
-> only output clocks can be disabled.
-
-That's specific to your board design, though.  Another board design
-might use a different clocking setup.
+While the ascii is a little mailer-mangled, in the diagram above x was
+intended to precede the "frozen" time segment, but at a point where
+the work it wants to do exceeds the time-before-freeze resulting in
+dilation of execution and a performance regression.
