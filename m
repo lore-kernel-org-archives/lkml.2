@@ -1,196 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab1CIAej (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:34:39 -0500
-Received: from mout.perfora.net ([74.208.4.195]:62331 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756039Ab1CIAeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:34:37 -0500
-From: Stephen Wilson <wilsons@start.ca>
-To: x86@kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Paul Mundt <lethal@linux-sh.org>, Andi Kleen <ak@linux.intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH 5/5] mm: arch: rename in_gate_area_no_task to in_gate_area_no_mm
-Date: Tue,  8 Mar 2011 19:32:01 -0500
-Message-Id: <1299630721-4337-6-git-send-email-wilsons@start.ca>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <1299630721-4337-1-git-send-email-wilsons@start.ca>
-References: <1299630721-4337-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:7VLAUYT1ittvSCW+706Yvk9sHBmv4H9hzdn4+Ra5/TX
- Fer+Gppe1QUSkla+Bj/i84V1/yTYLfcobfz/32TAb3HjbOKbaY
- BPIfk+LhEuvQAgh57GHjgq5lVtJY97kZXJ43M4j3UAr2EXeYhP
- eVBdMeS7LQKjHnNkh71IyOhidvWSennXo5vz7T0mvJMc8GEqat
- NpjAYh46mZpCVW+kcTcGhzG662FqUc4YWHLISnlxik=
+	id S1756895Ab1CIAgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:36:50 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:47687 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755347Ab1CIAgt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:36:49 -0500
+Subject: Re: BUG at mm/mmap.c:2309 when cx18.ko and cx18-alsa.ko loaded
+From: Andy Walls <awalls@md.metrocast.net>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        David Miller <davem@davemloft.net>, linux-media@vger.kernel.org,
+        Devin Heitmueller <dheitmueller@kernellabs.com>
+In-Reply-To: <1299445446.2310.157.camel@localhost>
+References: <1299204400.2812.35.camel@localhost>
+	 <1299362366.2570.27.camel@localhost> <1299377017.2341.50.camel@localhost>
+	 <AANLkTimU9qV11p+wTDz4SCvaoYyxpja8tmJ5D7-ki==B@mail.gmail.com>
+	 <1299445446.2310.157.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Mar 2011 19:37:01 -0500
+Message-ID: <1299631021.3023.10.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-03-08_09:2011-03-08,2011-03-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1012030000 definitions=main-1103080182
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that gate vma's are referenced with respect to a particular mm and not a
-particular task it only makes sense to propagate the change to this predicate as
-well.
+On Sun, 2011-03-06 at 16:04 -0500, Andy Walls wrote:
+> On Sun, 2011-03-06 at 10:37 -0800, Hugh Dickins wrote:
 
-Signed-off-by: Stephen Wilson <wilsons@start.ca>
----
- arch/powerpc/kernel/vdso.c         |    2 +-
- arch/s390/kernel/vdso.c            |    2 +-
- arch/sh/kernel/vsyscall/vsyscall.c |    2 +-
- arch/x86/mm/init_64.c              |    8 ++++----
- arch/x86/vdso/vdso32-setup.c       |    2 +-
- include/linux/mm.h                 |    6 +++---
- kernel/kallsyms.c                  |    4 ++--
- mm/memory.c                        |    2 +-
- mm/nommu.c                         |    2 +-
- 9 files changed, 15 insertions(+), 15 deletions(-)
+> > 
+> > Thanks for all the effort you are putting into investigating this: you
+> > deserve a better response than I can give you.
+> > 
+> > mm/vmalloc.c's vmap_area handling is entirely separate from
+> > mm/mmap.c's vm_area_struct handling, yet both misbehaviors would be
+> > explained if a next pointer has been corrupted to NULL.
+> > 
+> > Probably just coincidence that they both manifest that way, though the
+> > underlying problem may turn out to be one.
 
-diff --git a/arch/powerpc/kernel/vdso.c b/arch/powerpc/kernel/vdso.c
-index 467aa9e..142ab10 100644
---- a/arch/powerpc/kernel/vdso.c
-+++ b/arch/powerpc/kernel/vdso.c
-@@ -820,7 +820,7 @@ static int __init vdso_init(void)
- }
- arch_initcall(vdso_init);
- 
--int in_gate_area_no_task(unsigned long addr)
-+int in_gate_area_no_mm(unsigned long addr)
- {
- 	return 0;
- }
-diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
-index 9006e96..d73630b 100644
---- a/arch/s390/kernel/vdso.c
-+++ b/arch/s390/kernel/vdso.c
-@@ -337,7 +337,7 @@ static int __init vdso_init(void)
- }
- arch_initcall(vdso_init);
- 
--int in_gate_area_no_task(unsigned long addr)
-+int in_gate_area_no_mm(unsigned long addr)
- {
- 	return 0;
- }
-diff --git a/arch/sh/kernel/vsyscall/vsyscall.c b/arch/sh/kernel/vsyscall/vsyscall.c
-index 62c36a8..1d6d51a 100644
---- a/arch/sh/kernel/vsyscall/vsyscall.c
-+++ b/arch/sh/kernel/vsyscall/vsyscall.c
-@@ -104,7 +104,7 @@ int in_gate_area(struct mm_struct *mm, unsigned long address)
- 	return 0;
- }
- 
--int in_gate_area_no_task(unsigned long address)
-+int in_gate_area_no_mm(unsigned long address)
- {
- 	return 0;
- }
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 3af0da3..d3b5e2c 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -890,11 +890,11 @@ int in_gate_area(struct mm_struct *mm, unsigned long addr)
- }
- 
- /*
-- * Use this when you have no reliable task/vma, typically from interrupt
-- * context. It is less reliable than using the task's vma and may give
-- * false positives:
-+ * Use this when you have no reliable mm, typically from interrupt
-+ * context. It is less reliable than using a task's mm and may give
-+ * false positives.
-  */
--int in_gate_area_no_task(unsigned long addr)
-+int in_gate_area_no_mm(unsigned long addr)
- {
- 	return (addr >= VSYSCALL_START) && (addr < VSYSCALL_END);
- }
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index f849bb2..468d591 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -435,7 +435,7 @@ int in_gate_area(struct mm_struct *mm, unsigned long addr)
- 	return vma && addr >= vma->vm_start && addr < vma->vm_end;
- }
- 
--int in_gate_area_no_task(unsigned long addr)
-+int in_gate_area_no_mm(unsigned long addr)
- {
- 	return 0;
- }
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index c700bbb..694512d 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1570,11 +1570,11 @@ static inline bool kernel_page_present(struct page *page) { return true; }
- 
- extern struct vm_area_struct *get_gate_vma(struct mm_struct *mm);
- #ifdef	__HAVE_ARCH_GATE_AREA
--int in_gate_area_no_task(unsigned long addr);
-+int in_gate_area_no_mm(unsigned long addr);
- int in_gate_area(struct mm_struct *mm, unsigned long addr);
- #else
--int in_gate_area_no_task(unsigned long addr);
--#define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_task(addr);})
-+int in_gate_area_no_mm(unsigned long addr);
-+#define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
- #endif	/* __HAVE_ARCH_GATE_AREA */
- 
- int drop_caches_sysctl_handler(struct ctl_table *, int,
-diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-index 6f6d091..b9d0fd1 100644
---- a/kernel/kallsyms.c
-+++ b/kernel/kallsyms.c
-@@ -64,14 +64,14 @@ static inline int is_kernel_text(unsigned long addr)
- 	if ((addr >= (unsigned long)_stext && addr <= (unsigned long)_etext) ||
- 	    arch_is_kernel_text(addr))
- 		return 1;
--	return in_gate_area_no_task(addr);
-+	return in_gate_area_no_mm(addr);
- }
- 
- static inline int is_kernel(unsigned long addr)
- {
- 	if (addr >= (unsigned long)_stext && addr <= (unsigned long)_end)
- 		return 1;
--	return in_gate_area_no_task(addr);
-+	return in_gate_area_no_mm(addr);
- }
- 
- static int is_ksym_addr(unsigned long addr)
-diff --git a/mm/memory.c b/mm/memory.c
-index d1347ac..3863e86 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3448,7 +3448,7 @@ struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
- #endif
- }
- 
--int in_gate_area_no_task(unsigned long addr)
-+int in_gate_area_no_mm(unsigned long addr)
- {
- #ifdef AT_SYSINFO_EHDR
- 	if ((addr >= FIXADDR_USER_START) && (addr < FIXADDR_USER_END))
-diff --git a/mm/nommu.c b/mm/nommu.c
-index f59e142..e629143 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1963,7 +1963,7 @@ error:
- 	return -ENOMEM;
- }
- 
--int in_gate_area_no_task(unsigned long addr)
-+int in_gate_area_no_mm(unsigned long addr)
- {
- 	return 0;
- }
--- 
-1.7.3.5
+> > If you have not already, it would be well worth turning on
+> > CONFIG_DEBUG_LIST and CONFIG_DEBUG_SLAB or CONFIG_SLUB_DEBUG with
+> > CONFIG_SLUB_DEBUG_ON.
+
+> 
+> >  But you are having trouble
+> > reproducing it yourself?
+> 
+> I can't say yet.  I'm currently two for two.
+
+After backing up the machine and testing again, I'm now 3 for 3.
+
+This time it happened in the memset() in kernel/module.c:move_module()
+when modprobe was trying to load the cx18-alsa.ko module.
+
+        static int move_module(struct module *mod, struct load_info
+        *info)
+        {
+                int i;
+                void *ptr;
+        
+                /* Do the allocs. */
+                ptr = module_alloc_update_bounds(mod->core_size);
+                /*
+                 * The pointer to this block is stored in the module structure
+                 * which is inside the block. Just mark it as not being
+        a
+                 * leak.
+                 */
+                kmemleak_not_leak(ptr);
+                if (!ptr)
+                        return -ENOMEM;
+        
+                memset(ptr, 0, mod->core_size);   <----- Ooops/BUG
+        
+        /home/andy/cx18dev/git/media_tree/kernel/module.c:2529
+            385c:       41 8b 8c 24 64 01 00    mov    0x164(%r12),%ecx
+            3863:       00 
+            3864:       31 c0                   xor    %eax,%eax
+            3866:       48 89 d7                mov    %rdx,%rdi
+            3869:       f3 aa                   rep stos %al,%es:(%rdi)  <----- Oops/BUG
+        
+ptr had a value of 0x0000000000001000
+
+I'm starting a git bisect now.
+
+Regards,
+Andy
 
