@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab1CIPPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 10:15:00 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:3062 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1CIPO6 (ORCPT
+	id S1757250Ab1CIPQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 10:16:10 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52239 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097Ab1CIPQI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 10:14:58 -0500
-Date: Wed, 9 Mar 2011 09:14:57 -0600
-From: scameron@beardog.cce.hp.com
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH 2/2] hpsa: export resettable_on_kexec host attribute
-Message-ID: <20110309151457.GI12760@beardog.cce.hp.com>
-References: <20110308230749.22291.56200.stgit@beardog.cce.hp.com> <20110308231003.22291.20417.stgit@beardog.cce.hp.com> <4D777249.10400@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D777249.10400@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	Wed, 9 Mar 2011 10:16:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=P6VWCclgZ4J7iq5qsPa0Jmtj8crrlMvdC5tJdqFolXhIfyrgW8tirqYhQiPtBa+JT+
+         yCMcHaOdTX9NaqsVPIpH8Na65iIHFZJI0ZFMtRfS9WB0jnbvupMe98P7zXardL3Lo2US
+         XFCo1b87kDJAyW2cZdmF8uY09cxcLHywUe1rE=
+MIME-Version: 1.0
+In-Reply-To: <20110302180259.109909335@chello.nl>
+References: <20110302175928.022902359@chello.nl>
+	<20110302180259.109909335@chello.nl>
+Date: Wed, 9 Mar 2011 15:16:07 +0000
+X-Google-Sender-Auth: GgeUI2PwzGYwD4LyD9PoXMdBDt8
+Message-ID: <AANLkTimbRS++SCcKGrUcL5xKsCO+1ygkg+83x7F+2S4i@mail.gmail.com>
+Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>, Russell King <rmk@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 01:27:53PM +0100, Tomas Henzl wrote:
-> On 03/09/2011 12:10 AM, Stephen M. Cameron wrote:
-> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> >
-> > This attribute, requested by Redhat, allows kexec-tools to know
-> > whether the controller can honor the reset_devices kernel parameter
->
+Hi Peter,
 
+On 2 March 2011 17:59, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> --- linux-2.6.orig/arch/arm/include/asm/tlb.h
+> +++ linux-2.6/arch/arm/include/asm/tlb.h
 [...]
+> +__pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte, unsigned long addr)
+>  {
+>        pgtable_page_dtor(pte);
+> -       tlb_add_flush(tlb, addr);
+>        tlb_remove_page(tlb, pte);
+>  }
 
-> and actually reset the controller.  For kdump to work properly it
-> Hi Stephen,
-> 
-> thanks for posting this.
-> Some of the devices are served by the cciss driver by default - I guess
-> a very similar patch for cciss is needed too.
-> Shouldn't be the 0x409C0E11 and 0x409D0E11 (640x boards) also added to the list?
-> (And the 'unknown' devices.)
+I think we still need a tlb_track_range() call here. On the path to
+pte_free_tlb() (for example shift_arg_pages ... free_pte_range) there
+doesn't seem to be any code setting the tlb->start/end range. Did I
+miss anything?
 
-There's a bit of a fine point here regarding the unknown devices.
+Thanks.
 
-If hpsa_allow_any=1 module parameter is set, then the unknown device
-is considered to be resettable (as it's unknown, it's obviously not
-on the list of known unresettable controllers).  If hpsa_allow_any
-is not set, then the unknown devices are not reset -- and the driver
-doesn't even try to do anything with them.  
-
-So, the patch is consistent with this, in that if hpsa_allow_any is
-not set, then there won't be any corresponding sysfs entries at all
-for those devices because those devices won't be service by hpsa
-at all.  And if hpsa_allow_any is set, then those devices will be
-marked as resettable, and the reset code will attempt to reset them.
-
-I think we've got all the unresettable devices listed (when I add the 6400
-boards to the list of course) and I think we're going to try pretty hard to
-make sure new boards are resettable, so, that's probably ok, right?
-
-Or, do you want to be extra safe, and say that new, unknown boards are assumed
-to be non-resettable?  (Since new boards generally mean driver changes to make
-sure the driver knows those boards, that's not such a big deal -- except for
-people who want to continue to use old OSes on new hardware, which, there seem
-to be quite a few of those people.)
-
-I think my preference would be to assume that unknown boards are resettable
-if hpsa_allow_any=1, and assume unresettable otherwise (and for purposes of
-sysfs attributes, this is what the patch already does.)
-
--- steve
-
+-- 
+Catalin
