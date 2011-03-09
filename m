@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab1CIAC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:02:28 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42874 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314Ab1CIAC1 (ORCPT
+	id S1756847Ab1CIAD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:03:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40709 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314Ab1CIAD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:02:27 -0500
-Subject: Re: [PATCH R4 7/7] xen/balloon: Memory hotplug support for Xen
- balloon driver
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
-        rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20110308215049.GH27331@router-fw-old.local.net-space.pl>
-References: <20110308215049.GH27331@router-fw-old.local.net-space.pl>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 08 Mar 2011 16:02:19 -0800
-Message-ID: <1299628939.9014.3499.camel@nimitz>
+	Tue, 8 Mar 2011 19:03:27 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=Of1ChBLq4JMA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=HQ3P60KExhUqiWa606AA:9 a=H5QDpiqvmAjkl6TP38pNgdqwpt4A:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 10/15] ftrace: fix event alignment: jbd2:*
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
+        "Theodore Ts'o" <tytso@mit.edu>
+In-Reply-To: <1291427578.16223.12.camel@gandalf.stny.rr.com>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+	 <1291421609-14665-11-git-send-email-dhsharp@google.com>
+	 <1291427578.16223.12.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 08 Mar 2011 19:03:25 -0500
+Message-ID: <1299629005.20306.101.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -29,90 +29,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-08 at 22:50 +0100, Daniel Kiper wrote:
-> +static enum bp_state reserve_additional_memory(long credit)
-> +{
-> +	int rc;
-> +	unsigned long balloon_hotplug = credit;
-> +
-> +	balloon_hotplug <<= PAGE_SHIFT;
-> +
-> +	rc = add_virtual_memory((u64 *)&balloon_hotplug);
+Now I know why I was so late at adding this. I was waiting for
+Acked-bys ;)
 
-This would work if all 'unsigned long's were 64-bits.  It'll break on
-32-bit kernels in a very bad way by overwriting 4 bytes of stack.
+On Fri, 2010-12-03 at 20:52 -0500, Steven Rostedt wrote:
+> [ Ccing Ted for Acked-by ]
 
-> +	if (rc) {
-> +		pr_info("xen_balloon: %s: add_virtual_memory() failed: %i\n", __func__, rc);
-> +		return BP_EAGAIN;
-> +	}
-> +
-> +	balloon_hotplug >>= PAGE_SHIFT;
-> +
-> +	balloon_hotplug -= credit;
-> +
-> +	balloon_stats.hotplug_pages += credit;
-> +	balloon_stats.balloon_hotplug = balloon_hotplug;
-> +
-> +	return BP_DONE;
-> +}
-> +
-> +static int xen_online_page_notifier(struct notifier_block *nb, unsigned long val, void *v)
-> +{
-> +	struct page *page = v;
-> +	unsigned long pfn = page_to_pfn(page);
-> +
-> +	if (pfn >= num_physpages)
-> +		num_physpages = pfn + 1;
-> +
-> +	inc_totalhigh_pages();
-> +
-> +#ifdef CONFIG_FLATMEM
-> +	max_mapnr = max(pfn, max_mapnr);
-> +#endif
+Ted, Ping?
 
-I really don't like that this is a direct copy of online_page() up to
-this point.  They're already subtly different.  I'm also curious if this
-breaks on 32-bit kernels because of the unconditional
-inc_totalhigh_pages().
+-- Steve
 
-If it's done this way, I'd almost guarantee that the first time someone
-fixes a bug or adds a generic feature in online_page() that Xen gets
-missed.  
+> 
+> -- Steve
+> 
+> 
+> On Fri, 2010-12-03 at 16:13 -0800, David Sharp wrote:
+> > Signed-off-by: David Sharp <dhsharp@google.com>
+> > ---
+> >  include/trace/events/jbd2.h |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/trace/events/jbd2.h b/include/trace/events/jbd2.h
+> > index 7447ea9..2f9f362 100644
+> > --- a/include/trace/events/jbd2.h
+> > +++ b/include/trace/events/jbd2.h
+> > @@ -41,15 +41,15 @@ DECLARE_EVENT_CLASS(jbd2_commit,
+> >  	TP_STRUCT__entry(
+> >  		__field(	int,   dev_major                )
+> >  		__field(	int,   dev_minor                )
+> > -		__field(	char,	sync_commit		  )
+> >  		__field(	int,	transaction		  )
+> > +		__field(	char,	sync_commit		  )
+> >  	),
+> >  
+> >  	TP_fast_assign(
+> >  		__entry->dev_major	= MAJOR(journal->j_fs_dev->bd_dev);
+> >  		__entry->dev_minor	= MINOR(journal->j_fs_dev->bd_dev);
+> > -		__entry->sync_commit = commit_transaction->t_synchronous_commit;
+> >  		__entry->transaction	= commit_transaction->t_tid;
+> > +		__entry->sync_commit = commit_transaction->t_synchronous_commit;
+> >  	),
+> >  
+> >  	TP_printk("dev %d,%d transaction %d sync %d",
+> > @@ -93,17 +93,17 @@ TRACE_EVENT(jbd2_end_commit,
+> >  	TP_STRUCT__entry(
+> >  		__field(	int,   dev_major                )
+> >  		__field(	int,   dev_minor                )
+> > -		__field(	char,	sync_commit		  )
+> >  		__field(	int,	transaction		  )
+> >  		__field(	int,	head		  	  )
+> > +		__field(	char,	sync_commit		  )
+> >  	),
+> >  
+> >  	TP_fast_assign(
+> >  		__entry->dev_major	= MAJOR(journal->j_fs_dev->bd_dev);
+> >  		__entry->dev_minor	= MINOR(journal->j_fs_dev->bd_dev);
+> > -		__entry->sync_commit = commit_transaction->t_synchronous_commit;
+> >  		__entry->transaction	= commit_transaction->t_tid;
+> >  		__entry->head		= journal->j_tail_sequence;
+> > +		__entry->sync_commit = commit_transaction->t_synchronous_commit;
+> >  	),
+> >  
+> >  	TP_printk("dev %d,%d transaction %d sync %d head %d",
+> 
 
-> +	mutex_lock(&balloon_mutex);
-> +
-> +	__balloon_append(page);
-> +
-> +	if (balloon_stats.hotplug_pages)
-> +		--balloon_stats.hotplug_pages;
-> +	else
-> +		--balloon_stats.balloon_hotplug;
-> +
-> +	mutex_unlock(&balloon_mutex);
-> +
-> +	return NOTIFY_STOP;
-> +}
-
-I'm not a _huge_ fan of these notifier chains, but I guess it works.
-However, if you're going to use these notifier chains, then we probably
-should use them to full effect.  Have a notifier list like this:
-
-	1. generic online_page()
-	2. xen_online_page_notifier() (returns NOTIFY_STOP)
-	3. free_online_page()
-
-Where finish_online_page() does something like this:
-
-finish_online_page(...)
-{
-        ClearPageReserved(page);
-        init_page_count(page);
-        __free_page(page);
-}
-
-These patches are definitely getting there.  Just another round or two,
-and they should be ready to go.
-
--- Dave
 
