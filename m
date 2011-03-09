@@ -1,83 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab1CIJOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 04:14:43 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47848 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab1CIJOB (ORCPT
+	id S1756984Ab1CIJOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 04:14:39 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51822 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756513Ab1CIJN4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 04:14:01 -0500
+	Wed, 9 Mar 2011 04:13:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=wlx5bE0XvoPRzuuRRM+FeYaSyGOhXY/YxnU3HrUUynIPjeVHu4Cbi+djbJVL+nfSdr
-         RY+fF/ixKyPSYZN08KySf3P1WLKhPtEvYDaFGjWfiAu7ZvwxQAoSX7KGZQXuYNqWAC64
-         AaNvhPpAaUeP2Z3FMPuhExsRrNzyl3KZCit9c=
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/16] xsysace: Convert to bdops->check_events()
-Date: Wed,  9 Mar 2011 10:13:31 +0100
-Message-Id: <1299662016-7721-12-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299662016-7721-1-git-send-email-tj@kernel.org>
-References: <1299662016-7721-1-git-send-email-tj@kernel.org>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=mOoV7vQ054CJ15NKR8dWs5Sg3vgQdvNgXjm2APwyYDmEwdZg3GY+BCdTVc6lukVJk8
+         OC9Jex4uo4aHs9vZLck8UfJmCsMJ+OzGpB3SoPsmR2BmgwEgccrcWJugSkOJVhmAYLhX
+         6TZJDc9TgeJeiYYS9z5vMNL3caMCdDt8bbD9U=
+MIME-Version: 1.0
+In-Reply-To: <20110309084645.GB3569@polaris.bitmath.org>
+References: <1299601979-4871-1-git-send-email-benjamin.tissoires@enac.fr>
+	<1299601979-4871-4-git-send-email-benjamin.tissoires@enac.fr>
+	<20110309084645.GB3569@polaris.bitmath.org>
+Date: Wed, 9 Mar 2011 10:13:55 +0100
+X-Google-Sender-Auth: Cx7-AJtt5WkcrFCfwzSbUvMfFIM
+Message-ID: <AANLkTi=LHwdvpJOyeVqHrpFjikr5=uKsaa_T3LKgXtDP@mail.gmail.com>
+Subject: Re: [PATCH 3/4] hid-multitouch: migrate 3M PCT touch screens to the
+ unified driver.
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert from ->media_changed() to ->check_events().
+Hi Henrik
 
-xsysace buffers media changed state and clears it on revalidation.  It
-will behave correctly with kernel event polling.
+On Wed, Mar 9, 2011 at 09:46, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+> On Tue, Mar 08, 2011 at 05:32:58PM +0100, Benjamin Tissoires wrote:
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>> ---
+>
+> Semms this patch is missing a commit message.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
----
- drivers/block/xsysace.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+You can copy/paste this point to the other patches as well.
 
-diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-index 829161e..16a2fa9 100644
---- a/drivers/block/xsysace.c
-+++ b/drivers/block/xsysace.c
-@@ -867,12 +867,12 @@ static void ace_request(struct request_queue * q)
- 	}
- }
- 
--static int ace_media_changed(struct gendisk *gd)
-+static unsigned int ace_check_events(struct gendisk *gd, unsigned int clearing)
- {
- 	struct ace_device *ace = gd->private_data;
--	dev_dbg(ace->dev, "ace_media_changed(): %i\n", ace->media_change);
-+	dev_dbg(ace->dev, "ace_check_events(): %i\n", ace->media_change);
- 
--	return ace->media_change;
-+	return ace->media_change ? DISK_EVENT_MEDIA_CHANGE : 0;
- }
- 
- static int ace_revalidate_disk(struct gendisk *gd)
-@@ -953,7 +953,7 @@ static const struct block_device_operations ace_fops = {
- 	.owner = THIS_MODULE,
- 	.open = ace_open,
- 	.release = ace_release,
--	.media_changed = ace_media_changed,
-+	.check_events = ace_check_events,
- 	.revalidate_disk = ace_revalidate_disk,
- 	.getgeo = ace_getgeo,
- };
-@@ -1005,6 +1005,7 @@ static int __devinit ace_setup(struct ace_device *ace)
- 	ace->gd->major = ace_major;
- 	ace->gd->first_minor = ace->id * ACE_NUM_MINORS;
- 	ace->gd->fops = &ace_fops;
-+	ace->gd->events = DISK_EVENT_MEDIA_CHANGE;
- 	ace->gd->queue = ace->queue;
- 	ace->gd->private_data = ace;
- 	snprintf(ace->gd->disk_name, 32, "xs%c", ace->id + 'a');
--- 
-1.7.1
+How about:
+"3M PCT touch screens can be handled by the unified driver. This will
+ease future evolution. So, just move it."
 
+Then I'll copy/paste for the others.
+
+>
+> [...]
+>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+>> index e7a4f83..f32bf46 100644
+>> --- a/drivers/hid/hid-multitouch.c
+>> +++ b/drivers/hid/hid-multitouch.c
+>> @@ -5,6 +5,11 @@
+>>   *  Copyright (c) 2010-2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>>   *  Copyright (c) 2010-2011 Ecole Nationale de l'Aviation Civile, France
+>>   *
+>> + *  based on hid-3m-pct.c copyrighted as follows:
+>> + *    Copyright (c) 2009-2010 Stephane Chatty <chatty@enac.fr>
+>> + *    Copyright (c) 2010      Henrik Rydberg <rydberg@euromail.se>
+>> + *    Copyright (c) 2010      Canonical, Ltd.
+>> + *
+>>   */
+>>
+>>  /*
+>> @@ -74,6 +79,7 @@ struct mt_class {
+>>  #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER    3
+>>  #define MT_CLS_CYPRESS                               4
+>>  #define MT_CLS_STANTUM                               5
+>> +#define MT_CLS_3M                            6
+>>
+>>  /*
+>>   * these device-dependent functions determine what slot corresponds
+>> @@ -124,6 +130,11 @@ struct mt_class mt_classes[] = {
+>>               .maxcontacts = 10 },
+>>       { .name = MT_CLS_STANTUM,
+>>               .quirks = MT_QUIRK_VALID_IS_CONFIDENCE },
+>> +     { .name = MT_CLS_3M,
+>> +             .quirks = MT_QUIRK_VALID_IS_CONFIDENCE |
+>> +                     MT_QUIRK_SLOT_IS_CONTACTID,
+>> +             .sn_move = 2048,
+>> +             .sn_pressure = 128 },
+>>
+>>       { }
+>>  };
+>> @@ -479,6 +490,14 @@ static void mt_remove(struct hid_device *hdev)
+>>
+>>  static const struct hid_device_id mt_devices[] = {
+>>
+>> +     /* 3M panels */
+>> +     { .driver_data = MT_CLS_3M,
+>> +             HID_USB_DEVICE(USB_VENDOR_ID_3M,
+>> +                     USB_DEVICE_ID_3M1968) },
+>> +     { .driver_data = MT_CLS_3M,
+>> +             HID_USB_DEVICE(USB_VENDOR_ID_3M,
+>> +                     USB_DEVICE_ID_3M2256) },
+>> +
+>>       /* Cypress panel */
+>>       { .driver_data = MT_CLS_CYPRESS,
+>>               HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS,
+>
+> The touch width correction from the original driver has gone missing
+> here. Otherwise, looks good, but will defer testing to the next round.
+
+Oops, it's not missing, it has been transformed into sn_pressure...
+Will correct it.
+
+By looking at it, I just saw that we override values for HID_DG_HEIGHT
+to the range [0-1].
+I'll have to dig into.
+
+For the tests, I've tested it on the 1968.
+
+Thanks,
+Benjamin
