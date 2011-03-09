@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab1CIL7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 06:59:51 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48757 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932113Ab1CIL7t (ORCPT
+	id S932215Ab1CIMCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 07:02:42 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:45061 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932113Ab1CIMCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 06:59:49 -0500
-Message-ID: <4D776BAD.1020307@pengutronix.de>
-Date: Wed, 09 Mar 2011 12:59:41 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	Wed, 9 Mar 2011 07:02:41 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, Jonas Aberg <jonas.aberg@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 0/3] TP6105x core and regulator driver v2
+Date: Wed, 9 Mar 2011 13:02:10 +0100
+Message-ID: <1299672130-4669-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: davinci-linux-open-source@linux.davincidsp.com,
-        Kevin Hilman <khilman@ti.com>, sachi@mistralsolutions.com,
-        Russell King <linux@arm.linux.org.uk>, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 3/7] da850: pruss board specific additions.
-References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com> <1299592667-21367-4-git-send-email-subhasish@mistralsolutions.com>
-In-Reply-To: <1299592667-21367-4-git-send-email-subhasish@mistralsolutions.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig30EB3043CDAB0E847C9081F4"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig30EB3043CDAB0E847C9081F4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On 03/08/2011 02:57 PM, Subhasish Ghosh wrote:
-> This patch adds board specific initializations and setup routines.
->=20
-> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
-> ---
->  arch/arm/mach-davinci/board-da850-evm.c |   25 +++++++++++++++++++++++=
-++
->  1 files changed, 25 insertions(+), 0 deletions(-)
->=20
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-da=
-vinci/board-da850-evm.c
-> index 11f986b..c614c82 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@ -1053,6 +1053,26 @@ static __init int da850_evm_init_cpufreq(void)
->  static __init int da850_evm_init_cpufreq(void) { return 0; }
->  #endif
-> =20
-> +static struct da8xx_pruss_devices pruss_devices[] =3D {
-> +	{.dev_name =3D NULL,},
-> +};
-> +
-> +static int __init da8xx_evm_setup_pruss(void)
-> +{
-> +	u32 ret =3D 0;
-your functions returns an int, not an u32
-> +	u32 count;
+This adds an MFD device for handling the TPS61052 boost converter
+used in audio.
 
-use "int i" for loop counter.
+Changes v1->v2:
+- Only register the mfd cells that are actually going to be used
+  in the core driver (Mark)
+- Don't set deafault valies in any registers on startup of core nor
+  regulator driver (Mark)
+- Use voltage set/get selector APIs to simplify regulator code (Mark)
+- Reorder initcall placements (Mark)
+- Platform data only allows one voltage so don't mark the consumer
+  as "changeable" (Mark)
+- Remove mfd cells on exit from tps6105x core (self)
+- Clear separation of core driver and regulator patch in the
+  series (Jonas)
+- Do not mark core driver experimental (Mark)
+- De-parenthesize numerals in header file (Jonas)
+- kmalloc rather than kzalloc core state holder (Jonas)
+- Update copyright headers (Jonas, Lee)
 
-> +
-> +	for (count =3D 0; count < ARRAY_SIZE(pruss_devices); count++) {
-> +		if (pruss_devices[count].setup !=3D NULL) {
+If any of you guys are happy, acked/reviewed-by is appreciated.
 
-you may omit the "!=3D NULL"
+Linus Walleij (3):
+  mfd: add a core driver for TI TPS61050/TPS61052 chips v2
+  regulator: add a subdriver for TI TPS6105x regulator portions v2
+  mach-ux500: configure board for the TPS61052 regulator v2
 
-> +			ret =3D pruss_devices[count].setup();
-> +			if (ret)
-> +				return ret;
+ arch/arm/mach-ux500/Kconfig                   |    1 +
+ arch/arm/mach-ux500/board-mop500-regulators.c |   25 +++
+ arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
+ arch/arm/mach-ux500/board-mop500.c            |   14 ++
+ drivers/mfd/Kconfig                           |   11 +
+ drivers/mfd/Makefile                          |    1 +
+ drivers/mfd/tps6105x.c                        |  245 +++++++++++++++++++++++++
+ drivers/regulator/Kconfig                     |    9 +
+ drivers/regulator/Makefile                    |    2 +-
+ drivers/regulator/tps6105x-regulator.c        |  195 ++++++++++++++++++++
+ include/linux/mfd/tps6105x.h                  |  101 ++++++++++
+ 11 files changed, 604 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/mfd/tps6105x.c
+ create mode 100644 drivers/regulator/tps6105x-regulator.c
+ create mode 100644 include/linux/mfd/tps6105x.h
 
-in case of an error you don't clean up correct
+-- 
+1.7.3.2
 
-> +		}
-> +	}
-> +
-> +	return da8xx_register_pruss_mfd(pruss_devices);
-> +}
-> +
->  static __init void da850_evm_init(void)
->  {
->  	int ret;
-> @@ -1127,6 +1147,11 @@ static __init void da850_evm_init(void)
-> =20
->  	da8xx_register_mcasp(0, &da850_evm_snd_data);
-> =20
-> +	ret =3D da8xx_evm_setup_pruss();
-> +	if (ret)
-> +		pr_warning("%s: pruss initialization failed: %d\n",
-> +				__func__, ret);
-> +
->  	ret =3D davinci_cfg_reg_list(da850_lcdcntl_pins);
->  	if (ret)
->  		pr_warning("da850_evm_init: lcdcntl mux setup failed: %d\n",
-
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig30EB3043CDAB0E847C9081F4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk13a60ACgkQjTAFq1RaXHMzXgCeMaNHoqSKqAIWIAtj7Aq62ORZ
-0swAn0dKYKPAq0ChyPqtz6Hssuh0qt41
-=kYSS
------END PGP SIGNATURE-----
-
---------------enig30EB3043CDAB0E847C9081F4--
