@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600Ab1CINB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 08:01:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:58238 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932314Ab1CINB5 (ORCPT
+	id S932446Ab1CINFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 08:05:46 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51970 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932179Ab1CINFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 08:01:57 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=VOOo5lHdzEUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=II75eZPyu2gntX1qs_YA:9 a=DiVmo7QpcQbqwoUCticA:7 a=8M9h6ND-lXtDtCzOsE9wqWkDVssA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 04/15] ftrace: pack event structures.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1291421609-14665-5-git-send-email-dhsharp@google.com>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
-	 <1291421609-14665-5-git-send-email-dhsharp@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 09 Mar 2011 08:01:55 -0500
-Message-ID: <1299675715.15854.13.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 9 Mar 2011 08:05:45 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] rtc-mrst: Fix section types
+To: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        a.zummo@towertech.it
+Date: Wed, 09 Mar 2011 12:44:39 +0000
+Message-ID: <20110309124431.20581.3589.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-03 at 16:13 -0800, David Sharp wrote:
-> Ftrace event structures have a 12-byte struct trace_entry at the beginning.
-> If the structure is aligned, this means that if the first field is 64-bits,
-> there will be 4 bytes of padding. Ironically, due to the 4-byte ringbuffer
-> header, this will make 64-bit writes unaligned, if the ring buffer position
-> is currently 64-bit aligned:
-> 4(rb)+12(ftrace)+4(pad) = 20;  20%8 = 4
+From: Major Lee <major_lee@wistron.com>
 
-Actually the better answer is: It's time to nuke the lock_depth field.
-That was added temporarily in helping to remove the BKL, and now that
-it's pretty much gone, I say we need to nuke it. That will remove 4
-bytes from the 12 byte ftrace header giving us a 8 byte header. Much
-nicer :)
+Fix the following section mismatch warning.
 
-I'll do that today. Thanks!
+WARNING: drivers/rtc/built-in.o(.data+0xa0): Section mismatch in
+reference from the variable vrtc_mrst_platform_driver to the function
+.init.text:vrtc_mrst_platform_probe()
+The variable vrtc_mrst_platform_driver references
+the function __init vrtc_mrst_platform_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the
+variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
 
--- Steve
+Signed-off-by: Major Lee <major_lee@wistron.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-> 
-> Adding __attribute__((packed)) to the event structures removes the extra
-> space from the trace events, and actually improves alignment of trace
-> events with a first field that is 64-bits.
-> 
-> About 65 tracepoints have a 4-byte pad at offset 12:
->  # find events -name format | xargs -n1 awk '
->    $1=="name:" {name=$2}
->    $1=="format:"{FS="\t"}
->    $3=="offset:12;" && $4=="size:4;"{okay=1}
->    $3=="offset:16;" && !okay {print name}' | wc -l
-> 65
-> 
-> With all 'syscalls' and 'timer' events enabled, this results in a 5%
-> improvement in a simple 512MB read benchmark with warm caches.
+ drivers/rtc/rtc-mrst.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
+
+diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+index 28e02e7..4c3e251 100644
+--- a/drivers/rtc/rtc-mrst.c
++++ b/drivers/rtc/rtc-mrst.c
+@@ -360,7 +360,7 @@ static irqreturn_t mrst_rtc_irq(int irq, void *p)
+ 	return IRQ_NONE;
+ }
+ 
+-static int __init
++static int __devinit
+ vrtc_mrst_do_probe(struct device *dev, struct resource *iomem, int rtc_irq)
+ {
+ 	int retval = 0;
+@@ -432,7 +432,7 @@ static void rtc_mrst_do_shutdown(void)
+ 	spin_unlock_irq(&rtc_lock);
+ }
+ 
+-static void __exit rtc_mrst_do_remove(struct device *dev)
++static void __devexit rtc_mrst_do_remove(struct device *dev)
+ {
+ 	struct mrst_rtc	*mrst = dev_get_drvdata(dev);
+ 	struct resource *iomem;
+@@ -541,14 +541,14 @@ static inline int mrst_poweroff(struct device *dev)
+ 
+ #endif
+ 
+-static int __init vrtc_mrst_platform_probe(struct platform_device *pdev)
++static int __devinit vrtc_mrst_platform_probe(struct platform_device *pdev)
+ {
+ 	return vrtc_mrst_do_probe(&pdev->dev,
+ 			platform_get_resource(pdev, IORESOURCE_MEM, 0),
+ 			platform_get_irq(pdev, 0));
+ }
+ 
+-static int __exit vrtc_mrst_platform_remove(struct platform_device *pdev)
++static int __devexit vrtc_mrst_platform_remove(struct platform_device *pdev)
+ {
+ 	rtc_mrst_do_remove(&pdev->dev);
+ 	return 0;
+@@ -566,7 +566,7 @@ MODULE_ALIAS("platform:vrtc_mrst");
+ 
+ static struct platform_driver vrtc_mrst_platform_driver = {
+ 	.probe		= vrtc_mrst_platform_probe,
+-	.remove		= __exit_p(vrtc_mrst_platform_remove),
++	.remove		= __devexit_p(vrtc_mrst_platform_remove),
+ 	.shutdown	= vrtc_mrst_platform_shutdown,
+ 	.driver = {
+ 		.name		= (char *) driver_name,
 
