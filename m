@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab1CILeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 06:34:12 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:36578 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932113Ab1CILeK convert rfc822-to-8bit (ORCPT
+	id S1756790Ab1CILnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 06:43:42 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36778 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab1CILnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 06:34:10 -0500
-Subject: Re: [BUG] rebuild_sched_domains considered dangerous
-From: Peter Zijlstra <peterz@infradead.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Jesse Larrew <jlarrew@linux.vnet.ibm.com>
-In-Reply-To: <1299665998.2308.2753.camel@twins>
-References: <1299639487.22236.256.camel@pasglop>
-	 <1299665998.2308.2753.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Mar 2011 12:33:49 +0100
-Message-ID: <1299670429.2308.2834.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 9 Mar 2011 06:43:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=HUo07ia9E6F0xWWEQ+5LHA3SRrTptF9trGrU2Uy+QV5/jnT28hWKebIaAzfgCjzNd5
+         lYJtlCsMokw83EJ+p6BlCAijdyhCkwwJh7UQ+WSbMxPwvObgnFawSqsT6sGZ28M6jZNH
+         RGIfkIe/9AMQMjqpTG5nEDutUe5d3qagcY/C0=
+MIME-Version: 1.0
+In-Reply-To: <1299321935-6727-1-git-send-email-linus.walleij@stericsson.com>
+References: <1299321935-6727-1-git-send-email-linus.walleij@stericsson.com>
+Date: Wed, 9 Mar 2011 12:43:41 +0100
+X-Google-Sender-Auth: rvs5FWND1fQHSZnbbTNpVVV7xMI
+Message-ID: <AANLkTik2HKbqWvCXchUVMqtPrTSgf7tXmFtaaXDGVM+J@mail.gmail.com>
+Subject: Re: [PATCH 0/5] ab8500 gpadc fixes
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Willerud <daniel.willerud@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Karl Komierowski <karl.komierowski@stericsson.com>,
+        Johan Palsson <johan.palsson@stericsson.com>,
+        Arun Murthy <arun.murthy@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 11:19 +0100, Peter Zijlstra wrote:
-> > It appears that this corresponds to one CPU deciding to rebuild the
-> > sched domains. There's various reasons why that can happen, the typical
-> > one in our case is the new VPNH feature where the hypervisor informs us
-> > of a change in node affinity of our virtual processors. s390 has a
-> > similar feature and should be affected as well.
-> 
-> Ahh, so that's triggering it :-), just curious, how often does the HV do
-> that to you? 
+2011/3/5 Linus Walleij <linus.walleij@stericsson.com>:
 
-OK, so Ben told me on IRC this can happen quite frequently, to which I
-must ask WTF were you guys smoking? Flipping the CPU topology every time
-the HV scheduler does something funny is quite insane. And you did that
-without ever talking to the scheduler folks, not cool.
+> I had to do this now beacue the current driver that is in the
+> tree makes my platform crash ([2/5] fixes that problem) like
+> this:
 
-That is of course aside from the fact that we have a real bug there that
-needs fixing, but really guys, WTF!
+Sam, are these patches OK? I'd very much like to have
+booting code in next that's why...
+
+Yours,
+Linus Walleij
