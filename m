@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab1CIOi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 09:38:59 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:48157 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932613Ab1CIOi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 09:38:56 -0500
-Date: Wed, 9 Mar 2011 16:36:35 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-X-X-Sender: aakoskin@esdhcp041196.research.nokia.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Aaro Koskinen <aaro.koskinen@nokia.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        stable@kernel.org
-Subject: Re: [PATCHv2] procfs: fix /proc/<pid>/maps heap check
-In-Reply-To: <20110307150756.d50635f1.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.1.10.1103091631280.23039@esdhcp041196.research.nokia.com>
-References: <1299244994-5284-1-git-send-email-aaro.koskinen@nokia.com> <20110307150756.d50635f1.akpm@linux-foundation.org>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S932613Ab1CIOmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 09:42:11 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:46442 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757022Ab1CIOmH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 09:42:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MHwsKKFDbK4MJOI0vQJpgCCrjbsnzlldDD3hW3OTHx7LmLuhpSeI4BrdGPK5HpAEeD
+         m9s0xN88U/7zHU+1yQ41TEUKfsATU9Pf66SShCR+eoXKhClKE/ZoITSr2Y8VwCSQMSXj
+         OUzxoYl8hc6e6zLugoi5RGIPravP2Q5zrbqzE=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Nokia-AV: Clean
+In-Reply-To: <AANLkTimBTs43Bi+-aKuMkgpA1vQbSEMKkSdBQ6CcfzF7@mail.gmail.com>
+References: <1299459180-11321-1-git-send-email-leemgs1@gmail.com>
+	<1299459180-11321-3-git-send-email-leemgs1@gmail.com>
+	<AANLkTimBTs43Bi+-aKuMkgpA1vQbSEMKkSdBQ6CcfzF7@mail.gmail.com>
+Date: Wed, 9 Mar 2011 23:42:06 +0900
+Message-ID: <AANLkTikGJaydyu0AUg5WAJuVx4ULTpghhj1h+biQP7vy@mail.gmail.com>
+Subject: Re: [PATCH RESEND 2/2] cgroup:doc Update suitable words to explain cgroups.
+From: Geunsik Lim <leemgs1@gmail.com>
+To: Paul Menage <menage@google.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 7 Mar 2011, Andrew Morton wrote:
-> On Fri,  4 Mar 2011 15:23:14 +0200
-> Aaro Koskinen <aaro.koskinen@nokia.com> wrote:
+On Wed, Mar 9, 2011 at 6:51 AM, Paul Menage <menage@google.com> wrote:
+> On Sun, Mar 6, 2011 at 4:53 PM, Geunsik Lim <leemgs1@gmail.com> wrote:
+>> Update a sutible words to explaind / understand cgroups cotents.
 >
->> The current code fails to print the "[heap]" marking if the heap is
->> splitted into multiple mappings.
->>
->> Fix the check so that the marking is displayed in all possible cases:
->> 	1. vma matches exactly the heap
->> 	2. the heap vma is merged e.g. with bss
->> 	3. the heap vma is splitted e.g. due to locked pages
->>
->> Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
->> Cc: stable@kernel.org
+> s/sutible/suitable/
+> s/explaind/explain/
+> s/cotents/contents/
+Thank you for your correction about my spelling.
+I will resend this patch.
 >
-> Why do you believe this problem is serious enough to justify
-> backporting the fix into -stable?
+> Paul
+>>
+>> Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+>> ---
+>>  Documentation/cgroups/cgroups.txt |   12 ++++++------
+>>  1 files changed, 6 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+>> index 44b8b7a..7252cbd 100644
+>> --- a/Documentation/cgroups/cgroups.txt
+>> +++ b/Documentation/cgroups/cgroups.txt
+>> @@ -110,22 +110,22 @@ university server with various users - students, professors, system
+>>  tasks etc. The resource planning for this server could be along the
+>>  following lines:
+>>
+>> -       CPU :           Top cpuset
+>> +       CPU :          "Top cpuset"
+>>                        /       \
+>>                CPUSet1         CPUSet2
+>> -                  |              |
+>> -               (Profs)         (Students)
+>> +                  |               |
+>> +               (Professors)    (Students)
+>>
+>>                In addition (system tasks) are attached to topcpuset (so
+>>                that they can run anywhere) with a limit of 20%
+>>
+>> -       Memory : Professors (50%), students (30%), system (20%)
+>> +       Memory : Professors (50%), Students (30%), system (20%)
+>>
+>> -       Disk : Prof (50%), students (30%), system (20%)
+>> +       Disk : Professors (50%), Students (30%), system (20%)
+>>
+>>        Network : WWW browsing (20%), Network File System (60%), others (20%)
+>>                                / \
+>> -                       Prof (15%) students (5%)
+>> +               Professors (15%)  students (5%)
+>>
+>>  Browsers like Firefox/Lynx go into the WWW network class, while (k)nfsd go
+>>  into NFS network class.
+>> --
+>> 1.6.2.5
+>>
+>>
+>
 
-My bad analysis. It looks like the bug has been there forever, and
-since it only results in some information missing from a procfile,
-it does not fulfil the stable "critical issue" criteria.
 
-A.
+
+-- 
+Regards,
+Geunsik Lim ( Samsung Electronics )
+Blog : http://blog.naver.com/invain/
+e-Mail: geunsik.lim@samsung.com
+           leemgs@gmail.com , leemgs1@gmail.com
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
