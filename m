@@ -1,51 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab1CIHlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 02:41:45 -0500
-Received: from web31816.mail.mud.yahoo.com ([68.142.206.169]:26595 "HELO
-	web31816.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752296Ab1CIHln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 02:41:43 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=pucsPOWZy6Ytzu5+sqJjd6IRGI/TLY590dByM2tzAOAUEdYD60oCLxmNNWAPsaZGumEx31cxvDa2zN1dEeeD/FKLSYlLgLYAWoZ3bS/U68+4CWhR2gzPBQBpKcXEDQ7M7uh+yUYny2WcGm0vOGkwbNU825UpUAGcTfESR9MUNpo=;
-Message-ID: <794860.74593.qm@web31816.mail.mud.yahoo.com>
-X-YMail-OSG: GypUMmMVM1lINVyzyA1_G4BX3HQY.CbxIXvMrdTSZpiWIGe
- fMmRiL5qVtocA9gv.C.bZidvvlN2UFslnNjD7iqGpd8bxyWqwdnGwqjHdZoM
- 9Z9aJYDTPIC0o1Hrwtuhb44M2CCE1NWl9hf0cG9pNWgbhmt2WLiVcwRzEqiV
- WvovN6W5ettDGxHcholD0xo2u2atAp5ZpAt4WqERk6B92moGjLnViq_UB7n1
- qdwqw.rZZE5YayEBVhvspJ9Ueqb3iYQ6g6NG85OGt1g_nqX8Hm9nDd.o_x5Z
- 046JGynAjHvfzfXOhiT_w9mY0mUbTdcKzuW0kZ2n7sZdTzWbk.aJbCVPuDLC
- HwOhcKEvS2fcReOQ2vg--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.110.296531
-Date: Tue, 8 Mar 2011 23:35:00 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: UASP: updates and merges
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Greg KH <greg@kroah.com>
+	id S1756593Ab1CIHmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 02:42:06 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63431 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab1CIHmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 02:42:04 -0500
+Message-ID: <4D772F84.6090501@cn.fujitsu.com>
+Date: Wed, 09 Mar 2011 15:43:00 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 3/4] KVM: MMU: introduce a common function to get no-dirty-logged
+ slot
+References: <4D772F10.3020302@cn.fujitsu.com>
+In-Reply-To: <4D772F10.3020302@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-09 15:40:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-09 15:40:49,
+	Serialize complete at 2011-03-09 15:40:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've merged Linux 2.6.38-rc8. The UASP driver saw the following update:
+Cleanup the code of pte_prefetch_gfn_to_memslot and mapping_level_dirty_bitmap
 
-[USB] UASP: Process INVALID INFORMATION UNIT response
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   37 +++++++++++++++++--------------------
+ 1 files changed, 17 insertions(+), 20 deletions(-)
 
-A UAS Target Port responds with a RESPONSE IU with
-RESPONSE CODE set to INVALID INFORMATION UNIT,
-when it receives an IU with IU ID set to a
-reserved value.  Handle this response.
-
-The branch can be found here off of master:
-https://github.com/ltuikov/linux-2.6
-
-Original posting of the UASP driver can be found here:
-http://marc.info/?l=linux-usb&m=129165511732388&w=2
-
-    Luben
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 88d3689..83171fd 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -549,13 +549,23 @@ static int host_mapping_level(struct kvm *kvm, gfn_t gfn)
+ 	return ret;
+ }
+ 
+-static bool mapping_level_dirty_bitmap(struct kvm_vcpu *vcpu, gfn_t large_gfn)
++static struct kvm_memory_slot *
++gfn_to_memslot_dirty_bitmap(struct kvm_vcpu *vcpu, gfn_t gfn,
++			    bool no_dirty_log)
+ {
+ 	struct kvm_memory_slot *slot;
+-	slot = gfn_to_memslot(vcpu->kvm, large_gfn);
+-	if (slot && slot->dirty_bitmap)
+-		return true;
+-	return false;
++
++	slot = gfn_to_memslot(vcpu->kvm, gfn);
++	if (!slot || slot->flags & KVM_MEMSLOT_INVALID ||
++	      (no_dirty_log && slot->dirty_bitmap))
++		slot = NULL;
++
++	return slot;
++}
++
++static bool mapping_level_dirty_bitmap(struct kvm_vcpu *vcpu, gfn_t large_gfn)
++{
++	return gfn_to_memslot_dirty_bitmap(vcpu, large_gfn, true);
+ }
+ 
+ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
+@@ -2145,26 +2155,13 @@ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+ {
+ }
+ 
+-static struct kvm_memory_slot *
+-pte_prefetch_gfn_to_memslot(struct kvm_vcpu *vcpu, gfn_t gfn, bool no_dirty_log)
+-{
+-	struct kvm_memory_slot *slot;
+-
+-	slot = gfn_to_memslot(vcpu->kvm, gfn);
+-	if (!slot || slot->flags & KVM_MEMSLOT_INVALID ||
+-	      (no_dirty_log && slot->dirty_bitmap))
+-		slot = NULL;
+-
+-	return slot;
+-}
+-
+ static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 				     bool no_dirty_log)
+ {
+ 	struct kvm_memory_slot *slot;
+ 	unsigned long hva;
+ 
+-	slot = pte_prefetch_gfn_to_memslot(vcpu, gfn, no_dirty_log);
++	slot = gfn_to_memslot_dirty_bitmap(vcpu, gfn, no_dirty_log);
+ 	if (!slot) {
+ 		get_page(bad_page);
+ 		return page_to_pfn(bad_page);
+@@ -2185,7 +2182,7 @@ static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
+ 	gfn_t gfn;
+ 
+ 	gfn = kvm_mmu_page_get_gfn(sp, start - sp->spt);
+-	if (!pte_prefetch_gfn_to_memslot(vcpu, gfn, access & ACC_WRITE_MASK))
++	if (!gfn_to_memslot_dirty_bitmap(vcpu, gfn, access & ACC_WRITE_MASK))
+ 		return -1;
+ 
+ 	ret = gfn_to_page_many_atomic(vcpu->kvm, gfn, pages, end - start);
+-- 
+1.7.4
 
