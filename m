@@ -1,80 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab1CIGpS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 01:45:18 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48374
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752829Ab1CIGpO (ORCPT
+	id S1753360Ab1CIG60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 01:58:26 -0500
+Received: from sj-iport-3.cisco.com ([171.71.176.72]:40706 "EHLO
+	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156Ab1CIG6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 01:45:14 -0500
-Date: Tue, 08 Mar 2011 22:45:51 -0800 (PST)
-Message-Id: <20110308.224551.226764517.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, emil.s.tantilov@intel.com,
-        stephen.s.ko@intel.com, jeffrey.t.kirsher@intel.com
-Subject: Re: linux-next: build failure after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110309134234.32cd09b7.sfr@canb.auug.org.au>
-References: <20110309134234.32cd09b7.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Mar 2011 01:58:24 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMazdk2rR7Hu/2dsb2JhbACma3SmXYtIh0gviGCFYwSFHYcVhmM
+X-IronPort-AV: E=Sophos;i="4.62,289,1297036800"; 
+   d="scan'208";a="275380337"
+From: Vinay Sawal <vinaysawal@gmail.com>
+To: greg@kroah.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Vinay Sawal <vinaysawal@gmail.com>
+Subject: [PATCH 2/2] Staging: bcm: Bcmnet: fixed 'checkpatch.pl' issues
+Date: Tue,  8 Mar 2011 22:58:22 -0800
+Message-Id: <1299653902-27644-1-git-send-email-vinaysawal@gmail.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 9 Mar 2011 13:42:34 +1100
+Fixed all issues reported by 'checkpatch.pl' for this file.
 
-> Hi all,
-> 
-> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/net/ixgbe/ixgbe_mbx.c: In function 'ixgbe_init_mbx_params_pf':
-> drivers/net/ixgbe/ixgbe_mbx.c:456: error: 'struct ixgbe_mbx_info' has no member named 'udelay'
-> 
-> Caused by commit d7c8a29fc8bd20ba45ec2f52577ed04a988a9500 ("ixgbe:
-> improve logic in ixgbe_init_mbx_params_pf").
-> 
-> I am wondering if that was ever built ...
-> 
-> I have used the net tree from next-20110308 for today.
+Signed-off-by: Vinay Sawal <vinaysawal@gmail.com>
+---
+ drivers/staging/bcm/Bcmnet.c |   52 +++++++++++++++++++++++++++++------------
+ 1 files changed, 37 insertions(+), 15 deletions(-)
 
-Probably two minutes after you pulled this a fix went in:
-
-commit 5217e8794619ac0a29151f29be20c7d6188303ba
-Author: Andy Gospodarek <andy@greyhouse.net>
-Date:   Tue Mar 8 14:26:00 2011 -0800
-
-    ixgbe: fix compile failure in ixgbe_init_mbx_params_pf
-    
-    This commit:
-    
-        commit d7c8a29fc8bd20ba45ec2f52577ed04a988a9500
-        Author: Emil Tantilov <emil.s.tantilov@intel.com>
-        Date:   Thu Mar 3 09:25:02 2011 +0000
-    
-            ixgbe: improve logic in ixgbe_init_mbx_params_pf
-    
-    incorrectly added a line that accessed mbx->udelay.  I'm sure the intent
-    was mbx->usec_delay.  This patch fixes the compilation error.
-    
-    Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/drivers/net/ixgbe/ixgbe_mbx.c b/drivers/net/ixgbe/ixgbe_mbx.c
-index 3cf8aec..c7ed82e 100644
---- a/drivers/net/ixgbe/ixgbe_mbx.c
-+++ b/drivers/net/ixgbe/ixgbe_mbx.c
-@@ -453,7 +453,7 @@ void ixgbe_init_mbx_params_pf(struct ixgbe_hw *hw)
- 		return;
+diff --git a/drivers/staging/bcm/Bcmnet.c b/drivers/staging/bcm/Bcmnet.c
+index a6ce239..a09b6a6 100644
+--- a/drivers/staging/bcm/Bcmnet.c
++++ b/drivers/staging/bcm/Bcmnet.c
+@@ -1,3 +1,24 @@
++/*
++    bcm/Bcmnet.c
++    Bcm network driver
++
++    This program is free software; you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation; either version 2 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program; if not, write to the Free Software
++    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++
++*/
++
++#define __NO_VERSION__
+ #include "headers.h"
  
- 	mbx->timeout = 0;
--	mbx->udelay = 0;
-+	mbx->usec_delay = 0;
+ struct net_device *gblpnetdev;
+@@ -8,7 +29,7 @@ static INT bcm_open(struct net_device *dev)
  
- 	mbx->stats.msgs_tx = 0;
- 	mbx->stats.msgs_rx = 0;
+ 	if (Adapter->fw_download_done == FALSE) {
+ 		pr_notice(PFX "%s: link up failed (download in progress)\n",
+- 			  dev->name);
++			  dev->name);
+ 		return -EBUSY;
+ 	}
+ 
+@@ -50,7 +71,7 @@ static u16 bcm_select_queue(struct net_device *dev, struct sk_buff *skb)
+ * Description - This is the main transmit function for our virtual
+ *		interface(eth0). It handles the ARP packets. It
+ *		clones this packet and then Queue it to a suitable
+-* 		Queue. Then calls the transmit_packet().
++*		Queue. Then calls the transmit_packet().
+ *
+ * Parameter   -	 skb - Pointer to the socket buffer structure
+ *		 dev - Pointer to the virtual net device structure
+@@ -110,13 +131,13 @@ static netdev_tx_t bcm_transmit(struct sk_buff *skb, struct net_device *dev)
+ Register other driver entry points with the kernel
+ */
+ static const struct net_device_ops bcmNetDevOps = {
+-    .ndo_open		= bcm_open,
+-    .ndo_stop 		= bcm_close,
+-    .ndo_start_xmit	= bcm_transmit,
+-    .ndo_change_mtu	= eth_change_mtu,
+-    .ndo_set_mac_address = eth_mac_addr,
+-    .ndo_validate_addr	= eth_validate_addr,
+-    .ndo_select_queue	= bcm_select_queue,
++	.ndo_open		= bcm_open,
++	.ndo_stop		= bcm_close,
++	.ndo_start_xmit	        = bcm_transmit,
++	.ndo_change_mtu	        = eth_change_mtu,
++	.ndo_set_mac_address    = eth_mac_addr,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_select_queue	= bcm_select_queue,
+ };
+ 
+ static struct device_type wimax_type = {
+@@ -138,7 +159,8 @@ static int bcm_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	return 0;
+ }
+ 
+-static void bcm_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
++static void bcm_get_drvinfo(struct net_device *dev,
++			    struct ethtool_drvinfo *info)
+ {
+ 	PMINI_ADAPTER Adapter = GET_BCM_ADAPTER(dev);
+ 	PS_INTERFACE_ADAPTER psIntfAdapter = Adapter->pvInterfaceAdapter;
+@@ -160,14 +182,14 @@ static u32 bcm_get_link(struct net_device *dev)
+ 	return Adapter->LinkUpStatus;
+ }
+ 
+-static u32 bcm_get_msglevel (struct net_device *dev)
++static u32 bcm_get_msglevel(struct net_device *dev)
+ {
+ 	PMINI_ADAPTER Adapter = GET_BCM_ADAPTER(dev);
+ 
+ 	return Adapter->msg_enable;
+ }
+ 
+-static void bcm_set_msglevel (struct net_device *dev, u32 level)
++static void bcm_set_msglevel(struct net_device *dev, u32 level)
+ {
+ 	PMINI_ADAPTER Adapter = GET_BCM_ADAPTER(dev);
+ 
+@@ -177,7 +199,7 @@ static void bcm_set_msglevel (struct net_device *dev, u32 level)
+ static const struct ethtool_ops bcm_ethtool_ops = {
+ 	.get_settings	= bcm_get_settings,
+ 	.get_drvinfo	= bcm_get_drvinfo,
+-	.get_link 	= bcm_get_link,
++	.get_link	= bcm_get_link,
+ 	.get_msglevel	= bcm_get_msglevel,
+ 	.set_msglevel	= bcm_set_msglevel,
+ };
+@@ -206,7 +228,7 @@ int register_networkdev(PMINI_ADAPTER Adapter)
+ 	if (result != STATUS_SUCCESS) {
+ 		dev_err(&udev->dev,
+ 			PFX "Error in Reading the mac Address: %d", result);
+- 		return -EIO;
++		return -EIO;
+ 	}
+ 
+ 	result = register_netdev(net);
+@@ -233,6 +255,6 @@ void unregister_networkdev(PMINI_ADAPTER Adapter)
+ 	if (netif_msg_probe(Adapter))
+ 		dev_info(&udev->dev, PFX "%s: unregister usb-%s%s\n",
+ 			 net->name, xdev->bus->bus_name, xdev->devpath);
+- 
++
+ 	unregister_netdev(Adapter->dev);
+ }
+-- 
+1.6.2.4
+
