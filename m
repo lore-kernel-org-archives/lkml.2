@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab1CIKw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 05:52:58 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:36249 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932098Ab1CIKw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 05:52:57 -0500
-X-ASG-Debug-ID: 1299667975-01de284cf82f810001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D775C03.9090600@fusionio.com>
-Date: Wed, 9 Mar 2011 11:52:51 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1756851Ab1CILI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 06:08:27 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34620 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab1CILIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 06:08:25 -0500
+Message-ID: <4D775FA4.50706@monstr.eu>
+Date: Wed, 09 Mar 2011 12:08:20 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: "hch@infradead.org" <hch@infradead.org>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] fs: make generic file read/write functions plug
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com> <1295659049-2688-8-git-send-email-jaxboe@fusionio.com> <20110304040907.GB32404@redhat.com> <4D70E78D.9000402@fusionio.com> <20110304132551.GA2407@infradead.org> <4D762330.8000003@fusionio.com> <20110309103828.GA26181@infradead.org>
-X-ASG-Orig-Subj: Re: [PATCH 07/10] fs: make generic file read/write functions plug
-In-Reply-To: <20110309103828.GA26181@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Michel Lespinasse <walken@google.com>
+CC: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] futex: cmpxchg_futex_value_locked API change
+References: <20110307021127.GB31188@google.com>
+In-Reply-To: <20110307021127.GB31188@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299667975
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.60
-X-Barracuda-Spam-Status: No, SCORE=0.60 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=MARKETING_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57495
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.60 MARKETING_SUBJECT      Subject contains popular marketing words
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-09 11:38, hch@infradead.org wrote:
-> On Tue, Mar 08, 2011 at 01:38:08PM +0100, Jens Axboe wrote:
->> -#define DP_UNPLUG             8 /* equals REQ_UNPLUG  */
->> +#define DP_UNPLUG             8 /* not used anymore   */
+Michel Lespinasse wrote:
+> Aplogies for the long CC list - as this proposal involves asm changes
+> in many architectures, and I have only been able to test on x86,
+> I have tried to include one maintainer from every arch so they can
+> hopefully double check me. I do think I got all architectures right,
+> but you can never be 100% sure...
 > 
-> The way this is used might need some more review.  It seems like DRBD is
-> trying to propagate unplug requests over the wire, which is
-> functionality we lose now.
-
-But that use case is pretty questionable. The receiving end should just
-do its own plugging, if it's beneficial.
-
->> + * The various wait functions, such as wait_on_writeback_range() will
->> + * ultimately call sync_page() which will ultimately call
->> + * blk_run_backing_dev(), which will end up unplugging the device queue.
+> ------------------------------------8<---------------------------------
 > 
-> This comment describes code that doesn't exist anymore on your branch.
+> The cmpxchg_futex_value_locked API was funny in that it returned either
+> the original, user-exposed futex value OR an error code such as -EFAULT.
+> This was confusing at best, and could be a source of livelocks in places
+> that retry the cmpxchg_futex_value_locked after trying to fix the issue
+> by running fault_in_user_writeable().
+> 
+> This change makes the cmpxchg_futex_value_locked API more similar to the
+> get_futex_value_locked one, returning an error code and updating the
+> original value through a reference argument.
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> ---
+>  arch/alpha/include/asm/futex.h      |   22 +++++++++-------
+>  arch/arm/include/asm/futex.h        |   23 +++++++++--------
+>  arch/frv/include/asm/futex.h        |    3 +-
+>  arch/ia64/include/asm/futex.h       |    9 ++++--
+>  arch/microblaze/include/asm/futex.h |   24 ++++++++++--------
 
-Thanks, I'll kill those.
+For microblaze:
+Tested-by: Michal Simek <monstr@monstr.eu>
 
+M
 
 -- 
-Jens Axboe
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
