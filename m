@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab1CIR5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 12:57:35 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32673 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757188Ab1CIR5e (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 9 Mar 2011 12:57:34 -0500
-Date: Wed, 9 Mar 2011 12:56:21 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, yinghai@kernel.org
-Subject: Re: [PATCH] xen: update mask_rw_pte after kernel page tables init
- changes
-Message-ID: <20110309175621.GI8049@dumpdata.com>
-References: <alpine.DEB.2.00.1103091429300.2968@kaball-desktop>
- <20110309174335.GH8049@dumpdata.com>
+	id S1757236Ab1CISAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 13:00:40 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:34007 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755546Ab1CISAi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 13:00:38 -0500
+Date: Wed, 9 Mar 2011 19:00:37 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Joe Perches <joe@perches.com>
+Cc: Douglas Mencken <dougmencken@gmail.com>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
+        Ingo Molnar <mingo@elte.hu>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: problem with ccflags := -Werror in Makefiles when building
+	with gcc 4.6.0
+Message-ID: <20110309180037.GA29233@merkur.ravnborg.org>
+References: <AANLkTi=3xRFt-p+HUMWwTUcUzFaxY6y9bovJiqdHTwrn@mail.gmail.com> <1299691370.20104.127.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110309174335.GH8049@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0205.4D77BF48.014F,ss=1,fgs=0
+In-Reply-To: <1299691370.20104.127.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On Wed, Mar 09, 2011 at 09:22:50AM -0800, Joe Perches wrote:
+> On Wed, 2011-03-09 at 17:28 +0100, Douglas Mencken wrote:
+> > When building with gcc 4.6.0 with the new type of warnings introduced,
+> > -Wunused-but-set-variable, many directories with ccflags set to
+> > -Werror in Makefile fail to build.
 > 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Also pls apply my SOB to "xen: set max_pfn_mapped to the last pfn mapped"
-> 
+> After the kbuild W=<level> gets accepted,
+> it might be reasonable to add another W
+> level to make warnings fatal and remove
+> all -Werror entries from the various Makefiles.
 
-Ooops. Please convert those SOBs to Acked-by.
+It does not make sense to remove -Werror.
+They are there by default.
+
+It is just plain wrong to go removing -Werror that has been there for ages.
+Either we fix the warnings or we tell gcc to shut up.
+
+	Sam
