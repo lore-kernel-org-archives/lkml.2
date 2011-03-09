@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab1CIOTa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 09:19:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932250Ab1CIOT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 09:19:29 -0500
-Date: Wed, 9 Mar 2011 15:19:10 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, phan@redhat.com
-Subject: Re: [PATCH 1/2] perf,top: fix events overflow in top command
-Message-ID: <20110309141910.GB1929@jolsa.brq.redhat.com>
-References: <1299528821-17521-1-git-send-email-jolsa@redhat.com>
- <1299528821-17521-2-git-send-email-jolsa@redhat.com>
- <20110309135925.GA20188@ghostprotocols.net>
- <20110309140610.GB20188@ghostprotocols.net>
+	id S932730Ab1CIOV1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 09:21:27 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33417 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243Ab1CIOVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 09:21:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Nj1IoShpjeQ7e5q6WJ8myRvweWSkmoyoCrozWmaGqU1MxbaBCxPJxEG2K8kbuBm8ry
+         h16C0S0gCuPxcRIZV4gh0449ELFN/fg0i5k2dWScNeZ2CguC9PZKpYM4zKMRVVsJkgFJ
+         ChgndXUxLKBhKzI9XesW5ll2lws+hFD+T+UxI=
+Date: Wed, 9 Mar 2011 22:21:08 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Anton Blanchard <anton@samba.org>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Mahesh Jagannath Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, akpm@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
+ overridden
+Message-ID: <20110309142108.GD16951@cr0.redhat.com>
+References: <20100825002258.GD28360@kryten>
+ <m139u37cii.fsf@fess.ebiederm.org>
+ <4D771EE6.5050404@linux.vnet.ibm.com>
+ <20110309122046.GC16951@cr0.redhat.com>
+ <20110309234657.264d3080@kryten>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110309140610.GB20188@ghostprotocols.net>
+In-Reply-To: <20110309234657.264d3080@kryten>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 11:06:10AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Mar 09, 2011 at 10:59:25AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Mon, Mar 07, 2011 at 09:13:40PM +0100, Jiri Olsa escreveu:
-> > > The snprintf function returns number of printed characters even
-> > > if it cross the size parameter. So passing enough events via '-e'
-> > > parameter will cause segmentation fault.
-> > > 
-> > > It's reproduced by following command:
-> > > 
-> > > perf top -e `perf list | grep Tracepoint | awk -F'[' '\
-> > > {gsub(/[[:space:]]+/,"",$1);array[FNR]=$1}END{outputs=array[1];\
-> > > for (i=2;i<=FNR;i++){ outputs=outputs "," array[i];};print outputs}'`
-> > > 
-> > > Attached patch is adding SNPRINTF macro that provides the
-> > > overflow check and returns actuall number of printed characters.
-> > 
-> > Good catch, applying to perf/urgent.
-> 
-> Tried but it doesn't apply nor can I reproduce the overflow (albeit
-> granted the long line of events is annoying).
+On Wed, Mar 09, 2011 at 11:46:57PM +1100, Anton Blanchard wrote:
+>
+>Hi,
+>
+>> The crashkernel region is specified via kernel cmdline, so why
+>> not just drop a failure when it overlaps with RMO region?
+>> Am I missing something?
+>
+>Unfortunately a ppc64 kernel requires a chunk of RMO memory. We would
+>need the ability to specify multiple crashkernel regions - about 32MB
+>in the RMO and the rest can be anywhere. That sounds pretty fragile for
+>a user to configure successfully on the cmdline.
+>
+>Thats why the ppc64 crashkernel region begins mid way through the RMO
+>region. It means both kernels get a chunk of RMO and we only have to
+>deal with one crashkernel reservation in all the tools and
+>documentation.
+>
 
-patches were based on tip tree
+So, when I specify 128M in cmdline, 32M of them are RMO, and the
+rest 96M are normal memory? And when I want to free all of them,
+actually the 32M RMO will never be freed?
 
-hm, it crashes for me on tip tree,
-but I haven't checked the perf/core tree..
-
-not sure if it's any help, but while debugging I could see the sigsegv happened
-when the pointer was far beyond the 160 chars buffer size,
-maybe the buffer got bigger in the perf tree..
-
-jirka
-
-> 
-> So I'm applying both patches to perf/core instead.
-> 
-> - Arnaldo
