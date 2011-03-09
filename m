@@ -1,193 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab1CIAqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:46:14 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:26140 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab1CIAqM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:46:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=TZHso68ZLbWGWb9qsFsiURlosR+bzFjIUc8vWlBsgdzW9cktsUghsVsOibmfsvt/bS
-         P4SgbtpP3X32MOp7QOJw==
+	id S1756922Ab1CIAtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:49:14 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31349 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756425Ab1CIAtN (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 8 Mar 2011 19:49:13 -0500
+Date: Tue, 8 Mar 2011 19:47:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thomas Hellstrom <thomas@shipmail.org>
+Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, Alex Deucher <alexdeucher@gmail.com>,
+        Jerome Glisse <j.glisse@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH] cleanup: Add 'struct dev' in the TTM layer to be
+ passed in for DMA API calls.
+Message-ID: <20110309004718.GC10007@dumpdata.com>
+References: <1299598789-20402-1-git-send-email-konrad.wilk@oracle.com>
+ <4D769726.2030307@shipmail.org>
 MIME-Version: 1.0
-In-Reply-To: <1291844807-15481-1-git-send-email-dhsharp@google.com>
-References: <AANLkTim7xZvUJSxW0KzbZX1wxf19gZhvh1GLnU63zdgW@mail.gmail.com> <1291844807-15481-1-git-send-email-dhsharp@google.com>
-From: David Sharp <dhsharp@google.com>
-Date: Tue, 8 Mar 2011 16:45:48 -0800
-Message-ID: <AANLkTi=BN7nneqHyereiwR2dMCKr58ChaN+7p40jXX17@mail.gmail.com>
-Subject: Re: [PATCH] tracing: Add an 'overwrite' trace_option.
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, mrubin@google.com, jiayingz@google.com,
-        David Sharp <dhsharp@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D769726.2030307@shipmail.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D76CE75.0091,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 1:46 PM, David Sharp <dhsharp@google.com> wrote:
-> Add an "overwrite" trace_option for ftrace to control whether the buffer should
-> be overwritten on overflow or not. The default remains to overwrite old events
-> when the buffer is full. This patch adds the option to instead discard newest
-> events when the buffer is full. This is useful to get a snapshot of traces just
-> after enabling traces. Dropping the current event is also a simpler code path.
+On Tue, Mar 08, 2011 at 09:52:54PM +0100, Thomas Hellstrom wrote:
+> Hi, Konrad,
+> 
+> Is passing a struct device to the DMA api really *strictly* necessary?
 
-Signed-off-by: David Sharp <dhsharp@google.com>
+It is allowed. As said, it is a cleanup patch so it can be dropped.
+> 
+> I'd like to avoid that at all cost, since we don't want pages that
+> are backing buffer objects
+> (coherent pages) to be associated with a specific device.
 
-> ---
->  Documentation/trace/ftrace.txt |    5 +++++
->  include/linux/ring_buffer.h    |    2 ++
->  kernel/trace/ring_buffer.c     |   11 +++++++++++
->  kernel/trace/trace.c           |   17 +++++++++++------
->  kernel/trace/trace.h           |    1 +
->  5 files changed, 30 insertions(+), 6 deletions(-)
->
-> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-> index 557c1ed..2842ea7 100644
-> --- a/Documentation/trace/ftrace.txt
-> +++ b/Documentation/trace/ftrace.txt
-> @@ -491,6 +491,11 @@ x494] <- /root/a.out[+0x4a8] <- /lib/libc-2.7.so[+0x1e1a6]
->                    latencies, as described in "Latency
->                    trace format".
->
-> +  overwrite - This controls what happens when the trace buffer is
-> +              full. If "1" (default), the oldest events are
-> +              discarded and overwritten. If "0", then the newest
-> +              events are discarded.
-> +
->  sched_switch
->  ------------
->
-> diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-> index 8d3a248..ab38ac8 100644
-> --- a/include/linux/ring_buffer.h
-> +++ b/include/linux/ring_buffer.h
-> @@ -100,6 +100,8 @@ void ring_buffer_free(struct ring_buffer *buffer);
->
->  int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size);
->
-> +void ring_buffer_change_overwrite(struct ring_buffer *buffer, int val);
-> +
->  struct ring_buffer_event *ring_buffer_lock_reserve(struct ring_buffer *buffer,
->                                                   unsigned long length);
->  int ring_buffer_unlock_commit(struct ring_buffer *buffer,
-> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> index 9ed509a..3207147 100644
-> --- a/kernel/trace/ring_buffer.c
-> +++ b/kernel/trace/ring_buffer.c
-> @@ -1429,6 +1429,17 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
->  }
->  EXPORT_SYMBOL_GPL(ring_buffer_resize);
->
-> +void ring_buffer_change_overwrite(struct ring_buffer *buffer, int val)
-> +{
-> +       mutex_lock(&buffer->mutex);
-> +       if (val)
-> +               buffer->flags |= RB_FL_OVERWRITE;
-> +       else
-> +               buffer->flags &= ~RB_FL_OVERWRITE;
-> +       mutex_unlock(&buffer->mutex);
-> +}
-> +EXPORT_SYMBOL_GPL(ring_buffer_change_overwrite);
-> +
->  static inline void *
->  __rb_data_page_index(struct buffer_data_page *bpage, unsigned index)
->  {
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index c380612..6f7494c 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -41,8 +41,6 @@
->  #include "trace.h"
->  #include "trace_output.h"
->
-> -#define TRACE_BUFFER_FLAGS     (RB_FL_OVERWRITE)
-> -
->  /*
->  * On boot up, the ring buffer is set to the minimum size, so that
->  * we do not waste memory on systems that are not using tracing.
-> @@ -340,7 +338,7 @@ static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
->  /* trace_flags holds trace_options default values */
->  unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
->        TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
-> -       TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD;
-> +       TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE;
->
->  static int trace_stop_count;
->  static DEFINE_SPINLOCK(tracing_start_lock);
-> @@ -425,6 +423,7 @@ static const char *trace_options[] = {
->        "sleep-time",
->        "graph-time",
->        "record-cmd",
-> +       "overwrite",
->        NULL
->  };
->
-> @@ -2523,6 +2522,9 @@ static void set_tracer_flags(unsigned int mask, int enabled)
->
->        if (mask == TRACE_ITER_RECORD_CMD)
->                trace_event_enable_cmd_record(enabled);
-> +
-> +       if (mask == TRACE_ITER_OVERWRITE)
-> +               ring_buffer_change_overwrite(global_trace.buffer, enabled);
->  }
->
->  static ssize_t
-> @@ -4545,9 +4547,11 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
->  __init static int tracer_alloc_buffers(void)
->  {
->        int ring_buf_size;
-> +       enum ring_buffer_flags rb_flags;
->        int i;
->        int ret = -ENOMEM;
->
-> +
->        if (!alloc_cpumask_var(&tracing_buffer_mask, GFP_KERNEL))
->                goto out;
->
-> @@ -4560,12 +4564,13 @@ __init static int tracer_alloc_buffers(void)
->        else
->                ring_buf_size = 1;
->
-> +       rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
-> +
->        cpumask_copy(tracing_buffer_mask, cpu_possible_mask);
->        cpumask_copy(tracing_cpumask, cpu_all_mask);
->
->        /* TODO: make the number of buffers hot pluggable with CPUS */
-> -       global_trace.buffer = ring_buffer_alloc(ring_buf_size,
-> -                                                  TRACE_BUFFER_FLAGS);
-> +       global_trace.buffer = ring_buffer_alloc(ring_buf_size, rb_flags);
->        if (!global_trace.buffer) {
->                printk(KERN_ERR "tracer: failed to allocate ring buffer!\n");
->                WARN_ON(1);
-> @@ -4575,7 +4580,7 @@ __init static int tracer_alloc_buffers(void)
->
->
->  #ifdef CONFIG_TRACER_MAX_TRACE
-> -       max_tr.buffer = ring_buffer_alloc(1, TRACE_BUFFER_FLAGS);
-> +       max_tr.buffer = ring_buffer_alloc(1, rb_flags);
->        if (!max_tr.buffer) {
->                printk(KERN_ERR "tracer: failed to allocate max ring buffer!\n");
->                WARN_ON(1);
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 9021f8c..9cd025a 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -606,6 +606,7 @@ enum trace_iterator_flags {
->        TRACE_ITER_SLEEP_TIME           = 0x40000,
->        TRACE_ITER_GRAPH_TIME           = 0x80000,
->        TRACE_ITER_RECORD_CMD           = 0x100000,
-> +       TRACE_ITER_OVERWRITE            = 0x200000,
->  };
->
->  /*
-> --
-> 1.7.3.1
->
->
+OK.
+> 
+> The reason for this is that we probably soon will want to move ttm
+> buffer objects between devices, and that should ideally be a simple
+> operation: If the memory type the buffer object currently resides in
+> is not shared between two devices, then move it out to system memory
+> and change its struct bo_device pointer.
+> 
+> If pages are associated with a specific device, this will become
+> much harder. Basically we need to change backing pages and copy all
+> the data.
+
+<nods> Makes sense.
+
+> 
+> /Thomas
+> 
+> 
+> On 03/08/2011 04:39 PM, Konrad Rzeszutek Wilk wrote:
+> >These two patches are not strictly required but they do a bit of
+> >cleanup and also fix a false reporting issue when the kernel is compiled
+> >with CONFIG_DEBUG_DMA_API.
+> >
+> >Essentially the patchset modifies 'struct ttm_tt' and 'struct ttm_bo_device'
+> >to contain a pointer to 'struct device'. Passing of the 'struct device'
+> >is done via the 'tt_bo_device_init'. The 'struct device' is then used
+> >during the allocation/deallocation of pages when TTM_PAGE_FLAG_DMA32 flag
+> >is set.
+> >
+> >At first it seems that we would need to keep a copy of
+> >'struct device' in the struct ttm_bo_device only and use that. However,
+> >when 'ttm_tt_destroy' is called it sets ttm->be (which contains
+> >the 'struct ttm_bo_device') to NULL so we cannot use it. Hence
+> >we copy the 'struct device' pointer to the 'struct ttm_tm' and keep
+> >it there.
+> >
+> >I've put the patches on:
+> >
+> >git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/ttm.pci-api.v5
+> >
+> >The testing was a bit difficult b/c I could not persuade the machine to unload
+> >either the nouveau or radeon driver (I had a serial console hooked so I figured
+> >it would fallback to that?). Ended up calling 'unbind' on the
+> >/sys/pci/.../$BDF/driver/[radeon,nouveau] to trigger the de-allocation path.
+> >
+> >Thomas,
+> >
+> >What is the best way to test vmw-gfx*? Does the Workstation (5?) support
+> >this particular frontend?
+> >
+> >Konrad Rzeszutek Wilk (2):
+> >       ttm: Include the 'struct dev' when using the DMA API.
+> >       ttm: Pass in 'struct device' to TTM so it can do DMA API on behalf of device.
+> >
+> >  drivers/gpu/drm/nouveau/nouveau_mem.c |    3 ++-
+> >  drivers/gpu/drm/radeon/radeon_ttm.c   |    3 ++-
+> >  drivers/gpu/drm/ttm/ttm_bo.c          |    4 +++-
+> >  drivers/gpu/drm/ttm/ttm_page_alloc.c  |   11 ++++++-----
+> >  drivers/gpu/drm/ttm/ttm_tt.c          |    5 +++--
+> >  drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   |    4 ++--
+> >  include/drm/ttm/ttm_bo_driver.h       |    7 ++++++-
+> >  include/drm/ttm/ttm_page_alloc.h      |    8 ++++++--
+> >  8 files changed, 30 insertions(+), 15 deletions(-)
+> >
+> >
+> >The full diff:
+> >
+> >diff --git a/drivers/gpu/drm/nouveau/nouveau_mem.c b/drivers/gpu/drm/nouveau/nouveau_mem.c
+> >index 26347b7..3706156 100644
+> >--- a/drivers/gpu/drm/nouveau/nouveau_mem.c
+> >+++ b/drivers/gpu/drm/nouveau/nouveau_mem.c
+> >@@ -412,7 +412,8 @@ nouveau_mem_vram_init(struct drm_device *dev)
+> >  	ret = ttm_bo_device_init(&dev_priv->ttm.bdev,
+> >  				 dev_priv->ttm.bo_global_ref.ref.object,
+> >  				&nouveau_bo_driver, DRM_FILE_PAGE_OFFSET,
+> >-				 dma_bits<= 32 ? true : false);
+> >+				 dma_bits<= 32 ? true : false,
+> >+				 dev->dev);
+> >  	if (ret) {
+> >  		NV_ERROR(dev, "Error initialising bo driver: %d\n", ret);
+> >  		return ret;
+> >diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+> >index 9ead11f..371890c 100644
+> >--- a/drivers/gpu/drm/radeon/radeon_ttm.c
+> >+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+> >@@ -517,7 +517,8 @@ int radeon_ttm_init(struct radeon_device *rdev)
+> >  	r = ttm_bo_device_init(&rdev->mman.bdev,
+> >  			       rdev->mman.bo_global_ref.ref.object,
+> >  			&radeon_bo_driver, DRM_FILE_PAGE_OFFSET,
+> >-			       rdev->need_dma32);
+> >+			       rdev->need_dma32,
+> >+			       rdev->dev);
+> >  	if (r) {
+> >  		DRM_ERROR("failed initializing buffer object driver(%d).\n", r);
+> >  		return r;
+> >diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+> >index af61fc2..278a2d3 100644
+> >--- a/drivers/gpu/drm/ttm/ttm_bo.c
+> >+++ b/drivers/gpu/drm/ttm/ttm_bo.c
+> >@@ -1526,12 +1526,14 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
+> >  		       struct ttm_bo_global *glob,
+> >  		       struct ttm_bo_driver *driver,
+> >  		       uint64_t file_page_offset,
+> >-		       bool need_dma32)
+> >+		       bool need_dma32,
+> >+		       struct device *dev)
+> >  {
+> >  	int ret = -EINVAL;
+> >
+> >  	rwlock_init(&bdev->vm_lock);
+> >  	bdev->driver = driver;
+> >+	bdev->dev = dev;
+> >
+> >  	memset(bdev->man, 0, sizeof(bdev->man));
+> >
+> >diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> >index 737a2a2..35849db 100644
+> >--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> >+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> >@@ -664,7 +664,7 @@ out:
+> >   */
+> >  int ttm_get_pages(struct list_head *pages, int flags,
+> >  		  enum ttm_caching_state cstate, unsigned count,
+> >-		  dma_addr_t *dma_address)
+> >+		  dma_addr_t *dma_address, struct device *dev)
+> >  {
+> >  	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+> >  	struct page *p = NULL;
+> >@@ -685,7 +685,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
+> >  		for (r = 0; r<  count; ++r) {
+> >  			if ((flags&  TTM_PAGE_FLAG_DMA32)&&  dma_address) {
+> >  				void *addr;
+> >-				addr = dma_alloc_coherent(NULL, PAGE_SIZE,
+> >+				addr = dma_alloc_coherent(dev, PAGE_SIZE,
+> >  							&dma_address[r],
+> >  							  gfp_flags);
+> >  				if (addr == NULL)
+> >@@ -730,7 +730,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
+> >  			printk(KERN_ERR TTM_PFX
+> >  			       "Failed to allocate extra pages "
+> >  			       "for large request.");
+> >-			ttm_put_pages(pages, 0, flags, cstate, NULL);
+> >+			ttm_put_pages(pages, 0, flags, cstate, NULL, NULL);
+> >  			return r;
+> >  		}
+> >  	}
+> >@@ -741,7 +741,8 @@ int ttm_get_pages(struct list_head *pages, int flags,
+> >
+> >  /* Put all pages in pages list to correct pool to wait for reuse */
+> >  void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
+> >-		   enum ttm_caching_state cstate, dma_addr_t *dma_address)
+> >+		   enum ttm_caching_state cstate, dma_addr_t *dma_address,
+> >+		   struct device *dev)
+> >  {
+> >  	unsigned long irq_flags;
+> >  	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+> >@@ -757,7 +758,7 @@ void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
+> >  				void *addr = page_address(p);
+> >  				WARN_ON(!addr || !dma_address[r]);
+> >  				if (addr)
+> >-					dma_free_coherent(NULL, PAGE_SIZE,
+> >+					dma_free_coherent(dev, PAGE_SIZE,
+> >  							  addr,
+> >  							  dma_address[r]);
+> >  				dma_address[r] = 0;
+> >diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+> >index 86d5b17..354f9d9 100644
+> >--- a/drivers/gpu/drm/ttm/ttm_tt.c
+> >+++ b/drivers/gpu/drm/ttm/ttm_tt.c
+> >@@ -110,7 +110,7 @@ static struct page *__ttm_tt_get_page(struct ttm_tt *ttm, int index)
+> >  		INIT_LIST_HEAD(&h);
+> >
+> >  		ret = ttm_get_pages(&h, ttm->page_flags, ttm->caching_state, 1,
+> >-				&ttm->dma_address[index]);
+> >+				&ttm->dma_address[index], ttm->dev);
+> >
+> >  		if (ret != 0)
+> >  			return NULL;
+> >@@ -304,7 +304,7 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
+> >  		}
+> >  	}
+> >  	ttm_put_pages(&h, count, ttm->page_flags, ttm->caching_state,
+> >-		      ttm->dma_address);
+> >+		      ttm->dma_address, ttm->dev);
+> >  	ttm->state = tt_unpopulated;
+> >  	ttm->first_himem_page = ttm->num_pages;
+> >  	ttm->last_lomem_page = -1;
+> >@@ -397,6 +397,7 @@ struct ttm_tt *ttm_tt_create(struct ttm_bo_device *bdev, unsigned long size,
+> >  	ttm->last_lomem_page = -1;
+> >  	ttm->caching_state = tt_cached;
+> >  	ttm->page_flags = page_flags;
+> >+	ttm->dev = bdev->dev;
+> >
+> >  	ttm->dummy_read_page = dummy_read_page;
+> >
+> >diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+> >index 10ca97e..803d979 100644
+> >--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+> >+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+> >@@ -322,11 +322,11 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
+> >  	ttm_lock_set_kill(&dev_priv->fbdev_master.lock, false, SIGTERM);
+> >  	dev_priv->active_master =&dev_priv->fbdev_master;
+> >
+> >-
+> >  	ret = ttm_bo_device_init(&dev_priv->bdev,
+> >  				 dev_priv->bo_global_ref.ref.object,
+> >  				&vmw_bo_driver, VMWGFX_FILE_PAGE_OFFSET,
+> >-				 false);
+> >+				 false,
+> >+				 dev->dev);
+> >  	if (unlikely(ret != 0)) {
+> >  		DRM_ERROR("Failed initializing TTM buffer object driver.\n");
+> >  		goto out_err1;
+> >diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+> >index efed082..2024a74 100644
+> >--- a/include/drm/ttm/ttm_bo_driver.h
+> >+++ b/include/drm/ttm/ttm_bo_driver.h
+> >@@ -177,6 +177,7 @@ struct ttm_tt {
+> >  		tt_unpopulated,
+> >  	} state;
+> >  	dma_addr_t *dma_address;
+> >+	struct device *dev;
+> >  };
+> >
+> >  #define TTM_MEMTYPE_FLAG_FIXED         (1<<  0)	/* Fixed (on-card) PCI memory */
+> >@@ -551,6 +552,7 @@ struct ttm_bo_device {
+> >  	struct list_head device_list;
+> >  	struct ttm_bo_global *glob;
+> >  	struct ttm_bo_driver *driver;
+> >+	struct device *dev;
+> >  	rwlock_t vm_lock;
+> >  	struct ttm_mem_type_manager man[TTM_NUM_MEM_TYPES];
+> >  	spinlock_t fence_lock;
+> >@@ -791,6 +793,8 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
+> >   * @file_page_offset: Offset into the device address space that is available
+> >   * for buffer data. This ensures compatibility with other users of the
+> >   * address space.
+> >+ * @need_dma32: Allocate pages under 4GB
+> >+ * @dev: 'struct device' of the PCI device.
+> >   *
+> >   * Initializes a struct ttm_bo_device:
+> >   * Returns:
+> >@@ -799,7 +803,8 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
+> >  extern int ttm_bo_device_init(struct ttm_bo_device *bdev,
+> >  			      struct ttm_bo_global *glob,
+> >  			      struct ttm_bo_driver *driver,
+> >-			      uint64_t file_page_offset, bool need_dma32);
+> >+			      uint64_t file_page_offset, bool need_dma32,
+> >+			      struct device *dev);
+> >
+> >  /**
+> >   * ttm_bo_unmap_virtual
+> >diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
+> >index 8062890..ccb6b7a 100644
+> >--- a/include/drm/ttm/ttm_page_alloc.h
+> >+++ b/include/drm/ttm/ttm_page_alloc.h
+> >@@ -37,12 +37,14 @@
+> >   * @cstate: ttm caching state for the page.
+> >   * @count: number of pages to allocate.
+> >   * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
+> >+ * @dev: struct device for appropiate DMA accounting.
+> >   */
+> >  int ttm_get_pages(struct list_head *pages,
+> >  		  int flags,
+> >  		  enum ttm_caching_state cstate,
+> >  		  unsigned count,
+> >-		  dma_addr_t *dma_address);
+> >+		  dma_addr_t *dma_address,
+> >+		  struct device *dev);
+> >  /**
+> >   * Put linked list of pages to pool.
+> >   *
+> >@@ -52,12 +54,14 @@ int ttm_get_pages(struct list_head *pages,
+> >   * @flags: ttm flags for page allocation.
+> >   * @cstate: ttm caching state.
+> >   * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
+> >+ * @dev: struct device for appropiate DMA accounting.
+> >   */
+> >  void ttm_put_pages(struct list_head *pages,
+> >  		   unsigned page_count,
+> >  		   int flags,
+> >  		   enum ttm_caching_state cstate,
+> >-		   dma_addr_t *dma_address);
+> >+		   dma_addr_t *dma_address,
+> >+		   struct device *dev);
+> >  /**
+> >   * Initialize pool allocator.
+> >   */
