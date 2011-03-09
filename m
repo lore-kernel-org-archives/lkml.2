@@ -1,269 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab1CIHEJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 02:04:09 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62266 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab1CIHEF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 02:04:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fCJVePacjAqx6W5cGnXRXBaH1Vo4YFn1Az7SG6CLYWEOI6SOF2wVsB6Pygd1UNAxTg
-         ruHJOrQxko6cjXD7TTPpiJcjXakqg463vg98bONJuHoGGfh6f5PAhnyCf61haW9Pu0dA
-         9kZ7pLSq3VDUmWljUrG1/0O7BwXyY472f+mwk=
-MIME-Version: 1.0
-In-Reply-To: <20110307114142.GB13471@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
-	<20110307114142.GB13471@opensource.wolfsonmicro.com>
-Date: Wed, 9 Mar 2011 15:04:03 +0800
-Message-ID: <AANLkTinmbJWAoFPPT9aNrJQ+E+eb-3a1F_cV-d2J3YGj@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH] Add driver for Analog Devices ADAU1701 SigmaDSP
-From: Cliff Cai <cliffcai.sh@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753874Ab1CIHJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 02:09:00 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:43306 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751050Ab1CIHI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 02:08:58 -0500
+Date: Wed, 9 Mar 2011 18:08:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for March 9
+Message-Id: <20110309180845.52a9c130.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__9_Mar_2011_18_08_45_+1100_Byr8d5giXh8vDadM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 7, 2011 at 7:41 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Mar 07, 2011 at 09:11:42AM +0800, cliff.cai@analog.com wrote:
->
->> From: Cliff Cai <cliff.cai@analog.com>
->
->> ADAU1701 is an SigmaDSP processor,it supports I2S audio interface.
->
-> As with previous submissions from you guys this won't compile with
-> current ASoC versions.  All new driver code submitted for mainline
-> should be submitted against the development versions of the trees you're
-> submitting against, in general -next contains everything relevant.
->
->> It needs to include "linux/sigma.h" which is still in Andrew Morton's
->> tree.
->
-> Is this needed by other trees?  I can't apply this driver until it's
-> merged into ASoC via some means.  I guess it'll go in during the merge
-> window, though, and you do need to respin.
->
->>       select SND_SOC_PCM3008
->>       select SND_SOC_SPDIF
->>       select SND_SOC_SSM2602 if I2C
->> +     select SND_SOC_ADAU1701 if I2C
->>       select SND_SOC_STAC9766 if SND_SOC_AC97_BUS
->>       select SND_SOC_TLV320AIC23 if I2C
->
-> This presumably also needs to select the DSP API otherwise it's not
-> going to build.
->
-> As ever, keep the Kconfig and Makefile sorted.
->
->> +#define AUDIO_NAME "adau1701"
->> +#define ADAU1701_VERSION "0.10"
->
-> These aren't referenced anywhere, remove them.
->
->> +/*
->> + * Write a ADAU1701 register,since the register length is from 1 to 5,
->> + * So, use our own read/write functions instead of snd_soc_read/write.
->> + */
->> +static int adau1701_write_register(struct snd_soc_codec *codec,
->> +     u16 reg_address, u8 length, u32 value)
->> +{
->
-> It loooks like the register length is hard coded in every location that
-> the register is referenced.  This doesn't seem ideal - it'd be much
-> nicer to have the register I/O functions work this out without the
-> callers needing to.
+--Signature=_Wed__9_Mar_2011_18_08_45_+1100_Byr8d5giXh8vDadM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm afraid it's not easy to do so.
+Hi all,
 
->> +static int adau1701_pcm_prepare(struct snd_pcm_substream *substream,
->> +                             struct snd_soc_dai *dai)
->> +{
->> +     struct snd_soc_codec *codec = dai->codec;
->> +     int reg = 0;
->> +
->> +     reg = SEROCTL_MASTER | SEROCTL_OBF16 | SEROCTL_OLF1024;
->> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, reg);
->> +
->> +     return 0;
->> +}
->
-> This looks like some of it is DAI format and word length configuration?
+Changes since 20110308:
 
-no,it makes the processor work in master mode.and output bit clock and
-frame clock.
+Dropped tree: xen
 
->> +static void adau1701_shutdown(struct snd_pcm_substream *substream,
->> +                           struct snd_soc_dai *dai)
->> +{
->> +     struct snd_soc_codec *codec = dai->codec;
->> +
->> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, 0);
->> +}
->
-> I suspect this isn't going to work for simultaneous playback and capture
-> - it's not clear what the code does but I'd guess it will stop things
-> completely.
+The nfs tree lost its build failure.
 
-this SigmaDSP doesn't support duplex operation,it can choose either
-ADCs or serial port as input source.
->> +static int adau1701_set_dai_fmt(struct snd_soc_dai *codec_dai,
->> +             unsigned int fmt)
->> +{
->> +     struct snd_soc_codec *codec = codec_dai->codec;
->> +     u32 reg = 0;
->> +
->> +     reg = adau1701_read_register(codec, ADAU1701_SERITL1, 1);
->> +     /* interface format */
->> +     switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
->> +     case SND_SOC_DAIFMT_I2S:
->> +             break;
->> +     case SND_SOC_DAIFMT_LEFT_J:
->> +             reg |= SERITL1_LEFTJ;
->> +             break;
->> +     /* TODO: support TDM */
->
-> I'd expect that the I2S case should be clearing a bitmask.
->
->> +     default:
->> +             return 0;
->> +     }
->
-> Return an error if you don't support something.  The same issue applies
-> elsewhere in the function.
->
->> +static int adau1701_set_bias_level(struct snd_soc_codec *codec,
->> +                              enum snd_soc_bias_level level)
->> +{
->> +     u16 reg;
->> +     switch (level) {
->> +     case SND_SOC_BIAS_ON:
->> +             reg = adau1701_read_register(codec, ADAU1701_AUXNPOW, 2);
->> +             reg &= ~(AUXNPOW_AAPD | AUXNPOW_D0PD | AUXNPOW_D1PD |  AUXNPOW_D2PD |
->> +                      AUXNPOW_D3PD | AUXNPOW_VBPD | AUXNPOW_VRPD);
->> +             adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, reg);
->
-> You were also updating some of the same register bits in the mute
-> function.  This looks buggy.
+The net tree gained a build failure, so I used the version from
+next-20110308.
 
-the processor has no switchs to mute or unmute ADCS/DACs,only thing we
-can do is turning them off or on.
+The drm tree gained a conflict against Linus' tree.
 
->> +             break;
->> +     case SND_SOC_BIAS_PREPARE:
->> +             break;
->> +     case SND_SOC_BIAS_STANDBY:
->> +             break;
->> +     case SND_SOC_BIAS_OFF:
->> +             /* everything off, dac mute, inactive */
->> +             reg = adau1701_read_register(codec, ADAU1701_AUXNPOW, 2);
->> +             reg |= AUXNPOW_AAPD | AUXNPOW_D0PD | AUXNPOW_D1PD |  AUXNPOW_D2PD |
->> +                      AUXNPOW_D3PD | AUXNPOW_VBPD | AUXNPOW_VRPD;
->> +             adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, reg);
->> +             break;
->
-> It's very odd that the code only does anything in _OFF or _ON - what
-> exactly are these updates doing?
->
->> +             .rates = ADAU1701_RATES,
->> +             .formats = ADAU1701_FORMATS,
->> +     },
->> +     .ops = &adau1701_dai_ops,
->> +};
->> +EXPORT_SYMBOL_GPL(adau1701_dai);
->
-> This is not required.
->
->> +static ssize_t adau1371_dsp_load(struct device *dev,
->> +                               struct device_attribute *attr,
->> +                               const char *buf, size_t count)
->> +{
->> +     int ret = 0;
->> +     struct adau1701_priv *adau1701 = dev_get_drvdata(dev);
->> +     struct snd_soc_codec *codec = adau1701->codec;
->> +     ret = adau1701_setprogram(codec);
->> +     if (ret)
->> +             return ret;
->> +     else
->> +             return count;
->> +}
->> +static DEVICE_ATTR(dsp, 0644, NULL, adau1371_dsp_load);
->
-> You're marking the file as supporting both read and write but only
-> providing write functionality, and the write functionality totally
-> ignores the written data.
->
-> More generally this doesn't seem like a great interface - apparently the
-> device requries that firmware be loaded but the whole firmware load
-> process isn't at all joined up with the driver code meaning that the
-> application layer has to figure out when firmware needs to be reloaded,
-> there's no understanding on the part of the driver of what the firmware
-> on the device is doing or how it's glued into the audio subsystem.
->
->> +     ret = adau1701_setprogram(codec);
->> +     if (ret < 0) {
->> +             printk(KERN_ERR "Loading program data failed\n");
->> +             goto error;
->> +     }
->> +     reg = DSPCTRL_DAM | DSPCTRL_ADM;
->> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
->> +     reg = 0x08;
->> +     adau1701_write_register(codec, ADAU1701_DSPRES, 1, reg);
->
-> Should these DSP configuations things be part of downloading firmware?
+The powerpc allyesconfig build is still broken by some obscure bloating
+of the low memory code.
 
-these configurations above loading firmware mainly used to avoid pops/clicks
-and cleanup some registers in the DSP core.
+----------------------------------------------------------------------------
 
->> +     adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, 0);
->> +     reg = AUXADCE_AAEN;
->> +     adau1701_write_register(codec, ADAU1701_AUXADCE, 2, reg);
->> +     reg = DACSET_DACEN;
->> +     adau1701_write_register(codec, ADAU1701_DACSET, 2, reg);
->> +     reg = DSPCTRL_DAM | DSPCTRL_ADM | DSPCTRL_CR;
->> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
->> +     /* Power-up the oscillator */
->> +     adau1701_write_register(codec, ADAU1701_OSCIPOW, 2, 0);
->
-> This looks like it's all power management which I'd expect to see
-> handled in either the bias management functions or ideally DAPM.  It
-> also appears that the oscillator is an optional feature so it should be
-> used conditionally.
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
-the processor can receive MCLK either from external clock source or
-crystal oscillator,
-currently we use the on board crystal,and it can't be turned
-off,otherwise the whole chip will be in an unpredicted status,
-only output clocks can be disabled.
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
->> +     struct adau1701_priv *adau1701 = snd_soc_codec_get_drvdata(codec);
->> +
->> +     adau1701->codec = codec;
->
-> You don't actually ever seem to reference the codec pointer you're
-> storing, perhaps just loose it?
->
->> +/* Bit fields */
->> +#define DSPCTRL_CR           (1 << 2)
->> +#define DSPCTRL_DAM          (1 << 3)
->> +#define DSPCTRL_ADM          (1 << 4)
->> +#define DSPCTRL_IST          (1 << 5)
->> +#define DSPCTRL_IFCW         (1 << 6)
->> +#define DSPCTRL_GPCW         (1 << 7)
->> +#define DSPCTRL_AACW         (1 << 8)
->
-> These and the other bitfield definitions in the header should all be
-> namespaced.
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
->
+Below is a summary of the state of the merge.
+
+We are up to 184 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-mxs/gpio.c
+Merging linux-spec/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
+.h
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+CONFLICT (content): Merge conflict in arch/arm/mm/Kconfig
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+CONFLICT (content): Merge conflict in arch/arm/configs/u8500_defconfig
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/cpu-db8500.c
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/video/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+CONFLICT (content): Merge conflict in drivers/hwmon/Makefile
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+CONFLICT (content): Merge conflict in arch/alpha/Kconfig
+CONFLICT (content): Merge conflict in arch/parisc/Kconfig
+CONFLICT (content): Merge conflict in arch/sparc/Kconfig
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_ata.c
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_scsi_host.c
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/Kconfig
+CONFLICT (content): Merge conflict in drivers/net/bnx2x/bnx2x_cmn.c
+CONFLICT (content): Merge conflict in lib/Makefile
+$ git reset --hard HEAD^
+Merging refs/next/20110308/net
+CONFLICT (content): Merge conflict in drivers/net/Kconfig
+CONFLICT (content): Merge conflict in drivers/net/bnx2x/bnx2x_cmn.c
+CONFLICT (content): Merge conflict in lib/Makefile
+[master ef987f9] Merge commit 'refs/next/20110308/net'
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-mx27_3ds.c
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-pcm038.c
+CONFLICT (content): Merge conflict in arch/arm/mach-mx3/mach-mx31_3ds.c
+CONFLICT (content): Merge conflict in arch/arm/mach-mx3/mach-mx31moboard.c
+CONFLICT (content): Merge conflict in drivers/mfd/davinci_voicecodec.c
+CONFLICT (content): Merge conflict in drivers/mfd/ucb1x00-ts.c
+CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+CONFLICT (content): Merge conflict in drivers/gpu/drm/nouveau/nouveau_mem.c
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in fs/eventpoll.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in arch/x86/kernel/acpi/sleep.c
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+CONFLICT (content): Merge conflict in include/linux/pci_ids.h
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in arch/x86/kernel/vmlinux.lds.S
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in drivers/hwmon/lm85.c
+Applying: OLPC: fix for removal of run_wake_count
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
+CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3evm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-overo.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/clock3xxx_data.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/usb-musb.c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/include/plat/usb.h
+CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
+CONFLICT (content): Merge conflict in drivers/usb/gadget/fsl_mxc_udc.c
+CONFLICT (content): Merge conflict in drivers/usb/musb/musb_core.h
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/Makefile
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmsmac/wl=
+_mac80211.c
+CONFLICT (delete/modify): drivers/staging/dabusb/dabusb.c deleted in HEAD a=
+nd modified in staging/staging-next. Version staging/staging-next of driver=
+s/staging/dabusb/dabusb.c left in tree.
+CONFLICT (delete/modify): drivers/staging/dabusb/dabusb.h deleted in HEAD a=
+nd modified in staging/staging-next. Version staging/staging-next of driver=
+s/staging/dabusb/dabusb.h left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/easycap/easycap_ioctl=
+.c
+CONFLICT (delete/modify): drivers/staging/usbvideo/usbvideo.c deleted in HE=
+AD and modified in staging/staging-next. Version staging/staging-next of dr=
+ivers/staging/usbvideo/usbvideo.c left in tree.
+CONFLICT (delete/modify): drivers/staging/usbvideo/vicam.c deleted in HEAD =
+and modified in staging/staging-next. Version staging/staging-next of drive=
+rs/staging/usbvideo/vicam.c left in tree.
+$ git rm -f drivers/staging/usbvideo/usbvideo.c
+$ git rm -f drivers/staging/usbvideo/vicam.c
+$ git rm -f drivers/staging/dabusb/dabusb.c drivers/staging/dabusb/dabusb.h
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Wed__9_Mar_2011_18_08_45_+1100_Byr8d5giXh8vDadM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNdyd9AAoJEDMEi1NhKgbsCNcIAI9rgDbsZhGrwxN+hRDOgmHY
+pEEJytX6C1HR3HlHoR3dqRRH0Gdg+c5Yvd62F7gHLUl1Gw7t7q3Xd2Hky5/ji5dP
+rl2V14ADlmG4F3da13/Muif2HnFJegajs17kgFuDsLiE3AZsaNgOUXdcU5B7g6Un
+7CRKDR5y8WHR+vBnwaNukXE1hZgtqctX5jADEHh+rqw8EZac9E1Ce+c/eMTNiPtx
+xJEp5IXgijzvmPGYY00Yqtd4VqLhfr+pfrr08N2FqFaezm6TN/UjHbPRtEVblbcB
+nUE8YsYS+s7Wjq1xbmWvypF9WiyJY3tjJ7parsXoXp8or4YwEOgll9pfl/POCf8=
+=BIqq
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__9_Mar_2011_18_08_45_+1100_Byr8d5giXh8vDadM--
