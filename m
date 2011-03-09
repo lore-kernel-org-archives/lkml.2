@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795Ab1CIAJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Mar 2011 19:09:44 -0500
-Received: from kroah.org ([198.145.64.141]:49500 "EHLO coco.kroah.org"
+	id S1756868Ab1CIAL2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Mar 2011 19:11:28 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:46964 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755386Ab1CIAJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Mar 2011 19:09:42 -0500
-Date: Tue, 8 Mar 2011 16:09:32 -0800
-From: Greg KH <greg@kroah.com>
-To: Minkyu Kang <promsoft@gmail.com>
-Cc: Minkyu Kang <mk7.kang@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        kyungmin.park@samsung.com, Ben Dooks <ben-i2c@fluff.org>
-Subject: Re: [PATCH v3] misc: adds support the FSA9480 USB Switch
-Message-ID: <20110309000932.GA12470@kroah.com>
-References: <4D75D338.9070801@samsung.com>
- <20110308135909.GA7519@kroah.com>
- <AANLkTi=cgOJK=xGpbM8zaTVHcF+ZzjTCds+6dw3zAN_P@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=cgOJK=xGpbM8zaTVHcF+ZzjTCds+6dw3zAN_P@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756548Ab1CIAL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Mar 2011 19:11:26 -0500
+Date: Wed, 9 Mar 2011 11:11:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Dmitry Kravkov" <dmitry@broadcom.com>
+Cc: "David Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eilon Greenstein" <eilong@broadcom.com>,
+        "Vladislav Zolotarov" <vladz@broadcom.com>
+Subject: Re: linux-next: manual merge of the net tree with the net-current
+ tree
+Message-Id: <20110309111113.883972ba.sfr@canb.auug.org.au>
+In-Reply-To: <1299577473.17233.41.camel@lb-tlvb-dmitry>
+References: <20110308140957.8a894312.sfr@canb.auug.org.au>
+	<1299577473.17233.41.camel@lb-tlvb-dmitry>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 08:59:18AM +0900, Minkyu Kang wrote:
-> Dear Greg KH,
-> 
-> On 8 March 2011 22:59, Greg KH <greg@kroah.com> wrote:
-> > On Tue, Mar 08, 2011 at 03:56:56PM +0900, Minkyu Kang wrote:
-> >> --- /dev/null
-> >> +++ b/include/linux/fsa9480.h
-> >
-> > Why do you need a .h file for this driver?
-> >
-> > If it's just for platform data, please put it in
-> > include/linux/platform_data/ instead.
-> 
-> Yes, it's for platform data.
-> But, sorry I couldn't find such a directory.
-> Where?
+--Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's in the linux-next tree, you can create that file in your patch.
+Hi Dmitry,
 
-thanks,
+On Tue, 8 Mar 2011 11:44:33 +0200 "Dmitry Kravkov" <dmitry@broadcom.com> wr=
+ote:
+>
+> You are correct it's just an addition and it does not really matter
+> where to do this. But the merge pushed new code in the middle
+> of MAC configuration between MAC and multicast list.
+> It's clearer to put it at the end of MAC/ML/UL block:
+> ---
+>  drivers/net/bnx2x/bnx2x_cmn.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/net/bnx2x/bnx2x_cmn.c b/drivers/net/bnx2x/bnx2x_cmn.c
+> index b01b622..9e37675 100644
+> --- a/drivers/net/bnx2x/bnx2x_cmn.c
+> +++ b/drivers/net/bnx2x/bnx2x_cmn.c
+> @@ -1498,6 +1498,11 @@ int bnx2x_nic_load(struct bnx2x *bp, int load_mode)
+>  	/* Clear UC lists configuration */
+>  	bnx2x_invalidate_uc_list(bp);
+> =20
+> +	if (bp->pending_max) {
+> +		bnx2x_update_max_mf_config(bp, bp->pending_max);
+> +		bp->pending_max =3D 0;
+> +	}
+> +
+>  	if (bp->port.pmf)
+>  		bnx2x_initial_phy_init(bp, load_mode);
 
-greg k-h
+OK, thanks.  I have changed the conflict resolution to do that.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNdsWhAAoJEDMEi1NhKgbs59YH/ifwsP88QypKpEWACWH2Ca8N
+E0cT0cxrM6dHRcAvV0WhJbDu3PUzgcPjN9/Fum3xGkm00XfB4rgSGEsPfYh3/phX
+7wdpN70O0dG+WEs3ZioFY8BGYJ4pKyDtmVw1J4d6wkdr2lVRvriUqkabbHHl+3un
+LM5a1Gqs+tKlf8UjSftNGkuU8xMYuKXoVIwZwNAqpOMoxIRy/6f2gJkaAKT/tlmu
+Bksig3NMTJj8ohsUHk8hMNHD/OswYK/spOEjerGY8QKLfCJZM1oQ+XTXDuRIIl0O
+XDS3ZRsF1TC1K4PrqheRF1loQwGPtj08dZlVtDMiHHJgmmvjuZAvzqI6Uwba+78=
+=OasS
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__9_Mar_2011_11_11_13_+1100_+WUkRSi=TV3KgM.8--
