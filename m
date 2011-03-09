@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab1CIJcj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 04:32:39 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:3828 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab1CIJcg (ORCPT
+	id S1756928Ab1CIJhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 04:37:47 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:57048 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756745Ab1CIJho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 04:32:36 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6279"; a="78871533"
-Message-ID: <d5e2ebf84426f2c709bce782b5f3179a.squirrel@www.codeaurora.org>
-In-Reply-To: <20110309080519.GB605@n2100.arm.linux.org.uk>
-References: <4D6D9C03.2080906@codeaurora.org>
-    <20110302083904.GA4493@n2100.arm.linux.org.uk>
-    <4D6F481B.8000700@codeaurora.org>
-    <20110303102411.GB13179@n2100.arm.linux.org.uk>
-    <4D7708EC.9020806@codeaurora.org>
-    <20110309080519.GB605@n2100.arm.linux.org.uk>
-Date: Wed, 9 Mar 2011 01:32:15 -0800 (PST)
-Subject: Re: CONFIG_ARM_DMA_MEM_BUFFERABLE and readl/writel weirdness
-From: "Saravana Kannan" <skannan@codeaurora.org>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: "Saravana Kannan" <skannan@codeaurora.org>,
-        "Catalin Marinas" <catalin.marinas@arm.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Wed, 9 Mar 2011 04:37:44 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 9 Mar 2011 10:38:09 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] hid-multitouch: Auto detection of maxcontacts
+Message-ID: <20110309093809.GA3980@polaris.bitmath.org>
+References: <1299601979-4871-1-git-send-email-benjamin.tissoires@enac.fr>
+ <1299601979-4871-2-git-send-email-benjamin.tissoires@enac.fr>
+ <20110309084222.GA3569@polaris.bitmath.org>
+ <AANLkTin4KsPWRfFEEYXkjWdnEnXyiMyDGc6eEWFA_kWx@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin4KsPWRfFEEYXkjWdnEnXyiMyDGc6eEWFA_kWx@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1PxFnh-0004pt-51.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PxFnh-0004pt-51 436a8f427dc304fff966adbbb1f2fb19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, March 9, 2011 12:05 am, Russell King - ARM Linux wrote:
-> On Tue, Mar 08, 2011 at 08:58:20PM -0800, Saravana Kannan wrote:
->> On 03/03/2011 02:24 AM, Russell King - ARM Linux wrote:
->>> On Wed, Mar 02, 2011 at 11:49:47PM -0800, Saravana Kannan wrote:
->>>>> I think you misunderstand what's going on.  IO accesses are always
->>>>> ordered
->>>>> with respect to themselves.  The barriers are there to ensure
->>>>> ordering
->>>>> between DMA coherent memory (normal non-cached memory) and IO
->>>>> accesses
->>>>> (device).
->>>>
->>>> Unfortunately this is not correct. The ARM spec doesn't guarantee that
->>>> all IO accesses should be ordered with respect to themselves. It only
->>>> requires that the ordering should be guaranteed at least within a 1KB
->>>> region.
->>>>
->>>> You can find this info in ARMv7 ARM spec[1] named
->>>> "DDI0406B_arm_architecture_reference_manual_errata_markup_8_0.pdf", on
->>>> page A3-45. There is a para that goes:
->>>>
->>>> "Accesses must arrive at any particular memory-mapped peripheral or
->>>> block of memory in program order, that is, A1 must arrive before A2.
->>>> There are no ordering restrictions about when accesses arrive at
->>>> different peripherals or blocks of memory, provided that the accesses
->>>> follow the general ordering rules given in this section."
->>>
->>> That is news to me.  My DDI0406B does not have this paragraph, so it's
->>> something that ARM has sprung upon us without telling *anyone* about
->>> it.
->>> It's not unreasonable or even unexpected.  That is exactly the same
->>> condition which applies on buses like PCI due to write posting on
->>> bridges
->>> downstream of the CPU, and issuing memory barriers will not help with
->>> that.
->>
->> While the PCI stuff is true, as you say, it's not related to mb()s. The
->> mb()s matter to the point of getting the writes to the  intended
->> "devices addresses" in the program order. What happens after that is a
->> separate issue.
->>
->> So, going back to the discussion of mb()s and readl/writel (and
->> variations), I think we should no longer state the all IO accesses are
->> ordered wrt each other. Are we in agreement on this?
->
-> No, because you clearly haven't understood the point I made.
->
-> I still believe you are wrong on this point.
+On Wed, Mar 09, 2011 at 10:03:45AM +0100, Benjamin Tissoires wrote:
+> On Wed, Mar 9, 2011 at 09:42, Henrik Rydberg <rydberg@euromail.se> wrote:
+> > Hi Benjamin,
+> >
+> >> This patch enables support of autodetection of maxcontacts.
+> >> We can still manually provide maxcontact in case the device
+> >> lies on it.
+> >>
+> >> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> >
+> > It seems quite alright to let the classes contain the expected number
+> > of contacts, so I do not really see the reason for that part of the
+> > patch. How about keeping the maxcontacts in the class, and then do
+> > max(hid-provided-maxcontacts, default-maxcontacts)?
+> >
+> 
+> Yep, I've got three particular reasons:
+> - 3M: there are two devices now, 1968 and 2256. The first one is a 10
+> touches only, whereas the second one is a 60 touches.
 
-I'm not going to pretend to be a PCI expert, but I think the ARMv7 ARM
-text I quoted makes it pretty clear that all IO accesses are not ordered
-wrt each other. So, why do you still disagree on that point?
+Right, so increasing the number of touches based on device information
+seems like a good idea.
 
--Saravana
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> - autodetection of multitouch devices. I have some patches on my tree
+> (that we do not want to go upstream right now for some reasons) that
+> allows us to plug any unknown multitouch devices and to let
+> hid-multitouch handling it. As most of the devices are 2 touches only,
+> and as the generic way to work with a multitouch devices is to iterate
+> over all the slots, using 10 touches by default infers a lot of
+> instructions that can be avoided.
 
+Right, so keeping the default number of touches per class seems like a
+good idea.
 
+> - finally, it simplifies the writing of the new CLS (we just need to
+> know how the device works to add the right quirks).
+
+Right, we always need to know how the device works. :-)
+
+Cheers,
+Henrik
