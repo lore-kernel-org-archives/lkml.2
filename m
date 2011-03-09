@@ -1,119 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1CIXpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 18:45:06 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62949 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab1CIXpD convert rfc822-to-8bit (ORCPT
+	id S1753002Ab1CIXuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 18:50:19 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:34073 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab1CIXuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 18:45:03 -0500
+	Wed, 9 Mar 2011 18:50:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dHvkQ/qEE2dc2Z+53wN0wB3w/wKKi/6O5YizSxvXkdnWRgsiZxcvnr6XWX9DG/FDc6
-         +IztTzYgi3p8tivciCHwxA7+FOCJUp2Bq8nfmUlNxOOL3S/Wj2QFHNesO7vDej31oqNj
-         DN2t1G9ZEGIcV9glGWzISwkG67pRQIWobxjMY=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DwQzr6aI/t2G+cFaSLyVPUUyTylc5+qYbBtrfDPhIb9wX4lsmd4EKCoYd4R1X9XQvM
+         /F547L/b//yiKIHQgh+/h0sjkl5MJZAR1yahz3PrwElfhjeqOIAnZlUn3uW+mgsbigFZ
+         NzXhv1XUTnlmd8xahb1QUH4vpFRikH+dxMe+A=
+Date: Thu, 10 Mar 2011 00:50:11 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        David Ahern <daahern@cisco.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 07/10] perf script: Move printing of 'common' data from
+ print_event and rename
+Message-ID: <20110309235007.GB2533@nowhere>
+References: <1299695491-15786-1-git-send-email-acme@infradead.org>
+ <1299695491-15786-8-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <C825D274.919E%Kyle.D.Moffett@boeing.com>
-References: <4B4531F9.3060108@gmail.com>
-	<C825D274.919E%Kyle.D.Moffett@boeing.com>
-Date: Thu, 10 Mar 2011 00:44:29 +0100
-Message-ID: <AANLkTikr86_tXWzBATbtpOi5eDV4iVggeQBm-0vkP4+t@mail.gmail.com>
-Subject: Re: New MSI support in sata_sil24 still broken in 2.6.33-rc3
-From: Leon Woestenberg <leon.woestenberg@gmail.com>
-To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-Cc: Robert Hancock <hancockrwd@gmail.com>,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vivek Mahajan <vivek.mahajan@freescale.com>,
-        Jeff Garzik <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Kyle Moffett <kyle@moffetthome.net>,
-        "Livingston, John A" <john.a.livingston@boeing.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299695491-15786-8-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kyle,
+On Wed, Mar 09, 2011 at 03:31:28PM -0300, Arnaldo Carvalho de Melo wrote:
+> From: David Ahern <daahern@cisco.com>
+> 
+> This change does impact output: latency data is trace specific and is now
+> printed after the common data - comm, tid, cpu, time and event name.
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> LPU-Reference: <1299606342-26745-3-git-send-email-daahern@cisco.com>
+> Signed-off-by: David Ahern <daahern@cisco.com>
+> [ committer note: Added space after print_lat_fmt() ]
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/builtin-script.c         |   38 ++++++++++--
+>  tools/perf/util/trace-event-parse.c |  106 +++--------------------------------
+>  tools/perf/util/trace-event.h       |    3 +-
+>  3 files changed, 41 insertions(+), 106 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index b2bdd55..0a79da2 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -20,18 +20,42 @@ static u64			last_timestamp;
+>  static u64			nr_unordered;
+>  extern const struct option	record_options[];
+>  
+> +static void print_sample_start(struct perf_sample *sample,
+> +			       struct thread *thread)
+> +{
+> +	int type;
+> +	struct event *event;
+> +	const char *evname = NULL;
+> +	unsigned long secs;
+> +	unsigned long usecs;
+> +	unsigned long long nsecs = sample->time;
+> +
+> +	if (latency_format)
 
-I'm also using SIL3234 (sil24 driver) on P2020 and encountering
-problems. Instead of starting my own investigation first I used google
-powers to find this old email thread.
+I believe we don't yet make use of the latency format with perf.
+Like the function graph output, it was included in that code coming
+from trace-cmd.
 
-Have you found a more recent working solution to your problem?
+We might use it in the future though, so it looks fine to keep it
+and handle it like you did.
 
-Regards,
+> +		printf("%8.8s-%-5d %3d", thread->comm, sample->tid, sample->cpu);
+> +	else
+> +		printf("%16s-%-5d [%03d]", thread->comm, sample->tid, sample->cpu);
+> +
+> +	secs = nsecs / NSECS_PER_SEC;
+> +	nsecs -= secs * NSECS_PER_SEC;
+> +	usecs = nsecs / NSECS_PER_USEC;
+> +	printf(" %5lu.%06lu: ", secs, usecs);
+> +
+> +	type = trace_parse_common_type(sample->raw_data);
+> +	event = trace_find_event(type);
+> +	if (event)
+> +		evname = event->name;
+> +
+> +	printf("%s: ", evname ? evname : "(unknown)");
+> +}
+> +
+[...]
+> +++ b/tools/perf/util/trace-event-parse.c
+> @@ -2648,63 +2648,8 @@ static void print_lat_fmt(void *data, int size __unused)
+>  		printf("%d", lock_depth);
+>  }
+>  
+> -/* taken from Linux, written by Frederic Weisbecker */
+> -static void print_graph_cpu(int cpu)
+> -{
+> -	int i;
+> -	int log10_this = log10_cpu(cpu);
+> -	int log10_all = log10_cpu(cpus);
+> -
+> -
+> -	/*
+> -	 * Start with a space character - to make it stand out
+> -	 * to the right a bit when trace output is pasted into
+> -	 * email:
+> -	 */
+> -	printf(" ");
+> -
+> -	/*
+> -	 * Tricky - we space the CPU field according to the max
+> -	 * number of online CPUs. On a 2-cpu system it would take
+> -	 * a maximum of 1 digit - on a 128 cpu system it would
+> -	 * take up to 3 digits:
+> -	 */
+> -	for (i = 0; i < log10_all - log10_this; i++)
+> -		printf(" ");
+> -
+> -	printf("%d) ", cpu);
+> -}
 
-Leon.
+So, we indeed don't use the function graph tracer with perf yet.
+But there are fair chances we will in the future.
 
+So if we remove such code, I would prefer this to be made as
+a seperate commit. Something we can easily retrieve and revert
+in the future.
 
-On Sat, May 29, 2010 at 2:05 AM, Moffett, Kyle D
-<Kyle.D.Moffett@boeing.com> wrote:
-> My advance apologies if this email gets badly MIME-mangled...
->
-> On 2010/01/06 20:59, "Robert Hancock" <hancockrwd@gmail.com> wrote:
->> On 01/06/2010 03:37 AM, Torsten Kaiser wrote:
->>> After activating the MSI support by adding sata_sil24.msi=1 to the
->>> kernel command line, the first write to a drive attached to the SiI
->>> 3132 controller results in the following errors:
->>>
->>> [  138.950074] ata2.00: exception Emask 0x0 SAct 0xf SErr 0x0 action 0x6
->>> frozen
->>> [  138.961023] ata2.00: failed command: WRITE FPDMA QUEUED
->>> [  138.970034] ata2.00: cmd 61/00:00:a5:95:4a/04:00:01:00:00/40 tag 0
->>> ncq 524288 out
->>> [  138.970037]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask
->>> 0x4 (timeout)
->>
->> Looking at the code in sata_sil24 and the SiI3132 datasheet, there's a
->> control bit which doesn't seem to be handled in the driver, global
->> control register bit 30: "MSI Acknowledge (W). Writing a one to this bit
->> acknowledges a Message Signaled Interrupt and permits generation of
->> another MSI. This bit is cleared immediately after the acknowledgement
->> is recognized by the control logic, hence the bit will always be read as
->> a zero. If all interrupt conditions are removed subsequent to an MSI, it
->> is not necessary to assert this Acknowledge; another MSI will be
->> generated when an interrupt condition occurs."
->>
->> The way the interrupt handler for this driver works is that we check the
->> global IRQ status register, and then based on what ports indicated an
->> interrupt in that register, we check the individual port command
->> completion registers. The issue would seem to be that if a port got an
->> interrupt condition in between these two operations, we'd miss it, and
->> the MSI logic described above then wouldn't generate any more interrupts
->> since we didn't remove all interrupt conditions.
->>
->> Can you try this patch and see if it helps? (Might be whitespace damaged
->> but hopefully you can apply manually in that case.)
->
-> I've got this custom board that uses the sata_sil24 driver (off a P2020
-> processor).  My current kernel is a slightly patched 2.6.32 kernel
-> (including the sata_sil24 enable-MSI patch).
->
-> Unfortunately when I turn MSI on, I get the exact same hang described here,
-> boot log included as dmesg1.txt.
->
-> With this patch applied, it seems to get a little further (dmesg2.txt), but
-> still dies miserably.
->
-> I'm relatively sure that MSI works on this chipset as I also have an e1000e
-> controller off an adjacent PCI-E bus which works correctly with MSI.
->
-> It's relatively critical for me to get MSI working, because the legacy-PCI
-> INTx interrupt for that PCI-E port happens to share an IRQ line with a
-> device that is very unfriendly to shared IRQs (it has no internal IRQ
-> disable register).  I'd rather not have to go in there with a soldering iron
-> and some scraps of wire to make it work. :-D
->
-> Cheers,
-> Kyle Moffett
->
->
+Other than that and the callchain bug, the whole series looks
+pretty good now.
 
-
-
--- 
-Leon
+Thanks a lot!
