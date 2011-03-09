@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab1CIV3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 16:29:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753077Ab1CIV3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 16:29:50 -0500
-Message-ID: <4D77F149.8020906@redhat.com>
-Date: Wed, 09 Mar 2011 16:29:45 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>
-Subject: Re: [PATCH] add missing guest clock update removed by	e48672fa25e879f7ae21785c7efd187738139593
-References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz>
-In-Reply-To: <20110309193003.GB1762@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753377Ab1CIVeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 16:34:04 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37838
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751249Ab1CIVeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 16:34:01 -0500
+Date: Wed, 09 Mar 2011 13:34:39 -0800 (PST)
+Message-Id: <20110309.133439.246540302.davem@davemloft.net>
+To: andy@greyhouse.net
+Cc: amwang@redhat.com, linux-kernel@vger.kernel.org, fubar@us.ibm.com,
+        netdev@vger.kernel.org
+Subject: Re: [V2 Patch] bonding: move procfs code into bond_procfs.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110307161740.GT11864@gospo.rdu.redhat.com>
+References: <1299484726-29905-1-git-send-email-amwang@redhat.com>
+	<20110307161740.GT11864@gospo.rdu.redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2011 02:30 PM, Nikola Ciprich wrote:
->> Can you try moving the kvm_make_request() inside the if conditional and
->> see if it that also fixes it?
->>      
-> yes, changing to:
-> if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
-> 	kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> 	/* Make sure TSC doesn't go backwards */
-> 	s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->
-> is also OK.
->
-> what about changing:
-> if (check_tsc_unstable()) {
-> 	kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
-> 	vcpu->arch.tsc_catchup = 1;
-> 	kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> }
->
-> to:
->
-> if (check_tsc_unstable()) {
-> 	kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
-> 	vcpu->arch.tsc_catchup = 1;
-> }
-> kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->
-> this fixes thinks for me as well..
-> n.
-> ?
->    
+From: Andy Gospodarek <andy@greyhouse.net>
+Date: Mon, 7 Mar 2011 11:17:40 -0500
 
-Can you send a patch which does that?  I think this is the correct fix.
+> On Mon, Mar 07, 2011 at 03:58:46PM +0800, Amerigo Wang wrote:
+>> V2: Move #ifdef CONFIG_PROC_FS into bonding.h, as suggested by David.
+>> 
+>> bond_main.c is bloating, separate the procfs code out,
+>> move them to bond_procfs.c
+>> 
+>> Signed-off-by: WANG Cong <amwang@redhat.com>
+>> 
+> 
+> Looks good and works as expected.
+> 
+> Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
 
-Thanks,
-
-Zach
+Applied, thanks everyone.
