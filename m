@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab1CJVbC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:31:02 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:50344 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751252Ab1CJVbA (ORCPT
+	id S1752014Ab1CJVeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:34:24 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44152 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab1CJVeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:31:00 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 10 Mar 2011 22:33:40 +0100
-To: Wang Lei <f3d27b@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
-Message-ID: <20110310213340.GA1821@polaris.bitmath.org>
-References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1PxnRX-0002mE-Ax.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PxnRX-0002mE-Ax 57082b2e226cbad92705098cbb26758a
+	Thu, 10 Mar 2011 16:34:23 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=UwRGqXM3h7MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ES1dpH7g7n332EvRqp4A:9 a=XIKhXPkgfNtpJXD6KkJktIuWTGgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/2] jump label: update for .39
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+In-Reply-To: <BLU0-SMTP2489AC44910467F37596A496C80@phx.gbl>
+References: <cover.1299702291.git.jbaron@redhat.com>
+	 <1299728191.15854.319.camel@gandalf.stny.rr.com>
+	 <BLU0-SMTP690BB959832A97E002293396C80@phx.gbl>
+	 <1299771504.15854.347.camel@gandalf.stny.rr.com>
+	 <BLU0-SMTP2489AC44910467F37596A496C80@phx.gbl>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 16:34:20 -0500
+Message-ID: <1299792860.15854.423.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2011-03-10 at 16:14 -0500, Mathieu Desnoyers wrote:
 
-> [~]$ cat /sys/class/thermal/thermal_zone0/trip_point_*_temp
-> 105000
-> 15900
-> 15900
-> 15900
-> 15900
-> 15900
-> [~]$ 
+> > Just insert a long "Reserved" word.
 > 
-> This is the output at v2.6.38-rc6+:
-> 
-> [~]$ cat /sys/class/thermal/thermal_zone0/trip_point_*_temp
-> 105000
-> 95000
-> 75000
-> 65000
-> 55000
-> 40000
-> [~]$
-> 
-> Any help is appreciated.
-> 
-> Cheers,
-> Lei
+> I agree that this solution can work, but it's only because the
+> "object" definition is done in assembly in this case (and not in C, like
+> we did for trace event and tracepoints). Padding to power of 2 multiples
+> should make the linker happy. There should be a nice comment beside
+> these padding elements though.
 
-I wonder if this problem is related, present in latest git (35d34df71):
+Rereading what David and even what you wrote just now, I don't think
+this is even needed. As you said. The issue with us is that we had
+defined structs in C as static which lost all bets. Not to mention,
+these structures were not natural word aligned.
 
-mainline>cat /sys/module/*/srcversion | sort | uniq -c
-      1 03B88A441752AC2157DBD6A
-      1 0C932B9F52535F81D3FFF93
-      1 1BB88B035855B2AE7F47229
-      1 2100DB8F374F0EE1AA607F2
-      1 2BBC9DD51CFC881CF5F60AA
-      1 3D4D8AFD09A0C71D9B19948
-      1 3EF20C25CC62BD750F4C3F3
-      1 41024DA8E830C7DAE171017
-      1 47AD35AE180473EB06EED32
-     19 533BB7E5866E52F63B9ACCB
-      1 598C709DDDAB55EB331379A
-      1 5AC5CB9DA8C242CBC76EEC0
-      1 6961679677DB019310F9046
-      1 6BBB3E29D835F5EC8C2FCF9
-      1 78FBC4BE6E0D68CC70FBFEC
-      1 97A6441C3D26B1B6A9B2B2B
-      1 AAD974CC23F320629986F38
-      2 AEBBDFD273E0316FD4E5D04
-      1 CC2F5468F15E654BA13360D
-      1 CD18C3E8FA6CD119EE11935
-      1 EA10C238A334BB44445DC83
-      1 EF2B1B70D28CB9290D97726
+The linker should not be adding holes more than natural word alignment.
+Why waste space?
 
-It shows that 19 modules exhibit the same module srcversion... This
-behavior showed up late in -rc's, I am going to bisect now (unless
-this is already done).
+-- Steve
 
-Henrik
+
