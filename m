@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab1CJX5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:57:35 -0500
-Received: from kroah.org ([198.145.64.141]:46903 "EHLO coco.kroah.org"
+	id S1754787Ab1CJX5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:57:40 -0500
+Received: from kroah.org ([198.145.64.141]:46944 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754204Ab1CJX53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:29 -0500
+	id S1754733Ab1CJX5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:36 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:38 2011
-Message-Id: <20110310235538.137989036@clark.kroah.org>
+Message-Id: <20110310235538.827178742@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:27 -0800
+Date: Thu, 10 Mar 2011 15:54:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ivan Vecera <ivecera@redhat.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, Hayes <hayeswang@realtek.com>
-Subject: [patch 21/29] r8169: use RxFIFO overflow workaround for 8168c chipset.
+        Sven Barth <pascaldragon@googlemail.com>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [patch 28/29] [media] cx25840: fix probing of cx2583x chips
 In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Vecera <ivecera@redhat.com>
+From: Sven Barth <pascaldragon@googlemail.com>
 
-commit b5ba6d12bdac21bc0620a5089e0f24e362645efd upstream.
+commit 1e6406b8f0dc1ae7d7c39c9e1ac6ca78e016ebfb upstream.
 
-I found that one of the 8168c chipsets (concretely XID 1c4000c0) starts
-generating RxFIFO overflow errors. The result is an infinite loop in
-interrupt handler as the RxFIFOOver is handled only for ...MAC_VER_11.
-With the workaround everything goes fine.
+Fix the probing of cx2583x chips, because two controls were clustered
+that are not created for these chips.
 
-Signed-off-by: Ivan Vecera <ivecera@redhat.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Hayes <hayeswang@realtek.com>
+This regression was introduced in 2.6.36.
+
+Signed-off-by: Sven Barth <pascaldragon@googlemail.com>
+Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/r8169.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/media/video/cx25840/cx25840-core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -3725,7 +3725,8 @@ static void rtl_hw_start_8168(struct net
- 	RTL_W16(IntrMitigate, 0x5151);
- 
- 	/* Work around for RxFIFO overflow. */
--	if (tp->mac_version == RTL_GIGA_MAC_VER_11) {
-+	if (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
-+	    tp->mac_version == RTL_GIGA_MAC_VER_22) {
- 		tp->intr_event |= RxFIFOOver | PCSTimeout;
- 		tp->intr_event &= ~RxOverflow;
+--- a/drivers/media/video/cx25840/cx25840-core.c
++++ b/drivers/media/video/cx25840/cx25840-core.c
+@@ -2031,7 +2031,8 @@ static int cx25840_probe(struct i2c_clie
+ 		kfree(state);
+ 		return err;
  	}
-@@ -4604,7 +4605,8 @@ static irqreturn_t rtl8169_interrupt(int
+-	v4l2_ctrl_cluster(2, &state->volume);
++	if (!is_cx2583x(state))
++		v4l2_ctrl_cluster(2, &state->volume);
+ 	v4l2_ctrl_handler_setup(&state->hdl);
  
- 		/* Work around for rx fifo overflow */
- 		if (unlikely(status & RxFIFOOver) &&
--		(tp->mac_version == RTL_GIGA_MAC_VER_11)) {
-+		    (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
-+		     tp->mac_version == RTL_GIGA_MAC_VER_22)) {
- 			netif_stop_queue(dev);
- 			rtl8169_tx_timeout(dev);
- 			break;
+ 	cx25840_ir_probe(sd);
 
 
