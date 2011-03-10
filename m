@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1CJVOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:14:39 -0500
-Received: from blu0-omc1-s1.blu0.hotmail.com ([65.55.116.12]:54472 "EHLO
-	blu0-omc1-s1.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753377Ab1CJVOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:14:38 -0500
-X-Originating-IP: [174.91.193.52]
-X-Originating-Email: [pdumas9@sympatico.ca]
-Message-ID: <BLU0-SMTP44E52BF8FC82E66D2DA69596C80@phx.gbl>
-Date: Thu, 10 Mar 2011 16:14:31 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 0/2] jump label: update for .39
-References: <cover.1299702291.git.jbaron@redhat.com> <1299728191.15854.319.camel@gandalf.stny.rr.com> <BLU0-SMTP690BB959832A97E002293396C80@phx.gbl> <1299771504.15854.347.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1299771504.15854.347.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 16:11:48 up 337 days,  7:01,  3 users,  load average: 0.38, 0.36,
-	0.29
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 10 Mar 2011 21:14:37.0317 (UTC) FILETIME=[29543B50:01CBDF68]
+	id S1753857Ab1CJVO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:14:58 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:59641 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369Ab1CJVO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 16:14:57 -0500
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: gregkh@suse.de
+Cc: ext-phil.2.carmody@nokia.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] sysfs: add more info to the oops dump
+Date: Thu, 10 Mar 2011 23:10:40 +0200
+Message-Id: <1299791440-21545-1-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
+In-Reply-To: <20110310190227.GA28086@suse.de>
+References: <20110310190227.GA28086@suse.de>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2011-03-10 at 09:11 -0500, Mathieu Desnoyers wrote:
-> > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > On Wed, 2011-03-09 at 15:47 -0500, Jason Baron wrote:
-> > > > Hi,
-> > > > 
-> > > > Re-fresh of updates against latest -tip tree.
-> > > 
-> > > Thanks Jason,
-> > > 
-> > > I started looking at them, I should have comments tomorrow (if I have
-> > > any comments ;)
-> > > 
-> > > > 
-> > > > I've tried to split this update up somewhat, but I've only succeeded to split
-> > > > out the dynamic debug bits. The interface changes and re-write are quite
-> > > > intertwined.
-> > > > 
-> > > > I believe this update should address all the comments from the previous posting
-> > > > except for Mathieu's request for a section of jump label pointers that point to
-> > > > the jump label structures (since the compiler might leave gaps in the jump label
-> > > > structures).
-> > > 
-> > > The jump label structures is a list of 3 pointers, correct? I doubt that
-> > > gcc would place any holes in it as they are all aligned by natural word
-> > > size.
-> > > 
-> > 
-> > Hi Steven,
-> > 
-> > Can you explain what would prevent gcc from aligning these 3 pointers
-> > (total of 24 bytes on 64-bit architectures) on 32-bytes ? Also, could
-> > you point out what would refrain the linker from aligning the start of
-> > object sections on the next 32-bytes (thus power of two) address
-> > multiple ?
-> 
-> Maybe it would be just easier to add another long ;)
-> 
-> Seriously, it would. Then it would be 32 bytes on 64bit and 16 bytes on
-> 32bit. Then I guess we can have our guarantee without doing a large
-> change to have this indirect pointer and still waste sizeof(long) bytes
-> in having it.
-> 
-> Just insert a long "Reserved" word.
+If we're going to remember which file we accessed, we might as well
+also remember whether it was a read or a write, and if the latter,
+some indication of what was written.
 
-I agree that this solution can work, but it's only because the
-"object" definition is done in assembly in this case (and not in C, like
-we did for trace event and tracepoints). Padding to power of 2 multiples
-should make the linker happy. There should be a nice comment beside
-these padding elements though.
+Changes in V2: restrict to just one line.
 
-Thanks,
+e.g.
+$ echo sesquipedalianism > /sys/module/vt/parameters/default_utf8
+$ echo c > /proc/sysrq-trigger
+...
+[   57.522583] last sysfs file (w): /sys/module/vt/parameters/default_utf8  written: sesquipedaliani...(18 chars)
 
-Mathieu
+Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+---
+ fs/sysfs/file.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
-> 
-> -- Steve
-> 
-> > 
-> > I think we need to be a bit more strict in our interpretation of what
-> > guarantee gcc/ld provide and don't provide with respect to section and
-> > structure alignment.
-> > 
-> > As it stands now, the section alignment of jump labels looks half-broken
-> > on most architectures, and this *is* a big deal. I would really like to
-> > see a patch for this (it can be a separate patch) going in for .39.
-> > 
-> > Thank you,
-> > 
-> > Mathieu
-> > 
-> 
-> 
-
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index da3fefe..fa5b21a 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -26,9 +26,19 @@
+ 
+ /* used in crash dumps to help with debugging */
+ static char last_sysfs_file[PATH_MAX];
++static char last_sysfs_write[16];
++static int last_sysfs_write_len; /* magic value < 0 => read */
+ void sysfs_printk_last_file(void)
+ {
+-	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
++	printk(KERN_EMERG "last sysfs file (%c): %s%c",
++	       (last_sysfs_write_len < 0) ? 'r' : 'w',
++	       last_sysfs_file,
++	       last_sysfs_write_len > 0 ? ' ' : '\n');
++	if (last_sysfs_write_len >= sizeof(last_sysfs_write))
++		printk(KERN_CONT " written: %s...(%d chars)\n",
++		       last_sysfs_write, last_sysfs_write_len);
++	else if (last_sysfs_write_len > 0)
++		printk(KERN_CONT " written: %s\n", last_sysfs_write);
+ }
+ 
+ /*
+@@ -200,12 +210,19 @@ flush_write_buffer(struct dentry * dentry, struct sysfs_buffer * buffer, size_t
+ 	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
+ 	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
+ 	const struct sysfs_ops * ops = buffer->ops;
++	int copylen = min(count, sizeof(last_sysfs_write) - 1);
+ 	int rc;
+ 
+ 	/* need attr_sd for attr and ops, its parent for kobj */
+ 	if (!sysfs_get_active(attr_sd))
+ 		return -ENODEV;
+ 
++	while (copylen > 0 && buffer->page[copylen-1] == '\n')
++		--copylen; /* never print trailing \n's */
++	memcpy(last_sysfs_write, buffer->page, copylen);
++	last_sysfs_write[copylen] = '\0';
++	last_sysfs_write_len = count;
++
+ 	rc = ops->store(kobj, attr_sd->s_attr.attr, buffer->page, count);
+ 
+ 	sysfs_put_active(attr_sd);
+@@ -363,6 +380,9 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 	if (file->f_mode & FMODE_WRITE) {
+ 		if (!(inode->i_mode & S_IWUGO) || !ops->store)
+ 			goto err_out;
++		last_sysfs_write_len = 0;
++	} else {
++		last_sysfs_write_len = -1; /* magic value */
+ 	}
+ 
+ 	/* File needs read support.
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.2.rc1.37.gf8c40
+
