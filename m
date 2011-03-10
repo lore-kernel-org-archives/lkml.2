@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab1CJNbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 08:31:32 -0500
-Received: from cable-static-216-94.intergga.ch ([87.102.216.94]:59288 "EHLO
-	mail.ffwll.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab1CJNba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 08:31:30 -0500
-X-Spam-ASN: 
-X-Spam-Spammy: 0.965-+--H*r:mail.ffwll.ch, 0.941-+--H*Ad:D*ffwll.ch,
-	0.941-+--H*Ad:U*daniel.vetter
-X-Spam-Hammy: 0.000-+--H*Ad:U*dri-devel, 0.000-+--HCc:D*freedesktop.org,
-	0.000-+--HCc:D*lists.freedesktop.org
-Message-ID: <a43587d716af46c642fe30e779204ca0.squirrel@www.ffwll.ch>
-In-Reply-To: <2e9ca0040729649ed989a16a07bb2c49.squirrel@webmail.greenhost.nl>
-References: <af572f9c6c75d54f1f81e51f508358dd.squirrel@webmail.greenhost.nl>
-    <1298395549-4064-1-git-send-email-daniel.vetter@ffwll.ch>
-    <ed85db84d2d5ea460898d78e1179c6ca.squirrel@webmail.greenhost.nl>
-    <25dfe766fbe767e249ef95d1fda0094c.squirrel@www.ffwll.ch>
-    <0378a20bb9cfafee46c89461fa2dd4d6.squirrel@webmail.greenhost.nl>
-    <8b77a7a0de898635c8b25e7612907deb.squirrel@www.ffwll.ch>
-    <2e9ca0040729649ed989a16a07bb2c49.squirrel@webmail.greenhost.nl>
-Date: Thu, 10 Mar 2011 14:31:07 +0100
-Subject: Re: [PATCH] drm/i915: fix corruptions on i8xx due to relaxed     
- fencing
-From: "Daniel Vetter" <daniel@ffwll.ch>
-To: "Indan Zupancic" <indan@nul.nu>
-Cc: "Daniel Vetter" <daniel@ffwll.ch>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org, "LKML" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.21
+	id S1752307Ab1CJNh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 08:37:27 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33256 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab1CJNhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 08:37:25 -0500
+Date: Thu, 10 Mar 2011 14:37:15 +0100
+From: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+To: David Jander <david.jander@protonic.nl>
+Cc: Nguyen Dinh-R00091 <R00091@freescale.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Message-ID: <20110310133715.GC29521@pengutronix.de>
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+ <87oc5puwg3.fsf@lebrac.rtp-net.org>
+ <56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+ <87fwqyvrzf.fsf@lebrac.rtp-net.org>
+ <56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
+ <20110307180700.GQ29521@pengutronix.de>
+ <20110308124023.5a952d13@archvile>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110308124023.5a952d13@archvile>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 14:32:06 up 22 days,  1:29, 88 users,  load average: 0.13, 0.44,
+ 0.58
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Do, 10.03.2011, 11:36 schrieb Indan Zupancic:
-> On Thu, March 10, 2011 08:52, Daniel Vetter wrote:
->> [Aside: This only happens if you have new enough userspace that supports
->> relaxed tiling. Old userspace and new kernels are _not_ broken.]
->
-> Yes, I noticed it got reverted when digging into git log, but the
-> commit message only said it broke gen4+, not how gen2 should be
-> unbroken after the revert.
->
-> Which versions fix this, just for reference?
+Hi David,
 
-git master branch of libdrm and xf86-video-intel newer than 2011-02-22.
+On Tue, Mar 08, 2011 at 12:40:23PM +0100, David Jander wrote:
+> 
+> Hi Sascha,
+> 
+> On Mon, 7 Mar 2011 19:07:00 +0100
+> "s.hauer@pengutronix.de" <s.hauer@pengutronix.de> wrote:
+> >[...]
+> > > The current imx for-next tree is not booting on my Babbage board. Is
+> > > it okay for you with your HW. I'll have to debug the booting part
+> > > first.
+> > 
+> > Probably because other than kconfig states i.MX51 and i.MX53 cannot be
+> > compiled in one kernel. the for-next branch boots fine on my babbage.
+> 
+> Would you mind explaining (or pointing to an explanation) as to why this is
+> not supposed to work? Given the high level of compatibility between MX51 and
+> MX53, I'd say there must be a very good reason not to enable a single binary
+> kernel for both. Or is this just temporary brokenness?
 
--Daniel
+i.MX51 and i.MX53 have different phys_offsets. Look at
+arch/arm/mach-mx5/Makefile.boot:
 
+   zreladdr-$(CONFIG_ARCH_MX50) := 0x70008000
+params_phys-$(CONFIG_ARCH_MX50) := 0x70000100
+initrd_phys-$(CONFIG_ARCH_MX50) := 0x70800000
+   zreladdr-$(CONFIG_ARCH_MX51) := 0x90008000
+params_phys-$(CONFIG_ARCH_MX51) := 0x90000100
+initrd_phys-$(CONFIG_ARCH_MX51) := 0x90800000
+   zreladdr-$(CONFIG_ARCH_MX53) := 0x70008000
+params_phys-$(CONFIG_ARCH_MX53) := 0x70000100
+initrd_phys-$(CONFIG_ARCH_MX53) := 0x70800000
+
+Compiling a kernel for i.MX50 and i.MX53 will work, but compiling a
+kernel for i.MX51 and i.MX53 will and up with a kernel assuming SDRAM
+at 0x70000000 which will fail on a i.MX51. We need
+phys_to_virt/virt_to_phys runtime patching to get this right. This
+will be merged in the next merge window.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
