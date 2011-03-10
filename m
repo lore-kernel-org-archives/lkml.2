@@ -1,114 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab1CJShE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 13:37:04 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:29468 "EHLO mgw-da02.nokia.com"
+	id S1751973Ab1CJSoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 13:44:30 -0500
+Received: from mailhost.tue.nl ([131.155.3.8]:51572 "EHLO mailhost.tue.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab1CJShD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 13:37:03 -0500
-Date: Thu, 10 Mar 2011 20:32:40 +0200
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Greg KH <gregkh@suse.de>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] sysfs: add more info to the oops dump
-Message-ID: <20110310183239.GF7975@esdhcp04044.research.nokia.com>
-References: <1299772388-15439-1-git-send-email-ext-phil.2.carmody@nokia.com> <20110310162501.GB23989@suse.de>
+	id S1751125Ab1CJSo3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 13:44:29 -0500
+X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Mar 2011 13:44:28 EST
+From: "Guo, M." <M.Guo@tue.nl>
+Date: Thu, 10 Mar 2011 19:33:53 +0100
+Subject: Good day
+Thread-Topic: Good day
+Thread-Index: AQHL31G0cUvY7DrXl0OfkNx48BFkQQ==
+Message-ID: <FBE9DDA18F01844A8CB6D36AAFC2D6E6018407DF4CB5@EXCHANGE11.campus.tue.nl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110310162501.GB23989@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Nokia-AV: Clean
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/11 08:25 -0800, ext Greg KH wrote:
-> On Thu, Mar 10, 2011 at 05:53:08PM +0200, Phil Carmody wrote:
-> > If we're going to remember which file we accessed, we might as well
-> > also remember whether it was a read or a write, and if the latter,
-> > some indication of what was written.
-> > 
-> > e.g.
-> > $ echo 1 > /sys/kernel/slab/:at-0000064/sanity_checks
-> > $ echo c > /proc/sysrq-trigger
-> > ...
-> > [  112.457580] last sysfs file (w): /sys/kernel/slab/:at-0000064/sanity_checks
-> > [  112.464569]   written: 1
-> 
-> Has this actually helped you out?  I've been thinking of removing this
-> line in the dmesg entirely as I haven't seen it help in a very long time
-> to track anything down.
-
-I'm glad I started my commit message with that 'if', that tells you
-something. I have considered it, in its original form, not particularly
-helpful too. But I blamed that on it not telling me enough. Today I saw
-an oops related to a sysfs write, and this just patch basically wrote
-itself instantly. But it's not stood the test of time, that's for sure.
-
-Phil
- 
-> > 
-> > Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-> > ---
-> >  fs/sysfs/file.c |   21 ++++++++++++++++++++-
-> >  1 files changed, 20 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-> > index da3fefe..281e4dd 100644
-> > --- a/fs/sysfs/file.c
-> > +++ b/fs/sysfs/file.c
-> > @@ -26,9 +26,18 @@
-> >  
-> >  /* used in crash dumps to help with debugging */
-> >  static char last_sysfs_file[PATH_MAX];
-> > +static char last_sysfs_write[16];
-> > +static int last_sysfs_write_len; /* magic value < 0 => read */
-> >  void sysfs_printk_last_file(void)
-> >  {
-> > -	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
-> > +	printk(KERN_EMERG "last sysfs file (%c): %s\n",
-> > +	       (last_sysfs_write_len < 0) ? 'r' : 'w',
-> > +	       last_sysfs_file);
-> > +	if (last_sysfs_write_len >= sizeof(last_sysfs_write))
-> > +		printk(KERN_EMERG "  written: %s...(%d chars)\n",
-> > +		       last_sysfs_write, last_sysfs_write_len);
-> > +	else if (last_sysfs_write_len > 0)
-> > +		printk(KERN_EMERG "  written: %s\n", last_sysfs_write);
-> >  }
-> >  
-> >  /*
-> > @@ -200,12 +209,19 @@ flush_write_buffer(struct dentry * dentry, struct sysfs_buffer * buffer, size_t
-> >  	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
-> >  	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
-> >  	const struct sysfs_ops * ops = buffer->ops;
-> > +	int copylen = min(count, sizeof(last_sysfs_write) - 1);
-> >  	int rc;
-> >  
-> >  	/* need attr_sd for attr and ops, its parent for kobj */
-> >  	if (!sysfs_get_active(attr_sd))
-> >  		return -ENODEV;
-> >  
-> > +	while (copylen > 0 && buffer->page[copylen-1] == '\n')
-> > +		--copylen; /* never print trailing \n's */
-> > +	memcpy(last_sysfs_write, buffer->page, copylen);
-> > +	last_sysfs_write[copylen] = '\0';
-> > +	last_sysfs_write_len = count;
-> > +
-> >  	rc = ops->store(kobj, attr_sd->s_attr.attr, buffer->page, count);
-> >  
-> >  	sysfs_put_active(attr_sd);
-> > @@ -363,6 +379,9 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
-> >  	if (file->f_mode & FMODE_WRITE) {
-> >  		if (!(inode->i_mode & S_IWUGO) || !ops->store)
-> >  			goto err_out;
-> > +		last_sysfs_write_len = 0;
-> > +	} else {
-> > +		last_sysfs_write_len = -1; /* magic value */
-> 
-> "magic" values are bad, please use a #define or something else that
-> makes more sense to those looking at the code in 5 years.
-> 
-> thanks,
-> 
-> greg k-h
+You have been chosen as a grant winner of 5 million pounds by the UN, Contact claims agent on email address to claim your funds Email: 
+unationonlinegrant@kimo.com 
