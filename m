@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab1CJQ5T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:57:19 -0500
-Received: from outgoing.selfhost.de ([82.98.87.70]:50076 "EHLO
-	outgoing.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab1CJQ5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:57:18 -0500
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Mar 2011 11:57:18 EST
-Message-ID: <4D79015B.4060707@afaics.de>
-Date: Thu, 10 Mar 2011 17:50:35 +0100
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110303 Thunderbird/3.1.8
+	id S1753874Ab1CJQ57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:57:59 -0500
+Received: from mga02.intel.com ([134.134.136.20]:7688 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753833Ab1CJQ56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:57:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,297,1297065600"; 
+   d="scan'208";a="611385151"
+Date: Thu, 10 Mar 2011 08:57:30 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>, dm-crypt@saout.de,
+        linux-kernel@vger.kernel.org, Milan Broz <mbroz@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: dm-crypt: Performance Regression 2.6.37 -> 2.6.38-rc8
+Message-ID: <20110310165730.GC20504@alboin.amr.corp.intel.com>
+References: <20110308164508.GA8729@darkside.kls.lan>
 MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: Rio Karma not shown by blkid
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110308164508.GA8729@darkside.kls.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, Mar 08, 2011 at 05:45:08PM +0100, Mario 'BitKoenig' Holbe wrote:
+> Hello,
+> 
+> dm-crypt in 2.6.38 changed to per-CPU workqueues to increase it's
+> performance by parallelizing encryption to multiple CPUs.
+> This modification seems to cause (massive) performance drops for
+> multiple parallel dm-crypt instances...
+> 
+> I'm running a 4-disk RAID0 on top of 4 independent dm-crypt(aes-xts)
+> devices on a Core2Quad 3GHz. This setup did overcome the single-CPU
+> limitation from previous versions and utilized all 4 cores for
+> encryption.
+> The throughput of this array drops from 282MB/s sustained read (dd,
+> single process) with 2.6.37.3 down to 133MB/s with 2.6.38-rc8 (which
 
-Hi folks,
+It will be better with multiple processes running on different CPUs. 
+The new design is really for multiple processes.
 
-How comes that the Rio Karma is not shown by blkid -c /dev/null, even
-though the omfs module is loaded? Is this an issue of util-linux or of
-the kernel?
+Do you actually use dd for production or is this just a benchmark?
+(if yes: newsflash: use a better benchmark)
 
-Any helpful comment would be highly appreciated
-
-
-Regards
-
-Harri
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk15AVYACgkQUTlbRTxpHjfztgCaA4cSHl7SZOZk8a7Ljn+weG8J
-jnYAn3/gJEOQuV9sNy/XJnlnL/re9ULY
-=KWPz
------END PGP SIGNATURE-----
+-Andi
