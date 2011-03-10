@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab1CJJqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:46:18 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:25616 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab1CJJqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:46:16 -0500
-Message-ID: <4D789B64.9000603@parallels.com>
-Date: Thu, 10 Mar 2011 12:35:32 +0300
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1752685Ab1CJJtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:49:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46305 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab1CJJta (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 04:49:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bzMrhRmhY3eHAKWUQ7hYgoeo7K6cMYfZuUXPmpwetDkX8c2YCsHNvAfWYfl5nxvGzh
+         8yXHqtSNbBszJFWjie0/lvw/FlPPJ2oc/FraKiBAy3q6tvmMUOlvJcOSo/u+CZ05o6os
+         rOmTKuliZ/icmhbxPMtuDlI8dydIUWd/y30ng=
+Date: Thu, 10 Mar 2011 12:49:23 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: James Morris <jmorris@namei.org>
+Cc: David Miller <davem@davemloft.net>, mjt@tls.msk.ru,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, mirqus@gmail.com,
+        netdev@vger.kernel.org, bhutchings@solarflare.com,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
+        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
+        eugene@redhat.com, dan.j.rosenberg@gmail.com
+Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
+ kernel modules
+Message-ID: <20110310094923.GA3945@albatros>
+References: <20110301213313.GA6507@albatros>
+ <4D6DEE7C.6020700@msgid.tls.msk.ru>
+ <20110309220633.GA14750@albatros>
+ <20110309.140928.70185544.davem@davemloft.net>
+ <alpine.LRH.2.00.1103100953330.4485@tundra.namei.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pidns: Make pid_max per namespace
-References: <4D6F53B5.5090105@parallels.com> <20110307155823.22e47d73.akpm@linux-foundation.org>
-In-Reply-To: <20110307155823.22e47d73.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1103100953330.4485@tundra.namei.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2011 02:58 AM, Andrew Morton wrote:
-> On Thu, 03 Mar 2011 11:39:17 +0300
-> Pavel Emelyanov <xemul@parallels.com> wrote:
-> 
->> Rationale:
->>
->> On x86_64 with big ram people running containers set pid_max on host to 
->> large values to be able to launch more containers. At the same time 
->> containers running 32-bit software experience problems with large pids - ps
->> calls readdir/stat on proc entries and inode's i_ino happen to be too big 
->> for the 32-bit API.
->>
->> Thus, the ability to limit the pid value inside container is required.
->>
-> 
-> This is a behavioural change, isn't it?  In current kernels a write to
-> /proc/sys/kernel/pid_max will change the max pid on all processes. 
-> After this change, that write will only affect processes in the current
-> namespace.  Anyone who was depending on the old behaviour might run
-> into problems?
+James,
 
-Hardly. If the behavior of some two apps depends on its synchronous change,
-these two might want to run in the same pid namespace.
+On Thu, Mar 10, 2011 at 09:53 +1100, James Morris wrote:
+> I can submit it via my tree.
 
-> Also: documentation.  Documentation/sysctl/kernel.txt would like an
-> update.  And perhaps also the pidns documentation which we forgot to
-> create :(
+Thank you!
 
-OK, I'll fix the existing docs.
-
-Thanks,
-Pavel
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
