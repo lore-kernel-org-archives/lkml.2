@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab1CJToT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 14:44:19 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60033 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab1CJToS (ORCPT
+	id S1754051Ab1CJTpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 14:45:33 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47422 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab1CJTpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 14:44:18 -0500
-Message-ID: <4D792A00.6090803@pengutronix.de>
-Date: Thu, 10 Mar 2011 20:44:00 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Dr Andrew John Hughes <ahughes@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Trond.Myklebust@netapp.com,
-        Greg KH <greg@kroah.com>
-Subject: Re: NFS regression in 2.6.37.1 (current stable)
-References: <20110310185321.GA22030@rivendell.middle-earth.co.uk> <AANLkTikXb_NM0+3ro607k0sz1zFJFTeJwp9MmBn_ngzn@mail.gmail.com>
-In-Reply-To: <AANLkTikXb_NM0+3ro607k0sz1zFJFTeJwp9MmBn_ngzn@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigBA3054419E5906AB8FD47DA1"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 10 Mar 2011 14:45:32 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=UwRGqXM3h7MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=niRJQ5NdebbLZNx8V1kA:9 a=OC57vgZZZzemxGPPF5UA:7 a=c1xza0Kz4SJo0qucXvQQ4uCN5v8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/2] jump label: update for .39
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, peterz@infradead.org,
+        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+In-Reply-To: <1299785143.15854.407.camel@gandalf.stny.rr.com>
+References: <cover.1299702291.git.jbaron@redhat.com>
+	 <1299728191.15854.319.camel@gandalf.stny.rr.com>
+	 <BLU0-SMTP690BB959832A97E002293396C80@phx.gbl>
+	 <1299771504.15854.347.camel@gandalf.stny.rr.com>
+	 <4D790A13.4060705@caviumnetworks.com>
+	 <1299780241.15854.393.camel@gandalf.stny.rr.com>
+	 <20110310182000.GB2906@redhat.com>
+	 <1299782143.15854.402.camel@gandalf.stny.rr.com>
+	 <4D791CAA.7090108@caviumnetworks.com>
+	 <1299783236.15854.405.camel@gandalf.stny.rr.com>
+	 <4D791F31.6040100@caviumnetworks.com>
+	 <1299785143.15854.407.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 14:45:29 -0500
+Message-ID: <1299786329.15854.409.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigBA3054419E5906AB8FD47DA1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-03-10 at 14:25 -0500, Steven Rostedt wrote:
+> On Thu, 2011-03-10 at 10:57 -0800, David Daney wrote:
+> > On 03/10/2011 10:53 AM, Steven Rostedt wrote:
+> > > On Thu, 2011-03-10 at 10:47 -0800, David Daney wrote:
+> > >
+> > >> The alignment requested by the assembler will have to satisfy *all* the
+> > >> requested alignments, so manually forcing everything to .align 8 (or
+> > >> .align 4 for 32-bit) should ensure that the linker doesn't put in any holes.
+> > >
+> > > I would agree with the assessment although, I don't know that it is
+> > > documented anywhere that this is what happens. As the previous "bug"
+> > > with the trace_events was solved by me adding .align(4) everywhere, I
+> > > would think that .align(sizeof(long)) would work here too.
+> > >
+> > > It may be a good ideal to force this alignment, and not add wasted
+> > > space. If anything, if this (hypothetical) bug appears, it will most
+> > > likely show up as a crash on boot up. I'm not too concerned about it.
+> > >
+> > 
+> > If the linker put in gratuitous holes, things like  __ex_table would 
+> > break too.
+> 
+> Again, as I have said (although I said extable not __ex_table), there
+> seems to be no problem when the data is of a power of 2 as well. As
+> __ex_table size is a power of 2. We just don't know if the linker will
+> add holes when the size is something other than power of 2.
 
-On 03/10/2011 08:35 PM, Pekka Enberg wrote:
-[...]
-> There's some more discussion here:
->=20
-> https://bugs.gentoo.org/show_bug.cgi?id=3D357121
+Anyway, I think the best thing for now is to have Jason add
+the .align(sizeof(long)) in the inline assembly for all locations and be
+done with it.
 
-They have identified the 55ea499d60aefa3d03a77fc8590c26b5881faa92 as the
-offending commit, too. Used system is x86_64.
-
-> Greg, Trond, as this is a regression in -stable, I wonder if it's best
-> that we just revert the commit?
-
-No - that would break arm < armv6 and IIRC parisc.
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+-- Steve
 
 
---------------enigBA3054419E5906AB8FD47DA1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk15KgMACgkQjTAFq1RaXHPOiACfVZ2eBCOHpTiB8IRAIb/zkDc8
-hlMAn1W0jDtEsKhBkkTALBB2beWz0GBp
-=jiZV
------END PGP SIGNATURE-----
-
---------------enigBA3054419E5906AB8FD47DA1--
