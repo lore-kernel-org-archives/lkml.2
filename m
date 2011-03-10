@@ -1,241 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab1CJLZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 06:25:12 -0500
-Received: from compulab.co.il ([67.18.134.219]:41053 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab1CJLZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 06:25:10 -0500
-From: Mike Rapoport <mike@compulab.co.il>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: [PATCH] rtc: add EM3027 rtc driver
-Date: Thu, 10 Mar 2011 13:30:51 +0200
-Message-Id: <1299756651-25433-1-git-send-email-mike@compulab.co.il>
-X-Mailer: git-send-email 1.7.3.1
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1751798Ab1CJLZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 06:25:57 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54437 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1CJLZ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 06:25:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PZL0mZFbfpjcM4xtoafcfrQ+BO1cCwIH1/DbtcTPx99TXQKGn9nyJb6I3LmQ3vvVMe
+         RGBR34NpIhOYpp8stX4CnqKLA0uWSU1BgdFFOUr8pf7+j+F/kywvkboTl9y1OywrfHNp
+         HAVpFgKAHyPPpRexR+6f9OBqrnJ40uP7+gAOM=
+Date: Thu, 10 Mar 2011 12:25:38 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: MD-raid broken in 2.6.37.3?
+Message-ID: <20110310112538.GD14009@localhost>
+References: <20110309090622.GA3570@localhost>
+ <20110309210251.744ef954@notabene.brown>
+ <20110309192642.GA4098@localhost>
+ <20110310092837.7b52cccd@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110310092837.7b52cccd@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for EM Microelectronic EM3027 RTC chip.
+On Thu, Mar 10, 2011 at 09:28:37AM +1100, NeilBrown wrote:
+> On Wed, 9 Mar 2011 20:26:42 +0100 Johan Hovold <jhovold@gmail.com> wrote:
+> 
+> > On Wed, Mar 09, 2011 at 09:02:51PM +1100, NeilBrown wrote:
+> > > On Wed, 9 Mar 2011 10:06:22 +0100 Johan Hovold <jhovold@gmail.com> wrote:
 
-Signed-off-by: Mike Rapoport <mike@compulab.co.il>
----
- drivers/rtc/Kconfig      |    9 +++
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-em3027.c |  161 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 171 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-em3027.c
+[...]
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 4941cad..13a6042 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -354,6 +354,15 @@ config RTC_DRV_RX8025
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-rx8025.
- 
-+config RTC_DRV_EM3027
-+	tristate "EM Microelectronic EM3027"
-+	help
-+	  If you say yes here you get support for the EM
-+	  Microelectronic EM3027 RTC chips.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-em3027.
-+
- endif # I2C
- 
- comment "SPI RTC drivers"
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 2afdaf3..d29723f 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -45,6 +45,7 @@ obj-$(CONFIG_RTC_DRV_DS1742)	+= rtc-ds1742.o
- obj-$(CONFIG_RTC_DRV_DS3232)	+= rtc-ds3232.o
- obj-$(CONFIG_RTC_DRV_DS3234)	+= rtc-ds3234.o
- obj-$(CONFIG_RTC_DRV_EFI)	+= rtc-efi.o
-+obj-$(CONFIG_RTC_DRV_EM3027)	+= rtc-em3027.o
- obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
- obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
- obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
-diff --git a/drivers/rtc/rtc-em3027.c b/drivers/rtc/rtc-em3027.c
-new file mode 100644
-index 0000000..d8e1c25
---- /dev/null
-+++ b/drivers/rtc/rtc-em3027.c
-@@ -0,0 +1,161 @@
-+/*
-+ * An rtc/i2c driver for the EM Microelectronic EM3027
-+ * Copyright 2011 CompuLab, Ltd.
-+ *
-+ * Author: Mike Rapoport <mike@compulab.co.il>
-+ *
-+ * Based on rtc-ds1672.c by Alessandro Zummo <a.zummo@towertech.it>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/i2c.h>
-+#include <linux/rtc.h>
-+#include <linux/bcd.h>
-+
-+/* Registers */
-+#define EM3027_REG_ON_OFF_CTRL	0x00
-+#define EM3027_REG_IRQ_CTRL	0x01
-+#define EM3027_REG_IRQ_FLAGS	0x02
-+#define EM3027_REG_STATUS	0x03
-+#define EM3027_REG_RST_CTRL	0x04
-+
-+#define EM3027_REG_WATCH_SEC	0x08
-+#define EM3027_REG_WATCH_MIN	0x09
-+#define EM3027_REG_WATCH_HOUR	0x0a
-+#define EM3027_REG_WATCH_DATE	0x0b
-+#define EM3027_REG_WATCH_DAY	0x0c
-+#define EM3027_REG_WATCH_MON	0x0d
-+#define EM3027_REG_WATCH_YEAR	0x0e
-+
-+#define EM3027_REG_ALARM_SEC	0x10
-+#define EM3027_REG_ALARM_MIN	0x11
-+#define EM3027_REG_ALARM_HOUR	0x12
-+#define EM3027_REG_ALARM_DATE	0x13
-+#define EM3027_REG_ALARM_DAY	0x14
-+#define EM3027_REG_ALARM_MON	0x15
-+#define EM3027_REG_ALARM_YEAR	0x16
-+
-+static struct i2c_driver em3027_driver;
-+
-+static int em3027_get_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+
-+	unsigned char addr = EM3027_REG_WATCH_SEC;
-+	unsigned char buf[7];
-+
-+	struct i2c_msg msgs[] = {
-+		{client->addr, 0, 1, &addr},		/* setup read addr */
-+		{client->addr, I2C_M_RD, 7, buf},	/* read time/date */
-+	};
-+
-+	/* read time/date registers */
-+	if ((i2c_transfer(client->adapter, &msgs[0], 2)) != 2) {
-+		dev_err(&client->dev, "%s: read error\n", __func__);
-+		return -EIO;
-+	}
-+
-+	tm->tm_sec	= bcd2bin(buf[0]);
-+	tm->tm_min	= bcd2bin(buf[1]);
-+	tm->tm_hour	= bcd2bin(buf[2]);
-+	tm->tm_mday	= bcd2bin(buf[3]);
-+	tm->tm_wday	= bcd2bin(buf[4]);
-+	tm->tm_mon	= bcd2bin(buf[5]);
-+	tm->tm_year	= bcd2bin(buf[6]) + 100;
-+
-+	return 0;
-+}
-+
-+static int em3027_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	unsigned char buf[8];
-+
-+	struct i2c_msg msg = {
-+		client->addr, 0, 8, buf,	/* write time/date */
-+	};
-+
-+	buf[0] = EM3027_REG_WATCH_SEC;
-+	buf[1] = bin2bcd(tm->tm_sec);
-+	buf[2] = bin2bcd(tm->tm_min);
-+	buf[3] = bin2bcd(tm->tm_hour);
-+	buf[4] = bin2bcd(tm->tm_mday);
-+	buf[5] = bin2bcd(tm->tm_wday);
-+	buf[6] = bin2bcd(tm->tm_mon);
-+	buf[7] = bin2bcd(tm->tm_year % 100);
-+
-+	/* write time/date registers */
-+	if ((i2c_transfer(client->adapter, &msg, 1)) != 1) {
-+		dev_err(&client->dev, "%s: write error\n", __func__);
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct rtc_class_ops em3027_rtc_ops = {
-+	.read_time = em3027_get_time,
-+	.set_time = em3027_set_time,
-+};
-+
-+static int em3027_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct rtc_device *rtc;
-+
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
-+		return -ENODEV;
-+
-+	rtc = rtc_device_register(em3027_driver.driver.name, &client->dev,
-+				  &em3027_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtc))
-+		return PTR_ERR(rtc);
-+
-+	i2c_set_clientdata(client, rtc);
-+
-+	return 0;
-+}
-+
-+static int em3027_remove(struct i2c_client *client)
-+{
-+	struct rtc_device *rtc = i2c_get_clientdata(client);
-+
-+	if (rtc)
-+		rtc_device_unregister(rtc);
-+
-+	return 0;
-+}
-+
-+static struct i2c_device_id em3027_id[] = {
-+	{ "em3027", 0 },
-+	{ }
-+};
-+
-+static struct i2c_driver em3027_driver = {
-+	.driver = {
-+		   .name = "rtc-em3027",
-+	},
-+	.probe = &em3027_probe,
-+	.remove = &em3027_remove,
-+	.id_table = em3027_id,
-+};
-+
-+static int __init em3027_init(void)
-+{
-+	return i2c_add_driver(&em3027_driver);
-+}
-+
-+static void __exit em3027_exit(void)
-+{
-+	i2c_del_driver(&em3027_driver);
-+}
-+
-+MODULE_AUTHOR("Mike Rapoport <mike@compulab.co.il>");
-+MODULE_DESCRIPTION("EM Microelectronic EM3027 RTC driver");
-+MODULE_LICENSE("GPL");
-+
-+module_init(em3027_init);
-+module_exit(em3027_exit);
--- 
-1.7.3.1
+> > It's the whole array that is missing. The raid-1 arrays appear but the
+> > raid-0 does not.
+> 
+> Based on that I am very confident that the problem is not related to
+> an md patches in 2.6.37.3 - and your own testing below seems to confirm that.
+> 
+> > > If you still have the boot-log from when you booted 2.6.37.3 (or can
+> > > recreated) and can get a similar log for 2.6.37.2, then it might be useful to
+> > > compare them.
+> > 
+> > Attaching two boot logs for 2.6.37.3 with /dev/md6 missing, and one for
+> > 2.6.37.2.
+> > 
+> > Note that md1, md2, and md3 have v0.90 superblocks, whereas md5 and md6 have
+> > v1.20 ones and are assembled later.
+> > 
+> > When /dev/md6 is successfully assembled, through the gentoo init scripts
+> > calling "mdadm -As", the log contains:
+> > 
+> > 	messages.2:Mar  8 20:44:19 xi kernel: md: bind<sda6>
+> > 	messages.2:Mar  8 20:44:19 xi kernel: md: bind<sda5>
+> > 	messages.2:Mar  8 20:44:19 xi kernel: md: bind<sdb5>
+> > 	messages.2:Mar  8 20:44:19 xi kernel: md: bind<sdb6>
+> 
+> This doesn't look like the output that would be generated if
+> "mdadm -As" were used.
+> in that case you would expect to see the two '5' devices together and the
+> two '6' devices together.
+> e.g
+>    sda5
+>    sdb5
+>    sda6
+>    sdb6
+> 
+> This looks more like the result of "mdadm -I" being called on various devices
+> as udev discovers them and gives them to mdadm (it could be "mdadm
+> --incremental" rather than "-I").
+> 
+> This suggests that there is some race somewhere that is causing either a6 or
+> b6 to be missed, either by udev or by mdadm - probably mdadm.
+> 
+> I would suggest that you check if "mdadm -I" is being called by some
+> udev rules.d files (/liub/udev/rules.d/*.rules or /etc/udev/rules.d/*.rules)
+> 
+> Then maybe try to enable some udev tracing to get a log of everything it
+> does.  Then if this is something that you want to pursue, post to
+>   linux-raid@vger.kernel.org
+> with as many details as you can.
 
+You're right about mdadm --incremental, of course.
+
+Since I'm not able to reproduce it reliably (and adding udev tracing
+could probably make it even harder to due to changed timings) and I'm
+basically only cold booting on kernel updates these days, I think I'll
+have to let this one be for now. At least now I know it's not hurting
+my disks.
+
+For reference, I'm using udev-151 and mdadm-3.1.4.
+
+Thanks for you help,
+Johan
