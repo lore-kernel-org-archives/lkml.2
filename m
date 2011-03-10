@@ -1,189 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1CJP7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 10:59:13 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57628 "EHLO
+	id S1753430Ab1CJQAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:00:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41178 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab1CJP7K (ORCPT
+	with ESMTP id S1752550Ab1CJP7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 10:59:10 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Ci8PUUQdb-QA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=jR6N51ylbiydvFIhAcAA:9 a=TQ6M3GN_4XVou_cCODYA:7 a=oHSlfBt0vn0Jc2j_pEqDuREPVSYA:4 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=jaydZH6APZ--ZdUN:21 a=qLnWfbA9-bcmRTfm:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 10 Mar 2011 10:59:13 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=S2mbvSiwNDUA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=WXfvmbAI4Rpl6lzlBgQA:9 a=XyqPVa_guuUqm1lPd5VNMU-dniIA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110310155909.071564362@goodmis.org>
+Message-Id: <20110310155911.537759130@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Mar 2011 10:58:01 -0500
+Date: Thu, 10 Mar 2011 10:58:10 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Sharp <dhsharp@google.com>
-Subject: [PATCH 01/15] tracing: Add an overwrite trace_option.
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 10/15] ftrace: Add .ref.text as one of the safe areas to trace
 References: <20110310155800.478792851@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Add-an-overwrite-trace_option.patch
+Content-Disposition: inline; filename=0010-ftrace-Add-.ref.text-as-one-of-the-safe-areas-to-tra.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Sharp <dhsharp@google.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Add an "overwrite" trace_option for ftrace to control whether the buffer should
-be overwritten on overflow or not. The default remains to overwrite old events
-when the buffer is full. This patch adds the option to instead discard newest
-events when the buffer is full. This is useful to get a snapshot of traces just
-after enabling traces. Dropping the current event is also a simpler code path.
+The section .ref.text will not go away unexpectedly and is
+safe to trace. Add it to the safe list of sections to allow
+tracing.
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-LKML-Reference: <1291844807-15481-1-git-send-email-dhsharp@google.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- Documentation/trace/ftrace.txt |    5 +++++
- include/linux/ring_buffer.h    |    2 ++
- kernel/trace/ring_buffer.c     |   11 +++++++++++
- kernel/trace/trace.c           |   17 +++++++++++------
- kernel/trace/trace.h           |    1 +
- 5 files changed, 30 insertions(+), 6 deletions(-)
+ scripts/recordmcount.c  |    3 ++-
+ scripts/recordmcount.pl |    1 +
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 67f1cc4..1ebc24c 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -454,6 +454,11 @@ x494] <- /root/a.out[+0x4a8] <- /lib/libc-2.7.so[+0x1e1a6]
-                    latencies, as described in "Latency
-                    trace format".
- 
-+  overwrite - This controls what happens when the trace buffer is
-+              full. If "1" (default), the oldest events are
-+              discarded and overwritten. If "0", then the newest
-+              events are discarded.
-+
- ftrace_enabled
- --------------
- 
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index 8d3a248..ab38ac8 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -100,6 +100,8 @@ void ring_buffer_free(struct ring_buffer *buffer);
- 
- int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size);
- 
-+void ring_buffer_change_overwrite(struct ring_buffer *buffer, int val);
-+
- struct ring_buffer_event *ring_buffer_lock_reserve(struct ring_buffer *buffer,
- 						   unsigned long length);
- int ring_buffer_unlock_commit(struct ring_buffer *buffer,
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index bd1c35a..269db80 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1429,6 +1429,17 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
- }
- EXPORT_SYMBOL_GPL(ring_buffer_resize);
- 
-+void ring_buffer_change_overwrite(struct ring_buffer *buffer, int val)
-+{
-+	mutex_lock(&buffer->mutex);
-+	if (val)
-+		buffer->flags |= RB_FL_OVERWRITE;
-+	else
-+		buffer->flags &= ~RB_FL_OVERWRITE;
-+	mutex_unlock(&buffer->mutex);
-+}
-+EXPORT_SYMBOL_GPL(ring_buffer_change_overwrite);
-+
- static inline void *
- __rb_data_page_index(struct buffer_data_page *bpage, unsigned index)
+diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
+index 038b3d1..f9f6f52 100644
+--- a/scripts/recordmcount.c
++++ b/scripts/recordmcount.c
+@@ -206,7 +206,8 @@ static uint32_t (*w2)(uint16_t);
+ static int
+ is_mcounted_section_name(char const *const txtname)
  {
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 8dc8da6..85e3ee1 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -41,8 +41,6 @@
- #include "trace.h"
- #include "trace_output.h"
- 
--#define TRACE_BUFFER_FLAGS	(RB_FL_OVERWRITE)
--
- /*
-  * On boot up, the ring buffer is set to the minimum size, so that
-  * we do not waste memory on systems that are not using tracing.
-@@ -340,7 +338,7 @@ static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
- /* trace_flags holds trace_options default values */
- unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
- 	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
--	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD;
-+	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE;
- 
- static int trace_stop_count;
- static DEFINE_SPINLOCK(tracing_start_lock);
-@@ -425,6 +423,7 @@ static const char *trace_options[] = {
- 	"sleep-time",
- 	"graph-time",
- 	"record-cmd",
-+	"overwrite",
- 	NULL
- };
- 
-@@ -2529,6 +2528,9 @@ static void set_tracer_flags(unsigned int mask, int enabled)
- 
- 	if (mask == TRACE_ITER_RECORD_CMD)
- 		trace_event_enable_cmd_record(enabled);
-+
-+	if (mask == TRACE_ITER_OVERWRITE)
-+		ring_buffer_change_overwrite(global_trace.buffer, enabled);
- }
- 
- static ssize_t
-@@ -4555,9 +4557,11 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
- __init static int tracer_alloc_buffers(void)
- {
- 	int ring_buf_size;
-+	enum ring_buffer_flags rb_flags;
- 	int i;
- 	int ret = -ENOMEM;
- 
-+
- 	if (!alloc_cpumask_var(&tracing_buffer_mask, GFP_KERNEL))
- 		goto out;
- 
-@@ -4570,12 +4574,13 @@ __init static int tracer_alloc_buffers(void)
- 	else
- 		ring_buf_size = 1;
- 
-+	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
-+
- 	cpumask_copy(tracing_buffer_mask, cpu_possible_mask);
- 	cpumask_copy(tracing_cpumask, cpu_all_mask);
- 
- 	/* TODO: make the number of buffers hot pluggable with CPUS */
--	global_trace.buffer = ring_buffer_alloc(ring_buf_size,
--						   TRACE_BUFFER_FLAGS);
-+	global_trace.buffer = ring_buffer_alloc(ring_buf_size, rb_flags);
- 	if (!global_trace.buffer) {
- 		printk(KERN_ERR "tracer: failed to allocate ring buffer!\n");
- 		WARN_ON(1);
-@@ -4585,7 +4590,7 @@ __init static int tracer_alloc_buffers(void)
- 
- 
- #ifdef CONFIG_TRACER_MAX_TRACE
--	max_tr.buffer = ring_buffer_alloc(1, TRACE_BUFFER_FLAGS);
-+	max_tr.buffer = ring_buffer_alloc(1, rb_flags);
- 	if (!max_tr.buffer) {
- 		printk(KERN_ERR "tracer: failed to allocate max ring buffer!\n");
- 		WARN_ON(1);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 856e73c..951d0b7 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -606,6 +606,7 @@ enum trace_iterator_flags {
- 	TRACE_ITER_SLEEP_TIME		= 0x40000,
- 	TRACE_ITER_GRAPH_TIME		= 0x80000,
- 	TRACE_ITER_RECORD_CMD		= 0x100000,
-+	TRACE_ITER_OVERWRITE		= 0x200000,
- };
- 
- /*
+-	return 0 == strcmp(".text",          txtname) ||
++	return 0 == strcmp(".text",           txtname) ||
++		0 == strcmp(".ref.text",      txtname) ||
+ 		0 == strcmp(".sched.text",    txtname) ||
+ 		0 == strcmp(".spinlock.text", txtname) ||
+ 		0 == strcmp(".irqentry.text", txtname) ||
+diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+index 1d7963f..4be0dee 100755
+--- a/scripts/recordmcount.pl
++++ b/scripts/recordmcount.pl
+@@ -130,6 +130,7 @@ if ($inputfile =~ m,kernel/trace/ftrace\.o$,) {
+ # Acceptable sections to record.
+ my %text_sections = (
+      ".text" => 1,
++     ".ref.text" => 1,
+      ".sched.text" => 1,
+      ".spinlock.text" => 1,
+      ".irqentry.text" => 1,
 -- 
 1.7.2.3
 
