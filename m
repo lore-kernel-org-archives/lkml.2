@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1CJL4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 06:56:20 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:52535 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab1CJL4T (ORCPT
+	id S1752497Ab1CJL7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 06:59:00 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43096 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab1CJL66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 06:56:19 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
-Date: Thu, 10 Mar 2011 12:56:06 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, bp@amd64.org
-References: <20110301083529.GA767@liondog.tnic> <20110309175625.GA29181@merkur.ravnborg.org> <20110310090444.GA25522@elte.hu>
-In-Reply-To: <20110310090444.GA25522@elte.hu>
+	Thu, 10 Mar 2011 06:58:58 -0500
+Date: Thu, 10 Mar 2011 11:58:56 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: sedat.dilek@gmail.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] more vfs fixes for final
+Message-ID: <20110310115856.GG22723@ZenIV.linux.org.uk>
+References: <20110310110931.GF22723@ZenIV.linux.org.uk>
+ <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103101256.06745.arnd@arndb.de>
-X-Provags-ID: V02:K0:EqxcsX4dcSFZVQzKtjgiCfwUm6B5qEszAgN7hZVKUYp
- FDHVWunBJCe9OeK+1O5yrdnQfzzcOmjhZdp9b9j0R9ZCxiBG0L
- 9hZ/xT2FzOtLo/uV6hlNU8SG1wGKPa/u6CoylFNCz+B4YWjav6
- a/B1GbOmzk1aS3yf0BKCSgR8y8IT/LxnIGt4I+iEhw2aP0Nkgi
- wnhVTCff/EJglewhOEkiA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 March 2011, Ingo Molnar wrote:
-> Also, adding 3 lines per object file is pretty ugly - would it be possible to create 
-> a nicer, compact, single-line way to someone condense a CONFIG_ERROR opt-out 
-> mechanism, the -Werror default and the single-object-file into a single rule?
+On Thu, Mar 10, 2011 at 12:44:37PM +0100, Sedat Dilek wrote:
+> On Thu, Mar 10, 2011 at 12:09 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > ?? ?? ?? ??Fix for misplaced include in sysctl.h, fixes for ->d_revalidate()
+> > (a bunch of filesystems are unusable with nfsd at the moment; the real fix
+> > is to make ->d_revalidate() take flags directly and forget about dereferencing
+> > nameidata in most of the instances, but that's obviously for the next window
+> > and oopsen really need to be fixed for -final), missing checks in fallocate()
+> > and Bruce's patch for inode (temporary) leaks with nfsd. ??Please, pull from
+> >
+> > git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+> >
 > 
-> Something like:
+> Did you really push the new commits?
 > 
->   obj-werror-y += sched.o
+> Last commit here is commit b306419ae08d9def53f2142a37cc0a58622307a8:
+> "nd->inode is not set on the second attempt in path_walk()"
 
-I haven't tried it, but it could work (or be made to work) recursively,
-so you can link multiple objects together and have them use the same flag e.g.
+Looks like propagation from hera to git.kernel.org is slow tonight...
 
-obj-y += obj_werror.o
-ccflags-obj_werror.o += -Werror
-obj-werror-y += sched.o module.o user.o
+GIT_DIR=/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ git log for-linus|head -5
+commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
+Author: J. Bruce Fields <bfields@fieldses.org>
+Date:   Tue Jan 18 15:45:09 2011 -0500
 
-	Arnd
+    fs/dcache: allow d_obtain_alias() to return unhashed dentries
