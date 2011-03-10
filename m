@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab1CJMv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 07:51:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48781 "EHLO mx2.suse.de"
+	id S1752527Ab1CJM7l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 07:59:41 -0500
+Received: from cantor.suse.de ([195.135.220.2]:39549 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022Ab1CJMv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 07:51:56 -0500
-Date: Thu, 10 Mar 2011 13:51:53 +0100
-Message-ID: <s5hvczrm93q.wl%tiwai@suse.de>
+	id S1751938Ab1CJM7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 07:59:40 -0500
+Date: Thu, 10 Mar 2011 13:59:38 +0100
+Message-ID: <s5hsjuvm8qt.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: "Indan Zupancic" <indan@nul.nu>
 Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
@@ -18,7 +18,7 @@ Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
         "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
         "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
 Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after           reopening lid
-In-Reply-To: <5c286d66bf790d7fbdd69c9861edc91d.squirrel@webmail.greenhost.nl>
+In-Reply-To: <a04bdafb8c7a97d92593e980b01b37fd.squirrel@webmail.greenhost.nl>
 References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
 	<20110216192658.GA7225@blimp.localdomain>
 	<20110217221329.GA3332@x61.home>
@@ -33,7 +33,8 @@ References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
 	<AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
 	<1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
 	<s5h4o7btnxq.wl%tiwai@suse.de>
-	<5c286d66bf790d7fbdd69c9861edc91d.squirrel@webmail.greenhost.nl>
+	<s5hy64ns7pq.wl%tiwai@suse.de>
+	<a04bdafb8c7a97d92593e980b01b37fd.squirrel@webmail.greenhost.nl>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -43,154 +44,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 10 Mar 2011 09:45:18 +0100 (CET),
+At Thu, 10 Mar 2011 11:06:28 +0100 (CET),
 Indan Zupancic wrote:
 > 
-> On Thu, March 10, 2011 08:49, Takashi Iwai wrote:
-> > At Thu, 10 Mar 2011 06:50:09 +0100 (CET),
-> > Indan Zupancic wrote:
+> On Thu, March 10, 2011 09:25, Takashi Iwai wrote:
+> > At Thu, 10 Mar 2011 08:49:37 +0100,
+> > Takashi Iwai wrote:
 > >>
-> >> Hello,
-> >>
-> >> On Fri, March 4, 2011 19:47, Linus Torvalds wrote:
-> >> > Alex, can you confirm that the revert of 951f3512dba5 plus the
-> >> > one-liner patch from Takashi that Indan quoted also works for you?
+> >> At Thu, 10 Mar 2011 06:50:09 +0100 (CET),
+> >> Indan Zupancic wrote:
 > >> >
-> >> >               Linus
+> >> > Hello,
 > >> >
-> >> > On Thu, Mar 3, 2011 at 10:53 PM, Indan Zupancic <indan@nul.nu> wrote:
-> >> >>
-> >> >> So please revert my patch and apply Takashi Iwai's, which fixes the
-> >> >> most immediate bug without changing anything else. This should go
-> >> >> in stable too.
+> >> > On Fri, March 4, 2011 19:47, Linus Torvalds wrote:
+> >> > > Alex, can you confirm that the revert of 951f3512dba5 plus the
+> >> > > one-liner patch from Takashi that Indan quoted also works for you?
+> >> > >
+> >> > >               Linus
+> >> > >
+> >> > > On Thu, Mar 3, 2011 at 10:53 PM, Indan Zupancic <indan@nul.nu> wrote:
+> >> > >>
+> >> > >> So please revert my patch and apply Takashi Iwai's, which fixes the
+> >> > >> most immediate bug without changing anything else. This should go
+> >> > >> in stable too.
+> >> > >
 > >> >
+> >> > I found another backlight bug:
+> >> >
+> >> > When suspending intel_panel_disable_backlight() is never called,
+> >> > but intel_panel_enable_backlight() is called at resume. With the
+> >> > effect that if the brightness was ever changed after screen
+> >> > blanking, the wrong brightness gets restored.
+> >> >
+> >> > This explains the weird behaviour I've seen. I didn't see it with
+> >> > combination mode, because then the brightness is always the same
+> >> > (zero or the maximum, the BIOS only uses LBPC on my system.) I'll
+> >> > send a patch in a moment.
+> >> >
+> >> > Alternative for reverting the combination mode removal (I can also
+> >> > redo the patch against the revert and Takashi's patch, if that's
+> >> > preferred):
+> >> >
+> >> > --
+> >> >
+> >> > drm/i915: Do handle backlight combination mode specially
+> >> >
+> >> > Add back the combination mode check, but with slightly cleaner code
+> >> > and the weirdness removed: No val >>= 1, but also no val &= ~1. The
+> >> > old code probably confused bit 0 with BLM_LEGACY_MODE, which is bit 16.
+> >> > The other change is clearer calculations: Just check for zero level
+> >> > explicitly instead of avoiding the divide-by-zero.
+> >> >
+> >> > Signed-off-by: Indan Zupancic <indan@nul.nu>
+> >> >
+> >> > ---
+> >> >
+> >> > diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+> >> > index d860abe..b05631a 100644
+> >> > --- a/drivers/gpu/drm/i915/intel_panel.c
+> >> > +++ b/drivers/gpu/drm/i915/intel_panel.c
+> >> > @@ -30,6 +30,10 @@
+> >> >
+> >> >  #include "intel_drv.h"
+> >> >
+> >> > +#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
+> >> > +#define BLM_COMBINATION_MODE (1 << 30)
+> >> > +#define BLM_LEGACY_MODE (1 << 16)
+> >> > +
+> >> >  void
+> >> >  intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
+> >> >  		       struct drm_display_mode *adjusted_mode)
+> >> > @@ -110,6 +114,22 @@ done:
+> >> >  	dev_priv->pch_pf_size = (width << 16) | height;
+> >> >  }
+> >> >
+> >> > +/*
+> >> > + * What about gen 3? If there are no gen 3 systems with ASLE,
+> >> > + * then it doesn't matter, as we don't need to change the
+> >> > + * brightness. But then the gen 2 check can be removed too.
+> >> > + */
+> >> > +static int is_backlight_combination_mode(struct drm_device *dev)
+> >> > +{
+> >> > +	struct drm_i915_private *dev_priv = dev->dev_private;
+> >> > +
+> >> > +	if (INTEL_INFO(dev)->gen >= 4)
+> >> > +		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
+> >> > +	if (IS_GEN2(dev))
+> >> > +		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
+> >> > +	return 0;
+> >> > +}
+> >> > +
+> >> >  static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
+> >> >  {
+> >> >  	u32 val;
+> >> > @@ -163,9 +183,12 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
+> >> >  			max >>= 17;
+> >> >  		} else {
+> >> >  			max >>= 16;
+> >> > +			/* Ignore BLM_LEGACY_MODE bit */
+> >> >  			if (INTEL_INFO(dev)->gen < 4)
+> >> >  				max &= ~1;
+> >> >  		}
+> >> > +		if (is_backlight_combination_mode(dev))
+> >> > +			max *= 0xff;
+> >> >  	}
+> >> >
+> >> >  	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
+> >> > @@ -183,6 +206,12 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
+> >> >  		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
+> >> >  		if (IS_PINEVIEW(dev))
+> >> >  			val >>= 1;
+> >> > +		if (is_backlight_combination_mode(dev)){
+> >> > +			u8 lbpc;
+> >> > +
+> >> > +			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
+> >> > +			val *= lbpc;
+> >> > +		}
+> >> >  	}
+> >> >
+> >> >  	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
+> >> > @@ -205,6 +234,15 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+> >> >
+> >> >  	if (HAS_PCH_SPLIT(dev))
+> >> >  		return intel_pch_panel_set_backlight(dev, level);
+> >> > +
+> >> > +	if (level && is_backlight_combination_mode(dev)){
+> >> > +		u32 max = intel_panel_get_max_backlight(dev);
+> >> > +		u8 lpbc;
+> >> > +
+> >> > +		lpbc = level * 0xff / max;
+> >> > +		level /= lpbc;
 > >>
-> >> I found another backlight bug:
+> >> Hmm, I don't think this calculation is correct.  This would result
+> >> in level of opregion over its limit.  For example, assume the level
+> >> max = 100, so total max = 25500.  Passing level=150 here will be:
 > >>
-> >> When suspending intel_panel_disable_backlight() is never called,
-> >> but intel_panel_enable_backlight() is called at resume. With the
-> >> effect that if the brightness was ever changed after screen
-> >> blanking, the wrong brightness gets restored.
+> >> 	lbpc = 150 * 0xff / 25500 = 1.5 = 1
+> >> 	level = 150 / 1 = 150, which is over limit.
 > >>
-> >> This explains the weird behaviour I've seen. I didn't see it with
-> >> combination mode, because then the brightness is always the same
-> >> (zero or the maximum, the BIOS only uses LBPC on my system.) I'll
-> >> send a patch in a moment.
-> >>
-> >> Alternative for reverting the combination mode removal (I can also
-> >> redo the patch against the revert and Takashi's patch, if that's
-> >> preferred):
-> >>
-> >> --
-> >>
-> >> drm/i915: Do handle backlight combination mode specially
-> >>
-> >> Add back the combination mode check, but with slightly cleaner code
-> >> and the weirdness removed: No val >>= 1, but also no val &= ~1. The
-> >> old code probably confused bit 0 with BLM_LEGACY_MODE, which is bit 16.
-> >> The other change is clearer calculations: Just check for zero level
-> >> explicitly instead of avoiding the divide-by-zero.
-> >>
-> >> Signed-off-by: Indan Zupancic <indan@nul.nu>
-> >>
-> >> ---
-> >>
-> >> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> >> index d860abe..b05631a 100644
-> >> --- a/drivers/gpu/drm/i915/intel_panel.c
-> >> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> >> @@ -30,6 +30,10 @@
-> >>
-> >>  #include "intel_drv.h"
-> >>
-> >> +#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
-> >> +#define BLM_COMBINATION_MODE (1 << 30)
-> >> +#define BLM_LEGACY_MODE (1 << 16)
-> >> +
-> >>  void
-> >>  intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
-> >>  		       struct drm_display_mode *adjusted_mode)
-> >> @@ -110,6 +114,22 @@ done:
-> >>  	dev_priv->pch_pf_size = (width << 16) | height;
-> >>  }
-> >>
-> >> +/*
-> >> + * What about gen 3? If there are no gen 3 systems with ASLE,
-> >> + * then it doesn't matter, as we don't need to change the
-> >> + * brightness. But then the gen 2 check can be removed too.
-> >> + */
-> >> +static int is_backlight_combination_mode(struct drm_device *dev)
-> >> +{
-> >> +	struct drm_i915_private *dev_priv = dev->dev_private;
-> >> +
-> >> +	if (INTEL_INFO(dev)->gen >= 4)
-> >> +		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
-> >> +	if (IS_GEN2(dev))
-> >> +		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
-> >> +	return 0;
-> >> +}
-> >> +
-> >>  static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
-> >>  {
-> >>  	u32 val;
-> >> @@ -163,9 +183,12 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
-> >>  			max >>= 17;
-> >>  		} else {
-> >>  			max >>= 16;
-> >> +			/* Ignore BLM_LEGACY_MODE bit */
-> >>  			if (INTEL_INFO(dev)->gen < 4)
-> >>  				max &= ~1;
-> >>  		}
-> >> +		if (is_backlight_combination_mode(dev))
-> >> +			max *= 0xff;
-> >>  	}
-> >>
-> >>  	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
-> >> @@ -183,6 +206,12 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
-> >>  		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
-> >>  		if (IS_PINEVIEW(dev))
-> >>  			val >>= 1;
-> >> +		if (is_backlight_combination_mode(dev)){
-> >> +			u8 lbpc;
-> >> +
-> >> +			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
-> >> +			val *= lbpc;
-> >> +		}
-> >>  	}
-> >>
-> >>  	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
-> >> @@ -205,6 +234,15 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
-> >>
-> >>  	if (HAS_PCH_SPLIT(dev))
-> >>  		return intel_pch_panel_set_backlight(dev, level);
-> >> +
-> >> +	if (level && is_backlight_combination_mode(dev)){
-> >> +		u32 max = intel_panel_get_max_backlight(dev);
-> >> +		u8 lpbc;
-> >> +
-> >> +		lpbc = level * 0xff / max;
-> >> +		level /= lpbc;
+> >> More worse, lbpc can be zero when level is below 100 in the case
+> >> above...
 > >
-> > Hmm, I don't think this calculation is correct.  This would result
-> > in level of opregion over its limit.  For example, assume the level
-> > max = 100, so total max = 25500.  Passing level=150 here will be:
+> > That is, Chris' original code in that portion was correct:
 > >
-> > 	lbpc = 150 * 0xff / 25500 = 1.5 = 1
-> > 	level = 150 / 1 = 150, which is over limit.
+> > 	if (is_backlight_combination_mode(dev)){
+> > 		u32 max = intel_panel_get_max_backlight(dev);
+> > 		u8 lpbc;
 > >
-> > More worse, lbpc can be zero when level is below 100 in the case
-> > above...
+> > 		lpbc = level * 0xfe / max + 1;
+> > 		level /= lpbc;
+> > 		pci_write_config_byte(dev->pdev, PCI_LBPC, lpbc);
+> > 	}
+> >
+> > This will fit within the right range.
+> > Though, changing like below will give a bit better calculation,
+> > closer to the real level.
+> >
+> > 		lpbc = level * 0xfe / max + 1;
+> > 		level = (level + lpbc / 2) / lpbc;
 > 
-> Yes, you're right. It seems that any simplification I try to do
-> creates a new bug.
+> Indeed, though I don't think it makes much difference in practise.
 > 
-> Do you have any bright idea why the old code did val &= ~1; too?
-> It seems obvious it's related to val >>= 1, but...
+> All in all it seems best to just revert my patch and apply your fix.
+> Any "improvements" I may have are either buggy or can be added later.
 
-I guess it's for the case GEN < 4.  But, no certain idea.
+Agreed.  We should take a safer way.
 
-In my patch, I left it since this is relatively harmless, even if it's
-not correct.
+> Care to make a new patch with the above improvement added? You can
+> add my acked-by, for what it's worth.
+
+OK, I'm going to send it now.
+
+> At this point I don't even dare removing that "obviously" bogus
+> val &= ~1; I bet it's an undocumented bit having some obscure
+> secret function on not well tested systems.
+
+Yes, I also left it...
 
 
 Takashi
