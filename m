@@ -1,112 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab1CJTbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 14:31:13 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:24338 "EHLO relay.sw.ru"
+	id S1753959Ab1CJTcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 14:32:15 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:47408 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752791Ab1CJTbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 14:31:09 -0500
-Message-ID: <4D7926C9.9070206@parallels.com>
-Date: Thu, 10 Mar 2011 22:30:17 +0300
-From: Andrew Vagin <avagin@parallels.com>
-Reply-To: avagin@parallels.com
-Organization: parallels
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1752458Ab1CJTcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 14:32:14 -0500
+X-ASG-Debug-ID: 1299785532-01de284cf83f230001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D792735.8000604@fusionio.com>
+Date: Thu, 10 Mar 2011 20:32:05 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + x86-mm-handle-mm_fault_error-in-kernel-space.patch added to
- -mm tree
-References: <20110310142812.GA25224@redhat.com>
-In-Reply-To: <20110310142812.GA25224@redhat.com>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
+        <hch@infradead.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com> <1295659049-2688-5-git-send-email-jaxboe@fusionio.com> <20110310165452.GE29464@redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH 04/10] block: initial patch for on-stack per-task plugging
+In-Reply-To: <20110310165452.GE29464@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299785532
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57610
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 05:28 PM, Oleg Nesterov wrote:
-> (add cc's)
->
->> Subject: x86/mm: handle mm_fault_error() in kernel space
->> From: Andrey Vagin<avagin@openvz.org>
->>
->> mm_fault_error() should not execute oom-killer, if page fault occurs in
->> kernel space.  E.g.  in copy_from_user/copy_to_user.
-> Why? I don't understand this part.
-I thought for a bit more...
+On 2011-03-10 17:54, Vivek Goyal wrote:
+> On Sat, Jan 22, 2011 at 01:17:23AM +0000, Jens Axboe wrote:
+> 
+> [..]
+>> -/*
+>> - * Only disabling plugging for non-rotational devices if it does tagging
+>> - * as well, otherwise we do need the proper merging
+>> - */
+>> -static inline bool queue_should_plug(struct request_queue *q)
+>> -{
+>> -	return !(blk_queue_nonrot(q) && blk_queue_tagged(q));
+>> -}
+>> -
+> 
+> Jens,
+> 
+> While discussing stack plug with Mike Snitzer, this occurred to us that in
+> new code we seem to be plugging even if underlying device is SSD with NCQ.
+> Should we continue to maintain the old behavior of not plugging for NCQ SSD?
 
-I think we should not execute out_of_memory() in this case at all, 
-because when we return from page fault, we execute the same command and 
-provoke the "same" page fault again. Now pls think what is the 
-difference between these page faults? It has been generated from one 
-place and the program do nothing between those. I think we try to handle 
-one error two times and it isn't good. If handle_mm_fault() returns 
-VM_FAULT_OOM and pagefault occurred from userspace, the current task 
-should be killed by SIGKILL, then we should return from page fault back 
-to userspace for the task to handle the signal. If handle_mm_fault() 
-returns VM_FAULT_OOM and pagefault occurred in kernel space, we should 
-execute no_context() to return from syscall.
+The main reason plugging was turned off for SSD's previously was because
+it ended up hammering on the queue lock a lot. So it was turned off to
+speed them up.
 
-Also note that out_of_memory is usually called from handle_mm_fault() -> 
-... -> alloc_page()->...->out_of_memory().
+The new plugging scheme is faster than hitting the queue directly, so
+now it would be a good idea to do the plugging in fact. Plus even for
+high performance SSD's, things like merging are still a good idea.
 
->> This would happen if we find ourselves in OOM on a copy_to_user(), or a
->> copy_from_user() which faults.
->>
->> Without this patch, the kernels hangs up in copy_from_user, because OOM
->> killer sends SIG_KILL to current process,
-> This depends. OOM can choose another victim, and if it does we shouldn't
-> return -EFAULT.
->
->> but it can't handle a signal
->> while in syscall, then the kernel returns to copy_from_user, reexcute
->> current command and provokes page_fault again.
-> Yes. This is buggy.
->
->> --- a/arch/x86/mm/fault.c~x86-mm-handle-mm_fault_error-in-kernel-space
->> +++ a/arch/x86/mm/fault.c
->> @@ -827,6 +827,13 @@ mm_fault_error(struct pt_regs *regs, uns
->>   	       unsigned long address, unsigned int fault)
->>   {
->>   	if (fault&  VM_FAULT_OOM) {
->> +		/* Kernel mode? Handle exceptions or die: */
->> +		if (!(error_code&  PF_USER)) {
->> +			up_read(&current->mm->mmap_sem);
->> +			no_context(regs, error_code, address);
->> +			return;
->> +		}
->> +
-> At first glance, this is not optimal...
->
-> Perhaps I missed something, but afaics it is better to call
-> out_of_memory() first, then check if current was killed. In this case
-> no_context() is fine, we are not going to return to the user-mode.
-It's not first oom, so I perfere don't ca
-> IOW, what do you think about the (untested/uncompiled) patch below?
->
-> Oleg.
->
-> --- x/arch/x86/mm/fault.c
-> +++ x/arch/x86/mm/fault.c
-> @@ -829,6 +829,11 @@ mm_fault_error(struct pt_regs *regs, uns
->   {
->   	if (fault&  VM_FAULT_OOM) {
->   		out_of_memory(regs, error_code, address);
-> +
-> +		if (!(error_code&  PF_USER)&&  fatal_signal_pending(current)) {
-> +			no_context(regs, error_code, address);
-> +			return;
-> +		}
->   	} else {
->   		if (fault&  (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
->   			     VM_FAULT_HWPOISON_LARGE))
->
->
+So yes, it's on now and on purpose.
+
+-- 
+Jens Axboe
 
