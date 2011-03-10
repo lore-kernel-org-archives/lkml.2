@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab1CJPEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 10:04:53 -0500
-Received: from mail09.linbit.com ([212.69.161.110]:48320 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab1CJPEw convert rfc822-to-8bit (ORCPT
+	id S1752586Ab1CJPGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 10:06:13 -0500
+Received: from 210513-www4.sumeffect.com ([98.129.86.238]:53733 "EHLO
+	210513-www4.sumeffect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab1CJPGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 10:04:52 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [GIT PULL] DRBD bits for 2.6.39
-Date: Thu, 10 Mar 2011 16:04:48 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; i686; ; )
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-References: <201103091523.51815.philipp.reisner@linbit.com> <201103101310.39012.philipp.reisner@linbit.com> <4D78CF3A.7000408@kernel.dk>
-In-Reply-To: <4D78CF3A.7000408@kernel.dk>
-X-OTRS-FollowUp-SenderType: agent
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103101604.48775.philipp.reisner@linbit.com>
+	Thu, 10 Mar 2011 10:06:12 -0500
+To: linux-kernel@vger.kernel.org
+Subject: Spirituality
+From: earn2011@yahoo.com
+Reply-To: earn2011@yahoo.com
+Content-Type: text/plain; charset=UTF-8
+Message-Id: <20110310150032.0E712B17A3@210513-www4.sumeffect.com>
+Date: Thu, 10 Mar 2011 09:00:32 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 10. März 2011, um 14:16:42 schrieb Jens Axboe:
-> On 2011-03-10 13:10, Philipp Reisner wrote:
-> > [...]
-> > 
-> >> Now that I have your attention... Did you look at the plugging changes?
-> > 
-> > You always have it :)
-> > I looked at the changes, and I noticed that we no longer get the unplug
-> > events.
-> > 
-> >> As Christoph mentioned, you seem to be passing plugging information on
-> >> the wire. What is the reason for that? With the on-stack plugging, these
-> >> events are not seen by the block device anymore.
-> > 
-> > Imagine DRBD in synchronous mode (protocol C in DRBD speak) on an older
-> > kernel. We mirror a write, in order to get the write-ack packet from the
-> > peer, the peer needs to unplug as well. -> Send the unplug events via the
-> > wire.
-> > 
-> > Now, it we would connect a current-head-of-git DRBD on one node to
-> > a older one (which still needs unplug packets to respond quickly),
-> > we would have a tar pit block device. (At least for single synchronous
-> > writes)
-> > 
-> > We are in brainstorming mode right now here.
-> > One idea is to have a timer, that gets touched with every request we get
-> > in, in case it expires, we send out a unplug event over the wire.
-> > 
-> > But having the unplug events would be more elegant of course...
-> 
-> The unplug is essentially the ->request_fn() being run now. So for older
-> clients you could just always include an unplug even when you pulled
-> whatever off the queue there is and sent it to the device.
+Name: Jenifer Jackson
+Email: earn2011@yahoo.com
+Hi Friend, 
 
-DRBD is a bio-based device. I.e. we hook into the stack by having a
-->make_request_fn() function. 
-Are you saying that although we get the BIOs via a ->make_request_fn()
-call also our ->request_fn() will be called when it is time to send 
-an unplug hint?
-My expectation is, that as soon one uses his own ->make_request_fn()
-->request_fn() will never get called.
+Are You Ready For Success $$$$$$$$!?
 
-Best,
- Phil
--- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
+You Are Eligible to Travel this Program Anywhere in the World.
 
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
+The Hometown Merchant Marketing Program"Welcome To Our Site!!!
+Make $100-$200 Placing Ads! Get the 2 Sacks Of $$....
+
+IF YOU ARE READY TO MAKE SOME QUICK CONSISTENT MONEY, KEEP READING......
+IF YOU CAN POST 3 FREE ADS A DAY, YOU WILL START GETTING $$$$$$$$ DUMPED INTO 
+YOUR PAYPAL ACCOUNT EVERY DAY!!!!  GUARANTEED!!!
+
+Join Now!! Get Your $680 USD Guaranteed Commissions!!!~
+
+Even during the boom years in any economy it's not possible to find a form 
+of free income, BUT THIS IS EXACTLY THAT! and it will make you free money   
+for the rest of your life.
+
+It's Easy To Make Money Everyday From Home With This Program...Even If 
+You're Starting From Scratch With Zero Knowledge, Experience Or Budget!
+I'll Show You Exactly How.
+
+We've Start putting New 40 Members in YOUR TEAM for the March 8- 15 - /2011
+commission cycle...and GROWING everyday Earn by $100 up to $300 or more.
+
+IMPORTANT:Join before March 15, 2011 is the Cut-Off day to lock in your
+position. First Come first serve the Commissions!!
+
+Go Here To Secure not less than $680 Commission Now and it still growing as 
+many people joining under you. important secure your position right away:
+
+Your commission will Send Arrive Through ,Paypal,or Credit Card in your area  
+on April 20/2011...And Hurry For the 8 Remaining Position This Week!!
+
+Once your Membership are set up, you will be able to earn $680 in less than 
+2 hours a day.  I will show you how we do that and then I will help you  
+through the process so that YOU SUCCEED!
+
+You Can access the $680 in any ATM when you join now before cut-off.
+
+Click below!!
+https://www.plimus.com/jsp/redirect.jsp?contractId=2912206&referrer=earnhere2011
+
+HERE IS A SCREENSHOT OF PAYMENTS THAT I'VE RECEIVED IN A 2 DAY PERIOD WITH THESE ADS.
+
+TYPE  DATE   &  TIME ------ NEW MEMBERS ------------- COUNTRY
+
+P -- March.08  @ 2:38  AM-----Jinky Robinson----------- United States
+P -- March.08  @ 2:53  AM-----Ailaine Smith ----------- United States
+P -- March.08  @ 2:56  AM-----Mandene Jonhson---------- United States
+M -- March.08  @ 4:19  AM-----Cristian Gatmaitan------- Singapore
+P -- March.08  @ 4:28  AM-----Jhon Carmalon------------ Italy
+M -- March.08  @ 6:01  AM-----lalaine Brown------------ Australia
+P -- March.08  @ 7:11  AM-----Rebecca Underwood-------- Hungary
+P -- March.08  @ 7:39  AM-----Jericho Jackson---------- Canada
+P -- March.08  @ 9:42  AM-----Thomas Silva ------------ Sri Lanka
+M -- March.08  @ 9:58  PM-----Grace Taylor------------- United Kingdom
+P -- March.08  @ 10:21 PM-----Gina Henry--------------- New Zealand
+P -- March.08  @ 11:24 PM-----Mohammed Ahmen ---------- Mexico
+M -- March.08  @ 11:33 PM-----Tracey Furlong----------- Puerto Rico
+P -- March.08  @ 11:41 PM-----Jane furlong------------- Potugal
+P -- March.08  @ 11:47 PM-----Janice Youngtown--------- Taiwan
+P -- March.08  @ 11:53 PM-----Shirley Ong-------------- China
+P -- March.08  @ 1:45  AM --- Ryann Lambert ----------- Europe
+M -- March.08  @ 12:34 AM --- Nick Gauci -------------- Calefornia
+M -- March.08  @ 10:24 AM --- Don Riley --------------- Netherland
+P -- March.08  @ 10:30 AM --- Lorne Whittaker --------- Swetzerland
+P -- March.08  @ 02:14 AM --- Ashwani Vohra ----------- Brazil
+M -- March.08  @ 2:34  AM --- Kevin Hunt -------------- Sweden
+P -- March.08  @ 1:54  AM --- Charles James Mills ----- South Africa
+P -- March.08  @ 12:34 AM --- Delia Lane -------------- New York
+P -- March.08  @ 6:45  AM --- Mohamed Salamaikom------- Saudi Arabia
+M -- March.08  @ 5:34  AM --- Aleksandar Gjuroski ----- Japan
+P -- March.08  @ 12:34 PM --- Andrew Karim ------------ England
+P -- March.08  @ 8:23  AM --- Carla Pereira ----------- South Korea
+P -- March.08  @ 2:34  PM --- Carl Krause ------------- United States
+M -- March.08  @ 9:14  AM --- David Cook -------------- Denmark
+
+Therefore, you have a GUARANTEED $680 Commissions  every month from now on!
+
+Earn $17 USD Per Process!Each $17 USD x 40 =$680 Commission will be yours...
+
+Be Sure to Copy the link below & Paste into your browser and press enter:
+To Secure your $680 commission!!!
+
+You will access your money in any ATM when you follow the instructions you receive.
+
+Click below!!
+https://www.plimus.com/jsp/redirect.jsp?contractId=2912206&referrer=earnhere2011
+
+Just one simple payment of 17 USD and you could have earn $680 that is yours,And you    
+have a chance to recieve unlimited commissions every 20th of the month. Today its $680   
+For the start of the month of March  if goes up daily until the end of the month.
+
+You must UPGRADE right away or before others do....
+
+Caring for Your Success, Jenifer Jackson
+
+http://www.truthitnow.com/cart.php?m=product_detail&p=8
