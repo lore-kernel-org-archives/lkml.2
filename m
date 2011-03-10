@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab1CJAgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:36:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32874 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab1CJAgJ convert rfc822-to-8bit (ORCPT
+	id S1754727Ab1CJAgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:36:37 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60149 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754563Ab1CJAge convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:36:09 -0500
+	Wed, 9 Mar 2011 19:36:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=vrfy.org; s=google;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=xgi7i5qTQum+pzC56NLonYdsFxc//8Yp0H0KhCbI8KQgP1GWMah6HX+1MJXq+dgkQ8
-         Q2918uts6zYN4TfasJLE4ovFxMVRw8P9bTv1ewt7PMit98lEB3MkHDTALob1MzRAaT0R
-         NNyavDq5u0nntzAbprw2PyupUw2qVexvmLuU0=
+        b=b8dVwLs66po3XfIRsE25PHYLljUgWnZp2QegWE2PMyxf0NubtTKu+rDPGPsC0wxyK8
+         UrwPJ2qe4/88lWqTXBOhE4IXJ/I93xY8xtluj9WCisu4wNo/QMurJtR9MsH0qFhbwUBy
+         aBAWHVWzCc69hmXVl65z4s15E6QOzTHzW6N38=
 MIME-Version: 1.0
-In-Reply-To: <20110309100055.GB6923@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com> <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
- <20110307121502.GG13471@opensource.wolfsonmicro.com> <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
- <AANLkTik=wEyCEY5xsrdGJw6t_VHH9ByKt4mX348P8uD7@mail.gmail.com> <20110309100055.GB6923@opensource.wolfsonmicro.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 9 Mar 2011 19:35:48 -0500
-Message-ID: <AANLkTinhm3t5TRRXnArzA=H23JOsAMCDwPUPp6aYi1gW@mail.gmail.com>
-Subject: Re: [alsa-devel] [Device-drivers-devel] [PATCH] Add driver for Analog
- Devices ADAU1701 SigmaDSP
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Cliff Cai <cliffcai.sh@gmail.com>, cliff.cai@analog.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org, akpm@linux-foundation.org,
-        lrg@slimlogic.co.uk
+In-Reply-To: <20110309162513.5058c824.akpm@linux-foundation.org>
+References: <1299681411-9227-1-git-send-email-virtuoso@slind.org> <20110309162513.5058c824.akpm@linux-foundation.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 10 Mar 2011 01:36:18 +0100
+Message-ID: <AANLkTinZioShsr3O0Z=xaEQ-S=JBCgs_SS_LdsBnNhZ2@mail.gmail.com>
+Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
+        Ken MacLeod <ken@bitsko.slc.ut.us>,
+        Shaun Reich <predator106@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 9, 2011 at 05:00, Mark Brown wrote:
-> On Wed, Mar 09, 2011 at 03:25:05PM +0800, Cliff Cai wrote:
->> On Mon, Mar 7, 2011 at 8:29 PM, Mike Frysinger wrote:
->> > i dont see the issue here.  the firmware is *optional* and does not
->> > impair basic audio output.  further, the firmware is fully
->> > written/compiled/maintained by the end customer, just like the
->> > application.  which means there is no "magic" here -- the end customer
->> > is the wizard.
->>
->> it's a DSP,so firmware is not optional,actually there is default
->> internal program can be used
->> if no external firmware is downloaded,of cause, the internal program
->> is only used to test analog audio pass-through.
+On Thu, Mar 10, 2011 at 01:25, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed,  9 Mar 2011 16:36:51 +0200
+> Alexander Shishkin <virtuoso@slind.org> wrote:
 >
-> If there is default firmware then even if it's not particularly useful
-> the kernel should probably not *require* that additional firmware is
-> provided during driver startup - the system may wish to wait until later
-> in the boot to provide it, for example because it needs to mount media
-> to get to the firmware or because it needs to do additional work to
-> decide what firmware is required for the current system setup.
+>> Changes since v3:
+>>  - changed timerfd_settime() semantics (see below)
+>> Changes since v2:
+>>  - replaced sysfs interface with a syscall
+>>  - added sysctl/procfs handle to set a limit to the number of users
+>>  - fixed issues pointed out by Greg.
+>> Changes since v1:
+>>  - updated against 2.6.36-rc1,
+>>  - added notification/filtering options,
+>>  - added Documentation/ABI/sysfs-kernel-time-notify interface description.
 
-sorry, i was thinking this part was like the other ADI ones where the
-DSP is there as an enhancement.  so many of my comments were tailored
-towards that.
+> It would be helpful to know if the identified users of this feature
+> actually find it useful and adequate.  I guess the most common
+> application is the 1,001 desktop clock widgets.  Do you have any
+> feedback from any of the owners of those?
 
-there shouldnt be any problem with us providing a stub firmware with
-the kernel (in firmware/) that simply does a "pass through" or
-whatever.
--mike
+We want it for systemd, to provide cron-like functionality but without
+the need to stupidly wake up every minute and check the system time
+for possible jumps.
+
+It also sounds useful for a generic resume (after system suspend)
+notification for applications, which isn't really possible today.
+
+Kay
