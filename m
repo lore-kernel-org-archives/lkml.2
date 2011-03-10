@@ -1,95 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab1CJQkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:40:49 -0500
-Received: from www.tglx.de ([62.245.132.106]:54176 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab1CJQkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:40:47 -0500
-Date: Thu, 10 Mar 2011 17:40:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexander Shishkin <virtuoso@slind.org>
-cc: linux-kernel@vger.kernel.org, Ken MacLeod <ken@bitsko.slc.ut.us>,
-        Shaun Reich <predator106@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
- changes
-In-Reply-To: <20110310154357.GG11410@shisha.kicks-ass.net>
-Message-ID: <alpine.LFD.2.00.1103101653350.2787@localhost6.localdomain6>
-References: <1299681411-9227-1-git-send-email-virtuoso@slind.org> <alpine.LFD.2.00.1103101014260.2787@localhost6.localdomain6> <20110310141241.GE11410@shisha.kicks-ass.net> <alpine.LFD.2.00.1103101516501.2787@localhost6.localdomain6>
- <20110310154357.GG11410@shisha.kicks-ass.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753593Ab1CJQll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:41:41 -0500
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:33013 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab1CJQlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:41:39 -0500
+Date: Thu, 10 Mar 2011 17:41:23 +0100
+From: Jan Glauber <jang@linux.vnet.ibm.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: peterz@infradead.org, hpa@zytor.com, mathieu.desnoyers@polymtl.ca,
+        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        schwidefsky@de.ibm.com
+Subject: Re: [PATCH 0/2] jump label: update for .39
+Message-ID: <20110310164123.GA19663@hal>
+References: <cover.1299702291.git.jbaron@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1299702291.git.jbaron@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011, Alexander Shishkin wrote:
-> On Thu, Mar 10, 2011 at 03:55:00PM +0100, Thomas Gleixner wrote:
-> > On Thu, 10 Mar 2011, Alexander Shishkin wrote:
-> > > On Thu, Mar 10, 2011 at 10:52:18AM +0100, Thomas Gleixner wrote:
-> > > > On Wed, 9 Mar 2011, Alexander Shishkin wrote:
-> > > > The patch does something different. How is this related to the problem
-> > > > you wanted to solve in the first place?
-> > > 
-> > > Well, if you scratch the timerfd_settime() bit, it kind of addresses the
-> > > initial problem. The timerfd_settime() was indeed a mistake.
-> > > 
-> > > > Can you please explain which problems you identified aside of the
-> > > > initial one?
-> > > 
-> > > Sure. The time daemon that we have here has to stop automatic time updates
-> > > when some other program changes system time *and* keep that setting
-> > > effective. Currently, when "the other program" changes the system time
-> > > right before time daemon changes it, this time setting will be overwritten
-> > > and lost. I'm thinking that it could be solved with something like
-> > > 
-> > >   clock_swaptime(clockid, new_timespec, old_timespec);
-> > > 
-> > > but something tells me that it will not be welcome either.
-> > 
-> > What's that time daemon doing? The semantics of updating system time,
-> > but stopping to do so when something else sets the time sounds more
-> > like a design problem than anything else.
+On Wed, Mar 09, 2011 at 03:47:24PM -0500, Jason Baron wrote:
+> Hi,
 > 
-> The daemon's synchronizing system time with various sources like GSM base
-> stations, time servers etc, but only until something else touches the time
-> in the system, which would basically mean that the user has installed a
-> 3rd-party application that's controlling system time or just called `date`.
+> Re-fresh of updates against latest -tip tree.
 
-Well, having several different applications fiddling with
-settimeofday() is not a good idea to begin with. If you have that,
-then there is no way to avoid races or inconsistencies.
+Hi Jason,
 
-There is no restriction of issuing settimeofday() or clock_settime()
-on any standard Linux system other than security_settime(). Which is
-fine. When I have the permission to issue 'date -s' then I better know
-that I'm screwing over whatever is responsible for maintaining time on
-my machine. Same applies for installing applications which fiddle with
-time. My package manager usually makes sure, that I don't install two
-NTP daemons, but nothing prevents me to launch another one when I'm on
-a root shell. If stuff explodes in my face, then I'm to blame nothing
-else.
+here are the s390 bits, tested successfully on top of your patches
+so it would be nice to have this in .39 too.
 
-> I don't know all the reasons for this requirement, but it seems that not
-> losing time changes to a race is not a bad idea. Of course, if anyone cares.
+The s390 support depends on the JUMP_TABLE being in the RW section
+which is not the case in .38 and leads to a protection exception
+there.
 
-Unless I'm missing something then this requirement is based on the
-wish to shorten the rope with which you can hang yourself, but fails
-to make it short enough to prevent it. So what's the point?
+--Jan
 
-Thanks,
+Subject: [PATCH] jump_label: Add s390 support
+From: Jan Glauber <jang@linux.vnet.ibm.com>
 
-	tglx
+Implement the architecture backend for jump label support on s390.
+
+For a shared kernel booted from a NSS silently disable jump labels
+because the NSS is read-only. Therefore jump labels will be disabled
+in a shared kernel and can't be activated.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
+---
+ arch/s390/Kconfig                  |    1 
+ arch/s390/include/asm/jump_label.h |   34 +++++++++++++++++++++
+ arch/s390/kernel/Makefile          |    2 -
+ arch/s390/kernel/jump_label.c      |   59 +++++++++++++++++++++++++++++++++++++
+ arch/s390/kernel/module.c          |    1 
+ 5 files changed, 96 insertions(+), 1 deletion(-)
+
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -87,6 +87,7 @@ config S390
+ 	select HAVE_KERNEL_LZO
+ 	select HAVE_GET_USER_PAGES_FAST
+ 	select HAVE_ARCH_MUTEX_CPU_RELAX
++	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
+ 	select ARCH_INLINE_SPIN_TRYLOCK
+ 	select ARCH_INLINE_SPIN_TRYLOCK_BH
+ 	select ARCH_INLINE_SPIN_LOCK
+--- /dev/null
++++ b/arch/s390/include/asm/jump_label.h
+@@ -0,0 +1,34 @@
++#ifndef _ASM_S390_JUMP_LABEL_H
++#define _ASM_S390_JUMP_LABEL_H
++
++#include <linux/types.h>
++
++#define JUMP_LABEL_NOP_SIZE 6
++
++#ifdef CONFIG_64BIT
++#define ASM_PTR ".quad"
++#else
++#define ASM_PTR ".long"
++#endif
++
++static __always_inline bool arch_static_branch(struct jump_label_key *key)
++{
++	asm goto("0:	brcl 0,0\n"
++		".pushsection __jump_table, \"aw\"\n"
++		ASM_PTR " 0b, %l[label], %0\n"
++		".popsection\n"
++		: : "X" (key) : : label);
++	return false;
++label:
++	return true;
++}
++
++typedef unsigned long jump_label_t;
++
++struct jump_entry {
++	jump_label_t code;
++	jump_label_t target;
++	jump_label_t key;
++};
++
++#endif
+--- a/arch/s390/kernel/Makefile
++++ b/arch/s390/kernel/Makefile
+@@ -23,7 +23,7 @@ CFLAGS_sysinfo.o += -Iinclude/math-emu -
+ obj-y	:=  bitmap.o traps.o time.o process.o base.o early.o setup.o \
+ 	    processor.o sys_s390.o ptrace.o signal.o cpcmd.o ebcdic.o \
+ 	    s390_ext.o debug.o irq.o ipl.o dis.o diag.o mem_detect.o \
+-	    vdso.o vtime.o sysinfo.o nmi.o sclp.o
++	    vdso.o vtime.o sysinfo.o nmi.o sclp.o jump_label.o
+ 
+ obj-y	+= $(if $(CONFIG_64BIT),entry64.o,entry.o)
+ obj-y	+= $(if $(CONFIG_64BIT),reipl64.o,reipl.o)
+--- /dev/null
++++ b/arch/s390/kernel/jump_label.c
+@@ -0,0 +1,59 @@
++/*
++ * Jump label s390 support
++ *
++ * Copyright IBM Corp. 2011
++ * Author(s): Jan Glauber <jang@linux.vnet.ibm.com>
++ */
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <linux/stop_machine.h>
++#include <linux/jump_label.h>
++#include <asm/ipl.h>
++
++#ifdef HAVE_JUMP_LABEL
++
++struct insn {
++	u16 opcode;
++	s32 offset;
++} __packed;
++
++struct insn_args {
++	unsigned long *target;
++	struct insn *insn;
++	ssize_t size;
++};
++
++static int __arch_jump_label_transform(void *data)
++{
++	struct insn_args *args = data;
++	int rc;
++
++	rc = probe_kernel_write(args->target, args->insn, args->size);
++	WARN_ON_ONCE(rc < 0);
++	return 0;
++}
++
++void arch_jump_label_transform(struct jump_entry *entry,
++			       enum jump_label_type type)
++{
++	struct insn_args args;
++	struct insn insn;
++
++	if (type == JUMP_LABEL_ENABLE) {
++		/* brcl 15,offset */
++		insn.opcode = 0xc0f4;
++		insn.offset = (entry->target - entry->code) >> 1;
++	} else {
++		/* brcl 0,0 */
++		insn.opcode = 0xc004;
++		insn.offset = 0;
++	}
++
++	args.target = (void *) entry->code;
++	args.insn = &insn;
++	args.size = JUMP_LABEL_NOP_SIZE;
++
++	stop_machine(__arch_jump_label_transform, &args, NULL);
++}
++
++#endif
+--- a/arch/s390/kernel/module.c
++++ b/arch/s390/kernel/module.c
+@@ -407,6 +407,7 @@ int module_finalize(const Elf_Ehdr *hdr,
+ {
+ 	vfree(me->arch.syminfo);
+ 	me->arch.syminfo = NULL;
++	jump_label_apply_nops(me);
+ 	return 0;
+ }
+ 
