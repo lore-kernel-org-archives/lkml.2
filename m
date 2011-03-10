@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1CJVGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:06:16 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:55764 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab1CJVCo (ORCPT
+	id S1753585Ab1CJVGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:06:45 -0500
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:60474 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab1CJVCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:02:44 -0500
+	Thu, 10 Mar 2011 16:02:42 -0500
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         arnaud.patard@rtp-net.org
-Subject: [PATCH 13/22] staging: xgifb: vb_util: delete commented-out code
-Date: Thu, 10 Mar 2011 23:02:38 +0200
-Message-Id: <1299790967-7135-14-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 05/22] staging: xgifb: delete dead code for chip types < XG40
+Date: Thu, 10 Mar 2011 23:02:30 +0200
+Message-Id: <1299790967-7135-6-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299790967-7135-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1299790967-7135-1-git-send-email-aaro.koskinen@iki.fi>
@@ -20,75 +20,329 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete commented-out code.
+XG40 is the first supported chip, so the code for earlier chips can
+be dropped.
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/vb_util.c |   34 ----------------------------------
- drivers/staging/xgifb/vb_util.h |    2 --
- 2 files changed, 0 insertions(+), 36 deletions(-)
+ drivers/staging/xgifb/vb_init.c    |    9 +--
+ drivers/staging/xgifb/vb_setmode.c |  216 +-----------------------------------
+ 2 files changed, 3 insertions(+), 222 deletions(-)
 
-diff --git a/drivers/staging/xgifb/vb_util.c b/drivers/staging/xgifb/vb_util.c
-index f542d66..465bcda 100644
---- a/drivers/staging/xgifb/vb_util.c
-+++ b/drivers/staging/xgifb/vb_util.c
-@@ -21,22 +21,6 @@ void XGINew_SetReg1(unsigned long port, unsigned short index,
- 	outb(data, port + 1);
+diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
+index 7b8e00d..10c0a3b 100644
+--- a/drivers/staging/xgifb/vb_init.c
++++ b/drivers/staging/xgifb/vb_init.c
+@@ -1409,9 +1409,7 @@ unsigned char XGIInitNew(struct xgi_hw_device_info *HwDeviceExtension)
+ 
+ 	 if (HwDeviceExtension->jChipType >= XG40)
+ 	 XGINew_RAMType = (int)XGINew_GetXG20DRAMType(HwDeviceExtension, pVBInfo);
+-
+-	 if (HwDeviceExtension->jChipType < XG40)
+-	 XGINew_SetMemoryClock(HwDeviceExtension, pVBInfo);  */
++	*/
+ 
+ 	printk("11");
+ 
+@@ -1494,9 +1492,6 @@ unsigned char XGIInitNew(struct xgi_hw_device_info *HwDeviceExtension)
+ 				XGINew_SetReg1(pVBInfo->P3d4, 0x48, 0x20); /* CR48 */
+ 		}
+ 		printk("14");
+-
+-		if (HwDeviceExtension->jChipType < XG40)
+-			XGINew_SetReg1(pVBInfo->P3d4, 0x49, pVBInfo->CR49[0]);
+ 	} /* != XG20 */
+ 
+ 	/* Set PCI */
+@@ -1552,8 +1547,6 @@ unsigned char XGIInitNew(struct xgi_hw_device_info *HwDeviceExtension)
+ 	} /* != XG20 */
+ 	printk("18");
+ 
+-	if (HwDeviceExtension->jChipType < XG40)
+-		XGINew_SetReg1(pVBInfo->P3d4, 0x83, 0x00);
+ 	printk("181");
+ 
+ 	printk("182");
+diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+index 693be07..4d56963 100644
+--- a/drivers/staging/xgifb/vb_setmode.c
++++ b/drivers/staging/xgifb/vb_setmode.c
+@@ -6280,47 +6280,6 @@ static void XGI_SetGroup5(unsigned short ModeNo, unsigned short ModeIdIndex,
+ 	return;
  }
  
 -/* --------------------------------------------------------------------- */
--/* Function : XGINew_SetReg2 */
+-/* Function : XGI_BacklightByDrv */
+-/* Input : */
+-/* Output : 1 -> Skip backlight control */
+-/* Description : */
+-/* --------------------------------------------------------------------- */
+-static unsigned char XGI_BacklightByDrv(struct vb_device_info *pVBInfo)
+-{
+-	unsigned char tempah;
+-
+-	tempah = (unsigned char) XGINew_GetReg1(pVBInfo->P3d4, 0x3A);
+-	if (tempah & BacklightControlBit)
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-/* --------------------------------------------------------------------- */
+-/* Function : XGI_FirePWDDisable */
 -/* Input : */
 -/* Output : */
--/* Description : AR( 3C0 ) */
+-/* Description : Turn off VDD & Backlight : Fire disable procedure */
 -/* --------------------------------------------------------------------- */
 -/*
--void XGINew_SetReg2(unsigned long port, unsigned short index, unsigned short data)
+-void XGI_FirePWDDisable(struct vb_device_info *pVBInfo)
 -{
--	InPortByte((P unsigned char)port + 0x3da - 0x3c0) ;
--	OutPortByte(XGINew_P3c0, index);
--	OutPortByte(XGINew_P3c0, data);
--	OutPortByte(XGINew_P3c0, 0x20);
+-	XGINew_SetRegANDOR(pVBInfo->Part1Port, 0x26, 0x00, 0xFC);
 -}
 -*/
 -
- void XGINew_SetReg3(unsigned long port, unsigned short data)
+-/* --------------------------------------------------------------------- */
+-/* Function : XGI_FirePWDEnable */
+-/* Input : */
+-/* Output : */
+-/* Description : Turn on VDD & Backlight : Fire enable procedure */
+-/* --------------------------------------------------------------------- */
+-static void XGI_FirePWDEnable(struct vb_device_info *pVBInfo)
+-{
+-	XGINew_SetRegANDOR(pVBInfo->Part1Port, 0x26, 0x03, 0xFC);
+-}
+-
+ static void XGI_EnableGatingCRT(struct xgi_hw_device_info *HwDeviceExtension,
+ 		struct vb_device_info *pVBInfo)
  {
- 	outb(data, port);
-@@ -103,21 +87,3 @@ void XGINew_SetRegOR(unsigned long Port, unsigned short Index,
- 	temp |= DataOR;
- 	XGINew_SetReg1(Port, Index, temp);
+@@ -6334,54 +6293,6 @@ static void XGI_DisableGatingCRT(struct xgi_hw_device_info *HwDeviceExtension,
+ 	XGINew_SetRegANDOR(pVBInfo->P3d4, 0x63, 0xBF, 0x00);
  }
--
--#if 0
--void NewDelaySeconds(int seconds)
+ 
+-/* --------------------------------------------------------------------- */
+-/* Function : XGI_SetPanelDelay */
+-/* Input : */
+-/* Output : */
+-/* Description : */
+-/* I/P : bl : 1 ; T1 : the duration between CPL on and signal on */
+-/* : bl : 2 ; T2 : the duration signal on and Vdd on */
+-/* : bl : 3 ; T3 : the duration between CPL off and signal off */
+-/* : bl : 4 ; T4 : the duration signal off and Vdd off */
+-/* --------------------------------------------------------------------- */
+-static void XGI_SetPanelDelay(unsigned short tempbl, struct vb_device_info *pVBInfo)
 -{
--	int i;
+-	unsigned short index;
 -
--	for (i = 0; i < seconds; i++) {
+-	index = XGI_GetLCDCapPtr(pVBInfo);
 -
+-	if (tempbl == 1)
+-		mdelay(pVBInfo->LCDCapList[index].PSC_S1);
+-
+-	if (tempbl == 2)
+-		mdelay(pVBInfo->LCDCapList[index].PSC_S2);
+-
+-	if (tempbl == 3)
+-		mdelay(pVBInfo->LCDCapList[index].PSC_S3);
+-
+-	if (tempbl == 4)
+-		mdelay(pVBInfo->LCDCapList[index].PSC_S4);
+-}
+-
+-/* --------------------------------------------------------------------- */
+-/* Function : XGI_SetPanelPower */
+-/* Input : */
+-/* Output : */
+-/* Description : */
+-/* I/O : ah = 0011b = 03h ; Backlight on, Power on */
+-/* = 0111b = 07h ; Backlight on, Power off */
+-/* = 1011b = 0Bh ; Backlight off, Power on */
+-/* = 1111b = 0Fh ; Backlight off, Power off */
+-/* --------------------------------------------------------------------- */
+-static void XGI_SetPanelPower(unsigned short tempah, unsigned short tempbl,
+-		struct vb_device_info *pVBInfo)
+-{
+-	if (pVBInfo->VBType & (VB_XGI301LV | VB_XGI302LV | VB_XGI301C))
+-		XGINew_SetRegANDOR(pVBInfo->Part4Port, 0x26, tempbl, tempah);
+-	else
+-		XGINew_SetRegANDOR(pVBInfo->P3c4, 0x11, tempbl, tempah);
+-}
+-
+ /*----------------------------------------------------------------------------*/
+ /* input                                                                      */
+ /*      bl[5] : 1;LVDS signal on                                              */
+@@ -6951,29 +6862,6 @@ static unsigned char XGI_IsLCDON(struct vb_device_info *pVBInfo)
+ 	return 0;
+ }
+ 
+-static void XGI_EnablePWD(struct vb_device_info *pVBInfo)
+-{
+-	unsigned short index, temp;
+-
+-	index = XGI_GetLCDCapPtr(pVBInfo);
+-	temp = pVBInfo->LCDCapList[index].PWD_2B;
+-	XGINew_SetReg1(pVBInfo->Part4Port, 0x2B, temp);
+-	XGINew_SetReg1(pVBInfo->Part4Port, 0x2C,
+-			pVBInfo->LCDCapList[index].PWD_2C);
+-	XGINew_SetReg1(pVBInfo->Part4Port, 0x2D,
+-			pVBInfo->LCDCapList[index].PWD_2D);
+-	XGINew_SetReg1(pVBInfo->Part4Port, 0x2E,
+-			pVBInfo->LCDCapList[index].PWD_2E);
+-	XGINew_SetReg1(pVBInfo->Part4Port, 0x2F,
+-			pVBInfo->LCDCapList[index].PWD_2F);
+-	XGINew_SetRegOR(pVBInfo->Part4Port, 0x27, 0x80); /* enable PWD */
+-}
+-
+-static void XGI_DisablePWD(struct vb_device_info *pVBInfo)
+-{
+-	XGINew_SetRegAND(pVBInfo->Part4Port, 0x27, 0x7F); /* disable PWD */
+-}
+-
+ /* --------------------------------------------------------------------- */
+ /* Function : XGI_DisableChISLCD */
+ /* Input : */
+@@ -7031,37 +6919,11 @@ static unsigned char XGI_EnableChISLCD(struct vb_device_info *pVBInfo)
+ void XGI_DisableBridge(struct xgi_hw_device_info *HwDeviceExtension,
+ 		struct vb_device_info *pVBInfo)
+ {
+-	unsigned short tempax, tempbx, tempah = 0, tempbl = 0;
++	unsigned short tempah = 0;
+ 
+ 	if (pVBInfo->SetFlag == Win9xDOSMode)
+ 		return;
+ 
+-	if (HwDeviceExtension->jChipType < XG40) {
+-		if ((!(pVBInfo->VBInfo & (SetCRT2ToLCD | SetCRT2ToLCDA)))
+-				|| (XGI_DisableChISLCD(pVBInfo))) {
+-			if (!XGI_IsLCDON(pVBInfo)) {
+-				if (pVBInfo->LCDInfo & SetPWDEnable)
+-					XGI_EnablePWD(pVBInfo);
+-				else {
+-					pVBInfo->LCDInfo &= ~SetPWDEnable;
+-					XGI_DisablePWD(pVBInfo);
+-					if (pVBInfo->VBType & (VB_XGI301LV
+-							| VB_XGI302LV
+-							| VB_XGI301C)) {
+-						tempbx = 0xFE; /* not 01h */
+-						tempax = 0;
+-					} else {
+-						tempbx = 0xF7; /* not 08h */
+-						tempax = 0x08;
+-					}
+-					XGI_SetPanelPower(tempax, tempbx,
+-							pVBInfo);
+-					XGI_SetPanelDelay(3, pVBInfo);
+-				}
+-			} /* end if (!XGI_IsLCDON(pVBInfo)) */
+-		}
 -	}
--}
 -
--void Newdebugcode(unsigned char code)
--{
--	/* OutPortByte(0x80, code); */
--	/* OutPortByte(0x300, code); */
--	/* NewDelaySeconds(0x3); */
--}
--#endif
-diff --git a/drivers/staging/xgifb/vb_util.h b/drivers/staging/xgifb/vb_util.h
-index 156f644..bf52127 100644
---- a/drivers/staging/xgifb/vb_util.h
-+++ b/drivers/staging/xgifb/vb_util.h
-@@ -1,7 +1,5 @@
- #ifndef _VBUTIL_
- #define _VBUTIL_
--extern   void     NewDelaySeconds( int );
--extern   void     Newdebugcode(unsigned char);
- extern   void     XGINew_SetReg1(unsigned long, unsigned short, unsigned short);
- extern   void     XGINew_SetReg3(unsigned long, unsigned short);
- extern    unsigned char     XGINew_GetReg1(unsigned long, unsigned short);
+ 	/*
+ 	if (CH7017) {
+ 		if (!(pVBInfo->VBInfo & (SetCRT2ToLCD | SetCRT2toLCDA)) || (XGI_DisableChISLCD(pVBInfo))) {
+@@ -7155,28 +7017,6 @@ void XGI_DisableBridge(struct xgi_hw_device_info *HwDeviceExtension,
+ 				| SetSimuScanMode))
+ 			XGI_DisplayOff(HwDeviceExtension, pVBInfo);
+ 	}
+-
+-	if (HwDeviceExtension->jChipType < XG40) {
+-		if (!(pVBInfo->VBInfo & (SetCRT2ToLCD | SetCRT2ToLCDA))
+-				|| (XGI_DisableChISLCD(pVBInfo))
+-				|| (XGI_IsLCDON(pVBInfo))) {
+-			if (pVBInfo->LCDInfo & SetPWDEnable) {
+-				if (pVBInfo->LCDInfo & SetPWDEnable)
+-					XGI_BacklightByDrv(pVBInfo);
+-				else {
+-					XGI_SetPanelDelay(4, pVBInfo);
+-					if (pVBInfo->VBType & VB_XGI301LV) {
+-						tempbl = 0xFD;
+-						tempah = 0x00;
+-					} else {
+-						tempbl = 0xFB;
+-						tempah = 0x04;
+-					}
+-				}
+-			}
+-			XGI_SetPanelPower(tempah, tempbl, pVBInfo);
+-		}
+-	}
+ }
+ 
+ /* --------------------------------------------------------------------- */
+@@ -8220,7 +8060,7 @@ void XGI_SenseCRT1(struct vb_device_info *pVBInfo)
+ void XGI_EnableBridge(struct xgi_hw_device_info *HwDeviceExtension,
+ 		struct vb_device_info *pVBInfo)
+ {
+-	unsigned short tempbl, tempah;
++	unsigned short tempah;
+ 
+ 	if (pVBInfo->SetFlag == Win9xDOSMode) {
+ 		if (pVBInfo->VBType & (VB_XGI301B | VB_XGI302B | VB_XGI301LV
+@@ -8232,32 +8072,6 @@ void XGI_EnableBridge(struct xgi_hw_device_info *HwDeviceExtension,
+ 			return;
+ 	}
+ 
+-	if (HwDeviceExtension->jChipType < XG40) {
+-		if (!XGI_DisableChISLCD(pVBInfo)) {
+-			if ((XGI_EnableChISLCD(pVBInfo)) || (pVBInfo->VBInfo
+-					& (SetCRT2ToLCD | SetCRT2ToLCDA))) {
+-				if (pVBInfo->LCDInfo & SetPWDEnable) {
+-					XGI_EnablePWD(pVBInfo);
+-				} else {
+-					pVBInfo->LCDInfo &= (~SetPWDEnable);
+-					if (pVBInfo->VBType & (VB_XGI301LV
+-							| VB_XGI302LV
+-							| VB_XGI301C)) {
+-						tempbl = 0xFD;
+-						tempah = 0x02;
+-					} else {
+-						tempbl = 0xFB;
+-						tempah = 0x00;
+-					}
+-
+-					XGI_SetPanelPower(tempah, tempbl,
+-							pVBInfo);
+-					XGI_SetPanelDelay(1, pVBInfo);
+-				}
+-			}
+-		}
+-	} /* Not 340 */
+-
+ 	if (pVBInfo->VBType & (VB_XGI301B | VB_XGI302B | VB_XGI301LV
+ 			| VB_XGI302LV | VB_XGI301C)) {
+ 		if (!(pVBInfo->SetFlag & DisableChA)) {
+@@ -8376,32 +8190,6 @@ void XGI_EnableBridge(struct xgi_hw_device_info *HwDeviceExtension,
+ 		XGINew_SetRegAND(pVBInfo->Part1Port, 0x00, 0x7F);
+ 		XGI_DisplayOn(HwDeviceExtension, pVBInfo);
+ 	} /* End of VB */
+-
+-	if (HwDeviceExtension->jChipType < XG40) {
+-		if (!XGI_EnableChISLCD(pVBInfo)) {
+-			if (pVBInfo->VBInfo & (SetCRT2ToLCD | SetCRT2ToLCDA)) {
+-				if (XGI_BacklightByDrv(pVBInfo))
+-					return;
+-			} else
+-				return;
+-		}
+-
+-		if (pVBInfo->LCDInfo & SetPWDEnable) {
+-			XGI_FirePWDEnable(pVBInfo);
+-			return;
+-		}
+-
+-		XGI_SetPanelDelay(2, pVBInfo);
+-
+-		if (pVBInfo->VBType & (VB_XGI301LV | VB_XGI302LV | VB_XGI301C)) {
+-			tempah = 0x01;
+-			tempbl = 0xFE; /* turn on backlght */
+-		} else {
+-			tempbl = 0xF7;
+-			tempah = 0x00;
+-		}
+-		XGI_SetPanelPower(tempah, tempbl, pVBInfo);
+-	}
+ }
+ 
+ static void XGI_SetCRT1Group(struct xgi_hw_device_info *HwDeviceExtension,
 -- 
 1.5.6.5
 
