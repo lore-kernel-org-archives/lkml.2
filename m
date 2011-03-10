@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab1CJKzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:55:09 -0500
+	id S1753044Ab1CJKzp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:55:45 -0500
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:52950 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab1CJKv6 (ORCPT
+	with ESMTP id S1752358Ab1CJKvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:51:58 -0500
+	Thu, 10 Mar 2011 05:51:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=b61qyV9aMBcdI8Gib/p8cOxPDfnYx6H4msI3BAMXc7/eW/noVq5Ps644GDl22KSytQ
-         6P6QlJXwlf6Xy0W64wCqfbnUblf0390NTly55j+o5uheMLr2yqJNdsneQ1ZwRbT0Tp0O
-         4KiWdcwdwJoGWzzFeVkGmXa0WheL5mlVX79/g=
+        b=PgT1WM/0RRPUSqvd7D8/+Xpb7pvWUHs1ygRfUzryF1trIOAxyE47uNWFShVFpWoLO2
+         dJS31OXv1mXwbOX8BRCnc1NkgCGHj4/nqj5Lq/UNQYHeBPWKqE+g3rVRAUOVHe7Go3Lc
+         tRw/4pe1RN7fDUyydCC5HfLYenjKx5hFLW+50=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH v2 09/21] staging: ft1000: Fix coding style in reg_ft1000_netdev function.
-Date: Thu, 10 Mar 2011 11:51:23 +0100
-Message-Id: <1299754295-8493-10-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH v2 06/21] staging: ft1000: Fix identation in ftnet_ops struct.
+Date: Thu, 10 Mar 2011 11:51:20 +0100
+Message-Id: <1299754295-8493-7-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299754295-8493-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1299754295-8493-1-git-send-email-marek.belisko@open-nandra.com>
@@ -30,70 +30,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   40 +++++++++++-------------
- 1 files changed, 18 insertions(+), 22 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 55998ec..0b8ff3d 100644
+index 71c7c5d..bf2c729 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -848,38 +848,34 @@ err_net:
- // Notes:
- //
- //---------------------------------------------------------------------------
--int reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *intf)
-+int reg_ft1000_netdev(struct ft1000_device *ft1000dev,
-+		      struct usb_interface *intf)
+@@ -688,10 +688,10 @@ static int ft1000_reset_card(struct net_device *dev)
+ #ifdef HAVE_NET_DEVICE_OPS
+ static const struct net_device_ops ftnet_ops =
  {
--    struct net_device *netdev;
-+	struct net_device *netdev;
- 	struct ft1000_info *pInfo;
- 	int rc;
+-.ndo_open = &ft1000_open,
+-.ndo_stop = &ft1000_close,
+-.ndo_start_xmit = &ft1000_start_xmit,
+-.ndo_get_stats = &ft1000_netdev_stats,
++	.ndo_open = &ft1000_open,
++	.ndo_stop = &ft1000_close,
++	.ndo_start_xmit = &ft1000_start_xmit,
++	.ndo_get_stats = &ft1000_netdev_stats,
+ };
+ #endif
  
--    netdev = ft1000dev->net;
--    pInfo = netdev_priv(ft1000dev->net);
--    DEBUG("Enter reg_ft1000_netdev...\n");
--
-+	netdev = ft1000dev->net;
-+	pInfo = netdev_priv(ft1000dev->net);
-+	DEBUG("Enter reg_ft1000_netdev...\n");
- 
--    ft1000_read_register(ft1000dev, &pInfo->AsicID, FT1000_REG_ASIC_ID);
-+	ft1000_read_register(ft1000dev, &pInfo->AsicID, FT1000_REG_ASIC_ID);
- 
--    usb_set_intfdata(intf, pInfo);
--    SET_NETDEV_DEV(netdev, &intf->dev);
-+	usb_set_intfdata(intf, pInfo);
-+	SET_NETDEV_DEV(netdev, &intf->dev);
- 
--    rc = register_netdev(netdev);
--    if (rc)
--    {
--        DEBUG("reg_ft1000_netdev: could not register network device\n");
--        free_netdev(netdev);
--	return rc;
--    }
--
--
--    //Create character device, implemented by Jim
--    ft1000_create_dev(ft1000dev);
-+	rc = register_netdev(netdev);
-+	if (rc) {
-+		DEBUG("reg_ft1000_netdev: could not register network device\n");
-+		free_netdev(netdev);
-+		return rc;
-+	}
- 
--    DEBUG ("reg_ft1000_netdev returned\n");
-+	ft1000_create_dev(ft1000dev);
- 
--    pInfo->CardReady = 1;
-+	DEBUG("reg_ft1000_netdev returned\n");
- 
-+	pInfo->CardReady = 1;
- 
- 	return 0;
- }
 -- 
 1.7.1
 
