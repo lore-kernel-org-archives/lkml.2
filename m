@@ -1,39 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249Ab1CJFGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 00:06:39 -0500
-Received: from nm29-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.248]:22665 "HELO
-	nm29-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750819Ab1CJFGg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 00:06:36 -0500
-X-Yahoo-Newman-Id: 97595.82371.bm@omp1024.mail.ac4.yahoo.com
-X-Yahoo-SMTP: eoj4RIGswBCym4pYPrQi9QGVyrJYUq_tgEmsrEzpMeovYHnAkg--
-X-YMail-OSG: 3Wv6oxwVM1kj6HtQ9uDoT8k__xABdXFTl6oir.nVVmqpi4h
- rTduBZTNt3Mv6V__nN.zikbY.z09CzgqHssQLyLrFSGovAjBcNty7ICb1yF8
- C9572Tyfs3hgI.1xKmfYzG1DhQnqNI6SY1.E972Mrn1CWusFHyzKiJQhsEph
- ewu2uBAz72s39.cxYvv6f0ayfneLYxMrvIYmJCqwJ72EDiDuhe96Um6H9sGQ
- fFZSXSAn3DF4i7bibzybhpQ--
-X-Yahoo-Newman-Property: ymail-3
-From: "Basirah Binti" <suhatawilarafat2@att.net>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: basirahbintiesq@consultant.com
-Date: Thu, 10 Mar 2011 13:03:37 +0800
-Subject: ATTENTION:
+	id S1751449Ab1CJFGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 00:06:47 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:35578 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab1CJFGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 00:06:40 -0500
+Message-ID: <0378a20bb9cfafee46c89461fa2dd4d6.squirrel@webmail.greenhost.nl>
+In-Reply-To: <25dfe766fbe767e249ef95d1fda0094c.squirrel@www.ffwll.ch>
+References: <af572f9c6c75d54f1f81e51f508358dd.squirrel@webmail.greenhost.nl>
+    <1298395549-4064-1-git-send-email-daniel.vetter@ffwll.ch>
+    <ed85db84d2d5ea460898d78e1179c6ca.squirrel@webmail.greenhost.nl>
+    <25dfe766fbe767e249ef95d1fda0094c.squirrel@www.ffwll.ch>
+Date: Thu, 10 Mar 2011 06:06:35 +0100 (CET)
+Subject: Re: [PATCH] drm/i915: fix corruptions on i8xx due to relaxed 
+     fencing
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Daniel Vetter" <daniel@ffwll.ch>
+Cc: "Daniel Vetter" <daniel.vetter@ffwll.ch>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org, "LKML" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-ID: <HENRYPCed4e6de32fa04758a36969cab91b0576@HENRYPC>
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: be1ed956250a6aced2eef8025a824392
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sir/Madam. 
-I am Basirah Binti, Attorney at Law; I contacted you to assist in distributing the money left behind by my late client, whom you share the same last name with. 
-My late Client has a deposit of (USD$19 MILLION USD) lodged in the bank. 
-http://en.wikipedia.org/wiki/2004_Indian_Ocean_earthquake. 
-I can be reached (basirahbintiesq@consultant.com) for more details. 
-Sincerely yours. 
-Basirah Binti Esq.,
+Hi,
+
+On Wed, February 23, 2011 08:10, Daniel Vetter wrote:
+> Am Mi, 23.02.2011, 07:59 schrieb Indan Zupancic:
+>> On Tue, February 22, 2011 18:25, Daniel Vetter wrote:
+>>> It looks like gen2 has a peculiar interleaved 2-row inter-tile
+>>> layout. Probably inherited from i81x which had 2kb tiles (which
+>>> naturally fit an even-number-of-tile-rows scheme to fit onto 4kb
+>>> pages). There is no other mention of this in any docs (also not
+>>> in the Intel internal documention according to Chris Wilson).
+>>>
+>>> Problem manifests itself in corruptions in the second half of the
+>>> last tile row (if the bo has an odd number of tiles). Which can
+>>> only happen with relaxed tiling (introduced in a00b10c360b35d6431a9).
+>>>
+>>> So reject set_tiling calls that don't satisfy this constrain to
+>>> prevent broken userspace from causing havoc. While at it, also
+>>> check the size for newer chipsets.
+>>>
+>>> LKML: https://lkml.org/lkml/2011/2/19/5
+>>> Reported-by: Indan Zupancic <indan@nul.nu>
+>>> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>> ---
+>>>  drivers/gpu/drm/i915/i915_gem_tiling.c |   16 +++++++++++++++-
+>>>  1 files changed, 15 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/i915/i915_gem_tiling.c
+>>> b/drivers/gpu/drm/i915/i915_gem_tiling.c
+>>> index 22a32b9..79a04fd 100644
+>>> --- a/drivers/gpu/drm/i915/i915_gem_tiling.c
+>>> +++ b/drivers/gpu/drm/i915/i915_gem_tiling.c
+>>> @@ -184,7 +184,7 @@ i915_gem_detect_bit_6_swizzle(struct drm_device
+>>> *dev)
+>>>  static bool
+>>>  i915_tiling_ok(struct drm_device *dev, int stride, int size, int
+>>> tiling_mode)
+>>>  {
+>>> -	int tile_width;
+>>> +	int tile_width, tile_height;
+>>>
+>>>  	/* Linear is always fine */
+>>>  	if (tiling_mode == I915_TILING_NONE)
+>>> @@ -215,6 +215,20 @@ i915_tiling_ok(struct drm_device *dev, int stride,
+>>> int size, int
+>>> tiling_mode)
+>>>  		}
+>>>  	}
+>>>
+>>> +	if (IS_GEN2(dev) ||
+>>> +	    (tiling_mode == I915_TILING_Y && HAS_128_BYTE_Y_TILING(dev)))
+>>> +		tile_height = 32;
+>>> +	else
+>>> +		tile_height = 8;
+>>> +	/* i8xx is strange: It has 2 interleaved rows of tiles, so needs an
+>>> even
+>>> +	 * number of tile rows. */
+>>> +	if (IS_GEN2(dev))
+>>> +		tile_height *= 2;
+>>> +
+>>> +	/* Size needs to be aligned to a full tile row */
+>>> +	if (size & (tile_height * stride - 1))
+>>> +		return false;
+>>> +
+>>>  	/* 965+ just needs multiples of tile width */
+>>>  	if (INTEL_INFO(dev)->gen >= 4) {
+>>>  		if (stride & (tile_width - 1))
+>>
+>> Tested-by: Indan Zupancic <indan@nul.nu>
+>>
+>> I tested with this patch and without the other ones you send and the
+>> corruption is indeed gone.
+>>
+>> Not sure why you dropped lkml from CC, now people who stuble upon it
+>> don't see the ending...
+>
+> Random incoherency in my brain. Re-added to cc.
+
+This isn't in rc8, can someone make sure it gets into 2.6.38-rc9/2.6.38?
+
+Thanks,
+
+Indan
 
 
