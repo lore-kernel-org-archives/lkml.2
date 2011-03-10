@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab1CJUZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:25:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36517 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab1CJUZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:25:37 -0500
-Date: Thu, 10 Mar 2011 12:25:17 -0800
-From: Tony Jones <tonyj@suse.de>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: PATCH [1/1]: audit: acquire creds selectively to reduce atomic
- op overhead
-Message-ID: <20110310202516.GA16122@suse.de>
-References: <20110307210656.GA1750@suse.de>
- <18893.1299607373@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <18893.1299607373@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752858Ab1CJUhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 15:37:21 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24305 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab1CJUhS (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 10 Mar 2011 15:37:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Cc: xen-devel@lists.xensource.com, Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [PATCH] small bug-fixes
+Date: Thu, 10 Mar 2011 15:36:43 -0500
+Message-Id: <1299789405-30802-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.1
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D79366F.00A1,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 06:02:53PM +0000, David Howells wrote:
-> Tony Jones <tonyj@suse.de> wrote:
-> 
-> > Commit c69e8d9c01db added calls to get_task_cred and put_cred in
-> > audit_filter_rules.  Profiling with a large number of audit rules active on
-> > the exit chain shows that we are spending upto 48% in this routine for
-> > syscall intensive tests, most of which is in the atomic ops.
-> > 
-> > The following patch acquires the cred if a rule requires it.  In our
-> > particular case above, most rules had no cred requirement and this dropped
-> > the time spent in audit_filter_rules down to ~12%.  An alternative would be
-> > for the caller to acquire the cred just once for the whole chain and pass
-> > into audit_filter_rules.  I can create an alternate patch doing this if
-> > required.
-> 
-> There's no actual need to get a ref on the named task's creds.
-> 
-> If tsk == current, no locking is needed at all.
-> 
-> If tsk != current, the RCU read lock is sufficient.  See task_cred_xxx() in
-> include/linux/cred.h.
-> 
-> Hmmm...  I wonder...  The audit filter uses tsk->real_cred, but is that
-> correct?  Should it be using tsk->cred?  And is tsk always going to be
-> current?
+During testing (git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git #linux-next)
 
-Hi David.
+I found that ballooning of PV guests stopped working and traced it down to
+2f14ddc3a7146ea4cd5a3d1ecd993f85f2e4f948
+"xen/setup: Inhibit resource API from using System RAM E820 gaps as PCI mem gaps"
+which is correct for the initial domain, but not for true PV guests. This patch:
 
-I'm not seeing the 'tsk->real_cred' usage, can you clarify?
+ "xen/e820: Don't mark balloon memory as E820_UNUSABLE when running as guest."
+   fixes that.
 
-I went through the call tree.  Assuming my analysis is correct the only case 
-where it's not current is the calls from copy_process.  I believe there is no 
-need for rcu in this case either.
+The second I found when running 2.6.32 pvops tree when we swapped over from
+using level_irq handler for VIRQ to percpu irq handler. There is a race window
+that I was able to hit 66% of time. With 2.6.38 I can't seem to hit this and I am
+not sure why - but it still makes sense to add this patch in. The patch in
+question is:
 
-Tony
+ xen/hvc: Disable probe_irq_on/off from poking the hvc-console IRQ line.
 
-------
-
-audit_filter_rules
-	<- audit_filter_task
-		<- audit_alloc
-			<- copy_process
-
-	<- audit_filter_syscall
-		<- audit_get_context 
-			<- audit_free 
-				<- copy_process (error path)
-				<- do_exit (tsk == current)
-			<- audit_syscall_exit (tsk == current)
-
-		<- audit_syscall_entry (tsk == current)
-
-	<- audit_filter_inodes
-		<- audit_update_watch (tsk == current)
-		<- audit_get_context (see above)
