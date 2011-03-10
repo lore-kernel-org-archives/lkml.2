@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab1CJSzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 13:55:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62808 "EHLO mx1.redhat.com"
+	id S1753463Ab1CJS4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 13:56:19 -0500
+Received: from www.tglx.de ([62.245.132.106]:46066 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab1CJSzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 13:55:46 -0500
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] PCI: Enable ASPM state clearing regardless of policy
-To: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
-Cc: linux-kernel@vger.kernel.org, alex.williamson@redhat.com, mjg@redhat.com
-Date: Thu, 10 Mar 2011 11:54:16 -0700
-Message-ID: <20110310185351.3394.54996.stgit@s20.home>
-User-Agent: StGIT/0.14.3
+	id S1752230Ab1CJS4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 13:56:17 -0500
+Date: Thu, 10 Mar 2011 19:55:05 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Michel Lespinasse <walken@google.com>
+cc: Darren Hart <darren@dvhart.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] futex: cmpxchg_futex_value_locked API change
+In-Reply-To: <20110309112550.GA3050@google.com>
+Message-ID: <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
+References: <20110307021127.GB31188@google.com> <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6> <20110309112550.GA3050@google.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2f671e2d allowed us to clear ASPM state when the FADT
-tells us it isn't supported, but we don't put this into effect
-if the aspm_policy is set to POLICY_POWERSAVE.  Enable the
-state to be cleared regardless of policy.
+On Wed, 9 Mar 2011, Michel Lespinasse wrote:
+> On Tue, Mar 08, 2011 at 09:17:11PM +0100, Thomas Gleixner wrote:
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+Just looked at it again in detail before picking it up. Can we please
+separate the s/int/u32/ changes from the real API change ?
 
- drivers/pci/pcie/aspm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>  
+> -	pagefault_disable();	/* implies preempt_disable() */
+> +	/* Note that preemption is disabled by futex_atomic_cmpxchg_inatomic
+> +	 * call sites. */
 
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 3188cd9..eb8ac5c 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -607,7 +607,7 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
- 	 * the BIOS's expectation, we'll do so once pci_enable_device() is
- 	 * called.
- 	 */
--	if (aspm_policy != POLICY_POWERSAVE) {
-+	if (aspm_policy != POLICY_POWERSAVE || aspm_clear_state) {
- 		pcie_config_aspm_path(link);
- 		pcie_set_clkpm(link, policy_to_clkpm_state(link));
- 	}
+That wants to be a separate patch as well.
+  
+> -int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
+> +int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
+>  {
+>  	int op = (encoded_op >> 28) & 7;
+>  	int cmp = (encoded_op >> 24) & 15;
+> @@ -197,7 +197,7 @@ int futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
+>  	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
+>  		oparg = 1 << oparg;
+>  
+> -	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
+> +	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
+>  		return -EFAULT;
+>  
+>  	pagefault_disable();
 
+So following the reasoning above, shouldn't that be the same for
+futex_atomic_op_inuser() ?
+
+Thanks,
+
+	tglx
