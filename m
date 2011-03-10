@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1CJV2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:28:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab1CJV2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:28:18 -0500
-Date: Thu, 10 Mar 2011 13:27:47 -0800
-From: Greg KH <gregkh@suse.de>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] sysfs: add more info to the oops dump
-Message-ID: <20110310212746.GA3361@suse.de>
-References: <20110310190227.GA28086@suse.de>
- <1299791440-21545-1-git-send-email-ext-phil.2.carmody@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299791440-21545-1-git-send-email-ext-phil.2.carmody@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752227Ab1CJVa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:30:26 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40553 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1CJVaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 16:30:25 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=gWPt9IHLA7gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=QyXUC8HyAAAA:8 a=5_cCk_V5n04vabvquSkA:9 a=-GabITsK9rgZg3lhRFPpEr55SQIA:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH trace-cmd v2] trace-cmd: allow setting CC and AR, or
+ CROSS_COMPILE from command line
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
+        Darren Hart <dvhart@linux.intel.com>
+In-Reply-To: <1299791491-1805-1-git-send-email-dhsharp@google.com>
+References: <1299780664.15854.399.camel@gandalf.stny.rr.com>
+	 <1299791491-1805-1-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 16:30:23 -0500
+Message-ID: <1299792624.15854.420.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 11:10:40PM +0200, Phil Carmody wrote:
-> If we're going to remember which file we accessed, we might as well
-> also remember whether it was a read or a write, and if the latter,
-> some indication of what was written.
+On Thu, 2011-03-10 at 13:11 -0800, David Sharp wrote:
+> Makefiles suck: Use some makefile magic to get the best of all worlds for
+> CC and AR: Sane defaults and the ability to override CC, and AR, or use
+> CROSS_COMPILE to set a prefix.
 > 
-> Changes in V2: restrict to just one line.
+> Signed-off-by: David Sharp <dhsharp@google.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Darren Hart <dvhart@linux.intel.com>
+> ---
 
-Looks nicer, but you forgot to address the "magic value" trick you used
-that I mentioned last time.  Please fix that up.
+Applied, thanks David!
 
-thanks,
+-- Steve
 
-greg k-h
+
