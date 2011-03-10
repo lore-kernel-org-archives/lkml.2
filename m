@@ -1,117 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab1CJR1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 12:27:53 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:7808 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab1CJR1w (ORCPT
+	id S1753796Ab1CJR2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 12:28:07 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59880 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab1CJR2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 12:27:52 -0500
-Message-ID: <4D790A13.4060705@caviumnetworks.com>
-Date: Thu, 10 Mar 2011 09:27:47 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 10 Mar 2011 12:28:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type;
+        b=lGavK74Uj5azP5rUrrdFxNlUOKpSFys+iOPEkTCe0bmsnzL3H/Vk0HtClSLXiQddqb
+         IG8enq9AVekOZIWP/0gLKoXo06A2OmP6dqh4A1sQNBOQDcQEkO6bUMr74IQ/tjX2AglZ
+         fEHx/Zz6Ev1g7qk9AwSdPlozUf5ail5vzfTCg=
+Message-ID: <4D790A20.3050105@gmail.com>
+Date: Thu, 10 Mar 2011 19:28:00 +0200
+From: Nikolai Kondrashov <spbnick@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 0/2] jump label: update for .39
-References: <cover.1299702291.git.jbaron@redhat.com>	 <1299728191.15854.319.camel@gandalf.stny.rr.com>	 <BLU0-SMTP690BB959832A97E002293396C80@phx.gbl> <1299771504.15854.347.camel@gandalf.stny.rr.com>
-In-Reply-To: <1299771504.15854.347.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 10 Mar 2011 17:27:47.0568 (UTC) FILETIME=[79495700:01CBDF48]
+To: Greg KH <greg@kroah.com>
+CC: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+References: <20110209224006.GA11202@kroah.com> <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com> <20110225210334.GB16860@kroah.com> <4D6823DD.6040809@gmail.com> <20110225225055.GA5931@kroah.com> <4D787714.6060405@gmail.com> <20110310170143.GA24559@kroah.com> <AANLkTinyqJx76=nzepa9fe5VDzqiXRGCQ=E1SsKm2npE@mail.gmail.com> <20110310171940.GA24972@kroah.com>
+In-Reply-To: <20110310171940.GA24972@kroah.com>
+Content-Type: multipart/mixed;
+ boundary="------------090501010303020304060507"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 07:38 AM, Steven Rostedt wrote:
-> On Thu, 2011-03-10 at 09:11 -0500, Mathieu Desnoyers wrote:
->> * Steven Rostedt (rostedt@goodmis.org) wrote:
->>> On Wed, 2011-03-09 at 15:47 -0500, Jason Baron wrote:
->>>> Hi,
->>>>
->>>> Re-fresh of updates against latest -tip tree.
->>>
->>> Thanks Jason,
->>>
->>> I started looking at them, I should have comments tomorrow (if I have
->>> any comments ;)
->>>
->>>>
->>>> I've tried to split this update up somewhat, but I've only succeeded to split
->>>> out the dynamic debug bits. The interface changes and re-write are quite
->>>> intertwined.
->>>>
->>>> I believe this update should address all the comments from the previous posting
->>>> except for Mathieu's request for a section of jump label pointers that point to
->>>> the jump label structures (since the compiler might leave gaps in the jump label
->>>> structures).
->>>
->>> The jump label structures is a list of 3 pointers, correct? I doubt that
->>> gcc would place any holes in it as they are all aligned by natural word
->>> size.
->>>
->>
->> Hi Steven,
->>
->> Can you explain what would prevent gcc from aligning these 3 pointers
->> (total of 24 bytes on 64-bit architectures) on 32-bytes ?
+This is a multi-part message in MIME format.
+--------------090501010303020304060507
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-I can:
+On 03/10/2011 07:19 PM, Greg KH wrote:
+> Can you provide me the output of:
+> 	grep . /sys/class/dmi/id/*
+> so I can try to add support for this machine to the driver?
+Sure, here it is.
 
-http://www.x86-64.org/documentation/abi.pdf Section 3.1.2:
+Sincerely,
+Nick
 
-    Aggregates and Unions
+--------------090501010303020304060507
+Content-Type: text/plain;
+ name="n230_dmi_id_grep.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="n230_dmi_id_grep.txt"
 
-    Structures and unions assume the alignment of their most strictly
-    aligned component. Each member is assigned to the lowest
-    available offset with the appropriate alignment. The size of any
-    object is always a multiple of the object‘s alignment.
-
-    An array uses the same alignment as its elements, except that a
-    local or global array variable of length at least 16 bytes or a C99
-    variable-length array variable always has alignment of at least 16
-    bytes.
-
-    Structure and union objects can require padding to meet size and
-    alignment constraints. The contents of any padding is undefined.
-
-I don't think it is explicitly stated, but it is also true that the size 
-is the smallest value that meets the above constraints.
-
-
->> Also, could
->> you point out what would refrain the linker from aligning the start of
->> object sections on the next 32-bytes (thus power of two) address
->> multiple ?
->
-
-The rules of the ABI are quite specific.  It would be a toolchain bug if 
-this were messed up.
-
-
-
-> Maybe it would be just easier to add another long ;)
-
-Maybe we should audit all the data structures in the entire kernel and 
-add manual padding to power of 2 boundaries.
-
->
-> Seriously, it would. Then it would be 32 bytes on 64bit and 16 bytes on
-> 32bit. Then I guess we can have our guarantee without doing a large
-> change to have this indirect pointer and still waste sizeof(long) bytes
-> in having it.
->
-> Just insert a long "Reserved" word.
->
-
-I disagree.  Wasting memory to work around non-existent hypothetical 
-bugs seems wrong to me.
-
-David Daney
+L3N5cy9jbGFzcy9kbWkvaWQvYmlvc19kYXRlOjA1LzE4LzIwMTAKL3N5cy9jbGFzcy9kbWkv
+aWQvYmlvc192ZW5kb3I6UGhvZW5peCBUZWNobm9sb2dpZXMgTHRkLgovc3lzL2NsYXNzL2Rt
+aS9pZC9iaW9zX3ZlcnNpb246MDBNQS5NMDAwLjIwMTAwNTE4LkpJUAovc3lzL2NsYXNzL2Rt
+aS9pZC9ib2FyZF9hc3NldF90YWc6U0FNU1VORwovc3lzL2NsYXNzL2RtaS9pZC9ib2FyZF9u
+YW1lOk4yMzAgICAgICAgICAgICAgICAgICAgICAgIAovc3lzL2NsYXNzL2RtaS9pZC9ib2Fy
+ZF9zZXJpYWw6MTIzNDkwRU40MDAwMTUKL3N5cy9jbGFzcy9kbWkvaWQvYm9hcmRfdmVuZG9y
+OlNBTVNVTkcgRUxFQ1RST05JQ1MgQ08uLCBMVEQuCi9zeXMvY2xhc3MvZG1pL2lkL2JvYXJk
+X3ZlcnNpb246Tm90IEFwcGxpY2FibGUKL3N5cy9jbGFzcy9kbWkvaWQvY2hhc3Npc19hc3Nl
+dF90YWc6Tm8gQXNzZXQgVGFnCi9zeXMvY2xhc3MvZG1pL2lkL2NoYXNzaXNfc2VyaWFsOk5v
+bmUgICAgICAgIAovc3lzL2NsYXNzL2RtaS9pZC9jaGFzc2lzX3R5cGU6MTAKL3N5cy9jbGFz
+cy9kbWkvaWQvY2hhc3Npc192ZW5kb3I6U0FNU1VORyBFTEVDVFJPTklDUyBDTy4sIExURC4K
+L3N5cy9jbGFzcy9kbWkvaWQvY2hhc3Npc192ZXJzaW9uOk4vQSAgICAgICAgIAovc3lzL2Ns
+YXNzL2RtaS9pZC9tb2RhbGlhczpkbWk6YnZuUGhvZW5peFRlY2hub2xvZ2llc0x0ZC46YnZy
+MDBNQS5NMDAwLjIwMTAwNTE4LkpJUDpiZDA1LzE4LzIwMTA6c3ZuU0FNU1VOR0VMRUNUUk9O
+SUNTQ08uLExURC46cG5OMjMwOnB2ck5vdEFwcGxpY2FibGU6cnZuU0FNU1VOR0VMRUNUUk9O
+SUNTQ08uLExURC46cm5OMjMwOnJ2ck5vdEFwcGxpY2FibGU6Y3ZuU0FNU1VOR0VMRUNUUk9O
+SUNTQ08uLExURC46Y3QxMDpjdnJOL0E6Ci9zeXMvY2xhc3MvZG1pL2lkL3Byb2R1Y3RfbmFt
+ZTpOMjMwICAgICAgICAgICAgICAgICAgICAgICAKL3N5cy9jbGFzcy9kbWkvaWQvcHJvZHVj
+dF9zZXJpYWw6WlQ3SDkzSFo4MDAxOTQKL3N5cy9jbGFzcy9kbWkvaWQvcHJvZHVjdF91dWlk
+OjAwMENEQkQxLUUzMUQtQjIxMS04MDAwLTkyQkMzNzUzOTdEQQovc3lzL2NsYXNzL2RtaS9p
+ZC9wcm9kdWN0X3ZlcnNpb246Tm90IEFwcGxpY2FibGUKL3N5cy9jbGFzcy9kbWkvaWQvc3lz
+X3ZlbmRvcjpTQU1TVU5HIEVMRUNUUk9OSUNTIENPLiwgTFRELgovc3lzL2NsYXNzL2RtaS9p
+ZC91ZXZlbnQ6TU9EQUxJQVM9ZG1pOmJ2blBob2VuaXhUZWNobm9sb2dpZXNMdGQuOmJ2cjAw
+TUEuTTAwMC4yMDEwMDUxOC5KSVA6YmQwNS8xOC8yMDEwOnN2blNBTVNVTkdFTEVDVFJPTklD
+U0NPLixMVEQuOnBuTjIzMDpwdnJOb3RBcHBsaWNhYmxlOnJ2blNBTVNVTkdFTEVDVFJPTklD
+U0NPLixMVEQuOnJuTjIzMDpydnJOb3RBcHBsaWNhYmxlOmN2blNBTVNVTkdFTEVDVFJPTklD
+U0NPLixMVEQuOmN0MTA6Y3ZyTi9BOgo=
+--------------090501010303020304060507--
