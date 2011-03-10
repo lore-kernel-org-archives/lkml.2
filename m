@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab1CJK4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:56:35 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52950 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab1CJKvs (ORCPT
+	id S1752348Ab1CJLAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 06:00:32 -0500
+Received: from mail09.linbit.com ([212.69.161.110]:58744 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1CJLAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:51:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=seYxkKnUe/mOx8yVhSUJOGaleTj6tYkaVA9cJzJ6J8APVFKSpcc/JMCEouLicGN5Sn
-         c93igolfZGkDF55K2oR3j1/1qH1sZvOxIeI50Jspn/RD15Wmo+ia8NjTZ7VbJunCufNe
-         A/hxzThkStanQ2Asw5g4sKIznFC+r/1tY7Cxk=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH v2 02/21] staging: ft1000: Fix coding style in card_send_command function.
-Date: Thu, 10 Mar 2011 11:51:16 +0100
-Message-Id: <1299754295-8493-3-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299754295-8493-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1299754295-8493-1-git-send-email-marek.belisko@open-nandra.com>
+	Thu, 10 Mar 2011 06:00:31 -0500
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [GIT PULL] DRBD bits for 2.6.39
+Date: Thu, 10 Mar 2011 12:00:23 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+References: <201103091523.51815.philipp.reisner@linbit.com> <4D789ED1.6060905@kernel.dk>
+In-Reply-To: <4D789ED1.6060905@kernel.dk>
+X-OTRS-FollowUp-SenderType: agent
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103101200.24005.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   60 +++++++++++-------------
- 1 files changed, 28 insertions(+), 32 deletions(-)
+[...]
+> Philip, sorry for the extra work, but can I please ask you to rebase
+> this on the new for-2.6.39/core? Two things happened:
+> 
+> - I pulled in the stack-plug changes, it's causing a few conflicts. All
+>   of them are trivial, so that's not a real worry.
+> 
+> - I had to rebase for-2.6.39/core to get rid of an OOPS in the
+>   ->check_events() changes from Tejun.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 293a469..ded13f2 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -481,51 +481,47 @@ static void card_reset_dsp(struct ft1000_device *ft1000dev, bool value)
- // Notes:
- //
- //---------------------------------------------------------------------------
--void card_send_command(struct ft1000_device *ft1000dev, void *ptempbuffer, int size)
-+void card_send_command(struct ft1000_device *ft1000dev, void *ptempbuffer,
-+		       int size)
- {
--    unsigned short temp;
--    unsigned char *commandbuf;
-+	unsigned short temp;
-+	unsigned char *commandbuf;
- 
--    DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
-+	DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
- 
--    commandbuf =(unsigned char*) kmalloc(size+2, GFP_KERNEL);
--    memcpy((void*)commandbuf+2, (void*)ptempbuffer, size);
-+	commandbuf = (unsigned char *)kmalloc(size + 2, GFP_KERNEL);
-+	memcpy((void *)commandbuf + 2, (void *)ptempbuffer, size);
- 
--    //DEBUG("card_send_command: Command Send\n");
-+	//DEBUG("card_send_command: Command Send\n");
- 
--    ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
-+	ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
- 
--    if (temp & 0x0100)
--    {
--       msleep(10);
--    }
-+	if (temp & 0x0100)
-+		msleep(10);
- 
--    // check for odd word
--    size = size + 2;
--    if (size % 4)
--    {
--       // Must force to be 32 bit aligned
--       size += 4 - (size % 4);
--    }
-+	/* check for odd word */
-+	size = size + 2;
- 
-+	/* Must force to be 32 bit aligned */
-+	if (size % 4)
-+		size += 4 - (size % 4);
- 
--    //DEBUG("card_send_command: write dpram ... size=%d\n", size);
--    ft1000_write_dpram32(ft1000dev, 0,commandbuf, size);
--    msleep(1);
--    //DEBUG("card_send_command: write into doorbell ...\n");
--    ft1000_write_register(ft1000dev,  FT1000_DB_DPRAM_TX ,FT1000_REG_DOORBELL) ;
--    msleep(1);
-+	//DEBUG("card_send_command: write dpram ... size=%d\n", size);
-+	ft1000_write_dpram32(ft1000dev, 0, commandbuf, size);
-+	msleep(1);
-+	//DEBUG("card_send_command: write into doorbell ...\n");
-+	ft1000_write_register(ft1000dev, FT1000_DB_DPRAM_TX,
-+			      FT1000_REG_DOORBELL);
-+	msleep(1);
- 
--    ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
--    //DEBUG("card_send_command: read doorbell ...temp=%x\n", temp);
--    if ( (temp & 0x0100) == 0)
--    {
--       //DEBUG("card_send_command: Message sent\n");
--    }
-+	ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
-+	//DEBUG("card_send_command: read doorbell ...temp=%x\n", temp);
-+	if ((temp & 0x0100) == 0) {
-+		//DEBUG("card_send_command: Message sent\n");
-+	}
- 
- }
- 
--
- //--------------------------------------------------------------------------
- //
- //  Function:   dsp_reload
--- 
-1.7.1
+Hi Jens,
 
+Done, it is rebased:
+
+The following changes since commit 4c63f5646e405b5010cc9499419060bf2e838f5b:
+
+  Merge branch 'for-2.6.39/stack-plug' into for-2.6.39/core (2011-03-10 
+08:58:35 +0100)
+
+are available in the git repository at:
+
+  git://git.drbd.org/linux-2.6-drbd.git for-jens
+
+Andreas Gruenbacher (22):
+      drbd: Removed an unnecessary #undef
+      drbd: Make sure that drbd_send() has sent the right number of bytes
+      drbd: Remove left-over prototype
+[...]
+
+BTW, since we got a request for a "summary change-log":
+
+8.3.10 (api:88/proto:86-96)
+--------
+ * Fixed a subtle performance degradation that might affected synchronous
+   work loads (databases) (introduced in 8.3.9)
+ * Fixed a locking regression (introduced in 8.3.9)
+ * Fixed on-no-data-accessible for Primary, SyncTarget nodes (Bugz 332)
+ * Progress bar for online verify
+ * Optionally use the resync speed control loop code for the online verify
+   process as well
+ * Added code to detect false positives when using data-integrity-alg
+ * New config option on-congestion and new connection states ahead and behind
+ * Reduced IO latencies during resync, bitmap exchange and temporal states
+ * On 64bit architectures allow device sizes up to one petabyte
+
+Best,
+ Phil
