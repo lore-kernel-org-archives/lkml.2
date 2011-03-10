@@ -1,45 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab1CJFln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 00:41:43 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17858 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab1CJFlm (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 10 Mar 2011 00:41:42 -0500
-Date: Thu, 10 Mar 2011 00:40:45 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] [PATCH 13/14] xen: events: do not workaround
- too-small nr_irqs
-Message-ID: <20110310054045.GF10574@dumpdata.com>
-References: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
- <1299692486-28634-13-git-send-email-ian.campbell@citrix.com>
+	id S1751667Ab1CJFuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 00:50:22 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:34423 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab1CJFuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 00:50:17 -0500
+Message-ID: <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
+In-Reply-To: <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
+References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
+    <20110216192658.GA7225@blimp.localdomain>
+    <20110217221329.GA3332@x61.home>
+    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
+    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
+    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
+    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
+    <20110222130440.21a27714@jbarnes-desktop>
+    <20110222223120.GA3567@x61.home>
+    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
+    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
+    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
+Date: Thu, 10 Mar 2011 06:50:09 +0100 (CET)
+Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after 
+     reopening lid
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "Alex Riesen" <raa.lkml@gmail.com>,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org, indan@nul.nu,
+        "Takashi Iwai" <tiwai@suse.de>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299692486-28634-13-git-send-email-ian.campbell@citrix.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0204.4D78648F.00F2,ss=1,fgs=0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: d825756976bdd03eeab7bf7cffb9f8e1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 05:41:25PM +0000, Ian Campbell wrote:
-> This workaround was somewhat useful prior to the introduction of the
-> core irq allocator and 026c9d2d0d75 "xen: events: allocate GSIs and
-> dynamic IRQs from separate IRQ ranges." but should be unnecessary now.
+Hello,
 
-OK, so you tested this under QEMU with Xen + Dom0? A simple one CPU
-config was what we had trouble with.
-> 
-> If nr_irqs turns out to be too small under Xen then we should increase
-> nr_irqs rather than working around the core allocator in this way.
-> 
-> In my configuration NR_IRQS ends up being 2304 with nr_irq_gsi 272
-> which is sufficient.
+On Fri, March 4, 2011 19:47, Linus Torvalds wrote:
+> Alex, can you confirm that the revert of 951f3512dba5 plus the
+> one-liner patch from Takashi that Indan quoted also works for you?
+>
+>               Linus
+>
+> On Thu, Mar 3, 2011 at 10:53 PM, Indan Zupancic <indan@nul.nu> wrote:
+>>
+>> So please revert my patch and apply Takashi Iwai's, which fixes the
+>> most immediate bug without changing anything else. This should go
+>> in stable too.
+>
+
+I found another backlight bug:
+
+When suspending intel_panel_disable_backlight() is never called,
+but intel_panel_enable_backlight() is called at resume. With the
+effect that if the brightness was ever changed after screen
+blanking, the wrong brightness gets restored.
+
+This explains the weird behaviour I've seen. I didn't see it with
+combination mode, because then the brightness is always the same
+(zero or the maximum, the BIOS only uses LBPC on my system.) I'll
+send a patch in a moment.
+
+Alternative for reverting the combination mode removal (I can also
+redo the patch against the revert and Takashi's patch, if that's
+preferred):
+
+--
+
+drm/i915: Do handle backlight combination mode specially
+
+Add back the combination mode check, but with slightly cleaner code
+and the weirdness removed: No val >>= 1, but also no val &= ~1. The
+old code probably confused bit 0 with BLM_LEGACY_MODE, which is bit 16.
+The other change is clearer calculations: Just check for zero level
+explicitly instead of avoiding the divide-by-zero.
+
+Signed-off-by: Indan Zupancic <indan@nul.nu>
+
+---
+
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index d860abe..b05631a 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -30,6 +30,10 @@
+
+ #include "intel_drv.h"
+
++#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
++#define BLM_COMBINATION_MODE (1 << 30)
++#define BLM_LEGACY_MODE (1 << 16)
++
+ void
+ intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
+ 		       struct drm_display_mode *adjusted_mode)
+@@ -110,6 +114,22 @@ done:
+ 	dev_priv->pch_pf_size = (width << 16) | height;
+ }
+
++/*
++ * What about gen 3? If there are no gen 3 systems with ASLE,
++ * then it doesn't matter, as we don't need to change the
++ * brightness. But then the gen 2 check can be removed too.
++ */
++static int is_backlight_combination_mode(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++
++	if (INTEL_INFO(dev)->gen >= 4)
++		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
++	if (IS_GEN2(dev))
++		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
++	return 0;
++}
++
+ static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
+ {
+ 	u32 val;
+@@ -163,9 +183,12 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
+ 			max >>= 17;
+ 		} else {
+ 			max >>= 16;
++			/* Ignore BLM_LEGACY_MODE bit */
+ 			if (INTEL_INFO(dev)->gen < 4)
+ 				max &= ~1;
+ 		}
++		if (is_backlight_combination_mode(dev))
++			max *= 0xff;
+ 	}
+
+ 	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
+@@ -183,6 +206,12 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
+ 		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
+ 		if (IS_PINEVIEW(dev))
+ 			val >>= 1;
++		if (is_backlight_combination_mode(dev)){
++			u8 lbpc;
++
++			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
++			val *= lbpc;
++		}
+ 	}
+
+ 	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
+@@ -205,6 +234,15 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+
+ 	if (HAS_PCH_SPLIT(dev))
+ 		return intel_pch_panel_set_backlight(dev, level);
++
++	if (level && is_backlight_combination_mode(dev)){
++		u32 max = intel_panel_get_max_backlight(dev);
++		u8 lpbc;
++
++		lpbc = level * 0xff / max;
++		level /= lpbc;
++		pci_write_config_byte(dev->pdev, PCI_LBPC, lpbc);
++	}
+ 	tmp = I915_READ(BLC_PWM_CTL);
+ 	if (IS_PINEVIEW(dev)) {
+ 		tmp &= ~(BACKLIGHT_DUTY_CYCLE_MASK - 1);
+
+
