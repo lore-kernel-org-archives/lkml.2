@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751228Ab1CJCIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 21:08:50 -0500
-Received: from nm15-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.236]:44104 "HELO
-	nm15-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754905Ab1CJCIE (ORCPT
+	id S1751560Ab1CJCaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 21:30:19 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:48665 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab1CJCaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 21:08:04 -0500
-X-Yahoo-Newman-Id: 574512.16900.bm@omp1060.mail.ac4.yahoo.com
-Cc: recipient list not shown:;
-Message-ID: <293003.57214.qm@smtp104.sbc.mail.ac4.yahoo.com>
-X-Yahoo-SMTP: h91GRs.swBCA5i3qPkzhFVbczBclxgb8ww.14fq0wZTgsDeVW2r1
-X-YMail-OSG: VE.p32QVM1kCqcdduXiz5BA51YKlO_0rJgZcEFKNZBdy3bs
- foGhJlzqsPyvKaWkyIEFq44kf_oz4F5kQ0B6EzSRxmkd.8f4Bzv34QhQfjql
- ErX0DhTjVFvs66rTAsuCRtxIQy2qmHIOIxd7vlDvrmbPBGC97OjLv3odMEUJ
- MjkcCnr6gPN.B5PDboGEHvmPJ7szi1YHcN7oByKF2YZKeGCsY9WlzTtjEE_J
- 99cj8p57fMxK3doCM8DtvGyeF_YzL7bXiCYO77vHWOtWQkLa4QSfFqyulV76
- aOATZzuBDwqYOb53_5MBZcqIWPoCYdKNpsXA3t2YJGrIo1Hn.s1kQON0Yu1B
- m9OTSf_f7U_4FpvggDYxs0iEUm2SyBed7306vbeW_lEIGgLp3nFfyPZI_RkE
- 2RorQSqiGlvX4BVfu_HoIPCfqmheXRo8ESao3Je4sKeMJjja8Clg3LaOXJb8
- 0SkXMyIz.Zf_sBFPm.VeI1IKrorDZP64g69JE1fswGPG7.MR2keJZWVD1rqz
- EejwaDwm_bb7NTNiH0.4zfrWZ7GzFfYtmOxSWn23kB0VFn4laZI1_bGubX0N
- MniFl6RApR.OoDnr9rcN4KmjpqKwn_v5FtDHUme0D1WS..j5ooCkpVLUcn75
- w1U8Aq8NrwFkzeXz.qzv17Bi_jC_SN82VdCMXPTp4ldnDbkVbPcFuts1IoPU
- .vYBPjbFZOyws2gULzHRTlhQVHqrn9l3bKnDjIADOvFtMnzT65s5EsQ--
-X-Yahoo-Newman-Property: ymail-3
-Reply-To: <banquedubenin@admin.in.th>
-From: <3569--pwunion@att.net>
-Subject: YOUR PAYMENT FUND ...............
-Date: Thu, 10 Mar 2011 03:07:54 +0100
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0006_01C2A9A6.5991565A"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 9 Mar 2011 21:30:16 -0500
+Date: Thu, 10 Mar 2011 11:29:57 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+Subject: Re: [PATCH]mmc: set timeout for SDHCI host before sending busy cmds
+In-reply-to: <20110309080609.GA23207@intel.com>
+To: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, prakity@marvell.com,
+        jh80.chung@samsung.com, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, Philip Rakity <prakity@marvell.com>
+Message-id: <4D7837A5.3010603@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+References: <20110309080609.GA23207@intel.com>
+X-OriginalArrivalTime: 10 Mar 2011 02:30:14.0194 (UTC)
+ FILETIME=[162C9920:01CBDECB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Chuanxiao Dong wrote:
+> Hi all,
+>    From the previous discussion, I do not think we have got a clear conclusion
+>    about using maximum timeout value. At least we know from Jae hoon Chung
+>    using 0xE for every case is not a good. So I want to suggest only use 0xE for
+>    busy command. I personally preferred below implementation, which is similar
+>    with a RFC patch submitted by Jae hoon Chung, but only without adding a new
+>    quirk.
 
-------=_NextPart_000_0006_01C2A9A6.5991565A
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+thanks for remind. 
+Yes, i tested without quirks, i think that is not problem.
+(Just sent RFC patch with quirks, because i want to ask how think about adding quirks or not).
 
-View And Get Back.........................
+> 
+>    I think sdhci_calc_timeout should be left for data transfer since at least we
+>    can get a warning if 0xE is not enough for host to use. And if the host
+>    controller and the card have no bugs, then the calculated timeout should be
+>    safe. Left the old implementation unchanged is also compatible with all
+>    existed host controllers and cards.
+> 
+>    But for busy command, we are not clear about how long is safe enough for
+>    waiting and there is also no function to do the calculation for them. So
+>    preferred just using 0xE. Below the patch and comment:
+> 
+> Set the timeout control register for SDHCI host when send some commands which
+> need busy signal. Use the maximum timeout value 0xE will be safe.
+> 
+> Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+> ---
+>  drivers/mmc/host/sdhci.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 99c372e..8306323 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -659,8 +659,15 @@ static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_data *data)
+>  
+>  	WARN_ON(host->data);
+>  
+> -	if (data == NULL)
+> +	if (data == NULL) {
+> +		/*
+> +		 * set the timeout to be maximum value for commands those with
+> +		 * busy signal
+> +		 */
+> +		if (host->cmd->flags & MMC_RSP_BUSY)
+> +			sdhci_writeb(host, 0xE, SDHCI_TIMEOUT_CONTROL);
+>  		return;
+> +	}
+>  
+>  	/* Sanity checks */
+>  	BUG_ON(data->blksz * data->blocks > 524288);
 
-------=_NextPart_000_0006_01C2A9A6.5991565A
-Content-Type: application/octet-stream;
-	name="DIRECTOR OF OPERATIONS 1.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="DIRECTOR OF OPERATIONS 1.txt"
-
-RElSRUNUT1IgT0YgT1BFUkFUSU9OUw0KRk9SRUlHTiBSRU1JVFRBTkNFIERJ
-VklTSU9OIEFUTQ0KRklOQU5DSUFMIEJBTksgUExDIEJFTklODQpXRVNUIEFG
-UklDQQ0KQVRUTiBNWSBERUFSIA0KTk9XIFdFIEhBVkUgQVJSQU5HRUQgWU9V
-UiBQQVlNRU5UIE9GICgkMi41TUlMTElPTlMpIFRXTyBNSUxMSU9OUyBGSVZF
-IEhVTkRSRUQgVEhPVVNBTkQgVU5JVEVEIFNUQVRFUyBET0xMQVJTIElOIEFU
-TSBQQVlNRU5UIENBUkQgVE8gQkUgU0VOVCBUTyBZT1UgVEhST1VHSCBXRVNU
-RVJOIFVOSU9OIE1PTkVZIFRSQU5TRkVSIFBBWU1FTlQgQU5EIFRIUk9VR0gg
-TU9ORVkgR1JBTSBUUkFOU0ZFUiBQQVlNRU5ULiBZT1VSIFBBWU1FTlQgV0lM
-TCBCRSBTRU5EIFRPIFlPVSBCWSBXRVNURVJOIFVOSU9OIE9SIEJZIE1PTkVZ
-IEdSQU0uIFRIRSBBTU9VTlQgWU9VIFdJTEwgUkVDRUlWRSBQRVIgREFZIElT
-ICQxNCwzMDBVU0QsICQ3LDE1MFVTRCBZT1UgV0lMTCBSRUNFSVZFIFRIUk9V
-R0ggV0VTVEVSTiBVTklPTiBNT05FWSBUUkFOU0ZFUiBBTkQgJDcsMTUwVVNE
-IFlPVSBXSUxMIFJFQ0VJVkUgVEhST1VHSCBNT05FWSBHUkFNIFRSQU5TRkVS
-LiAgVEhFIE1JTklTVEVSIFRSVVNUIEZVTkRTIE9GIEJFTklOIFJFUFVCTElD
-IFdJTEwgU0VORCBZT1UgVEhFIENVUlJFTlRMWSBTVEFOREFSRCBUUkFDS0lO
-RyBERVRBSUxTIFlPVSBORUVEIFRPIFBJQ0sgVVAgWU9VUiAoJDE0LDMwMC5V
-U0QpIFBBWU1FTlQgQlkgV0VTVEVSTiBVTklPTiBBTkQgTU9ORVkgR1JBTSwg
-WU9VIFdJTEwgUkVDRUlWRSBFVkVSWSBEQVkgVElMTCBZT1UgUkVDRUlWRSBU
-SEUgJDIuNU1JTExJT05TIFVOSVRFRCBTVEFURSBET0xMQVJTLCBOT1cgTk8g
-TkVFRCBUTyBTRU5EIFlPVSBUSElTIEFUTSBDQVJEIEJFQ0FVU0UgWU9VIENB
-TiBOT1QgQkUgQUJMRSBUTyBXSVRIRFJBVyBUSEUgQVRNIENBUkQgRFVFIFRP
-IFRIRSBBVE0gTUFTVEVSIENBUkQgQ09OVEFJTiBMQVJHRSBNT05FWSBPTiBJ
-VC4gIFRIRSBESVJFQ1RPUiBBRE1JTklTVFJBVE9SIFRSVVNUIEZVTkRTIEhB
-VkUgQUxSRUFEWSBTSUdORUQgWU9VUiBQQVlNRU5ULCBOT1cgWU9VIEFSRSBG
-UkVFIFRPIENPTVBMWSBXSVRIIEZJTkFOQ0lBTCBCQU5LIEJFTklOIFBBWU1F
-TlQgT0ZGSUNFIE9OIFRISVMgRU1BSUw6ICAgYmFucXVlZHViZW5pbkBhZG1p
-bi5pbi50aCANCkhPV0VWRVIsIEtJTkRMWSBDT05UQUNUIFRIRSBCRUxPVyBQ
-RVJTT04gV0hPIElTIElOIFBPU0lUSU9OIFRPIFJFTEVBU0UgWU9VUiBQQVlN
-RU5UIEJZIFdFU1RFUk4gVU5JT04gQU5EIEJZIE1PTkVZIEdSQU0gUEVSICQx
-NCwzMDAuVVNEIEEgREFZLk1SUyBNQVJHUkVURSBaRVdBTlUsIFdFU1RFUk4g
-VU5JT04gJiBNT05FWSBHUkFNIERFUEFSVE1FTlQgIEZJTkFOQ0lBTCBCQU5L
-IEJFTklOICBFLU1BSUw6IGJhbnF1ZWR1YmVuaW5AYWRtaW4uaW4udGggIFRI
-RSBGSU5BTkNJQUwgV0VTVEVSTiBVTklPTiBQQVlNRU5UIENBTlRFUiBBTkQg
-RklOQU5DSUFMIE1PTkVZIEdSQU0gUEFZTUVOVCBDRU5URVIgSEFTIEJFRU4g
-TUFOREFURUQgVE8gSVNTVUUgT1VUIFlPVVIgUEFZTUVOVCBBTkQgWU9VIEhB
-VkUgVE8gU1RPUCBBTlkgRlVSVEhFUiBDT01NVU5JQ0FUSU9OIFdJVEggQU5Z
-IE9USEVSICBQRVJTT04oUykgT1IgT0ZGSUNFKFMpIFRPIEFWT0lEIEFOWSAg
-SElUQ0hFUyBJTiBSRUNFSVZJTkcgWU9VUiBQQVlNRU5ULg0KTk9URSBUSEFU
-IFRIRSBBRE1JTklTVFJBVE9SIFBBWU1FTlQgQ0VOVFJFIE5FRUQgVEhJUyBE
-RVRBSUxTIEZST00gWU9VIFRPIFBST0NFU1MgWU9VUiBQQVlNRU5UOiANClJF
-Q0VJVkVSIE5BTUU6IC0tLS0tLS0tLS0tLS0tLS0tLS0tDQpDT1VOVFJZOiAt
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KQ0lUWSBBRERSRVNTOiAtLS0t
-LS0tLS0tLS0tLS0tLS0tLS0NClRFTDogLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tDQpURVNUIFFVRVNUSU9OOiAtLS0tLS0tLS0tLS0tLS0tLS0t
-LQ0KQU5TV0VSOiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NCkNPTVBM
-WSBOT1cgQkVDQVVTRSBBUyBTT09OIEFTIFlPVSBTRU5UIFRISVMgUkVRVUlS
-RUQgREVUQUlMUyBUTyBNUlMuIE1BUkdSRVRFIFpBV0VOVSwgU0hFIFdJTEwg
-U1RBUlQgU0VORElORyBZT1VSIFBBWU1FTlQgQlkgV0VTVEVSTiBVTklPTiBB
-TkQgQlkgTU9ORVkgR1JBTS4NClJFR0FSRFMgVE8gWU9VIEFORCBZT1VSIEZB
-TUlMWSwgVEhBTktTIEFORCBCRSBCTEVTU0VELg0KUkVWLiBEUi4gTExPWUQg
-SE9XQVJEDQpUSEUgRElSRUNUT1IgT0YgT1BFUkFUSU9OUw0KRk9SRUlHTiBS
-RU1JVFRBTkNFIERJVklTSU9ODQo=
-
-------=_NextPart_000_0006_01C2A9A6.5991565A--
