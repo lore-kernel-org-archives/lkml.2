@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab1CJHAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 02:00:45 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59336 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab1CJHAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 02:00:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nN7L8EzLV0sd4ANNqSVvhulKBCiqW0JT1k6O/p/KRDlBlDfbdFs7LoWORNdSRbp1Rc
-         P0r+SiAEUENhhwvOvNYlopHJBXq/C5bs5hnEpET3WTvVDInXy9RTIjKVZD02a4+2oayk
-         EFSNjYQmRo4uG7GimCa7qp8hlRBRHmoVeIJ+0=
-Message-ID: <4D787714.6060405@gmail.com>
-Date: Thu, 10 Mar 2011 09:00:36 +0200
-From: Nikolai Kondrashov <spbnick@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	id S1752769Ab1CJHBf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 02:01:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14961 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752242Ab1CJHBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 02:01:31 -0500
+Message-ID: <4D787747.7080207@redhat.com>
+Date: Thu, 10 Mar 2011 02:01:27 -0500
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-References: <20110209224006.GA11202@kroah.com> <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com> <20110225210334.GB16860@kroah.com> <4D6823DD.6040809@gmail.com> <20110225225055.GA5931@kroah.com>
-In-Reply-To: <20110225225055.GA5931@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+CC: KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: [PATCHv2] fix regression caused by	e48672fa25e879f7ae21785c7efd187738139593
+References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz> <4D77F149.8020906@redhat.com> <20110309223651.GC1762@pcnci.linuxbox.cz>
+In-Reply-To: <20110309223651.GC1762@pcnci.linuxbox.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On 02/26/2011 12:50 AM, Greg KH wrote:
-> On Sat, Feb 26, 2011 at 12:49:17AM +0300, Nikolai Kondrashov wrote:
->> On 02/26/2011 12:03 AM, Greg KH wrote:
->>> This should work, as we support the N150/N210/N220 versions.
->>>
->>> Can you provide the output of:
->>> 	grep ./sys/class/dmi/id/*
->>>
->>> so I can verify this?
->> Sure. Please find it attached. It is taken on a stock Debian kernel, without
->> your patch.
->>
->> Could I have configured the kernel incorrectly?
+On 03/09/2011 05:36 PM, Nikola Ciprich wrote:
+> commit 387b9f97750444728962b236987fbe8ee8cc4f8c moved kvm_request_guest_time_update(vcpu),
+> breaking 32bit SMP guests using kvm-clock. Fix this by moving (new) clock update function
+> to proper place.
 >
-> Maybe, that's odd.
+> Signed-off-by: Nikola Ciprich<nikola.ciprich@linuxbox.cz>
+> ---
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 4c27144..ba3f76f 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2101,8 +2101,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>   		if (check_tsc_unstable()) {
+>   			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+>   			vcpu->arch.tsc_catchup = 1;
+> -			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>   		}
+> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>   		if (vcpu->cpu != cpu)
+>   			kvm_migrate_timers(vcpu);
+>   		vcpu->cpu = cpu;
 >
-> Care to try the version of the patch below to see if that works better
-> for you or not?
-Thank you. The result is the same: ENODEV without "force" and "This computer
-doesn't support SABI" and EINVAL with "force".
-
-Sorry for the delay - I'm in the process of chaning my job as well as the
-country of living now.
-
-Sincerely,
-Nick
+>    
+ACK
