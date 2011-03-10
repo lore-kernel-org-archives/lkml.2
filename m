@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab1CJXY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:24:28 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44703 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab1CJXY1 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 10 Mar 2011 18:24:27 -0500
-Date: Thu, 10 Mar 2011 18:23:29 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [GIT PATCH v2 0/14] xen: events: cleanups + ween off nr_irqs
-Message-ID: <20110310232329.GA11684@dumpdata.com>
-References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
- <20110310225726.GA2983@dumpdata.com>
+	id S1754078Ab1CJXZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:25:08 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:18828 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab1CJXZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:25:06 -0500
+Message-ID: <4D795DCE.7050807@caviumnetworks.com>
+Date: Thu, 10 Mar 2011 15:25:02 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110310225726.GA2983@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D795D98.00D0,ss=1,fgs=0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 0/2] jump label: update for .39
+References: <1299780241.15854.393.camel@gandalf.stny.rr.com>	 <20110310182000.GB2906@redhat.com>	 <1299782143.15854.402.camel@gandalf.stny.rr.com>	 <4D791CAA.7090108@caviumnetworks.com>	 <1299783236.15854.405.camel@gandalf.stny.rr.com>	 <4D791F31.6040100@caviumnetworks.com>	 <1299785143.15854.407.camel@gandalf.stny.rr.com>	 <1299786329.15854.409.camel@gandalf.stny.rr.com>	 <BLU0-SMTP311155BEBE5F141636A6E596C80@phx.gbl>	 <1299793339.15854.430.camel@gandalf.stny.rr.com>	 <BLU0-SMTP101D168109508CC1B82F0E496C80@phx.gbl> <1299798970.15854.484.camel@gandalf.stny.rr.com>
+In-Reply-To: <1299798970.15854.484.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Mar 2011 23:25:02.0287 (UTC) FILETIME=[615FE5F0:01CBDF7A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
-> > have gone in before, but the penultimate patch really needed to be
-> > simultaneous) so I haven't bothered to try and pull anything from tip
-> > into this branch -- it should all be resolved during the merge window
-> > and bisection won't be too broken since the "eat into GSI space"
-> > workaround only appears to be needed on a small number of older
-> > platforms (qemu being the main exception).
-> 
-> <nods>
-> > 
-> > I have tested:
-> >       * Domain 0 on real h/w and under qemu
-> >       * PV guest, including migration and passthrough of both VF and PF.
-> >       * PVHVM guest, including migration and passthrough of both VF and
-> >         PF.
-> 
-> I am having difficulties with passthrough of an USB device. Somehow the
-> irq count is not going up at all (both in dom0 and domU) and it looks to
-> be doing just simple polling. I've rebased the xen-pciback to be on top
-> of your changes and apply cleanly. The whole lot is now in #master
-> 
-> MSI and MSI-X devices work just fine in both Dom0 and DomU case so
-> it is something special with the legacy IRQs. Probably forgot something
-> simple...
+On 03/10/2011 03:16 PM, Steven Rostedt wrote:
+> On Thu, 2011-03-10 at 17:48 -0500, Mathieu Desnoyers wrote:
+>> * Steven Rostedt (rostedt@goodmis.org) wrote:
+>>> On Thu, 2011-03-10 at 16:22 -0500, Mathieu Desnoyers wrote:
+>>>
+>>>>> Anyway, I think the best thing for now is to have Jason add
+>>>>> the .align(sizeof(long)) in the inline assembly for all locations and be
+>>>>> done with it.
+>>>>
+>>>> You seem to be contradicting yourself here. I'm concerned about having
+>>>> "structures" of a size not power of two. Can we simply either
+>>>
+>>> But we don't have structures. We have data that has been allocated in
+>>> assembly. Come to think of it, it may be best to keep these as
+>>> ".align 4".
+>>
+>> The .align 4 is certainly not the right answer, because it will trigger
+>> unaligned accesses on some 64-bit architectures, as we have faced with
+>> trace event.
+>
+> Will it? Seems that sparc does this regardless.
+>
+> Remember, this is 3 natural word sized objects, and vmlinux.ld starts
+> the section off with .ALIGN 8, hence, the section is already 8 byte
+> aligned, all objects within this section are 8 bytes (for 64bit archs,
+> and 4 bytes for 32bit), why would saying ".align 4" cause the linker to
+> add holes to make it 4 byte aligned when it is already 8 byte aligned.
+> The ".align 4" should work with both 32bit and 64bit archs.
+>
 
-This looks like it would fix the culprit:
-[edit: not entirely]
+It should work, but it hurts my eyes to see the source code forcing a 
+64-bit word to 32-bit alignment.
 
-diff --git a/drivers/xen/pciback/conf_space_header.c b/drivers/xen/pciback/conf_space_header.c
-index 22ad0f5..3eeb197 100644
---- a/drivers/xen/pciback/conf_space_header.c
-+++ b/drivers/xen/pciback/conf_space_header.c
-@@ -6,6 +6,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/pci.h>
-+#include <xen/events.h>
- #include "pciback.h"
- #include "conf_space.h"
- 
-@@ -246,7 +247,7 @@ static int pciback_read_device(struct pci_dev *dev, int offset,
- static int interrupt_read(struct pci_dev *dev, int offset, u8 * value,
-                          void *data)
- {
--       *value = (u8) dev->irq;
-+       *value = (u8) dev->irq ? xen_pirq_from_irq(dev->irq) : 0;
- 
-        return 0;
- }
-
-Thought I am not sure if this is absolutly correct. Are the PIRQs == GSI or should
-we provide another piece of code to extract info->u.pirq.gsi?
-
-I also see this when using xen-pciback.hide=..
-
-pciback 0000:00:1d.7: found PCI INT A -> IRQ 14
-pciback 0000:00:1d.7: sharing IRQ 14 with 0000:00:1d.0
-pciback 0000:00:1d.0: found PCI INT A -> IRQ 14
-pciback 0000:00:1d.0: sharing IRQ 14 with 0000:00:1d.7
-pciback 0000:00:1d.1: found PCI INT B -> IRQ 5
-pciback 0000:00:1d.1: sharing IRQ 5 with 0000:00:16.3
-pciback 0000:00:1d.1: sharing IRQ 5 with 0000:00:16.7
-pciback 0000:00:1d.1: sharing IRQ 5 with 0000:00:1a.2
-..
-.. which are clearly the Linux IRQ's, not the PIRQ/GSI values,
-so some other patch for the xen-pciback will be needed as well.
+David Daney
