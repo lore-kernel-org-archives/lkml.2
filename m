@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab1CJWiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:38:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42802 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751892Ab1CJWiO (ORCPT
+	id S1753845Ab1CJWjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:39:08 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41659
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752042Ab1CJWjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:38:14 -0500
-Date: Thu, 10 Mar 2011 14:38:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/1] sysfs: add more info to the oops dump
-Message-Id: <20110310143806.7542e929.akpm@linux-foundation.org>
-In-Reply-To: <1299796027-3343-2-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <20110310212746.GA3361@suse.de>
-	<1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com>
-	<1299796027-3343-2-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Thu, 10 Mar 2011 17:39:05 -0500
+Date: Thu, 10 Mar 2011 14:39:42 -0800 (PST)
+Message-Id: <20110310.143942.183042624.davem@davemloft.net>
+To: j223yang@asset.uwaterloo.ca
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] ariadne: remove redundant NULL check
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110310223636.GA11399@asset.uwaterloo.ca>
+References: <20110310223636.GA11399@asset.uwaterloo.ca>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011 00:27:07 +0200
-Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
+From: j223yang@asset.uwaterloo.ca
+Date: Thu, 10 Mar 2011 17:36:37 -0500
 
-> +static int last_sysfs_write_len;
->  void sysfs_printk_last_file(void)
->  {
-> -	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
-> +	printk(KERN_EMERG "last sysfs file (%c): %s%c",
-> +	       (last_sysfs_write_len == SYSFS_NOT_A_WRITE) ? 'r' : 'w',
-> +	       last_sysfs_file,
-> +	       last_sysfs_write_len > 0 ? ' ' : '\n');
-> +	if (last_sysfs_write_len >= (int)sizeof(last_sysfs_write))
-> +		printk(KERN_CONT " written: %s...(%d chars)\n",
-> +		       last_sysfs_write, last_sysfs_write_len);
-> +	else if (last_sysfs_write_len > 0)
-> +		printk(KERN_CONT " written: %s\n", last_sysfs_write);
->  }
+> Simply remove redundant 'dev' NULL check.
+> Source code uses spaces instead of TAB, except 'printk' and 'return' lines.
+> 
+> 
+> Signed-off-by: Jinqiu Yang <crindy646@gmail.com>
 
-That's going to fail to emit the \n if last_sysfs_write_len<=0. 
-However there are tricks inside printk() which will fix that up if the
-next printk starts with KERN_foo.
+Patch is still corrupted by your email client, the same way as before.
+And when you fix it, you don't need to mention this in the commit
+message.
 
-
-
-I can recall just one instance in the past 5-6 years in which the
-last-sysfs-file output enabled me to locate a bug which would otherwise
-have been unlocatable (within a drivers/md handler, iirc).
-
-I don't think it's a terribly useful feature.  Except for when it _is_
-useful, when it's very useful ;) The world wouldn't end if we decided
-to remove it.
+Please, take the time to do some testing by sending the patch to
+yourself, and then try to apply the patch in the email you receive.
