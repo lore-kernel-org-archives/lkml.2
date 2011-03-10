@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab1CJTlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 14:41:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60240 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753191Ab1CJTlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 14:41:23 -0500
-Date: Thu, 10 Mar 2011 14:41:06 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, m-ikeda@ds.jp.nec.com,
-        jaxboe@fusionio.com, linux-kernel@vger.kernel.org, ryov@valinux.co.jp,
-        taka@valinux.co.jp, righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
-        mrubin@google.com, linux-fsdevel@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [RFC] Storing cgroup id in page->private (Was: Re: [RFC] [PATCH
- 0/6] Provide cgroup isolation for buffered writes.)
-Message-ID: <20110310194106.GH29464@redhat.com>
-References: <1299619256-12661-1-git-send-email-teravest@google.com>
- <20110309142237.6ab82523.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTimRRAEp75CfyJFxU-5wOYfety6gjq=msZf0Wp8P@mail.gmail.com>
- <20110310181529.GF29464@redhat.com>
- <AANLkTi=LL6JEwOcZfSsapYn-isA3RBrV8kPq8EK6va8=@mail.gmail.com>
- <20110310191115.GG29464@redhat.com>
+	id S1754039Ab1CJToT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 14:44:19 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60033 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab1CJToS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 14:44:18 -0500
+Message-ID: <4D792A00.6090803@pengutronix.de>
+Date: Thu, 10 Mar 2011 20:44:00 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110310191115.GG29464@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pekka Enberg <penberg@kernel.org>
+CC: Dr Andrew John Hughes <ahughes@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Trond.Myklebust@netapp.com,
+        Greg KH <greg@kroah.com>
+Subject: Re: NFS regression in 2.6.37.1 (current stable)
+References: <20110310185321.GA22030@rivendell.middle-earth.co.uk> <AANLkTikXb_NM0+3ro607k0sz1zFJFTeJwp9MmBn_ngzn@mail.gmail.com>
+In-Reply-To: <AANLkTikXb_NM0+3ro607k0sz1zFJFTeJwp9MmBn_ngzn@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigBA3054419E5906AB8FD47DA1"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 02:11:15PM -0500, Vivek Goyal wrote:
-> On Thu, Mar 10, 2011 at 10:57:52AM -0800, Justin TerAvest wrote:
-> > On Thu, Mar 10, 2011 at 10:15 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > > On Thu, Mar 10, 2011 at 10:08:03AM -0800, Justin TerAvest wrote:
-> > >
-> > > [..]
-> > >> > I don't like to increase size of page_cgroup but I think you can record
-> > >> > information without increasing size of page_cgroup.
-> > >> >
-> > >> > A) As Andrea did, encode it to pc->flags.
-> > >> >   But I'm afraid that there is a racy case because memory cgroup uses some
-> > >> >   test_and_set() bits.
-> > >> > B) I wonder why the information cannot be recorded in page->private.
-> > >> >   When page has buffers, you can record the information to buffer struct.
-> > >> >   About swapio (if you take care of), you can record information to bio.
-> > >>
-> > >> Hi Kame,
-> > >>
-> > >> I'm concerned that by using something like buffer_heads stored in
-> > >> page->private, we will only be supported on some filesystems and not
-> > >> others. In addition, I'm not sure if all filesystems attach buffer
-> > >> heads at the same time; if page->private is modified in the flusher
-> > >> thread, we might not be able to determine the thread that dirtied the
-> > >> page in the first place.
-> > >
-> > > I think the person who dirtied the page can store the information in
-> > > page->private (assuming buffer heads were not generated) and if flusher
-> > > thread later ends up generating buffer heads and ends up modifying
-> > > page->private, this can be copied in buffer heads?
-> > 
-> > This scares me a bit.
-> > 
-> > As I understand it, fs/ code expects total ownership of page->private.
-> > This adds a responsibility for every user to copy the data through and
-> > store it in the buffer head (or anything else). btrfs seems to do
-> > something entirely different in some cases and store a different kind
-> > of value.
-> 
-> If filesystems are using page->private for some other purpose also, then
-> I guess we have issues. 
-> 
-> I am ccing linux-fsdevel to have some feedback on the idea of trying
-> to store cgroup id of page dirtying thread in page->private and/or buffer
-> head for tracking which group originally dirtied the page in IO controller
-> during writeback.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigBA3054419E5906AB8FD47DA1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-A quick "grep" showed that btrfs, ceph and logfs are using page->private
-for other purposes also.
+On 03/10/2011 08:35 PM, Pekka Enberg wrote:
+[...]
+> There's some more discussion here:
+>=20
+> https://bugs.gentoo.org/show_bug.cgi?id=3D357121
 
-I was under the impression that either page->private is null or it 
-points to buffer heads for the writeback case. So storing the info
-directly in either buffer head directly or first in page->private and
-then transferring it to buffer heads would have helped. 
+They have identified the 55ea499d60aefa3d03a77fc8590c26b5881faa92 as the
+offending commit, too. Used system is x86_64.
 
-Thanks
-Vivek
+> Greg, Trond, as this is a regression in -stable, I wonder if it's best
+> that we just revert the commit?
+
+No - that would break arm < armv6 and IIRC parisc.
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enigBA3054419E5906AB8FD47DA1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk15KgMACgkQjTAFq1RaXHPOiACfVZ2eBCOHpTiB8IRAIb/zkDc8
+hlMAn1W0jDtEsKhBkkTALBB2beWz0GBp
+=jiZV
+-----END PGP SIGNATURE-----
+
+--------------enigBA3054419E5906AB8FD47DA1--
