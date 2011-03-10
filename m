@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab1CJJKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:10:54 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54830 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab1CJJKw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:10:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Z6D8hFPimosG5DMMFuGWJNRz0fnxy97a4QfpgwOlNpOhqfdfmutuksISvKWbbEekOy
-         kbuovTWGVuXCXiX1fJ4340d9zDtIfNPgYYbN0fNog0LB+JckOxp2xn3j4+4+orraActf
-         v7K1FF3sqW39tKuzpe+5XLLB6w32XWwcVyVCk=
-Subject: [PATCH] gpio: Use  __devexit at necessary places
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Miguel Gaio <miguel.gaio@efixo.com>,
-        Mocean Laboratories <info@mocean-labs.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain
-Date: Thu, 10 Mar 2011 17:10:45 +0800
-Message-Id: <1299748245.18619.5.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1752242Ab1CJJRV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:17:21 -0500
+Received: from cantor.suse.de ([195.135.220.2]:59368 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab1CJJRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 04:17:19 -0500
+Message-ID: <4D78971C.6090107@suse.cz>
+Date: Thu, 10 Mar 2011 10:17:16 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Borislav Petkov <bp@alien8.de>,
+        Arnd Bergmann <arnd@arndb.de>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, bp@amd64.org
+Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
+References: <20110301083529.GA767@liondog.tnic> <20110309144504.GA1096@sepie.suse.cz> <20110309151134.GA15730@elte.hu> <20110309175625.GA29181@merkur.ravnborg.org> <20110310090444.GA25522@elte.hu>
+In-Reply-To: <20110310090444.GA25522@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function gen_74x164_remove and mc33880_remove are used only wrapped
-by __devexit_p so define it using __devexit.
+On 10.3.2011 10:04, Ingo Molnar wrote:
+> 
+> * Sam Ravnborg <sam@ravnborg.org> wrote:
+> 
+>>> Another, related, very nice kbuild feature would be to allow for arch maintainers to 
+>>> mark certain files as "should only build fine without warnings" - i.e. -Werror 
+>>> should be the default. There would be a Kconfig feature to opt out of this, 
+>>> CONFIG_CC_IGNORE_WARNINGS=y or so. This would allow for people to still build the 
+>>> kernel with old (or buggy) versions of GCC.
+>>
+>> To add -Werror for all files conditionally you can do:
+>>
+>>     ccflags-$(CONFIG_WERROR) += -Werror
+>>
+>> For individual files we can then drop -Werror like this:
+>>
+>>     CFLAGS_REMOVE_foobar.o := -Werror
+>>
+>> So it should be doable with the existing infrastructure.
+> 
+> Stupid question: is there an existing kbuild rule that i could use to enable -Werror 
+> for a single .o file, such as kernel/sched.o - without affecting other files in 
+> kernel/ that i do not maintain?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Miguel Gaio <miguel.gaio@efixo.com>
-Cc: Mocean Laboratories <info@mocean-labs.com>
----
- drivers/gpio/74x164.c  |    2 +-
- drivers/gpio/mc33880.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
-index d91ff4c..84e0702 100644
---- a/drivers/gpio/74x164.c
-+++ b/drivers/gpio/74x164.c
-@@ -133,7 +133,7 @@ exit_destroy:
- 	return ret;
- }
- 
--static int gen_74x164_remove(struct spi_device *spi)
-+static int __devexit gen_74x164_remove(struct spi_device *spi)
- {
- 	struct gen_74x164_chip *chip;
- 	int ret;
-diff --git a/drivers/gpio/mc33880.c b/drivers/gpio/mc33880.c
-index 935479d..00f6d24 100644
---- a/drivers/gpio/mc33880.c
-+++ b/drivers/gpio/mc33880.c
-@@ -146,7 +146,7 @@ exit_destroy:
- 	return ret;
- }
- 
--static int mc33880_remove(struct spi_device *spi)
-+static int __devexit mc33880_remove(struct spi_device *spi)
- {
- 	struct mc33880 *mc;
- 	int ret;
--- 
-1.7.2
+CFLAGS_sched.o := -Werror
 
 
+> Also, adding 3 lines per object file is pretty ugly - would it be possible to create 
+> a nicer, compact, single-line way to someone condense a CONFIG_ERROR opt-out 
+> mechanism, the -Werror default and the single-object-file into a single rule?
+> 
+> Something like:
+> 
+>   obj-werror-y += sched.o
+> 
+> Although i'm not sure if it is wise to mix build details into the object build tree 
+> hierarchy like that ...
 
+One way without extending the current rules could be:
+
+ifdef CONFIG_CC_WERROR
+Werror := -Werror
+endif
+
+CFLAGS_sched.o := $(Werror)
+CFLAGS_another.o := $(Werror)
+
+What do you think?
