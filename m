@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1CJL73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 06:59:29 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39483 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab1CJL7Z (ORCPT
+	id S1752606Ab1CJMDL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 07:03:11 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55516 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab1CJMDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 06:59:25 -0500
+	Thu, 10 Mar 2011 07:03:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=tm8A9n+2BxVPdhSRp/UqxBwzBjUdh5Al44et+S1uy4G60srfZXz2+WOLp1rr9xGFpC
-         QxuYm+8WWxDLd89HWl2d8HcCV/rg6mDRi88JxUPFTMDDeCa2T0bPmUj+YrefiBy3G/mi
-         WdfygvpNfBgIdjzlSRWs4zTJi+w/XOwWAZ0ag=
-From: Wang Lei <f3d27b@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
-References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
-	<201103092125.43950.rjw@sisk.pl>
-	<4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
-	<201103100106.36678.rjw@sisk.pl>
-Date: Thu, 10 Mar 2011 19:59:35 +0800
-In-Reply-To: <201103100106.36678.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Thu, 10 Mar 2011 01:06:36 +0100")
-Message-ID: <4d78bd1c.231a8f0a.2e76.ffffcb63@mx.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ErA8r2Mq3ZKh/wOm1cQL+3J0Zjvd2jOnQjoxtodvRe8JRug8qRMkk4XUdueG6a9oaZ
+         Yh0CBbCSkFRi+/UF6sPvIKnfvnRRA88E7JuNW688iFfX/yIWSKQ/sYB9g/JgIkVZie92
+         O8ZaBNbp8hGJZe9iz7q/e0Zem4uNpcvjZEv70=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20110309212735.GB27747@suse.de>
+References: <4D6221B8.9040303@gmail.com>
+	<4D6F5473.2070709@gmail.com>
+	<4D720469.1010101@gmail.com>
+	<AANLkTinyK0G=tfZob4u7XBj7Gna3FbZnLrqswz2oajwn@mail.gmail.com>
+	<4D720C0B.1050300@gmail.com>
+	<4D77D821.7090003@gmail.com>
+	<20110309212735.GB27747@suse.de>
+Date: Thu, 10 Mar 2011 13:03:08 +0100
+Message-ID: <AANLkTi=S++FwLwaedKE17NRFqh5B7b1MYg9OD55XRVfd@mail.gmail.com>
+Subject: Re: [PATCH v3][RESEND] Check for immutable/append flag in fallocate path
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
-
-> On Thursday, March 10, 2011, Wang Lei wrote:
->> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->> 
->> > On Wednesday, March 09, 2011, Wang Lei wrote:
->> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->> >> 
->> >> >
->> >> > There was only one commit in that area since 2.6.38-rc6, but it shouldn't
->> >> > affect the functionality this way.
->> >> >
->> >> > Is yout thermal management controlled by ACPI?
->> >> >
->> >> > Rafael
->> >> 
->> >> Thanks for your reply!
->> >> 
->> >> How could I know that?
+2011/3/9 Greg KH <gregkh@suse.de>:
+> On Wed, Mar 09, 2011 at 08:42:25PM +0100, Marco Stornelli wrote:
+>> Il 05/03/2011 11:10, Marco Stornelli ha scritto:
+>> > From: Marco Stornelli <marco.stornelli@gmail.com>
 >> >
->> > What does "ls -l /sys/class/thermal/cooling_device0/device" say?
+>> > In the fallocate path the kernel doesn't check for the immutable/append
+>> > flag. It's possible to have a race condition in this scenario: an
+>> > application open a file in read/write and it does something, meanwhile
+>> > root set the immutable flag on the file, the application at that point
+>> > can call fallocate with success. In addition, we don't allow to do any
+>> > unreserve operation on an append only file but only the reserve one.
 >> >
->> > Rafael
->> 
->> [~]$ ls -l /sys/class/thermal/cooling_device0/device
->> lrwxrwxrwx 1 root root 0 Mar 10 07:13 /sys/class/thermal/cooling_device0/device -> ../../../LNXSYSTM:00/device:47/PNP0C0B:00
->> [~]$
+>> > Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+>>
+>> Al, can you apply this patch please? I add Greg in cc, because maybe he
+>> could be interested about stable tree.
 >
-> That's ACPI.
+> Please read Documentation/stable_kernel_rules.txt for how to get patches
+> into stable kernel releases (hint, emailing me like this is not the way
+> to do it...)
 >
-> I don't know, however, which change might cause the problem to happen.
->
-> Can you bisect the commits between 2.6.38-rc6 and -rc7 to find the one that
-> introduced the issue?
->
-> Rafael
-OK, I'll try.
 
--- 
+I'm sorry. It wasn't a request about the add of this patch to the
+stable tree, it was only a request for comment about the applicability
+of this patch in the stable tree. However thanks for the tip, in case
+I'll send the patch to the stable mailing list.
+
 Regards,
-Lei
+
+Marco
