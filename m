@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab1CJT35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 14:29:57 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57575 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab1CJT34 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 14:29:56 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Han Pingtian <phan@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/4] perf top: Don't let events to eat up whole header line
-Date: Thu, 10 Mar 2011 16:29:44 -0300
-Message-Id: <1299785386-22234-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1299785386-22234-1-git-send-email-acme@infradead.org>
-References: <1299785386-22234-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754083Ab1CJTbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 14:31:13 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:24338 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752791Ab1CJTbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 14:31:09 -0500
+Message-ID: <4D7926C9.9070206@parallels.com>
+Date: Thu, 10 Mar 2011 22:30:17 +0300
+From: Andrew Vagin <avagin@parallels.com>
+Reply-To: avagin@parallels.com
+Organization: parallels
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: + x86-mm-handle-mm_fault_error-in-kernel-space.patch added to
+ -mm tree
+References: <20110310142812.GA25224@redhat.com>
+In-Reply-To: <20110310142812.GA25224@redhat.com>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On 03/10/2011 05:28 PM, Oleg Nesterov wrote:
+> (add cc's)
+>
+>> Subject: x86/mm: handle mm_fault_error() in kernel space
+>> From: Andrey Vagin<avagin@openvz.org>
+>>
+>> mm_fault_error() should not execute oom-killer, if page fault occurs in
+>> kernel space.  E.g.  in copy_from_user/copy_to_user.
+> Why? I don't understand this part.
+I thought for a bit more...
 
-Passing multiple events might force out information about pid/tid/cpu.
-Attached patch leaves 30 characters for this info at the expense of the
-events' names.
+I think we should not execute out_of_memory() in this case at all, 
+because when we return from page fault, we execute the same command and 
+provoke the "same" page fault again. Now pls think what is the 
+difference between these page faults? It has been generated from one 
+place and the program do nothing between those. I think we try to handle 
+one error two times and it isn't good. If handle_mm_fault() returns 
+VM_FAULT_OOM and pagefault occurred from userspace, the current task 
+should be killed by SIGKILL, then we should return from page fault back 
+to userspace for the task to handle the signal. If handle_mm_fault() 
+returns VM_FAULT_OOM and pagefault occurred in kernel space, we should 
+execute no_context() to return from syscall.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Han Pingtian <phan@redhat.com>
-LKML-Reference: <1299528821-17521-3-git-send-email-jolsa@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/top.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
+Also note that out_of_memory is usually called from handle_mm_fault() -> 
+... -> alloc_page()->...->out_of_memory().
 
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index 4f869da..75cfe4d 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -115,9 +115,23 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 	if (!top->display_weighted) {
- 		ret += SNPRINTF(bf + ret, size - ret, "%s",
- 				event_name(top->sym_evsel));
--	} else list_for_each_entry(counter, &top->evlist->entries, node) {
--		ret += SNPRINTF(bf + ret, size - ret, "%s%s",
--				counter->idx ? "/" : "", event_name(counter));
-+	} else {
-+		/*
-+		 * Don't let events eat all the space. Leaving 30 bytes
-+		 * for the rest should be enough.
-+		 */
-+		size_t last_pos = size - 30;
-+
-+		list_for_each_entry(counter, &top->evlist->entries, node) {
-+			ret += SNPRINTF(bf + ret, size - ret, "%s%s",
-+					counter->idx ? "/" : "",
-+					event_name(counter));
-+			if (ret > last_pos) {
-+				sprintf(bf + last_pos - 3, "..");
-+				ret = last_pos - 1;
-+				break;
-+			}
-+		}
- 	}
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "], ");
--- 
-1.6.2.5
+>> This would happen if we find ourselves in OOM on a copy_to_user(), or a
+>> copy_from_user() which faults.
+>>
+>> Without this patch, the kernels hangs up in copy_from_user, because OOM
+>> killer sends SIG_KILL to current process,
+> This depends. OOM can choose another victim, and if it does we shouldn't
+> return -EFAULT.
+>
+>> but it can't handle a signal
+>> while in syscall, then the kernel returns to copy_from_user, reexcute
+>> current command and provokes page_fault again.
+> Yes. This is buggy.
+>
+>> --- a/arch/x86/mm/fault.c~x86-mm-handle-mm_fault_error-in-kernel-space
+>> +++ a/arch/x86/mm/fault.c
+>> @@ -827,6 +827,13 @@ mm_fault_error(struct pt_regs *regs, uns
+>>   	       unsigned long address, unsigned int fault)
+>>   {
+>>   	if (fault&  VM_FAULT_OOM) {
+>> +		/* Kernel mode? Handle exceptions or die: */
+>> +		if (!(error_code&  PF_USER)) {
+>> +			up_read(&current->mm->mmap_sem);
+>> +			no_context(regs, error_code, address);
+>> +			return;
+>> +		}
+>> +
+> At first glance, this is not optimal...
+>
+> Perhaps I missed something, but afaics it is better to call
+> out_of_memory() first, then check if current was killed. In this case
+> no_context() is fine, we are not going to return to the user-mode.
+It's not first oom, so I perfere don't ca
+> IOW, what do you think about the (untested/uncompiled) patch below?
+>
+> Oleg.
+>
+> --- x/arch/x86/mm/fault.c
+> +++ x/arch/x86/mm/fault.c
+> @@ -829,6 +829,11 @@ mm_fault_error(struct pt_regs *regs, uns
+>   {
+>   	if (fault&  VM_FAULT_OOM) {
+>   		out_of_memory(regs, error_code, address);
+> +
+> +		if (!(error_code&  PF_USER)&&  fatal_signal_pending(current)) {
+> +			no_context(regs, error_code, address);
+> +			return;
+> +		}
+>   	} else {
+>   		if (fault&  (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
+>   			     VM_FAULT_HWPOISON_LARGE))
+>
+>
 
