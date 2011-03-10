@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab1CJUvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:51:35 -0500
-Received: from kroah.org ([198.145.64.141]:35911 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab1CJUve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:51:34 -0500
-Date: Thu, 10 Mar 2011 12:50:54 -0800
-From: Greg KH <greg@kroah.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Dr Andrew John Hughes <ahughes@redhat.com>, mkl@pengutronix.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [stable] NFS regression in 2.6.37.1 (current stable)
-Message-ID: <20110310205054.GA1861@kroah.com>
-References: <20110310185321.GA22030@rivendell.middle-earth.co.uk>
- <1299785965.3075.30.camel@heimdal.trondhjem.org>
+	id S1752653Ab1CJUxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 15:53:51 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64662 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab1CJUxu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 15:53:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:mime-version:content-type
+         :message-id;
+        b=hO+DKNEeoWpj9qsJp4Qc8d/FuWdQlpHummeg5Z7s2JBLrIYhdIF8OG8UA1RgfYcBV0
+         Do5UtdNiea+dKNScbOpvwyMAlHeV8Z8OnV9MY4SIJCl1HJ2aRngui9bB1GRagQsfLIGA
+         AGr1c2oP7eLZ83rnmZO8eowXRSkjBBRm48JxQ=
+From: Michal =?utf-8?q?Mal=C3=BD?= <madcatxster@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Product ID for Logitech Driving Force Pro wheel
+Date: Thu, 10 Mar 2011 21:53:43 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8-ARCHMOD; KDE/4.6.1; x86_64; ; )
+Cc: jkosina@suse.cz
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299785965.3075.30.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_YpTeNlWA+vNxYn/"
+Message-Id: <201103102153.44137.madcatxster@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 02:39:25PM -0500, Trond Myklebust wrote:
-> On Thu, 2011-03-10 at 18:53 +0000, Dr Andrew John Hughes wrote: 
-> > [Please CC me on responses as I'm not subscribed]
-> > 
-> > Hi,
-> > 
-> > I seem to have uncovered a regression in the NFS code between 2.6.37 and 2.6.37.1
-> > caused by this changeset:
-> > 
-> > commit 55ea499d60aefa3d03a77fc8590c26b5881faa92
-> > Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > Date:   Sat Jan 8 17:45:38 2011 -0500
-> > NFS: Don't use vm_map_ram() in readdir
-> > http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=commit;h=6650239a4b01077e80d5a4468562756d77afaa59
-> > 
-> > With this change applied, copying of files between NFS and non-NFS
-> > mounts seems to be broken.  The easiest way I've found to replicate
-> > this myself is to use a VCS to do a clone of a tree on a NFS mount to
-> > a directory on a non-NFS mount.  I used Mercurial, as I had Mercurial
-> > trees to hand from work on IcedTea, but I assume doing it with a git
-> > tree such as the linux tree would also work.  The idea is to do
-> > something which involves copying over a bunch of directories and
-> > checking the result is readable.
-> > 
-> > $ hg clone $HOME/projects/openjdk/icedtea6-hg
-> > destination directory: icedtea6-hg
-> > updating to branch default
-> > abort:
-> > data/contrib/templater/hotspot/src/cpu/CPU/vm/bytecodeInterpreter_CPU.inline.hpp.i@16d04ce16287:
-> > no match found!
-> > 
-> > In the above, $HOME is an NFS mount and $PWD is a local reiserfs
-> > partition.  I initially hit failures doing builds with source on $HOME
-> > and the build directory on a local reiserfs partition.  In that
-> > scenario, it would fail as not being able to find files that should
-> > have been copied over.
-> > 
-> > Reverting the changeset fixes the issue.  2.6.37.2 still has the bug.
-> > I haven't checked 2.6.37.3 yet but I didn't see any NFS changes in there.
-> > --
-> > Andrew :)
-> > 
-> > Free Java Software Engineer
-> > Red Hat, Inc. (http://www.redhat.com)
-> 
-> It looks to me as if you are hitting the issue that was fixed in
-> mainline by commit d1205f87bbb8040c1408bbd9e0a720310b2b0b9b (NFS: NFSv4
-> readdir loses entries). That commit was labelled as "Cc:
-> stable@kernel.org" but has still not made it into the 2.6.37 stable
-> series.
-> 
-> I've attached it below...
+--Boundary-00=_YpTeNlWA+vNxYn/
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-That's because this patch does not apply to the 2.6.37-stable kernel
-tree.  I should have sent out an email saying that this is why it was
-not included.
+This trivial fix adds correct product ID for Logitech Driving Force Pro wheel 
+when it operates in native mode. This is needed to get force feedback working.
 
-Just to be sure, I just now resent the "this doesn't apply" email.
-Please feel free to backport it and send it to stable@kernel.org and I
-will be glad to queue it up.
+--Boundary-00=_YpTeNlWA+vNxYn/
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="dfp_id_0.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="dfp_id_0.patch"
 
-thanks,
+--- linux.orig/drivers/hid/hid-core.c	2011-03-08 06:09:37.000000000 +0100
++++ linux/drivers/hid/hid-core.c	2011-03-09 20:09:36.926973002 +0100
+@@ -1368,6 +1368,7 @@
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_FLIGHT_SYSTEM_G940) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WII_WHEEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_RUMBLEPAD2) },
 
-greg k-h
+--Boundary-00=_YpTeNlWA+vNxYn/
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="dfp_id_1.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="dfp_id_1.patch"
+
+--- linux.orig/drivers/hid/hid-lg.c	2011-03-08 06:09:37.000000000 +0100
++++ linux/drivers/hid/hid-lg.c	2011-03-09 20:09:36.927973002 +0100
+@@ -375,6 +375,8 @@
+ 		.driver_data = LG_FF },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2),
+ 		.driver_data = LG_FF },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL),
++		.driver_data = LG_FF },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL),
+ 		.driver_data = LG_FF },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WII_WHEEL),
+
+--Boundary-00=_YpTeNlWA+vNxYn/
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="dfp_id_2.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="dfp_id_2.patch"
+
+--- linux.orig/drivers/hid/hid-ids.h	2011-03-08 06:09:37.000000000 +0100
++++ linux/drivers/hid/hid-ids.h	2011-03-09 20:09:36.923973002 +0100
+@@ -383,6 +383,7 @@
+ #define USB_DEVICE_ID_LOGITECH_WHEEL	0xc294
+ #define USB_DEVICE_ID_LOGITECH_WINGMAN_FFG	0xc293
+ #define USB_DEVICE_ID_LOGITECH_MOMO_WHEEL	0xc295
++#define USB_DEVICE_ID_LOGITECH_DFP_WHEEL	0xc298
+ #define USB_DEVICE_ID_LOGITECH_G25_WHEEL	0xc299
+ #define USB_DEVICE_ID_LOGITECH_WII_WHEEL	0xc29c
+ #define USB_DEVICE_ID_LOGITECH_ELITE_KBD	0xc30a
+
+--Boundary-00=_YpTeNlWA+vNxYn/--
