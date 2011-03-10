@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1CJGsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 01:48:31 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39171 "EHLO mx2.mail.elte.hu"
+	id S1752642Ab1CJGs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 01:48:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19783 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436Ab1CJGs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 01:48:29 -0500
-Date: Thu, 10 Mar 2011 07:48:16 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sam Liao <phyomh@gmail.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] Add inverted call graph report support to perf tool
-Message-ID: <20110310064816.GF9289@elte.hu>
-References: <AANLkTi=vxgHe=dqz+xEPcZ9oBexM1jBxFz3sXA2DJEZA@mail.gmail.com>
- <20110307180619.GG1873@nowhere>
- <AANLkTi=rabeXE6m0wRo029jgqHLBaUGQcXYJriLewZeJ@mail.gmail.com>
- <20110310024355.GG2533@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110310024355.GG2533@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752465Ab1CJGsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 01:48:54 -0500
+Date: Thu, 10 Mar 2011 01:49:52 -0500
+From: Chuck Ebbert <cebbert@redhat.com>
+To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG and freeze on cat /proc/tty/driver/serial
+Message-ID: <20110310014952.38b7a6ef@redhat.com>
+In-Reply-To: <20110216161728.GA8431@darkside.kls.lan>
+References: <20110216161728.GA8431@darkside.kls.lan>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 16 Feb 2011 17:17:28 +0100
+"Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE> wrote:
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> reading /proc/tty/driver/serial leads to a NULL pointer dereference
+> BUG and freeze on a serial-console enabled 2.6.35.{4,10,11} and
+> 2.6.37. 2.6.32.28 does fine without BUG and freeze.
+> 
+> Fresh boot 2.6.35.11 into emergency...
+> # cat /proc/tty/driver/serial
+> [   73.199568] BUG: unable to handle kernel NULL pointer dereference
+> at 00000099 [   73.227373] IP: [<c11a8969>] tty_ldisc_try+0x10/0x35
 
-> But your idea of turning the callee into the caller would show us a very global 
-> profiling. With reverse callchains it can be a very nice overview of the big 
-> picture.
+The oops is here, in uart_handle_dcd_change() in serial_core.h:
 
-Very much agreed - i think that matches the sysprof display structure as well, 
-right?
+        struct tty_ldisc *ld = tty_ldisc_ref(port->tty);
 
-This could then be propagated not just into perf report but perf top --tui as well.
+(port->tty is NULL)
 
-Thanks,
+Called from check_modem_status() in 8250.c:
 
-	Ingo
+                if (status & UART_MSR_DDCD)
+                        uart_handle_dcd_change(&up->port, status & UART_MSR_DCD);
+
+So apparently the port has no tty, until you run "setserial -g", or else
+that somehow makes the DCD status appear unchanged later when reading
+/proc/tty/driver/serial.
