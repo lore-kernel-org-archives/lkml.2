@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1CJB6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 20:58:20 -0500
-Received: from mga01.intel.com ([192.55.52.88]:8356 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569Ab1CJB6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 20:58:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,293,1297065600"; 
-   d="scan'208";a="665741735"
-Message-ID: <4D783038.8080103@linux.intel.com>
-Date: Wed, 09 Mar 2011 17:58:16 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1753414Ab1CJCBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 21:01:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54787 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab1CJCBK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 21:01:10 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com
-Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional assignment
- of CC and AR"
-References: <1299715137-22768-1-git-send-email-dhsharp@google.com>	 <1299715137-22768-3-git-send-email-dhsharp@google.com>	 <4D7828F9.7000906@linux.intel.com> <1299720997.15854.276.camel@gandalf.stny.rr.com>
-In-Reply-To: <1299720997.15854.276.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.22.72.22]
+In-Reply-To: <20110309162513.5058c824.akpm@linux-foundation.org>
+References: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
+	<20110309162513.5058c824.akpm@linux-foundation.org>
+Date: Wed, 9 Mar 2011 18:01:09 -0800
+Message-ID: <AANLkTin7=rK2Sc2D7aMhPnPWU9LJq7KMSvwxv_PHERcK@mail.gmail.com>
+Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
+From: Scott James Remnant <scott@netsplit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
+        Ken MacLeod <ken@bitsko.slc.ut.us>,
+        Shaun Reich <predator106@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2011 05:36 PM, Steven Rostedt wrote:
-> On Wed, 2011-03-09 at 17:27 -0800, Darren Hart wrote:
->> On 03/09/2011 03:58 PM, David Sharp wrote:
->>> This reverts commit 6c696cec3f264a9399241b6e648f58bc97117d49.
->>>
->>> Make has default values CC and AR of 'cc' and 'ar' respectively. This means
->>> that "CC ?= anything" will never have effect, because CC is always already set.
->>> Because of this, 6c696cec makes setting CROSS_COMPILE from the command line or
->>> environment useless.
+On Wed, Mar 9, 2011 at 4:25 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed,  9 Mar 2011 16:36:51 +0200
+> Alexander Shishkin <virtuoso@slind.org> wrote:
+>
+>> Changes since v3:
+>>  - changed timerfd_settime() semantics (see below)
+>> Changes since v2:
+>>  - replaced sysfs interface with a syscall
+>>  - added sysctl/procfs handle to set a limit to the number of users
+>>  - fixed issues pointed out by Greg.
+>> Changes since v1:
+>>  - updated against 2.6.36-rc1,
+>>  - added notification/filtering options,
+>>  - added Documentation/ABI/sysfs-kernel-time-notify interface description.
 >>
->> The problem with this approach is it prevents the user from setting CC
->> explicitly with the environment which is a very common way of using a
->> specific version of gcc (for example). It also places restrictions on
->> the filename of the compiler (it must end in gcc - so gcc-4.5.1 cannot
->> work), this isn't acceptable.
+>> Certain userspace applications (like "clock" desktop applets or cron or
+>> systemd) might want to be notified when some other application changes
+>> the system time. There are several known to me reasons for this:
+>>  - avoiding periodic wakeups to poll time changes;
+>>  - rearming CLOCK_REALTIME timers when said changes happen;
+>>  - changing system timekeeping policy for system-wide time management
+>>    programs;
+>>  - keeping guest applications/operating systems running in emulators
+>>    up to date;
+>>  - recalculation of traffic signal cycles in Advanced Traffic Controllers
+>>    (ATC), which is part of ATC API requirements [1] as developed by ATC
+>>    working group of the U.S. Institute of Transportation Engineers (ITE).
 >>
->> You could use CC=your-cross-compiler, and if that doesn't work for you,
->> you could prepare a patch that conditionally sets CC only if
->> CROSS_COMPILE is set, but please do not simply revert this patch which
->> solved a real problem with the Makefile.
+>> The major change since the previous version is the new semantics of
+>> timerfd_settime() when it's called on a time change notification
+>> descriptor: it will set the system time to utmr.it_value if the time
+>> change counter is zero, otherwise it will return EBUSY, this is required
+>> to prevent a race between setting the time and reading the counter, when
+>> the time controlling procees changes the time immediately after another
+>> process in the system did the same (the counter is greater than one),
+>> that process' time change will be lost. Thus, the time controlling
+>> process should use timerfd_settime() instead of clock_settime() or
+>> settimeofday() to ensure that other processes' time changes don't get
+>> lost.
+>>
+>> This is another attempt to approach notifying userspace about system
+>> clock changes. The other one is using an eventfd and a syscall [1]. In
+>> the course of discussing the necessity of a syscall for this kind of
+>> notifications, it was suggested that this functionality can be achieved
+>> via timers [2] (and timerfd in particular [3]). This idea got quite
+>> some support [4], [5], [6] and some vague criticism [7], so I decided
+>> to try and go a bit further with it.
 >
-> Hmm, but the thing is, the change did not work,
-
-It did work for me as I was setting CC= on the command line.
-
-unless your environment
-> for some reason does not supply a 'cc'. Or that 'cc' defaulted to the
-> compiler that you wanted, where 'gcc' would not.
+> Looks sane to me.  The changelog is a bit of a pickle - I stole a
+> useful-looking paragraph from your other please-ignore-this-email
+> email.
 >
-> Thus, would you be fine with something like:
+> I also cc'ed Michael and linux-api: there isn't much point in adding
+> kernel features if we don't tell anyone about them.
 >
-> 	BUILD_CC ?=	$(CROSS_COMPILE)gcc
-> 	CC	 =	$(BUILD_CC)
-
-This would also work, but what is wrong with:
-
-dvhart@doubt:templates$ cat Makefile
-ifdef CROSS_COMPILE
-CC = $(CROSS_COMPILE)gcc
-AR = $(CROSS_COMPILE)ar
-endif
-
-all:
-	echo "CC: $(CC)"
-
-dvhart@doubt:templates$ make -s
-CC: cc
-
-dvhart@doubt:templates$ CC=gcc-4.5.1 make -s
-CC: gcc-4.5.1
-
-dvhart@doubt:templates$ CROSS_COMPILE=my-cross- make -s
-CC: my-cross-gcc
-
-
-Seems to meet everyone's needs without changing any tools/scripts/etc 
-that have used trace-cmd before or after the CC ?= wreckage.
-
-
-
-Thanks,
-
---
-Darren
-
+> It would be helpful to know if the identified users of this feature
+> actually find it useful and adequate.  I guess the most common
+> application is the 1,001 desktop clock widgets.  Do you have any
+> feedback from any of the owners of those?
 >
-> Then you could just update BUILD_CC and that will update CC for you.
->
-> -- Steve
->
->
+cron is another obvious one (or init systems attempting to replace
+cron). Having to wakeup and check the time every minute can be
+non-conducive to power savings, it would be better if we could just
+sleep until the next alarm and be woken up if the time changes in
+between.
 
+(That being said, we also need to poll for and/or check for timezone
+changes - but those are entirely userspace, so we can deal with that
+separately)
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Scott
