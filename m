@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1CJQak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:30:40 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:48491 "EHLO smtp3-g21.free.fr"
+	id S1752708Ab1CJQiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:38:17 -0500
+Received: from mga03.intel.com ([143.182.124.21]:4683 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab1CJQaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:30:39 -0500
-Message-ID: <4D78FCA6.7010000@eukrea.com>
-Date: Thu, 10 Mar 2011 17:30:30 +0100
-From: =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: =?ISO-8859-1?Q?M=E1rio_Isidoro?= <marioisidoro@gmail.com>, gregkh@suse.de,
+	id S1750819Ab1CJQiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:38:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,296,1297065600"; 
+   d="scan'208";a="400694825"
+Date: Thu, 10 Mar 2011 08:38:09 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephen Wilson <wilsons@start.ca>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Paul Mundt <lethal@linux-sh.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH n_gsm] GSM Mux in non-transparent mode
-References: <1299724790.1800.135.camel@Paio> <20110310110658.0a46d19d@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110310110658.0a46d19d@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 0/5] make *_gate_vma accept mm_struct instead of
+ task_struct II
+Message-ID: <20110310163809.GA20675@alboin.amr.corp.intel.com>
+References: <1299630721-4337-1-git-send-email-wilsons@start.ca>
+ <20110310160032.GA20504@alboin.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110310160032.GA20504@alboin.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> There is a problem that happens if the process that is holding the
->> attached line discipline tries to detach it before a process using a
->> virtual com manages to close it. Both processes end up dealocked. I
->> think this has to do with the tty lock. I don't have the backtrace with
->> me
+On Thu, Mar 10, 2011 at 08:00:32AM -0800, Andi Kleen wrote:
+> On Tue, Mar 08, 2011 at 07:31:56PM -0500, Stephen Wilson wrote:
+> > 
+> > Morally, the question of whether an address lies in a gate vma should be asked
+> > with respect to an mm, not a particular task.
+> > 
+> > Practically, dropping the dependency on task_struct will help make current and
+> > future operations on mm's more flexible and convenient.  In particular, it
+> > allows some code paths to avoid the need to hold task_lock.
+> > 
+> > The only architecture this change impacts in any significant way is x86_64.
+> > The principle change on that architecture is to mirror TIF_IA32 via
+> > a new flag in mm_context_t. 
+> 
+> The problem is -- you're adding a likely cache miss on mm_struct for
+> every 32bit compat syscall now, even if they don't need mm_struct
+> currently (and a lot of them do not) Unless there's a very good
+> justification to make up for this performance issue elsewhere
+> (including numbers) this seems like a bad idea.
 
-here is the log I get here :
+Hmm I see you're only setting it on exec time actually on rereading
+the patches. I thought you were changing TS_COMPAT which is in
+the syscall path.
 
-[ 1051.950000] ------------[ cut here ]------------
-[ 1051.950000] WARNING: at drivers/tty/tty_mutex.c:31 tty_lock+0x30/0x50()
-[ 1051.960000] Modules linked in:
-[ 1051.960000] [<c0029478>] (unwind_backtrace+0x0/0xe4) from [<c0034f30>] 
-(warn_slowpath_common+0x4c/0x64)
-[ 1051.970000] [<c0034f30>] (warn_slowpath_common+0x4c/0x64) from [<c0034f60>] 
-(warn_slowpath_null+0x18/0x1c)
-[ 1051.980000] [<c0034f60>] (warn_slowpath_null+0x18/0x1c) from [<c031550c>] 
-(tty_lock+0x30/0x50)
-[ 1051.990000] [<c031550c>] (tty_lock+0x30/0x50) from [<c01af5b0>] 
-(__tty_hangup+0x78/0x47c)
-[ 1052.000000] [<c01af5b0>] (__tty_hangup+0x78/0x47c) from [<c01ba69c>] 
-(gsm_cleanup_mux+0x198/0x214)
-[ 1052.010000] [<c01ba69c>] (gsm_cleanup_mux+0x198/0x214) from [<c01baaf4>] 
-(gsmld_close+0x28/0x4c)
-[ 1052.020000] [<c01baaf4>] (gsmld_close+0x28/0x4c) from [<c01b5974>] 
-(tty_ldisc_close+0x58/0x64)
-[ 1052.030000] [<c01b5974>] (tty_ldisc_close+0x58/0x64) from [<c01b5b48>] 
-(tty_ldisc_release+0x38/0x70)
-[ 1052.040000] [<c01b5b48>] (tty_ldisc_release+0x38/0x70) from [<c01b0e2c>] 
-(tty_release+0x41c/0x480)
-[ 1052.050000] [<c01b0e2c>] (tty_release+0x41c/0x480) from [<c009667c>] 
-(fput+0x108/0x200)
-[ 1052.060000] [<c009667c>] (fput+0x108/0x200) from [<c00939c8>] 
-(filp_close+0x60/0x6c)
-[ 1052.070000] [<c00939c8>] (filp_close+0x60/0x6c) from [<c0036eb8>] 
-(put_files_struct+0x80/0xdc)
-[ 1052.080000] [<c0036eb8>] (put_files_struct+0x80/0xdc) from [<c0038500>] 
-(do_exit+0x1b8/0x6bc)
-[ 1052.080000] [<c0038500>] (do_exit+0x1b8/0x6bc) from [<c0038ac4>] 
-(do_group_exit+0xc0/0xf4)
-[ 1052.090000] [<c0038ac4>] (do_group_exit+0xc0/0xf4) from [<c0044460>] 
-(get_signal_to_deliver+0x3ac/0x40c)
-[ 1052.100000] [<c0044460>] (get_signal_to_deliver+0x3ac/0x40c) from 
-[<c0027190>] (do_signal+0x68/0x614)
-[ 1052.110000] [<c0027190>] (do_signal+0x68/0x614) from [<c0027754>] 
-(do_notify_resume+0x18/0x60)
-[ 1052.120000] [<c0027754>] (do_notify_resume+0x18/0x60) from [<c0024f94>] 
-(work_pending+0x24/0x28)
-[ 1052.130000] ---[ end trace ac06c34c1914deef ]---
+Never mind.  I have no problems with doing such a change on exec
+time.
 
-Eric
+-Andi
