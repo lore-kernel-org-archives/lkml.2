@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1CJXua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:50:30 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50522 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753849Ab1CJXu2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:50:28 -0500
+	id S1754218Ab1CJXwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:52:22 -0500
+Received: from www.tglx.de ([62.245.132.106]:50975 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753849Ab1CJXwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:52:21 -0500
+Date: Fri, 11 Mar 2011 00:51:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: David Daney <ddaney@caviumnetworks.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
+        mingo@elte.hu, andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 0/2] jump label: update for .39
+In-Reply-To: <1299800584.15854.520.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1103110047360.2787@localhost6.localdomain6>
+References: <1299780241.15854.393.camel@gandalf.stny.rr.com>  <20110310182000.GB2906@redhat.com>  <1299782143.15854.402.camel@gandalf.stny.rr.com>  <4D791CAA.7090108@caviumnetworks.com>  <1299783236.15854.405.camel@gandalf.stny.rr.com>  <4D791F31.6040100@caviumnetworks.com>
+  <1299785143.15854.407.camel@gandalf.stny.rr.com>  <1299786329.15854.409.camel@gandalf.stny.rr.com>  <BLU0-SMTP311155BEBE5F141636A6E596C80@phx.gbl>  <1299793339.15854.430.camel@gandalf.stny.rr.com>  <BLU0-SMTP101D168109508CC1B82F0E496C80@phx.gbl> 
+ <1299798970.15854.484.camel@gandalf.stny.rr.com>  <4D795DCE.7050807@caviumnetworks.com>  <alpine.LFD.2.00.1103110029090.2787@localhost6.localdomain6> <1299800584.15854.520.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110310.153444.115930379.davem@davemloft.net>
-References: <20110310.153444.115930379.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 10 Mar 2011 15:49:40 -0800
-Message-ID: <AANLkTimnHtVS=SFopgyjAAQDW8bXDKDXf+YvEtPdpPsA@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 3:34 PM, David Miller <davem@davemloft.net> wrote:
->
-> David S. Miller (3):
->      ipv4: Fix erroneous uses of ifa_address.
->      ipv6: Don't create clones of host routes.
->      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
+On Thu, 10 Mar 2011, Steven Rostedt wrote:
+> On Fri, 2011-03-11 at 00:32 +0100, Thomas Gleixner wrote:
+> 
+> > > It should work, but it hurts my eyes to see the source code forcing a 64-bit
+> > > word to 32-bit alignment.
+> > 
+> > We solved such stuff with macros in other places already.
+> > 
+> > #ifdef 64bit
+> > # define BLA 8
+> > #else
+> > # define BLA 4
+> > #endif
+> > 
+> > and then use 
+> > 
+> > .aling BLA
+> > 
+> > Where is the problem?
+> 
+> That's basically the solution that Jason came up with, and what I
+> expected. What caught my eye was that David Miller had .align 4 for this
+> on sparc which is the one arch that is truly picky about such things. As
+> I understood more about this, I see that would work for both archs.
 
-David, why do you keep on doing those broken back-merges?
+I doubt that sparc will barf when we make this 64/32bit aware. If it
+does, we have some bigger fish to fry.
+ 
+> That doesn't mean I'm against the .align BLA solution.
 
-It's the _one_ thing you keep on doing wrong, and I don't understand
-it. Just the merge message you get should tell you that you're doing
-something total SH*T.
+As hpa pointed out in some unreadable mail, we have _ASM_ALIGN on x86
+already exactly for this purpose.
 
-Look at that commit message:
+Thanks,
 
-    Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
-
-That is literally the WHOLE message. Ask yourself: is that commit
-doing anything useful? Does the commit message explain what it is
-doing, and why you are doing it?
-
-And if not (and if you came to some other conclusion than "no" to
-either of those questions, you should explain it), then why do you do
-it? It sure doesn't help me: it just makes it harder for me to
-see/follow the history (and if it's harder for me to see, then it's
-harder for _others_ to see). There was no conflict (I double-checked),
-and there was no explanation for why it would be done.
-
-Now, I admit that it's a git usability bug: for normal "git commit",
-git will _force_ you to write a message, and sadly, for merges, I made
-it instead just do the message automatically. My bad. I designed it
-for the kind of merges I do, where the the automatic merge message
-actually tells you what the merge is all about. But for back-merges,
-the automatic message is totally worthless, and it is DOUBLY worthless
-when you do it the way you do it, namely from some local directory of
-your own.
-
-That's just STUPID. Look at that message once more, and ponder. What does
-
-  "Merge branch 'master' of /home/davem/src/GIT/linux-2.6/"
-
-tell anybody? It's not even pointing to my repository, and you have
-actively BROKEN the small amount of smarts (as admitted above, not
-enough) that git does do normally, which is at least tell you where
-the merge comes from. You broke it by fetching my repository into your
-own anonymous tree, and then merging it from there, and thus the
-automatic merge message lost sight of the fact that it was my upstream
-tree, because you had made it your own random repo.
-
-Grr. This has been going on for too long. Don't do it. Don't do random
-backwards merges without explanations, and with the actual source data
-removed.
-
-We're _really_ good at doing commit messages, and the kernel commit
-log should be a great example to other projects. But in the last week
-or so, I've now _twice_ had to flame core developers for making
-totally useless commit messages.
-
-So don't do back-merges. And if you DO do back-merges, don't make the
-commit message totally useless.
-
-You can use either 'git commit --amend" to fix the message afterwards
-and explain WHY you did the stupid thing, or you can just do "git pull
---no-commit" to not actually commit the merge and then write your
-commit message as you do it. But preferably you shouldn't do the
-back-merges at all.
-
-                     Linus
+	tglx
