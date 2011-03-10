@@ -1,126 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab1CJOlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:41:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1533 "EHLO mx1.redhat.com"
+	id S1752228Ab1CJOqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:46:03 -0500
+Received: from ebb05.tieto.com ([131.207.168.36]:51078 "EHLO ebb05.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751723Ab1CJOlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:41:18 -0500
-Date: Thu, 10 Mar 2011 09:39:23 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Takao Indoh <tindoh@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Len Brown <lenb@kernel.org>,
-        linux-doc@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
-Message-ID: <20110310143923.GB29464@redhat.com>
-References: <1299766243-494-1-git-send-email-amwang@redhat.com>
+	id S1751223Ab1CJOqB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:46:01 -0500
+X-AuditID: 83cfa824-b7ce6ae000004ad6-fb-4d78e4270499
+From: <Waldemar.Rymarkiewicz@tieto.com>
+To: <arnd@arndb.de>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <hthebaud@insidefr.com>, <ext-jari.vanhala@nokia.com>,
+        <matti.j.aaltonen@nokia.com>
+Date: Thu, 10 Mar 2011 16:45:56 +0200
+Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Index: AcvfKnz0MJdkNEvWRgma2YirfN/UQQAAWM3Q
+Message-ID: <99B09243E1A5DA4898CDD8B7001114481082EF2A65@EXMB04.eu.tieto.com>
+References: <1299766808-2535-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+ <201103101452.54862.arnd@arndb.de>
+In-Reply-To: <201103101452.54862.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299766243-494-1-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 10:10:43PM +0800, Amerigo Wang wrote:
-> From: Takao Indoh <tindoh@redhat.com>
-> 
-> There is a problem with putting the first kernel in EFI virtual mode,
-> it is that when the second kernel comes up it tries to initialize the
-> EFI again and once we have put EFI in virtual mode we can not really
-> do that.
-> 
-> Actually, EFI is not necessary for kdump, we can boot the second kernel
-> with "noefi" parameter, but the boot will mostly fail because 2nd kernel
-> cannot find RSDP.
-> 
-> In this situation, we introduced "acpi_addr=" kernel parameter,
-> so that kexec-tools can pass the "noefi acpi_addr=X" to the second kernel
-> to make kdump works.
-> 
+Hi Arnd, 
 
-Little more background on this. So we now seem to have this general
-general problem of how to make kexec/kdump work with EFI.
+>However, this is the second NFC driver (at least), and that 
+>means it's time to come up with a generic way of talking to 
+>NFC devices from user space. We cannot allow every NFC 
+>controller to have another set of arbitrary ioctl numbers.
 
-I have very limited knowledge of EFI and based on some information
-gleaned, it looks we seem to have two alternatives to make kdump work.
+>What I suggest you do is to work with the maintainers of the existing
+>pn544 driver (Matti and Jari) to create an NFC core library 
+>that takes care of the character device interface and that can 
+>be shared between the two drivers. Instead of each driver 
+>registering a misc device, make it call a 
+>nfc_device_register() function that is implemented in a common module.
 
-- Don't transition to virtual mode in first kernel and work with
-  physical mode of EFI. Maintain a separate set of page tables for
-  mapping EFI and use those to make EFI calls.
+I've been already thinking about that and it's seems like next obvious step.
 
-- Transition EFI in virtual mode in first kernel. Boot second kernel with
-  "noefi" and pass in whatever details are required on kernel command line.
-  One such details is ACPI pointer.
+>Not your problem directly, but I think we need to find a way 
+>to encode gpio pins in resources like we do for interrupts.
+>
+>> +	int (*request_hardware) (struct i2c_client *client);
+>> +	void (*release_hardware) (void);
+>
+>Why do you need these in platform data? Can't you just request 
+>the i2c device at the time when you create the platform_device?
 
-Matthew Garret mentioned that other OSes tend to transition EFI in
-virtual mode (MacOS X seems to be the exception) and if we decide to stick
-to physical mode all the time then we can expect a host of BIOS bug report
-as vendors are unlikely to test that path.
+I do gpio/irq stuff there but you are right it doesn't make sense. I can do it when create platform_device as well.
+Will remove this. 
 
-Keeping in that mind, using noefi for second kernel make sense. But
-I think it is not good for pure kexec case. Takao Indoh san mentioned
-that he seems to be running into VGA initialization issues and it
-seems there is a need to pass SMBIOS address also.
+>mdev, rx_waitq and mutex would go into the common module.
+>I would expect that you also need a tx_waitq. What happens 
+>when the buffer is full?
 
-So I think if it work, for kdump case probably using noefi is fine. I
-wanted to bring up the case of kexec and wondering how to make it 
-work with virtual mode of EFI or what is our strategy to handle it.
+Do you mean info->buff ?
 
-Eric and others, any thoughts on this in general?
 
-Thanks
-Vivek
+>> +static inline int microread_is_busy(struct microread_info *info) {
+>> +	return (info->state == MICROREAD_STATE_BUSY); }
+>> +
+>> +static int microread_open(struct inode *inode, struct file *file) {
+>> +	struct microread_info *info = container_of(file->private_data,
+>> +					struct microread_info, mdev);
+>> +	struct i2c_client *client = info->i2c_dev;
+>> +	int ret = 0;
+>> +
+>> +	dev_vdbg(&client->dev, "%s: info: %p", __func__, info);
+>> +
+>> +	mutex_lock(&info->mutex);
+>> +
+>> +	if (microread_is_busy(info)) {
+>> +		dev_err(&client->dev, "%s: info %p: device is 
+>busy.", __func__,
+>> +				info);
+>> +		ret = -EBUSY;
+>> +		goto done;
+>> +	}
+>> +
+>> +	info->state = MICROREAD_STATE_BUSY;
+>> +done:
+>> +	mutex_unlock(&info->mutex);
+>> +	return ret;
+>> +}
+>
+>Note that the microread_is_busy() logic does not protect you 
+>from having multiple concurrent readers, because multiple 
+>threads may share a single file descriptor.
 
-> Signed-off-by: Takao Indoh <tindoh@redhat.com>
-> [amwang@redhat.com: Add documentation.]
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> 
-> ---
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index f4a04c0..0fbbdc6 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -163,6 +163,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  
->  			See also Documentation/power/pm.txt, pci=noacpi
->  
-> +	acpi_addr=	[ACPI,EFI]
-> +			Pass the RSDP address to the kernel, mostly used
-> +			on machines running EFI runtime service to boot the
-> +			second kernel for kdump.
-> +
->  	acpi_apic_instance=	[ACPI, IOAPIC]
->  			Format: <int>
->  			2: use 2nd APIC table, if available
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index c90c76a..06dfec0 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -238,8 +238,19 @@ void acpi_os_vprintf(const char *fmt, va_list args)
->  #endif
->  }
->  
-> +static unsigned long acpi_addr;
-> +static int __init setup_acpi_addr(char *arg)
-> +{
-> +	acpi_addr = simple_strtoul(arg, NULL, 16);
-> +	return 0;
-> +}
-> +early_param("acpi_addr", setup_acpi_addr);
-> +
->  acpi_physical_address __init acpi_os_get_root_pointer(void)
->  {
-> +	if (acpi_addr)
-> +		return acpi_addr;
-> +
->  	if (efi_enabled) {
->  		if (efi.acpi20 != EFI_INVALID_TABLE_ADDR)
->  			return efi.acpi20;
+It's just used to ensure that only one reader can open the device. It's called only in open callback.
+The mutex actually secures concurrent read operations. 
+
+
+>Some of your identifiers are not 'static'. Please make sure 
+>that only symbols that are used across files are in the global 
+>namespace.
+
+Sure, I missed that. 
+Must be fixed.
