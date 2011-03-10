@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab1CJRuh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 12:50:37 -0500
-Received: from mga11.intel.com ([192.55.52.93]:51818 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640Ab1CJRug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 12:50:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,297,1297065600"; 
-   d="scan'208";a="895938263"
-Message-ID: <4D790F4B.2030908@linux.intel.com>
-Date: Thu, 10 Mar 2011 09:50:03 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1753906Ab1CJRum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 12:50:42 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:46597 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab1CJRui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 12:50:38 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        Takao Indoh <tindoh@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Len Brown <lenb@kernel.org>, linux-doc@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+References: <1299766243-494-1-git-send-email-amwang@redhat.com>
+	<20110310143923.GB29464@redhat.com>
+Date: Thu, 10 Mar 2011 09:50:28 -0800
+In-Reply-To: <20110310143923.GB29464@redhat.com> (Vivek Goyal's message of
+	"Thu, 10 Mar 2011 09:39:23 -0500")
+Message-ID: <m1oc5ig90b.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com
-Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional assignment
- of CC and AR"
-References: <1299715137-22768-1-git-send-email-dhsharp@google.com>	 <1299715137-22768-3-git-send-email-dhsharp@google.com>	 <4D7828F9.7000906@linux.intel.com>	 <1299720997.15854.276.camel@gandalf.stny.rr.com>	 <4D783038.8080103@linux.intel.com>	 <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>	 <4D787312.7080609@linux.intel.com> <1299762670.15854.332.camel@gandalf.stny.rr.com>
-In-Reply-To: <1299762670.15854.332.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+XjpojrpPcM+/zUpTtSTiLZ/Y7TGW3aKU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.2 SARE_LWSHORTT BODY: SARE_LWSHORTT
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Vivek Goyal <vgoyal@redhat.com> writes:
 
+> On Thu, Mar 10, 2011 at 10:10:43PM +0800, Amerigo Wang wrote:
+>> From: Takao Indoh <tindoh@redhat.com>
+>> 
+>> There is a problem with putting the first kernel in EFI virtual mode,
+>> it is that when the second kernel comes up it tries to initialize the
+>> EFI again and once we have put EFI in virtual mode we can not really
+>> do that.
+>> 
+>> Actually, EFI is not necessary for kdump, we can boot the second kernel
+>> with "noefi" parameter, but the boot will mostly fail because 2nd kernel
+>> cannot find RSDP.
+>> 
+>> In this situation, we introduced "acpi_addr=" kernel parameter,
+>> so that kexec-tools can pass the "noefi acpi_addr=X" to the second kernel
+>> to make kdump works.
+>> 
+>
+> Little more background on this. So we now seem to have this general
+> general problem of how to make kexec/kdump work with EFI.
+>
+> I have very limited knowledge of EFI and based on some information
+> gleaned, it looks we seem to have two alternatives to make kdump work.
+>
+> - Don't transition to virtual mode in first kernel and work with
+>   physical mode of EFI. Maintain a separate set of page tables for
+>   mapping EFI and use those to make EFI calls.
+>
+> - Transition EFI in virtual mode in first kernel. Boot second kernel with
+>   "noefi" and pass in whatever details are required on kernel command line.
+>   One such details is ACPI pointer.
+>
+> Matthew Garret mentioned that other OSes tend to transition EFI in
+> virtual mode (MacOS X seems to be the exception) and if we decide to stick
+> to physical mode all the time then we can expect a host of BIOS bug report
+> as vendors are unlikely to test that path.
+>
+> Keeping in that mind, using noefi for second kernel make sense. But
+> I think it is not good for pure kexec case. Takao Indoh san mentioned
+> that he seems to be running into VGA initialization issues and it
+> seems there is a need to pass SMBIOS address also.
+>
+> So I think if it work, for kdump case probably using noefi is fine. I
+> wanted to bring up the case of kexec and wondering how to make it 
+> work with virtual mode of EFI or what is our strategy to handle it.
+>
+> Eric and others, any thoughts on this in general?
 
-On 03/10/2011 05:11 AM, Steven Rostedt wrote:
-> On Wed, 2011-03-09 at 22:43 -0800, Darren Hart wrote:
->
->>> I don't know the answers, but if we take the kernel Makefile as a
->>> template, then setting CC doesn't work.
->>
->> The kernel is a bit special I believe as it is pretty tied to gcc. Is
->> trace-cmd tied to gcc to such a degree that we want to make it difficult
->> for people to try different compilers?
->
-> True, trace-cmd is tied more to glibc (special features) than gcc.
->
-> I just looked at the Makefile for evolution, and it has:
->
-> CC = gcc
->
-> So it is not limited to just the kernel.
+If we want to handle EFI in a long term supportable manner and stop
+making short term hacks here is my suggestion.
 
-I think we're down to a subjective argument over "correctness". Any of 
-the resent proposals will work for me.
+Move all EFI calls that the kernel does (on x86) into a special section
+of the bzImage that the bootloader can run.  This works very well for
+the x86 BIOS and it should also work very well for EFI.  Among other
+things by having a special 32bit and a special 64bit section this solves
+the what flavor of EFI problem are we running on problem.
 
+Never perform any EFI calls once the kernel is initialized, last I
+looked all of the EFI calls that were interesting to perform at runtime
+were a subset of what ACPI can do, and ACPI is a easier to deal with
+long term.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Kexec and kdump can easily pass the gather data from the first kernel to
+the second kernel like we do for the normal bios paramsters today.
+
+As a fly in the ointment that leaves the question of how do we set EFI
+variables.  It is needed functionality when we are installing, and
+occasionally nice to have.  But it is a very rare slow path.  I would
+isolate the EFI after the kernel has booted to exactly to that one case.
+Either with a special driver or a some flavor of virtualization from
+userspace like we used to do for video card initialization.
+
+The current design of EFI in the x86 kernel is crap.  We seem to have
+advanced past the early adopter hack anything together to make it work
+stage.  So let's stop adding hacks and write something that won't give
+us a long term support problems.
+
+Eric
