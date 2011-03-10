@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab1CJQiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:38:17 -0500
-Received: from mga03.intel.com ([143.182.124.21]:4683 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab1CJQiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:38:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,296,1297065600"; 
-   d="scan'208";a="400694825"
-Date: Thu, 10 Mar 2011 08:38:09 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Paul Mundt <lethal@linux-sh.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-mm@kvack.org,
+	id S1753100Ab1CJQj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:39:29 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60193 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab1CJQj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:39:28 -0500
+From: Abhilash K V <abhilash.kv@ti.com>
+To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] make *_gate_vma accept mm_struct instead of
- task_struct II
-Message-ID: <20110310163809.GA20675@alboin.amr.corp.intel.com>
-References: <1299630721-4337-1-git-send-email-wilsons@start.ca>
- <20110310160032.GA20504@alboin.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110310160032.GA20504@alboin.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: tony@atomide.com, linux@arm.linux.org.uk,
+        Abhilash K V <abhilash.kv@ti.com>, Sriramakrishnan <srk@ti.com>
+Subject: [PATCH] can : AM3517EVM : add platform specific init
+Date: Thu, 10 Mar 2011 22:09:13 +0530
+Message-Id: <1299775153-16766-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 08:00:32AM -0800, Andi Kleen wrote:
-> On Tue, Mar 08, 2011 at 07:31:56PM -0500, Stephen Wilson wrote:
-> > 
-> > Morally, the question of whether an address lies in a gate vma should be asked
-> > with respect to an mm, not a particular task.
-> > 
-> > Practically, dropping the dependency on task_struct will help make current and
-> > future operations on mm's more flexible and convenient.  In particular, it
-> > allows some code paths to avoid the need to hold task_lock.
-> > 
-> > The only architecture this change impacts in any significant way is x86_64.
-> > The principle change on that architecture is to mirror TIF_IA32 via
-> > a new flag in mm_context_t. 
-> 
-> The problem is -- you're adding a likely cache miss on mm_struct for
-> every 32bit compat syscall now, even if they don't need mm_struct
-> currently (and a lot of them do not) Unless there's a very good
-> justification to make up for this performance issue elsewhere
-> (including numbers) this seems like a bad idea.
+CAN module on AM3517 requires programming of IO expander
+as part of init sequence. Added transceiver_switch
+callback to handle this.
 
-Hmm I see you're only setting it on exec time actually on rereading
-the patches. I thought you were changing TS_COMPAT which is in
-the syscall path.
+Signed-off-by: Sriramakrishnan <srk@ti.com>
+Reviewed-by:  Vaibhav Hiremath <hvaibhav@ti.com>
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+---
+ arch/arm/mach-omap2/board-am3517evm.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-Never mind.  I have no problems with doing such a change on exec
-time.
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index 2e4aad2..782d72d 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -734,6 +734,23 @@ static struct omap_board_mux board_mux[] __initdata = {
+ };
+ #endif
+ 
++/*
++ * HECC information
++ */
++
++#define CAN_STB         214
++static void hecc_phy_control(int on)
++{
++        int r;
++
++        r = gpio_request(CAN_STB, "can_stb");
++        if (r) {
++                printk(KERN_ERR "failed to get can_stb \n");
++                return;
++        }
++
++        gpio_direction_output(CAN_STB, (on==1)?0:1);
++}
+ 
+ static struct resource am3517_hecc_resources[] = {
+ 	{
+@@ -762,6 +779,7 @@ static struct ti_hecc_platform_data am3517_evm_hecc_pdata = {
+ 	.mbx_offset		= AM35XX_HECC_MBOX_OFFSET,
+ 	.int_line		= AM35XX_HECC_INT_LINE,
+ 	.version		= AM35XX_HECC_VERSION,
++	.transceiver_switch     = hecc_phy_control,
+ };
+ 
+ static void am3517_evm_hecc_init(struct ti_hecc_platform_data *pdata)
+-- 
+1.6.2.4
 
--Andi
