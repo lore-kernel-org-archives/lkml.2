@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab1CJRDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 12:03:50 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55097 "EHLO mga09.intel.com"
+	id S1752473Ab1CJRFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 12:05:25 -0500
+Received: from cantor.suse.de ([195.135.220.2]:47556 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab1CJRDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 12:03:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,297,1297065600"; 
-   d="scan'208";a="718737000"
-Date: Thu, 10 Mar 2011 09:03:45 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Paul Mundt <lethal@linux-sh.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] make *_gate_vma accept mm_struct instead of
- task_struct II
-Message-ID: <20110310170345.GE20504@alboin.amr.corp.intel.com>
-References: <1299630721-4337-1-git-send-email-wilsons@start.ca>
- <20110310160032.GA20504@alboin.amr.corp.intel.com>
- <20110310163809.GA20675@alboin.amr.corp.intel.com>
- <20110310165414.GA6431@fibrous.localdomain>
+	id S1751252Ab1CJRFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 12:05:24 -0500
+Date: Thu, 10 Mar 2011 08:25:01 -0800
+From: Greg KH <gregkh@suse.de>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] sysfs: add more info to the oops dump
+Message-ID: <20110310162501.GB23989@suse.de>
+References: <1299772388-15439-1-git-send-email-ext-phil.2.carmody@nokia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110310165414.GA6431@fibrous.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1299772388-15439-1-git-send-email-ext-phil.2.carmody@nokia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 11:54:14AM -0500, Stephen Wilson wrote:
+On Thu, Mar 10, 2011 at 05:53:08PM +0200, Phil Carmody wrote:
+> If we're going to remember which file we accessed, we might as well
+> also remember whether it was a read or a write, and if the latter,
+> some indication of what was written.
 > 
-> On Thu, Mar 10, 2011 at 08:38:09AM -0800, Andi Kleen wrote:
-> > On Thu, Mar 10, 2011 at 08:00:32AM -0800, Andi Kleen wrote:
-> > > On Tue, Mar 08, 2011 at 07:31:56PM -0500, Stephen Wilson wrote:
-> > > > The only architecture this change impacts in any significant way is x86_64.
-> > > > The principle change on that architecture is to mirror TIF_IA32 via
-> > > > a new flag in mm_context_t. 
-> > > 
-> > > The problem is -- you're adding a likely cache miss on mm_struct for
-> > > every 32bit compat syscall now, even if they don't need mm_struct
-> > > currently (and a lot of them do not) Unless there's a very good
-> > > justification to make up for this performance issue elsewhere
-> > > (including numbers) this seems like a bad idea.
-> > 
-> > Hmm I see you're only setting it on exec time actually on rereading
-> > the patches. I thought you were changing TS_COMPAT which is in
-> > the syscall path.
-> > 
-> > Never mind.  I have no problems with doing such a change on exec
-> > time.
+> e.g.
+> $ echo 1 > /sys/kernel/slab/:at-0000064/sanity_checks
+> $ echo c > /proc/sysrq-trigger
+> ...
+> [  112.457580] last sysfs file (w): /sys/kernel/slab/:at-0000064/sanity_checks
+> [  112.464569]   written: 1
+
+Has this actually helped you out?  I've been thinking of removing this
+line in the dmesg entirely as I haven't seen it help in a very long time
+to track anything down.
+
 > 
-> OK.  Great!  Does this mean I have your ACK'ed by or reviewed by?
+> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> ---
+>  fs/sysfs/file.c |   21 ++++++++++++++++++++-
+>  1 files changed, 20 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+> index da3fefe..281e4dd 100644
+> --- a/fs/sysfs/file.c
+> +++ b/fs/sysfs/file.c
+> @@ -26,9 +26,18 @@
+>  
+>  /* used in crash dumps to help with debugging */
+>  static char last_sysfs_file[PATH_MAX];
+> +static char last_sysfs_write[16];
+> +static int last_sysfs_write_len; /* magic value < 0 => read */
+>  void sysfs_printk_last_file(void)
+>  {
+> -	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
+> +	printk(KERN_EMERG "last sysfs file (%c): %s\n",
+> +	       (last_sysfs_write_len < 0) ? 'r' : 'w',
+> +	       last_sysfs_file);
+> +	if (last_sysfs_write_len >= sizeof(last_sysfs_write))
+> +		printk(KERN_EMERG "  written: %s...(%d chars)\n",
+> +		       last_sysfs_write, last_sysfs_write_len);
+> +	else if (last_sysfs_write_len > 0)
+> +		printk(KERN_EMERG "  written: %s\n", last_sysfs_write);
+>  }
+>  
+>  /*
+> @@ -200,12 +209,19 @@ flush_write_buffer(struct dentry * dentry, struct sysfs_buffer * buffer, size_t
+>  	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
+>  	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
+>  	const struct sysfs_ops * ops = buffer->ops;
+> +	int copylen = min(count, sizeof(last_sysfs_write) - 1);
+>  	int rc;
+>  
+>  	/* need attr_sd for attr and ops, its parent for kobj */
+>  	if (!sysfs_get_active(attr_sd))
+>  		return -ENODEV;
+>  
+> +	while (copylen > 0 && buffer->page[copylen-1] == '\n')
+> +		--copylen; /* never print trailing \n's */
+> +	memcpy(last_sysfs_write, buffer->page, copylen);
+> +	last_sysfs_write[copylen] = '\0';
+> +	last_sysfs_write_len = count;
+> +
+>  	rc = ops->store(kobj, attr_sd->s_attr.attr, buffer->page, count);
+>  
+>  	sysfs_put_active(attr_sd);
+> @@ -363,6 +379,9 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+>  	if (file->f_mode & FMODE_WRITE) {
+>  		if (!(inode->i_mode & S_IWUGO) || !ops->store)
+>  			goto err_out;
+> +		last_sysfs_write_len = 0;
+> +	} else {
+> +		last_sysfs_write_len = -1; /* magic value */
 
-I didn't read it all, but the first two patches looked ok.
+"magic" values are bad, please use a #define or something else that
+makes more sense to those looking at the code in 5 years.
 
--Andi
+thanks,
+
+greg k-h
