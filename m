@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab1CJLwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 06:52:44 -0500
-Received: from sheliak.msh-paris.fr ([195.221.170.236]:45540 "EHLO
-	sheliak.msh-paris.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab1CJLwn (ORCPT
+	id S1752473Ab1CJL4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 06:56:20 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:52535 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab1CJL4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 06:52:43 -0500
-Message-ID: <5173cd371443e358f29e07af9deaeca5.squirrel@webmail.msh-paris.fr>
-Date: Thu, 10 Mar 2011 10:58:18 +0100
-Subject: 
-From: "MONEY GRAM TRANSFER" <info@msh-paris.fr>
-Reply-To: ronaldfinson_01@yahoo.co.jp
-User-Agent: SquirrelMail/1.4.18
+	Thu, 10 Mar 2011 06:56:19 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
+Date: Thu, 10 Mar 2011 12:56:06 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, bp@amd64.org
+References: <20110301083529.GA767@liondog.tnic> <20110309175625.GA29181@merkur.ravnborg.org> <20110310090444.GA25522@elte.hu>
+In-Reply-To: <20110310090444.GA25522@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103101256.06745.arnd@arndb.de>
+X-Provags-ID: V02:K0:EqxcsX4dcSFZVQzKtjgiCfwUm6B5qEszAgN7hZVKUYp
+ FDHVWunBJCe9OeK+1O5yrdnQfzzcOmjhZdp9b9j0R9ZCxiBG0L
+ 9hZ/xT2FzOtLo/uV6hlNU8SG1wGKPa/u6CoylFNCz+B4YWjav6
+ a/B1GbOmzk1aS3yf0BKCSgR8y8IT/LxnIGt4I+iEhw2aP0Nkgi
+ wnhVTCff/EJglewhOEkiA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 10 March 2011, Ingo Molnar wrote:
+> Also, adding 3 lines per object file is pretty ugly - would it be possible to create 
+> a nicer, compact, single-line way to someone condense a CONFIG_ERROR opt-out 
+> mechanism, the -Werror default and the single-object-file into a single rule?
+> 
+> Something like:
+> 
+>   obj-werror-y += sched.o
 
-MONEY GRAM CUSTOMER CARE
-21st Floor, Jalan Kampar, Plaza Permata,
-50400, Kuala Lumpur, Wilayah Persekutuan
-Malayasia
+I haven't tried it, but it could work (or be made to work) recursively,
+so you can link multiple objects together and have them use the same flag e.g.
 
+obj-y += obj_werror.o
+ccflags-obj_werror.o += -Werror
+obj-werror-y += sched.o module.o user.o
 
-
-G-20 board of trustees comprises of twenty finance minister and
-representative all over the  world head a meeting at Kuala Lumpur,
-Malaysia in January 5th 2011 regarding the economical meltdown affecting
-the world, so they decieded to engage in an email eletronic ballot system
-through an email open ballot email selection which your email came out as
-one on their beneficairy and they instructed Mr RONALD FINSON of Money
-Gram to keep send you $5000 USD twice a week untill the sum {$820,000} is
-completed
-
-Your are to contact RONALD FINSON for the fundS clearance certificate from
-the {IMF} below is the information.
-
-
-MONEY TRANSFER REFERENCE:2340-3297
-SENDER'S NAME:Esther Lee
-AMOUNT: US$5000
-
-To track your funds forward money gram
-Transfer agent Mr RONALD FINSON
-
-Your Name.__________________________
-Phone .__________________________
-
-Contact Allan Davis for the funds clearance
-certificate necessary for the realise of your funds
-
-E-mail:ronaldfinson_01@yahoo.co.jp
-
-Please direct all enquiring to:
-money gram Mr: RONALD FINSON
-
-ronaldfinson_01@yahoo.com.hk
-
-Best Regards,
-RONALD FINSON
-
-
-
-
-
-
-
-
-
+	Arnd
