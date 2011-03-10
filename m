@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab1CJDgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 22:36:37 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43627 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab1CJDgf (ORCPT
+	id S1751922Ab1CJD5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 22:57:11 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:28138 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab1CJD5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 22:36:35 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=UwRGqXM3h7MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=vcVM_-CSrIiTtnZWU30A:9 a=3mDoMQLVNpJEH13kVWXLYUlsRX4A:4 a=PUjeQqilurYA:10 a=8LfsZize8SvTrtSs:21 a=pmob_dQ-TBpnt2XT:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/2] jump label: update for .39
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: peterz@infradead.org, hpa@zytor.com, mathieu.desnoyers@polymtl.ca,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-In-Reply-To: <cover.1299702291.git.jbaron@redhat.com>
-References: <cover.1299702291.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 09 Mar 2011 22:36:31 -0500
-Message-ID: <1299728191.15854.319.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 9 Mar 2011 22:57:08 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6280"; a="79071452"
+Message-ID: <4D784BF6.1040700@codeaurora.org>
+Date: Thu, 10 Mar 2011 09:26:38 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>, davidb@codeaurora.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Collins <collinsd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Linus Walleij <linux.walleij@sterricsson.com>,
+        Thomas Glexiner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Qualcomm PM8921 MFD v2 4/6] mfd: pm8xxx-mpp: Add pm8xxx MPP
+ driver
+References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org> <1299564590-30116-5-git-send-email-adharmap@codeaurora.org> <20110308233045.GB2717@opensource.wolfsonmicro.com> <4D784730.4010307@codeaurora.org>
+In-Reply-To: <4D784730.4010307@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 15:47 -0500, Jason Baron wrote:
-> Hi,
+Hi Abhi,
+
+On 3/10/2011 9:06 AM, Abhijeet Dharmapurikar wrote:
+> Mark Brown wrote:
+>> On Mon, Mar 07, 2011 at 10:09:48PM -0800, adharmap@codeaurora.org wrote:
+>>
+>>> +    mpp_chip->gpio_chip.label = PM8XXX_MPP_DEV_NAME;
+>>> +    mpp_chip->gpio_chip.direction_input = pm8xxx_mpp_dir_input;
+>>> +    mpp_chip->gpio_chip.direction_output = pm8xxx_mpp_dir_output;
+>>> +    mpp_chip->gpio_chip.to_irq = pm8xxx_mpp_to_irq;
+>>> +    mpp_chip->gpio_chip.get = pm8xxx_mpp_get;
+>>> +    mpp_chip->gpio_chip.set = pm8xxx_mpp_set;
+>>> +    mpp_chip->gpio_chip.dbg_show = pm8xxx_mpp_dbg_show;
+>>> +    mpp_chip->gpio_chip.ngpio = pdata->core_data.nmpps;
+>>> +    mpp_chip->gpio_chip.can_sleep = 1;
+>>> +    mpp_chip->gpio_chip.dev = &pdev->dev;
+>>> +    mpp_chip->gpio_chip.base = pdata->mpp_base;
+>>
+>> It's seems really odd that you're adding gpiolib stuff here when you've
+>> also got a separate gpiolib driver.  Possibly this all shouldn't
+>> actually be split up as much as it is - there's also the issue with the
+>> gpiolib driver needing to peer into the interrupt controller.  It might
+>> simplify the code if things were merged more.
 > 
-> Re-fresh of updates against latest -tip tree.
-
-Thanks Jason,
-
-I started looking at them, I should have comments tomorrow (if I have
-any comments ;)
-
+> I dont think merging code will help here. gpio lines and mpp lines are very different piece of hardware,they have a different register map and different config attributes. They do fall under the generic 'gpiolib' umbrella, but it seems clean to keep them separate.
 > 
-> I've tried to split this update up somewhat, but I've only succeeded to split
-> out the dynamic debug bits. The interface changes and re-write are quite
-> intertwined.
+> I agree with you that gpio code needs to call on interrupt controller ( a complicated hardware design) but I think I have a clean software implementation to manage it.
 > 
-> I believe this update should address all the comments from the previous posting
-> except for Mathieu's request for a section of jump label pointers that point to
-> the jump label structures (since the compiler might leave gaps in the jump label
-> structures).
 
-The jump label structures is a list of 3 pointers, correct? I doubt that
-gcc would place any holes in it as they are all aligned by natural word
-size.
+It would be good to add that MPP do have more functionality than normal GPIO. So, I expect that in future
+we might have few exported APIs beyond gpiolib integration. 
 
->  I've got a prototype patch to address this issue but its somewhat
-> invasive, and thus I'd like to leave it as a follow-up item. I have to date,
-> not seen this issue in practice.
-> 
-> thanks,
-> 
-> -Jason
-> 
-> 
-> Jason Baron (2):
->   jump label: introduce static_branch() interface
->   dynamic debug: add jump label support
-> 
->  arch/mips/include/asm/jump_label.h  |   22 +-
->  arch/mips/kernel/jump_label.c       |    2 +-
+---Trilok Soni
 
-Could we get Ralf's acked-by for the mips code.
-
->  arch/sparc/include/asm/jump_label.h |   25 +-
-
-Could we get David Miller's Acked-by for sparc.
-
-Thanks,
-
--- Steve
-
->  arch/x86/include/asm/alternative.h  |    3 +-
->  arch/x86/include/asm/jump_label.h   |   26 +-
->  arch/x86/kernel/alternative.c       |    2 +-
->  arch/x86/kernel/jump_label.c        |    2 +-
->  arch/x86/kernel/module.c            |    1 +
->  include/asm-generic/vmlinux.lds.h   |   14 +-
->  include/linux/dynamic_debug.h       |   44 +++-
->  include/linux/jump_label.h          |   86 ++++---
->  include/linux/jump_label_ref.h      |   44 ---
->  include/linux/perf_event.h          |   26 +-
->  include/linux/tracepoint.h          |   22 +-
->  kernel/jump_label.c                 |  537 ++++++++++++++---------------------
->  kernel/perf_event.c                 |    4 +-
->  kernel/tracepoint.c                 |   23 +-
->  lib/dynamic_debug.c                 |    4 +-
->  18 files changed, 391 insertions(+), 496 deletions(-)
->  delete mode 100644 include/linux/jump_label_ref.h
-
-
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
