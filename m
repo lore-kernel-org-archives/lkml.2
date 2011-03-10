@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab1CJXzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:55:20 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49590
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754180Ab1CJXzT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:55:19 -0500
-Date: Thu, 10 Mar 2011 15:55:56 -0800 (PST)
-Message-Id: <20110310.155556.48513201.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTimnHtVS=SFopgyjAAQDW8bXDKDXf+YvEtPdpPsA@mail.gmail.com>
-References: <20110310.153444.115930379.davem@davemloft.net>
-	<AANLkTimnHtVS=SFopgyjAAQDW8bXDKDXf+YvEtPdpPsA@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754277Ab1CJX4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:56:54 -0500
+Received: from kroah.org ([198.145.64.141]:45154 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754181Ab1CJX4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:56:53 -0500
+Date: Thu, 10 Mar 2011 15:55:48 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [patch 00/29] 2.6.37.4-stable review
+Message-ID: <20110310235548.GA10103@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 10 Mar 2011 15:49:40 -0800
+This is the start of the stable review cycle for the 2.6.37.r release.
+There are 29 patches in this series, all will be posted as a response to
+this one.  If anyone has any issues with these being applied, please let
+us know.  If anyone is a maintainer of the proper subsystem, and wants
+to add a Signed-off-by: line to the patch, please respond with it.
 
-> Grr. This has been going on for too long. Don't do it. Don't do random
-> backwards merges without explanations, and with the actual source data
-> removed.
-> 
-> We're _really_ good at doing commit messages, and the kernel commit
-> log should be a great example to other projects. But in the last week
-> or so, I've now _twice_ had to flame core developers for making
-> totally useless commit messages.
-> 
-> So don't do back-merges. And if you DO do back-merges, don't make the
-> commit message totally useless.
-> 
-> You can use either 'git commit --amend" to fix the message afterwards
-> and explain WHY you did the stupid thing, or you can just do "git pull
-> --no-commit" to not actually commit the merge and then write your
-> commit message as you do it. But preferably you shouldn't do the
-> back-merges at all.
+Responses should be made by Saturday, March 12, 24:00:00 UTC.
+Anything received after that time might be too late.
 
-I'm sorry about this, won't happen again.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.37.4-rc1.gz
+and the diffstat can be found below.
 
-I should have put:
+thanks,
 
-	Merge to get commit 8909c9ad8ff03611c9c96c9a92656213e4bb495b
-	("net: don't allow CAP_NET_ADMIN to load non-netdev kernel modules")
-	so that we can add Stephen Hemminger's fix to handle ip6 tunnels
-	as well, which uses the MODULE_ALIAS_NETDEV() macro created by
-	that change.
+greg k-h
 
-Again, sorry.
+
+ Makefile                                    |    2 +-
+ arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c   |    2 +-
+ drivers/char/virtio_console.c               |    8 ++++
+ drivers/hid/hid-mosart.c                    |    4 ++
+ drivers/media/dvb/dvb-usb/dib0700_devices.c |   21 +++++++++-
+ drivers/media/dvb/frontends/dib7000m.c      |   19 +++++++++
+ drivers/media/dvb/frontends/dib7000m.h      |   15 +++++++
+ drivers/media/video/cx23885/cx23885-i2c.c   |    8 ----
+ drivers/media/video/cx25840/cx25840-core.c  |    3 +-
+ drivers/media/video/ivtv/ivtv-irq.c         |   58 +++++++++++++++++++++++---
+ drivers/misc/bmp085.c                       |    1 +
+ drivers/net/forcedeth.c                     |    2 +
+ drivers/net/ixgbe/ixgbe_main.c              |    4 ++
+ drivers/net/r8169.c                         |   42 +++++++++++++++----
+ drivers/net/wireless/ath/ath9k/ath9k.h      |    3 -
+ drivers/net/wireless/ath/ath9k/init.c       |    4 --
+ drivers/net/wireless/ath/ath9k/main.c       |    4 --
+ drivers/s390/char/keyboard.c                |    3 +-
+ fs/nfs/nfs4proc.c                           |   44 +++++++++++++++++++-
+ fs/nfs/nfs4xdr.c                            |    3 -
+ fs/nfsd/nfs4xdr.c                           |    4 +-
+ include/keys/rxrpc-type.h                   |    1 -
+ include/linux/netdevice.h                   |    3 +
+ kernel/cpuset.c                             |    7 ++-
+ kernel/sched_rt.c                           |   14 ++++--
+ mm/mremap.c                                 |    4 +-
+ net/core/dev.c                              |   12 +++++-
+ net/ipv4/ip_gre.c                           |    1 +
+ net/ipv4/ipip.c                             |    1 +
+ net/ipv4/netfilter/arpt_mangle.c            |    6 +-
+ net/ipv6/sit.c                              |    2 +-
+ net/netfilter/ipvs/ip_vs_ctl.c              |    4 +-
+ net/netfilter/nf_log.c                      |    4 ++
+ sound/pci/hda/patch_cirrus.c                |    2 +
+ sound/pci/hda/patch_realtek.c               |    7 +--
+ sound/soc/codecs/wm9081.c                   |    5 ++
+ 36 files changed, 255 insertions(+), 72 deletions(-)
