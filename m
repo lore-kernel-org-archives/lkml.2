@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab1CJEdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 23:33:46 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:55851 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab1CJEdp convert rfc822-to-8bit (ORCPT
+	id S1752497Ab1CJEeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 23:34:18 -0500
+Received: from fox.seas.upenn.edu ([158.130.68.12]:48017 "EHLO
+	fox.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab1CJEeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 23:33:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Sse6/zT7Mbm/aFPUY/2HWLuXfwp+1/6UPkXRsq84eeQZnzxoExRUGVpV1d0NsArXWV
-         uhXnsVnpEiahV/AGKhjkGR+y0nWb+nN3RyltFNstrpFX+3Z8THEAx2gu0w4xyfnmgax/
-         SQMsj3BANIpoEUfaG2m3/be/x0RsV8OROxeJ4=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1103082313130.19969@pobox.suse.cz>
-References: <1299459180-11321-1-git-send-email-leemgs1@gmail.com>
-	<1299459180-11321-2-git-send-email-leemgs1@gmail.com>
-	<AANLkTi=FYHX3Z1zAi5BqHqxRSQK-iOJ+tSvZwj4csZ=2@mail.gmail.com>
-	<alpine.LNX.2.00.1103082313130.19969@pobox.suse.cz>
-Date: Thu, 10 Mar 2011 13:33:44 +0900
-Message-ID: <AANLkTikmftpc-TCw-JLQv5AJKDJ3e=j3uXqUtucrX4Rn@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/2] cgroup:doc Update cpuset info & webiste via cgroup.
-From: Geunsik Lim <leemgs1@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Paul Menage <menage@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Mar 2011 23:34:15 -0500
+From: Rafi Rubin <rafi@seas.upenn.edu>
+To: jkosina@suse.cz, linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, micki@n-trig.com, rydberg@euromail.se,
+        chatty@enac.fr, Rafi Rubin <rafi@seas.upenn.edu>
+Subject: [PATCH 1/2] hid: ntrig NO_INIT_REPORTS
+Date: Wed,  9 Mar 2011 23:33:51 -0500
+Message-Id: <1299731632-9814-1-git-send-email-rafi@seas.upenn.edu>
+X-Mailer: git-send-email 1.7.4.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-03-10_03:2011-03-10,2011-03-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 9, 2011 at 7:13 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Tue, 8 Mar 2011, Paul Menage wrote:
->
->> > cpuset website is changed.
->> > and, update list of cpuset using cgroup(controller group).
->> >
->> > Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
->>
->> Acked-by: Paul Menage <menage@google.com>
->>
->> You should forward these to Andew Morton for the -mm tree.
->
-> I can take it since you have Acked it.
->
-> Applied, thanks.
-Thanks Jiri.
->
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
->
+Probing reports does bad things with some ntrig firmwares, better to
+just leave them alone.
 
+Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
 
+---
 
+This resolves an annoying delay on initialization and reduces the
+chance of the device coming up in an odd state or crashing.
+---
+ drivers/hid/hid-ntrig.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+index b1e9cca..850ba14 100644
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -837,7 +837,8 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	struct hid_report *report;
+ 
+ 	if (id->driver_data)
+-		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
++		hdev->quirks |= HID_QUIRK_MULTI_INPUT
++				| HID_QUIRK_NO_INIT_REPORTS;
+ 
+ 	nd = kmalloc(sizeof(struct ntrig_data), GFP_KERNEL);
+ 	if (!nd) {
 -- 
-Regards,
-Geunsik Lim ( Samsung Electronics )
-Blog : http://blog.naver.com/invain/
-e-Mail: geunsik.lim@samsung.com
-           leemgs@gmail.com , leemgs1@gmail.com
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+1.7.4.1
+
