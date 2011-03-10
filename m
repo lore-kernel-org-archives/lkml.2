@@ -1,37 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab1CJCjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 21:39:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:37171 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab1CJCjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 21:39:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,293,1297065600"; 
-   d="scan'208";a="718474751"
-Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX
- protection for kernel data)
-From: Lin Ming <ming.m.lin@intel.com>
-To: matthieu castet <castet.matthieu@free.fr>
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-In-Reply-To: <4D780A36.60303@free.fr>
-References: <1290410581.2405.24.camel@minggr.sh.intel.com>
-	 <1290431008.2072.119.camel@laptop>	<1290443379.4cea9a73cd9ce@imp.free.fr>
-	 <1290443758.2072.318.camel@laptop>	<20101122164247.GC21836@basil.fritz.box>
-	 <20101123235527.54293b59@mat-laptop>  <20101126183144.300a71a4@mat-laptop>
-	 <1291093230.2405.191.camel@minggr.sh.intel.com>
-	 <1291116438.32004.649.camel@laptop>
-	 <1291162504.2405.216.camel@minggr.sh.intel.com> <4D3C7C36.903@free.fr>
-	 <4D3DFBB0.90402@free.fr>  <4D780A36.60303@free.fr>
+	id S1751917Ab1CJCj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 21:39:59 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41663 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab1CJCj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 21:39:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=etI5+A95qiZ+U/PkbSX5RgT+XkoFhWp7V7RfjUH6oSiGMN4aSbX2anAacyE7xtL1Ic
+         4rn25bj26QHeQ6J0F+j5LFOIcHZFxxtX3rJrvZoWE7imqW5tGblZyvXFjJUnmckWbJlI
+         /Sm0k3VJ8CUBLZQ8aJ5zqJ2R2EKDyCns3MY2E=
+Subject: [PATCH n_gsm] GSM Mux in non-transparent mode
+From: =?ISO-8859-1?Q?M=E1rio?= Isidoro <marioisidoro@gmail.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Mar 2011 10:39:15 +0800
-Message-ID: <1299724755.12873.79.camel@minggr.sh.intel.com>
+Date: Thu, 10 Mar 2011 02:39:50 +0000
+Message-ID: <1299724790.1800.135.camel@Paio>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
@@ -39,203 +28,326 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 07:16 +0800, matthieu castet wrote:
-> Hi,
-> 
-> matthieu castet a écrit :
-> > matthieu castet a écrit :
-> >> Lin Ming a écrit :
-> >>> On Tue, 2010-11-30 at 19:27 +0800, Peter Zijlstra wrote:
-> >>>> On Tue, 2010-11-30 at 13:00 +0800, Lin Ming wrote:
-> >>>>> echo 0 > /sys/devices/system/cpu/cpu1/online;
-> >>>>> echo 1 > /sys/devices/system/cpu/cpu1/online;
-> >>>>>
-> >>>>> then machine just reboots...
-> >>>>>
-> >> I tried to do the same thing on qemu, and the same behavior happened 
-> >> (ie reboot when resuming cpu1).
-> >>
-> >> After enabling qemu log, I found that a triple fault was happening at 
-> >> the beginning of secondary_startup_64
-> >> when doing "addq phys_base(%rip), %rax".
-> >>
-> >> Why ?
-> >> I suppose because we access data set to NX, but we don't have enabled 
-> >> yet NX in the msr. So the cpu crash due to "reserved bit check".
-> >>
-> >> If we enable NX before reading data, there is no more crash (patch 
-> >> attached).
-> >>
-> >> Now I am not sure this is the correct fix. I think the problem is that 
-> >> trampoline using kernel page table
-> >> is very dangerous. The kernel can have modified them atfer booting !
-> >> May be all the paging stuff should have been done in head_64.S. A 
-> >> first one with identity mapping, and the second one for
-> >> the real kernel stuff.
-> >>
-> > Lin, could you try this patch on your x64 machine.
-> > 
-> > 
-> I updated the patch to last tip. I tested on a 64 bits config and everything works.
+These alterations allow the usage of the non-transparent mode of the gsm
+mux, it works well enough to establish a ppp session using pppd. The
+increased buffer size allows the usage of the default MRU and MTU sizes
+in pppd.
+Tested with a Telit GE863-Pro^3. 
 
-I tested suspend/resume/hotplug and it works on my 64 bit notebook too.
+This is my first attempt at a patch so I think it is rather crude,
+suggestions are welcomed :)
 
-Thanks,
-Lin Ming
+There is a problem that happens if the process that is holding the
+attached line discipline tries to detach it before a process using a
+virtual com manages to close it. Both processes end up dealocked. I
+think this has to do with the tty lock. I don't have the backtrace with
+me
 
-> 
-> Any comment on it ?
-> 
-> 
-> Thanks
-> 
-> 
-> Matthieu
-> 
-> 
-> From: Matthieu CASTET <castet.matthieu@free.fr>
-> Date: Thu, 10 Mar 2011 00:10:01 +0100
-> Subject: [PATCH] x86 : Add NX protection for kernel data on 64 bit
-> 
-> This fix the cpu hotplug support, by allocating dedicated page table
-> for ident mapping in trampoline.
-> This is need because kernel set NX flag in level3_ident_pgt and
-> level3_kernel_pgt, and made it unusable from trampoline.
-> 
-> We also set the Low kernel Mapping to NX.
-> 
-> Finaly we apply nx in free_init_pages only when we switch to NX mode in order
-> to preserve large page mapping.
-> 
-> mapping now look like :
-> ---[ Low Kernel Mapping ]---
-> 0xffff880000000000-0xffff880000200000           2M     RW             GLB NX pte
-> 0xffff880000200000-0xffff880001000000          14M     RW         PSE GLB NX pmd
-> 0xffff880001000000-0xffff880001200000           2M     ro         PSE GLB NX pmd
-> 0xffff880001200000-0xffff8800012ae000         696K     ro             GLB NX pte
-> 0xffff8800012ae000-0xffff880001400000        1352K     RW             GLB NX pte
-> 0xffff880001400000-0xffff880001503000        1036K     ro             GLB NX pte
-> 0xffff880001503000-0xffff880001600000        1012K     RW             GLB NX pte
-> 0xffff880001600000-0xffff880007e00000         104M     RW         PSE GLB NX pmd
-> 0xffff880007e00000-0xffff880007ffd000        2036K     RW             GLB NX pte
-> 0xffff880007ffd000-0xffff880008000000          12K                           pte
-> 0xffff880008000000-0xffff880040000000         896M                           pmd
-> 0xffff880040000000-0xffff888000000000         511G                           pud
-> 0xffff888000000000-0xffffc90000000000       66048G                           pgd
-> ---[ vmalloc() Area ]---
-> [...]
-> ---[ High Kernel Mapping ]---
-> 0xffffffff80000000-0xffffffff81000000          16M                           pmd
-> 0xffffffff81000000-0xffffffff81400000           4M     ro         PSE GLB x  pmd
-> 0xffffffff81400000-0xffffffff81600000           2M     ro         PSE GLB NX pmd
-> 0xffffffff81600000-0xffffffff81800000           2M     RW         PSE GLB NX pmd
-> 0xffffffff81800000-0xffffffffa0000000         488M                           pmd
-> ---[ Modules ]---
-> 
-> Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
-> 
-> Conflicts:
-> 
-> 	arch/x86/kernel/head_64.S
-> ---
->  arch/x86/kernel/head_64.S       |   15 +++++++++++++++
->  arch/x86/kernel/trampoline_64.S |    4 ++--
->  arch/x86/mm/init.c              |    6 ++++--
->  arch/x86/mm/init_64.c           |    6 +++++-
->  4 files changed, 26 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-> index e11e394..e261354 100644
-> --- a/arch/x86/kernel/head_64.S
-> +++ b/arch/x86/kernel/head_64.S
-> @@ -140,6 +140,9 @@ ident_complete:
->  	addq	%rbp, trampoline_level4_pgt + 0(%rip)
->  	addq	%rbp, trampoline_level4_pgt + (511*8)(%rip)
->  
-> +	addq	%rbp, trampoline_level3_ident_pgt + 0(%rip)
-> +	addq	%rbp, trampoline_level3_ident_pgt + (L3_START_KERNEL*8)(%rip)
-> +
->  	/* Due to ENTRY(), sometimes the empty space gets filled with
->  	 * zeros. Better take a jmp than relying on empty space being
->  	 * filled with 0x90 (nop)
-> @@ -395,6 +398,18 @@ NEXT_PAGE(level2_kernel_pgt)
->  NEXT_PAGE(level2_spare_pgt)
->  	.fill   512, 8, 0
->  
-> +NEXT_PAGE(trampoline_level3_ident_pgt)
-> +	.quad	trampoline_level2_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
-> +	.fill	L3_START_KERNEL-1,8,0
-> +	.quad	trampoline_level2_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
-> +	.fill	511-L3_START_KERNEL,8,0
-> +
-> +
-> +NEXT_PAGE(trampoline_level2_ident_pgt)
-> +	/* Since I easily can, map the first 1G.
-> +	 * Don't set NX because code runs from these pages.
-> +	 */
-> +	PMDS(0, __PAGE_KERNEL_IDENT_LARGE_EXEC, PTRS_PER_PMD)
->  #undef PMDS
->  #undef NEXT_PAGE
->  
-> diff --git a/arch/x86/kernel/trampoline_64.S b/arch/x86/kernel/trampoline_64.S
-> index 09ff517..8723e47 100644
-> --- a/arch/x86/kernel/trampoline_64.S
-> +++ b/arch/x86/kernel/trampoline_64.S
-> @@ -164,8 +164,8 @@ trampoline_stack:
->  	.org 0x1000
->  trampoline_stack_end:
->  ENTRY(trampoline_level4_pgt)
-> -	.quad	level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
-> +	.quad	trampoline_level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
->  	.fill	510,8,0
-> -	.quad	level3_kernel_pgt - __START_KERNEL_map + _KERNPG_TABLE
-> +	.quad	trampoline_level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
->  
->  ENTRY(trampoline_end)
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 286d289..98dd5fa 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -338,8 +338,10 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
->  	 * we are going to free part of that, we need to make that
->  	 * writeable and non-executable first.
->  	 */
-> -	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
-> -	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
-> +	if (kernel_set_to_readonly) {
-> +		set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
-> +		set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
-> +	}
->  
->  	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
->  
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 470cc47..e9bb29d 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -832,6 +832,7 @@ void mark_rodata_ro(void)
->  	unsigned long rodata_start =
->  		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
->  	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
-> +	unsigned long kernel_end = (((unsigned long)&__init_end + HPAGE_SIZE) & HPAGE_MASK);
->  	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
->  	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
->  	unsigned long data_start = (unsigned long) &_sdata;
-> @@ -842,11 +843,14 @@ void mark_rodata_ro(void)
->  
->  	kernel_set_to_readonly = 1;
->  
-> +	/* make low level mapping NX */
-> +	set_memory_nx(PAGE_OFFSET, (PMD_PAGE_SIZE*PTRS_PER_PMD) >> PAGE_SHIFT);
-> +
->  	/*
->  	 * The rodata section (but not the kernel text!) should also be
->  	 * not-executable.
->  	 */
-> -	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
-> +	set_memory_nx(rodata_start, (kernel_end - rodata_start) >> PAGE_SHIFT);
->  
->  	rodata_test();
->  
+Signed-off-by: Mário Isidoro <marioisidoro@gmail.com>
+
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index aa2e5d3..c244292 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -77,8 +77,8 @@ module_param(debug, int, 0600);
+  * Semi-arbitary buffer size limits. 0710 is normally run with 32-64
+byte
+  * limits so this is plenty
+  */
+-#define MAX_MRU 512
+-#define MAX_MTU 512
++#define MAX_MRU 2048
++#define MAX_MTU 2048
+ 
+ /*
+  *	Each block of data we have queued to go out is in the form of
+@@ -417,6 +417,30 @@ static u8 gsm_encode_modem(const struct gsm_dlci
+*dlci)
+ }
+ 
+ /**
++ *	gsm_print_modem	-	Print modem control lines
++ *	@dlci: DLCI to encode from
++ *
++ *	Print the status of the modem control lines
++ */
++
++static void gsm_print_modem(int mlines)
++{
++	pr_debug("Modem lines: %04X\n", mlines);
++	pr_debug(" RTS:\t%s\n",
++		((mlines & TIOCM_RTS) == TIOCM_RTS) ? ("ON") : ("OFF"));
++	pr_debug(" CTS:\t%s\n",
++		((mlines & TIOCM_CTS) == TIOCM_CTS) ? ("ON") : ("OFF"));
++	pr_debug(" DSR:\t%s\n",
++		((mlines & TIOCM_DSR) == TIOCM_DSR) ? ("ON") : ("OFF"));
++	pr_debug(" DTR:\t%s\n",
++		((mlines & TIOCM_DTR) == TIOCM_DTR) ? ("ON") : ("OFF"));
++	pr_debug(" DCD:\t%s\n",
++		((mlines & TIOCM_CD) == TIOCM_CD) ? ("ON") : ("OFF"));
++	pr_debug(" RI :\t%s\n",
++		((mlines & TIOCM_RI) == TIOCM_RI) ? ("ON") : ("OFF"));
++}
++
++/**
+  *	gsm_print_packet	-	display a frame for debug
+  *	@hdr: header to print before decode
+  *	@addr: address EA from the frame
+@@ -588,7 +612,7 @@ static void gsm_send(struct gsm_mux *gsm, int addr,
+int cr, int control)
+ 		return;
+ 	}
+ 	gsm->output(gsm, cbuf, len);
+-	gsm_print_packet("-->", addr, cr, control, NULL, 0);
++	gsm_print_packet("->-", addr, cr, control, NULL, 0);
+ }
+ 
+ /**
+@@ -999,22 +1023,25 @@ static void gsm_control_reply(struct gsm_mux
+*gsm, int cmd, u8 *data,
+ static void gsm_process_modem(struct tty_struct *tty, struct gsm_dlci
+*dlci,
+ 							u32 modem)
+ {
+-	int  mlines = 0;
++	int  mlines = dlci->modem_tx;
+ 	u8 brk = modem >> 6;
+ 
++	modem = modem >> 1 ;
++
+ 	/* Flow control/ready to communicate */
+ 	if (modem & MDM_FC) {
++		pr_debug("Flux throttled\n");
+ 		/* Need to throttle our output on this device */
+ 		dlci->constipated = 1;
+ 	}
+ 	if (modem & MDM_RTC) {
+-		mlines |= TIOCM_DSR | TIOCM_DTR;
++		mlines |= TIOCM_DSR ;
+ 		dlci->constipated = 0;
+ 		gsm_dlci_data_kick(dlci);
+ 	}
+ 	/* Map modem bits */
+ 	if (modem & MDM_RTR)
+-		mlines |= TIOCM_RTS | TIOCM_CTS;
++		mlines |= TIOCM_CTS;
+ 	if (modem & MDM_IC)
+ 		mlines |= TIOCM_RI;
+ 	if (modem & MDM_DV)
+@@ -1068,18 +1095,25 @@ static void gsm_control_modem(struct gsm_mux
+*gsm, u8 *data, int clen)
+ 		return;
+ 	dlci = gsm->dlci[addr];
+ 
+-	while (gsm_read_ea(&modem, *dp++) == 0) {
+-		len--;
+-		if (len == 0)
+-			return;
++
++	/* Signals frame comes with EA = 0 in GE863-PRO3*/
++	if (len == 1) {
++		modem = *dp ;
++	} else {
++		while (gsm_read_ea(&modem, *dp++) == 0) {
++			len--;
++			if (len == 0)
++				return;
++		}
+ 	}
++
+ 	tty = tty_port_tty_get(&dlci->port);
+ 	gsm_process_modem(tty, dlci, modem);
+ 	if (tty) {
+ 		tty_wakeup(tty);
+ 		tty_kref_put(tty);
+ 	}
+-	gsm_control_reply(gsm, CMD_MSC, data, clen);
++	/*gsm_control_reply(gsm, CMD_MSC, data, clen);*/
+ }
+ 
+ /**
+@@ -1234,6 +1268,10 @@ static void gsm_control_response(struct gsm_mux
+*gsm, unsigned int command,
+ 		/* Rejected by the other end */
+ 		if (command == CMD_NSC)
+ 			ctrl->error = -EOPNOTSUPP;
++		if (command == CMD_MSC) {
++			/* Out of band modem line change indicator for a DLCI */
++			gsm_control_modem(gsm, data, clen);
++		}
+ 		ctrl->done = 1;
+ 		wake_up(&gsm->event);
+ 	}
+@@ -1251,7 +1289,7 @@ static void gsm_control_response(struct gsm_mux
+*gsm, unsigned int command,
+ static void gsm_control_transmit(struct gsm_mux *gsm, struct
+gsm_control *ctrl)
+ {
+ 	struct gsm_msg *msg = gsm_data_alloc(gsm, 0, ctrl->len + 1,
+-							gsm->ftype|PF);
++							gsm->ftype/*|PF*/);
+ 	if (msg == NULL)
+ 		return;
+ 	msg->data[0] = (ctrl->cmd << 1) | 2 | EA;	/* command */
+@@ -1548,6 +1586,7 @@ static void gsm_dlci_command(struct gsm_dlci
+*dlci, u8 *data, int len)
+ {
+ 	/* See what command is involved */
+ 	unsigned int command = 0;
++	pr_debug("%d bytes of command data\n", len);
+ 	while (len-- > 0) {
+ 		if (gsm_read_ea(&command, *data++) == 1) {
+ 			int clen = *data++;
+@@ -1555,8 +1594,10 @@ static void gsm_dlci_command(struct gsm_dlci
+*dlci, u8 *data, int len)
+ 			/* FIXME: this is properly an EA */
+ 			clen >>= 1;
+ 			/* Malformed command ? */
+-			if (clen > len)
++			if (clen > len) {
++				pr_debug("Malformed Command\n");
+ 				return;
++			}
+ 			if (command & 1)
+ 				gsm_control_message(dlci->gsm, command,
+ 								data, clen);
+@@ -1673,7 +1714,7 @@ static void gsm_queue(struct gsm_mux *gsm)
+ 
+ 	cr = gsm->address & 1;		/* C/R bit */
+ 
+-	gsm_print_packet("<--", address, cr, gsm->control, gsm->buf,
+gsm->len);
++	gsm_print_packet("-<-", address, cr, gsm->control, gsm->buf,
+gsm->len);
+ 
+ 	cr ^= 1 - gsm->initiator;	/* Flip so 1 always means command */
+ 	dlci = gsm->dlci[address];
+@@ -1706,7 +1747,7 @@ static void gsm_queue(struct gsm_mux *gsm)
+ 		break;
+ 	case UA:
+ 	case UA|PF:
+-		if (cr == 0 || dlci == NULL)
++		if (dlci == NULL)
+ 			break;
+ 		switch (dlci->state) {
+ 		case DLCI_CLOSING:
+@@ -2017,6 +2058,9 @@ int gsm_activate_mux(struct gsm_mux *gsm)
+ 	dlci = gsm_dlci_alloc(gsm, 0);
+ 	if (dlci == NULL)
+ 		return -ENOMEM;
++	/* At least Siemens/Cinterion and Telit modems require that the
+control
++	   channel be open within 5 seconds of starting the cmux mode */
++	gsm_dlci_begin_open(dlci);
+ 	gsm->dead = 0;		/* Tty opens are now permissible */
+ 	return 0;
+ }
+@@ -2093,7 +2137,7 @@ static int gsmld_output(struct gsm_mux *gsm, u8
+*data, int len)
+ 		return -ENOSPC;
+ 	}
+ 	if (debug & 4) {
+-		pr_debug("-->%d bytes out\n", len);
++		pr_debug("%d bytes out\n", len);
+ 		hex_packet(data, len);
+ 	}
+ 	gsm->tty->ops->write(gsm->tty, data, len);
+@@ -2150,7 +2194,7 @@ static void gsmld_receive_buf(struct tty_struct
+*tty, const unsigned char *cp,
+ 	char flags;
+ 
+ 	if (debug & 4) {
+-		pr_debug("Inbytes %dd\n", count);
++		pr_debug("%d bytes in\n", count);
+ 		hex_packet(cp, count);
+ 	}
+ 
+@@ -2508,10 +2552,10 @@ static int gsmtty_modem_update(struct gsm_dlci
+*dlci, u8 brk)
+ 		len++;
+ 
+ 	modembits[0] = len << 1 | EA;		/* Data bytes */
+-	modembits[1] = dlci->addr << 2 | 3;	/* DLCI, EA, 1 */
+-	modembits[2] = gsm_encode_modem(dlci) << 1 | EA;
++	modembits[1] = (dlci->addr << 2) | 3;	/* DLCI, EA, 1 */
++	modembits[2] = gsm_encode_modem(dlci) << 1 /*| EA*/;
+ 	if (brk)
+-		modembits[3] = brk << 4 | 2 | EA;	/* Valid, EA */
++		modembits[3] = (brk << 4) | 2 | EA;	/* Valid, EA */
+ 	ctrl = gsm_control_send(dlci->gsm, CMD_MSC, modembits, len + 1);
+ 	if (ctrl == NULL)
+ 		return -ENOMEM;
+@@ -2537,6 +2581,10 @@ static void gsm_dtr_rts(struct tty_port *port,
+int onoff)
+ 		modem_tx |= TIOCM_DTR | TIOCM_RTS;
+ 	else
+ 		modem_tx &= ~(TIOCM_DTR | TIOCM_RTS);
++
++	if (debug & 16)
++		gsm_print_modem(modem_tx);
++
+ 	if (modem_tx != dlci->modem_tx) {
+ 		dlci->modem_tx = modem_tx;
+ 		gsmtty_modem_update(dlci, 0);
+@@ -2556,6 +2604,7 @@ static int gsmtty_open(struct tty_struct *tty,
+struct file *filp)
+ 	struct tty_port *port;
+ 	unsigned int line = tty->index;
+ 	unsigned int mux = line >> 6;
++	int ret;
+ 
+ 	line = line & 0x3F;
+ 
+@@ -2583,8 +2632,18 @@ static int gsmtty_open(struct tty_struct *tty,
+struct file *filp)
+ 	/* We could in theory open and close before we wait - eg if we get
+ 	   a DM straight back. This is ok as that will have caused a hangup */
+ 	set_bit(ASYNCB_INITIALIZED, &port->flags);
++
++	if (debug & 16)
++		pr_debug("Request to open DLCI %d\n", dlci->addr);
++
+ 	/* Start sending off SABM messages */
+ 	gsm_dlci_begin_open(dlci);
++
++	/* Wait for the modem to send a acknowledge to the open command */
++	ret = wait_event_interruptible(gsm->event, dlci->state == DLCI_OPEN);
++	if (ret < 0)
++		return -ERESTARTSYS;
++
+ 	/* And wait for virtual carrier */
+ 	return tty_port_block_til_ready(port, tty, filp);
+ }
+@@ -2612,8 +2671,13 @@ static int gsmtty_write(struct tty_struct *tty,
+const unsigned char *buf,
+ 								    int len)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	int sent;
++
++	if (debug & 16)
++		pr_debug("%d bytes for dlci %d\n", len, dlci->addr);
++
+ 	/* Stuff the bytes into the fifo queue */
+-	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
++	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
+ 	/* Need to kick the channel */
+ 	gsm_dlci_data_kick(dlci);
+ 	return sent;
+@@ -2661,9 +2725,12 @@ static int gsmtty_tiocmset(struct tty_struct
+*tty, struct file *filp,
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	unsigned int modem_tx = dlci->modem_tx;
+ 
+-	modem_tx &= clear;
++	modem_tx &= ~clear;
+ 	modem_tx |= set;
+ 
++	if (debug & 16)
++		gsm_print_modem(modem_tx);
++
+ 	if (modem_tx != dlci->modem_tx) {
+ 		dlci->modem_tx = modem_tx;
+ 		return gsmtty_modem_update(dlci, 0);
 
 
