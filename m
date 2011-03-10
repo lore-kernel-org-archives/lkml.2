@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1CJS6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 13:58:03 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:10773 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab1CJS6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 13:58:02 -0500
-Message-ID: <4D791F31.6040100@caviumnetworks.com>
-Date: Thu, 10 Mar 2011 10:57:53 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753573Ab1CJS6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 13:58:13 -0500
+Received: from hera.kernel.org ([140.211.167.34]:44798 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab1CJS6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 13:58:10 -0500
+Date: Thu, 10 Mar 2011 18:57:47 GMT
+From: tip-bot for Michel Lespinasse <walken@google.com>
+Cc: linux-kernel@vger.kernel.org, dvhltc@us.ibm.com, hpa@zytor.com,
+        mingo@redhat.com, torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, walken@google.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, dvhltc@us.ibm.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de, walken@google.com
+In-Reply-To: <20110307020750.GA31188@google.com>
+References: <20110307020750.GA31188@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/futexes] futex: Update futex_wait_setup comments about locking
+Message-ID: <tip-8fe8f545c6d753ead15e1f4919d39e8f9bb49629@git.kernel.org>
+Git-Commit-ID: 8fe8f545c6d753ead15e1f4919d39e8f9bb49629
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, peterz@infradead.org,
-        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 0/2] jump label: update for .39
-References: <cover.1299702291.git.jbaron@redhat.com>	 <1299728191.15854.319.camel@gandalf.stny.rr.com>	 <BLU0-SMTP690BB959832A97E002293396C80@phx.gbl>	 <1299771504.15854.347.camel@gandalf.stny.rr.com>	 <4D790A13.4060705@caviumnetworks.com>	 <1299780241.15854.393.camel@gandalf.stny.rr.com>	 <20110310182000.GB2906@redhat.com>	 <1299782143.15854.402.camel@gandalf.stny.rr.com>	 <4D791CAA.7090108@caviumnetworks.com> <1299783236.15854.405.camel@gandalf.stny.rr.com>
-In-Reply-To: <1299783236.15854.405.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Mar 2011 18:57:58.0381 (UTC) FILETIME=[1261E1D0:01CBDF55]
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Mar 2011 18:57:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 10:53 AM, Steven Rostedt wrote:
-> On Thu, 2011-03-10 at 10:47 -0800, David Daney wrote:
->
->> The alignment requested by the assembler will have to satisfy *all* the
->> requested alignments, so manually forcing everything to .align 8 (or
->> .align 4 for 32-bit) should ensure that the linker doesn't put in any holes.
->
-> I would agree with the assessment although, I don't know that it is
-> documented anywhere that this is what happens. As the previous "bug"
-> with the trace_events was solved by me adding .align(4) everywhere, I
-> would think that .align(sizeof(long)) would work here too.
->
-> It may be a good ideal to force this alignment, and not add wasted
-> space. If anything, if this (hypothetical) bug appears, it will most
-> likely show up as a crash on boot up. I'm not too concerned about it.
->
+Commit-ID:  8fe8f545c6d753ead15e1f4919d39e8f9bb49629
+Gitweb:     http://git.kernel.org/tip/8fe8f545c6d753ead15e1f4919d39e8f9bb49629
+Author:     Michel Lespinasse <walken@google.com>
+AuthorDate: Sun, 6 Mar 2011 18:07:50 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 10 Mar 2011 19:56:18 +0100
 
-If the linker put in gratuitous holes, things like  __ex_table would 
-break too.
+futex: Update futex_wait_setup comments about locking
 
+Reviving a cleanup I had done about a year ago as part of a larger
+futex_set_wait proposal. Over the years, the locking of the hashed
+futex queue got improved, so that some of the "rare but normal" race
+conditions described in comments can't actually happen anymore.
 
-David Daney
+Signed-off-by: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Darren Hart <dvhltc@us.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <20110307020750.GA31188@google.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/futex.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index b766d28..3184d3b 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1781,13 +1781,14 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
+ 	 *
+ 	 * The basic logical guarantee of a futex is that it blocks ONLY
+ 	 * if cond(var) is known to be true at the time of blocking, for
+-	 * any cond.  If we queued after testing *uaddr, that would open
+-	 * a race condition where we could block indefinitely with
++	 * any cond.  If we locked the hash-bucket after testing *uaddr, that
++	 * would open a race condition where we could block indefinitely with
+ 	 * cond(var) false, which would violate the guarantee.
+ 	 *
+-	 * A consequence is that futex_wait() can return zero and absorb
+-	 * a wakeup when *uaddr != val on entry to the syscall.  This is
+-	 * rare, but normal.
++	 * On the other hand, we insert q and release the hash-bucket only
++	 * after testing *uaddr.  This guarantees that futex_wait() will NOT
++	 * absorb a wakeup if *uaddr does not match the desired values
++	 * while the syscall executes.
+ 	 */
+ retry:
+ 	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
