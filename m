@@ -1,74 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab1CJPVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 10:21:04 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:52802 "EHLO kernel.dk"
+	id S1753151Ab1CJPaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 10:30:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab1CJPVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 10:21:01 -0500
-Message-ID: <4D78EC5B.50300@kernel.dk>
-Date: Thu, 10 Mar 2011 16:20:59 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753098Ab1CJPaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 10:30:52 -0500
+Message-ID: <4D78EE42.7090800@redhat.com>
+Date: Thu, 10 Mar 2011 16:29:06 +0100
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Philipp Reisner <philipp.reisner@linbit.com>
-CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT PULL] DRBD bits for 2.6.39
-References: <201103091523.51815.philipp.reisner@linbit.com> <201103101310.39012.philipp.reisner@linbit.com> <4D78CF3A.7000408@kernel.dk> <201103101604.48775.philipp.reisner@linbit.com>
-In-Reply-To: <201103101604.48775.philipp.reisner@linbit.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+CC: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Subject: Re: [PATCH 2/2] hpsa: export resettable host attribute
+References: <20110309225822.26877.94051.stgit@beardog.cce.hp.com> <20110309230006.26877.68951.stgit@beardog.cce.hp.com>
+In-Reply-To: <20110309230006.26877.68951.stgit@beardog.cce.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-10 16:04, Philipp Reisner wrote:
-> Am Donnerstag, 10. März 2011, um 14:16:42 schrieb Jens Axboe:
->> On 2011-03-10 13:10, Philipp Reisner wrote:
->>> [...]
->>>
->>>> Now that I have your attention... Did you look at the plugging changes?
->>>
->>> You always have it :)
->>> I looked at the changes, and I noticed that we no longer get the unplug
->>> events.
->>>
->>>> As Christoph mentioned, you seem to be passing plugging information on
->>>> the wire. What is the reason for that? With the on-stack plugging, these
->>>> events are not seen by the block device anymore.
->>>
->>> Imagine DRBD in synchronous mode (protocol C in DRBD speak) on an older
->>> kernel. We mirror a write, in order to get the write-ack packet from the
->>> peer, the peer needs to unplug as well. -> Send the unplug events via the
->>> wire.
->>>
->>> Now, it we would connect a current-head-of-git DRBD on one node to
->>> a older one (which still needs unplug packets to respond quickly),
->>> we would have a tar pit block device. (At least for single synchronous
->>> writes)
->>>
->>> We are in brainstorming mode right now here.
->>> One idea is to have a timer, that gets touched with every request we get
->>> in, in case it expires, we send out a unplug event over the wire.
->>>
->>> But having the unplug events would be more elegant of course...
->>
->> The unplug is essentially the ->request_fn() being run now. So for older
->> clients you could just always include an unplug even when you pulled
->> whatever off the queue there is and sent it to the device.
-> 
-> DRBD is a bio-based device. I.e. we hook into the stack by having a
-> ->make_request_fn() function. 
-> Are you saying that although we get the BIOs via a ->make_request_fn()
-> call also our ->request_fn() will be called when it is time to send 
-> an unplug hint?
-> My expectation is, that as soon one uses his own ->make_request_fn()
-> ->request_fn() will never get called.
+>
+> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>
+> This attribute, requested by Redhat, allows kexec-tools to know
+> whether the controller can honor the reset_devices kernel parameter
+> and actually reset the controller.  For kdump to work properly it
+> is necessary that the reset_devices parameter be honored.  This
+> attribute enables kexec-tools to warn the user if they attempt to
+> designate a non-resettable controller as the dump device.
+>
+> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>   
+Thanks,looks good to me.
+Tomas
 
-Your expectation is correct. So in that case, the only UNPLUG event you
-would get is if the request is marked UNPLUG, not an actual unplug
-event. Just use the SYNC flag to know when to send the unplug event.
-
-
--- 
-Jens Axboe
+> ---
+>  Documentation/scsi/hpsa.txt |   12 ++++++++++++
+>  drivers/scsi/hpsa.c         |   41 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 53 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/scsi/hpsa.txt b/Documentation/scsi/hpsa.txt
+> index dca6583..8b418b3 100644
+> --- a/Documentation/scsi/hpsa.txt
+> +++ b/Documentation/scsi/hpsa.txt
+> @@ -39,6 +39,7 @@ HPSA specific entries in /sys
+>  
+>    /sys/class/scsi_host/host*/rescan
+>    /sys/class/scsi_host/host*/firmware_revision
+> +  /sys/class/scsi_host/host*/resettable
+>  
+>    the host "rescan" attribute is a write only attribute.  Writing to this
+>    attribute will cause the driver to scan for new, changed, or removed devices
+> @@ -55,6 +56,17 @@ HPSA specific entries in /sys
+>  	root@host:/sys/class/scsi_host/host4# cat firmware_revision
+>  	7.14
+>  
+> +  The "resettable" read-only attribute indicates whether a particular
+> +  controller is able to honor the "reset_devices" kernel parameter.  If the
+> +  device is resettable, this file will contain a "1", otherwise, a "0".  This
+> +  parameter is used by kdump, for example, to reset the controller at driver
+> +  load time to eliminate any outstanding commands on the controller and get the
+> +  controller into a known state so that the kdump initiated i/o will work right
+> +  and not be disrupted in any way by stale commands or other stale state
+> +  remaining on the controller from the previous kernel.  This attribute enables
+> +  kexec tools to warn the user if they attempt to designate a device which is
+> +  unable to honor the reset_devices kernel parameter as a dump device.
+> +
+>    HPSA specific disk attributes:
+>    ------------------------------
+>  
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index dcabef4..415ad4f 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -273,6 +273,44 @@ static ssize_t host_show_transport_mode(struct device *dev,
+>  			"performant" : "simple");
+>  }
+>  
+> +/* List of controllers which cannot be reset on kexec with reset_devices */
+> +static u32 unresettable_controller[] = {
+> +	0x324a103C, /* Smart Array P712m */
+> +	0x324b103C, /* SmartArray P711m */
+> +	0x3223103C, /* Smart Array P800 */
+> +	0x3234103C, /* Smart Array P400 */
+> +	0x3235103C, /* Smart Array P400i */
+> +	0x3211103C, /* Smart Array E200i */
+> +	0x3212103C, /* Smart Array E200 */
+> +	0x3213103C, /* Smart Array E200i */
+> +	0x3214103C, /* Smart Array E200i */
+> +	0x3215103C, /* Smart Array E200i */
+> +	0x3237103C, /* Smart Array E500 */
+> +	0x323D103C, /* Smart Array P700m */
+> +	0x409C0E11, /* Smart Array 6400 */
+> +	0x409D0E11, /* Smart Array 6400 EM */
+> +};
+> +
+> +static int ctlr_is_resettable(struct ctlr_info *h)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(unresettable_controller); i++)
+> +		if (unresettable_controller[i] == h->board_id)
+> +			return 0;
+> +	return 1;
+> +}
+> +
+> +static ssize_t host_show_resettable(struct device *dev,
+> +	struct device_attribute *attr, char *buf)
+> +{
+> +	struct ctlr_info *h;
+> +	struct Scsi_Host *shost = class_to_shost(dev);
+> +
+> +	h = shost_to_hba(shost);
+> +	return snprintf(buf, 20, "%d\n", ctlr_is_resettable(h));
+> +}
+> +
+>  static inline int is_logical_dev_addr_mode(unsigned char scsi3addr[])
+>  {
+>  	return (scsi3addr[3] & 0xC0) == 0x40;
+> @@ -379,6 +417,8 @@ static DEVICE_ATTR(commands_outstanding, S_IRUGO,
+>  	host_show_commands_outstanding, NULL);
+>  static DEVICE_ATTR(transport_mode, S_IRUGO,
+>  	host_show_transport_mode, NULL);
+> +static DEVICE_ATTR(resettable, S_IRUGO,
+> +	host_show_resettable, NULL);
+>  
+>  static struct device_attribute *hpsa_sdev_attrs[] = {
+>  	&dev_attr_raid_level,
+> @@ -392,6 +432,7 @@ static struct device_attribute *hpsa_shost_attrs[] = {
+>  	&dev_attr_firmware_revision,
+>  	&dev_attr_commands_outstanding,
+>  	&dev_attr_transport_mode,
+> +	&dev_attr_resettable,
+>  	NULL,
+>  };
+>  
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
 
