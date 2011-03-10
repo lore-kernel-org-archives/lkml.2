@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab1CJPz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 10:55:57 -0500
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:41016 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab1CJPz4 (ORCPT
+	id S1752239Ab1CJP4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 10:56:15 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43718 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1CJP4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 10:55:56 -0500
-X-Greylist: delayed 2020 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Mar 2011 10:55:55 EST
-Date: Thu, 10 Mar 2011 16:22:12 +0100
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-To: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ALSA: hda: Only write ICH6_PCIREG_TCSEL on Intel systems.
-Message-ID: <20110310152212.GD6376@os.inf.tu-dresden.de>
+	Thu, 10 Mar 2011 10:56:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=fs0kPFZs5NKarG3ANhZUYaItbGUIRf1HBDcJEwIGyhJ5EMQPLiaD+s2uTtxT+hdokn
+         MYIcN3+yXjYe5q4D5vtnT9KCikP0IXzq0KzId4h1+ZLX3d6rA4ao8jn1RvB5RsUFixA5
+         sJ/YBtNvia5O4Lkmdt44KVfh4VkwvjTqqMz6M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110310071709.GG9289@elte.hu>
+References: <AANLkTiknsT1iQzUQ_oBiOORaqWBFyk2BaLq_xu9C5E_G@mail.gmail.com>
+	<1299605269.29313.1427511237@webmail.messagingengine.com>
+	<AANLkTi=6YstJxad41knR4Q9WN3wYKikPv-g1i3kg3HS1@mail.gmail.com>
+	<1299615939.25628.1427572905@webmail.messagingengine.com>
+	<AANLkTimBMP1jiuEEUwmKKVNZcZnrkFxFA_YBcLmkEFJM@mail.gmail.com>
+	<AANLkTikpMAXfG5aNWo8x7pKKppaQiE-U8qjFaG0B2azV@mail.gmail.com>
+	<20110309085150.GC21294@elte.hu>
+	<AANLkTiks9o18LRS46CrYHBXzq_6U-v-CqK=0Fzc4Tuco@mail.gmail.com>
+	<20110309160241.GC31249@elte.hu>
+	<AANLkTinCzzqq6KC5H1Gad7a99dkp_x-cc8f3FHnXdjLJ@mail.gmail.com>
+	<20110310071709.GG9289@elte.hu>
+Date: Thu, 10 Mar 2011 07:54:22 -0800
+Message-ID: <AANLkTim_oy_X9DGvyzyN3Y6w0YWp2CCy+dsMKCHob_cU@mail.gmail.com>
+Subject: Re: linux-next: Tree for March 8 (BROKEN: arch/x86/kernel/entry_32.S?
+ Debian's binutils/as?)
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        linux-next <linux-next@vger.kernel.org>, psomas@cslab.ece.ntua.gr,
+        Jan Beulich <JBeulich@novell.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Mar 9, 2011 at 11:17 PM, Ingo Molnar <mingo@elte.hu> wrote:
 
-azx_init_pci() always writes PCI config register ICH6_PCIREG_TCSEL
-although this looks to be only defined on Intel systems and has a
-different meaning on AMD systems. On AMD systems the PCI interrupt pin
-control register is modified instead. Since the register has 'ICH' in
-its name I pulled the call to update_pci_byte() into the switch block to
-only happen on Intel variants. I'm not sure on the other variants.
+> Your "it's simple to fix" argument misses that point: i was talking about bisection
+> breakage, and during bisection of kernel bugs we dive back into older versions of
+> the code.
+>
+> It does not matter that you declare the .size directive bogus. It is buggy and yes
+> i've already queued up the fixes and i apprecitate them being fixed, but that's
+> immaterial to the compatibility argument i made: BINUTILS BUILT THE KERNEL FINE
+> BEFORE.
+>
+> If you do changes to a major component of the build environment of thousands of free
+> software projects you *must* consider the real-life compatbility effects of your
+> change on others, not just your own motivation.
+>
+> If you do that you need to at least UNDERSTAND what i'm talking about. It scares the
+> heck out of me that we are here at mail #20 with a *very* simple compatibility
+> scenario and the maintainer of a major piece of free software infrastructure *still*
+> does not understand this very simple argument. How the heck will you be able to
+> handle more complex cases of compatibility in a responsible way?
+>
 
-Signed-off-by: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
----
- sound/pci/hda/hda_intel.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+If I understand it correctly, the issue here is in some cases, for whatever
+reason, the assembly input files can't be changed even if they are incorrect.
+On the other hand, this is the incorrect assembly input as far as assembler
+is concern.  You can write a simple assembly wrapper to fix the assembly input
+before sending it to the real assembler.  Yes, it may be a hassle.  I guess
+it is the price you may have to pay when you can't fix your code.
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index fcedad9..41debbd 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -1049,13 +1049,6 @@ static void azx_init_pci(struct azx *chip)
- {
- 	unsigned short snoop;
- 
--	/* Clear bits 0-2 of PCI register TCSEL (at offset 0x44)
--	 * TCSEL == Traffic Class Select Register, which sets PCI express QOS
--	 * Ensuring these bits are 0 clears playback static on some HD Audio
--	 * codecs
--	 */
--	update_pci_byte(chip->pci, ICH6_PCIREG_TCSEL, 0x07, 0);
--
- 	switch (chip->driver_type) {
- 	case AZX_DRIVER_ATI:
- 		/* For ATI SB450 azalia HD audio, we need to enable snoop */
-@@ -1087,6 +1080,14 @@ static void azx_init_pci(struct azx *chip)
- 				(snoop & INTEL_SCH_HDA_DEVC_NOSNOOP)
- 				? "Failed" : "OK");
- 		}
-+		/* fall through */
-+	case AZX_DRIVER_ICH:
-+		/* Clear bits 0-2 of PCI register TCSEL (at offset 0x44)
-+		 * TCSEL == Traffic Class Select Register, which sets PCI
-+		 * express QOS Ensuring these bits are 0 clears playback
-+		 * static on some HD Audio codecs
-+		 */
-+		update_pci_byte(chip->pci, ICH6_PCIREG_TCSEL, 0x07, 0);
- 		break;
- 
-         }
+FWIW, I can provide the assembler wrapper if needed.
+
 -- 
-1.7.2.3
-
-
-Adam
--- 
-Adam                 adam@os.inf.tu-dresden.de
-  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
+H.J.
