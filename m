@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab1CJJTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:19:55 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56227 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab1CJJTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:19:53 -0500
-Subject: Re: [PATCH 0/2] Add struct crypto_alg->cra_check_optimized for
-	crc32c_intel
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@lst.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <20110310090929.GA10919@gondor.apana.org.au>
-References: <1299745272-25477-1-git-send-email-nab@linux-iscsi.org>
-	 <20110310084346.GA10650@gondor.apana.org.au>
-	 <1299747264.5263.35.camel@haakon2.linux-iscsi.org>
-	 <20110310090929.GA10919@gondor.apana.org.au>
-Content-Type: text/plain
-Date: Thu, 10 Mar 2011 01:13:07 -0800
-Message-Id: <1299748387.5263.45.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1752605Ab1CJJUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:20:42 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44993 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405Ab1CJJUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 04:20:39 -0500
+Date: Thu, 10 Mar 2011 10:20:34 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        Arnd Bergmann <arnd@arndb.de>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, bp@amd64.org
+Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
+Message-ID: <20110310092034.GA21454@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@elte.hu>, Sam Ravnborg <sam@ravnborg.org>,
+	Michal Marek <mmarek@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+	torvalds@linux-foundation.org, x86@kernel.org,
+	linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+	bp@amd64.org
+References: <20110301083529.GA767@liondog.tnic>
+ <20110309144504.GA1096@sepie.suse.cz>
+ <20110309151134.GA15730@elte.hu>
+ <20110309175625.GA29181@merkur.ravnborg.org>
+ <20110310090444.GA25522@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110310090444.GA25522@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 17:09 +0800, Herbert Xu wrote:
-> On Thu, Mar 10, 2011 at 12:54:24AM -0800, Nicholas A. Bellinger wrote:
-> >
-> > OK, so you mean each struct crypto_alg should define something like a
-> > 'cra_optimized_name' for which request_module(alg->cra_optimized_name)
-> > is called somewhere in libcrypto code..?
+On Thu, Mar 10, 2011 at 10:04:44AM +0100, Ingo Molnar wrote:
 > 
-> No, what I mean is that whenever we look up an algorithm through
-> crypto_alg_mod_lookup, we should conditionally call modprobe if
-> we havn't done so already.
+> * Sam Ravnborg <sam@ravnborg.org> wrote:
 > 
-> So you just need to record one bit of info in each crypto_alg
-> object to indicate whether we have invoked modprobe.  I suggest
-> adding a CRYPTO_ALG_* bit.
+> > > Another, related, very nice kbuild feature would be to allow for arch maintainers to 
+> > > mark certain files as "should only build fine without warnings" - i.e. -Werror 
+> > > should be the default. There would be a Kconfig feature to opt out of this, 
+> > > CONFIG_CC_IGNORE_WARNINGS=y or so. This would allow for people to still build the 
+> > > kernel with old (or buggy) versions of GCC.
+> > 
+> > To add -Werror for all files conditionally you can do:
+> > 
+> >     ccflags-$(CONFIG_WERROR) += -Werror
+> > 
+> > For individual files we can then drop -Werror like this:
+> > 
+> >     CFLAGS_REMOVE_foobar.o := -Werror
+> > 
+> > So it should be doable with the existing infrastructure.
 > 
+> Stupid question: is there an existing kbuild rule that i could use to enable -Werror 
+> for a single .o file, such as kernel/sched.o - without affecting other files in 
+> kernel/ that i do not maintain?
+> 
+> Also, adding 3 lines per object file is pretty ugly - would it be possible to create 
+> a nicer, compact, single-line way to someone condense a CONFIG_ERROR opt-out 
+> mechanism, the -Werror default and the single-object-file into a single rule?
+> 
+> Something like:
+> 
+>   obj-werror-y += sched.o
 
-Mmmm, now I am really confused, and please let me apologize in advance
-for my lack of experience with libcrypto internals..  ;)
+I believe you can do
 
-I thought the problem was that CONFIG_CRYPTO_ALGFOO=y and
-CONFIG_CRYPTO_ALGFOO_ARCH_HW_OFFLOAD=m would cause the latter to not
-explictly call request_module() for this HW offload case..
+CFLAGS_sched.o = -Werror
 
-So what I don't understand how adding a request_module() call to a list
-of known modules works when crc32c_intel.ko has not been loaded yet..?
+or similar but you'll have to try it out. I remember doing a more
+involved per-object flags fumbling with the popcnt stuff, i.e. you might
+want to take a look at d61931d89be506372d01a90d1755f6d0a9fafe2d where
+we pass it an arch-specific config option so you can have per-object,
+per-arch build flags :).
 
-Am I missing something obvious wrt to how crc32c.ko can tell libcrypto
-about which architecture dependent optimized modules it should load..?
+HTH.
 
-Best Regards,
-
---nab
-
+-- 
+Regards/Gruss,
+    Boris.
