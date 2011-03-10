@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab1CJX7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:59:38 -0500
-Received: from kroah.org ([198.145.64.141]:46914 "EHLO coco.kroah.org"
+	id S1754813Ab1CJX7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:59:51 -0500
+Received: from kroah.org ([198.145.64.141]:46884 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab1CJX5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:31 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:38 2011
-Message-Id: <20110310235538.346174922@clark.kroah.org>
+	id S1754578Ab1CJX51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:27 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:37 2011
+Message-Id: <20110310235537.833453647@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:29 -0800
+Date: Thu, 10 Mar 2011 15:54:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Ivan Vecera <ivecera@redhat.com>, Hayes <hayeswang@realtek.com>
-Subject: [patch 23/29] r8169: prevent RxFIFO induced loops in the irq handler.
+        Julian Anastasov <ja@ssi.bg>, Hans Schillstrom <hans@schillstrom.com>,
+        Simon Horman <horms@verge.net.au>, Simon Kirby <sim@hostway.ca>
+Subject: [patch 18/29] ipvs: fix dst_lock locking on dest update
 In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit f60ac8e7ab7cbb413a0131d5665b053f9f386526 upstream.
+commit ff75f40f44ae9b79d520bf32a05d35af74a805c0 upstream.
 
-While the RxFIFO interruption is masked for most 8168, nothing prevents
-it to appear in the irq status word. This is no excuse to crash.
+	Fix dst_lock usage in __ip_vs_update_dest. We need
+_bh locking because destination is updated in user context.
+Can cause lockups on frequent destination updates.
+Problem reported by Simon Kirby. Bug was introduced
+in 2.6.37 from the "ipvs: changes for local real server"
+change.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Ivan Vecera <ivecera@redhat.com>
-Cc: Hayes <hayeswang@realtek.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Cc: Simon Kirby <sim@hostway.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/r8169.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/netfilter/ipvs/ip_vs_ctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -4613,6 +4613,14 @@ static irqreturn_t rtl8169_interrupt(int
- 				netif_stop_queue(dev);
- 				rtl8169_tx_timeout(dev);
- 				goto done;
-+			/* Testers needed. */
-+			case RTL_GIGA_MAC_VER_17:
-+			case RTL_GIGA_MAC_VER_19:
-+			case RTL_GIGA_MAC_VER_20:
-+			case RTL_GIGA_MAC_VER_21:
-+			case RTL_GIGA_MAC_VER_23:
-+			case RTL_GIGA_MAC_VER_24:
-+			case RTL_GIGA_MAC_VER_27:
- 			/* Experimental science. Pktgen proof. */
- 			case RTL_GIGA_MAC_VER_12:
- 			case RTL_GIGA_MAC_VER_25:
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -810,9 +810,9 @@ __ip_vs_update_dest(struct ip_vs_service
+ 	dest->u_threshold = udest->u_threshold;
+ 	dest->l_threshold = udest->l_threshold;
+ 
+-	spin_lock(&dest->dst_lock);
++	spin_lock_bh(&dest->dst_lock);
+ 	ip_vs_dst_reset(dest);
+-	spin_unlock(&dest->dst_lock);
++	spin_unlock_bh(&dest->dst_lock);
+ 
+ 	if (add)
+ 		ip_vs_new_estimator(&dest->stats);
 
 
