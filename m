@@ -1,159 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab1CJOwu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:52:50 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:25716 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947Ab1CJOwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:52:49 -0500
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: akpm@linux-foundation.org
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Subject: [PATCH 4/4] DO NOT INTEGRATE: test-only timing
-Date: Thu, 10 Mar 2011 16:48:07 +0200
-Message-Id: <1299768487-13200-5-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
-In-Reply-To: <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
- <1299768487-13200-2-git-send-email-ext-phil.2.carmody@nokia.com>
- <1299768487-13200-3-git-send-email-ext-phil.2.carmody@nokia.com>
- <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Nokia-AV: Clean
+	id S1753129Ab1CJOxl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:53:41 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49268 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab1CJOxj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:53:39 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=22b6r0FicaIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=omOdbC7AAAAA:8 a=l5K6mMX47ewozwNn80AA:9 a=4qrcPZ4tJCix4sGHEcyjTQ3eoPAA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/3]trace-cmd: remove dead code
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D78A0A4.1040001@cn.fujitsu.com>
+References: <4D78A0A4.1040001@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 09:53:38 -0500
+Message-ID: <1299768818.15854.343.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always run both the old and the new converging method to see what they
-would say, even if more accurate techniques are available to us.
+On Thu, 2011-03-10 at 17:57 +0800, Lai Jiangshan wrote:
+> filter_cpu related code is totally dead.
 
-Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
----
- init/calibrate.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 73 insertions(+), 4 deletions(-)
+I'll rephrase this, as it is not dead. "dead" code is code that can not
+be reached. This code most certainly can be reached. You may think it is
+silly code, which it may be. The reason for the separation of one CPU
+and multiple CPUs, is I do one CPU more often than I filter multiple,
+and I wanted the 1 cpu to still be efficient.
 
-diff --git a/init/calibrate.c b/init/calibrate.c
-index a362ad0..8fb2a4f 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -146,12 +146,17 @@ static unsigned long __cpuinit calibrate_delay_converge(void)
- 	 * the largest likely undershoot. This defines our chop bounds.
- 	 */
- 	trials -= band;
-+
-+	/* May inject a deliberate mis-estimation here */
-+	/* trials -= 99; */
-+
- 	loopadd_base = lpj * band;
- 	lpj_base = lpj * trials;
- 
- recalibrate:
- 	lpj = lpj_base;
- 	loopadd = loopadd_base;
-+	pr_info("lpj underestimate = %lu range = %lu\n", lpj, loopadd);
- 
- 	/*
- 	 * Do a binary approximation to get lpj set to
-@@ -183,32 +188,96 @@ recalibrate:
- 	return lpj;
- }
- 
-+/* Old version for timing purposes only */
-+static unsigned long __cpuinit calibrate_delay_converge_slowly(void)
-+{
-+	unsigned long lpj, ticks, loopbit;
-+	int lps_precision = LPS_PREC;
-+
-+	lpj = (1<<12);
-+	while ((lpj <<= 1) != 0) {
-+		/* wait for "start of" clock tick */
-+		ticks = jiffies;
-+		while (ticks == jiffies)
-+			/* nothing */;
-+		/* Go .. */
-+		ticks = jiffies;
-+		__delay(lpj);
-+		ticks = jiffies - ticks;
-+		if (ticks)
-+			break;
-+	}
-+
-+	/*
-+	 * Do a binary approximation to get lpj set to
-+	 * equal one clock (up to lps_precision bits)
-+	 */
-+	lpj >>= 1;
-+	loopbit = lpj;
-+	while (lps_precision-- && (loopbit >>= 1)) {
-+		lpj |= loopbit;
-+		ticks = jiffies;
-+		while (ticks == jiffies)
-+			/* nothing */;
-+		ticks = jiffies;
-+		__delay(lpj);
-+		if (jiffies != ticks)   /* longer than 1 tick */
-+			lpj &= ~loopbit;
-+	}
-+
-+	return lpj;
-+}
-+
-+static void finally_print_bogomips(unsigned long lpj, unsigned int ticks)
-+{
-+	/* This calculation is bogus */
-+	pr_cont("%lu.%02lu BogoMIPS (lpj=%lu) took %u jiffies\n",
-+		lpj/(500000/HZ), (lpj/(5000/HZ)) % 100, lpj, ticks);
-+}
-+
- void __cpuinit calibrate_delay(void)
- {
-+	enum methods { DUNNO, PRESET, FINE, DIRECT, CONVERGE };
- 	static bool printed;
-+	int method_used = DUNNO;
-+	unsigned long ojiffs = jiffies;
- 
- 	if (preset_lpj) {
-+		method_used = PRESET;
- 		loops_per_jiffy = preset_lpj;
- 		if (!printed)
- 			pr_info("Calibrating delay loop (skipped) "
- 				"preset value.. ");
- 	} else if ((!printed) && lpj_fine) {
-+		method_used = FINE;
- 		loops_per_jiffy = lpj_fine;
- 		pr_info("Calibrating delay loop (skipped), "
- 			"value calculated using timer frequency.. ");
- 	} else if ((loops_per_jiffy = calibrate_delay_direct()) != 0) {
-+		method_used = DIRECT;
- 		if (!printed)
- 			pr_info("Calibrating delay using timer "
- 				"specific routine.. ");
- 	} else {
-+		method_used = CONVERGE;
- 		if (!printed)
- 			pr_info("Calibrating delay loop... ");
- 		loops_per_jiffy = calibrate_delay_converge();
- 	}
--	if (!printed)
--		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
--			loops_per_jiffy/(500000/HZ),
--			(loops_per_jiffy/(5000/HZ)) % 100, loops_per_jiffy);
-+	if (!printed) {
-+		unsigned long tmp_lpj;
-+		finally_print_bogomips(loops_per_jiffy, jiffies-ojiffs);
-+		if (method_used != CONVERGE) {
-+			ojiffs = jiffies;
-+			pr_info("New-style converging method... ");
-+			tmp_lpj = calibrate_delay_converge();
-+			finally_print_bogomips(tmp_lpj, jiffies-ojiffs);
-+		}
-+		ojiffs = jiffies;
-+		pr_info("Old-style converging method... ");
-+		tmp_lpj = calibrate_delay_converge_slowly();
-+		finally_print_bogomips(tmp_lpj, jiffies-ojiffs);
-+	}
- 
- 	printed = true;
- }
--- 
-1.7.2.rc1.37.gf8c40
+-- Steve
+
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  trace-read.c |   10 +---------
+>  1 files changed, 1 insertions(+), 9 deletions(-)
+> 
+> diff --git a/trace-read.c b/trace-read.c
+> index 0e9ced8..1cd9bd3 100644
+> --- a/trace-read.c
+> +++ b/trace-read.c
+> @@ -73,7 +73,6 @@ static const char *input_file;
+>  static int multi_inputs;
+>  static int max_file_size;
+>  
+> -static int filter_cpu = -1;
+>  static int *filter_cpus;
+>  static int nr_filter_cpus;
+>  
+> @@ -619,10 +618,6 @@ get_next_record(struct handle_list *handles, int *next_cpu)
+>  				record = tracecmd_read_data(handles->handle, next_cpu);
+>  			else
+>  				record = NULL;
+> -
+> -		} else if (filter_cpu >= 0) {
+> -			cpu = filter_cpu;
+> -			record = tracecmd_read_data(handles->handle, cpu);
+>  		} else
+>  			record = tracecmd_read_next_data(handles->handle, &cpu);
+>  
+> @@ -963,10 +958,7 @@ void trace_report (int argc, char **argv)
+>  		case 0:
+>  			switch(option_index) {
+>  			case 0: /* cpu */
+> -				if (filter_cpu)
+> -					add_cpu(optarg);
+> -				else
+> -					filter_cpu = atoi(optarg);
+> +				add_cpu(optarg);
+>  				break;
+>  			case 1: /* events */
+>  				print_events = 1;
+
 
