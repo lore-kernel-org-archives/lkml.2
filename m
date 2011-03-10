@@ -1,117 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab1CJUX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:23:28 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:18717 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab1CJUX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:23:27 -0500
-Subject: [PATCH] cciss: export resettable host attribute
-To: axboe@kernel.dk
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com
-Date: Thu, 10 Mar 2011 14:23:26 -0600
-Message-ID: <20110310202326.30581.9475.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	id S1752695Ab1CJUZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 15:25:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36517 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275Ab1CJUZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 15:25:37 -0500
+Date: Thu, 10 Mar 2011 12:25:17 -0800
+From: Tony Jones <tonyj@suse.de>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: PATCH [1/1]: audit: acquire creds selectively to reduce atomic
+ op overhead
+Message-ID: <20110310202516.GA16122@suse.de>
+References: <20110307210656.GA1750@suse.de>
+ <18893.1299607373@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <18893.1299607373@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Tue, Mar 08, 2011 at 06:02:53PM +0000, David Howells wrote:
+> Tony Jones <tonyj@suse.de> wrote:
+> 
+> > Commit c69e8d9c01db added calls to get_task_cred and put_cred in
+> > audit_filter_rules.  Profiling with a large number of audit rules active on
+> > the exit chain shows that we are spending upto 48% in this routine for
+> > syscall intensive tests, most of which is in the atomic ops.
+> > 
+> > The following patch acquires the cred if a rule requires it.  In our
+> > particular case above, most rules had no cred requirement and this dropped
+> > the time spent in audit_filter_rules down to ~12%.  An alternative would be
+> > for the caller to acquire the cred just once for the whole chain and pass
+> > into audit_filter_rules.  I can create an alternate patch doing this if
+> > required.
+> 
+> There's no actual need to get a ref on the named task's creds.
+> 
+> If tsk == current, no locking is needed at all.
+> 
+> If tsk != current, the RCU read lock is sufficient.  See task_cred_xxx() in
+> include/linux/cred.h.
+> 
+> Hmmm...  I wonder...  The audit filter uses tsk->real_cred, but is that
+> correct?  Should it be using tsk->cred?  And is tsk always going to be
+> current?
 
-This attribute, requested by Redhat, allows kexec-tools to know
-whether the controller can honor the reset_devices kernel parameter
-and actually reset the controller.  For kdump to work properly it
-is necessary that the reset_devices parameter be honored.  This
-attribute enables kexec-tools to warn the user if they attempt to
-designate a non-resettable controller as the dump device.
+Hi David.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- .../ABI/testing/sysfs-bus-pci-devices-cciss        |   12 ++++++
- drivers/block/cciss.c                              |   39 ++++++++++++++++++++
- 2 files changed, 51 insertions(+), 0 deletions(-)
+I'm not seeing the 'tsk->real_cred' usage, can you clarify?
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss b/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss
-index 4f29e5f..f5bb0a3 100644
---- a/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss
-+++ b/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss
-@@ -59,3 +59,15 @@ Kernel Version: 2.6.31
- Contact:	iss_storagedev@hp.com
- Description:	Displays the usage count (number of opens) of logical drive Y
- 		of controller X.
-+
-+Where:		/sys/bus/pci/devices/<dev>/ccissX/resettable
-+Date:		February 2011
-+Kernel Version:	2.6.38
-+Contact:	iss_storagedev@hp.com
-+Description:	Value of 1 indicates the controller can honor the reset_devices
-+		kernel parameter.  Value of 0 indicates reset_devices cannot be
-+		honored.  This is to allow, for example, kexec tools to be able
-+		to warn the user if they designate an unresettable device as
-+		a dump device, as kdump requires resetting the device in order
-+		to work reliably.
-+
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 8e52e63..f6a9fdb 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -560,6 +560,44 @@ static void __devinit cciss_procinit(ctlr_info_t *h)
- #define to_hba(n) container_of(n, struct ctlr_info, dev)
- #define to_drv(n) container_of(n, drive_info_struct, dev)
- 
-+/* List of controllers which cannot be reset on kexec with reset_devices */
-+static u32 unresettable_controller[] = {
-+	0x324a103C, /* Smart Array P712m */
-+	0x324b103C, /* SmartArray P711m */
-+	0x3223103C, /* Smart Array P800 */
-+	0x3234103C, /* Smart Array P400 */
-+	0x3235103C, /* Smart Array P400i */
-+	0x3211103C, /* Smart Array E200i */
-+	0x3212103C, /* Smart Array E200 */
-+	0x3213103C, /* Smart Array E200i */
-+	0x3214103C, /* Smart Array E200i */
-+	0x3215103C, /* Smart Array E200i */
-+	0x3237103C, /* Smart Array E500 */
-+	0x323D103C, /* Smart Array P700m */
-+	0x409C0E11, /* Smart Array 6400 */
-+	0x409D0E11, /* Smart Array 6400 EM */
-+};
-+
-+static int ctlr_is_resettable(struct ctlr_info *h)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(unresettable_controller); i++)
-+		if (unresettable_controller[i] == h->board_id)
-+			return 0;
-+	return 1;
-+}
-+
-+static ssize_t host_show_resettable(struct device *dev,
-+				    struct device_attribute *attr,
-+				    char *buf)
-+{
-+	struct ctlr_info *h = to_hba(dev);
-+
-+	return snprintf(buf, 20, "%d\n", ctlr_is_resettable(h));
-+}
-+static DEVICE_ATTR(resettable, S_IRUGO, host_show_resettable, NULL);
-+
- static ssize_t host_store_rescan(struct device *dev,
- 				 struct device_attribute *attr,
- 				 const char *buf, size_t count)
-@@ -745,6 +783,7 @@ static DEVICE_ATTR(usage_count, S_IRUGO, cciss_show_usage_count, NULL);
- 
- static struct attribute *cciss_host_attrs[] = {
- 	&dev_attr_rescan.attr,
-+	&dev_attr_resettable.attr,
- 	NULL
- };
- 
+I went through the call tree.  Assuming my analysis is correct the only case 
+where it's not current is the calls from copy_process.  I believe there is no 
+need for rcu in this case either.
 
+Tony
+
+------
+
+audit_filter_rules
+	<- audit_filter_task
+		<- audit_alloc
+			<- copy_process
+
+	<- audit_filter_syscall
+		<- audit_get_context 
+			<- audit_free 
+				<- copy_process (error path)
+				<- do_exit (tsk == current)
+			<- audit_syscall_exit (tsk == current)
+
+		<- audit_syscall_entry (tsk == current)
+
+	<- audit_filter_inodes
+		<- audit_update_watch (tsk == current)
+		<- audit_get_context (see above)
