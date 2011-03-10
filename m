@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1CJAxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:53:39 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52760 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406Ab1CJAxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:53:37 -0500
-Date: Thu, 10 Mar 2011 11:53:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the nfsd tree
-Message-Id: <20110310115331.10a95d57.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__10_Mar_2011_11_53_31_+1100_Jdn1VghIVlGBtS2O"
+	id S1754258Ab1CJAzG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:55:06 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53420 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753045Ab1CJAzD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 19:55:03 -0500
+Date: Thu, 10 Mar 2011 00:54:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure lin Linus' tree
+Message-ID: <20110310005458.GD22723@ZenIV.linux.org.uk>
+References: <20110310112543.5ae7fb7e.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110310112543.5ae7fb7e.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_Mar_2011_11_53_31_+1100_Jdn1VghIVlGBtS2O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 10, 2011 at 11:25:43AM +1100, Stephen Rothwell wrote:
+> Hi Linus,
+> 
+> After merging the spi-current tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> include/linux/sysctl.h:28: included file 'linux/rcupdate.h' is not exported
+> 
+> Caused by commit dfef6dcd35cb ("unf*ck proc_sysctl ->d_compare()").
+> 
+> I applied this patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 10 Mar 2011 11:14:17 +1100
+> Subject: [PATCH] sysctl: the include of rcupdate.h is only needed in the kernel
+> 
+> Fixes this built error:
+> 
+> include/linux/sysctl.h:28: included file 'linux/rcupdate.h' is not exported
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-Hi Bruce,
-
-After merging the nfsd tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
-
-net/sunrpc/svcauth_unix.c: In function 'unix_domain_find':
-net/sunrpc/svcauth_unix.c:58: warning: passing argument 1 of 'svcauth_unix_=
-domain_release' from incompatible pointer type
-net/sunrpc/svcauth_unix.c:41: note: expected 'struct auth_domain *' but arg=
-ument is of type 'struct unix_domain *'
-
-Introduced by commit 8b3e07ac908d ("svcrpc: fix rare race on unix_domain
-creation").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__10_Mar_2011_11_53_31_+1100_Jdn1VghIVlGBtS2O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNeCELAAoJEDMEi1NhKgbs9SAH/jOFrd38fx9xYZDdmj9wZl6r
-d9AMmwdxg3eAdyL0VgukfTfNna+Lv36rBQtL+qv53KkbS26+L9yB7h/fQRzy37VJ
-Zls5nnNkgDL3BNODo9023B2za3vHcJVzvwoOIobdzNgS0rRIfYn35zvOLE9Rehoc
-kHwPOz3kSi64Zj7DTu75/d2sSoVKtwb93BrVU/E26dPEnuSOsT7pzJksRSIYhmSI
-TUqOIzrNUPHAR1FfQsjqMlmftCw5RG/FdJM2fEIYP/jyofel3ugiQn+4q5fBoZmK
-lbLJgURujzo1CMptEAlO9DWDGmQNADMkIcpEPN8Pep58RKtGjNt31gvHy03wfZM=
-=SAyX
------END PGP SIGNATURE-----
-
---Signature=_Thu__10_Mar_2011_11_53_31_+1100_Jdn1VghIVlGBtS2O--
+ACKed-by: Al Viro <viro@zeniv.linux.org.uk>
