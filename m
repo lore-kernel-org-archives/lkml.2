@@ -1,130 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab1CJRum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 12:50:42 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:46597 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab1CJRui (ORCPT
+	id S1753592Ab1CJRyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 12:54:54 -0500
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:44070 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711Ab1CJRyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 12:50:38 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        Takao Indoh <tindoh@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Len Brown <lenb@kernel.org>, linux-doc@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-References: <1299766243-494-1-git-send-email-amwang@redhat.com>
-	<20110310143923.GB29464@redhat.com>
-Date: Thu, 10 Mar 2011 09:50:28 -0800
-In-Reply-To: <20110310143923.GB29464@redhat.com> (Vivek Goyal's message of
-	"Thu, 10 Mar 2011 09:39:23 -0500")
-Message-ID: <m1oc5ig90b.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 10 Mar 2011 12:54:53 -0500
+Date: Thu, 10 Mar 2011 18:54:12 +0100
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: dm-crypt@saout.de, linux-kernel@vger.kernel.org,
+        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: Re: dm-crypt: Performance Regression 2.6.37 -> 2.6.38-rc8
+Message-ID: <20110310175411.GB25027@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Andi Kleen <ak@linux.intel.com>, dm-crypt@saout.de,
+	linux-kernel@vger.kernel.org, Milan Broz <mbroz@redhat.com>,
+	Alasdair G Kergon <agk@redhat.com>
+References: <20110308164508.GA8729@darkside.kls.lan>
+ <20110310165730.GC20504@alboin.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+XjpojrpPcM+/zUpTtSTiLZ/Y7TGW3aKU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.2 SARE_LWSHORTT BODY: SARE_LWSHORTT
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
+Content-Disposition: inline
+In-Reply-To: <20110310165730.GC20504@alboin.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
 
-> On Thu, Mar 10, 2011 at 10:10:43PM +0800, Amerigo Wang wrote:
->> From: Takao Indoh <tindoh@redhat.com>
->> 
->> There is a problem with putting the first kernel in EFI virtual mode,
->> it is that when the second kernel comes up it tries to initialize the
->> EFI again and once we have put EFI in virtual mode we can not really
->> do that.
->> 
->> Actually, EFI is not necessary for kdump, we can boot the second kernel
->> with "noefi" parameter, but the boot will mostly fail because 2nd kernel
->> cannot find RSDP.
->> 
->> In this situation, we introduced "acpi_addr=" kernel parameter,
->> so that kexec-tools can pass the "noefi acpi_addr=X" to the second kernel
->> to make kdump works.
->> 
->
-> Little more background on this. So we now seem to have this general
-> general problem of how to make kexec/kdump work with EFI.
->
-> I have very limited knowledge of EFI and based on some information
-> gleaned, it looks we seem to have two alternatives to make kdump work.
->
-> - Don't transition to virtual mode in first kernel and work with
->   physical mode of EFI. Maintain a separate set of page tables for
->   mapping EFI and use those to make EFI calls.
->
-> - Transition EFI in virtual mode in first kernel. Boot second kernel with
->   "noefi" and pass in whatever details are required on kernel command line.
->   One such details is ACPI pointer.
->
-> Matthew Garret mentioned that other OSes tend to transition EFI in
-> virtual mode (MacOS X seems to be the exception) and if we decide to stick
-> to physical mode all the time then we can expect a host of BIOS bug report
-> as vendors are unlikely to test that path.
->
-> Keeping in that mind, using noefi for second kernel make sense. But
-> I think it is not good for pure kexec case. Takao Indoh san mentioned
-> that he seems to be running into VGA initialization issues and it
-> seems there is a need to pass SMBIOS address also.
->
-> So I think if it work, for kdump case probably using noefi is fine. I
-> wanted to bring up the case of kexec and wondering how to make it 
-> work with virtual mode of EFI or what is our strategy to handle it.
->
-> Eric and others, any thoughts on this in general?
+--OgqxwSJOaUobr8KG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If we want to handle EFI in a long term supportable manner and stop
-making short term hacks here is my suggestion.
+On Thu, Mar 10, 2011 at 08:57:30AM -0800, Andi Kleen wrote:
+> On Tue, Mar 08, 2011 at 05:45:08PM +0100, Mario 'BitKoenig' Holbe wrote:
+> > I'm running a 4-disk RAID0 on top of 4 independent dm-crypt(aes-xts)
+> > devices on a Core2Quad 3GHz. This setup did overcome the single-CPU
+> Do you actually use dd for production or is this just a benchmark?
 
-Move all EFI calls that the kernel does (on x86) into a special section
-of the bzImage that the bootloader can run.  This works very well for
-the x86 BIOS and it should also work very well for EFI.  Among other
-things by having a special 32bit and a special 64bit section this solves
-the what flavor of EFI problem are we running on problem.
+The array is streaming most of the time, i.e. single-process sequential
+read or write (read mostly) for large chunks of data.
+So, no and yes, but...
 
-Never perform any EFI calls once the kernel is initialized, last I
-looked all of the EFI calls that were interesting to perform at runtime
-were a subset of what ACPI can do, and ACPI is a easier to deal with
-long term.
+> (if yes: newsflash: use a better benchmark)
 
-Kexec and kdump can easily pass the gather data from the first kernel to
-the second kernel like we do for the normal bios paramsters today.
+this makes dd quite a valid benchmark for me in this case.
 
-As a fly in the ointment that leaves the question of how do we set EFI
-variables.  It is needed functionality when we are installing, and
-occasionally nice to have.  But it is a very rare slow path.  I would
-isolate the EFI after the kernel has booted to exactly to that one case.
-Either with a special driver or a some flavor of virtualization from
-userspace like we used to do for video card initialization.
+> It will be better with multiple processes running on different CPUs.=20
+> The new design is really for multiple processes.
 
-The current design of EFI in the x86 kernel is crap.  We seem to have
-advanced past the early adopter hack anything together to make it work
-stage.  So let's stop adding hacks and write something that won't give
-us a long term support problems.
+Of course it is. What bother me is that I can't get back my old
+performance in my case whatever I do.
 
-Eric
+I don't know what kind of parallelism padata uses, i.e. whether a
+padata-based solution would suffer from the same limitations like the
+current dm-crypt/kcryptd-parallelism or not.
+
+Wth the current approach:
+Would it be possible to make CPU-affinity configurable for *single*
+kcryptd instances? Either in the way to nail a specific kcryptd to a
+specific CPU or (what would be better for me, I guess) in the way to
+completely remove CPU-affinity from a specific kcryptd, like it was
+before?
+
+
+Mario
+--=20
+There is nothing more deceptive than an obvious fact.
+             -- Sherlock Holmes by Arthur Conan Doyle
+
+--OgqxwSJOaUobr8KG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUBTXkQQxS+e2HeSPbpAQLT+AgAmDizJdzSW7yIlJMm99YpPb8uZmMXKcCQ
+y4n+DWslnVCDhneQtxCzip0IIzBVnGwuxXkE8/EtlL6PsEgwTSAVLU8MfrW2kWKS
+Iqw+NZJWGxWXaIbtRtk8ORAhXFekHtuGyvMrrkndSL8ClPIzN3ulAq+ZKo0zjeGA
+WpvZ2ou0rf4PvIs8ucPPUUY8jcDTeRmeh0t7oX148yc0ORcoJXqzfBaJX1sCWncN
+RULJL8ND97U6KXlsSooCBcNjvUncqsz1k/kVopjqShM6nEYaAEkv+AIGz9Z7ONt5
+nU96WV09lweGBUscPdKSuffaAUYtDau94Eu6IdYCRIGwdn9srcyrJw==
+=pqGo
+-----END PGP SIGNATURE-----
+
+--OgqxwSJOaUobr8KG--
