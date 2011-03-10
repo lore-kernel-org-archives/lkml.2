@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab1CJLJe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 06:09:34 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55630 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1CJLJd (ORCPT
+	id S1751598Ab1CJLXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 06:23:41 -0500
+Received: from sheliak.msh-paris.fr ([195.221.170.236]:58367 "EHLO
+	sheliak.msh-paris.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1CJLXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 06:09:33 -0500
-Date: Thu, 10 Mar 2011 11:09:31 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] more vfs fixes for final
-Message-ID: <20110310110931.GF22723@ZenIV.linux.org.uk>
+	Thu, 10 Mar 2011 06:23:40 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Mar 2011 06:23:40 EST
+Message-ID: <529b7ec99fd5eb59c17d9fc7e0ca390b.squirrel@webmail.msh-paris.fr>
+Date: Thu, 10 Mar 2011 10:44:16 +0100
+Subject: 
+From: "MONEY GRAM TRANSFER" <info@msh-paris.fr>
+Reply-To: ronaldfinson_01@yahoo.co.jp
+User-Agent: SquirrelMail/1.4.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Fix for misplaced include in sysctl.h, fixes for ->d_revalidate()
-(a bunch of filesystems are unusable with nfsd at the moment; the real fix
-is to make ->d_revalidate() take flags directly and forget about dereferencing
-nameidata in most of the instances, but that's obviously for the next window
-and oopsen really need to be fixed for -final), missing checks in fallocate()
-and Bruce's patch for inode (temporary) leaks with nfsd.  Please, pull from
 
-git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+MONEY GRAM CUSTOMER CARE
+21st Floor, Jalan Kampar, Plaza Permata,
+50400, Kuala Lumpur, Wilayah Persekutuan
+Malayasia
 
-Shortlog:
 
-Al Viro (8):
-      /proc/self is never going to be invalidated...
-      reiserfs xattr ->d_revalidate() shouldn't care about RCU
-      ceph: fix d_revalidate oopsen on NFS exports
-      fuse: fix d_revalidate oopsen on NFS exports
-      gfs2: fix d_revalidate oopsen on NFS exports
-      ocfs2: fix d_revalidate oopsen on NFS exports
-      jfs: fix d_revalidate oopsen on NFS exports
-      fat: fix d_revalidate oopsen on NFS exports
 
-J. Bruce Fields (1):
-      fs/dcache: allow d_obtain_alias() to return unhashed dentries
+G-20 board of trustees comprises of twenty finance minister and
+representative all over the  world head a meeting at Kuala Lumpur,
+Malaysia in January 5th 2011 regarding the economical meltdown affecting
+the world, so they decieded to engage in an email eletronic ballot system
+through an email open ballot email selection which your email came out as
+one on their beneficairy and they instructed Mr RONALD FINSON of Money
+Gram to keep send you $5000 USD twice a week untill the sum {$820,000} is
+completed
 
-Marco Stornelli (1):
-      Check for immutable/append flag in fallocate path
+Your are to contact RONALD FINSON for the fundS clearance certificate from
+the {IMF} below is the information.
 
-Stephen Rothwell (1):
-      sysctl: the include of rcupdate.h is only needed in the kernel
 
-Diffstat:
- fs/ceph/dir.c          |    2 +-
- fs/dcache.c            |   26 ++++++++++++++++++++++++--
- fs/fat/namei_vfat.c    |    4 ++--
- fs/fuse/dir.c          |    2 +-
- fs/gfs2/dentry.c       |    2 +-
- fs/jfs/namei.c         |    2 +-
- fs/ocfs2/dcache.c      |    2 +-
- fs/open.c              |    8 ++++++++
- fs/proc/base.c         |   30 ------------------------------
- fs/reiserfs/xattr.c    |    2 --
- include/linux/sysctl.h |    2 +-
- 11 files changed, 40 insertions(+), 42 deletions(-)
+MONEY TRANSFER REFERENCE:2340-3297
+SENDER'S NAME:Esther Lee
+AMOUNT: US$5000
+
+To track your funds forward money gram
+Transfer agent Mr RONALD FINSON
+
+Your Name.__________________________
+Phone .__________________________
+
+Contact Allan Davis for the funds clearance
+certificate necessary for the realise of your funds
+
+E-mail:ronaldfinson_01@yahoo.co.jp
+
+Please direct all enquiring to:
+money gram Mr: RONALD FINSON
+
+ronaldfinson_01@yahoo.com.hk
+
+Best Regards,
+RONALD FINSON
+
+
+
+
+
+
+
+
+
+
