@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab1CJNQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 08:16:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61320 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab1CJNQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 08:16:09 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=KjT2LIUkuf4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=omOdbC7AAAAA:8 a=59qInKXrf230AuHHryYA:9 a=8HRfr5qkUf0nDLZBgLp1uVCrWE0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/3] trace-cmd: fold option parsing
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D78A0A9.40000@cn.fujitsu.com>
-References: <4D78A0A9.40000@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 08:16:07 -0500
-Message-ID: <1299762967.15854.335.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752324Ab1CJNQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 08:16:23 -0500
+Received: from compulab.co.il ([67.18.134.219]:42002 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752210Ab1CJNQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 08:16:21 -0500
+Message-ID: <4D78CE98.4040500@compulab.co.il>
+Date: Thu, 10 Mar 2011 15:14:00 +0200
+From: Denis Turischev <denis@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH v3] pch_uart: reference clock on CM-iTC
+References: <4D74A600.7070302@compulab.co.il> <20110307200733.GA18849@kroah.com> <4D761F7F.2030908@compulab.co.il> <20110309234238.GA4071@kroah.com>
+In-Reply-To: <20110309234238.GA4071@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 17:58 +0800, Lai Jiangshan wrote:
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Default clock source for UARTs on Topcliff is external UART_CLK.
+On CM-iTC USB_48MHz is used instead. After VCO2PLL and DIV
+manipulations UARTs will receive 192 MHz.
+Clock manipulations on Topcliff are controlled in pch_phub.c
 
-Thanks!
+v2: redone against the linux-next tree
+v3: redone against linux/kernel/git/next/linux-next.git snapshot
 
->  
-> +#define OPT_debug	255
-> +
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
+---
+diff -Nru linux-next-20110310.orig/drivers/misc/pch_phub.c linux-next-20110310/drivers/misc/pch_phub.c
+--- linux-next-20110310.orig/drivers/misc/pch_phub.c	2011-03-10 08:31:30.000000000 +0200
++++ linux-next-20110310/drivers/misc/pch_phub.c	2011-03-10 14:42:05.110978473 +0200
+@@ -27,6 +27,7 @@
+ #include <linux/mutex.h>
+ #include <linux/if_ether.h>
+ #include <linux/ctype.h>
++#include <linux/dmi.h>
 
->  
-> +#define OPT_cpu		255
-> +#define OPT_events	254
-> +#define OPT_kallsyms	253
-> +
+ #define PHUB_STATUS 0x00		/* Status Register offset */
+ #define PHUB_CONTROL 0x04		/* Control Register offset */
+@@ -46,6 +47,13 @@
+ #define PCH_MINOR_NOS 1
+ #define CLKCFG_CAN_50MHZ 0x12000000
+ #define CLKCFG_CANCLK_MASK 0xFF000000
++#define CLKCFG_UART_MASK			0xFFFFFF
++
++/* CM-iTC */
++#define CLKCFG_UART_48MHZ			(1 << 16)
++#define CLKCFG_BAUDDIV				(2 << 20)
++#define CLKCFG_PLL2VCO				(8 << 9)
++#define CLKCFG_UARTCLKSEL			(1 << 18)
 
-I wonder if it would look cleaner if we converted them all to enums:
+ /* Macros for ML7213 */
+ #define PCI_VENDOR_ID_ROHM			0x10db
+@@ -618,6 +626,14 @@
+ 					       CLKCFG_CAN_50MHZ,
+ 					       CLKCFG_CANCLK_MASK);
 
-enum {
-	OPT_kallsyms	= 253,
-	OPT_events	= 254,
-	OPT_cpu		= 255,
-};
++		/* quirk for CM-iTC board */
++		if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
++			pch_phub_read_modify_write_reg(chip,
++						(unsigned int)CLKCFG_REG_OFFSET,
++						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
++						CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
++						CLKCFG_UART_MASK);
++
+ 		/* set the prefech value */
+ 		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
+ 		/* set the interrupt delay value */
+diff -Nru linux-next-20110310.orig/drivers/tty/serial/pch_uart.c linux-next-20110310/drivers/tty/serial/pch_uart.c
+--- linux-next-20110310.orig/drivers/tty/serial/pch_uart.c	2011-03-10 08:31:30.000000000 +0200
++++ linux-next-20110310/drivers/tty/serial/pch_uart.c	2011-03-10 14:45:46.123478166 +0200
+@@ -20,6 +20,7 @@
+ #include <linux/serial_core.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
++#include <linux/dmi.h>
 
-As in the kernel, defines look ugly, and can have side-effects.
+ #include <linux/dmaengine.h>
+ #include <linux/pch_dma.h>
+@@ -1403,14 +1404,18 @@
+ 	if (!rxbuf)
+ 		goto init_port_free_txbuf;
 
--- Steve
-
-
++	base_baud = 1843200; /* 1.8432MHz */
++
++	/* quirk for CM-iTC board */
++	if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
++		base_baud = 192000000; /* 192.0MHz */
++
+ 	switch (port_type) {
+ 	case PORT_UNKNOWN:
+ 		fifosize = 256; /* EG20T/ML7213: UART0 */
+-		base_baud = 1843200; /* 1.8432MHz */
+ 		break;
+ 	case PORT_8250:
+ 		fifosize = 64; /* EG20T:UART1~3  ML7213: UART1~2*/
+-		base_baud = 1843200; /* 1.8432MHz */
+ 		break;
+ 	default:
+ 		dev_err(&pdev->dev, "Invalid Port Type(=%d)\n", port_type);
