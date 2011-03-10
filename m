@@ -1,374 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab1CJVHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:07:54 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:50418 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab1CJVCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:02:35 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        arnaud.patard@rtp-net.org
-Subject: [PATCH 01/22] staging: xgifb: vb_ext: move functions to avoid forward declarations
-Date: Thu, 10 Mar 2011 23:02:26 +0200
-Message-Id: <1299790967-7135-2-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1299790967-7135-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1299790967-7135-1-git-send-email-aaro.koskinen@iki.fi>
+	id S1753158Ab1CJVLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:11:11 -0500
+Received: from blu0-omc1-s37.blu0.hotmail.com ([65.55.116.48]:30662 "EHLO
+	blu0-omc1-s37.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752586Ab1CJVLJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 16:11:09 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP217A0D2C21D7A74E7B9D9296C80@phx.gbl>
+Date: Thu, 10 Mar 2011 16:11:01 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: David Daney <ddaney@caviumnetworks.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        peterz@infradead.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 0/2] jump label: update for .39
+References: <cover.1299702291.git.jbaron@redhat.com> <1299728191.15854.319.camel@gandalf.stny.rr.com> <BLU0-SMTP690BB959832A97E002293396C80@phx.gbl> <1299771504.15854.347.camel@gandalf.stny.rr.com> <4D790A13.4060705@caviumnetworks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4D790A13.4060705@caviumnetworks.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 15:56:52 up 337 days,  6:46,  3 users,  load average: 0.18, 0.26,
+	0.23
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 10 Mar 2011 21:11:07.0671 (UTC) FILETIME=[AC5ECA70:01CBDF67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move functions to avoid forward declarations.
+* David Daney (ddaney@caviumnetworks.com) wrote:
+> On 03/10/2011 07:38 AM, Steven Rostedt wrote:
+>> On Thu, 2011-03-10 at 09:11 -0500, Mathieu Desnoyers wrote:
+>>> * Steven Rostedt (rostedt@goodmis.org) wrote:
+>>>> On Wed, 2011-03-09 at 15:47 -0500, Jason Baron wrote:
+>>>>> Hi,
+>>>>>
+>>>>> Re-fresh of updates against latest -tip tree.
+>>>>
+>>>> Thanks Jason,
+>>>>
+>>>> I started looking at them, I should have comments tomorrow (if I have
+>>>> any comments ;)
+>>>>
+>>>>>
+>>>>> I've tried to split this update up somewhat, but I've only succeeded to split
+>>>>> out the dynamic debug bits. The interface changes and re-write are quite
+>>>>> intertwined.
+>>>>>
+>>>>> I believe this update should address all the comments from the previous posting
+>>>>> except for Mathieu's request for a section of jump label pointers that point to
+>>>>> the jump label structures (since the compiler might leave gaps in the jump label
+>>>>> structures).
+>>>>
+>>>> The jump label structures is a list of 3 pointers, correct? I doubt that
+>>>> gcc would place any holes in it as they are all aligned by natural word
+>>>> size.
+>>>>
+>>>
+>>> Hi Steven,
+>>>
+>>> Can you explain what would prevent gcc from aligning these 3 pointers
+>>> (total of 24 bytes on 64-bit architectures) on 32-bytes ?
+>
+> I can:
+>
+> http://www.x86-64.org/documentation/abi.pdf Section 3.1.2:
+>
+>    Aggregates and Unions
+>
+>    Structures and unions assume the alignment of their most strictly
+>    aligned component. Each member is assigned to the lowest
+>    available offset with the appropriate alignment. The size of any
+>    object is always a multiple of the object‘s alignment.
+>
+>    An array uses the same alignment as its elements, except that a
+>    local or global array variable of length at least 16 bytes or a C99
+>    variable-length array variable always has alignment of at least 16
+>    bytes.
+>
+>    Structure and union objects can require padding to meet size and
+>    alignment constraints. The contents of any padding is undefined.
+>
+> I don't think it is explicitly stated, but it is also true that the size  
+> is the smallest value that meets the above constraints.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/staging/xgifb/vb_ext.c |  320 +++++++++++++++++++--------------------
- 1 files changed, 156 insertions(+), 164 deletions(-)
+Your quote seems to apply in this case because:
 
-diff --git a/drivers/staging/xgifb/vb_ext.c b/drivers/staging/xgifb/vb_ext.c
-index 33a0635..6863fc2 100644
---- a/drivers/staging/xgifb/vb_ext.c
-+++ b/drivers/staging/xgifb/vb_ext.c
-@@ -9,14 +9,6 @@
- #include "vb_util.h"
- #include "vb_setmode.h"
- #include "vb_ext.h"
--static unsigned char XGINew_GetPanelID(struct vb_device_info *pVBInfo);
--static unsigned char XGINew_GetLCDDDCInfo(
--		struct xgi_hw_device_info *HwDeviceExtension,
--		struct vb_device_info *pVBInfo);
--static unsigned char XGINew_BridgeIsEnable(struct xgi_hw_device_info *,
--		struct vb_device_info *pVBInfo);
--static unsigned char XGINew_SenseHiTV(struct xgi_hw_device_info *HwDeviceExtension,
--		struct vb_device_info *pVBInfo);
- 
- /**************************************************************
-  *********************** Dynamic Sense ************************
-@@ -58,162 +50,6 @@ static unsigned char XGINew_Sense(unsigned short tempbx, unsigned short tempcx,
- 		return 0;
- }
- 
--void XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
--{
--	unsigned short tempax = 0, tempbx, tempcx, temp, P2reg0 = 0, SenseModeNo = 0,
--			OutputSelect = *pVBInfo->pOutputSelect, ModeIdIndex, i;
--	pVBInfo->BaseAddr = (unsigned long) HwDeviceExtension->pjIOAddress;
--
--	if (pVBInfo->IF_DEF_LVDS == 1) {
--		tempax = XGINew_GetReg1(pVBInfo->P3c4, 0x1A); /* ynlai 02/27/2002 */
--		tempbx = XGINew_GetReg1(pVBInfo->P3c4, 0x1B);
--		tempax = ((tempax & 0xFE) >> 1) | (tempbx << 8);
--		if (tempax == 0x00) { /* Get Panel id from DDC */
--			temp = XGINew_GetLCDDDCInfo(HwDeviceExtension, pVBInfo);
--			if (temp == 1) { /* LCD connect */
--				XGINew_SetRegANDOR(pVBInfo->P3d4, 0x39, 0xFF, 0x01); /* set CR39 bit0="1" */
--				XGINew_SetRegANDOR(pVBInfo->P3d4, 0x37, 0xEF, 0x00); /* clean CR37 bit4="0" */
--				temp = LCDSense;
--			} else { /* LCD don't connect */
--				temp = 0;
--			}
--		} else {
--			XGINew_GetPanelID(pVBInfo);
--			temp = LCDSense;
--		}
--
--		tempbx = ~(LCDSense | AVIDEOSense | SVIDEOSense);
--		XGINew_SetRegANDOR(pVBInfo->P3d4, 0x32, tempbx, temp);
--	} else { /* for 301 */
--		if (pVBInfo->VBInfo & SetCRT2ToHiVisionTV) { /* for HiVision */
--			tempax = XGINew_GetReg1(pVBInfo->P3c4, 0x38);
--			temp = tempax & 0x01;
--			tempax = XGINew_GetReg1(pVBInfo->P3c4, 0x3A);
--			temp = temp | (tempax & 0x02);
--			XGINew_SetRegANDOR(pVBInfo->P3d4, 0x32, 0xA0, temp);
--		} else {
--			if (XGI_BridgeIsOn(pVBInfo)) {
--				P2reg0 = XGINew_GetReg1(pVBInfo->Part2Port, 0x00);
--				if (!XGINew_BridgeIsEnable(HwDeviceExtension, pVBInfo)) {
--					SenseModeNo = 0x2e;
--					/* XGINew_SetReg1(pVBInfo->P3d4, 0x30, 0x41); */
--					/* XGISetModeNew(HwDeviceExtension, 0x2e); // ynlai InitMode */
--
--					temp = XGI_SearchModeID(SenseModeNo, &ModeIdIndex, pVBInfo);
--					XGI_GetVGAType(HwDeviceExtension, pVBInfo);
--					XGI_GetVBType(pVBInfo);
--					pVBInfo->SetFlag = 0x00;
--					pVBInfo->ModeType = ModeVGA;
--					pVBInfo->VBInfo = SetCRT2ToRAMDAC | LoadDACFlag | SetInSlaveMode;
--					XGI_GetLCDInfo(0x2e, ModeIdIndex, pVBInfo);
--					XGI_GetTVInfo(0x2e, ModeIdIndex, pVBInfo);
--					XGI_EnableBridge(HwDeviceExtension, pVBInfo);
--					XGI_SetCRT2Group301(SenseModeNo, HwDeviceExtension, pVBInfo);
--					XGI_SetCRT2ModeRegs(0x2e, HwDeviceExtension, pVBInfo);
--					/* XGI_DisableBridge( HwDeviceExtension, pVBInfo ) ; */
--					XGINew_SetRegANDOR(pVBInfo->P3c4, 0x01, 0xDF, 0x20); /* Display Off 0212 */
--					for (i = 0; i < 20; i++)
--						XGI_LongWait(pVBInfo);
--				}
--				XGINew_SetReg1(pVBInfo->Part2Port, 0x00, 0x1c);
--				tempax = 0;
--				tempbx = *pVBInfo->pRGBSenseData;
--
--				if (!(XGINew_Is301B(pVBInfo)))
--					tempbx = *pVBInfo->pRGBSenseData2;
--
--				tempcx = 0x0E08;
--				if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
--					if (XGINew_Sense(tempbx, tempcx, pVBInfo))
--						tempax |= Monitor2Sense;
--				}
--
--				if (pVBInfo->VBType & VB_XGI301C)
--					XGINew_SetRegOR(pVBInfo->Part4Port, 0x0d, 0x04);
--
--				if (XGINew_SenseHiTV(HwDeviceExtension, pVBInfo)) { /* add by kuku for Multi-adapter sense HiTV */
--					tempax |= HiTVSense;
--					if ((pVBInfo->VBType & VB_XGI301C))
--						tempax ^= (HiTVSense | YPbPrSense);
--				}
--
--				if (!(tempax & (HiTVSense | YPbPrSense))) { /* start */
--
--					tempbx = *pVBInfo->pYCSenseData;
--
--					if (!(XGINew_Is301B(pVBInfo)))
--						tempbx = *pVBInfo->pYCSenseData2;
--
--					tempcx = 0x0604;
--					if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
--						if (XGINew_Sense(tempbx, tempcx, pVBInfo))
--							tempax |= SVIDEOSense;
--					}
--
--					if (OutputSelect & BoardTVType) {
--						tempbx = *pVBInfo->pVideoSenseData;
--
--						if (!(XGINew_Is301B(pVBInfo)))
--							tempbx = *pVBInfo->pVideoSenseData2;
--
--						tempcx = 0x0804;
--						if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
--							if (XGINew_Sense(tempbx, tempcx, pVBInfo))
--								tempax |= AVIDEOSense;
--						}
--					} else {
--						if (!(tempax & SVIDEOSense)) {
--							tempbx = *pVBInfo->pVideoSenseData;
--
--							if (!(XGINew_Is301B(pVBInfo)))
--								tempbx = *pVBInfo->pVideoSenseData2;
--
--							tempcx = 0x0804;
--							if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
--								if (XGINew_Sense(tempbx, tempcx, pVBInfo))
--									tempax |= AVIDEOSense;
--							}
--						}
--					}
--				}
--			} /* end */
--			if (!(tempax & Monitor2Sense)) {
--				if (XGINew_SenseLCD(HwDeviceExtension, pVBInfo))
--					tempax |= LCDSense;
--			}
--			tempbx = 0;
--			tempcx = 0;
--			XGINew_Sense(tempbx, tempcx, pVBInfo);
--
--			XGINew_SetRegANDOR(pVBInfo->P3d4, 0x32, ~0xDF, tempax);
--			XGINew_SetReg1(pVBInfo->Part2Port, 0x00, P2reg0);
--
--			if (!(P2reg0 & 0x20)) {
--				pVBInfo->VBInfo = DisableCRT2Display;
--				/* XGI_SetCRT2Group301(SenseModeNo, HwDeviceExtension, pVBInfo); */
--			}
--		}
--	}
--	XGI_DisableBridge(HwDeviceExtension, pVBInfo); /* shampoo 0226 */
--
--}
--
--unsigned short XGINew_SenseLCD(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
--{
--	/* unsigned short SoftSetting ; */
--	unsigned short temp;
--
--	if ((HwDeviceExtension->jChipType >= XG20) || (HwDeviceExtension->jChipType >= XG40))
--		temp = 0;
--	else
--		temp = XGINew_GetPanelID(pVBInfo);
--
--	if (!temp)
--		temp = XGINew_GetLCDDDCInfo(HwDeviceExtension, pVBInfo);
--
--	return temp;
--}
--
- static unsigned char XGINew_GetLCDDDCInfo(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
- {
- 	unsigned short temp;
-@@ -401,3 +237,159 @@ static unsigned char XGINew_SenseHiTV(struct xgi_hw_device_info *HwDeviceExtensi
- 			return 0;
- 	}
- }
-+
-+void XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
-+{
-+	unsigned short tempax = 0, tempbx, tempcx, temp, P2reg0 = 0, SenseModeNo = 0,
-+			OutputSelect = *pVBInfo->pOutputSelect, ModeIdIndex, i;
-+	pVBInfo->BaseAddr = (unsigned long) HwDeviceExtension->pjIOAddress;
-+
-+	if (pVBInfo->IF_DEF_LVDS == 1) {
-+		tempax = XGINew_GetReg1(pVBInfo->P3c4, 0x1A); /* ynlai 02/27/2002 */
-+		tempbx = XGINew_GetReg1(pVBInfo->P3c4, 0x1B);
-+		tempax = ((tempax & 0xFE) >> 1) | (tempbx << 8);
-+		if (tempax == 0x00) { /* Get Panel id from DDC */
-+			temp = XGINew_GetLCDDDCInfo(HwDeviceExtension, pVBInfo);
-+			if (temp == 1) { /* LCD connect */
-+				XGINew_SetRegANDOR(pVBInfo->P3d4, 0x39, 0xFF, 0x01); /* set CR39 bit0="1" */
-+				XGINew_SetRegANDOR(pVBInfo->P3d4, 0x37, 0xEF, 0x00); /* clean CR37 bit4="0" */
-+				temp = LCDSense;
-+			} else { /* LCD don't connect */
-+				temp = 0;
-+			}
-+		} else {
-+			XGINew_GetPanelID(pVBInfo);
-+			temp = LCDSense;
-+		}
-+
-+		tempbx = ~(LCDSense | AVIDEOSense | SVIDEOSense);
-+		XGINew_SetRegANDOR(pVBInfo->P3d4, 0x32, tempbx, temp);
-+	} else { /* for 301 */
-+		if (pVBInfo->VBInfo & SetCRT2ToHiVisionTV) { /* for HiVision */
-+			tempax = XGINew_GetReg1(pVBInfo->P3c4, 0x38);
-+			temp = tempax & 0x01;
-+			tempax = XGINew_GetReg1(pVBInfo->P3c4, 0x3A);
-+			temp = temp | (tempax & 0x02);
-+			XGINew_SetRegANDOR(pVBInfo->P3d4, 0x32, 0xA0, temp);
-+		} else {
-+			if (XGI_BridgeIsOn(pVBInfo)) {
-+				P2reg0 = XGINew_GetReg1(pVBInfo->Part2Port, 0x00);
-+				if (!XGINew_BridgeIsEnable(HwDeviceExtension, pVBInfo)) {
-+					SenseModeNo = 0x2e;
-+					/* XGINew_SetReg1(pVBInfo->P3d4, 0x30, 0x41); */
-+					/* XGISetModeNew(HwDeviceExtension, 0x2e); // ynlai InitMode */
-+
-+					temp = XGI_SearchModeID(SenseModeNo, &ModeIdIndex, pVBInfo);
-+					XGI_GetVGAType(HwDeviceExtension, pVBInfo);
-+					XGI_GetVBType(pVBInfo);
-+					pVBInfo->SetFlag = 0x00;
-+					pVBInfo->ModeType = ModeVGA;
-+					pVBInfo->VBInfo = SetCRT2ToRAMDAC | LoadDACFlag | SetInSlaveMode;
-+					XGI_GetLCDInfo(0x2e, ModeIdIndex, pVBInfo);
-+					XGI_GetTVInfo(0x2e, ModeIdIndex, pVBInfo);
-+					XGI_EnableBridge(HwDeviceExtension, pVBInfo);
-+					XGI_SetCRT2Group301(SenseModeNo, HwDeviceExtension, pVBInfo);
-+					XGI_SetCRT2ModeRegs(0x2e, HwDeviceExtension, pVBInfo);
-+					/* XGI_DisableBridge( HwDeviceExtension, pVBInfo ) ; */
-+					XGINew_SetRegANDOR(pVBInfo->P3c4, 0x01, 0xDF, 0x20); /* Display Off 0212 */
-+					for (i = 0; i < 20; i++)
-+						XGI_LongWait(pVBInfo);
-+				}
-+				XGINew_SetReg1(pVBInfo->Part2Port, 0x00, 0x1c);
-+				tempax = 0;
-+				tempbx = *pVBInfo->pRGBSenseData;
-+
-+				if (!(XGINew_Is301B(pVBInfo)))
-+					tempbx = *pVBInfo->pRGBSenseData2;
-+
-+				tempcx = 0x0E08;
-+				if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
-+					if (XGINew_Sense(tempbx, tempcx, pVBInfo))
-+						tempax |= Monitor2Sense;
-+				}
-+
-+				if (pVBInfo->VBType & VB_XGI301C)
-+					XGINew_SetRegOR(pVBInfo->Part4Port, 0x0d, 0x04);
-+
-+				if (XGINew_SenseHiTV(HwDeviceExtension, pVBInfo)) { /* add by kuku for Multi-adapter sense HiTV */
-+					tempax |= HiTVSense;
-+					if ((pVBInfo->VBType & VB_XGI301C))
-+						tempax ^= (HiTVSense | YPbPrSense);
-+				}
-+
-+				if (!(tempax & (HiTVSense | YPbPrSense))) { /* start */
-+
-+					tempbx = *pVBInfo->pYCSenseData;
-+
-+					if (!(XGINew_Is301B(pVBInfo)))
-+						tempbx = *pVBInfo->pYCSenseData2;
-+
-+					tempcx = 0x0604;
-+					if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
-+						if (XGINew_Sense(tempbx, tempcx, pVBInfo))
-+							tempax |= SVIDEOSense;
-+					}
-+
-+					if (OutputSelect & BoardTVType) {
-+						tempbx = *pVBInfo->pVideoSenseData;
-+
-+						if (!(XGINew_Is301B(pVBInfo)))
-+							tempbx = *pVBInfo->pVideoSenseData2;
-+
-+						tempcx = 0x0804;
-+						if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
-+							if (XGINew_Sense(tempbx, tempcx, pVBInfo))
-+								tempax |= AVIDEOSense;
-+						}
-+					} else {
-+						if (!(tempax & SVIDEOSense)) {
-+							tempbx = *pVBInfo->pVideoSenseData;
-+
-+							if (!(XGINew_Is301B(pVBInfo)))
-+								tempbx = *pVBInfo->pVideoSenseData2;
-+
-+							tempcx = 0x0804;
-+							if (XGINew_Sense(tempbx, tempcx, pVBInfo)) {
-+								if (XGINew_Sense(tempbx, tempcx, pVBInfo))
-+									tempax |= AVIDEOSense;
-+							}
-+						}
-+					}
-+				}
-+			} /* end */
-+			if (!(tempax & Monitor2Sense)) {
-+				if (XGINew_SenseLCD(HwDeviceExtension, pVBInfo))
-+					tempax |= LCDSense;
-+			}
-+			tempbx = 0;
-+			tempcx = 0;
-+			XGINew_Sense(tempbx, tempcx, pVBInfo);
-+
-+			XGINew_SetRegANDOR(pVBInfo->P3d4, 0x32, ~0xDF, tempax);
-+			XGINew_SetReg1(pVBInfo->Part2Port, 0x00, P2reg0);
-+
-+			if (!(P2reg0 & 0x20)) {
-+				pVBInfo->VBInfo = DisableCRT2Display;
-+				/* XGI_SetCRT2Group301(SenseModeNo, HwDeviceExtension, pVBInfo); */
-+			}
-+		}
-+	}
-+	XGI_DisableBridge(HwDeviceExtension, pVBInfo); /* shampoo 0226 */
-+
-+}
-+
-+unsigned short XGINew_SenseLCD(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo)
-+{
-+	/* unsigned short SoftSetting ; */
-+	unsigned short temp;
-+
-+	if ((HwDeviceExtension->jChipType >= XG20) || (HwDeviceExtension->jChipType >= XG40))
-+		temp = 0;
-+	else
-+		temp = XGINew_GetPanelID(pVBInfo);
-+
-+	if (!temp)
-+		temp = XGINew_GetLCDDDCInfo(HwDeviceExtension, pVBInfo);
-+
-+	return temp;
-+}
+a) the "structure" is defined in assembly, so the compiler is not
+   deciding the alignment of the structure.
+
+b) the C code that iterates on the section array in jump_label.c see an
+   array of structures, which imply that gcc does not have no freedom in
+   terms of up-aligning these structures.
+
+The problem we faced with trace event and tracepoints was caused by the
+fact that we did define static structures from within C code, and the
+compiler mistakenly believed that it was the only one holding references
+to these structures, so it could up-align them to larger multiples as it
+wants, because they were each independent objects.
+
+>
+>
+>>> Also, could
+>>> you point out what would refrain the linker from aligning the start of
+>>> object sections on the next 32-bytes (thus power of two) address
+>>> multiple ?
+>>
+>
+> The rules of the ABI are quite specific.  It would be a toolchain bug if  
+> this were messed up.
+
+The trace event and tracepoint code are doing static structure
+declarations into specific sections for the linker to create array
+bounds with, and this last part sadly falls outside of the compiler
+knowledge, and therefore might be outside of the ABI scope because the
+compiler believes that these objects are local to the object and never
+ever exported. Note that up-aligning on larger multiples still meets the
+local alignment requirements -- it's just not valid to e.g. create an
+array that assumes that these statically defined structures are next to
+another without any extra padding.
+
+>
+>
+>
+>> Maybe it would be just easier to add another long ;)
+>
+> Maybe we should audit all the data structures in the entire kernel and  
+> add manual padding to power of 2 boundaries.
+
+Only required when we play games with sections outside of the compiler
+knowledge, which is really a handful of cases.
+
+>
+>>
+>> Seriously, it would. Then it would be 32 bytes on 64bit and 16 bytes on
+>> 32bit. Then I guess we can have our guarantee without doing a large
+>> change to have this indirect pointer and still waste sizeof(long) bytes
+>> in having it.
+>>
+>> Just insert a long "Reserved" word.
+>>
+>
+> I disagree.  Wasting memory to work around non-existent hypothetical  
+> bugs seems wrong to me.
+
+This object layout problem has been me with tracepoints in the past, and
+has bitter Steven with trace event recently. It is therefore very real.
+
+Thanks,
+
+Mathieu
+
+>
+> David Daney
+
 -- 
-1.5.6.5
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
