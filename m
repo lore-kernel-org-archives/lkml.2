@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab1CJSLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 13:11:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60630 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1CJSLG (ORCPT
+	id S1753683Ab1CJSMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 13:12:18 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48933 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab1CJSMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 13:11:06 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=XbqWoAS_rckA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=IHIGNWZHcwZ17vCXUZsA:9 a=YkAPOZdnDboL_5ggCgGnMzA4dhUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional
- assignment of CC and AR"
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com
-In-Reply-To: <4D790F4B.2030908@linux.intel.com>
-References: <1299715137-22768-1-git-send-email-dhsharp@google.com>
-	 <1299715137-22768-3-git-send-email-dhsharp@google.com>
-	 <4D7828F9.7000906@linux.intel.com>
-	 <1299720997.15854.276.camel@gandalf.stny.rr.com>
-	 <4D783038.8080103@linux.intel.com>
-	 <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>
-	 <4D787312.7080609@linux.intel.com>
-	 <1299762670.15854.332.camel@gandalf.stny.rr.com>
-	 <4D790F4B.2030908@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 13:11:04 -0500
-Message-ID: <1299780664.15854.399.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Mar 2011 13:12:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=YgouEJ5xE2l/pDDWGzyVUwc3BNVCrzABfPwu+A0WYYokGPzmguLoHKNcuhCa95ZYfF
+         GhAKeq+/N/hG4lSkD0TNThGbjrnOyxQqfmcd8Gq3rzsJOiTnq98PdsYiEfYXEHV+bBZL
+         PK45NXtGaiBy5HigBiIMEC7DvAccuT6HP8ueU=
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: security@kernel.org, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org
+Subject: [PATCH] ipv4: netfilter: arp_tables: fix infoleak to userspace
+Date: Thu, 10 Mar 2011 21:12:07 +0300
+Message-Id: <1299780728-32565-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 09:50 -0800, Darren Hart wrote:
-> 
-> On 03/10/2011 05:11 AM, Steven Rostedt wrote:
-> > On Wed, 2011-03-09 at 22:43 -0800, Darren Hart wrote:
-> >
-> >>> I don't know the answers, but if we take the kernel Makefile as a
-> >>> template, then setting CC doesn't work.
-> >>
-> >> The kernel is a bit special I believe as it is pretty tied to gcc. Is
-> >> trace-cmd tied to gcc to such a degree that we want to make it difficult
-> >> for people to try different compilers?
-> >
-> > True, trace-cmd is tied more to glibc (special features) than gcc.
-> >
-> > I just looked at the Makefile for evolution, and it has:
-> >
-> > CC = gcc
-> >
-> > So it is not limited to just the kernel.
-> 
-> I think we're down to a subjective argument over "correctness".
+Structures ipt_replace, compat_ipt_replace, and xt_get_revision are
+copied from userspace.  Fields of these structs that are
+zero-terminated strings are not checked.  When they are used as argument
+to a format string containing "%s" in request_module(), some sensitive
+information is leaked to userspace via argument of spawned modprobe
+process.
 
-No no no don't stop! I love having subjective arguments over
-"correctness"! ;)
+The first bug was introduced before the git epoch;  the second is
+introduced by 6b7d31fc (v2.6.15-rc1);  the third is introduced by
+6b7d31fc (v2.6.15-rc1).  To trigger the bug one should have
+CAP_NET_ADMIN.
 
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ Compile tested.
 
->  Any of 
-> the resent proposals will work for me.
+ net/ipv4/netfilter/arp_tables.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-OK, personally, I like the last one, even if it is an overkill of
-Makefile obfuscation.
-
-David, could you post that last change. I'll add a patch on top
-commenting the reason for it, and how Makefile's suck ;)
-
--- Steve
-
-
+diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
+index e95054c..4b5d457 100644
+--- a/net/ipv4/netfilter/arp_tables.c
++++ b/net/ipv4/netfilter/arp_tables.c
+@@ -1066,6 +1066,7 @@ static int do_replace(struct net *net, const void __user *user,
+ 	/* overflow check */
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
+ 
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1488,6 +1489,7 @@ static int compat_do_replace(struct net *net, void __user *user,
+ 		return -ENOMEM;
+ 	if (tmp.num_counters >= INT_MAX / sizeof(struct xt_counters))
+ 		return -ENOMEM;
++	tmp.name[sizeof(tmp.name)-1] = 0;
+ 
+ 	newinfo = xt_alloc_table_info(tmp.size);
+ 	if (!newinfo)
+@@ -1740,6 +1742,7 @@ static int do_arpt_get_ctl(struct sock *sk, int cmd, void __user *user, int *len
+ 			ret = -EFAULT;
+ 			break;
+ 		}
++		rev.name[sizeof(rev.name)-1] = 0;
+ 
+ 		try_then_request_module(xt_find_revision(NFPROTO_ARP, rev.name,
+ 							 rev.revision, 1, &ret),
+-- 
+1.7.0.4
 
