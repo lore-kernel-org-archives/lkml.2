@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab1CJJ1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:27:09 -0500
-Received: from smtp-out4.blueyonder.co.uk ([195.188.213.7]:33151 "EHLO
-	smtp-out4.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752275Ab1CJJ1H (ORCPT
+	id S1752612Ab1CJJi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:38:26 -0500
+Received: from smtp-out3.blueyonder.co.uk ([195.188.213.6]:56237 "EHLO
+	smtp-out3.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752439Ab1CJJiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:27:07 -0500
-Message-ID: <4D789961.5060500@blueyonder.co.uk>
-Date: Thu, 10 Mar 2011 09:26:57 +0000
+	Thu, 10 Mar 2011 04:38:25 -0500
+Message-ID: <4D789C0D.90702@blueyonder.co.uk>
+Date: Thu, 10 Mar 2011 09:38:21 +0000
 From: Sid Boyce <sboyce@blueyonder.co.uk>
 Reply-To: sboyce@blueyonder.co.uk
 Organization: blueyonder.co.uk
@@ -22,7 +22,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"make headers_install_all" works.
+Oops, the failure is actually in headers_check in both headers_install 
+and headers_install_all.
 Regards
 Sid.
 -- 
