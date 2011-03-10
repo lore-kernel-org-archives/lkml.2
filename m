@@ -1,93 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab1CJOWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:22:49 -0500
-Received: from hera.kernel.org ([140.211.167.34]:37864 "EHLO hera.kernel.org"
+	id S1752860Ab1CJOXV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:23:21 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37884 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab1CJOWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:22:47 -0500
-Date: Thu, 10 Mar 2011 14:21:53 GMT
-From: tip-bot for Andrey Vagin <avagin@openvz.org>
+	id S1751768Ab1CJOXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:23:20 -0500
+Date: Thu, 10 Mar 2011 14:22:14 GMT
+From: tip-bot for Andrea Arcangeli <aarcange@redhat.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, avagin@openvz.org,
-        akpm@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
+        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
+        stable@kernel.org, aarcange@redhat.com, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable@kernel.org, tglx@linutronix.de, avagin@openvz.org,
+        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
+        aarcange@redhat.com, stable@kernel.org, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
-References: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
+In-Reply-To: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
+References: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mm: Handle mm_fault_error() in kernel space
-Message-ID: <tip-f86268549f424f83b9eb0963989270e14fbfc3de@git.kernel.org>
-Git-Commit-ID: f86268549f424f83b9eb0963989270e14fbfc3de
+Subject: [tip:x86/urgent] x86/mm: Fix pgd_lock deadlock
+Message-ID: <tip-a79e53d85683c6dd9f99c90511028adc2043031f@git.kernel.org>
+Git-Commit-ID: a79e53d85683c6dd9f99c90511028adc2043031f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Mar 2011 14:21:54 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Mar 2011 14:22:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f86268549f424f83b9eb0963989270e14fbfc3de
-Gitweb:     http://git.kernel.org/tip/f86268549f424f83b9eb0963989270e14fbfc3de
-Author:     Andrey Vagin <avagin@openvz.org>
-AuthorDate: Wed, 9 Mar 2011 15:22:23 -0800
+Commit-ID:  a79e53d85683c6dd9f99c90511028adc2043031f
+Gitweb:     http://git.kernel.org/tip/a79e53d85683c6dd9f99c90511028adc2043031f
+Author:     Andrea Arcangeli <aarcange@redhat.com>
+AuthorDate: Wed, 16 Feb 2011 15:45:22 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 10 Mar 2011 09:41:40 +0100
+CommitDate: Thu, 10 Mar 2011 09:41:57 +0100
 
-x86/mm: Handle mm_fault_error() in kernel space
+x86/mm: Fix pgd_lock deadlock
 
-mm_fault_error() should not execute oom-killer, if page fault
-occurs in kernel space.  E.g. in copy_from_user()/copy_to_user().
+It's forbidden to take the page_table_lock with the irq disabled
+or if there's contention the IPIs (for tlb flushes) sent with
+the page_table_lock held will never run leading to a deadlock.
 
-This would happen if we find ourselves in OOM on a
-copy_to_user(), or a copy_from_user() which faults.
+Nobody takes the pgd_lock from irq context so the _irqsave can be
+removed.
 
-Without this patch, the kernels hangs up in copy_from_user(),
-because OOM killer sends SIG_KILL to current process, but it
-can't handle a signal while in syscall, then the kernel returns
-to copy_from_user(), reexcute current command and provokes
-page_fault again.
-
-With this patch the kernel return -EFAULT from copy_from_user().
-
-The code, which checks that page fault occurred in kernel space,
-has been copied from do_sigbus().
-
-This situation is handled by the same way on powerpc, xtensa,
-tile, ...
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: <stable@kernel.org>
-LKML-Reference: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
+LKML-Reference: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/fault.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ arch/x86/mm/fault.c    |    7 +++----
+ arch/x86/mm/init_64.c  |    6 +++---
+ arch/x86/mm/pageattr.c |   18 ++++++++----------
+ arch/x86/mm/pgtable.c  |   11 ++++-------
+ arch/x86/xen/mmu.c     |   10 ++++------
+ 5 files changed, 22 insertions(+), 30 deletions(-)
 
 diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 7d90ceb..ffc7be1 100644
+index ffc7be1..20e3f87 100644
 --- a/arch/x86/mm/fault.c
 +++ b/arch/x86/mm/fault.c
-@@ -828,6 +828,13 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
- 	       unsigned long address, unsigned int fault)
+@@ -229,15 +229,14 @@ void vmalloc_sync_all(void)
+ 	for (address = VMALLOC_START & PMD_MASK;
+ 	     address >= TASK_SIZE && address < FIXADDR_TOP;
+ 	     address += PMD_SIZE) {
+-
+-		unsigned long flags;
+ 		struct page *page;
+ 
+-		spin_lock_irqsave(&pgd_lock, flags);
++		spin_lock(&pgd_lock);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+ 			spinlock_t *pgt_lock;
+ 			pmd_t *ret;
+ 
++			/* the pgt_lock only for Xen */
+ 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+ 
+ 			spin_lock(pgt_lock);
+@@ -247,7 +246,7 @@ void vmalloc_sync_all(void)
+ 			if (!ret)
+ 				break;
+ 		}
+-		spin_unlock_irqrestore(&pgd_lock, flags);
++		spin_unlock(&pgd_lock);
+ 	}
+ }
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 71a5929..c14a542 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -105,18 +105,18 @@ void sync_global_pgds(unsigned long start, unsigned long end)
+ 
+ 	for (address = start; address <= end; address += PGDIR_SIZE) {
+ 		const pgd_t *pgd_ref = pgd_offset_k(address);
+-		unsigned long flags;
+ 		struct page *page;
+ 
+ 		if (pgd_none(*pgd_ref))
+ 			continue;
+ 
+-		spin_lock_irqsave(&pgd_lock, flags);
++		spin_lock(&pgd_lock);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+ 			pgd_t *pgd;
+ 			spinlock_t *pgt_lock;
+ 
+ 			pgd = (pgd_t *)page_address(page) + pgd_index(address);
++			/* the pgt_lock only for Xen */
+ 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+ 			spin_lock(pgt_lock);
+ 
+@@ -128,7 +128,7 @@ void sync_global_pgds(unsigned long start, unsigned long end)
+ 
+ 			spin_unlock(pgt_lock);
+ 		}
+-		spin_unlock_irqrestore(&pgd_lock, flags);
++		spin_unlock(&pgd_lock);
+ 	}
+ }
+ 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index d343b3c..90825f2 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -57,12 +57,10 @@ static unsigned long direct_pages_count[PG_LEVEL_NUM];
+ 
+ void update_page_count(int level, unsigned long pages)
  {
- 	if (fault & VM_FAULT_OOM) {
-+		/* Kernel mode? Handle exceptions or die: */
-+		if (!(error_code & PF_USER)) {
-+			up_read(&current->mm->mmap_sem);
-+			no_context(regs, error_code, address);
-+			return;
-+		}
-+
- 		out_of_memory(regs, error_code, address);
- 	} else {
- 		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
+-	unsigned long flags;
+-
+ 	/* Protect against CPA */
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	direct_pages_count[level] += pages;
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ static void split_page_count(int level)
+@@ -394,7 +392,7 @@ static int
+ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 			struct cpa_data *cpa)
+ {
+-	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
++	unsigned long nextpage_addr, numpages, pmask, psize, addr, pfn;
+ 	pte_t new_pte, old_pte, *tmp;
+ 	pgprot_t old_prot, new_prot, req_prot;
+ 	int i, do_split = 1;
+@@ -403,7 +401,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	if (cpa->force_split)
+ 		return 1;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	/*
+ 	 * Check for races, another CPU might have split this page
+ 	 * up already:
+@@ -498,14 +496,14 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	}
+ 
+ out_unlock:
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ 
+ 	return do_split;
+ }
+ 
+ static int split_large_page(pte_t *kpte, unsigned long address)
+ {
+-	unsigned long flags, pfn, pfninc = 1;
++	unsigned long pfn, pfninc = 1;
+ 	unsigned int i, level;
+ 	pte_t *pbase, *tmp;
+ 	pgprot_t ref_prot;
+@@ -519,7 +517,7 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	if (!base)
+ 		return -ENOMEM;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	/*
+ 	 * Check for races, another CPU might have split this page
+ 	 * up for us already:
+@@ -591,7 +589,7 @@ out_unlock:
+ 	 */
+ 	if (base)
+ 		__free_page(base);
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 500242d..0113d19 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -121,14 +121,12 @@ static void pgd_ctor(struct mm_struct *mm, pgd_t *pgd)
+ 
+ static void pgd_dtor(pgd_t *pgd)
+ {
+-	unsigned long flags; /* can be called from interrupt context */
+-
+ 	if (SHARED_KERNEL_PMD)
+ 		return;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	pgd_list_del(pgd);
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ /*
+@@ -260,7 +258,6 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ {
+ 	pgd_t *pgd;
+ 	pmd_t *pmds[PREALLOCATED_PMDS];
+-	unsigned long flags;
+ 
+ 	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP);
+ 
+@@ -280,12 +277,12 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ 	 * respect to anything walking the pgd_list, so that they
+ 	 * never see a partially populated pgd.
+ 	 */
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 
+ 	pgd_ctor(mm, pgd);
+ 	pgd_prepopulate_pmd(mm, pgd, pmds);
+ 
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ 
+ 	return pgd;
+ 
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 5e92b61..f608942 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -986,10 +986,9 @@ static void xen_pgd_pin(struct mm_struct *mm)
+  */
+ void xen_mm_pin_all(void)
+ {
+-	unsigned long flags;
+ 	struct page *page;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 
+ 	list_for_each_entry(page, &pgd_list, lru) {
+ 		if (!PagePinned(page)) {
+@@ -998,7 +997,7 @@ void xen_mm_pin_all(void)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ /*
+@@ -1099,10 +1098,9 @@ static void xen_pgd_unpin(struct mm_struct *mm)
+  */
+ void xen_mm_unpin_all(void)
+ {
+-	unsigned long flags;
+ 	struct page *page;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 
+ 	list_for_each_entry(page, &pgd_list, lru) {
+ 		if (PageSavePinned(page)) {
+@@ -1112,7 +1110,7 @@ void xen_mm_unpin_all(void)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ void xen_activate_mm(struct mm_struct *prev, struct mm_struct *next)
