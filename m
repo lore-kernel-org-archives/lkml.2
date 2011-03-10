@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab1CJJDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:03:20 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:42441 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab1CJJDR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:03:17 -0500
-Date: Thu, 10 Mar 2011 10:02:07 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
-        rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH R4 7/7] xen/balloon: Memory hotplug support for Xen balloon driver
-Message-ID: <20110310090207.GB13978@router-fw-old.local.net-space.pl>
-References: <20110308215049.GH27331@router-fw-old.local.net-space.pl> <1299628939.9014.3499.camel@nimitz>
-Mime-Version: 1.0
+	id S1752379Ab1CJJFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:05:17 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44958 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751856Ab1CJJFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 04:05:12 -0500
+Date: Thu, 10 Mar 2011 10:04:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Arnd Bergmann <arnd@arndb.de>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, bp@amd64.org
+Subject: Re: [PATCH -v5] kbuild: Add extra gcc checks
+Message-ID: <20110310090444.GA25522@elte.hu>
+References: <20110301083529.GA767@liondog.tnic>
+ <20110309144504.GA1096@sepie.suse.cz>
+ <20110309151134.GA15730@elte.hu>
+ <20110309175625.GA29181@merkur.ravnborg.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299628939.9014.3499.camel@nimitz>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <20110309175625.GA29181@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 04:02:19PM -0800, Dave Hansen wrote:
-> On Tue, 2011-03-08 at 22:50 +0100, Daniel Kiper wrote:
-> > +static int xen_online_page_notifier(struct notifier_block *nb, unsigned long val, void *v)
-> > +{
-> > +	struct page *page = v;
-> > +	unsigned long pfn = page_to_pfn(page);
-> > +
-> > +	if (pfn >= num_physpages)
-> > +		num_physpages = pfn + 1;
-> > +
-> > +	inc_totalhigh_pages();
-> > +
-> > +#ifdef CONFIG_FLATMEM
-> > +	max_mapnr = max(pfn, max_mapnr);
-> > +#endif
->
-> I really don't like that this is a direct copy of online_page() up to
-> this point.  They're already subtly different.  I'm also curious if this
-> breaks on 32-bit kernels because of the unconditional
-> inc_totalhigh_pages().
->
-> If it's done this way, I'd almost guarantee that the first time someone
-> fixes a bug or adds a generic feature in online_page() that Xen gets
-> missed.
 
-OK, I rewrite this part of code.
+* Sam Ravnborg <sam@ravnborg.org> wrote:
 
-> > +	mutex_lock(&balloon_mutex);
-> > +
-> > +	__balloon_append(page);
-> > +
-> > +	if (balloon_stats.hotplug_pages)
-> > +		--balloon_stats.hotplug_pages;
-> > +	else
-> > +		--balloon_stats.balloon_hotplug;
-> > +
-> > +	mutex_unlock(&balloon_mutex);
-> > +
-> > +	return NOTIFY_STOP;
-> > +}
->
-> I'm not a _huge_ fan of these notifier chains, but I guess it works.
+> > Another, related, very nice kbuild feature would be to allow for arch maintainers to 
+> > mark certain files as "should only build fine without warnings" - i.e. -Werror 
+> > should be the default. There would be a Kconfig feature to opt out of this, 
+> > CONFIG_CC_IGNORE_WARNINGS=y or so. This would allow for people to still build the 
+> > kernel with old (or buggy) versions of GCC.
+> 
+> To add -Werror for all files conditionally you can do:
+> 
+>     ccflags-$(CONFIG_WERROR) += -Werror
+> 
+> For individual files we can then drop -Werror like this:
+> 
+>     CFLAGS_REMOVE_foobar.o := -Werror
+> 
+> So it should be doable with the existing infrastructure.
 
-Could you tell me why ??? I think that in that case new
-(faster, simpler, etc.) mechanism is an overkill. I prefer
-to use something which is writen, tested and ready for usage.
+Stupid question: is there an existing kbuild rule that i could use to enable -Werror 
+for a single .o file, such as kernel/sched.o - without affecting other files in 
+kernel/ that i do not maintain?
 
-> However, if you're going to use these notifier chains, then we probably
-> should use them to full effect.  Have a notifier list like this:
->
-> 	1. generic online_page()
-> 	2. xen_online_page_notifier() (returns NOTIFY_STOP)
-> 	3. free_online_page()
->
-> Where finish_online_page() does something like this:
->
-> finish_online_page(...)
-> {
->         ClearPageReserved(page);
->         init_page_count(page);
->         __free_page(page);
-> }
+Also, adding 3 lines per object file is pretty ugly - would it be possible to create 
+a nicer, compact, single-line way to someone condense a CONFIG_ERROR opt-out 
+mechanism, the -Werror default and the single-object-file into a single rule?
 
-OK.
+Something like:
 
-Daniel
+  obj-werror-y += sched.o
+
+Although i'm not sure if it is wise to mix build details into the object build tree 
+hierarchy like that ...
+
+Maybe we can live with some multi-line definition after all - until all of the 
+kernel is covered by such a mechanism. But the per object file rule would still be 
+important, for multi-maintainenace-boundaries directories like kernel/*.o.
+
+Thanks,
+
+	Ingo
