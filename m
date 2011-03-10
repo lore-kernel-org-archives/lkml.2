@@ -1,67 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab1CJW0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:26:25 -0500
-Received: from hera.kernel.org ([140.211.167.34]:60996 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975Ab1CJW0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:26:24 -0500
-Date: Thu, 10 Mar 2011 22:26:07 GMT
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, namhyung@gmail.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, tglx@linutronix.de, namhyung@gmail.com
-In-Reply-To: <1299584662-24421-4-git-send-email-namhyung@gmail.com>
-References: <1299584662-24421-4-git-send-email-namhyung@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, dumpstack: Use frame pointer during stack trace
-Message-ID: <tip-2f8058ae197236f9d5641850ce27f67d8f3e0b39@git.kernel.org>
-Git-Commit-ID: 2f8058ae197236f9d5641850ce27f67d8f3e0b39
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753173Ab1CJW2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:28:31 -0500
+Received: from mailb.microsoft.com ([131.107.115.215]:53350 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab1CJW2a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:28:30 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>,
+        Mike Sterling <Mike.Sterling@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
+ driver
+Thread-Topic: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
+ driver
+Thread-Index: AQHL325beDuENri3oES+5wMXWQ0GNpQnqf4A//969sA=
+Date: Thu, 10 Mar 2011 22:28:27 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048018AA3@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1299794912-1233-1-git-send-email-kys@microsoft.com>
+ <20110310222034.GA19323@suse.de>
+In-Reply-To: <20110310222034.GA19323@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Mar 2011 22:26:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2f8058ae197236f9d5641850ce27f67d8f3e0b39
-Gitweb:     http://git.kernel.org/tip/2f8058ae197236f9d5641850ce27f67d8f3e0b39
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Tue, 8 Mar 2011 20:44:22 +0900
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 10 Mar 2011 23:20:30 +0100
 
-x86, dumpstack: Use frame pointer during stack trace
 
-If CONFIG_FRAME_POINTER is set then use the frame pointer for the
-stack backtrace rather than scanning whole stack blindly.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Thursday, March 10, 2011 5:21 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; Haiyang Zhang; Mike Sterling; Abhishek Kane
+> (Mindtree Consulting PVT LTD); Hank Janssen
+> Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci driver
+> 
+> On Thu, Mar 10, 2011 at 02:08:32PM -0800, K. Y. Srinivasan wrote:
+> > Make vmbus driver a platform pci driver. This is
+> > in preparation to cleaning up irq allocation for this
+> > driver.
+> 
+> The idea is nice, but the nameing is a bit confusing.
+> 
+> We have "platform drivers" which are much different from what you are
+> doing here, you are just creating a "normal" pci driver.
+> 
+> Very minor comments below.
+> 
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
+> > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > ---
+> >  drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++-------------
+> ----
+> >  1 files changed, 36 insertions(+), 27 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > index 8b9394a..e4855ac 100644
+> > --- a/drivers/staging/hv/vmbus_drv.c
+> > +++ b/drivers/staging/hv/vmbus_drv.c
+> > @@ -43,6 +43,8 @@
+> >
+> >  static struct device *root_dev; /* Root device */
+> >
+> > +struct pci_dev *hv_pci_dev;
+> > +
+> >  /* Main vmbus driver data structure */
+> >  struct vmbus_driver_context {
+> >
+> > @@ -887,36 +889,24 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
+> >  	}
+> >  }
+> >
+> > -static struct dmi_system_id __initdata microsoft_hv_dmi_table[] = {
+> > -	{
+> > -		.ident = "Hyper-V",
+> > -		.matches = {
+> > -			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft
+> Corporation"),
+> > -			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+> > -			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
+> > -		},
+> > -	},
+> > -	{ },
+> > -};
+> > -MODULE_DEVICE_TABLE(dmi, microsoft_hv_dmi_table);
+> 
+> You're sure it's safe to delete this now and just rely on the PCI ids,
+> right?  For some wierd reason I thought we needed both to catch all
+> types of systems, but I can't remember why.
+I have tested this; I don't think we need the dmi table.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <1299584662-24421-4-git-send-email-namhyung@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/dumpstack.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> >
+> > -static int __init vmbus_init(void)
+> > +
+> > +static int __devinit hv_pci_probe(struct pci_dev *pdev,
+> > +				const struct pci_device_id *ent)
+> >  {
+> > -	DPRINT_INFO(VMBUS_DRV,
+> > -		"Vmbus initializing.... current log level 0x%x (%x,%x)",
+> > -		vmbus_loglevel, HIWORD(vmbus_loglevel),
+> LOWORD(vmbus_loglevel));
+> > -	/* Todo: it is used for loglevel, to be ported to new kernel. */
+> > +	int err;
+> >
+> > -	if (!dmi_check_system(microsoft_hv_dmi_table))
+> > -		return -ENODEV;
+> > +	hv_pci_dev = pdev;
+> >
+> > -	return vmbus_bus_init();
+> > -}
+> > +	err = pci_enable_device(pdev);
+> > +	if (err)
+> > +		return err;
+> >
+> > -static void __exit vmbus_exit(void)
+> > -{
+> > -	vmbus_bus_exit();
+> > -	/* Todo: it is used for loglevel, to be ported to new kernel. */
+> > +	err = vmbus_bus_init();
+> > +	if (err)
+> > +		pci_disable_device(pdev);
+> > +
+> > +	return err;
+> >  }
+> >
+> >  /*
+> > @@ -931,10 +921,29 @@ static const struct pci_device_id
+> microsoft_hv_pci_table[] = {
+> >  };
+> >  MODULE_DEVICE_TABLE(pci, microsoft_hv_pci_table);
+> >
+> > +static struct pci_driver platform_driver = {
+> 
+> "hv_bus_driver"?
+> 
+> > +	.name =           "hv-platform-pci",
+> 
+> How about "hv_bus" as a name, as that's what this really is.  It's a
+> "bus adapter", like USB, Firewire, and all sorts of other bus
+> controllers.
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 38b74a5e..56db27d 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -170,7 +170,11 @@ static const struct stacktrace_ops print_trace_ops = {
- 	.warning_symbol		= print_trace_warning_symbol,
- 	.stack			= print_trace_stack,
- 	.address		= print_trace_address,
-+#ifdef CONFIG_FRAME_POINTER
-+	.walk_stack		= walk_context_stack_bp,
-+#else
- 	.walk_stack		= walk_context_stack,
-+#endif
- };
- 
- void
+Sure; I will make these changes. Would you mind if I submit these name changes as a separate patch.
+
+Regards,
+
+K. Y
