@@ -1,141 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab1CJQIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:08:53 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:34480 "EHLO
+	id S1751237Ab1CJQJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:09:44 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:63084 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab1CJQIm (ORCPT
+	with ESMTP id S1752960Ab1CJQIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:08:42 -0500
+	Thu, 10 Mar 2011 11:08:37 -0500
 X-IronPort-AV: E=Sophos;i="4.62,296,1297054800"; 
-   d="scan'208";a="139621180"
+   d="scan'208";a="139621155"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 14/14] xen: events: propagate irq allocation failure instead of panicking
-Date: Thu, 10 Mar 2011 16:08:15 +0000
-Message-Id: <1299773295-348-14-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 10/14] xen: events: maintain a list of Xen interrupts
+Date: Thu, 10 Mar 2011 16:08:11 +0000
+Message-Id: <1299773295-348-10-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
 References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 10 Mar 2011 16:08:41.0369 (UTC) FILETIME=[6C54D890:01CBDF3D]
+X-OriginalArrivalTime: 10 Mar 2011 16:08:34.0088 (UTC) FILETIME=[67FDDA80:01CBDF3D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running out of IRQs need not be fatal to the machine as a whole.
+In a PVHVM kernel not all interrupts are Xen interrupts (APIC interrupts can also be present).
+
+Currently we get away with walking over all interrupts because the
+lookup in the irq_info array simply returns IRQT_UNBOUND and we ignore
+it. However this array will be going away in a future patch so we need
+to manually track which interrupts have been allocated by the Xen
+events infrastructure.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 ---
- drivers/xen/events.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/xen/events.c |   59 +++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 44 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 7c36689..3566c00 100644
+index cf372d4..e119989 100644
 --- a/drivers/xen/events.c
 +++ b/drivers/xen/events.c
-@@ -406,7 +406,7 @@ static void xen_irq_init(unsigned irq)
- 	list_add_tail(&info->list, &xen_irq_list_head);
+@@ -56,6 +56,8 @@
+  */
+ static DEFINE_SPINLOCK(irq_mapping_update_lock);
+ 
++static LIST_HEAD(xen_irq_list_head);
++
+ /* IRQ <-> VIRQ mapping. */
+ static DEFINE_PER_CPU(int [NR_VIRQS], virq_to_irq) = {[0 ... NR_VIRQS-1] = -1};
+ 
+@@ -85,7 +87,9 @@ enum xen_irq_type {
+  */
+ struct irq_info
+ {
++	struct list_head list;
+ 	enum xen_irq_type type;	/* type */
++	unsigned irq;
+ 	unsigned short evtchn;	/* event channel */
+ 	unsigned short cpu;	/* cpu bound */
+ 
+@@ -135,6 +139,7 @@ static void xen_irq_info_common_init(struct irq_info *info,
+ 	BUG_ON(info->type != IRQT_UNBOUND && info->type != type);
+ 
+ 	info->type = type;
++	info->irq = irq;
+ 	info->evtchn = evtchn;
+ 	info->cpu = cpu;
+ 
+@@ -311,10 +316,11 @@ static void init_evtchn_cpu_bindings(void)
+ {
+ 	int i;
+ #ifdef CONFIG_SMP
+-	struct irq_desc *desc;
++	struct irq_info *info;
+ 
+ 	/* By default all event channels notify CPU#0. */
+-	for_each_irq_desc(i, desc) {
++	list_for_each_entry(info, &xen_irq_list_head, list) {
++		struct irq_desc *desc = irq_to_desc(info->irq);
+ 		cpumask_copy(desc->irq_data.affinity, cpumask_of(0));
+ 	}
+ #endif
+@@ -397,6 +403,21 @@ static void unmask_evtchn(int port)
+ 	put_cpu();
  }
  
--static int xen_allocate_irq_dynamic(void)
-+static int __must_check xen_allocate_irq_dynamic(void)
++static void xen_irq_init(unsigned irq)
++{
++	struct irq_info *info;
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	/* By default all event channels notify CPU#0. */
++	cpumask_copy(desc->irq_data.affinity, cpumask_of(0));
++
++	info = &irq_info[irq];
++
++	info->type = IRQT_UNBOUND;
++
++	list_add_tail(&info->list, &xen_irq_list_head);
++}
++
+ static int xen_allocate_irq_dynamic(void)
  {
  	int first = 0;
- 	int irq;
-@@ -425,15 +425,12 @@ static int xen_allocate_irq_dynamic(void)
+@@ -426,6 +447,8 @@ retry:
+ 	if (irq < 0)
+ 		panic("No available IRQ to bind to: increase nr_irqs!\n");
  
- 	irq = irq_alloc_desc_from(first, -1);
- 
--	if (irq < 0)
--		panic("No available IRQ to bind to: increase nr_irqs!\n");
--
- 	xen_irq_init(irq);
- 
++	xen_irq_init(irq);
++
  	return irq;
  }
  
--static int xen_allocate_irq_gsi(unsigned gsi)
-+static int __must_check xen_allocate_irq_gsi(unsigned gsi)
+@@ -444,18 +467,25 @@ static int xen_allocate_irq_gsi(unsigned gsi)
+ 
+ 	/* Legacy IRQ descriptors are already allocated by the arch. */
+ 	if (gsi < NR_IRQS_LEGACY)
+-		return gsi;
++		irq = gsi;
++	else
++		irq = irq_alloc_desc_at(gsi, -1);
+ 
+-	irq = irq_alloc_desc_at(gsi, -1);
+ 	if (irq < 0)
+ 		panic("Unable to allocate to IRQ%d (%d)\n", gsi, irq);
+ 
++	xen_irq_init(irq);
++
+ 	return irq;
+ }
+ 
+ static void xen_free_irq(unsigned irq)
  {
- 	int irq;
+-	irq_info[irq].type = IRQT_UNBOUND;
++	struct irq_info *info = &irq_info[irq];
++
++	info->type = IRQT_UNBOUND;
++
++	list_del(&info->list);
  
-@@ -452,9 +449,6 @@ static int xen_allocate_irq_gsi(unsigned gsi)
- 	else
- 		irq = irq_alloc_desc_at(gsi, -1);
+ 	/* Legacy IRQ descriptors are managed by the arch. */
+ 	if (irq < NR_IRQS_LEGACY)
+@@ -586,16 +616,14 @@ static void ack_pirq(struct irq_data *data)
  
--	if (irq < 0)
--		panic("Unable to allocate to IRQ%d (%d)\n", gsi, irq);
+ static int find_irq_by_gsi(unsigned gsi)
+ {
+-	int irq;
 -
- 	xen_irq_init(irq);
+-	for (irq = 0; irq < nr_irqs; irq++) {
+-		struct irq_info *info = info_for_irq(irq);
++	struct irq_info *info;
  
- 	return irq;
-@@ -640,6 +634,8 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+-		if (info == NULL || info->type != IRQT_PIRQ)
++	list_for_each_entry(info, &xen_irq_list_head, list) {
++		if (info->type != IRQT_PIRQ)
+ 			continue;
+ 
+-		if (gsi_from_irq(irq) == gsi)
+-			return irq;
++		if (info->u.pirq.gsi == gsi)
++			return info->irq;
  	}
  
- 	irq = xen_allocate_irq_gsi(gsi);
-+	if (irq < 0)
-+		goto out;
+ 	return -1;
+@@ -1374,7 +1402,8 @@ void xen_poll_irq(int irq)
  
- 	set_irq_chip_and_handler_name(irq, &xen_pirq_chip,
- 				      handle_level_irq, name);
-@@ -771,6 +767,8 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+ void xen_irq_resume(void)
+ {
+-	unsigned int cpu, irq, evtchn;
++	unsigned int cpu, evtchn;
++	struct irq_info *info;
  
- 	if (irq == -1) {
- 		irq = xen_allocate_irq_dynamic();
-+		if (irq == -1)
-+			goto out;
+ 	init_evtchn_cpu_bindings();
  
- 		set_irq_chip_and_handler_name(irq, &xen_dynamic_chip,
- 					      handle_fasteoi_irq, "event");
-@@ -778,6 +776,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
- 		xen_irq_info_evtchn_init(irq, evtchn);
- 	}
+@@ -1383,8 +1412,8 @@ void xen_irq_resume(void)
+ 		mask_evtchn(evtchn);
  
-+out:
- 	spin_unlock(&irq_mapping_update_lock);
+ 	/* No IRQ <-> event-channel mappings. */
+-	for (irq = 0; irq < nr_irqs; irq++)
+-		irq_info[irq].evtchn = 0; /* zap event-channel binding */
++	list_for_each_entry(info, &xen_irq_list_head, list)
++		info->evtchn = 0; /* zap event-channel binding */
  
- 	return irq;
-@@ -829,6 +828,8 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
- 
- 	if (irq == -1) {
- 		irq = xen_allocate_irq_dynamic();
-+		if (irq == -1)
-+			goto out;
- 
- 		set_irq_chip_and_handler_name(irq, &xen_percpu_chip,
- 					      handle_percpu_irq, "virq");
-@@ -845,6 +846,7 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
- 		bind_evtchn_to_cpu(evtchn, cpu);
- 	}
- 
-+out:
- 	spin_unlock(&irq_mapping_update_lock);
- 
- 	return irq;
-@@ -897,6 +899,8 @@ int bind_evtchn_to_irqhandler(unsigned int evtchn,
- 	int retval;
- 
- 	irq = bind_evtchn_to_irq(evtchn);
-+	if (irq < 0)
-+		return irq;
- 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
- 	if (retval != 0) {
- 		unbind_from_irq(irq);
-@@ -915,6 +919,8 @@ int bind_virq_to_irqhandler(unsigned int virq, unsigned int cpu,
- 	int retval;
- 
- 	irq = bind_virq_to_irq(virq, cpu);
-+	if (irq < 0)
-+		return irq;
- 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
- 	if (retval != 0) {
- 		unbind_from_irq(irq);
+ 	for (evtchn = 0; evtchn < NR_EVENT_CHANNELS; evtchn++)
+ 		evtchn_to_irq[evtchn] = -1;
 -- 
 1.5.6.5
 
