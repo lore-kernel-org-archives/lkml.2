@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab1CJNLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 08:11:12 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51266 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab1CJNLL (ORCPT
+	id S1751853Ab1CJNPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 08:15:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39571 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab1CJNPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 08:11:11 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=XbqWoAS_rckA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=nta_BhUiBZtbrMvoX5gA:9 a=pCuvqvdT2ohwrBJHp9I56jdSlakA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional
- assignment of CC and AR"
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com
-In-Reply-To: <4D787312.7080609@linux.intel.com>
-References: <1299715137-22768-1-git-send-email-dhsharp@google.com>
-	 <1299715137-22768-3-git-send-email-dhsharp@google.com>
-	 <4D7828F9.7000906@linux.intel.com>
-	 <1299720997.15854.276.camel@gandalf.stny.rr.com>
-	 <4D783038.8080103@linux.intel.com>
-	 <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>
-	 <4D787312.7080609@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 08:11:10 -0500
-Message-ID: <1299762670.15854.332.camel@gandalf.stny.rr.com>
+	Thu, 10 Mar 2011 08:15:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=CKgYfgWcxbWpoh5gxUCuOPgBCHfmxInMneGw26Q0rWvoBoK8J8vYrDkFOBRWvGosfE
+         9FDTbGo9nhcndnQCtOcxwjSFnIHODeLMuKlFN3nlZfOHiZIdWyqDhgYcQwR1O5wY+mIO
+         B+MIRBRE+080WqUfssfEErF8UHd8ORUYA55sI=
+Subject: Re: [PATCH/RFC v3 1/3] Shared BCH ECC library
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ivan Djelic <ivan.djelic@parrot.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <4c9c56a72dda5d22f91f252f103e4ec760c913c1.1299691382.git.ivan.djelic@parrot.com>
+References: <4c9c56a72dda5d22f91f252f103e4ec760c913c1.1299691382.git.ivan.djelic@parrot.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Mar 2011 15:13:46 +0200
+Message-ID: <1299762826.6676.10.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 22:43 -0800, Darren Hart wrote:
-
-> > I don't know the answers, but if we take the kernel Makefile as a
-> > template, then setting CC doesn't work.
+On Wed, 2011-03-09 at 18:50 +0100, Ivan Djelic wrote:
+> Hello,
 > 
-> The kernel is a bit special I believe as it is pretty tied to gcc. Is 
-> trace-cmd tied to gcc to such a degree that we want to make it difficult 
-> for people to try different compilers?
+> The first patch of this series contains a new generic BCH ECC library.
+> 
+> This library can be used to provide software BCH correction on NAND devices
+> (see 2nd and 3rd patch), as well as error correction for hybrid hardware BCH
+> engines.
+> 
+> This version v3
+> - improves Kconfig help description as suggested by Artem Bityutskiy
+> - documents the public domain origin of a parity computation code snippet
+> 
+> Could you please review and comment ?
+> Thanks,
 
-True, trace-cmd is tied more to glibc (special features) than gcc.
+I've put these patches to my l2-mtd-2.6 tree, let's see if dwmw2 merges
+them. I doubt there are many people who'd wish to really review it, but
+indeed the code looks good.
 
-I just looked at the Makefile for evolution, and it has:
+There are a couple of checkpatch.pl complaints for the 3rd patch, not
+very important though. Also, I think nowadays we do not put file name in
+the comments like you did:
 
-CC = gcc
++/*
++ * include/linux/bch.h
++ *
 
-So it is not limited to just the kernel.
+But again, not big deal. But it is better to address these tiny things,
+anyway. If you re-send v4 - I'll put it to my tree instead of v3.
 
--- Steve
+Thanks.
 
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
