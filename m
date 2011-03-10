@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1CJNF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 08:05:29 -0500
-Received: from charybdis-ext.suse.de ([195.135.221.2]:41183 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751723Ab1CJNF2 (ORCPT
+	id S1752719Ab1CJNHq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 08:07:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40214 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab1CJNHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 08:05:28 -0500
-Subject: Re: [RFC][PATCH 0/2] Allow subsystems to avoid using sysdevs for
- defining "core" PM callbacks
-From: Kay Sievers <kay.sievers@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Greg KH <gregkh@suse.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de
-In-Reply-To: <201103100131.58206.rjw@sisk.pl>
-References: <201103100131.58206.rjw@sisk.pl>
+	Thu, 10 Mar 2011 08:07:45 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=XbqWoAS_rckA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=cHa24kVuPC_Gx4GcXocA:9 a=5L5Qiv4pIAKaryHzdUlK2WCNQNsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional
+ assignment of CC and AR"
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        mrubin@google.com
+In-Reply-To: <4D787294.4040906@linux.intel.com>
+References: <1299715137-22768-1-git-send-email-dhsharp@google.com>
+	 <1299715137-22768-3-git-send-email-dhsharp@google.com>
+	 <4D7828F9.7000906@linux.intel.com>
+	 <1299720997.15854.276.camel@gandalf.stny.rr.com>
+	 <4D783038.8080103@linux.intel.com>
+	 <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>
+	 <1299725486.15854.281.camel@gandalf.stny.rr.com>
+	 <1299727594.15854.310.camel@gandalf.stny.rr.com>
+	 <4D787294.4040906@linux.intel.com>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 14:05:15 +0100
-Message-ID: <1299762315.1875.14.camel@zag>
+Date: Thu, 10 Mar 2011 08:07:43 -0500
+Message-ID: <1299762463.15854.329.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 01:31 +0100, Rafael J. Wysocki wrote:
-> There are multiple problems with sysdevs, or struct sys_device objects to
-> be precise, that are so annoying that some people have started to think
-> of removind them entirely from the kernel.  To me, personally, the most
-> obvious issue is the way sysdevs are used for defining suspend/resume
-> callbacks to be executed with one CPU on-line and interrupts disabled.
-> Greg and Kay may tell you more about the other problems with sysdevs. :-)
+On Wed, 2011-03-09 at 22:41 -0800, Darren Hart wrote:
+> On 03/09/2011 07:26 PM, Steven Rostedt wrote:
+> > On Wed, 2011-03-09 at 21:51 -0500, Steven Rostedt wrote:
+> >
+> >> I'll play with some other make tricks and see if I can come up with a
+> >> better solution.
+> >
+> > OK, it didn't take me long to come up with "Makefiles suck" ;)
 > 
-> Some subsystems need to carry out certain operations during suspend after
-> we've disabled non-boot CPUs and interrupts have been switched off on the
-> only on-line one.  Currently, the only way to achieve that is to define
-> sysdev suspend/resume callbacks, but this is cumbersome and inefficient.
-> Namely, to do that, one has to define a sysdev class providing the callbacks
-> and a sysdev actually using them, which is excessively complicated.  Moreover,
-> the sysdev suspend/resume callbacks take arguments that are not really used
-> by the majority of subsystems defining sysdev suspend/resume callbacks
-> (or even if they are used, they don't really _need_ to be used, so they
-> are simply unnecessary).  Of course, if a sysdev is only defined to provide
-> suspend/resume (and maybe shutdown) callbacks, there's no real reason why
-> it should show up in sysfs.
+> Yeah, that little tidbit I sent took longer to come up with than it 
+> should have :/
 > 
-> For this reason, I thought it would be a good idea to provide a simpler
-> interface for subsystems to define "very late" suspend callbacks and
-> "very early" resume callbacks (and "very late" shutdown callbacks as well)
-> without the entire bloat related to sysdevs.  The interface is introduced
-> by the first of the following patches, while the second patch converts some
-> sysdev users related to the x86 architecture to using the new interface.
+> >
+> > But I did come up with a solution:
+> >
+> > ifneq ("$(origin CC)", "environment")
+> > CC = gcc
+> > endif
+> >
+> > CC := $(CROSS_COMPILE)$(CC)
 > 
-> I believe that call sysdev users who need to define suspend/resume/shutdown
-> callbacks may be converted to using the interface provided by the first patch,
-> which in turn should allow us to convert the remaining sysdev functionality
-> into "normal" struct device interfaces.  Still, even if that turns out to be
-> too complicated, the bloat reduction resulting from the second patch kind of
-> shows that moving at least some sysdev users to a simpler interface (like in
-> the first patch) is a good idea anyway.
+> Why do we want to force CC=gcc? Isn't the right thing to make your OS 
+> setup cc to point to your preferred compiler since it is known to be the 
+> default for make?
 
-Do I read that right? We get rid of the entire dance of creating
-sysdevs/sysdev_classes and the pointless and broken stuff in /sys?
+Why not? The kernel does it. And yes, as I am following the kernel with
+trace-cmd than other user space tools.
 
-We just dynamically maintain a list of devices/operations, which is
-list-executed when needed?
+> 
+> On Ubuntu, cc -> gcc
+> On Fedora 13, cc -> ccache
 
-These new "core" operations are not included in every device but only
-global per subsystem, just like the sysdev_class did earlier?
+Ug, thanks for telling me. /me goes to disable ccache from his F13
+installs.
 
-Looks all like a nice plan to me.
+> 
+> seems strange to force it to be gcc when users/distros have gone through 
+> the trouble to set it up on their system.
 
-Thanks,
-Kay
+If you define CC as a environment variable, it will work with the other
+solution.
+
+> 
+> 
+> > This wont let make CC=xx work unless I also add a:
+> >
+> > ifneq ("$(origin CC)", "command line")
+> >
+> > around the above if, but do we care?
+> >
+> 
+> This starts to get to the point where others looking at it will choke on 
+> the expert Makefile usage.
+> 
+
+Yeah, that took a bit of searching. Makefiles are far from being
+obvious. But as you all know, I work in the world of obfuscation.
+Probably why I prefer perl over python ;)
+
+-- Steve
+
 
