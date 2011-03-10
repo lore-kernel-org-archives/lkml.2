@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab1CJS6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 13:58:21 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:61511 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab1CJS6S convert rfc822-to-8bit (ORCPT
+	id S1753225Ab1CJS7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 13:59:53 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37183 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab1CJS7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 13:58:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=qRlXRJijiDg2eFcycdlDiB3015dKkBN/UcOhW2rbLMcOlUIZN9oq5ZgAJoA63pnf1Z
-         pQxJ7WLIz7sh9YJrOuiw==
+	Thu, 10 Mar 2011 13:59:52 -0500
+Message-ID: <4D791FA3.3070100@pengutronix.de>
+Date: Thu, 10 Mar 2011 19:59:47 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <20110310181529.GF29464@redhat.com>
-References: <1299619256-12661-1-git-send-email-teravest@google.com>
- <20110309142237.6ab82523.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTimRRAEp75CfyJFxU-5wOYfety6gjq=msZf0Wp8P@mail.gmail.com>
- <20110310181529.GF29464@redhat.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Thu, 10 Mar 2011 10:57:52 -0800
-Message-ID: <AANLkTi=LL6JEwOcZfSsapYn-isA3RBrV8kPq8EK6va8=@mail.gmail.com>
-Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, m-ikeda@ds.jp.nec.com,
-        jaxboe@fusionio.com, linux-kernel@vger.kernel.org, ryov@valinux.co.jp,
-        taka@valinux.co.jp, righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
-        mrubin@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Dr Andrew John Hughes <ahughes@redhat.com>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Trond.Myklebust@netapp.com
+Subject: Re: NFS regression in 2.6.37.1 (current stable)
+References: <20110310185321.GA22030@rivendell.middle-earth.co.uk>
+In-Reply-To: <20110310185321.GA22030@rivendell.middle-earth.co.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigEDA031277098FCBB0A1198E1"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 10:15 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Mar 10, 2011 at 10:08:03AM -0800, Justin TerAvest wrote:
->
-> [..]
->> > I don't like to increase size of page_cgroup but I think you can record
->> > information without increasing size of page_cgroup.
->> >
->> > A) As Andrea did, encode it to pc->flags.
->> >   But I'm afraid that there is a racy case because memory cgroup uses some
->> >   test_and_set() bits.
->> > B) I wonder why the information cannot be recorded in page->private.
->> >   When page has buffers, you can record the information to buffer struct.
->> >   About swapio (if you take care of), you can record information to bio.
->>
->> Hi Kame,
->>
->> I'm concerned that by using something like buffer_heads stored in
->> page->private, we will only be supported on some filesystems and not
->> others. In addition, I'm not sure if all filesystems attach buffer
->> heads at the same time; if page->private is modified in the flusher
->> thread, we might not be able to determine the thread that dirtied the
->> page in the first place.
->
-> I think the person who dirtied the page can store the information in
-> page->private (assuming buffer heads were not generated) and if flusher
-> thread later ends up generating buffer heads and ends up modifying
-> page->private, this can be copied in buffer heads?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigEDA031277098FCBB0A1198E1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This scares me a bit.
+Hello Andrew,
 
-As I understand it, fs/ code expects total ownership of page->private.
-This adds a responsibility for every user to copy the data through and
-store it in the buffer head (or anything else). btrfs seems to do
-something entirely different in some cases and store a different kind
-of value.
+On 03/10/2011 07:53 PM, Dr Andrew John Hughes wrote:
+> [Please CC me on responses as I'm not subscribed]
+>=20
+> Hi,
+>=20
+> I seem to have uncovered a regression in the NFS code between 2.6.37 an=
+d 2.6.37.1
+> caused by this changeset:
+>=20
+> commit 55ea499d60aefa3d03a77fc8590c26b5881faa92
+> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Date:   Sat Jan 8 17:45:38 2011 -0500
+> NFS: Don't use vm_map_ram() in readdir
+> http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-2.6.37.y.git;a=
+=3Dcommit;h=3D6650239a4b01077e80d5a4468562756d77afaa59
+>=20
+> With this change applied, copying of files between NFS and non-NFS
+> mounts seems to be broken.  The easiest way I've found to replicate
+> this myself is to use a VCS to do a clone of a tree on a NFS mount to
+> a directory on a non-NFS mount.  I used Mercurial, as I had Mercurial
+> trees to hand from work on IcedTea, but I assume doing it with a git
+> tree such as the linux tree would also work.  The idea is to do
+> something which involves copying over a bunch of directories and
+> checking the result is readable.
+>=20
+> $ hg clone $HOME/projects/openjdk/icedtea6-hg
+> destination directory: icedtea6-hg
+> updating to branch default
+> abort:
+> data/contrib/templater/hotspot/src/cpu/CPU/vm/bytecodeInterpreter_CPU.i=
+nline.hpp.i@16d04ce16287:
+> no match found!
+>=20
+> In the above, $HOME is an NFS mount and $PWD is a local reiserfs
+> partition.  I initially hit failures doing builds with source on $HOME
+> and the build directory on a local reiserfs partition.  In that
+> scenario, it would fail as not being able to find files that should
+> have been copied over.
+>=20
+> Reverting the changeset fixes the issue.  2.6.37.2 still has the bug.
+> I haven't checked 2.6.37.3 yet but I didn't see any NFS changes in ther=
+e.
 
-I don't know that it's right to add the burden to copy the original
-value to everything that wants to use page->private.
+Which arch are you using? As this patch is also part of the upcoming
+2.6.38, can you check if the latest .38 is affected, too?
 
->
-> Thanks
-> Vivek
->
+cheers, Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enigEDA031277098FCBB0A1198E1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk15H6UACgkQjTAFq1RaXHMfOQCbBPBokIJjWhab2rX37UdfvgM8
+7CkAn2XcIdDRFAncXq+yrd2j7d0TF2Kf
+=zwn4
+-----END PGP SIGNATURE-----
+
+--------------enigEDA031277098FCBB0A1198E1--
