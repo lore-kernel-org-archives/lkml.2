@@ -1,214 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab1CJT3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 14:29:21 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:39730 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab1CJT3S (ORCPT
+	id S1753979Ab1CJT36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 14:29:58 -0500
+Received: from casper.infradead.org ([85.118.1.10]:57576 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab1CJT34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 14:29:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=I12lmLucYDbVrcI4qs1xQWZle
-	B3b8J02+BvPN8oCFQw7Rt4C3JeC2IVBKwXGZFPnzj//WuDf2s38Xu9J9WxdPR7/G
-	x82wtsET5etdI7IIOZx1H4BjcvE5ga61LuNrQj0D1A/W887dIKcG3xQacczNAEgu
-	Mks40zhdvTrwMyFYOU=
-Date: Thu, 10 Mar 2011 11:31:30 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: linux-fsdevel@vger.kernel.org
-cc: linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, arnd@arndb.de, mtk.manpages@gmail.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, linux-arch@vger.kernel.org
-Subject: [PATCH v3] introduce sys_syncfs to sync a single file system
-In-Reply-To: <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
-Message-ID: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
- <20110303072223.GA28133@elie> <87bp1sziqn.fsf@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 10 Mar 2011 14:29:56 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Han Pingtian <phan@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/4] perf top: Fix events overflow in top command
+Date: Thu, 10 Mar 2011 16:29:43 -0300
+Message-Id: <1299785386-22234-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1299785386-22234-1-git-send-email-acme@infradead.org>
+References: <1299785386-22234-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is frequently useful to sync a single file system, instead of all
-mounted file systems via sync(2):
+From: Jiri Olsa <jolsa@redhat.com>
 
- - On machines with many mounts, it is not at all uncommon for some of
-   them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
-   those and may never get to the one you do care about (e.g., /).
- - Some applications write lots of data to the file system and then
-   want to make sure it is flushed to disk.  Calling fsync(2) on each
-   file introduces unnecessary ordering constraints that result in a large
-   amount of sub-optimal writeback/flush/commit behavior by the file
-   system.
+The snprintf function returns number of printed characters even if it
+cross the size parameter. So passing enough events via '-e' parameter
+will cause segmentation fault.
 
-There are currently two ways (that I know of) to sync a single super_block:
+It's reproduced by following command:
 
- - BLKFLSBUF ioctl on the block device: That also invalidates the bdev
-   mapping, which isn't usually desirable, and doesn't work for non-block
-   file systems.
- - 'mount -o remount,rw' will call sync_filesystem as an artifact of the
-   current implemention.  Relying on this little-known side effect for
-   something like data safety sounds foolish.
+perf top -e `perf list | grep Tracepoint | awk -F'[' '\
+{gsub(/[[:space:]]+/,"",$1);array[FNR]=$1}END{outputs=array[1];\
+for (i=2;i<=FNR;i++){ outputs=outputs "," array[i];};print outputs}'`
 
-Both of these approaches require root privileges, which some applications
-do not have (nor should they need?) given that sync(2) is an unprivileged
-operation.
+Attached patch is adding SNPRINTF macro that provides the overflow check
+and returns actuall number of printed characters.
 
-This patch introduces a new system call syncfs(2) that takes an fd and
-syncs only the file system it references.  Maybe someday we can
-
- $ sync /some/path
-
-and not get
-
- sync: ignoring all arguments
-
-The syscall is motivated by comments by Al and Christoph at the last LSF.
-syncfs(2) seems like an appropriate name given statfs(2).
-
-A similar ioctl was also proposed a while back, see
-	http://marc.info/?l=linux-fsdevel&m=127970513829285&w=2
-
-Signed-off-by: Sage Weil <sage@newdream.net>
+Reported-by: Han Pingtian <phan@redhat.com>
+Cc: Han Pingtian <phan@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1299528821-17521-2-git-send-email-jolsa@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-ChangeLog:
-  v3: Update include/linux/syscalls.h and asm-generic/unistd.h
-  v2: Rename to syncfs, simplify to just take an fd.
-  v1: syncat
+ tools/perf/util/top.c |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
- arch/x86/ia32/ia32entry.S          |    1 +
- arch/x86/include/asm/unistd_32.h   |    3 ++-
- arch/x86/include/asm/unistd_64.h   |    2 ++
- arch/x86/kernel/syscall_table_32.S |    1 +
- fs/sync.c                          |   24 ++++++++++++++++++++++++
- include/asm-generic/unistd.h       |    4 +++-
- include/linux/syscalls.h           |    1 +
- 7 files changed, 34 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 518bb99..24082b8 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -851,4 +851,5 @@ ia32_sys_call_table:
- 	.quad sys_fanotify_init
- 	.quad sys32_fanotify_mark
- 	.quad sys_prlimit64		/* 340 */
-+	.quad sys_syncfs
- ia32_syscall_end:
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index b766a5e..da3903f 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -346,10 +346,11 @@
- #define __NR_fanotify_init	338
- #define __NR_fanotify_mark	339
- #define __NR_prlimit64		340
-+#define __NR_syncfs             341
- 
- #ifdef __KERNEL__
- 
--#define NR_syscalls 341
-+#define NR_syscalls 342
- 
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index 363e9b8..a2e7516 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -669,6 +669,8 @@ __SYSCALL(__NR_fanotify_init, sys_fanotify_init)
- __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
- #define __NR_prlimit64				302
- __SYSCALL(__NR_prlimit64, sys_prlimit64)
-+#define __NR_syncfs                             303
-+__SYSCALL(__NR_syncfs, sys_syncfs)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index b35786d..d40bd16 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -340,3 +340,4 @@ ENTRY(sys_call_table)
- 	.long sys_fanotify_init
- 	.long sys_fanotify_mark
- 	.long sys_prlimit64		/* 340 */
-+	.long sys_syncfs
-diff --git a/fs/sync.c b/fs/sync.c
-index ba76b96..92ca208 100644
---- a/fs/sync.c
-+++ b/fs/sync.c
-@@ -7,6 +7,7 @@
- #include <linux/fs.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/namei.h>
- #include <linux/sched.h>
- #include <linux/writeback.h>
- #include <linux/syscalls.h>
-@@ -128,6 +129,29 @@ void emergency_sync(void)
- 	}
+diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
+index 70a9c13..4f869da 100644
+--- a/tools/perf/util/top.c
++++ b/tools/perf/util/top.c
+@@ -61,6 +61,12 @@ static void rb_insert_active_sym(struct rb_root *tree, struct sym_entry *se)
+ 	rb_insert_color(&se->rb_node, tree);
  }
  
-+/*
-+ * sync a single super
-+ */
-+SYSCALL_DEFINE1(syncfs, int, fd)
-+{
-+	struct file *file;
-+	struct super_block *sb;
-+	int ret;
-+	int fput_needed;
++#define SNPRINTF(buf, size, fmt, args...) \
++({ \
++	size_t r = snprintf(buf, size, fmt, ## args); \
++	r > size ?  size : r; \
++})
 +
-+	file = fget_light(fd, &fput_needed);
-+	if (!file)
-+		return -EBADF;
-+	sb = file->f_dentry->d_sb;
-+
-+	down_read(&sb->s_umount);
-+	ret = sync_filesystem(sb);
-+	up_read(&sb->s_umount);
-+
-+	fput_light(file, fput_needed);
-+	return ret;
-+}
-+
- /**
-  * vfs_fsync_range - helper to sync a range of data & metadata to disk
-  * @file:		file to sync
-diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
-index b969770..3cf62eb 100644
---- a/include/asm-generic/unistd.h
-+++ b/include/asm-generic/unistd.h
-@@ -646,9 +646,11 @@ __SYSCALL(__NR_prlimit64, sys_prlimit64)
- __SYSCALL(__NR_fanotify_init, sys_fanotify_init)
- #define __NR_fanotify_mark 263
- __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
-+#define __NR_syncfs 264
-+__SYSCALL(__NR_syncfs, sys_syncfs)
+ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ {
+ 	struct perf_evsel *counter;
+@@ -70,7 +76,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 	size_t ret = 0;
  
- #undef __NR_syscalls
--#define __NR_syscalls 264
-+#define __NR_syscalls 265
+ 	if (!perf_guest) {
+-		ret = snprintf(bf, size,
++		ret = SNPRINTF(bf, size,
+ 			       "   PerfTop:%8.0f irqs/sec  kernel:%4.1f%%"
+ 			       "  exact: %4.1f%% [", samples_per_sec,
+ 			       100.0 - (100.0 * ((samples_per_sec - ksamples_per_sec) /
+@@ -81,7 +87,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 		float guest_kernel_samples_per_sec = top->guest_kernel_samples / top->delay_secs;
+ 		float guest_us_samples_per_sec = top->guest_us_samples / top->delay_secs;
  
- /*
-  * All syscalls below here should go away really,
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 98664db..0ceed21 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -820,6 +820,7 @@ asmlinkage long sys_fanotify_init(unsigned int flags, unsigned int event_f_flags
- asmlinkage long sys_fanotify_mark(int fanotify_fd, unsigned int flags,
- 				  u64 mask, int fd,
- 				  const char  __user *pathname);
-+asmlinkage long sys_syncfs(int fd);
+-		ret = snprintf(bf, size,
++		ret = SNPRINTF(bf, size,
+ 			       "   PerfTop:%8.0f irqs/sec  kernel:%4.1f%% us:%4.1f%%"
+ 			       " guest kernel:%4.1f%% guest us:%4.1f%%"
+ 			       " exact: %4.1f%% [", samples_per_sec,
+@@ -101,38 +107,38 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+ 	if (top->evlist->nr_entries == 1 || !top->display_weighted) {
+ 		struct perf_evsel *first;
+ 		first = list_entry(top->evlist->entries.next, struct perf_evsel, node);
+-		ret += snprintf(bf + ret, size - ret, "%" PRIu64 "%s ",
++		ret += SNPRINTF(bf + ret, size - ret, "%" PRIu64 "%s ",
+ 				(uint64_t)first->attr.sample_period,
+ 				top->freq ? "Hz" : "");
+ 	}
  
- int kernel_execve(const char *filename, const char *const argv[], const char *const envp[]);
+ 	if (!top->display_weighted) {
+-		ret += snprintf(bf + ret, size - ret, "%s",
++		ret += SNPRINTF(bf + ret, size - ret, "%s",
+ 				event_name(top->sym_evsel));
+ 	} else list_for_each_entry(counter, &top->evlist->entries, node) {
+-		ret += snprintf(bf + ret, size - ret, "%s%s",
++		ret += SNPRINTF(bf + ret, size - ret, "%s%s",
+ 				counter->idx ? "/" : "", event_name(counter));
+ 	}
  
+-	ret += snprintf(bf + ret, size - ret, "], ");
++	ret += SNPRINTF(bf + ret, size - ret, "], ");
+ 
+ 	if (top->target_pid != -1)
+-		ret += snprintf(bf + ret, size - ret, " (target_pid: %d",
++		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %d",
+ 				top->target_pid);
+ 	else if (top->target_tid != -1)
+-		ret += snprintf(bf + ret, size - ret, " (target_tid: %d",
++		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %d",
+ 				top->target_tid);
+ 	else
+-		ret += snprintf(bf + ret, size - ret, " (all");
++		ret += SNPRINTF(bf + ret, size - ret, " (all");
+ 
+ 	if (top->cpu_list)
+-		ret += snprintf(bf + ret, size - ret, ", CPU%s: %s)",
++		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
+ 				top->evlist->cpus->nr > 1 ? "s" : "", top->cpu_list);
+ 	else {
+ 		if (top->target_tid != -1)
+-			ret += snprintf(bf + ret, size - ret, ")");
++			ret += SNPRINTF(bf + ret, size - ret, ")");
+ 		else
+-			ret += snprintf(bf + ret, size - ret, ", %d CPU%s)",
++			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
+ 					top->evlist->cpus->nr,
+ 					top->evlist->cpus->nr > 1 ? "s" : "");
+ 	}
 -- 
-1.7.0
+1.6.2.5
 
