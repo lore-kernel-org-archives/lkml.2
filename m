@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1CJA3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:29:20 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:24397 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab1CJA3T (ORCPT
+	id S1754193Ab1CJAaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:30:35 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:47561 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753881Ab1CJAad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:29:19 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=aoKKWR9xDhskunYCBwBSLagXVIkNWvqQuX6zfAiZ5DSg+MH2Gptlc8aU4AqMk6VF1
-	iY12OZHZFRk6xDgrnrI1w==
-From: David Sharp <dhsharp@google.com>
-To: linux-kernel@vger.kernel.org, rostedt@goodmis.org
-Cc: mrubin@google.com, David Sharp <dhsharp@google.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional assignment of CC and AR"
-Date: Wed,  9 Mar 2011 15:58:57 -0800
-Message-Id: <1299715137-22768-3-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1299715137-22768-1-git-send-email-dhsharp@google.com>
-References: <1299715137-22768-1-git-send-email-dhsharp@google.com>
+	Wed, 9 Mar 2011 19:30:33 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:X-X-Sender:To:cc:Subject:In-Reply-To:Message-ID:References:User-Agent:MIME-Version:Content-Type:X-Identified-User;
+	b=nPmpNNR+IKaoMsWp6z1yHihlDZuzRdvxvEWJPuO+2FpTQ655lzMt8Iz1lmh5Rq/fvPf0d8WqFKHQh05bkX/lCQj3iSpEYMtsSvT7vRNmQ2O+Fx8wKrbv2bxFESdJQMvd;
+Date: Wed, 9 Mar 2011 16:30:23 -0800 (PST)
+From: Randy Dunlap <rdunlap@xenotime.net>
+X-X-Sender: rddunlap@chimera.site
+To: Rob Landley <rlandley@parallels.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Remove more obsolete Documentation entries.
+In-Reply-To: <4D77F557.3050002@parallels.com>
+Message-ID: <alpine.LFD.2.00.1103091630001.2061@chimera.site>
+References: <4D77F557.3050002@parallels.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 6c696cec3f264a9399241b6e648f58bc97117d49.
 
-Make has default values CC and AR of 'cc' and 'ar' respectively. This means
-that "CC ?= anything" will never have effect, because CC is always already set.
-Because of this, 6c696cec makes setting CROSS_COMPILE from the command line or
-environment useless.
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Wed, 9 Mar 2011, Rob Landley wrote:
 
-diff --git a/Makefile b/Makefile
-index 169fcbc..fa37df5 100644
---- a/Makefile
-+++ b/Makefile
-@@ -13,8 +13,8 @@ FILE_VERSION = 6
- 
- MAKEFLAGS += --no-print-directory
- 
--CC ?= $(CROSS_COMPILE)gcc
--AR ?= $(CROSS_COMPILE)ar
-+CC = $(CROSS_COMPILE)gcc
-+AR = $(CROSS_COMPILE)ar
- EXT = -std=gnu99
- INSTALL = install
- 
--- 
-1.7.3.1
+> From: Rob Landley <rlandley@parallels.com>
+>
+> Time interpolators were removed in git 1f564ad6d41828
+> Voyager support went away in git b6b6e2b112caf
+>
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
 
+Hi Rob,
+
+I already have this patch queued.
+
+> ---
+>
+> Documentation/00-INDEX |    4 ----
+> 1 file changed, 4 deletions(-)
+>
+> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+> index 8dfc670..f607367 100644
+> --- a/Documentation/00-INDEX
+> +++ b/Documentation/00-INDEX
+> @@ -328,8 +328,6 @@ sysrq.txt
+> 	- info on the magic SysRq key.
+> telephony/
+> 	- directory with info on telephony (e.g. voice over IP) support.
+> -time_interpolators.txt
+> -	- info on time interpolators.
+> uml/
+> 	- directory with information about User Mode Linux.
+> unicode.txt
+> @@ -346,8 +344,6 @@ vm/
+> 	- directory with info on the Linux vm code.
+> volatile-considered-harmful.txt
+> 	- Why the "volatile" type class should not be used
+> -voyager.txt
+> -	- guide to running Linux on the Voyager architecture.
+> w1/
+> 	- directory with documents regarding the 1-wire (w1) subsystem.
+> watchdog/
+>
