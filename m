@@ -1,96 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1CJOxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:53:12 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:61293 "EHLO mgw-da02.nokia.com"
+	id S1752997Ab1CJOwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:52:50 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:25716 "EHLO mgw-da01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907Ab1CJOwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:52:47 -0500
+	id S1752947Ab1CJOwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:52:49 -0500
 From: Phil Carmody <ext-phil.2.carmody@nokia.com>
 To: akpm@linux-foundation.org
 Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Subject: [PATCH 3/4] calibrate: retry with wider bounds when converge seems to fail
-Date: Thu, 10 Mar 2011 16:48:06 +0200
-Message-Id: <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com>
+Subject: [PATCH 4/4] DO NOT INTEGRATE: test-only timing
+Date: Thu, 10 Mar 2011 16:48:07 +0200
+Message-Id: <1299768487-13200-5-git-send-email-ext-phil.2.carmody@nokia.com>
 X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
-In-Reply-To: <1299768487-13200-3-git-send-email-ext-phil.2.carmody@nokia.com>
+In-Reply-To: <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com>
 References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
  <1299768487-13200-2-git-send-email-ext-phil.2.carmody@nokia.com>
  <1299768487-13200-3-git-send-email-ext-phil.2.carmody@nokia.com>
+ <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com>
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Systems with unmaskable interrupts such as SMIs may massively underestimate
-loops_per_jiffy, and fail to converge anywhere near the real value. A case
-seen on x86_64 was an initial estimate of 256<<12, which converged to 511<<12
-where the real value should have been over 630<<12. This admitedly requires
-bypassing the TSC calibration (lpj_fine), and a failure to settle in the
-direct calibration too, but is physically possible. This failure does not
-depend on my previous calibration optimisation, but by luck is easy to fix
-with the optimisation in place with a trivial retry loop.
-
-In the context of the optimised converging method, as we can no longer trust
-the starting estimate, enlarge the search bounds exponentially so that the
-number of retries is logarithmically bounded.
+Always run both the old and the new converging method to see what they
+would say, even if more accurate techniques are available to us.
 
 Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 ---
- init/calibrate.c |   22 ++++++++++++++++++----
- 1 files changed, 18 insertions(+), 4 deletions(-)
+ init/calibrate.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 73 insertions(+), 4 deletions(-)
 
 diff --git a/init/calibrate.c b/init/calibrate.c
-index f9000df..a362ad0 100644
+index a362ad0..8fb2a4f 100644
 --- a/init/calibrate.c
 +++ b/init/calibrate.c
-@@ -122,7 +122,7 @@ static unsigned long __cpuinit calibrate_delay_direct(void) {return 0;}
- static unsigned long __cpuinit calibrate_delay_converge(void)
- {
- 	/* First stage - slowly accelerate to find initial bounds */
--	unsigned long lpj, ticks, loopadd, chop_limit;
-+	unsigned long lpj, lpj_base, ticks, loopadd, loopadd_base, chop_limit;
- 	int trials = 0, band = 0, trial_in_band = 0;
- 
- 	lpj = (1<<12);
-@@ -146,14 +146,18 @@ static unsigned long __cpuinit calibrate_delay_converge(void)
+@@ -146,12 +146,17 @@ static unsigned long __cpuinit calibrate_delay_converge(void)
  	 * the largest likely undershoot. This defines our chop bounds.
  	 */
  	trials -= band;
--	loopadd = lpj * band;
--	lpj *= trials;
--	chop_limit = lpj >> (LPS_PREC + 1);
-+	loopadd_base = lpj * band;
-+	lpj_base = lpj * trials;
 +
-+recalibrate:
-+	lpj = lpj_base;
-+	loopadd = loopadd_base;
++	/* May inject a deliberate mis-estimation here */
++	/* trials -= 99; */
++
+ 	loopadd_base = lpj * band;
+ 	lpj_base = lpj * trials;
+ 
+ recalibrate:
+ 	lpj = lpj_base;
+ 	loopadd = loopadd_base;
++	pr_info("lpj underestimate = %lu range = %lu\n", lpj, loopadd);
  
  	/*
  	 * Do a binary approximation to get lpj set to
- 	 * equal one clock (up to LPS_PREC bits)
- 	 */
-+	chop_limit = lpj >> LPS_PREC;
- 	while (loopadd > chop_limit) {
- 		lpj += loopadd;
- 		ticks = jiffies;
-@@ -165,6 +169,16 @@ static unsigned long __cpuinit calibrate_delay_converge(void)
- 			lpj -= loopadd;
- 		loopadd >>= 1;
- 	}
+@@ -183,32 +188,96 @@ recalibrate:
+ 	return lpj;
+ }
+ 
++/* Old version for timing purposes only */
++static unsigned long __cpuinit calibrate_delay_converge_slowly(void)
++{
++	unsigned long lpj, ticks, loopbit;
++	int lps_precision = LPS_PREC;
++
++	lpj = (1<<12);
++	while ((lpj <<= 1) != 0) {
++		/* wait for "start of" clock tick */
++		ticks = jiffies;
++		while (ticks == jiffies)
++			/* nothing */;
++		/* Go .. */
++		ticks = jiffies;
++		__delay(lpj);
++		ticks = jiffies - ticks;
++		if (ticks)
++			break;
++	}
++
 +	/*
-+	 * If we incremented every single time possible, presume we've
-+	 * massively underestimated initially, and retry with a higher
-+	 * start, and larger range. (Only seen on x86_64.)
++	 * Do a binary approximation to get lpj set to
++	 * equal one clock (up to lps_precision bits)
 +	 */
-+	if (lpj + loopadd * 2 == lpj_base + loopadd_base * 2) {
-+		lpj_base = lpj;
-+		loopadd_base <<= 2;
-+		goto recalibrate;
++	lpj >>= 1;
++	loopbit = lpj;
++	while (lps_precision-- && (loopbit >>= 1)) {
++		lpj |= loopbit;
++		ticks = jiffies;
++		while (ticks == jiffies)
++			/* nothing */;
++		ticks = jiffies;
++		__delay(lpj);
++		if (jiffies != ticks)   /* longer than 1 tick */
++			lpj &= ~loopbit;
++	}
++
++	return lpj;
++}
++
++static void finally_print_bogomips(unsigned long lpj, unsigned int ticks)
++{
++	/* This calculation is bogus */
++	pr_cont("%lu.%02lu BogoMIPS (lpj=%lu) took %u jiffies\n",
++		lpj/(500000/HZ), (lpj/(5000/HZ)) % 100, lpj, ticks);
++}
++
+ void __cpuinit calibrate_delay(void)
+ {
++	enum methods { DUNNO, PRESET, FINE, DIRECT, CONVERGE };
+ 	static bool printed;
++	int method_used = DUNNO;
++	unsigned long ojiffs = jiffies;
+ 
+ 	if (preset_lpj) {
++		method_used = PRESET;
+ 		loops_per_jiffy = preset_lpj;
+ 		if (!printed)
+ 			pr_info("Calibrating delay loop (skipped) "
+ 				"preset value.. ");
+ 	} else if ((!printed) && lpj_fine) {
++		method_used = FINE;
+ 		loops_per_jiffy = lpj_fine;
+ 		pr_info("Calibrating delay loop (skipped), "
+ 			"value calculated using timer frequency.. ");
+ 	} else if ((loops_per_jiffy = calibrate_delay_direct()) != 0) {
++		method_used = DIRECT;
+ 		if (!printed)
+ 			pr_info("Calibrating delay using timer "
+ 				"specific routine.. ");
+ 	} else {
++		method_used = CONVERGE;
+ 		if (!printed)
+ 			pr_info("Calibrating delay loop... ");
+ 		loops_per_jiffy = calibrate_delay_converge();
+ 	}
+-	if (!printed)
+-		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
+-			loops_per_jiffy/(500000/HZ),
+-			(loops_per_jiffy/(5000/HZ)) % 100, loops_per_jiffy);
++	if (!printed) {
++		unsigned long tmp_lpj;
++		finally_print_bogomips(loops_per_jiffy, jiffies-ojiffs);
++		if (method_used != CONVERGE) {
++			ojiffs = jiffies;
++			pr_info("New-style converging method... ");
++			tmp_lpj = calibrate_delay_converge();
++			finally_print_bogomips(tmp_lpj, jiffies-ojiffs);
++		}
++		ojiffs = jiffies;
++		pr_info("Old-style converging method... ");
++		tmp_lpj = calibrate_delay_converge_slowly();
++		finally_print_bogomips(tmp_lpj, jiffies-ojiffs);
 +	}
  
- 	return lpj;
+ 	printed = true;
  }
 -- 
 1.7.2.rc1.37.gf8c40
