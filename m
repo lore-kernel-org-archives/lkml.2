@@ -1,192 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab1CJQJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:09:44 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:63084 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab1CJQIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:08:37 -0500
+	id S1753610Ab1CJQKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:10:14 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:8204 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750Ab1CJQIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:08:36 -0500
 X-IronPort-AV: E=Sophos;i="4.62,296,1297054800"; 
-   d="scan'208";a="139621155"
+   d="scan'208";a="139621130"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 10/14] xen: events: maintain a list of Xen interrupts
-Date: Thu, 10 Mar 2011 16:08:11 +0000
-Message-Id: <1299773295-348-10-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 06/14] xen: events: refactor GSI pirq bindings functions
+Date: Thu, 10 Mar 2011 16:08:07 +0000
+Message-Id: <1299773295-348-6-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
 References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 10 Mar 2011 16:08:34.0088 (UTC) FILETIME=[67FDDA80:01CBDF3D]
+X-OriginalArrivalTime: 10 Mar 2011 16:08:27.0151 (UTC) FILETIME=[63DB59F0:01CBDF3D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a PVHVM kernel not all interrupts are Xen interrupts (APIC interrupts can also be present).
+Following the example set by xen_allocate_pirq_msi and
+xen_bind_pirq_msi_to_irq:
 
-Currently we get away with walking over all interrupts because the
-lookup in the irq_info array simply returns IRQT_UNBOUND and we ignore
-it. However this array will be going away in a future patch so we need
-to manually track which interrupts have been allocated by the Xen
-events infrastructure.
+xen_allocate_pirq becomes xen_allocate_pirq_gsi and now only allocates
+a pirq number and does not bind it.
+
+xen_map_pirq_gsi becomes xen_bind_pirq_gsi_to_irq and binds an
+existing pirq.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 ---
- drivers/xen/events.c |   59 +++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 44 insertions(+), 15 deletions(-)
+ arch/x86/pci/xen.c   |   41 +++++++++++++++++++++++++++++------------
+ drivers/xen/events.c |    7 ++++---
+ include/xen/events.h |   10 +++++++---
+ 3 files changed, 40 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index cf372d4..e119989 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -56,6 +56,8 @@
-  */
- static DEFINE_SPINLOCK(irq_mapping_update_lock);
- 
-+static LIST_HEAD(xen_irq_list_head);
-+
- /* IRQ <-> VIRQ mapping. */
- static DEFINE_PER_CPU(int [NR_VIRQS], virq_to_irq) = {[0 ... NR_VIRQS-1] = -1};
- 
-@@ -85,7 +87,9 @@ enum xen_irq_type {
-  */
- struct irq_info
- {
-+	struct list_head list;
- 	enum xen_irq_type type;	/* type */
-+	unsigned irq;
- 	unsigned short evtchn;	/* event channel */
- 	unsigned short cpu;	/* cpu bound */
- 
-@@ -135,6 +139,7 @@ static void xen_irq_info_common_init(struct irq_info *info,
- 	BUG_ON(info->type != IRQT_UNBOUND && info->type != type);
- 
- 	info->type = type;
-+	info->irq = irq;
- 	info->evtchn = evtchn;
- 	info->cpu = cpu;
- 
-@@ -311,10 +316,11 @@ static void init_evtchn_cpu_bindings(void)
- {
- 	int i;
- #ifdef CONFIG_SMP
--	struct irq_desc *desc;
-+	struct irq_info *info;
- 
- 	/* By default all event channels notify CPU#0. */
--	for_each_irq_desc(i, desc) {
-+	list_for_each_entry(info, &xen_irq_list_head, list) {
-+		struct irq_desc *desc = irq_to_desc(info->irq);
- 		cpumask_copy(desc->irq_data.affinity, cpumask_of(0));
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 8c4085a..e37b407 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -50,7 +50,7 @@ static int acpi_register_gsi_xen_hvm(struct device *dev, u32 gsi,
+ 		name = "ioapic-level";
  	}
- #endif
-@@ -397,6 +403,21 @@ static void unmask_evtchn(int port)
- 	put_cpu();
- }
  
-+static void xen_irq_init(unsigned irq)
-+{
-+	struct irq_info *info;
-+	struct irq_desc *desc = irq_to_desc(irq);
-+
-+	/* By default all event channels notify CPU#0. */
-+	cpumask_copy(desc->irq_data.affinity, cpumask_of(0));
-+
-+	info = &irq_info[irq];
-+
-+	info->type = IRQT_UNBOUND;
-+
-+	list_add_tail(&info->list, &xen_irq_list_head);
-+}
-+
- static int xen_allocate_irq_dynamic(void)
+-	irq = xen_map_pirq_gsi(map_irq.pirq, gsi, shareable, name);
++	irq = xen_bind_pirq_gsi_to_irq(gsi, map_irq.pirq, shareable, name);
+ 
+ 	printk(KERN_DEBUG "xen: --> irq=%d, pirq=%d\n", irq, map_irq.pirq);
+ 
+@@ -237,6 +237,7 @@ static int xen_pcifront_enable_irq(struct pci_dev *dev)
  {
- 	int first = 0;
-@@ -426,6 +447,8 @@ retry:
- 	if (irq < 0)
- 		panic("No available IRQ to bind to: increase nr_irqs!\n");
+ 	int rc;
+ 	int share = 1;
++	int pirq;
+ 	u8 gsi;
  
-+	xen_irq_init(irq);
+ 	rc = pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &gsi);
+@@ -246,13 +247,21 @@ static int xen_pcifront_enable_irq(struct pci_dev *dev)
+ 		return rc;
+ 	}
+ 
++	rc = xen_allocate_pirq_gsi(gsi);
++	if (rc < 0) {
++		dev_warn(&dev->dev, "Xen PCI: failed to allocate a PIRQ for GSI%d: %d\n",
++			 gsi, rc);
++		return rc;
++	}
++	pirq = rc;
 +
- 	return irq;
- }
- 
-@@ -444,18 +467,25 @@ static int xen_allocate_irq_gsi(unsigned gsi)
- 
- 	/* Legacy IRQ descriptors are already allocated by the arch. */
  	if (gsi < NR_IRQS_LEGACY)
--		return gsi;
-+		irq = gsi;
-+	else
-+		irq = irq_alloc_desc_at(gsi, -1);
+ 		share = 0;
  
--	irq = irq_alloc_desc_at(gsi, -1);
- 	if (irq < 0)
- 		panic("Unable to allocate to IRQ%d (%d)\n", gsi, irq);
+-	rc = xen_allocate_pirq(gsi, share, "pcifront");
++	rc = xen_bind_pirq_gsi_to_irq(gsi, pirq, share, "pcifront");
+ 	if (rc < 0) {
+-		dev_warn(&dev->dev, "Xen PCI: failed to register GSI%d: %d\n",
+-			 gsi, rc);
++		dev_warn(&dev->dev, "Xen PCI: failed to bind GSI%d (PIRQ%d) to IRQ: %d\n",
++			 gsi, pirq, rc);
+ 		return rc;
+ 	}
  
-+	xen_irq_init(irq);
-+
- 	return irq;
- }
- 
- static void xen_free_irq(unsigned irq)
+@@ -309,7 +318,7 @@ int __init pci_xen_hvm_init(void)
+ #ifdef CONFIG_XEN_DOM0
+ static int xen_register_pirq(u32 gsi, int triggering)
  {
--	irq_info[irq].type = IRQT_UNBOUND;
-+	struct irq_info *info = &irq_info[irq];
-+
-+	info->type = IRQT_UNBOUND;
-+
-+	list_del(&info->list);
+-	int rc, irq;
++	int rc, pirq, irq = -1;
+ 	struct physdev_map_pirq map_irq;
+ 	int shareable = 0;
+ 	char *name;
+@@ -325,17 +334,20 @@ static int xen_register_pirq(u32 gsi, int triggering)
+ 		name = "ioapic-level";
+ 	}
  
- 	/* Legacy IRQ descriptors are managed by the arch. */
- 	if (irq < NR_IRQS_LEGACY)
-@@ -586,16 +616,14 @@ static void ack_pirq(struct irq_data *data)
+-	irq = xen_allocate_pirq(gsi, shareable, name);
+-
+-	printk(KERN_DEBUG "xen: --> irq=%d\n", irq);
++	pirq = xen_allocate_pirq_gsi(gsi);
++	if (pirq < 0)
++		goto out;
  
- static int find_irq_by_gsi(unsigned gsi)
++	irq = xen_bind_pirq_gsi_to_irq(gsi, pirq, shareable, name);
+ 	if (irq < 0)
+ 		goto out;
+ 
++	printk(KERN_DEBUG "xen: --> pirq=%d -> irq=%d\n", pirq, irq);
++
+ 	map_irq.domid = DOMID_SELF;
+ 	map_irq.type = MAP_PIRQ_TYPE_GSI;
+ 	map_irq.index = gsi;
+-	map_irq.pirq = irq;
++	map_irq.pirq = pirq;
+ 
+ 	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
+ 	if (rc) {
+@@ -422,13 +434,18 @@ static int __init pci_xen_initial_domain(void)
+ 
+ void __init xen_setup_pirqs(void)
  {
 -	int irq;
--
--	for (irq = 0; irq < nr_irqs; irq++) {
--		struct irq_info *info = info_for_irq(irq);
-+	struct irq_info *info;
++	int pirq, irq;
  
--		if (info == NULL || info->type != IRQT_PIRQ)
-+	list_for_each_entry(info, &xen_irq_list_head, list) {
-+		if (info->type != IRQT_PIRQ)
- 			continue;
+ 	pci_xen_initial_domain();
  
--		if (gsi_from_irq(irq) == gsi)
--			return irq;
-+		if (info->u.pirq.gsi == gsi)
-+			return info->irq;
+ 	if (0 == nr_ioapics) {
+-		for (irq = 0; irq < NR_IRQS_LEGACY; irq++)
+-			xen_allocate_pirq(irq, 0, "xt-pic");
++		for (irq = 0; irq < NR_IRQS_LEGACY; irq++) {
++			pirq = xen_allocate_pirq_gsi(irq);
++			if (WARN(pirq < 0,
++				 "Could not allocate PIRQ for legacy interrupt\n"))
++				break;
++			irq = xen_bind_pirq_gsi_to_irq(irq, pirq, 0, "xt-pic");
++		}
+ 		return;
  	}
  
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index e828456..a40b2a1 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -568,9 +568,9 @@ static int find_irq_by_gsi(unsigned gsi)
  	return -1;
-@@ -1374,7 +1402,8 @@ void xen_poll_irq(int irq)
+ }
  
- void xen_irq_resume(void)
+-int xen_allocate_pirq(unsigned gsi, int shareable, char *name)
++int xen_allocate_pirq_gsi(unsigned gsi)
  {
--	unsigned int cpu, irq, evtchn;
-+	unsigned int cpu, evtchn;
-+	struct irq_info *info;
+-	return xen_map_pirq_gsi(gsi, gsi, shareable, name);
++	return gsi;
+ }
  
- 	init_evtchn_cpu_bindings();
+ /*
+@@ -580,7 +580,8 @@ int xen_allocate_pirq(unsigned gsi, int shareable, char *name)
+  * Note: We don't assign an event channel until the irq actually started
+  * up.  Return an existing irq if we've already got one for the gsi.
+  */
+-int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
++int xen_bind_pirq_gsi_to_irq(unsigned gsi,
++			     unsigned pirq, int shareable, char *name)
+ {
+ 	int irq = -1;
+ 	struct physdev_irq irq_op;
+diff --git a/include/xen/events.h b/include/xen/events.h
+index 99a64f0..32ebeba 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -68,12 +68,16 @@ int xen_set_callback_via(uint64_t via);
+ void xen_evtchn_do_upcall(struct pt_regs *regs);
+ void xen_hvm_evtchn_do_upcall(void);
  
-@@ -1383,8 +1412,8 @@ void xen_irq_resume(void)
- 		mask_evtchn(evtchn);
+-/* Allocate an irq for a physical interrupt, given a gsi. */
+-int xen_allocate_pirq(unsigned gsi, int shareable, char *name);
+-int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name);
++/* Allocate a pirq for a physical interrupt, given a gsi. */
++int xen_allocate_pirq_gsi(unsigned gsi);
++/* Bind a pirq for a physical interrupt to an irq. */
++int xen_bind_pirq_gsi_to_irq(unsigned gsi,
++			     unsigned pirq, int shareable, char *name);
  
- 	/* No IRQ <-> event-channel mappings. */
--	for (irq = 0; irq < nr_irqs; irq++)
--		irq_info[irq].evtchn = 0; /* zap event-channel binding */
-+	list_for_each_entry(info, &xen_irq_list_head, list)
-+		info->evtchn = 0; /* zap event-channel binding */
- 
- 	for (evtchn = 0; evtchn < NR_EVENT_CHANNELS; evtchn++)
- 		evtchn_to_irq[evtchn] = -1;
+ #ifdef CONFIG_PCI_MSI
++/* Allocate a pirq for a MSI style physical interrupt. */
+ int xen_allocate_pirq_msi(struct pci_dev *dev, struct msi_desc *msidesc);
++/* Bind an PSI pirq to an irq. */
+ int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 			     int pirq, int vector, const char *name);
+ #endif
 -- 
 1.5.6.5
 
