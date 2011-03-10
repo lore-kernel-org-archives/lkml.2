@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab1CJQFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:05:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64215 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1CJQFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:05:37 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=s7jom2g7sBwA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=AUd_NHdVAAAA:8 a=DH71FMdJ9oxqK1ysVqgA:9 a=Dj5TeHEHZnv5O62KUhPX_Nf-Dd0A:4 a=PUjeQqilurYA:10 a=JfD0Fch1gWkA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/6] perf script: move printing of 'common' data from
- print_event and rename
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de
-In-Reply-To: <20110310155109.GB23555@ghostprotocols.net>
-References: <1299734608-5223-1-git-send-email-daahern@cisco.com>
-	 <1299734608-5223-4-git-send-email-daahern@cisco.com>
-	 <20110310152053.GB12521@home.goodmis.org>
-	 <20110310155109.GB23555@ghostprotocols.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 11:05:35 -0500
-Message-ID: <1299773135.15854.352.camel@gandalf.stny.rr.com>
+	id S1752298Ab1CJQGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:06:32 -0500
+Received: from protonic.xs4all.nl ([213.84.116.84]:7025 "EHLO protonic.prtnl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751314Ab1CJQGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:06:30 -0500
+Date: Thu, 10 Mar 2011 17:06:27 +0100
+From: David Jander <david.jander@protonic.nl>
+To: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+Cc: Nguyen Dinh-R00091 <R00091@freescale.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Message-ID: <20110310170627.2d8135a7@archvile>
+In-Reply-To: <20110310133715.GC29521@pengutronix.de>
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+	<87oc5puwg3.fsf@lebrac.rtp-net.org>
+	<56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+	<87fwqyvrzf.fsf@lebrac.rtp-net.org>
+	<56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
+	<20110307180700.GQ29521@pengutronix.de>
+	<20110308124023.5a952d13@archvile>
+	<20110310133715.GC29521@pengutronix.de>
+Organization: Protonic Holland
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.1; i686-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 12:51 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Mar 10, 2011 at 10:20:53AM -0500, Steven Rostedt escreveu:
-> > On Wed, Mar 09, 2011 at 10:23:25PM -0700, David Ahern wrote:
-> > > This change does impact output: latency data is trace specific and is now
-> > > printed after the common data - comm, tid, cpu, time and event name.
+On Thu, 10 Mar 2011 14:37:15 +0100
+"s.hauer@pengutronix.de" <s.hauer@pengutronix.de> wrote:
+
+> Hi David,
 > 
-> > > Signed-off-by: David Ahern <daahern@cisco.com>
-> 
-> > >  tools/perf/builtin-script.c         |   38 ++++++++++++++++++++++-----
-> > >  tools/perf/util/trace-event-parse.c |   49 +++++++---------------------------
-> 
-> > I was hoping after the next merge window to start making a common library
-> > for parsing events. This way things like powertop and timechart or
-> > anything that uses the perf interface does not need to write its own
-> > parsing of events, or expect the event formats to be hardcoded.
+> On Tue, Mar 08, 2011 at 12:40:23PM +0100, David Jander wrote:
 > > 
-> > The trace-event-parse.c was taking from trace-cmd's parse-events.c code
-> > and hopefully the two can merge again. The parse-events.c code in
-> > trace-cmd has gone through several iterations that has made it much more
-> > robust and flexible. I purposely kept it as a separate libarary not
-> > dependent on trace-cmd so that it could be used by other utilities like
-> > perf.
+> > Hi Sascha,
+> > 
+> > On Mon, 7 Mar 2011 19:07:00 +0100
+> > "s.hauer@pengutronix.de" <s.hauer@pengutronix.de> wrote:
+> > >[...]
+> > > > The current imx for-next tree is not booting on my Babbage board. Is
+> > > > it okay for you with your HW. I'll have to debug the booting part
+> > > > first.
+> > > 
+> > > Probably because other than kconfig states i.MX51 and i.MX53 cannot be
+> > > compiled in one kernel. the for-next branch boots fine on my babbage.
+> > 
+> > Would you mind explaining (or pointing to an explanation) as to why this is
+> > not supposed to work? Given the high level of compatibility between MX51
+> > and MX53, I'd say there must be a very good reason not to enable a single
+> > binary kernel for both. Or is this just temporary brokenness?
 > 
-> David is kinda new to this perf/ftrace/trace-cmd/etc soap opera, and he
-
-Lucky him ;)
-
-> has been patient to go thru the motions with Peter, Thomas, Frédéric and
-> me, going from doing what he wants in 'perf report' to 'perf script',
-> etc.
+> i.MX51 and i.MX53 have different phys_offsets. Look at
+> arch/arm/mach-mx5/Makefile.boot:
 > 
-> We're almost to the point where his feature is implemented in a
-> way Frédéric, the one most actively reviewing his work, is satisfied,
-> right Frédéric?
-
-You must have one of those keyboards where it is easy to make that é
-
+>    zreladdr-$(CONFIG_ARCH_MX50) := 0x70008000
+> params_phys-$(CONFIG_ARCH_MX50) := 0x70000100
+> initrd_phys-$(CONFIG_ARCH_MX50) := 0x70800000
+>    zreladdr-$(CONFIG_ARCH_MX51) := 0x90008000
+> params_phys-$(CONFIG_ARCH_MX51) := 0x90000100
+> initrd_phys-$(CONFIG_ARCH_MX51) := 0x90800000
+>    zreladdr-$(CONFIG_ARCH_MX53) := 0x70008000
+> params_phys-$(CONFIG_ARCH_MX53) := 0x70000100
+> initrd_phys-$(CONFIG_ARCH_MX53) := 0x70800000
 > 
-> I think the merge with the libraries you mention is something that is
-> not a precondition to merging David's work.
-> 
-> And his work is at least moving things in the trace parts of tools/,
-> that was so far dormant.
+> Compiling a kernel for i.MX50 and i.MX53 will work, but compiling a
+> kernel for i.MX51 and i.MX53 will and up with a kernel assuming SDRAM
+> at 0x70000000 which will fail on a i.MX51. We need
+> phys_to_virt/virt_to_phys runtime patching to get this right. This
+> will be merged in the next merge window.
 
-Note, I'm not saying that his work should be put on hold. I actually
-want to start it up again. Maybe I worded this response wrong. It was
-more about bringing David up to speed on what I want to do next than
-saying not to do this work.
+Ok, so it classifies as "temporary brokenness" ;-)
+Thanks a lot for clarifying.
 
-Thanks,
+Best regards,
 
--- Steve
-
-
+-- 
+David Jander
+Protonic Holland.
