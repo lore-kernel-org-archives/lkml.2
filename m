@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab1CJX6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:58:10 -0500
-Received: from kroah.org ([198.145.64.141]:46937 "EHLO coco.kroah.org"
+	id S1754781Ab1CJX6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:58:34 -0500
+Received: from kroah.org ([198.145.64.141]:46930 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab1CJX5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:35 -0500
+	id S1754311Ab1CJX5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:34 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:38 2011
-Message-Id: <20110310235538.729623968@clark.kroah.org>
+Message-Id: <20110310235538.625456529@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:33 -0800
+Date: Thu, 10 Mar 2011 15:54:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Andy Walls <awalls@md.metrocast.net>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [patch 27/29] [media] cx23885: Revert "Check for slave nack on all transactions"
+Subject: [patch 26/29] [media] ivtv: Fix corrective action taken upon DMA ERR interrupt to avoid hang
 In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +26,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Walls <awalls@md.metrocast.net>
+From: Michael <mike@rsy.com>
 
-commit 67914b5c400d6c213f9e56d7547a2038ab5c06f4 upstream.
+commit d213ad08362909ab50fbd6568fcc9fd568268d29 upstream.
 
-This reverts commit 44835f197bf1e3f57464f23dfb239fef06cf89be.
+After upgrading the kernel from stock Ubuntu 7.10 to
+10.04, with no hardware changes, I started getting the dreaded DMA
+TIMEOUT errors, followed by inability to encode until the machine was
+rebooted.
 
-With the CX23885 hardware I2C master, checking for I2C slave ACK/NAK
-is not valid when the I2C_EXTEND or I2C_NOSTOP bits are set.
-Revert the commit that checks for I2C slave ACK/NAK on all transactions,
-so that XC5000 tuners work with the CX23885 again.
+I came across a post from Andy in March
+(http://www.gossamer-threads.com/lists/ivtv/users/40943#40943) where he
+speculates that perhaps the corrective actions being taken after a DMA
+ERROR are not sufficient to recover the situation.  After some testing
+I suspect that this is indeed the case, and that in fact the corrective
+action may be what hangs the card's DMA engine, rather than the
+original error.
 
-Thanks go to Mark Zimmerman for reporting and bisecting this problem.
+Specifically these DMA ERROR IRQs seem to present with two different
+values in the IVTV_REG_DMASTATUS register: 0x11 and 0x13.  The current
+corrective action is to clear that status register back to 0x01 or
+0x03, and then issue the next DMA request.  In the case of a 0x13 this
+seems to result in a minor glitch in the encoded stream due to the
+failed transfer that was not retried, but otherwise things continue OK.
+In the case of a 0x11 the card's DMA write engine is never heard from
+again, and a DMA TIMEOUT follows shortly after.  0x11 is the killer.
 
-Bisected-by: Mark Zimmerman <markzimm@frii.com>
+I suspect that the two cases need to be handled differently.  The
+difference is in bit 1 (0x02), which is set when the error is about to
+be successfully recovered, and clear when things are about to go bad.
 
-Reported-by: Mark Zimmerman <markzimm@frii.com>
+Bit 1 of DMASTATUS is described differently in different places either
+as a positive "write finished", or an inverted "write busy".  If we
+take the first definition, then when an error arises with state 0x11,
+it means that the write did not complete.   It makes sense to start a
+new transfer, as in the current code.  But if we take the second
+definition, then 0x11 means "an error but the write engine is still
+busy".  Trying to feed it a new transfer in this situation might not be
+a good idea.
+
+As an experiment, I added code to ignore the DMA ERROR IRQ if DMASTATUS
+is 0x11.  I.e., don't start a new transfer, don't clear our flags, etc.
+The hope was that the card would complete the transfer and issue a ENC
+DMA COMPLETE, either successfully or with an error condition there.
+However the card still hung.
+
+The only remaining corrective action being taken with a 0x11 status was
+then the write back to the status register to clear the error, i.e.
+DMASTATUS = DMASTATUS & ~3.  This would have the effect of clearing the
+error bit 4, while leaving the lower bits indicating DMA write busy.
+
+Strangely enough, removing this write to the status register solved the
+problem!  If the DMA ERROR IRQ with DMASTATUS=0x11 is completely
+ignored, with no corrective action at all, then the card will complete
+the transfer and issue a new IRQ.  If the status register is written to
+when it has the value 0x11, then the DMA engine hangs.  Perhaps it's
+illegal to write to
+DMASTATUS while the read or write busy bit is set?  At any rate, it
+appears that the current corrective action is indeed making things
+worse rather than better.
+
+I put together a patch that modifies ivtv_irq_dma_err to do the
+following:
+
+- Don't write back to IVTV_REG_DMASTATUS.
+- If write-busy is asserted, leave the card alone.  Just extend the
+timeout slightly.
+- If write-busy is de-asserted, retry the current transfer.
+
+This has completely fixed my DMA TIMEOUT woes.  DMA ERR events still
+occur, but now they seem to be correctly handled.  0x11 events no
+longer hang the card, and 0x13 events no longer result in a glitch in
+the stream, as the failed transfer is retried.  I'm happy.
+
+I've inlined the patch below in case it is of interest.  As described
+above, I have a theory about why it works (based on a different
+interpretation of bit 1 of DMASTATUS), but I can't guarantee that my
+theory is correct.  There may be another explanation, or it may be a
+fluke.  Maybe ignoring that IRQ entirely would be equally effective?
+Maybe the status register read/writeback sequence is race condition if
+the card changes it in the mean time?  Also as I am using a PVR-150
+only, I have not been able to test it on other cards, which may be
+especially relevant for 350s that support concurrent decoding.
+Hopefully the patch does not break the DMA READ path.
+
+Mike
+
+[awalls@md.metrocast.net: Modified patch to add a verbose comment, make minor
+brace reformats, and clear the error flags in the IVTV_REG_DMASTATUS iff both
+read and write DMA were not in progress.  Mike's conjecture about a race
+condition with the writeback is correct; it can confuse the DMA engine.]
+
+[Comment and analysis from the ML post by Michael <mike@rsy.com>]
 Signed-off-by: Andy Walls <awalls@md.metrocast.net>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/cx23885/cx23885-i2c.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/media/video/ivtv/ivtv-irq.c |   58 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 51 insertions(+), 7 deletions(-)
 
---- a/drivers/media/video/cx23885/cx23885-i2c.c
-+++ b/drivers/media/video/cx23885/cx23885-i2c.c
-@@ -122,10 +122,6 @@ static int i2c_sendbytes(struct i2c_adap
+--- a/drivers/media/video/ivtv/ivtv-irq.c
++++ b/drivers/media/video/ivtv/ivtv-irq.c
+@@ -628,22 +628,66 @@ static void ivtv_irq_enc_pio_complete(st
+ static void ivtv_irq_dma_err(struct ivtv *itv)
+ {
+ 	u32 data[CX2341X_MBOX_MAX_DATA];
++	u32 status;
  
- 	if (!i2c_wait_done(i2c_adap))
- 		goto eio;
--	if (!i2c_slave_did_ack(i2c_adap)) {
--		retval = -ENXIO;
--		goto err;
--	}
- 	if (i2c_debug) {
- 		printk(" <W %02x %02x", msg->addr << 1, msg->buf[0]);
- 		if (!(ctrl & I2C_NOSTOP))
-@@ -209,10 +205,6 @@ static int i2c_readbytes(struct i2c_adap
+ 	del_timer(&itv->dma_timer);
++
+ 	ivtv_api_get_data(&itv->enc_mbox, IVTV_MBOX_DMA_END, 2, data);
++	status = read_reg(IVTV_REG_DMASTATUS);
+ 	IVTV_DEBUG_WARN("DMA ERROR %08x %08x %08x %d\n", data[0], data[1],
+-				read_reg(IVTV_REG_DMASTATUS), itv->cur_dma_stream);
+-	write_reg(read_reg(IVTV_REG_DMASTATUS) & 3, IVTV_REG_DMASTATUS);
++				status, itv->cur_dma_stream);
++	/*
++	 * We do *not* write back to the IVTV_REG_DMASTATUS register to
++	 * clear the error status, if either the encoder write (0x02) or
++	 * decoder read (0x01) bus master DMA operation do not indicate
++	 * completed.  We can race with the DMA engine, which may have
++	 * transitioned to completed status *after* we read the register.
++	 * Setting a IVTV_REG_DMASTATUS flag back to "busy" status, after the
++	 * DMA engine has completed, will cause the DMA engine to stop working.
++	 */
++	status &= 0x3;
++	if (status == 0x3)
++		write_reg(status, IVTV_REG_DMASTATUS);
++
+ 	if (!test_bit(IVTV_F_I_UDMA, &itv->i_flags) &&
+ 	    itv->cur_dma_stream >= 0 && itv->cur_dma_stream < IVTV_MAX_STREAMS) {
+ 		struct ivtv_stream *s = &itv->streams[itv->cur_dma_stream];
  
- 		if (!i2c_wait_done(i2c_adap))
- 			goto eio;
--		if (cnt == 0 && !i2c_slave_did_ack(i2c_adap)) {
--			retval = -ENXIO;
--			goto err;
--		}
- 		msg->buf[cnt] = cx_read(bus->reg_rdata) & 0xff;
- 		if (i2c_debug) {
- 			dprintk(1, " %02x", msg->buf[cnt]);
+-		/* retry */
+-		if (s->type >= IVTV_DEC_STREAM_TYPE_MPG)
++		if (s->type >= IVTV_DEC_STREAM_TYPE_MPG) {
++			/* retry */
++			/*
++			 * FIXME - handle cases of DMA error similar to
++			 * encoder below, except conditioned on status & 0x1
++			 */
+ 			ivtv_dma_dec_start(s);
+-		else
+-			ivtv_dma_enc_start(s);
+-		return;
++			return;
++		} else {
++			if ((status & 0x2) == 0) {
++				/*
++				 * CX2341x Bus Master DMA write is ongoing.
++				 * Reset the timer and let it complete.
++				 */
++				itv->dma_timer.expires =
++						jiffies + msecs_to_jiffies(600);
++				add_timer(&itv->dma_timer);
++				return;
++			}
++
++			if (itv->dma_retries < 3) {
++				/*
++				 * CX2341x Bus Master DMA write has ended.
++				 * Retry the write, starting with the first
++				 * xfer segment. Just retrying the current
++				 * segment is not sufficient.
++				 */
++				s->sg_processed = 0;
++				itv->dma_retries++;
++				ivtv_dma_enc_start_xfer(s);
++				return;
++			}
++			/* Too many retries, give up on this one */
++		}
++
+ 	}
+ 	if (test_bit(IVTV_F_I_UDMA, &itv->i_flags)) {
+ 		ivtv_udma_start(itv);
 
 
