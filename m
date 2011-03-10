@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab1CJOJX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:09:23 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:53683 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664Ab1CJOJV convert rfc822-to-8bit (ORCPT
+	id S1752611Ab1CJOK2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:10:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33381 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab1CJOK1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:09:21 -0500
-X-IronPort-AV: E=Sophos;i="4.62,295,1297065600"; 
-   d="scan'208";a="528594923"
-Subject: Re: [Bug #30322] BUG in xs_tcp_setup_socket
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        David Miller <davem@davemloft.net>
-In-Reply-To: <20110309164844.decd835f.akpm@linux-foundation.org>
-References: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
-	 <sUKqYsqyJ4N.A.n0F.3-3cNB@chimera>
-	 <20110309164844.decd835f.akpm@linux-foundation.org>
+	Thu, 10 Mar 2011 09:10:27 -0500
+Subject: Re: [BUG] rebuild_sched_domains considered dangerous
+From: Peter Zijlstra <peterz@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Jesse Larrew <jlarrew@linux.vnet.ibm.com>
+In-Reply-To: <1299675674.2308.2924.camel@twins>
+References: <1299639487.22236.256.camel@pasglop>
+	 <1299665998.2308.2753.camel@twins>  <1299675674.2308.2924.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 10 Mar 2011 09:08:58 -0500
-Message-ID: <1299766138.3075.3.camel@heimdal.trondhjem.org>
+Date: Thu, 10 Mar 2011 15:10:11 +0100
+Message-ID: <1299766211.2308.4468.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 10 Mar 2011 14:09:02.0113 (UTC) FILETIME=[B5295110:01CBDF2C]
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 16:48 -0800, Andrew Morton wrote: 
-> On Sun,  6 Mar 2011 13:40:43 +0100 (CET)
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Wed, 2011-03-09 at 14:01 +0100, Peter Zijlstra wrote:
+> On Wed, 2011-03-09 at 11:19 +0100, Peter Zijlstra wrote:
+> > No, the domain stuff is good, we allocate new domains and have a
+> > synchronize_sched() between us installing the new ones and freeing the
+> > old ones. 
 > 
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.36 and 2.6.37.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.36 and 2.6.37.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=30322
-> > Subject		: BUG in xs_tcp_setup_socket
-> > Submitter	: Ben Hutchings <bhutchings@solarflare.com>
-> > Date		: 2011-03-01 20:34 (6 days old)
-> > Patch		: http://article.gmane.org/gmane.linux.nfs/38949
-> > 
-> 
-> Ben's patch is a no-brainer but it is not yet in mainline or linux-next. 
-> I'm not on linux-nfs so I recreated it as below.
+> Gah, if only..
 
-It is in linux-next. I've queued it up as part of a bugfix dump to Linus
-this weekend.
+OK, so for hotplug and cpusets it works because they change the doms_cur
+set, when the old and the new set don't match it destroys the current
+sched_domain/sched_group sets for the relevant cpus and then calls
+synchronize_sched() to wait for any current activity to go away.
 
-Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Only then does it rebuild stuff for the new set, reusing the static
+allocated sched_domain and sched_group data.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Now, supposedly when your new and old domain set is the same it should
+be a nop, unless arch_update_cpu_topology() returns true in which case
+it will do a full destroy and rebuild.
 
+So I'm not quite sure what power does to make it go bang..
+
+Anyway, I'm now rewriting the sched_domain creation stuff because I've
+utterly had it with that code..
+
+Also, still waiting to hear from the Power7 folks on how often they
+think to rebuild the topology and how they think that makes sense,
+afaict Power7 does have actual NUMA nodes unlike s390, so I'm still not
+seeing how that's going to work properly at all.
