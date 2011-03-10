@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab1CJMnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 07:43:24 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60648 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab1CJMnW convert rfc822-to-8bit (ORCPT
+	id S1752219Ab1CJMoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 07:44:24 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:35895 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751116Ab1CJMoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 07:43:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=mlY1I1ybZg2eTsmVCStFvu2kdkGQ2udhaFTU4/gDvtJNE0mloDsHSjunHRhSWoZ2GP
-         O33m0hmHq3Ah1FulAVph0s8QrkNIipqAK6qWZ9goQnBSgcH0ZUDqeVRMQaZEt6ePRkQu
-         /jO8iTm/AKybXZHVffgKq6S0n2eatF45jzJvk=
+	Thu, 10 Mar 2011 07:44:23 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 10 Mar 2011 13:45:30 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] hid-multitouch: Auto detection of maxcontacts
+Message-ID: <20110310124530.GA3378@polaris.bitmath.org>
+References: <1299686450-5475-1-git-send-email-benjamin.tissoires@enac.fr>
+ <1299686450-5475-2-git-send-email-benjamin.tissoires@enac.fr>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110310115856.GG22723@ZenIV.linux.org.uk>
-References: <20110310110931.GF22723@ZenIV.linux.org.uk>
-	<AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com>
-	<20110310115856.GG22723@ZenIV.linux.org.uk>
-Date: Thu, 10 Mar 2011 13:43:21 +0100
-Message-ID: <AANLkTik-0z1fKEBy-x0jnUys-x4whT=LNqEiTmhyke1N@mail.gmail.com>
-Subject: Re: [git pull] more vfs fixes for final
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299686450-5475-2-git-send-email-benjamin.tissoires@enac.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1PxfCO-00040s-9M.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PxfCO-00040s-9M 81ff7ac3cce56e8107148966a81eb63c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 12:58 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Thu, Mar 10, 2011 at 12:44:37PM +0100, Sedat Dilek wrote:
->> On Thu, Mar 10, 2011 at 12:09 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> > ?? ?? ?? ??Fix for misplaced include in sysctl.h, fixes for ->d_revalidate()
->> > (a bunch of filesystems are unusable with nfsd at the moment; the real fix
->> > is to make ->d_revalidate() take flags directly and forget about dereferencing
->> > nameidata in most of the instances, but that's obviously for the next window
->> > and oopsen really need to be fixed for -final), missing checks in fallocate()
->> > and Bruce's patch for inode (temporary) leaks with nfsd. ??Please, pull from
->> >
->> > git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
->> >
->>
->> Did you really push the new commits?
->>
->> Last commit here is commit b306419ae08d9def53f2142a37cc0a58622307a8:
->> "nd->inode is not set on the second attempt in path_walk()"
->
-> Looks like propagation from hera to git.kernel.org is slow tonight...
->
-> GIT_DIR=/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ git log for-linus|head -5
-> commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
-> Author: J. Bruce Fields <bfields@fieldses.org>
-> Date:   Tue Jan 18 15:45:09 2011 -0500
->
->    fs/dcache: allow d_obtain_alias() to return unhashed dentries
->
+Hi Benjamin,
 
-Thanks, it's pull-able now (commit-id fits).
+thanks for this, just a couple of things...
 
-- Sedat -
+> @@ -126,9 +127,19 @@ struct mt_class mt_classes[] = {
+>  static void mt_feature_mapping(struct hid_device *hdev,
+>  		struct hid_field *field, struct hid_usage *usage)
+>  {
+> -	if (usage->hid == HID_DG_INPUTMODE) {
+> -		struct mt_device *td = hid_get_drvdata(hdev);
+> +	struct mt_device *td = hid_get_drvdata(hdev);
+> +
+> +	switch (usage->hid) {
+> +	case HID_DG_INPUTMODE:
+>  		td->inputmode = field->report->id;
+> +		break;
+> +	case HID_DG_CONTACTMAX:
+> +		td->maxcontacts = *(field->value);
+
+field->value[0] seems more standard-ish
+
+> +		if (td->mtclass->maxcontacts > td->maxcontacts)
+> +			/* check if the maxcontacts is given by the class */
+> +			td->maxcontacts = td->mtclass->maxcontacts;
+> +
+> +		break;
+>  	}
+>  }
+>  
+> @@ -317,7 +327,7 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+>  	struct mt_device *td = hid_get_drvdata(hid);
+>  	__s32 quirks = td->mtclass->quirks;
+>  
+> -	if (hid->claimed & HID_CLAIMED_INPUT) {
+> +	if (hid->claimed & HID_CLAIMED_INPUT && td->slots) {
+
+The extra test could in principle be placed after the usage switch, which would prevent partially filled contact data, should this ever occur. Something like
+
+if (!td->slots)
+   break;
+
+>  		switch (usage->hid) {
+>  		case HID_DG_INRANGE:
+>  			if (quirks & MT_QUIRK_VALID_IS_INRANGE)
+> @@ -415,9 +425,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	 */
+>  	hdev->quirks |= HID_QUIRK_NO_INPUT_SYNC;
+>  
+> -	td = kzalloc(sizeof(struct mt_device) +
+> -				mtclass->maxcontacts * sizeof(struct mt_slot),
+> -				GFP_KERNEL);
+> +	td = kzalloc(sizeof(struct mt_device), GFP_KERNEL);
+>  	if (!td) {
+>  		dev_err(&hdev->dev, "cannot allocate multitouch data\n");
+>  		return -ENOMEM;
+> @@ -434,6 +442,14 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	if (ret)
+>  		goto fail;
+>  
+> +	td->slots = kzalloc(td->maxcontacts * sizeof(struct mt_slot),
+> +				GFP_KERNEL);
+> +	if (!td->slots) {
+> +		dev_err(&hdev->dev, "cannot allocate multitouch slots\n");
+> +		ret = -ENOMEM;
+> +		goto fail;
+
+This exit leaves the device running.
+
+> +	}
+> +
+>  	mt_set_input_mode(hdev);
+>  
+>  	return 0;
+> @@ -455,6 +471,7 @@ static void mt_remove(struct hid_device *hdev)
+>  {
+>  	struct mt_device *td = hid_get_drvdata(hdev);
+>  	hid_hw_stop(hdev);
+> +	kfree(td->slots);
+>  	kfree(td);
+>  	hid_set_drvdata(hdev, NULL);
+>  }
+> -- 
+> 1.7.4
+> 
+
+Thanks,
+Henrik
