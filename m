@@ -1,51 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab1CJWb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:31:56 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:57849 "EHLO mgw-sa02.nokia.com"
+	id S1753116Ab1CJWd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:33:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40794 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753311Ab1CJWby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:31:54 -0500
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: gregkh@suse.de
-Cc: ext-phil.2.carmody@nokia.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 0/1] sysfs: add more info to the oops dump
-Date: Fri, 11 Mar 2011 00:27:06 +0200
-Message-Id: <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
-In-Reply-To: <20110310212746.GA3361@suse.de>
-References: <20110310212746.GA3361@suse.de>
-X-Nokia-AV: Clean
+	id S1751158Ab1CJWdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:33:25 -0500
+Date: Thu, 10 Mar 2011 14:32:56 -0800
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Mike Sterling <Mike.Sterling@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
+ driver
+Message-ID: <20110310223256.GA8669@suse.de>
+References: <1299794912-1233-1-git-send-email-kys@microsoft.com>
+ <20110310222034.GA19323@suse.de>
+ <6E21E5352C11B742B20C142EB499E048018AA3@TK5EX14MBXC128.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048018AA3@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 10, 2011 at 10:28:27PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > Sent: Thursday, March 10, 2011 5:21 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org; Haiyang Zhang; Mike Sterling; Abhishek Kane
+> > (Mindtree Consulting PVT LTD); Hank Janssen
+> > Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci driver
+> > 
+> > On Thu, Mar 10, 2011 at 02:08:32PM -0800, K. Y. Srinivasan wrote:
+> > > Make vmbus driver a platform pci driver. This is
+> > > in preparation to cleaning up irq allocation for this
+> > > driver.
+> > 
+> > The idea is nice, but the nameing is a bit confusing.
+> > 
+> > We have "platform drivers" which are much different from what you are
+> > doing here, you are just creating a "normal" pci driver.
+> > 
+> > Very minor comments below.
+> > 
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
+> > > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > > ---
+> > >  drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++-------------
+> > ----
+> > >  1 files changed, 36 insertions(+), 27 deletions(-)
+> > >
+> > > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > > index 8b9394a..e4855ac 100644
+> > > --- a/drivers/staging/hv/vmbus_drv.c
+> > > +++ b/drivers/staging/hv/vmbus_drv.c
+> > > @@ -43,6 +43,8 @@
+> > >
+> > >  static struct device *root_dev; /* Root device */
+> > >
+> > > +struct pci_dev *hv_pci_dev;
+> > > +
+> > >  /* Main vmbus driver data structure */
+> > >  struct vmbus_driver_context {
+> > >
+> > > @@ -887,36 +889,24 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
+> > >  	}
+> > >  }
+> > >
+> > > -static struct dmi_system_id __initdata microsoft_hv_dmi_table[] = {
+> > > -	{
+> > > -		.ident = "Hyper-V",
+> > > -		.matches = {
+> > > -			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft
+> > Corporation"),
+> > > -			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+> > > -			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
+> > > -		},
+> > > -	},
+> > > -	{ },
+> > > -};
+> > > -MODULE_DEVICE_TABLE(dmi, microsoft_hv_dmi_table);
+> > 
+> > You're sure it's safe to delete this now and just rely on the PCI ids,
+> > right?  For some wierd reason I thought we needed both to catch all
+> > types of systems, but I can't remember why.
+> I have tested this; I don't think we need the dmi table.
 
-> But would the trace-back also have shown you the problem?  If not, then
-> that's a good reason to keep this feature, and to add your patch.
+Ok, if you are sure, that's fine with me.
 
-In this sample size of one, the write handler was so overloaded
-the data written was very valuable compared to the backtrace.
+> > How about "hv_bus" as a name, as that's what this really is.  It's a
+> > "bus adapter", like USB, Firewire, and all sorts of other bus
+> > controllers.
+> 
+> Sure; I will make these changes. Would you mind if I submit these name changes as a separate patch.
 
-> Looks nicer, but you forgot to address the "magic value" trick you used
-> that I mentioned last time.  Please fix that up.
+How about just redo this patch?  I haven't reviewed the others yet, so
+you might want to wait a day to see if I don't like any of them either
+:)
 
-My bad, sorry. I also realised that I'd never actually tested the read
-case, which highlighted a mixed-sign comparison issue. In a linux-2.6
-context this hasn't been more than compile tested, my testing has been
-done in our maemo tree.
-
-cat /sys/module/vt/parameters/default_utf8; echo c > /proc/sysrq-trigger
-[   13.489440] last sysfs file (r): /sys/module/vt/parameters/default_utf8
-
-echo sesquipedalian > /sys/module/vt/parameters/default_utf8; echo c > /proc/sysrq-trigger
-[   49.404632] last sysfs file (w): /sys/module/vt/parameters/default_utf8  written: sesquipedalian
-
-echo sesquipedalianism > /sys/module/vt/parameters/default_utf8; echo c > /proc/sysrq-trigger  
-[   33.172332] last sysfs file (w): /sys/module/vt/parameters/default_utf8  written: sesquipedaliani...(18 chars)
-
-Sorry for the ping-pong.
-
-Cheers,
-Phil
+> 
+> Regards,
+> 
+> K. Y
