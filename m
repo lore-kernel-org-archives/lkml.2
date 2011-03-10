@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab1CJKiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:38:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43391 "EHLO mx2.suse.de"
+	id S1752038Ab1CJKkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:40:31 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:37003 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459Ab1CJKiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:38:16 -0500
-Date: Thu, 10 Mar 2011 11:38:14 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Rafi Rubin <rafi@seas.upenn.edu>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        micki@n-trig.com, rydberg@euromail.se, chatty@enac.fr
-Subject: Re: [PATCH 1/2] hid: ntrig NO_INIT_REPORTS
-In-Reply-To: <1299731632-9814-1-git-send-email-rafi@seas.upenn.edu>
-Message-ID: <alpine.LNX.2.00.1103101138040.19969@pobox.suse.cz>
-References: <1299731632-9814-1-git-send-email-rafi@seas.upenn.edu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1750818Ab1CJKk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 05:40:29 -0500
+Message-ID: <4D78AA72.3060202@secunet.com>
+Date: Thu, 10 Mar 2011 11:39:46 +0100
+From: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+CC: =?ISO-8859-1?Q?Andreas_Bie=DFmann?= <biessmann@corscience.de>,
+        "Hilbrich, Torsten" <Torsten.Hilbrich@secunet.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [PATCH] fs-writeback: fix NULL pointer dereference in, __mark_inode_dirty
+References: <fa.8ND6HoGS9dKYUuniFCAoNq+1TFY@ifi.uio.no>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Mar 2011 10:40:27.0472 (UTC) FILETIME=[91DAA500:01CBDF0F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Mar 2011, Rafi Rubin wrote:
+I ran into the same problem and successfully applied your fix.
 
-> Probing reports does bad things with some ntrig firmwares, better to
-> just leave them alone.
-> 
-> Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
-> 
-> ---
-> 
-> This resolves an annoying delay on initialization and reduces the
-> chance of the device coming up in an odd state or crashing.
+I was able to reproduce this panic and bisected it to the following commit:
 
-Applied.
+commit aaead25b954879e1a708ff2f3602f494c18d20b5
+Author: Christoph Hellwig <hch@lst.de>
+Date:   Mon Oct 4 14:25:33 2010 +0200
 
-> ---
->  drivers/hid/hid-ntrig.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-> index b1e9cca..850ba14 100644
-> --- a/drivers/hid/hid-ntrig.c
-> +++ b/drivers/hid/hid-ntrig.c
-> @@ -837,7 +837,8 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  	struct hid_report *report;
->  
->  	if (id->driver_data)
-> -		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
-> +		hdev->quirks |= HID_QUIRK_MULTI_INPUT
-> +				| HID_QUIRK_NO_INIT_REPORTS;
->  
->  	nd = kmalloc(sizeof(struct ntrig_data), GFP_KERNEL);
->  	if (!nd) {
-> -- 
-> 1.7.4.1
-> 
+    writeback: always use sb->s_bdi for writeback purposes
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+The steps to reproduce it on my test system (T60p with Intel Core Duo) were.
+
+- /dev/sdb is an USB stick with partition sdb1 formatted as ext2
+- mount /dev/sdb1 /mnt
+- cat > /mnt/foo
+- now press return some times
+- remove stick
+- press return, panic takes place
+
+Hope this helps fixing the problem,
+
+	Torsten
