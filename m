@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1CJKwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:52:21 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49636 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab1CJKwM (ORCPT
+	id S1752525Ab1CJKv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:51:59 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46557 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab1CJKvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:52:12 -0500
+	Thu, 10 Mar 2011 05:51:55 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=U/gzbadOTVpYRs6Rz2hxxrArXpm0GsjSVzzXsNJsxJYonY+0M4esuI0qbdpP587BpL
-         G83bJwwTzhYVEW4e95V0MTTjl8GVe4Zr1FD0RfefPqjIYEZjwfjpcJwfbGRn7ApkM4XL
-         5Gi5RdmI11YynT2xA6P9pW1DOES1eX9P9JvMs=
+        b=mnLIvvdLZ1drKSrUhRHfIvBfpEredk7NTiuefnH0wp5pQpTM14ogRNTXSv5KfDIZwe
+         V6hXIkI1I9ftBUSip0IUKB5DK3YQ5reB4vVB/oZuYVQVZ6LnDX6/7JIlf+P2+nQyDUKw
+         wVkFYt+yjStTRYrz35LmLttqUdyepXJhCbQ2Q=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH v2 17/21] staging: ft1000: Fix coding style in ft1000_close function.
-Date: Thu, 10 Mar 2011 11:51:31 +0100
-Message-Id: <1299754295-8493-18-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH v2 07/21] staging: ft1000: Fix coding style in init_ft1000_netdev function.
+Date: Thu, 10 Mar 2011 11:51:21 +0100
+Message-Id: <1299754295-8493-8-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299754295-8493-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1299754295-8493-1-git-send-email-marek.belisko@open-nandra.com>
@@ -30,49 +30,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |  126 +++++++++++--------------
+ 1 files changed, 57 insertions(+), 69 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index b578630..8f38b08 100644
+index bf2c729..adf16c6 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1281,24 +1281,23 @@ static int ft1000_open(struct net_device *dev)
- int ft1000_close(struct net_device *net)
+@@ -712,7 +712,7 @@ static const struct net_device_ops ftnet_ops =
+ //---------------------------------------------------------------------------
+ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
  {
- 	struct ft1000_info *pInfo = netdev_priv(net);
--    struct ft1000_device *ft1000dev = pInfo->pFt1000Dev;
-+	struct ft1000_device *ft1000dev = pInfo->pFt1000Dev;
+-    struct net_device *netdev;
++	struct net_device *netdev;
+ 	struct ft1000_info *pInfo = NULL;
+ 	struct dpram_blk *pdpram_blk;
+ 	int i, ret_val;
+@@ -720,27 +720,23 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
+ 	char card_nr[2];
+ 	unsigned long gCardIndex = 0;
  
--    //DEBUG ("ft1000_close: netdev->refcnt=%d\n", net->refcnt);
-+	//DEBUG ("ft1000_close: netdev->refcnt=%d\n", net->refcnt);
+-    DEBUG("Enter init_ft1000_netdev...\n");
+-
++	DEBUG("Enter init_ft1000_netdev...\n");
  
--    ft1000dev->status |= FT1000_STATUS_CLOSING;
--    
--    //DEBUG("ft1000_close: calling usb_kill_urb \n");
-+	ft1000dev->status |= FT1000_STATUS_CLOSING;
+ 	netdev = alloc_etherdev(sizeof(struct ft1000_info));
+-    if (!netdev )
+-    {
+-        DEBUG("init_ft1000_netdev: can not allocate network device\n");
+-	return -ENOMEM;
+-    }
++	if (!netdev) {
++		DEBUG("init_ft1000_netdev: can not allocate network device\n");
++		return -ENOMEM;
++	}
  
--    DEBUG("ft1000_close: pInfo=%p, ft1000dev=%p\n", pInfo, ft1000dev);
--    netif_carrier_off(net);//mbelian
--    netif_stop_queue(net);
--    //DEBUG("ft1000_close: netif_stop_queue called\n");
--    ft1000dev->status &= ~FT1000_STATUS_CLOSING;
-+	//DEBUG("ft1000_close: calling usb_kill_urb \n");
+ 	pInfo = netdev_priv(netdev);
  
--   pInfo->ProgConStat = 0xff; //mbelian
-+	DEBUG("ft1000_close: pInfo=%p, ft1000dev=%p\n", pInfo, ft1000dev);
-+	netif_carrier_off(net);	//mbelian
-+	netif_stop_queue(net);
-+	//DEBUG("ft1000_close: netif_stop_queue called\n");
-+	ft1000dev->status &= ~FT1000_STATUS_CLOSING;
+-    //DEBUG("init_ft1000_netdev: gFt1000Info=%x, netdev=%x, ft1000dev=%x\n", gFt1000Info, netdev, ft1000dev);
+-
+ 	memset(pInfo, 0, sizeof(struct ft1000_info));
  
-+	pInfo->ProgConStat = 0xff;	//mbelian
+-    dev_alloc_name(netdev, netdev->name);
++	dev_alloc_name(netdev, netdev->name);
  
--    return 0;
-+	return 0;
+-        DEBUG("init_ft1000_netdev: network device name is %s\n", netdev->name);
++	DEBUG("init_ft1000_netdev: network device name is %s\n", netdev->name);
+ 
+-	if ( strncmp(netdev->name,"eth", 3) == 0) {
++	if (strncmp(netdev->name, "eth", 3) == 0) {
+ 		card_nr[0] = netdev->name[3];
+ 		card_nr[1] = '\0';
+ 		ret_val = strict_strtoul(card_nr, 10, &gCardIndex);
+@@ -749,89 +745,83 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
+ 			goto err_net;
+ 		}
+ 
+-            pInfo->CardNumber = gCardIndex;
+-            DEBUG("card number = %d\n", pInfo->CardNumber);
+-        }
+-        else {
+-            printk(KERN_ERR "ft1000: Invalid device name\n");
++		pInfo->CardNumber = gCardIndex;
++		DEBUG("card number = %d\n", pInfo->CardNumber);
++	} else {
++		printk(KERN_ERR "ft1000: Invalid device name\n");
+ 		ret_val = -ENXIO;
+ 		goto err_net;
+-        }
++	}
+ 
+-    memset(&pInfo->stats, 0, sizeof(struct net_device_stats) );
+-
+-   spin_lock_init(&pInfo->dpram_lock);
+-    pInfo->pFt1000Dev = ft1000dev;
+-    pInfo->DrvErrNum = 0;
+-    pInfo->ASICResetNum = 0;
+-    pInfo->registered = 1;
+-    pInfo->ft1000_reset = ft1000_reset;
+-    pInfo->mediastate = 0;
+-    pInfo->fifo_cnt = 0;
+-    pInfo->DeviceCreated = FALSE;
+-    pInfo->CurrentInterruptEnableMask = ISR_DEFAULT_MASK;
+-    pInfo->InterruptsEnabled = FALSE;
+-    pInfo->CardReady = 0;
+-    pInfo->DSP_TIME[0] = 0;
+-    pInfo->DSP_TIME[1] = 0;
+-    pInfo->DSP_TIME[2] = 0;
+-    pInfo->DSP_TIME[3] = 0;
+-    pInfo->fAppMsgPend = 0;
+-    pInfo->fCondResetPend = 0;
++	memset(&pInfo->stats, 0, sizeof(struct net_device_stats));
++
++	spin_lock_init(&pInfo->dpram_lock);
++	pInfo->pFt1000Dev = ft1000dev;
++	pInfo->DrvErrNum = 0;
++	pInfo->ASICResetNum = 0;
++	pInfo->registered = 1;
++	pInfo->ft1000_reset = ft1000_reset;
++	pInfo->mediastate = 0;
++	pInfo->fifo_cnt = 0;
++	pInfo->DeviceCreated = FALSE;
++	pInfo->CurrentInterruptEnableMask = ISR_DEFAULT_MASK;
++	pInfo->InterruptsEnabled = FALSE;
++	pInfo->CardReady = 0;
++	pInfo->DSP_TIME[0] = 0;
++	pInfo->DSP_TIME[1] = 0;
++	pInfo->DSP_TIME[2] = 0;
++	pInfo->DSP_TIME[3] = 0;
++	pInfo->fAppMsgPend = 0;
++	pInfo->fCondResetPend = 0;
+ 	pInfo->usbboot = 0;
+ 	pInfo->dspalive = 0;
+ 	memset(&pInfo->tempbuf[0], 0, sizeof(pInfo->tempbuf));
+ 
+-    INIT_LIST_HEAD(&pInfo->prov_list);
++	INIT_LIST_HEAD(&pInfo->prov_list);
+ 
+ 	INIT_LIST_HEAD(&pInfo->nodes.list);
+-//mbelian
++
+ #ifdef HAVE_NET_DEVICE_OPS
+ 	netdev->netdev_ops = &ftnet_ops;
+ #else
+-    netdev->hard_start_xmit = &ft1000_start_xmit;
+-    netdev->get_stats = &ft1000_netdev_stats;
+-    netdev->open = &ft1000_open;
+-    netdev->stop = &ft1000_close;
++	netdev->hard_start_xmit = &ft1000_start_xmit;
++	netdev->get_stats = &ft1000_netdev_stats;
++	netdev->open = &ft1000_open;
++	netdev->stop = &ft1000_close;
+ #endif
+ 
+-    ft1000dev->net = netdev;
+-
+-
++	ft1000dev->net = netdev;
+ 
+-//init free_buff_lock, freercvpool, numofmsgbuf, pdpram_blk
+-//only init once per card
+-//Jim
+-    	  DEBUG("Initialize free_buff_lock and freercvpool\n");
+-        spin_lock_init(&free_buff_lock);
++	DEBUG("Initialize free_buff_lock and freercvpool\n");
++	spin_lock_init(&free_buff_lock);
+ 
+-        // initialize a list of buffers to be use for queuing up receive command data
+-        INIT_LIST_HEAD (&freercvpool);
++	/* initialize a list of buffers to be use for queuing
++	 * up receive command data
++	 */
++	INIT_LIST_HEAD(&freercvpool);
+ 
+-        // create list of free buffers
+-        for (i=0; i<NUM_OF_FREE_BUFFERS; i++) {
+-            // Get memory for DPRAM_DATA link list
++	/* create list of free buffers */
++	for (i = 0; i < NUM_OF_FREE_BUFFERS; i++) {
++		/* Get memory for DPRAM_DATA link list */
+ 		pdpram_blk = kmalloc(sizeof(struct dpram_blk), GFP_KERNEL);
+ 		if (pdpram_blk == NULL) {
+ 			ret_val = -ENOMEM;
+ 			goto err_free;
+ 		}
+-            // Get a block of memory to store command data
+-            pdpram_blk->pbuffer = kmalloc ( MAX_CMD_SQSIZE, GFP_KERNEL );
++		/* Get a block of memory to store command data */
++		pdpram_blk->pbuffer = kmalloc(MAX_CMD_SQSIZE, GFP_KERNEL);
+ 		if (pdpram_blk->pbuffer == NULL) {
+ 			ret_val = -ENOMEM;
+ 			kfree(pdpram_blk);
+ 			goto err_free;
+ 		}
+-            // link provisioning data
+-            list_add_tail (&pdpram_blk->list, &freercvpool);
+-        }
+-        numofmsgbuf = NUM_OF_FREE_BUFFERS;
+-
++		/* link provisioning data */
++		list_add_tail(&pdpram_blk->list, &freercvpool);
++	}
++	numofmsgbuf = NUM_OF_FREE_BUFFERS;
+ 
+ 	return 0;
+ 
+-
+ err_free:
+ 	list_for_each_safe(cur, tmp, &freercvpool) {
+ 		pdpram_blk = list_entry(cur, struct dpram_blk, list);
+@@ -844,8 +834,6 @@ err_net:
+ 	return ret_val;
  }
  
- static struct net_device_stats *ft1000_netdev_stats(struct net_device *dev)
+-
+-
+ //---------------------------------------------------------------------------
+ // Function:    reg_ft1000_netdev
+ //
 -- 
 1.7.1
 
