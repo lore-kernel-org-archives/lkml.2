@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab1CJAGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:06:01 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:40918 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab1CJAF4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:05:56 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=PxAoOJ8Hl3uq/IfpLi+CfvkXudZo2kcPLwpDJSW3OkI5OP09QL2PXMNMwL6AbNhOS
-	anc9HsTGuP3SbCQEKcEvg==
-From: David Sharp <dhsharp@google.com>
-To: linux-kernel@vger.kernel.org, rostedt@goodmis.org
-Cc: mrubin@google.com, David Sharp <dhsharp@google.com>
-Subject: [PATCH trace-cmd 1/3] parse-events: Add support for printing short fields.
-Date: Wed,  9 Mar 2011 15:58:55 -0800
-Message-Id: <1299715137-22768-1-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1752879Ab1CJAGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:06:49 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:43167 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab1CJAGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 19:06:48 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Wang Lei <f3d27b@gmail.com>
+Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
+Date: Thu, 10 Mar 2011 01:06:36 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+References: <4d774c85.20f98e0a.2695.73ed@mx.google.com> <201103092125.43950.rjw@sisk.pl> <4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
+In-Reply-To: <4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103100106.36678.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle "%hd" etc. in pretty_print()
+On Thursday, March 10, 2011, Wang Lei wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> 
+> > On Wednesday, March 09, 2011, Wang Lei wrote:
+> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> >> 
+> >> >
+> >> > There was only one commit in that area since 2.6.38-rc6, but it shouldn't
+> >> > affect the functionality this way.
+> >> >
+> >> > Is yout thermal management controlled by ACPI?
+> >> >
+> >> > Rafael
+> >> 
+> >> Thanks for your reply!
+> >> 
+> >> How could I know that?
+> >
+> > What does "ls -l /sys/class/thermal/cooling_device0/device" say?
+> >
+> > Rafael
+> 
+> [~]$ ls -l /sys/class/thermal/cooling_device0/device
+> lrwxrwxrwx 1 root root 0 Mar 10 07:13 /sys/class/thermal/cooling_device0/device -> ../../../LNXSYSTM:00/device:47/PNP0C0B:00
+> [~]$
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-Google-Bug-Id: 3501052
----
- parse-events.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+That's ACPI.
 
-diff --git a/parse-events.c b/parse-events.c
-index 3d59d92..bfb7ff5 100644
---- a/parse-events.c
-+++ b/parse-events.c
-@@ -3607,6 +3607,9 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 			case '#':
- 				/* FIXME: need to handle properly */
- 				goto cont_process;
-+			case 'h':
-+				ls--;
-+				goto cont_process;
- 			case 'l':
- 				ls++;
- 				goto cont_process;
-@@ -3687,6 +3690,18 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 						strcpy(format, "0x%llx");
- 				}
- 				switch (ls) {
-+				case -2:
-+					if (len_as_arg)
-+						trace_seq_printf(s, format, len_arg, (char)val);
-+					else
-+						trace_seq_printf(s, format, (char)val);
-+					break;
-+				case -1:
-+					if (len_as_arg)
-+						trace_seq_printf(s, format, len_arg, (short)val);
-+					else
-+						trace_seq_printf(s, format, (short)val);
-+					break;
- 				case 0:
- 					if (len_as_arg)
- 						trace_seq_printf(s, format, len_arg, (int)val);
--- 
-1.7.3.1
+I don't know, however, which change might cause the problem to happen.
 
+Can you bisect the commits between 2.6.38-rc6 and -rc7 to find the one that
+introduced the issue?
+
+Rafael
