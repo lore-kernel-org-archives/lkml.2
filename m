@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab1CJVWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:22:21 -0500
-Received: from blu0-omc1-s20.blu0.hotmail.com ([65.55.116.31]:8131 "EHLO
-	blu0-omc1-s20.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751077Ab1CJVWU (ORCPT
+	id S1752052Ab1CJVYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:24:11 -0500
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:9674 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab1CJVYJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:22:20 -0500
-X-Originating-IP: [174.91.193.52]
-X-Originating-Email: [pdumas9@sympatico.ca]
-Message-ID: <BLU0-SMTP58EC26791F850066BFEAE996C80@phx.gbl>
-Date: Thu, 10 Mar 2011 16:22:14 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: David Daney <ddaney@caviumnetworks.com>, Jason Baron <jbaron@redhat.com>,
-        peterz@infradead.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 0/2] jump label: update for .39
-References: <1299771504.15854.347.camel@gandalf.stny.rr.com> <4D790A13.4060705@caviumnetworks.com> <1299780241.15854.393.camel@gandalf.stny.rr.com> <20110310182000.GB2906@redhat.com> <1299782143.15854.402.camel@gandalf.stny.rr.com> <4D791CAA.7090108@caviumnetworks.com> <1299783236.15854.405.camel@gandalf.stny.rr.com> <4D791F31.6040100@caviumnetworks.com> <1299785143.15854.407.camel@gandalf.stny.rr.com> <1299786329.15854.409.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1299786329.15854.409.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 16:20:52 up 337 days,  7:10,  3 users,  load average: 0.54, 0.34,
-	0.28
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 10 Mar 2011 21:22:19.0360 (UTC) FILETIME=[3CBA6600:01CBDF69]
+	Thu, 10 Mar 2011 16:24:09 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=c/XFevczzUoebyvqT+jDkQbuJdAAxuTGoZVbuGUMSf4= c=1 sm=1
+ a=1fThdbepzVgA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=U334Uqa5lhaIqtFrVCwA:9
+ a=-A_5E-_NVUgMFCzr1KdlTtaFtjAA:4 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [RFC] Storing cgroup id in page->private (Was: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.)
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <1299791640-sup-1874@think>
+Date: Thu, 10 Mar 2011 14:24:07 -0700
+Cc: Vivek Goyal <vgoyal@redhat.com>, Justin TerAvest <teravest@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        m-ikeda <m-ikeda@ds.jp.nec.com>, jaxboe <jaxboe@fusionio.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ryov <ryov@valinux.co.jp>,
+        taka <taka@valinux.co.jp>, "righi.andrea" <righi.andrea@gmail.com>,
+        guijianfeng <guijianfeng@cn.fujitsu.com>,
+        balbir <balbir@linux.vnet.ibm.com>, ctalbott <ctalbott@google.com>,
+        nauman <nauman@google.com>, mrubin <mrubin@google.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3EC7D30A-B8F7-416B-8B1D-A19350C57D82@dilger.ca>
+References: <1299619256-12661-1-git-send-email-teravest@google.com> <20110309142237.6ab82523.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTimRRAEp75CfyJFxU-5wOYfety6gjq=msZf0Wp8P@mail.gmail.com> <20110310181529.GF29464@redhat.com> <AANLkTi=LL6JEwOcZfSsapYn-isA3RBrV8kPq8EK6va8=@mail.gmail.com> <20110310191115.GG29464@redhat.com> <20110310194106.GH29464@redhat.com> <1299791640-sup-1874@think>
+To: Chris Mason <chris.mason@oracle.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2011-03-10 at 14:25 -0500, Steven Rostedt wrote:
-> > On Thu, 2011-03-10 at 10:57 -0800, David Daney wrote:
-> > > On 03/10/2011 10:53 AM, Steven Rostedt wrote:
-> > > > On Thu, 2011-03-10 at 10:47 -0800, David Daney wrote:
-> > > >
-> > > >> The alignment requested by the assembler will have to satisfy *all* the
-> > > >> requested alignments, so manually forcing everything to .align 8 (or
-> > > >> .align 4 for 32-bit) should ensure that the linker doesn't put in any holes.
-> > > >
-> > > > I would agree with the assessment although, I don't know that it is
-> > > > documented anywhere that this is what happens. As the previous "bug"
-> > > > with the trace_events was solved by me adding .align(4) everywhere, I
-> > > > would think that .align(sizeof(long)) would work here too.
-> > > >
-> > > > It may be a good ideal to force this alignment, and not add wasted
-> > > > space. If anything, if this (hypothetical) bug appears, it will most
-> > > > likely show up as a crash on boot up. I'm not too concerned about it.
-> > > >
-> > > 
-> > > If the linker put in gratuitous holes, things like  __ex_table would 
-> > > break too.
-> > 
-> > Again, as I have said (although I said extable not __ex_table), there
-> > seems to be no problem when the data is of a power of 2 as well. As
-> > __ex_table size is a power of 2. We just don't know if the linker will
-> > add holes when the size is something other than power of 2.
+On 2011-03-10, at 2:15 PM, Chris Mason wrote:
+> Excerpts from Vivek Goyal's message of 2011-03-10 14:41:06 -0500:
+>> On Thu, Mar 10, 2011 at 02:11:15PM -0500, Vivek Goyal wrote:
+>>>>> I think the person who dirtied the page can store the information in
+>>>>> page->private (assuming buffer heads were not generated) and if flusher
+>>>>> thread later ends up generating buffer heads and ends up modifying
+>>>>> page->private, this can be copied in buffer heads?
+>>>> 
+>>>> This scares me a bit.
+>>>> 
+>>>> As I understand it, fs/ code expects total ownership of page->private.
+>>>> This adds a responsibility for every user to copy the data through and
+>>>> store it in the buffer head (or anything else). btrfs seems to do
+>>>> something entirely different in some cases and store a different kind
+>>>> of value.
+>>> 
+>>> If filesystems are using page->private for some other purpose also, then
+>>> I guess we have issues. 
+>>> 
+>>> I am ccing linux-fsdevel to have some feedback on the idea of trying
+>>> to store cgroup id of page dirtying thread in page->private and/or buffer
+>>> head for tracking which group originally dirtied the page in IO controller
+>>> during writeback.
+>> 
+>> A quick "grep" showed that btrfs, ceph and logfs are using page->private
+>> for other purposes also.
+>> 
+>> I was under the impression that either page->private is null or it 
+>> points to buffer heads for the writeback case. So storing the info
+>> directly in either buffer head directly or first in page->private and
+>> then transferring it to buffer heads would have helped. 
 > 
-> Anyway, I think the best thing for now is to have Jason add
-> the .align(sizeof(long)) in the inline assembly for all locations and be
-> done with it.
+> Right, btrfs has its own uses for page->private, and we expect to own
+> it.  With a proper callback, the FS could store the extra information you
+> need in out own structs.
 
-You seem to be contradicting yourself here. I'm concerned about having
-"structures" of a size not power of two. Can we simply either
+There is no requirement that page->private ever points to a buffer_head, and Lustre clients use it for its own tracking structure (never touching buffer_heads at all).  Any assumption about what a filesystem is storing in page->private in other parts of the code is just broken.
 
-- Add a padding element at the end
-or
-- use .align 4*sizeof(long) at the beginning
+Cheers, Andreas
 
-to make sure the linker won't put any holes when it puts objects 
-together ?
 
-Thanks,
 
-Mathieu
 
-> 
-> -- Steve
-> 
-> 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
