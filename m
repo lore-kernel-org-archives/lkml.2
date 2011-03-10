@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1CKADb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:03:31 -0500
-Received: from kroah.org ([198.145.64.141]:46815 "EHLO coco.kroah.org"
+	id S1754456Ab1CKADs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 19:03:48 -0500
+Received: from kroah.org ([198.145.64.141]:45167 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab1CJX5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:14 -0500
+	id S1754322Ab1CJX5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:36 2011
-Message-Id: <20110310235536.525351587@clark.kroah.org>
+Message-Id: <20110310235536.221810926@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:11 -0800
+Date: Thu, 10 Mar 2011 15:54:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [patch 05/29] ALSA: HDA: Realtek: Fixup jack detection to input subsystem
+        Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [patch 02/29] virtio: console: Dont access vqs if device was unplugged
 In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit f0ce27996217d06207c8bfda1b1bbec2fbab48c6 upstream.
+commit d7a62cd0332115d4c7c4689abea0d889a30d8349 upstream.
 
-This patch fixes an error in the jack detection reporting,
-causing the jack detection sometimes not to be reported
-correctly to the input subsystem. It should apply to several
-Realtek codecs.
+If a virtio-console device gets unplugged while a port is open, a
+subsequent close() call on the port accesses vqs to free up buffers.
+This can lead to a crash.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The buffers are already freed up as a result of the call to
+unplug_ports() from virtcons_remove().  The fix is to simply not access
+vq information if port->portdev is NULL.
+
+Reported-by: juzhang <juzhang@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/char/virtio_console.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1127,11 +1127,8 @@ static void alc_automute_speaker(struct
- 		nid = spec->autocfg.hp_pins[i];
- 		if (!nid)
- 			break;
--		if (snd_hda_jack_detect(codec, nid)) {
--			spec->jack_present = 1;
--			break;
--		}
--		alc_report_jack(codec, spec->autocfg.hp_pins[i]);
-+		alc_report_jack(codec, nid);
-+		spec->jack_present |= snd_hda_jack_detect(codec, nid);
- 	}
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -387,6 +387,10 @@ static void discard_port_data(struct por
+ 	unsigned int len;
+ 	int ret;
  
- 	mute = spec->jack_present ? HDA_AMP_MUTE : 0;
++	if (!port->portdev) {
++		/* Device has been unplugged.  vqs are already gone. */
++		return;
++	}
+ 	vq = port->in_vq;
+ 	if (port->inbuf)
+ 		buf = port->inbuf;
+@@ -469,6 +473,10 @@ static void reclaim_consumed_buffers(str
+ 	void *buf;
+ 	unsigned int len;
+ 
++	if (!port->portdev) {
++		/* Device has been unplugged.  vqs are already gone. */
++		return;
++	}
+ 	while ((buf = virtqueue_get_buf(port->out_vq, &len))) {
+ 		kfree(buf);
+ 		port->outvq_full = false;
 
 
