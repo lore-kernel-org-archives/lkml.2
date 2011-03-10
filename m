@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab1CJGnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 01:43:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55883 "EHLO mga09.intel.com"
+	id S1752539Ab1CJGqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 01:46:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60581 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab1CJGnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 01:43:31 -0500
+	id S1751894Ab1CJGqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 01:46:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,295,1297065600"; 
-   d="scan'208";a="718538637"
-Message-ID: <4D787312.7080609@linux.intel.com>
-Date: Wed, 09 Mar 2011 22:43:30 -0800
+   d="scan'208";a="611173986"
+Message-ID: <4D7873B5.7090602@linux.intel.com>
+Date: Wed, 09 Mar 2011 22:46:13 -0800
 From: Darren Hart <dvhart@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
@@ -19,91 +19,65 @@ CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
         mrubin@google.com
 Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional assignment
  of CC and AR"
-References: <1299715137-22768-1-git-send-email-dhsharp@google.com> <1299715137-22768-3-git-send-email-dhsharp@google.com> <4D7828F9.7000906@linux.intel.com> <1299720997.15854.276.camel@gandalf.stny.rr.com> <4D783038.8080103@linux.intel.com> <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>
-In-Reply-To: <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>
+References: <1299715137-22768-1-git-send-email-dhsharp@google.com> <1299715137-22768-3-git-send-email-dhsharp@google.com> <4D7828F9.7000906@linux.intel.com> <1299720997.15854.276.camel@gandalf.stny.rr.com> <4D783038.8080103@linux.intel.com> <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com> <1299725486.15854.281.camel@gandalf.stny.rr.com> <1299727594.15854.310.camel@gandalf.stny.rr.com> <AANLkTi=WRv2PekEyuEh5k9VOv9LmGCWa6KxXn0BeZVSk@mail.gmail.com>
+In-Reply-To: <AANLkTi=WRv2PekEyuEh5k9VOv9LmGCWa6KxXn0BeZVSk@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2011 06:27 PM, David Sharp wrote:
-> On Wed, Mar 9, 2011 at 5:58 PM, Darren Hart<dvhart@linux.intel.com>  wrote:
->> On 03/09/2011 05:36 PM, Steven Rostedt wrote:
->>> On Wed, 2011-03-09 at 17:27 -0800, Darren Hart wrote:
->>>> On 03/09/2011 03:58 PM, David Sharp wrote:
->>>>>
->>>>> This reverts commit 6c696cec3f264a9399241b6e648f58bc97117d49.
->>>>>
->>>>> Make has default values CC and AR of 'cc' and 'ar' respectively. This
->>>>> means
->>>>> that "CC ?= anything" will never have effect, because CC is always
->>>>> already set.
->>>>> Because of this, 6c696cec makes setting CROSS_COMPILE from the command
->>>>> line or
->>>>> environment useless.
->>>>
->>>> The problem with this approach is it prevents the user from setting CC
->>>> explicitly with the environment which is a very common way of using a
->>>> specific version of gcc (for example). It also places restrictions on
->>>> the filename of the compiler (it must end in gcc - so gcc-4.5.1 cannot
->>>> work), this isn't acceptable.
->>>>
->>>> You could use CC=your-cross-compiler, and if that doesn't work for you,
->>>> you could prepare a patch that conditionally sets CC only if
->>>> CROSS_COMPILE is set, but please do not simply revert this patch which
->>>> solved a real problem with the Makefile.
->>>
->>> Hmm, but the thing is, the change did not work,
+On 03/09/2011 09:25 PM, David Sharp wrote:
+> On Wed, Mar 9, 2011 at 7:26 PM, Steven Rostedt<rostedt@goodmis.org>  wrote:
+>> On Wed, 2011-03-09 at 21:51 -0500, Steven Rostedt wrote:
 >>
->> It did work for me as I was setting CC= on the command line.
+>>> I'll play with some other make tricks and see if I can come up with a
+>>> better solution.
 >>
->> unless your environment
->>>
->>> for some reason does not supply a 'cc'. Or that 'cc' defaulted to the
->>> compiler that you wanted, where 'gcc' would not.
->>>
->>> Thus, would you be fine with something like:
->>>
->>>         BUILD_CC ?=     $(CROSS_COMPILE)gcc
->>>         CC       =      $(BUILD_CC)
+>> OK, it didn't take me long to come up with "Makefiles suck" ;)
+>
+> Yes, except for very basic things.
+>
 >>
->> This would also work, but what is wrong with:
+>> But I did come up with a solution:
 >>
->> dvhart@doubt:templates$ cat Makefile
->> ifdef CROSS_COMPILE
->> CC = $(CROSS_COMPILE)gcc
->> AR = $(CROSS_COMPILE)ar
+>> ifneq ("$(origin CC)", "environment")
+>> CC = gcc
 >> endif
 >>
->> all:
->>         echo "CC: $(CC)"
+>> CC := $(CROSS_COMPILE)$(CC)
 >>
->> dvhart@doubt:templates$ make -s
->> CC: cc
+>> This wont let make CC=xx work unless I also add a:
 >>
->> dvhart@doubt:templates$ CC=gcc-4.5.1 make -s
->> CC: gcc-4.5.1
+>> ifneq ("$(origin CC)", "command line")
 >>
->> dvhart@doubt:templates$ CROSS_COMPILE=my-cross- make -s
->> CC: my-cross-gcc
+>> around the above if, but do we care?
 >>
->>
->> Seems to meet everyone's needs without changing any tools/scripts/etc that
->> have used trace-cmd before or after the CC ?= wreckage.
+>> -- Steve
 >
-> It's a little odd that the default CC is "cc" unless you supply
-> CROSS_COMPILE, then it's "gcc". I'd probably be okay with this, but I
-> would think it's weird.
+> This seems to do it all:
 >
-> I don't know the answers, but if we take the kernel Makefile as a
-> template, then setting CC doesn't work.
+> define allow-override
+>    $(if $(or $(findstring environment,$(origin $(1))),
+>              $(findstring command line,$(origin $(1)))),,\
+>      $(eval $(1) = $(2)))
+> endef
+>
+> $(call allow-override,CC,$(CROSS_COMPILE)gcc)
+> $(call allow-override,AR,$(CROSS_COMPILE)ar)
 
-The kernel is a bit special I believe as it is pretty tied to gcc. Is 
-trace-cmd tied to gcc to such a degree that we want to make it difficult 
-for people to try different compilers?
+Egads .... that's hideous :-) This level of complexity makes it very 
+difficult for people to readily understand it. What does this offer over:
 
---
-Darren
+ifdef CROSS_COMPILE
+CC = $(CROSS_COMPILE)gcc
+AR = $(CROSS_COMPILE)ar
+endif
+
+besides being 3 lines longer with much more complex Makefile syntax and 
+conditional statements?
+
+-- 
+Darren Hart
 Intel Open Source Technology Center
 Yocto Project - Linux Kernel
