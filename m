@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab1CJCaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 21:30:19 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:48665 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab1CJCaQ (ORCPT
+	id S1751934Ab1CJCdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 21:33:21 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:14598 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab1CJCdR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 21:30:16 -0500
-Date: Thu, 10 Mar 2011 11:29:57 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-Subject: Re: [PATCH]mmc: set timeout for SDHCI host before sending busy cmds
-In-reply-to: <20110309080609.GA23207@intel.com>
-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, prakity@marvell.com,
-        jh80.chung@samsung.com, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, Philip Rakity <prakity@marvell.com>
-Message-id: <4D7837A5.3010603@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-References: <20110309080609.GA23207@intel.com>
-X-OriginalArrivalTime: 10 Mar 2011 02:30:14.0194 (UTC)
- FILETIME=[162C9920:01CBDECB]
+	Wed, 9 Mar 2011 21:33:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wxh9eEkXmJHjPDZFBiDR1r8nLzt5/1qpWAw51J5W/zPn/yyBygcbeFnH4elBarCHKf
+         BFk4/NLQr1NJiDZ1jL6Q==
+MIME-Version: 1.0
+In-Reply-To: <4D783038.8080103@linux.intel.com>
+References: <1299715137-22768-1-git-send-email-dhsharp@google.com>
+ <1299715137-22768-3-git-send-email-dhsharp@google.com> <4D7828F9.7000906@linux.intel.com>
+ <1299720997.15854.276.camel@gandalf.stny.rr.com> <4D783038.8080103@linux.intel.com>
+From: David Sharp <dhsharp@google.com>
+Date: Wed, 9 Mar 2011 18:27:35 -0800
+Message-ID: <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>
+Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional
+ assignment of CC and AR"
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mrubin@google.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chuanxiao Dong wrote:
-> Hi all,
->    From the previous discussion, I do not think we have got a clear conclusion
->    about using maximum timeout value. At least we know from Jae hoon Chung
->    using 0xE for every case is not a good. So I want to suggest only use 0xE for
->    busy command. I personally preferred below implementation, which is similar
->    with a RFC patch submitted by Jae hoon Chung, but only without adding a new
->    quirk.
+On Wed, Mar 9, 2011 at 5:58 PM, Darren Hart <dvhart@linux.intel.com> wrote:
+> On 03/09/2011 05:36 PM, Steven Rostedt wrote:
+>> On Wed, 2011-03-09 at 17:27 -0800, Darren Hart wrote:
+>>> On 03/09/2011 03:58 PM, David Sharp wrote:
+>>>>
+>>>> This reverts commit 6c696cec3f264a9399241b6e648f58bc97117d49.
+>>>>
+>>>> Make has default values CC and AR of 'cc' and 'ar' respectively. This
+>>>> means
+>>>> that "CC ?= anything" will never have effect, because CC is always
+>>>> already set.
+>>>> Because of this, 6c696cec makes setting CROSS_COMPILE from the command
+>>>> line or
+>>>> environment useless.
+>>>
+>>> The problem with this approach is it prevents the user from setting CC
+>>> explicitly with the environment which is a very common way of using a
+>>> specific version of gcc (for example). It also places restrictions on
+>>> the filename of the compiler (it must end in gcc - so gcc-4.5.1 cannot
+>>> work), this isn't acceptable.
+>>>
+>>> You could use CC=your-cross-compiler, and if that doesn't work for you,
+>>> you could prepare a patch that conditionally sets CC only if
+>>> CROSS_COMPILE is set, but please do not simply revert this patch which
+>>> solved a real problem with the Makefile.
+>>
+>> Hmm, but the thing is, the change did not work,
+>
+> It did work for me as I was setting CC= on the command line.
+>
+> unless your environment
+>>
+>> for some reason does not supply a 'cc'. Or that 'cc' defaulted to the
+>> compiler that you wanted, where 'gcc' would not.
+>>
+>> Thus, would you be fine with something like:
+>>
+>>        BUILD_CC ?=     $(CROSS_COMPILE)gcc
+>>        CC       =      $(BUILD_CC)
+>
+> This would also work, but what is wrong with:
+>
+> dvhart@doubt:templates$ cat Makefile
+> ifdef CROSS_COMPILE
+> CC = $(CROSS_COMPILE)gcc
+> AR = $(CROSS_COMPILE)ar
+> endif
+>
+> all:
+>        echo "CC: $(CC)"
+>
+> dvhart@doubt:templates$ make -s
+> CC: cc
+>
+> dvhart@doubt:templates$ CC=gcc-4.5.1 make -s
+> CC: gcc-4.5.1
+>
+> dvhart@doubt:templates$ CROSS_COMPILE=my-cross- make -s
+> CC: my-cross-gcc
+>
+>
+> Seems to meet everyone's needs without changing any tools/scripts/etc that
+> have used trace-cmd before or after the CC ?= wreckage.
 
-thanks for remind. 
-Yes, i tested without quirks, i think that is not problem.
-(Just sent RFC patch with quirks, because i want to ask how think about adding quirks or not).
+It's a little odd that the default CC is "cc" unless you supply
+CROSS_COMPILE, then it's "gcc". I'd probably be okay with this, but I
+would think it's weird.
 
-> 
->    I think sdhci_calc_timeout should be left for data transfer since at least we
->    can get a warning if 0xE is not enough for host to use. And if the host
->    controller and the card have no bugs, then the calculated timeout should be
->    safe. Left the old implementation unchanged is also compatible with all
->    existed host controllers and cards.
-> 
->    But for busy command, we are not clear about how long is safe enough for
->    waiting and there is also no function to do the calculation for them. So
->    preferred just using 0xE. Below the patch and comment:
-> 
-> Set the timeout control register for SDHCI host when send some commands which
-> need busy signal. Use the maximum timeout value 0xE will be safe.
-> 
-> Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> ---
->  drivers/mmc/host/sdhci.c |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 99c372e..8306323 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -659,8 +659,15 @@ static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_data *data)
->  
->  	WARN_ON(host->data);
->  
-> -	if (data == NULL)
-> +	if (data == NULL) {
-> +		/*
-> +		 * set the timeout to be maximum value for commands those with
-> +		 * busy signal
-> +		 */
-> +		if (host->cmd->flags & MMC_RSP_BUSY)
-> +			sdhci_writeb(host, 0xE, SDHCI_TIMEOUT_CONTROL);
->  		return;
-> +	}
->  
->  	/* Sanity checks */
->  	BUG_ON(data->blksz * data->blocks > 524288);
+I don't know the answers, but if we take the kernel Makefile as a
+template, then setting CC doesn't work.
 
+>
+>
+>
+> Thanks,
+>
+> --
+> Darren
+>
+>>
+>> Then you could just update BUILD_CC and that will update CC for you.
+>>
+>> -- Steve
+>>
+>>
+>
+>
+> --
+> Darren Hart
+> Intel Open Source Technology Center
+> Yocto Project - Linux Kernel
+>
