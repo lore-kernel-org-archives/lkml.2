@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab1CJVFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:05:44 -0500
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:53046 "EHLO
+	id S1753311Ab1CJVCn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:02:43 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:53023 "EHLO
 	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab1CJVCq (ORCPT
+	with ESMTP id S1753172Ab1CJVCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:02:46 -0500
+	Thu, 10 Mar 2011 16:02:40 -0500
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         arnaud.patard@rtp-net.org
-Subject: [PATCH 10/22] staging: xgifb: use mdelay() for millisecond delays
-Date: Thu, 10 Mar 2011 23:02:35 +0200
-Message-Id: <1299790967-7135-11-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 04/22] staging: xgifb: delete unsupported chip types
+Date: Thu, 10 Mar 2011 23:02:29 +0200
+Message-Id: <1299790967-7135-5-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1299790967-7135-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1299790967-7135-1-git-send-email-aaro.koskinen@iki.fi>
@@ -20,44 +20,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use mdelay() instead of udelay() for millisecond delays.
+The probe routine will fail if the chip is other than XG40..XG27, so
+the other types can be dropped.
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/vb_init.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |   31 +++++--------------------------
+ drivers/staging/xgifb/XGIfb.h       |   18 ------------------
+ 2 files changed, 5 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
-index 86d7333..8567696 100644
---- a/drivers/staging/xgifb/vb_init.c
-+++ b/drivers/staging/xgifb/vb_init.c
-@@ -105,7 +105,7 @@ static void XGINew_DDR1x_MRS_340(unsigned long P3c4, struct vb_device_info *pVBI
- 	XGINew_SetReg1(P3c4, 0x16, 0x80);
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index ee80171..b2cb7a3 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -182,8 +182,6 @@ static int XGIfb_mode_rate_to_dclock(struct vb_device_info *XGI_Pr,
  
- 	if (*pVBInfo->pXGINew_DRAMTypeDefinition != 0x0C) { /* Samsung F Die */
--		DelayUS(3000); /* Delay 67 x 3 Delay15us */
-+		mdelay(3);
- 		XGINew_SetReg1(P3c4, 0x18, 0x00);
- 		XGINew_SetReg1(P3c4, 0x19, 0x20);
- 		XGINew_SetReg1(P3c4, 0x16, 0x00);
-@@ -117,7 +117,7 @@ static void XGINew_DDR1x_MRS_340(unsigned long P3c4, struct vb_device_info *pVBI
- 	XGINew_SetReg1(P3c4, 0x19, 0x01);
- 	XGINew_SetReg1(P3c4, 0x16, pVBInfo->SR16[0]);
- 	XGINew_SetReg1(P3c4, 0x16, pVBInfo->SR16[1]);
--	DelayUS(1000);
-+	mdelay(1);
- 	XGINew_SetReg1(P3c4, 0x1B, 0x03);
- 	DelayUS(500);
- 	XGINew_SetReg1(P3c4, 0x18, pVBInfo->SR15[2][XGINew_RAMType]); /* SR18 */
-@@ -292,7 +292,7 @@ static void XGINew_DDR1x_MRS_XG20(unsigned long P3c4, struct vb_device_info *pVB
- 	XGINew_SetReg1(P3c4, 0x19, 0x01);
- 	XGINew_SetReg1(P3c4, 0x16, 0x03);
- 	XGINew_SetReg1(P3c4, 0x16, 0x83);
--	DelayUS(1000);
-+	mdelay(1);
- 	XGINew_SetReg1(P3c4, 0x1B, 0x03);
- 	DelayUS(500);
- 	/* XGINew_SetReg1(P3c4, 0x18, 0x31); */
+ 	*/
+ 	ClockIndex = XGI_Pr->RefIndex[RefreshRateTableIndex].Ext_CRTVCLK;
+-	if (HwDeviceExtension->jChipType < XGI_315H)
+-		ClockIndex &= 0x3F;
+ 
+ 	Clock = XGI_Pr->VCLKData[ClockIndex].CLOCK * 1000;
+ 
+@@ -859,12 +857,6 @@ static int XGIfb_validate_mode(int myindex)
+ 				if (XGIbios_mode[myindex].bpp == 32)
+ 					return -1;
+ 			}
+-			/* TW: LVDS/CHRONTEL only supports < 800 (1024 on 650/Ch7019) */
+-			if (xgi_video_info.hasVB == HASVB_LVDS_CHRONTEL
+-					|| xgi_video_info.hasVB	== HASVB_CHRONTEL) {
+-				if (xgi_video_info.chip < XGI_315H)
+-					return -1;
+-			}
+ 			break;
+ 		default:
+ 			return -1;
+@@ -1684,24 +1676,11 @@ static void XGIfb_detect_VB(void)
+ 		xgi_video_info.TV_plug = TVPLUG_SCART;
+ 
+ 	if (xgi_video_info.TV_type == 0) {
+-		/* TW: PAL/NTSC changed for 650 */
+-		if ((xgi_video_info.chip <= XGI_315PRO) || (xgi_video_info.chip
+-				>= XGI_330)) {
+-
+-			inXGIIDXREG(XGICR, 0x38, temp);
+-			if (temp & 0x10)
+-				xgi_video_info.TV_type = TVMODE_PAL;
+-			else
+-				xgi_video_info.TV_type = TVMODE_NTSC;
+-
+-		} else {
+-
+-			inXGIIDXREG(XGICR, 0x79, temp);
+-			if (temp & 0x20)
+-				xgi_video_info.TV_type = TVMODE_PAL;
+-			else
+-				xgi_video_info.TV_type = TVMODE_NTSC;
+-		}
++		inXGIIDXREG(XGICR, 0x38, temp);
++		if (temp & 0x10)
++			xgi_video_info.TV_type = TVMODE_PAL;
++		else
++			xgi_video_info.TV_type = TVMODE_NTSC;
+ 	}
+ 
+ 	/* TW: Copy forceCRT1 option to CRT1off if option is given */
+diff --git a/drivers/staging/xgifb/XGIfb.h b/drivers/staging/xgifb/XGIfb.h
+index 7813bbe..b43a758 100644
+--- a/drivers/staging/xgifb/XGIfb.h
++++ b/drivers/staging/xgifb/XGIfb.h
+@@ -27,23 +27,6 @@
+ #endif
+ 
+ enum XGI_CHIP_TYPE {
+-    XGI_VGALegacy = 0,
+-    XGI_300,
+-    XGI_630,
+-    XGI_730,
+-    XGI_540,
+-    XGI_315H,
+-    XGI_315,
+-    XGI_315PRO,
+-    XGI_550,
+-    XGI_640,
+-    XGI_740,
+-    XGI_650,
+-    XGI_650M,
+-    XGI_330 = 16,
+-    XGI_660,
+-    XGI_661,
+-    XGI_760,
+     XG40 = 32,
+     XG41,
+     XG42,
+@@ -51,7 +34,6 @@ enum XGI_CHIP_TYPE {
+     XG20 = 48,
+     XG21,
+     XG27,
+-    MAX_XGI_CHIP
+ };
+ 
+ enum xgi_tvtype {
 -- 
 1.5.6.5
 
