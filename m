@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab1CJIF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 03:05:26 -0500
-Received: from proxy.DResearch.DE ([87.193.137.100]:53813 "EHLO
-	mail.dresearch.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751159Ab1CJIFZ (ORCPT
+	id S1751858Ab1CJIJR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 03:09:17 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44422 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab1CJIJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 03:05:25 -0500
-From: Steffen Sledz <sledz@dresearch.de>
-To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>, Steffen Sledz <sledz@dresearch.de>
-Subject: [PATCH] cfi: add support for AMIC flashes (e.g. A29L160AT)
-Date: Thu, 10 Mar 2011 09:05:12 +0100
-Message-Id: <1299744312-6291-1-git-send-email-sledz@dresearch.de>
-X-Mailer: git-send-email 1.7.1
-X-OriginalArrivalTime: 10 Mar 2011 08:05:23.0219 (UTC) FILETIME=[E8164E30:01CBDEF9]
+	Thu, 10 Mar 2011 03:09:13 -0500
+Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
+	top level
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: James.Bottomley@hansenpartnership.com, hch@infradead.org,
+        rdunlap@xenotime.net, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+In-Reply-To: <20110308093334.GA21996@gondor.apana.org.au>
+References: <20110308093334.GA21996@gondor.apana.org.au>
+Content-Type: text/plain
+Date: Thu, 10 Mar 2011 00:02:21 -0800
+Message-Id: <1299744141.5263.25.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Steffen Sledz <sledz@dresearch.de>
----
- drivers/mtd/chips/cfi_cmdset_0002.c |    1 +
- include/linux/mtd/cfi.h             |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+On Tue, 2011-03-08 at 17:33 +0800, Herbert Xu wrote:
+> Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
+> >
+> >> > I should mention this is with the following .config:
+> >> > 
+> >> > CONFIG_CRYPTO_CRC32C=y
+> >> > CONFIG_CRYPTO_CRC32C_INTEL=m
+> 
+> This is why you get the unoptimised version.  Had you selected
+> both as built-in or both as modules, then it would have worked
+> as intended.
+>  
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index f072fcf..8338d33 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -349,6 +349,7 @@ static struct cfi_fixup cfi_fixup_table[] = {
- 	{ CFI_MFR_ATMEL, CFI_ID_ANY, fixup_convert_atmel_pri },
- #ifdef AMD_BOOTLOC_BUG
- 	{ CFI_MFR_AMD, CFI_ID_ANY, fixup_amd_bootblock },
-+	{ CFI_MFR_AMIC, CFI_ID_ANY, fixup_amd_bootblock },
- 	{ CFI_MFR_MACRONIX, CFI_ID_ANY, fixup_amd_bootblock },
- #endif
- 	{ CFI_MFR_AMD, 0x0050, fixup_use_secsi },
-diff --git a/include/linux/mtd/cfi.h b/include/linux/mtd/cfi.h
-index a9baee6..0d823f2 100644
---- a/include/linux/mtd/cfi.h
-+++ b/include/linux/mtd/cfi.h
-@@ -535,6 +535,7 @@ struct cfi_fixup {
- #define CFI_MFR_CONTINUATION	0x007F
- 
- #define CFI_MFR_AMD		0x0001
-+#define CFI_MFR_AMIC		0x0037
- #define CFI_MFR_ATMEL		0x001F
- #define CFI_MFR_EON		0x001C
- #define CFI_MFR_FUJITSU		0x0004
--- 
-1.7.1
+<nod>
+
+> > What about the following to simply call request_module("crc32c_intel")
+> > at module_init() time and top the extra iscsi_login_setup_crypto()
+> > code..?
+> 
+> If we're going to do this we should do it in the crypto layer,
+> and not litter every single crypto API user with such crap.
+> 
+> Currently we don't invoke request_module unless no implementation
+> is reigstered for an algorithm.  You can change this so that it
+> also invokes request_module if we have not yet done so at least
+> once for that algorithm.
+> 
+> Patches are welcome.
+> 
+
+Ok, fair enough point..  I have addressed this with a new struct
+crypto_alg->cra_check_optimized() callback in order for crc32c.ko to
+have a method to call request_module("crc32c_intel.ko") after the base
+software alg has been loaded.
+
+This is working w/ CONFIG_CRYPTO_CRC32C=y + CONFIG_CRYPTO_CRC32C_INTEL=m
+case and should satisfy current (and future) architecture dependent
+cases for CRC32C HW offload.
+
+Sending out a patch series for your comments shortly..
+
+Thanks!
+
+--nab
 
