@@ -1,105 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1CJJw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:52:59 -0500
-Received: from www.tglx.de ([62.245.132.106]:35719 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab1CJJw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:52:57 -0500
-Date: Thu, 10 Mar 2011 10:52:18 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexander Shishkin <virtuoso@slind.org>
-cc: linux-kernel@vger.kernel.org, Ken MacLeod <ken@bitsko.slc.ut.us>,
-        Shaun Reich <predator106@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
- changes
-In-Reply-To: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
-Message-ID: <alpine.LFD.2.00.1103101014260.2787@localhost6.localdomain6>
-References: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752719Ab1CJJ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:56:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56918 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab1CJJ4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 04:56:23 -0500
+Message-ID: <4D78A0A6.2060009@cn.fujitsu.com>
+Date: Thu, 10 Mar 2011 17:57:58 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3] trace-cmd: correct cpu list parsing
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-10 17:55:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-10 17:55:08,
+	Serialize complete at 2011-03-10 17:55:08
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Mar 2011, Alexander Shishkin wrote:
-> The major change since the previous version is the new semantics of
-> timerfd_settime() when it's called on a time change notification
-> descriptor: it will set the system time to utmr.it_value if the time
-> change counter is zero, otherwise it will return EBUSY, this is required
-> to prevent a race between setting the time and reading the counter, when
-> the time controlling procees changes the time immediately after another
-> process in the system did the same (the counter is greater than one),
-> that process' time change will be lost. Thus, the time controlling
-> process should use timerfd_settime() instead of clock_settime() or
-> settimeofday() to ensure that other processes' time changes don't get
-> lost.
+Old parsing code is incorrect, when we use execute
+./trace-cmd report --cpu 1,2-4,6,9-13
 
-No, we really don't want to go there and invent another mechanism to
-set the time.
+the result of filter_cpus will be:
+1,2,1,2,3,4,6,9,5,6,7,8,9,10,11,12,13
 
->  	/*
-> +	 * for the notification timerfd, set current time to it_value
-> +	 * if the timer hasn't expired; otherwise someone has changed
-> +	 * the system time to the value that we don't know
-> +	 */
-> +	if (!list_empty(&ctx->notifiers_list) && utmr) {
-> +		if (ctx->ticks) {
-> +			ret = -EBUSY;
-> +			goto out;
-> +		}
-> +
-> +		ret = security_settime(&ktmr.it_value, NULL);
-> +		if (ret)
-> +			goto out;
-> +
-> +		spin_unlock_irq(&ctx->wqh.lock);
-> +		ret = do_settimeofday(&ktmr.it_value);
-> +		goto out1;
-> +	}
+The correct filter_cpus should be:
+1,2,3,4,6,9,10,11,12,13,
 
-And how does that solve the problem of multiple processes using that
-interface? Not at all. You moved the timer_fd_clock_was_set()
-notification into the syscalls so you do not deadlock on the
-notifier_lock when you call do_settimeofday() here. So if you have
-multiple users of notification fd then they do not notice that you
-changed the time here. That's a half thought hack, really.
+I can change about 10 existed lines to make it correct, but it will be
+still bad readability, so I port the neat and good readability code:
+linux_kernel_src/lib/bitmap.c:bitmap_parselist()
+to here and replace the origin code
 
-And you start to overload timerfd in a way which is really horrible.
-The proposed semantics of timerfd_settime() with utmr == NULL or utmr
-!= NULL depending on the notification flag are so non obvious that Joe
-user space programmer is doomed to fail.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ trace-read.c |   76 ++++++++++++++-------------------------------------------
+ 1 files changed, 19 insertions(+), 57 deletions(-)
 
-The problem you want to solve is:
-
-   Wakeup CLOCK_REALTIME timers which are not yet expired, when the
-   time is set backward.
-
-That's at least what you said you wanted to solve. I regret already
-that I suggested adding that flag to timerfd, as it was only meant to
-provide an interface which wakes a non expired timer whenever clock
-was set.
-
-The patch does something different. How is this related to the problem
-you wanted to solve in the first place?
-
-Can you please explain which problems you identified aside of the
-initial one?
-
-Thanks,
-
-	tglx
-
+diff --git a/trace-read.c b/trace-read.c
+index 1cd9bd3..932f5aa 100644
+--- a/trace-read.c
++++ b/trace-read.c
+@@ -738,9 +738,8 @@ static void sig_end(int sig)
+ 	exit(0);
+ }
+ 
+-static const char *inc_and_test_char(const char *p, const char *cpu_str)
++static const char *skip_space_and_test_digit(const char *p, const char *cpu_str)
+ {
+-	p++;
+ 	while (isspace(*p))
+ 		p++;
+ 	if (!isdigit(*p))
+@@ -754,64 +753,27 @@ static void __add_cpu(int cpu)
+ 	filter_cpus = tracecmd_add_id(filter_cpus, cpu, nr_filter_cpus++);
+ }
+ 
+-static int process_cpu_str(const char *cpu_str)
++static void parse_cpulist(const char *cpu_str)
+ {
+-	const char *p = cpu_str;
+-	int cpu, ncpu, ret_cpu = 1;
++	unsigned a, b;
++	const char *s = cpu_str;
+ 
+ 	do {
+-		while (isspace(*p))
+-			p++;
+-
+-		cpu = atoi(p);
+-		__add_cpu(cpu);
+-
+- again:
+-		while (isdigit(*p))
+-			p++;
+-		while (isspace(*p))
+-			p++;
+-
+-		if (*p) {
+-			ret_cpu = 0;
+-			switch (*p) {
+-			case '-':
+-				p = inc_and_test_char(p, cpu_str);
+-				ncpu = atoi(p);
+-				if (ncpu < cpu)
+-					die("range of cpu numbers must be lower to greater");
+-				for (; cpu <= ncpu; cpu++)
+-					__add_cpu(cpu);
+-				break;
+-
+-			case ',':
+-			case ':':
+-				p = inc_and_test_char(p, cpu_str);
+-				ncpu = atoi(p);
+-				__add_cpu(ncpu);
+-				break;
+-			default:
+-				die("invalid character '%c' in cpu string '%s'",
+-				    *p, cpu_str);
+-			}
+-			goto again;
++		s = skip_space_and_test_digit(s, cpu_str);
++		b = a = strtoul(s, (char **)&s, 10);
++		if (*s == '-') {
++			s = skip_space_and_test_digit(s + 1, cpu_str);
++			b = strtoul(s, (char **)&s, 10);
+ 		}
+-	} while (*p);
+-
+-	if (ret_cpu)
+-		return cpu;
+-
+-	/* Return -1 if we added more than one CPU */
+-	return -1;
+-}
+-
+-static void add_cpu(const char *cpu_str)
+-{
+-	int cpu;
+-
+-	cpu = process_cpu_str(cpu_str);
+-	if (cpu >= 0)
+-		__add_cpu(cpu);
++		if (!(a <= b))
++			die("range of cpu numbers must be lower to greater");
++		while (a <= b) {
++			__add_cpu(a);
++			a++;
++		}
++		if (*s == ',' || *s == ':')
++			s++;
++	} while (*s != '\0');
+ }
+ 
+ static void read_file_fd(int fd, char *dst, int len)
+@@ -958,7 +920,7 @@ void trace_report (int argc, char **argv)
+ 		case 0:
+ 			switch(option_index) {
+ 			case 0: /* cpu */
+-				add_cpu(optarg);
++				parse_cpulist(optarg);
+ 				break;
+ 			case 1: /* events */
+ 				print_events = 1;
+-- 
+1.7.4
