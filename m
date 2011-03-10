@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab1CJKHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:07:50 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:20921 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116Ab1CJKHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:07:49 -0500
-Message-ID: <4D78A2B8.1030605@parallels.com>
-Date: Thu, 10 Mar 2011 13:06:48 +0300
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pidns: Make pid_max per namespace
-References: <4D6F53B5.5090105@parallels.com>	<20110307155823.22e47d73.akpm@linux-foundation.org>	<4D789B64.9000603@parallels.com> <20110310015045.63482b62.akpm@linux-foundation.org>
-In-Reply-To: <20110310015045.63482b62.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751240Ab1CJKMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:12:09 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43854 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab1CJKMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 05:12:06 -0500
+Subject: Re: [PATCH 0/2] Add struct crypto_alg->cra_check_optimized for
+	crc32c_intel
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@lst.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <1299748387.5263.45.camel@haakon2.linux-iscsi.org>
+References: <1299745272-25477-1-git-send-email-nab@linux-iscsi.org>
+	 <20110310084346.GA10650@gondor.apana.org.au>
+	 <1299747264.5263.35.camel@haakon2.linux-iscsi.org>
+	 <20110310090929.GA10919@gondor.apana.org.au>
+	 <1299748387.5263.45.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain
+Date: Thu, 10 Mar 2011 02:05:17 -0800
+Message-Id: <1299751517.5263.60.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 12:50 PM, Andrew Morton wrote:
-> On Thu, 10 Mar 2011 12:35:32 +0300 Pavel Emelyanov <xemul@parallels.com> wrote:
+On Thu, 2011-03-10 at 01:13 -0800, Nicholas A. Bellinger wrote:
+> On Thu, 2011-03-10 at 17:09 +0800, Herbert Xu wrote:
+> > On Thu, Mar 10, 2011 at 12:54:24AM -0800, Nicholas A. Bellinger wrote:
+> > >
+> > > OK, so you mean each struct crypto_alg should define something like a
+> > > 'cra_optimized_name' for which request_module(alg->cra_optimized_name)
+> > > is called somewhere in libcrypto code..?
+> > 
+> > No, what I mean is that whenever we look up an algorithm through
+> > crypto_alg_mod_lookup, we should conditionally call modprobe if
+> > we havn't done so already.
+> > 
+> > So you just need to record one bit of info in each crypto_alg
+> > object to indicate whether we have invoked modprobe.  I suggest
+> > adding a CRYPTO_ALG_* bit.
+> > 
 > 
->> On 03/08/2011 02:58 AM, Andrew Morton wrote:
->>> On Thu, 03 Mar 2011 11:39:17 +0300
->>> Pavel Emelyanov <xemul@parallels.com> wrote:
->>>
->>>> Rationale:
->>>>
->>>> On x86_64 with big ram people running containers set pid_max on host to 
->>>> large values to be able to launch more containers. At the same time 
->>>> containers running 32-bit software experience problems with large pids - ps
->>>> calls readdir/stat on proc entries and inode's i_ino happen to be too big 
->>>> for the 32-bit API.
->>>>
->>>> Thus, the ability to limit the pid value inside container is required.
->>>>
->>>
->>> This is a behavioural change, isn't it?  In current kernels a write to
->>> /proc/sys/kernel/pid_max will change the max pid on all processes. 
->>> After this change, that write will only affect processes in the current
->>> namespace.  Anyone who was depending on the old behaviour might run
->>> into problems?
->>
->> Hardly. If the behavior of some two apps depends on its synchronous change,
->> these two might want to run in the same pid namespace.
+> Mmmm, now I am really confused, and please let me apologize in advance
+> for my lack of experience with libcrypto internals..  ;)
 > 
-> I don't understand your answer.  What is this "synchronous change" of which
-> you speak?  Does your "might want to run" suggestion mean that userspace 
-> changes would be required for this operation to again work correctly?
+> I thought the problem was that CONFIG_CRYPTO_ALGFOO=y and
+> CONFIG_CRYPTO_ALGFOO_ARCH_HW_OFFLOAD=m would cause the latter to not
+> explictly call request_module() for this HW offload case..
+> 
+> So what I don't understand how adding a request_module() call to a list
+> of known modules works when crc32c_intel.ko has not been loaded yet..?
+> 
+> Am I missing something obvious wrt to how crc32c.ko can tell libcrypto
+> about which architecture dependent optimized modules it should load..?
+> 
 
-Your concern was about "anyone who was depending on the old behaviour", where
-the old behavior meant "a write to sys.pid_max will change the max pid on all
-processes".
+Just to clarify a bit on my previous comments..
 
-I wanted to say, that if someone changes pid_max and expects someone else to
-act differently after this, then these two should live in the same pid namespace.
+We are still expecting the libcrypto consumer (iscsi_target_mod.ko) to
+call the arch independent crypto_alloc_hash("crc32c", ...) in order to
+have libcrypto backend logic perform a request_module() upon
+architecture dependent offload modules (like crc32c_intel.ko) that
+libcrypto consumers are not (and should not) be calling directly via
+crypto_alloc_host("crc32c_intel", ...), correct..?
 
-IOW, if X raises the pid_max, then all the processes X sees in its pid namespace
-*may* have pids up to this value. All the other process, that are not visible
-in X's pid space will have other values, but X doesn't see them, so why should
-we care?
-
-> "In current kernels a write to /proc/sys/kernel/pid_max will change the
-> max pid on all processes."  Is this incorrect?
-
-Not 100%. If I have some process with pid N and then I change the pid_max to N/2,
-that process will still have its pid N which is obviously greater, than N/2.
-
-> "After this change (ie: this patch), that write will only affect
-> processes in the current namespace.".  Is this incorrect?
-
-With the exception stated above - yes, but I don't understand your concern after
-these two questions :(
+Where I am getting confused is wrt to a new crypto_alg_mod_lookup() ->
+request_module() call for a struct shash_alg that has not yet be loaded
+via arch/x86/crypto/crc32c-intel.c:crc32c_intel_mod_init() ->
+crypto_register_shash().
 
 Thanks,
-Pavel
+
+--nab
+
+
