@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab1CJWbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:31:46 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:21835 "EHLO mgw-da02.nokia.com"
+	id S1753410Ab1CJWb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:31:56 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:57849 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751158Ab1CJWbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:31:45 -0500
+	id S1753311Ab1CJWby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:31:54 -0500
 From: Phil Carmody <ext-phil.2.carmody@nokia.com>
 To: gregkh@suse.de
 Cc: ext-phil.2.carmody@nokia.com, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv3 1/1] sysfs: add more info to the oops dump
-Date: Fri, 11 Mar 2011 00:27:07 +0200
-Message-Id: <1299796027-3343-2-git-send-email-ext-phil.2.carmody@nokia.com>
+Subject: [PATCHv3 0/1] sysfs: add more info to the oops dump
+Date: Fri, 11 Mar 2011 00:27:06 +0200
+Message-Id: <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com>
 X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
-In-Reply-To: <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com>
+In-Reply-To: <20110310212746.GA3361@suse.de>
 References: <20110310212746.GA3361@suse.de>
- <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com>
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we're going to remember which file we accessed, we might as well
-also remember whether it was a read or a write, and if the latter,
-some indication of what was written.
 
-e.g.
-$ echo sesquipedalianism > /sys/module/vt/parameters/default_utf8
-$ echo c > /proc/sysrq-trigger
-...
-[   57.522583] last sysfs file (w): /sys/module/vt/parameters/default_utf8  written: sesquipedaliani...(18 chars)
+> But would the trace-back also have shown you the problem?  If not, then
+> that's a good reason to keep this feature, and to add your patch.
 
-Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
----
- fs/sysfs/file.c |   24 +++++++++++++++++++++++-
- 1 files changed, 23 insertions(+), 1 deletions(-)
+In this sample size of one, the write handler was so overloaded
+the data written was very valuable compared to the backtrace.
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index da3fefe..88ac53d 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -26,9 +26,21 @@
- 
- /* used in crash dumps to help with debugging */
- static char last_sysfs_file[PATH_MAX];
-+static char last_sysfs_write[16];
-+/* To indicate the last operation was a read, use an impossible length */
-+#define SYSFS_NOT_A_WRITE -1
-+static int last_sysfs_write_len;
- void sysfs_printk_last_file(void)
- {
--	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
-+	printk(KERN_EMERG "last sysfs file (%c): %s%c",
-+	       (last_sysfs_write_len == SYSFS_NOT_A_WRITE) ? 'r' : 'w',
-+	       last_sysfs_file,
-+	       last_sysfs_write_len > 0 ? ' ' : '\n');
-+	if (last_sysfs_write_len >= (int)sizeof(last_sysfs_write))
-+		printk(KERN_CONT " written: %s...(%d chars)\n",
-+		       last_sysfs_write, last_sysfs_write_len);
-+	else if (last_sysfs_write_len > 0)
-+		printk(KERN_CONT " written: %s\n", last_sysfs_write);
- }
- 
- /*
-@@ -200,12 +212,19 @@ flush_write_buffer(struct dentry * dentry, struct sysfs_buffer * buffer, size_t
- 	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
- 	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
- 	const struct sysfs_ops * ops = buffer->ops;
-+	int copylen = min(count, sizeof(last_sysfs_write) - 1);
- 	int rc;
- 
- 	/* need attr_sd for attr and ops, its parent for kobj */
- 	if (!sysfs_get_active(attr_sd))
- 		return -ENODEV;
- 
-+	while (copylen > 0 && buffer->page[copylen-1] == '\n')
-+		--copylen; /* never print trailing \n's */
-+	memcpy(last_sysfs_write, buffer->page, copylen);
-+	last_sysfs_write[copylen] = '\0';
-+	last_sysfs_write_len = count;
-+
- 	rc = ops->store(kobj, attr_sd->s_attr.attr, buffer->page, count);
- 
- 	sysfs_put_active(attr_sd);
-@@ -363,6 +382,9 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 	if (file->f_mode & FMODE_WRITE) {
- 		if (!(inode->i_mode & S_IWUGO) || !ops->store)
- 			goto err_out;
-+		last_sysfs_write_len = 0;
-+	} else {
-+		last_sysfs_write_len = SYSFS_NOT_A_WRITE;
- 	}
- 
- 	/* File needs read support.
--- 
-1.7.2.rc1.37.gf8c40
+> Looks nicer, but you forgot to address the "magic value" trick you used
+> that I mentioned last time.  Please fix that up.
 
+My bad, sorry. I also realised that I'd never actually tested the read
+case, which highlighted a mixed-sign comparison issue. In a linux-2.6
+context this hasn't been more than compile tested, my testing has been
+done in our maemo tree.
+
+cat /sys/module/vt/parameters/default_utf8; echo c > /proc/sysrq-trigger
+[   13.489440] last sysfs file (r): /sys/module/vt/parameters/default_utf8
+
+echo sesquipedalian > /sys/module/vt/parameters/default_utf8; echo c > /proc/sysrq-trigger
+[   49.404632] last sysfs file (w): /sys/module/vt/parameters/default_utf8  written: sesquipedalian
+
+echo sesquipedalianism > /sys/module/vt/parameters/default_utf8; echo c > /proc/sysrq-trigger  
+[   33.172332] last sysfs file (w): /sys/module/vt/parameters/default_utf8  written: sesquipedaliani...(18 chars)
+
+Sorry for the ping-pong.
+
+Cheers,
+Phil
