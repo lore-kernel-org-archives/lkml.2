@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab1CKABR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:01:17 -0500
-Received: from mga14.intel.com ([143.182.124.37]:49192 "EHLO mga14.intel.com"
+	id S1754472Ab1CJX5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:57:20 -0500
+Received: from kroah.org ([198.145.64.141]:46838 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754283Ab1CKABO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 19:01:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,299,1297065600"; 
-   d="scan'208";a="400913473"
-Subject: isci for 2.6.39?
-From: Dan Williams <dan.j.williams@intel.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Jiang <dave.jiang@intel.com>,
-        Ed Nadolski <edmund.nadolski@intel.com>,
-        Ed Ciechanowski <ed.ciechanowski@intel.com>,
-        Jacek Danecki <jacek.danecki@intel.com>,
-        Jeff Skirvin <jeffrey.d.skirvin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Mar 2011 16:02:37 -0800
-Message-ID: <1299801757.8641.21.camel@dwillia2-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1754350Ab1CJX5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:37 2011
+Message-Id: <20110310235536.943527938@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Thu, 10 Mar 2011 15:54:15 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Anton Blanchard <anton@samba.org>, David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [patch 09/29] RxRPC: Fix v1 keys
+In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-Given the impending opening of the 2.6.39 merge window I would like to
-discuss the options for merging the isci driver.  Review has been
-intermittent which is understandable given the size and flux of the
-codebase.  It has received a good amount of cleanups, but additional
-review issues and cleanups are still all too easy to spot.  I know you
-have expressed reservations about taking scsi drivers through -staging
-in the past [1], so I would like to propose an alternative.  Merge the
-driver into scsi-misc but with a -staging style TODO file that tracks
-the review issues.  If the TODO file is not addressed by the 2.6.40
-window the driver would be moved to -staging.  This has the benefit of
-keeping the driver under your purview and expected location, but still
-have the imminent prospect of being de-staged to ensure the community's
-concerns are ultimately addressed.  We fully intend to maintain the
-current momentum on the driver cleanup effort and be ready in advance of
-2.6.40.
+------------------
 
-As a side note I'm still looking for a disposition for:
-"libsas: flush initial device discovery before completing ->scan_finished()" [2]
-"libsas: fix/amend device gone notification in sas_deform_port()" [3]
+From: Anton Blanchard <anton@au1.ibm.com>
 
-Both have since been: Acked-by: Jack Wang <jack_wang@usish.com>
+commit f009918a1c1bbf8607b8aab3959876913a30193a upstream.
 
-Thanks,
-Dan for the isci driver team
+commit 339412841d7 (RxRPC: Allow key payloads to be passed in XDR form)
+broke klog for me. I notice the v1 key struct had a kif_version field
+added:
 
-[1]: http://marc.info/?l=linux-scsi&m=125536150519905&w=2
-[2]: http://marc.info/?l=linux-scsi&m=129791077719331&w=2
-[3]: http://marc.info/?l=linux-scsi&m=129791105419577&w=2
+-struct rxkad_key {
+-       u16     security_index;         /* RxRPC header security index */
+-       u16     ticket_len;             /* length of ticket[] */
+-       u32     expiry;                 /* time at which expires */
+-       u32     kvno;                   /* key version number */
+-       u8      session_key[8];         /* DES session key */
+-       u8      ticket[0];              /* the encrypted ticket */
+-};
+
++struct rxrpc_key_data_v1 {
++       u32             kif_version;            /* 1 */
++       u16             security_index;
++       u16             ticket_length;
++       u32             expiry;                 /* time_t */
++       u32             kvno;
++       u8              session_key[8];
++       u8              ticket[0];
++};
+
+However the code in rxrpc_instantiate strips it away:
+
+	data += sizeof(kver);
+	datalen -= sizeof(kver);
+
+Removing kif_version fixes my problem.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ include/keys/rxrpc-type.h |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/include/keys/rxrpc-type.h
++++ b/include/keys/rxrpc-type.h
+@@ -99,7 +99,6 @@ struct rxrpc_key_token {
+  * structure of raw payloads passed to add_key() or instantiate key
+  */
+ struct rxrpc_key_data_v1 {
+-	u32		kif_version;		/* 1 */
+ 	u16		security_index;
+ 	u16		ticket_length;
+ 	u32		expiry;			/* time_t */
 
 
