@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab1CJFYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 00:24:04 -0500
-Received: from sj-iport-2.cisco.com ([171.71.176.71]:57256 "EHLO
-	sj-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab1CJFWz (ORCPT
+	id S1751877Ab1CJFYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 00:24:23 -0500
+Received: from sj-iport-3.cisco.com ([171.71.176.72]:45745 "EHLO
+	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab1CJFWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 00:22:55 -0500
+	Thu, 10 Mar 2011 00:22:53 -0500
 X-IronPort-AV: E=Sophos;i="4.62,294,1297036800"; 
-   d="scan'208";a="318913074"
+   d="scan'208";a="276249611"
 From: David Ahern <daahern@cisco.com>
 To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
         fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
         David Ahern <daahern@cisco.com>
-Subject: [PATCH 3/6] perf script: move printing of 'common' data from print_event and rename
-Date: Wed,  9 Mar 2011 22:23:25 -0700
-Message-Id: <1299734608-5223-4-git-send-email-daahern@cisco.com>
+Subject: [PATCH 1/6] perf script: change process_event prototype
+Date: Wed,  9 Mar 2011 22:23:23 -0700
+Message-Id: <1299734608-5223-2-git-send-email-daahern@cisco.com>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1299734608-5223-1-git-send-email-daahern@cisco.com>
 References: <1299734608-5223-1-git-send-email-daahern@cisco.com>
@@ -24,205 +24,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change does impact output: latency data is trace specific and is now
-printed after the common data - comm, tid, cpu, time and event name.
+Prepare for handling of samples for any event type.
 
 Signed-off-by: David Ahern <daahern@cisco.com>
 ---
- tools/perf/builtin-script.c         |   38 ++++++++++++++++++++++-----
- tools/perf/util/trace-event-parse.c |   49 +++++++---------------------------
- tools/perf/util/trace-event.h       |    3 +-
- 3 files changed, 42 insertions(+), 48 deletions(-)
+ tools/perf/builtin-script.c                        |   25 ++++++++++++-------
+ .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++--
+ .../util/scripting-engines/trace-event-python.c    |   11 ++++++--
+ tools/perf/util/trace-event-scripting.c            |    9 +++----
+ tools/perf/util/trace-event.h                      |    7 ++++-
+ 5 files changed, 41 insertions(+), 22 deletions(-)
 
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index b2bdd55..0a79da2 100644
+index 5f40df6..b2bdd55 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -20,18 +20,42 @@ static u64			last_timestamp;
+@@ -20,6 +20,20 @@ static u64			last_timestamp;
  static u64			nr_unordered;
  extern const struct option	record_options[];
  
-+static void print_sample_start(struct perf_sample *sample,
-+			       struct thread *thread)
++static void process_event(union perf_event *event __unused,
++			  struct perf_sample *sample,
++			  struct perf_session *session __unused,
++			  struct thread *thread)
 +{
-+	int type;
-+	struct event *event;
-+	const char *evname = NULL;
-+	unsigned long secs;
-+	unsigned long usecs;
-+	unsigned long long nsecs = sample->time;
-+
-+	if (latency_format)
-+		printf("%8.8s-%-5d %3d", thread->comm, sample->tid, sample->cpu);
-+	else
-+		printf("%16s-%-5d [%03d]", thread->comm, sample->tid, sample->cpu);
-+
-+	secs = nsecs / NSECS_PER_SEC;
-+	nsecs -= secs * NSECS_PER_SEC;
-+	usecs = nsecs / NSECS_PER_USEC;
-+	printf(" %5lu.%06lu: ", secs, usecs);
-+
-+	type = trace_parse_common_type(sample->raw_data);
-+	event = trace_find_event(type);
-+	if (event)
-+		evname = event->name;
-+
-+	printf("%s: ", evname ? evname : "(unknown)");
++	/*
++	 * FIXME: better resolve from pid from the struct trace_entry
++	 * field, although it should be the same than this perf
++	 * event pid
++	 */
++	print_event(sample->cpu, sample->raw_data, sample->raw_size,
++		    sample->time, thread->comm);
 +}
 +
- static void process_event(union perf_event *event __unused,
- 			  struct perf_sample *sample,
- 			  struct perf_session *session __unused,
- 			  struct thread *thread)
- {
--	/*
--	 * FIXME: better resolve from pid from the struct trace_entry
--	 * field, although it should be the same than this perf
--	 * event pid
--	 */
--	print_event(sample->cpu, sample->raw_data, sample->raw_size,
--		    sample->time, thread->comm);
-+	print_sample_start(sample, thread);
-+	print_trace_event(sample->cpu, sample->raw_data, sample->raw_size);
-+	printf("\n");
- }
- 
  static int default_start_script(const char *script __unused,
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index dd5f058..0a7ed5b 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -2643,9 +2643,9 @@ static void print_lat_fmt(void *data, int size __unused)
- 		printf(".");
+ 				int argc __unused,
+ 				const char **argv __unused)
+@@ -40,7 +54,7 @@ static int default_generate_script(const char *outfile __unused)
+ static struct scripting_ops default_scripting_ops = {
+ 	.start_script		= default_start_script,
+ 	.stop_script		= default_stop_script,
+-	.process_event		= print_event,
++	.process_event		= process_event,
+ 	.generate_script	= default_generate_script,
+ };
  
- 	if (lock_depth < 0)
--		printf(".");
-+		printf(". ");
- 	else
--		printf("%d", lock_depth);
-+		printf("%d ", lock_depth);
- }
- 
- #define TRACE_GRAPH_INDENT	2
-@@ -2821,18 +2821,13 @@ static void print_graph_nested(struct event *event, void *data)
- 
- static void
- pretty_print_func_ent(void *data, int size, struct event *event,
--		      int cpu, int pid, const char *comm __unused,
--		      unsigned long secs, unsigned long usecs)
-+		      int cpu, int pid)
- {
- 	struct format_field *field;
- 	struct record *rec;
- 	void *copy_data;
- 	unsigned long val;
- 
--	printf("%5lu.%06lu |  ", secs, usecs);
--
--	printf(" | ");
--
- 	if (latency_format) {
- 		print_lat_fmt(data, size);
- 		printf(" | ");
-@@ -2865,19 +2860,13 @@ out_free:
- }
- 
- static void
--pretty_print_func_ret(void *data, int size __unused, struct event *event,
--		      int cpu __unused, int pid __unused, const char *comm __unused,
--		      unsigned long secs, unsigned long usecs)
-+pretty_print_func_ret(void *data, int size __unused, struct event *event)
- {
- 	unsigned long long rettime, calltime;
- 	unsigned long long duration, depth;
- 	struct format_field *field;
- 	int i;
- 
--	printf("%5lu.%06lu |  ", secs, usecs);
--
--	printf(" | ");
--
- 	if (latency_format) {
- 		print_lat_fmt(data, size);
- 		printf(" | ");
-@@ -2915,31 +2904,21 @@ pretty_print_func_ret(void *data, int size __unused, struct event *event,
- 
- static void
- pretty_print_func_graph(void *data, int size, struct event *event,
--			int cpu, int pid, const char *comm,
--			unsigned long secs, unsigned long usecs)
-+			int cpu, int pid)
- {
- 	if (event->flags & EVENT_FL_ISFUNCENT)
--		pretty_print_func_ent(data, size, event,
--				      cpu, pid, comm, secs, usecs);
-+		pretty_print_func_ent(data, size, event, cpu, pid);
- 	else if (event->flags & EVENT_FL_ISFUNCRET)
--		pretty_print_func_ret(data, size, event,
--				      cpu, pid, comm, secs, usecs);
-+		pretty_print_func_ret(data, size, event);
- 	printf("\n");
- }
- 
--void print_event(int cpu, void *data, int size, unsigned long long nsecs,
--		  char *comm)
-+void print_trace_event(int cpu, void *data, int size)
- {
- 	struct event *event;
--	unsigned long secs;
--	unsigned long usecs;
- 	int type;
- 	int pid;
- 
--	secs = nsecs / NSECS_PER_SEC;
--	nsecs -= secs * NSECS_PER_SEC;
--	usecs = nsecs / NSECS_PER_USEC;
--
- 	type = trace_parse_common_type(data);
- 
- 	event = trace_find_event(type);
-@@ -2951,17 +2930,10 @@ void print_event(int cpu, void *data, int size, unsigned long long nsecs,
- 	pid = trace_parse_common_pid(data);
- 
- 	if (event->flags & (EVENT_FL_ISFUNCENT | EVENT_FL_ISFUNCRET))
--		return pretty_print_func_graph(data, size, event, cpu,
--					       pid, comm, secs, usecs);
-+		return pretty_print_func_graph(data, size, event, cpu, pid);
- 
--	if (latency_format) {
--		printf("%8.8s-%-5d %3d",
--		       comm, pid, cpu);
-+	if (latency_format)
- 		print_lat_fmt(data, size);
--	} else
--		printf("%16s-%-5d [%03d]", comm, pid,  cpu);
--
--	printf(" %5lu.%06lu: %s: ", secs, usecs, event->name);
- 
- 	if (event->flags & EVENT_FL_FAILED) {
- 		printf("EVENT '%s' FAILED TO PARSE\n",
-@@ -2970,7 +2942,6 @@ void print_event(int cpu, void *data, int size, unsigned long long nsecs,
+@@ -86,14 +100,7 @@ static int process_sample_event(union perf_event *event,
+ 			last_timestamp = sample->time;
+ 			return 0;
+ 		}
+-		/*
+-		 * FIXME: better resolve from pid from the struct trace_entry
+-		 * field, although it should be the same than this perf
+-		 * event pid
+-		 */
+-		scripting_ops->process_event(sample->cpu, sample->raw_data,
+-					     sample->raw_size,
+-					     sample->time, thread->comm);
++		scripting_ops->process_event(event, sample, session, thread);
  	}
  
- 	pretty_print(data, size, event);
--	printf("\n");
+ 	session->hists.stats.total_period += sample->period;
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 9368081..6214272 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -245,9 +245,10 @@ static inline struct event *find_cache_event(int type)
+ 	return event;
  }
  
- static void print_fields(struct print_flag_sym *field)
+-static void perl_process_event(int cpu, void *data,
+-			       int size __unused,
+-			       unsigned long long nsecs, char *comm)
++static void perl_process_event(union perf_event *pevent __unused,
++			       struct perf_sample *sample,
++			       struct perf_session *session __unused,
++			       struct thread *thread)
+ {
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -256,6 +257,10 @@ static void perl_process_event(int cpu, void *data,
+ 	struct event *event;
+ 	int type;
+ 	int pid;
++	int cpu = sample->cpu;
++	void *data = sample->raw_data;
++	unsigned long long nsecs = sample->time;
++	char *comm = thread->comm;
+ 
+ 	dSP;
+ 
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 2040b85..1b85d60 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -204,9 +204,10 @@ static inline struct event *find_cache_event(int type)
+ 	return event;
+ }
+ 
+-static void python_process_event(int cpu, void *data,
+-				 int size __unused,
+-				 unsigned long long nsecs, char *comm)
++static void python_process_event(union perf_event *pevent __unused,
++				 struct perf_sample *sample,
++				 struct perf_session *session __unused,
++				 struct thread *thread)
+ {
+ 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+@@ -217,6 +218,10 @@ static void python_process_event(int cpu, void *data,
+ 	unsigned n = 0;
+ 	int type;
+ 	int pid;
++	int cpu = sample->cpu;
++	void *data = sample->raw_data;
++	unsigned long long nsecs = sample->time;
++	char *comm = thread->comm;
+ 
+ 	t = PyTuple_New(MAX_FIELDS);
+ 	if (!t)
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index f7af2fc..66f4b78 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -36,11 +36,10 @@ static int stop_script_unsupported(void)
+ 	return 0;
+ }
+ 
+-static void process_event_unsupported(int cpu __unused,
+-				      void *data __unused,
+-				      int size __unused,
+-				      unsigned long long nsecs __unused,
+-				      char *comm __unused)
++static void process_event_unsupported(union perf_event *event __unused,
++				      struct perf_sample *sample __unused,
++				      struct perf_session *session __unused,
++				      struct thread *thread __unused)
+ {
+ }
+ 
 diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 5f7b513..b04da57 100644
+index b5f12ca..5f7b513 100644
 --- a/tools/perf/util/trace-event.h
 +++ b/tools/perf/util/trace-event.h
-@@ -177,8 +177,7 @@ void print_printk(void);
+@@ -3,6 +3,7 @@
  
- int parse_ftrace_file(char *buf, unsigned long size);
- int parse_event_file(char *buf, unsigned long size, char *sys);
--void print_event(int cpu, void *data, int size, unsigned long long nsecs,
--		  char *comm);
-+void print_trace_event(int cpu, void *data, int size);
+ #include <stdbool.h>
+ #include "parse-events.h"
++#include "session.h"
  
- extern int file_bigendian;
- extern int host_bigendian;
+ #define __unused __attribute__((unused))
+ 
+@@ -278,8 +279,10 @@ struct scripting_ops {
+ 	const char *name;
+ 	int (*start_script) (const char *script, int argc, const char **argv);
+ 	int (*stop_script) (void);
+-	void (*process_event) (int cpu, void *data, int size,
+-			       unsigned long long nsecs, char *comm);
++	void (*process_event) (union perf_event *event,
++			       struct perf_sample *sample,
++			       struct perf_session *session,
++			       struct thread *thread);
+ 	int (*generate_script) (const char *outfile);
+ };
+ 
 -- 
 1.7.4
 
