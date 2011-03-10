@@ -1,206 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab1CJKAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:00:18 -0500
-Received: from nwd2mail11.analog.com ([137.71.25.57]:8229 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab1CJKAP (ORCPT
+	id S1751847Ab1CJKGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:06:35 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:61000 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab1CJKGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:00:15 -0500
-X-IronPort-AV: E=Sophos;i="4.62,295,1297054800"; 
-   d="scan'208";a="30017500"
-From: "Cai, Cliff" <Cliff.Cai@analog.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Cliff Cai <cliffcai.sh@gmail.com>
-CC: "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
-Date: Thu, 10 Mar 2011 05:04:41 -0500
-Subject: RE: [alsa-devel] [PATCH] Add driver for Analog Devices ADAU1701
- SigmaDSP
-Thread-Topic: [alsa-devel] [PATCH] Add driver for Analog Devices ADAU1701
- SigmaDSP
-Thread-Index: AcveQnwtABtOsm0fSaOaS1sCDd5ElwAxYXmw
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16649F4A563@NWD2CMBX1.ad.analog.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com>
- <AANLkTinmbJWAoFPPT9aNrJQ+E+eb-3a1F_cV-d2J3YGj@mail.gmail.com>
- <20110309101221.GC6923@opensource.wolfsonmicro.com>
-In-Reply-To: <20110309101221.GC6923@opensource.wolfsonmicro.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 10 Mar 2011 05:06:33 -0500
+Message-ID: <a04bdafb8c7a97d92593e980b01b37fd.squirrel@webmail.greenhost.nl>
+In-Reply-To: <s5hy64ns7pq.wl%tiwai@suse.de>
+References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
+    <20110216192658.GA7225@blimp.localdomain>
+    <20110217221329.GA3332@x61.home>
+    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
+    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
+    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
+    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
+    <20110222130440.21a27714@jbarnes-desktop>
+    <20110222223120.GA3567@x61.home>
+    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
+    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
+    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
+    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
+    <s5h4o7btnxq.wl%tiwai@suse.de> <s5hy64ns7pq.wl%tiwai@suse.de>
+Date: Thu, 10 Mar 2011 11:06:28 +0100 (CET)
+Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after     
+      reopening lid
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Takashi Iwai" <tiwai@suse.de>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Alex Riesen" <raa.lkml@gmail.com>,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 9bf25e62613229f0beb95d8bfda7a7aa
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2AA0R0r000381
+
+On Thu, March 10, 2011 09:25, Takashi Iwai wrote:
+> At Thu, 10 Mar 2011 08:49:37 +0100,
+> Takashi Iwai wrote:
+>>
+>> At Thu, 10 Mar 2011 06:50:09 +0100 (CET),
+>> Indan Zupancic wrote:
+>> >
+>> > Hello,
+>> >
+>> > On Fri, March 4, 2011 19:47, Linus Torvalds wrote:
+>> > > Alex, can you confirm that the revert of 951f3512dba5 plus the
+>> > > one-liner patch from Takashi that Indan quoted also works for you?
+>> > >
+>> > >               Linus
+>> > >
+>> > > On Thu, Mar 3, 2011 at 10:53 PM, Indan Zupancic <indan@nul.nu> wrote:
+>> > >>
+>> > >> So please revert my patch and apply Takashi Iwai's, which fixes the
+>> > >> most immediate bug without changing anything else. This should go
+>> > >> in stable too.
+>> > >
+>> >
+>> > I found another backlight bug:
+>> >
+>> > When suspending intel_panel_disable_backlight() is never called,
+>> > but intel_panel_enable_backlight() is called at resume. With the
+>> > effect that if the brightness was ever changed after screen
+>> > blanking, the wrong brightness gets restored.
+>> >
+>> > This explains the weird behaviour I've seen. I didn't see it with
+>> > combination mode, because then the brightness is always the same
+>> > (zero or the maximum, the BIOS only uses LBPC on my system.) I'll
+>> > send a patch in a moment.
+>> >
+>> > Alternative for reverting the combination mode removal (I can also
+>> > redo the patch against the revert and Takashi's patch, if that's
+>> > preferred):
+>> >
+>> > --
+>> >
+>> > drm/i915: Do handle backlight combination mode specially
+>> >
+>> > Add back the combination mode check, but with slightly cleaner code
+>> > and the weirdness removed: No val >>= 1, but also no val &= ~1. The
+>> > old code probably confused bit 0 with BLM_LEGACY_MODE, which is bit 16.
+>> > The other change is clearer calculations: Just check for zero level
+>> > explicitly instead of avoiding the divide-by-zero.
+>> >
+>> > Signed-off-by: Indan Zupancic <indan@nul.nu>
+>> >
+>> > ---
+>> >
+>> > diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+>> > index d860abe..b05631a 100644
+>> > --- a/drivers/gpu/drm/i915/intel_panel.c
+>> > +++ b/drivers/gpu/drm/i915/intel_panel.c
+>> > @@ -30,6 +30,10 @@
+>> >
+>> >  #include "intel_drv.h"
+>> >
+>> > +#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
+>> > +#define BLM_COMBINATION_MODE (1 << 30)
+>> > +#define BLM_LEGACY_MODE (1 << 16)
+>> > +
+>> >  void
+>> >  intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
+>> >  		       struct drm_display_mode *adjusted_mode)
+>> > @@ -110,6 +114,22 @@ done:
+>> >  	dev_priv->pch_pf_size = (width << 16) | height;
+>> >  }
+>> >
+>> > +/*
+>> > + * What about gen 3? If there are no gen 3 systems with ASLE,
+>> > + * then it doesn't matter, as we don't need to change the
+>> > + * brightness. But then the gen 2 check can be removed too.
+>> > + */
+>> > +static int is_backlight_combination_mode(struct drm_device *dev)
+>> > +{
+>> > +	struct drm_i915_private *dev_priv = dev->dev_private;
+>> > +
+>> > +	if (INTEL_INFO(dev)->gen >= 4)
+>> > +		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
+>> > +	if (IS_GEN2(dev))
+>> > +		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
+>> > +	return 0;
+>> > +}
+>> > +
+>> >  static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
+>> >  {
+>> >  	u32 val;
+>> > @@ -163,9 +183,12 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
+>> >  			max >>= 17;
+>> >  		} else {
+>> >  			max >>= 16;
+>> > +			/* Ignore BLM_LEGACY_MODE bit */
+>> >  			if (INTEL_INFO(dev)->gen < 4)
+>> >  				max &= ~1;
+>> >  		}
+>> > +		if (is_backlight_combination_mode(dev))
+>> > +			max *= 0xff;
+>> >  	}
+>> >
+>> >  	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
+>> > @@ -183,6 +206,12 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
+>> >  		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
+>> >  		if (IS_PINEVIEW(dev))
+>> >  			val >>= 1;
+>> > +		if (is_backlight_combination_mode(dev)){
+>> > +			u8 lbpc;
+>> > +
+>> > +			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
+>> > +			val *= lbpc;
+>> > +		}
+>> >  	}
+>> >
+>> >  	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
+>> > @@ -205,6 +234,15 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+>> >
+>> >  	if (HAS_PCH_SPLIT(dev))
+>> >  		return intel_pch_panel_set_backlight(dev, level);
+>> > +
+>> > +	if (level && is_backlight_combination_mode(dev)){
+>> > +		u32 max = intel_panel_get_max_backlight(dev);
+>> > +		u8 lpbc;
+>> > +
+>> > +		lpbc = level * 0xff / max;
+>> > +		level /= lpbc;
+>>
+>> Hmm, I don't think this calculation is correct.  This would result
+>> in level of opregion over its limit.  For example, assume the level
+>> max = 100, so total max = 25500.  Passing level=150 here will be:
+>>
+>> 	lbpc = 150 * 0xff / 25500 = 1.5 = 1
+>> 	level = 150 / 1 = 150, which is over limit.
+>>
+>> More worse, lbpc can be zero when level is below 100 in the case
+>> above...
+>
+> That is, Chris' original code in that portion was correct:
+>
+> 	if (is_backlight_combination_mode(dev)){
+> 		u32 max = intel_panel_get_max_backlight(dev);
+> 		u8 lpbc;
+>
+> 		lpbc = level * 0xfe / max + 1;
+> 		level /= lpbc;
+> 		pci_write_config_byte(dev->pdev, PCI_LBPC, lpbc);
+> 	}
+>
+> This will fit within the right range.
+> Though, changing like below will give a bit better calculation,
+> closer to the real level.
+>
+> 		lpbc = level * 0xfe / max + 1;
+> 		level = (level + lpbc / 2) / lpbc;
+
+Indeed, though I don't think it makes much difference in practise.
+
+All in all it seems best to just revert my patch and apply your fix.
+Any "improvements" I may have are either buggy or can be added later.
+
+Care to make a new patch with the above improvement added? You can
+add my acked-by, for what it's worth.
+
+At this point I don't even dare removing that "obviously" bogus
+val &= ~1; I bet it's an undocumented bit having some obscure
+secret function on not well tested systems.
+
+Greetings,
+
+Indan
 
 
-
->-----Original Message-----
->From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
->Sent: 2011å¹´3æœˆ9æ—¥ 18:12
->To: Cliff Cai
->Cc: Cai, Cliff; device-drivers-devel@blackfin.uclinux.org;
->akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
->alsa-devel@alsa-project.org; lrg@slimlogic.co.uk
->Subject: Re: [alsa-devel] [PATCH] Add driver for Analog
->Devices ADAU1701 SigmaDSP
->
->On Wed, Mar 09, 2011 at 03:04:03PM +0800, Cliff Cai wrote:
->> On Mon, Mar 7, 2011 at 7:41 PM, Mark Brown
->> > On Mon, Mar 07, 2011 at 09:11:42AM +0800,
->cliff.cai@analog.com wrote:
->
->> > It loooks like the register length is hard coded in every location
->> > that the register is referenced. ?This doesn't seem ideal
->- it'd be
->> > much nicer to have the register I/O functions work this
->out without
->> > the callers needing to.
->
->> I'm afraid it's not easy to do so.
->
->What's the issue?  I'd expect something like a lookup table or
->switch statement going from register to register length - I'd
->be surprised if it were any more complicated than getting all
->the callers right.
-
-All right,just looks nicer.
-
->> >> +static int adau1701_pcm_prepare(struct snd_pcm_substream
->> >> +*substream,
->> >> +                             struct snd_soc_dai *dai) {
->> >> +     struct snd_soc_codec *codec = dai->codec;
->> >> +     int reg = 0;
->
->> >> +     reg = SEROCTL_MASTER | SEROCTL_OBF16 | SEROCTL_OLF1024;
->> >> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, reg);
->
->> >> +     return 0;
->> >> +}
->
->> > This looks like some of it is DAI format and word length
->configuration?
->
->> no,it makes the processor work in master mode.and output bit
->clock and
->> frame clock.
->
->This controls the CODEC, not the CPU?  Master/slave should be
->controlled by set_dai_fmt() rather than being hard coded.
-
-Actually,if the DAI works in master mode,it will always output clocks.
-it's not we want,so we have to make it in slave mode when shutdown,and
-Make it in Master mode before starting to play.
-
->> >> +static void adau1701_shutdown(struct snd_pcm_substream
->*substream,
->> >> +                           struct snd_soc_dai *dai) {
->> >> +     struct snd_soc_codec *codec = dai->codec;
->
->> >> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, 0); }
->
->> > I suspect this isn't going to work for simultaneous playback and
->> > capture
->> > - it's not clear what the code does but I'd guess it will stop
->> > things completely.
->
->> this SigmaDSP doesn't support duplex operation,it can choose either
->> ADCs or serial port as input source.
->
->The driver should be enforcing this constraint, then.
-
-It's the firmware that is in charge of this work.
-
->> >> +static int adau1701_set_bias_level(struct snd_soc_codec *codec,
->> >> +                              enum snd_soc_bias_level level) {
->> >> +     u16 reg;
->> >> +     switch (level) {
->> >> +     case SND_SOC_BIAS_ON:
->> >> +             reg = adau1701_read_register(codec,
->ADAU1701_AUXNPOW,
->> >> +2);
->> >> +             reg &= ~(AUXNPOW_AAPD | AUXNPOW_D0PD |
->AUXNPOW_D1PD |
->> >> +AUXNPOW_D2PD |
->> >> +                      AUXNPOW_D3PD | AUXNPOW_VBPD |
->AUXNPOW_VRPD);
->> >> +             adau1701_write_register(codec, ADAU1701_AUXNPOW, 2,
->> >> +reg);
->
->> > You were also updating some of the same register bits in the mute
->> > function.  This looks buggy.
->
->> the processor has no switchs to mute or unmute
->ADCS/DACs,only thing we
->> can do is turning them off or on.
->
->If mute can't be implemented don't implement it.  Right now
->the code is clearly not going to do what's expected as you've
->got two different bits of code trying to control the same
->thing - at least one set of register updates isn't going to do
->anything?
-
-All right.
-
->> >> +     ret = adau1701_setprogram(codec);
->> >> +     if (ret < 0) {
->> >> +             printk(KERN_ERR "Loading program data failed\n");
->> >> +             goto error;
->> >> +     }
->> >> +     reg = DSPCTRL_DAM | DSPCTRL_ADM;
->> >> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
->> >> +     reg = 0x08;
->> >> +     adau1701_write_register(codec, ADAU1701_DSPRES, 1, reg);
->
->> > Should these DSP configuations things be part of
->downloading firmware?
->
->> these configurations above loading firmware mainly used to avoid
->> pops/clicks and cleanup some registers in the DSP core.
->
->Right, but is this something that's always useful when loading
->firmware (in which case the firmware load should just wrap it
->up so it always happens)?
-
-Sure,thanks.
-
->> >> +     adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, 0);
->> >> +     reg = AUXADCE_AAEN;
->> >> +     adau1701_write_register(codec, ADAU1701_AUXADCE, 2, reg);
->> >> +     reg = DACSET_DACEN;
->> >> +     adau1701_write_register(codec, ADAU1701_DACSET, 2, reg);
->> >> +     reg = DSPCTRL_DAM | DSPCTRL_ADM | DSPCTRL_CR;
->> >> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
->> >> +     /* Power-up the oscillator */
->> >> +     adau1701_write_register(codec, ADAU1701_OSCIPOW, 2, 0);
->
->> > This looks like it's all power management which I'd expect to see
->> > handled in either the bias management functions or ideally
->DAPM.  It
->> > also appears that the oscillator is an optional feature so
->it should
->> > be used conditionally.
->
->> the processor can receive MCLK either from external clock source or
->> crystal oscillator, currently we use the on board
->crystal,and it can't
->> be turned off,otherwise the whole chip will be in an unpredicted
->> status, only output clocks can be disabled.
->
->That's specific to your board design, though.  Another board
->design might use a different clocking setup.
-
-Yes,so I think I can add a MACRO to indicate it.
-
-Cliff
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
