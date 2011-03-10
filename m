@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1CJAtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:49:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48104 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751041Ab1CJAtM (ORCPT
+	id S1754055Ab1CJAuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:50:10 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46659 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab1CJAuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:49:12 -0500
-Date: Wed, 9 Mar 2011 16:48:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Ben Hutchings" <bhutchings@solarflare.com>,
-        "Pavel Emelyanov" <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [Bug #30322] BUG in xs_tcp_setup_socket
-Message-Id: <20110309164844.decd835f.akpm@linux-foundation.org>
-In-Reply-To: <sUKqYsqyJ4N.A.n0F.3-3cNB@chimera>
-References: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
-	<sUKqYsqyJ4N.A.n0F.3-3cNB@chimera>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Mar 2011 19:50:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Yh8SgdcTWxH2KSJJ78+26QBNxnYwLDDZjOFRmzaE0babVHFvFTDnGghWehcCQe5u57
+         8A/LVlSn5xiCz+hxSg9OyT1MqbLau8Tf58osGiESYkLxI7bbrICjIDrUnRPXJQzwrH0a
+         00r/fCTGqixLN3IRvnbfE2lgEe4Typ/Qbid0Q=
+Date: Thu, 10 Mar 2011 01:50:03 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <daahern@cisco.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 07/10] perf script: Move printing of 'common' data from
+ print_event and rename
+Message-ID: <20110310005001.GF2533@nowhere>
+References: <1299695491-15786-1-git-send-email-acme@infradead.org>
+ <1299695491-15786-8-git-send-email-acme@infradead.org>
+ <20110309235007.GB2533@nowhere>
+ <4D78158F.6010403@cisco.com>
+ <20110310001039.GC2533@nowhere>
+ <4D78174B.2090209@cisco.com>
+ <20110310002240.GE2533@nowhere>
+ <4D781C16.3080706@cisco.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D781C16.3080706@cisco.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  6 Mar 2011 13:40:43 +0100 (CET)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.36 and 2.6.37.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.36 and 2.6.37.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+On Wed, Mar 09, 2011 at 05:32:22PM -0700, David Ahern wrote:
 > 
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=30322
-> Subject		: BUG in xs_tcp_setup_socket
-> Submitter	: Ben Hutchings <bhutchings@solarflare.com>
-> Date		: 2011-03-01 20:34 (6 days old)
-> Patch		: http://article.gmane.org/gmane.linux.nfs/38949
+> On 03/09/11 17:22, Frederic Weisbecker wrote:
+> > On Wed, Mar 09, 2011 at 05:15:00PM -0700, David Ahern wrote:
+> >>
+> >>
+> >> On 03/09/11 17:10, Frederic Weisbecker wrote:
+> >>>
+> >>> And if you actually keep those functions in place?
+> >>
+> >>     CC /tmp/build-perf/util/trace-event-read.o
+> >> cc1: warnings being treated as errors
+> >> util/trace-event-parse.c:2652:13: error: 'print_graph_cpu' defined but
+> >> not used
+> >> util/trace-event-parse.c:2681:13: error: 'print_graph_proc' defined but
+> >> not used
+> >> make: *** [/tmp/build-perf/util/trace-event-parse.o] Error 1
+> >> make: *** Waiting for unfinished jobs....
+> > 
+> > All right, that's because you removed their calls in pretty_print_func_ent().
+> > So either you remove the whole in a specific patch, pretty_print_func_ent()
+> > included and other related functions, or you keep them.
+> > 
+> > But I prefer we don't do something halfway, and in particular not in a
+> > semi-hidden way inside a patch that is not particularly focused on that
+> > purpose.
 > 
+> You lost me on the halfway part.
+> 
+> So you want a separate patch that removes the code for an incomplete
+> feature -- which means changing the references to the functions in that
+> patch?
 
-Ben's patch is a no-brainer but it is not yet in mainline or linux-next. 
-I'm not on linux-nfs so I recreated it as below.
+Yep.
 
+> The intent being a patch that can be reverted later?
 
-Subject: sunrpc: propagate errors from xs_bind() through xs_create_sock()
-From: Ben Hutchings <bhutchings@solarflare.com>
+That can be reverted or something on top of which we can refer to
+get that feature later.
 
-xs_create_sock() is supposed to return a pointer or an ERR_PTR-encoded
-error, but it currently returns 0 if xs_bind() fails.  This causes the
-kernel to go BUG, as described in
-https://bugzilla.kernel.org/show_bug.cgi?id=30322.
+In any case it is deadcode right now. If you remove it it should be
+better done seperately. For all the reasons we always prefer to have
+patches that do only one logic thing: easier to review, understand,
+bisect, revert, find a bug, explain it, etc...
 
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- net/sunrpc/xprtsock.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff -puN net/sunrpc/xprtsock.c~sunrpc-propagate-errors-from-xs_bind-through-xs_create_sock net/sunrpc/xprtsock.c
---- a/net/sunrpc/xprtsock.c~sunrpc-propagate-errors-from-xs_bind-through-xs_create_sock
-+++ a/net/sunrpc/xprtsock.c
-@@ -1631,7 +1631,8 @@ static struct socket *xs_create_sock(str
- 	}
- 	xs_reclassify_socket(family, sock);
- 
--	if (xs_bind(transport, sock)) {
-+	err = xs_bind(transport, sock);
-+	if (err) {
- 		sock_release(sock);
- 		goto out;
- 	}
-_
-
+Ok, in fact you can actually keep it like you did: remove the cpu and
+proc displays and let the rest of the function graph features. But
+at least do it in an isolated patch because that should not be
+an unnoticeable change, and for other reasons to make it a standalone
+patch quoted above.
