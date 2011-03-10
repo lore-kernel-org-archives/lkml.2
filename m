@@ -1,75 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab1CJCIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 21:08:45 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52696 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab1CJCHo (ORCPT
+	id S1751228Ab1CJCIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 21:08:50 -0500
+Received: from nm15-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.236]:44104 "HELO
+	nm15-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754905Ab1CJCIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 21:07:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=NwbukFywP2VgaAgfg9a43L3JTx3t5fmv6QDcNW83cjTB0v7gMGkXh7bB0U9f3s8xwc
-         t4aKcx2f1Ce5WKkO2ujnfbhQQ0wJHTtJU9F9yVrgJRZLpbkej8qAyP/NuryzD+ajc0wn
-         +dtb6/EwS026Zsu6EALo8f2F967Gm/y6BToIk=
-Date: Thu, 10 Mar 2011 10:07:21 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: broonie@opensource.wolfsonmicro.com, joe@perches.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: [PATCH 05/18] MAINTAINERS: Remove unnecessary
- linux-kernel@vger.kernel.org entries
-Message-ID: <20110310020718.GA2976@gmail.com>
-Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
-	broonie@opensource.wolfsonmicro.com, joe@perches.com,
-	akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-References: <cover.1298439175.git.joe@perches.com>
- <03b0dc89c5badbc0b8f155ecdd5912cad3e278f2.1298439175.git.joe@perches.com>
- <20110301112038.GA12568@sirena.org.uk>
- <20110301141024.GA9014@gmail.com>
- <20110301141308.GG9662@opensource.wolfsonmicro.com>
- <AANLkTin2++GT3eRcTQeeqcB_1whedAt_0Hn+YY8y=v1s@mail.gmail.com>
- <20110301144712.GA9798@gmail.com>
- <20110308194538.GA8002@home.goodmis.org>
+	Wed, 9 Mar 2011 21:08:04 -0500
+X-Yahoo-Newman-Id: 574512.16900.bm@omp1060.mail.ac4.yahoo.com
+Cc: recipient list not shown:;
+Message-ID: <293003.57214.qm@smtp104.sbc.mail.ac4.yahoo.com>
+X-Yahoo-SMTP: h91GRs.swBCA5i3qPkzhFVbczBclxgb8ww.14fq0wZTgsDeVW2r1
+X-YMail-OSG: VE.p32QVM1kCqcdduXiz5BA51YKlO_0rJgZcEFKNZBdy3bs
+ foGhJlzqsPyvKaWkyIEFq44kf_oz4F5kQ0B6EzSRxmkd.8f4Bzv34QhQfjql
+ ErX0DhTjVFvs66rTAsuCRtxIQy2qmHIOIxd7vlDvrmbPBGC97OjLv3odMEUJ
+ MjkcCnr6gPN.B5PDboGEHvmPJ7szi1YHcN7oByKF2YZKeGCsY9WlzTtjEE_J
+ 99cj8p57fMxK3doCM8DtvGyeF_YzL7bXiCYO77vHWOtWQkLa4QSfFqyulV76
+ aOATZzuBDwqYOb53_5MBZcqIWPoCYdKNpsXA3t2YJGrIo1Hn.s1kQON0Yu1B
+ m9OTSf_f7U_4FpvggDYxs0iEUm2SyBed7306vbeW_lEIGgLp3nFfyPZI_RkE
+ 2RorQSqiGlvX4BVfu_HoIPCfqmheXRo8ESao3Je4sKeMJjja8Clg3LaOXJb8
+ 0SkXMyIz.Zf_sBFPm.VeI1IKrorDZP64g69JE1fswGPG7.MR2keJZWVD1rqz
+ EejwaDwm_bb7NTNiH0.4zfrWZ7GzFfYtmOxSWn23kB0VFn4laZI1_bGubX0N
+ MniFl6RApR.OoDnr9rcN4KmjpqKwn_v5FtDHUme0D1WS..j5ooCkpVLUcn75
+ w1U8Aq8NrwFkzeXz.qzv17Bi_jC_SN82VdCMXPTp4ldnDbkVbPcFuts1IoPU
+ .vYBPjbFZOyws2gULzHRTlhQVHqrn9l3bKnDjIADOvFtMnzT65s5EsQ--
+X-Yahoo-Newman-Property: ymail-3
+Reply-To: <banquedubenin@admin.in.th>
+From: <3569--pwunion@att.net>
+Subject: YOUR PAYMENT FUND ...............
+Date: Thu, 10 Mar 2011 03:07:54 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110308194538.GA8002@home.goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0006_01C2A9A6.5991565A"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 08, 2011 at 02:45:38PM -0500, Steven Rostedt wrote:
-> On Tue, Mar 01, 2011 at 10:47:15PM +0800, Harry Wei wrote:
-> > > 
-> > > >      I agree with Joe. I think any patch about kernel should be
-> > > >      emailed to LKML and other connection ML, as well as maintainers.
-> > > 
-> > > You're missing my point.  My point is that removing references to LKML
-> > > from MAINTAINERS is working against this as it makes it harder for users
-> > > to work out that they're supposed to do this.
-> > Maybe you are right.
-> 
-> Perhaps we should just add at the beginning of MAINTAINERS a note that
-> says something to the effect: "When in doubt, Cc
-> linux-kernel@vger.kernel.org". And then remove all individual references
-> to the list.
-This sounds good. I think we should have a try.
-Could i patch for this thought?
-Any different idea for us?
+This is a multi-part message in MIME format.
 
-Thanks.
-Best Regards.
-Harry Wei.
-> 
-> -- Steve
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+------=_NextPart_000_0006_01C2A9A6.5991565A
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+
+View And Get Back.........................
+
+------=_NextPart_000_0006_01C2A9A6.5991565A
+Content-Type: application/octet-stream;
+	name="DIRECTOR OF OPERATIONS 1.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="DIRECTOR OF OPERATIONS 1.txt"
+
+RElSRUNUT1IgT0YgT1BFUkFUSU9OUw0KRk9SRUlHTiBSRU1JVFRBTkNFIERJ
+VklTSU9OIEFUTQ0KRklOQU5DSUFMIEJBTksgUExDIEJFTklODQpXRVNUIEFG
+UklDQQ0KQVRUTiBNWSBERUFSIA0KTk9XIFdFIEhBVkUgQVJSQU5HRUQgWU9V
+UiBQQVlNRU5UIE9GICgkMi41TUlMTElPTlMpIFRXTyBNSUxMSU9OUyBGSVZF
+IEhVTkRSRUQgVEhPVVNBTkQgVU5JVEVEIFNUQVRFUyBET0xMQVJTIElOIEFU
+TSBQQVlNRU5UIENBUkQgVE8gQkUgU0VOVCBUTyBZT1UgVEhST1VHSCBXRVNU
+RVJOIFVOSU9OIE1PTkVZIFRSQU5TRkVSIFBBWU1FTlQgQU5EIFRIUk9VR0gg
+TU9ORVkgR1JBTSBUUkFOU0ZFUiBQQVlNRU5ULiBZT1VSIFBBWU1FTlQgV0lM
+TCBCRSBTRU5EIFRPIFlPVSBCWSBXRVNURVJOIFVOSU9OIE9SIEJZIE1PTkVZ
+IEdSQU0uIFRIRSBBTU9VTlQgWU9VIFdJTEwgUkVDRUlWRSBQRVIgREFZIElT
+ICQxNCwzMDBVU0QsICQ3LDE1MFVTRCBZT1UgV0lMTCBSRUNFSVZFIFRIUk9V
+R0ggV0VTVEVSTiBVTklPTiBNT05FWSBUUkFOU0ZFUiBBTkQgJDcsMTUwVVNE
+IFlPVSBXSUxMIFJFQ0VJVkUgVEhST1VHSCBNT05FWSBHUkFNIFRSQU5TRkVS
+LiAgVEhFIE1JTklTVEVSIFRSVVNUIEZVTkRTIE9GIEJFTklOIFJFUFVCTElD
+IFdJTEwgU0VORCBZT1UgVEhFIENVUlJFTlRMWSBTVEFOREFSRCBUUkFDS0lO
+RyBERVRBSUxTIFlPVSBORUVEIFRPIFBJQ0sgVVAgWU9VUiAoJDE0LDMwMC5V
+U0QpIFBBWU1FTlQgQlkgV0VTVEVSTiBVTklPTiBBTkQgTU9ORVkgR1JBTSwg
+WU9VIFdJTEwgUkVDRUlWRSBFVkVSWSBEQVkgVElMTCBZT1UgUkVDRUlWRSBU
+SEUgJDIuNU1JTExJT05TIFVOSVRFRCBTVEFURSBET0xMQVJTLCBOT1cgTk8g
+TkVFRCBUTyBTRU5EIFlPVSBUSElTIEFUTSBDQVJEIEJFQ0FVU0UgWU9VIENB
+TiBOT1QgQkUgQUJMRSBUTyBXSVRIRFJBVyBUSEUgQVRNIENBUkQgRFVFIFRP
+IFRIRSBBVE0gTUFTVEVSIENBUkQgQ09OVEFJTiBMQVJHRSBNT05FWSBPTiBJ
+VC4gIFRIRSBESVJFQ1RPUiBBRE1JTklTVFJBVE9SIFRSVVNUIEZVTkRTIEhB
+VkUgQUxSRUFEWSBTSUdORUQgWU9VUiBQQVlNRU5ULCBOT1cgWU9VIEFSRSBG
+UkVFIFRPIENPTVBMWSBXSVRIIEZJTkFOQ0lBTCBCQU5LIEJFTklOIFBBWU1F
+TlQgT0ZGSUNFIE9OIFRISVMgRU1BSUw6ICAgYmFucXVlZHViZW5pbkBhZG1p
+bi5pbi50aCANCkhPV0VWRVIsIEtJTkRMWSBDT05UQUNUIFRIRSBCRUxPVyBQ
+RVJTT04gV0hPIElTIElOIFBPU0lUSU9OIFRPIFJFTEVBU0UgWU9VUiBQQVlN
+RU5UIEJZIFdFU1RFUk4gVU5JT04gQU5EIEJZIE1PTkVZIEdSQU0gUEVSICQx
+NCwzMDAuVVNEIEEgREFZLk1SUyBNQVJHUkVURSBaRVdBTlUsIFdFU1RFUk4g
+VU5JT04gJiBNT05FWSBHUkFNIERFUEFSVE1FTlQgIEZJTkFOQ0lBTCBCQU5L
+IEJFTklOICBFLU1BSUw6IGJhbnF1ZWR1YmVuaW5AYWRtaW4uaW4udGggIFRI
+RSBGSU5BTkNJQUwgV0VTVEVSTiBVTklPTiBQQVlNRU5UIENBTlRFUiBBTkQg
+RklOQU5DSUFMIE1PTkVZIEdSQU0gUEFZTUVOVCBDRU5URVIgSEFTIEJFRU4g
+TUFOREFURUQgVE8gSVNTVUUgT1VUIFlPVVIgUEFZTUVOVCBBTkQgWU9VIEhB
+VkUgVE8gU1RPUCBBTlkgRlVSVEhFUiBDT01NVU5JQ0FUSU9OIFdJVEggQU5Z
+IE9USEVSICBQRVJTT04oUykgT1IgT0ZGSUNFKFMpIFRPIEFWT0lEIEFOWSAg
+SElUQ0hFUyBJTiBSRUNFSVZJTkcgWU9VUiBQQVlNRU5ULg0KTk9URSBUSEFU
+IFRIRSBBRE1JTklTVFJBVE9SIFBBWU1FTlQgQ0VOVFJFIE5FRUQgVEhJUyBE
+RVRBSUxTIEZST00gWU9VIFRPIFBST0NFU1MgWU9VUiBQQVlNRU5UOiANClJF
+Q0VJVkVSIE5BTUU6IC0tLS0tLS0tLS0tLS0tLS0tLS0tDQpDT1VOVFJZOiAt
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KQ0lUWSBBRERSRVNTOiAtLS0t
+LS0tLS0tLS0tLS0tLS0tLS0NClRFTDogLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tDQpURVNUIFFVRVNUSU9OOiAtLS0tLS0tLS0tLS0tLS0tLS0t
+LQ0KQU5TV0VSOiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NCkNPTVBM
+WSBOT1cgQkVDQVVTRSBBUyBTT09OIEFTIFlPVSBTRU5UIFRISVMgUkVRVUlS
+RUQgREVUQUlMUyBUTyBNUlMuIE1BUkdSRVRFIFpBV0VOVSwgU0hFIFdJTEwg
+U1RBUlQgU0VORElORyBZT1VSIFBBWU1FTlQgQlkgV0VTVEVSTiBVTklPTiBB
+TkQgQlkgTU9ORVkgR1JBTS4NClJFR0FSRFMgVE8gWU9VIEFORCBZT1VSIEZB
+TUlMWSwgVEhBTktTIEFORCBCRSBCTEVTU0VELg0KUkVWLiBEUi4gTExPWUQg
+SE9XQVJEDQpUSEUgRElSRUNUT1IgT0YgT1BFUkFUSU9OUw0KRk9SRUlHTiBS
+RU1JVFRBTkNFIERJVklTSU9ODQo=
+
+------=_NextPart_000_0006_01C2A9A6.5991565A--
