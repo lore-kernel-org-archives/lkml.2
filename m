@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab1CJSrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 13:47:17 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:10382 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab1CJSrQ (ORCPT
+	id S1752606Ab1CJStf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 13:49:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19225 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab1CJSte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 13:47:16 -0500
-Message-ID: <4D791CAA.7090108@caviumnetworks.com>
-Date: Thu, 10 Mar 2011 10:47:06 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 10 Mar 2011 13:49:34 -0500
+Message-ID: <4D791C9F.1010500@kernel.org>
+Date: Thu, 10 Mar 2011 10:46:55 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, peterz@infradead.org,
-        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 0/2] jump label: update for .39
-References: <cover.1299702291.git.jbaron@redhat.com>	 <1299728191.15854.319.camel@gandalf.stny.rr.com>	 <BLU0-SMTP690BB959832A97E002293396C80@phx.gbl>	 <1299771504.15854.347.camel@gandalf.stny.rr.com>	 <4D790A13.4060705@caviumnetworks.com>	 <1299780241.15854.393.camel@gandalf.stny.rr.com>	 <20110310182000.GB2906@redhat.com> <1299782143.15854.402.camel@gandalf.stny.rr.com>
-In-Reply-To: <1299782143.15854.402.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
+References: <20110302163729.GQ3319@htj.dyndns.org> <4D6E7459.6050706@kernel.org> <20110302165545.GR3319@htj.dyndns.org> <4D6E91EC.6040906@kernel.org> <20110302190208.GD28266@mtj.dyndns.org> <4D6E9541.2040201@kernel.org> <20110302191338.GE28266@mtj.dyndns.org> <4D6EA975.8070200@kernel.org> <20110302205704.GF28266@mtj.dyndns.org> <4D6EB335.8000306@kernel.org> <20110303061711.GG28266@mtj.dyndns.org>
+In-Reply-To: <20110303061711.GG28266@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Mar 2011 18:47:11.0537 (UTC) FILETIME=[90D55210:01CBDF53]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D791D1F.0036,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 10:35 AM, Steven Rostedt wrote:
-> On Thu, 2011-03-10 at 13:20 -0500, Jason Baron wrote:
->> On Thu, Mar 10, 2011 at 01:04:01PM -0500, Steven Rostedt wrote:
->> Now its up to the linker to decide where to place that element. Can we
->>> guarantee that it will always be on an 8 byte boundery?
->>> Hmm, I wonder if we could add a .ALIGN sizeof(long) before that?
->>>
->>
->> we can. Sparc does it, see: arch/sparc/include/asm/jump_label.h.
->>
->> So I guess it would be .align 8 for 64-bit and .align 4 for 32-bit...
->
-> Now what about the vmlinux.ld? That has a align 8. Is that a one time
-> short (align to 8 bytes here), or will it carry through aligning the
-> rest of the section. If not, perhaps we may be OK.
->
+On 03/02/2011 10:17 PM, Tejun Heo wrote:
+> On Wed, Mar 02, 2011 at 01:14:29PM -0800, Yinghai Lu wrote:
+>> what do you mean "enabled nodes"? numa_nodes_parsed? or from new
+>> numa_meminfo?
+> 
+> Yeah.
+> 
 
-That is the alignment of the start of the section in the *output* 
-object.  The linker will respect the requested alignment of the various 
-__jump_table sections in the *input* objects.  So adding an .align 8 
-before emitting data into the __jump_table section would not hurt (It 
-could even help.)
+that will duplicate the code:
 
-I empirically determined that if no .align is specified, the requested 
-alignment defaults to 4 for x86_64.
+        nodes_parsed = numa_nodes_parsed;
+        numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
 
-The alignment requested by the assembler will have to satisfy *all* the 
-requested alignments, so manually forcing everything to .align 8 (or 
-.align 4 for 32-bit) should ensure that the linker doesn't put in any holes.
+        for_each_node_mask(i, nodes_parsed)
+                cnt = i;
+        cnt++;
 
-David Daney
+in numa_alloc_distance().
+
+Why just let numa_alloc_distance() to be called at first and return cnt ?
+
+Yinghai
