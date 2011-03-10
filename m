@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab1CJOzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:55:33 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:27669 "EHLO mgw-da01.nokia.com"
+	id S1752879Ab1CJOzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:55:42 -0500
+Received: from www.tglx.de ([62.245.132.106]:43628 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752184Ab1CJOzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:55:32 -0500
-Message-ID: <4D78E61B.4020501@nokia.com>
-Date: Thu, 10 Mar 2011 16:54:19 +0200
-From: Roger Quadros <roger.quadros@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1751677Ab1CJOzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:55:40 -0500
+Date: Thu, 10 Mar 2011 15:55:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alexander Shishkin <virtuoso@slind.org>
+cc: linux-kernel@vger.kernel.org, Ken MacLeod <ken@bitsko.slc.ut.us>,
+        Shaun Reich <predator106@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
+ changes
+In-Reply-To: <20110310141241.GE11410@shisha.kicks-ass.net>
+Message-ID: <alpine.LFD.2.00.1103101516501.2787@localhost6.localdomain6>
+References: <1299681411-9227-1-git-send-email-virtuoso@slind.org> <alpine.LFD.2.00.1103101014260.2787@localhost6.localdomain6> <20110310141241.GE11410@shisha.kicks-ass.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: ext Alan Stern <stern@rowland.harvard.edu>
-CC: <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] usb: gadget: storage: Add fsg_get_toc helper
-References: <Pine.LNX.4.44L0.1103091057190.1965-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1103091057190.1965-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [131.228.1.90]
-X-OriginalArrivalTime: 10 Mar 2011 14:54:21.0134 (UTC) FILETIME=[09D2FEE0:01CBDF33]
-X-Nokia-AV: Clean
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 10 Mar 2011, Alexander Shishkin wrote:
+> On Thu, Mar 10, 2011 at 10:52:18AM +0100, Thomas Gleixner wrote:
+> > On Wed, 9 Mar 2011, Alexander Shishkin wrote:
+> > The patch does something different. How is this related to the problem
+> > you wanted to solve in the first place?
+> 
+> Well, if you scratch the timerfd_settime() bit, it kind of addresses the
+> initial problem. The timerfd_settime() was indeed a mistake.
+> 
+> > Can you please explain which problems you identified aside of the
+> > initial one?
+> 
+> Sure. The time daemon that we have here has to stop automatic time updates
+> when some other program changes system time *and* keep that setting
+> effective. Currently, when "the other program" changes the system time
+> right before time daemon changes it, this time setting will be overwritten
+> and lost. I'm thinking that it could be solved with something like
+> 
+>   clock_swaptime(clockid, new_timespec, old_timespec);
+> 
+> but something tells me that it will not be welcome either.
 
-On 03/09/2011 06:07 PM, ext Alan Stern wrote:
->> +	case 2:
->> +		/* Raw TOC */
->> +		memset(buf, 0, 37);	/* Header + A0, A1&  A2 descriptors */
->> +		buf[1] = 37;		/* 4 + 3*11 */
->
-> According to the SFF8020i spec Table 128, TOC Data Length is 2 + 11 *
-> (number of descriptors returned).  But that's probably a misprint.
+What's that time daemon doing? The semantics of updating system time,
+but stopping to do so when something else sets the time sounds more
+like a design problem than anything else.
 
-It's probably right. I will fix it and verify if it works.
->
->> +		buf[2] = 1;		/* First complete session */
->> +		buf[3] = 2;		/* Last complete session */
->
-> According to the spec, for drives that do not support multi-session,
-> the First session number should be equal to the Last session number.
->
-Right. good catch.
+Thanks,
 
->
-> On Wed, 9 Mar 2011, Roger Quadros wrote:
->
->> Mac OS-X expects CD-ROM TOC in raw format (i.e. format:2). It also
->> sends the READ_TOC CDB in old style SFF8020i format. i.e. 2 format bits
->> are encoded in MSBs of CDB byte 9.
->>
->> This patch will enable CD-ROM emulation to work with Mac OS-X. Tested on
->> Mac OS X v10.6.3.
->>
->> Signed-off-by: Roger Quadros<roger.quadros@nokia.com>
->> ---
->>   drivers/usb/gadget/file_storage.c |   32 +++++++++++++++++++-------------
->>   1 files changed, 19 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
->> index a6eacb5..753ac94 100644
->> --- a/drivers/usb/gadget/file_storage.c
->> +++ b/drivers/usb/gadget/file_storage.c
->> @@ -1696,6 +1696,8 @@ static int do_read_toc(struct fsg_dev *fsg, struct fsg_buffhd *bh)
->>   	int		msf = fsg->cmnd[1]&  0x02;
->>   	int		start_track = fsg->cmnd[6];
->>   	u8		*buf = (u8 *) bh->buf;
->> +	u8		format;
->> +	int		ret;
->>
->>   	if ((fsg->cmnd[1]&  ~0x02) != 0 ||		/* Mask away MSF */
->>   			start_track>  1) {
->> @@ -1703,18 +1705,22 @@ static int do_read_toc(struct fsg_dev *fsg, struct fsg_buffhd *bh)
->>   		return -EINVAL;
->>   	}
->>
->> -	memset(buf, 0, 20);
->> -	buf[1] = (20-2);		/* TOC data length */
->> -	buf[2] = 1;			/* First track number */
->> -	buf[3] = 1;			/* Last track number */
->> -	buf[5] = 0x16;			/* Data track, copying allowed */
->> -	buf[6] = 0x01;			/* Only track is number 1 */
->> -	store_cdrom_address(&buf[8], msf, 0);
->> +	/*
->> +	 * Check if CDB is old style SFF-8020i
->> +	 * i.e. format is in 2 MSBs of byte 9
->> +	 * Mac OS-X host sends us this.
->> +	 */
->> +	format = (fsg->cmnd[9]>>  6)&  0x3;
->> +	if (format == 0)
->> +		format = fsg->cmnd[2]&  0xf;	/* new style MMC-2 */
->
-> The spec says: "Format field definition: When Format in Byte 2 is zero,
-> then Byte 9 is used."  This logic does not follow that description.
->
+	tglx
 
-Yes indeed. I'll fix all this in v2. Thanks for review.
 
--- 
-regards,
--roger
