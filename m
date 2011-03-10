@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab1CJR2H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 12:28:07 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59880 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab1CJR2F (ORCPT
+	id S1753858Ab1CJRdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 12:33:42 -0500
+Received: from asset.uwaterloo.ca ([129.97.92.29]:49103 "EHLO
+	asset.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711Ab1CJRdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 12:28:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type;
-        b=lGavK74Uj5azP5rUrrdFxNlUOKpSFys+iOPEkTCe0bmsnzL3H/Vk0HtClSLXiQddqb
-         IG8enq9AVekOZIWP/0gLKoXo06A2OmP6dqh4A1sQNBOQDcQEkO6bUMr74IQ/tjX2AglZ
-         fEHx/Zz6Ev1g7qk9AwSdPlozUf5ail5vzfTCg=
-Message-ID: <4D790A20.3050105@gmail.com>
-Date: Thu, 10 Mar 2011 19:28:00 +0200
-From: Nikolai Kondrashov <spbnick@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	Thu, 10 Mar 2011 12:33:41 -0500
+Date: Thu, 10 Mar 2011 12:33:37 -0500
+From: chenliu@asset.uwaterloo.ca
+To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        cotte@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH]early: Fix possible overlapping data buffer
+Message-ID: <20110310173337.GA10906@asset.uwaterloo.ca>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-References: <20110209224006.GA11202@kroah.com> <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com> <20110225210334.GB16860@kroah.com> <4D6823DD.6040809@gmail.com> <20110225225055.GA5931@kroah.com> <4D787714.6060405@gmail.com> <20110310170143.GA24559@kroah.com> <AANLkTinyqJx76=nzepa9fe5VDzqiXRGCQ=E1SsKm2npE@mail.gmail.com> <20110310171940.GA24972@kroah.com>
-In-Reply-To: <20110310171940.GA24972@kroah.com>
-Content-Type: multipart/mixed;
- boundary="------------090501010303020304060507"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090501010303020304060507
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+This patch fixes bugzilla #12965:
+https://bugzilla.kernel.org/show_bug.cgi?id=12965
 
-On 03/10/2011 07:19 PM, Greg KH wrote:
-> Can you provide me the output of:
-> 	grep . /sys/class/dmi/id/*
-> so I can try to add support for this machine to the driver?
-Sure, here it is.
+The original code contains dangerous uses of sprintf functions like sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13", defsys_cmd, min_size), where defsys_cmd is used both as input string as well as output string. It should remember the written bytes of the previous sprintf and use that as the offset when adding something. Also use snprintf makes the code safer.
 
-Sincerely,
-Nick
+Signed-off-by: Chen Liu<chenliunju@gmail.com>
+---
+ arch/s390/kernel/early.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---------------090501010303020304060507
-Content-Type: text/plain;
- name="n230_dmi_id_grep.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="n230_dmi_id_grep.txt"
+diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
+--- a/arch/s390/kernel/early.c
++++ b/arch/s390/kernel/early.c
+@@ -94,6 +94,7 @@ static noinline __init void create_kerne
+ 	unsigned int sinitrd_pfn, einitrd_pfn;
+ #endif
+ 	int response;
++	int hlen;
+ 	size_t len;
+ 	char *savesys_ptr;
+ 	char defsys_cmd[DEFSYS_CMD_SIZE];
+@@ -124,7 +125,7 @@ static noinline __init void create_kerne
+ 	end_pfn = PFN_UP(__pa(&_end));
+ 	min_size = end_pfn << 2;
+ 
+-	sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
++	hlen = sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
+ 		kernel_nss_name, stext_pfn - 1, stext_pfn, eshared_pfn - 1,
+ 		eshared_pfn, end_pfn);
+ 
+@@ -133,13 +134,13 @@ static noinline __init void create_kerne
+ 		sinitrd_pfn = PFN_DOWN(__pa(INITRD_START));
+ 		einitrd_pfn = PFN_UP(__pa(INITRD_START + INITRD_SIZE));
+ 		min_size = einitrd_pfn << 2;
+-		sprintf(defsys_cmd, "%s EW %.5X-%.5X", defsys_cmd,
++		hlen += snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen, " EW %.5X-%.5X",
+ 		sinitrd_pfn, einitrd_pfn);
+ 	}
+ #endif
+ 
+-	sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13",
+-		defsys_cmd, min_size);
++	hlen += snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen, " EW MINSIZE=%.7iK PARMREGS=0-13",
++		min_size);
+ 	sprintf(savesys_cmd, "SAVESYS %s \n IPL %s",
+ 		kernel_nss_name, kernel_nss_name);
+ 
 
-L3N5cy9jbGFzcy9kbWkvaWQvYmlvc19kYXRlOjA1LzE4LzIwMTAKL3N5cy9jbGFzcy9kbWkv
-aWQvYmlvc192ZW5kb3I6UGhvZW5peCBUZWNobm9sb2dpZXMgTHRkLgovc3lzL2NsYXNzL2Rt
-aS9pZC9iaW9zX3ZlcnNpb246MDBNQS5NMDAwLjIwMTAwNTE4LkpJUAovc3lzL2NsYXNzL2Rt
-aS9pZC9ib2FyZF9hc3NldF90YWc6U0FNU1VORwovc3lzL2NsYXNzL2RtaS9pZC9ib2FyZF9u
-YW1lOk4yMzAgICAgICAgICAgICAgICAgICAgICAgIAovc3lzL2NsYXNzL2RtaS9pZC9ib2Fy
-ZF9zZXJpYWw6MTIzNDkwRU40MDAwMTUKL3N5cy9jbGFzcy9kbWkvaWQvYm9hcmRfdmVuZG9y
-OlNBTVNVTkcgRUxFQ1RST05JQ1MgQ08uLCBMVEQuCi9zeXMvY2xhc3MvZG1pL2lkL2JvYXJk
-X3ZlcnNpb246Tm90IEFwcGxpY2FibGUKL3N5cy9jbGFzcy9kbWkvaWQvY2hhc3Npc19hc3Nl
-dF90YWc6Tm8gQXNzZXQgVGFnCi9zeXMvY2xhc3MvZG1pL2lkL2NoYXNzaXNfc2VyaWFsOk5v
-bmUgICAgICAgIAovc3lzL2NsYXNzL2RtaS9pZC9jaGFzc2lzX3R5cGU6MTAKL3N5cy9jbGFz
-cy9kbWkvaWQvY2hhc3Npc192ZW5kb3I6U0FNU1VORyBFTEVDVFJPTklDUyBDTy4sIExURC4K
-L3N5cy9jbGFzcy9kbWkvaWQvY2hhc3Npc192ZXJzaW9uOk4vQSAgICAgICAgIAovc3lzL2Ns
-YXNzL2RtaS9pZC9tb2RhbGlhczpkbWk6YnZuUGhvZW5peFRlY2hub2xvZ2llc0x0ZC46YnZy
-MDBNQS5NMDAwLjIwMTAwNTE4LkpJUDpiZDA1LzE4LzIwMTA6c3ZuU0FNU1VOR0VMRUNUUk9O
-SUNTQ08uLExURC46cG5OMjMwOnB2ck5vdEFwcGxpY2FibGU6cnZuU0FNU1VOR0VMRUNUUk9O
-SUNTQ08uLExURC46cm5OMjMwOnJ2ck5vdEFwcGxpY2FibGU6Y3ZuU0FNU1VOR0VMRUNUUk9O
-SUNTQ08uLExURC46Y3QxMDpjdnJOL0E6Ci9zeXMvY2xhc3MvZG1pL2lkL3Byb2R1Y3RfbmFt
-ZTpOMjMwICAgICAgICAgICAgICAgICAgICAgICAKL3N5cy9jbGFzcy9kbWkvaWQvcHJvZHVj
-dF9zZXJpYWw6WlQ3SDkzSFo4MDAxOTQKL3N5cy9jbGFzcy9kbWkvaWQvcHJvZHVjdF91dWlk
-OjAwMENEQkQxLUUzMUQtQjIxMS04MDAwLTkyQkMzNzUzOTdEQQovc3lzL2NsYXNzL2RtaS9p
-ZC9wcm9kdWN0X3ZlcnNpb246Tm90IEFwcGxpY2FibGUKL3N5cy9jbGFzcy9kbWkvaWQvc3lz
-X3ZlbmRvcjpTQU1TVU5HIEVMRUNUUk9OSUNTIENPLiwgTFRELgovc3lzL2NsYXNzL2RtaS9p
-ZC91ZXZlbnQ6TU9EQUxJQVM9ZG1pOmJ2blBob2VuaXhUZWNobm9sb2dpZXNMdGQuOmJ2cjAw
-TUEuTTAwMC4yMDEwMDUxOC5KSVA6YmQwNS8xOC8yMDEwOnN2blNBTVNVTkdFTEVDVFJPTklD
-U0NPLixMVEQuOnBuTjIzMDpwdnJOb3RBcHBsaWNhYmxlOnJ2blNBTVNVTkdFTEVDVFJPTklD
-U0NPLixMVEQuOnJuTjIzMDpydnJOb3RBcHBsaWNhYmxlOmN2blNBTVNVTkdFTEVDVFJPTklD
-U0NPLixMVEQuOmN0MTA6Y3ZyTi9BOgo=
---------------090501010303020304060507--
