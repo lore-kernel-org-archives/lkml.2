@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1CJRFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 12:05:25 -0500
-Received: from cantor.suse.de ([195.135.220.2]:47556 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252Ab1CJRFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 12:05:24 -0500
-Date: Thu, 10 Mar 2011 08:25:01 -0800
-From: Greg KH <gregkh@suse.de>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] sysfs: add more info to the oops dump
-Message-ID: <20110310162501.GB23989@suse.de>
-References: <1299772388-15439-1-git-send-email-ext-phil.2.carmody@nokia.com>
+	id S1752707Ab1CJRF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 12:05:29 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:36975 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab1CJRF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 12:05:27 -0500
+X-Auth-Info: BCLNQxD+9YxEYwvpIyM/GlpRZszoSai6P6mNBcZ8HhQ=
+Message-ID: <4D790554.20204@grandegger.com>
+Date: Thu, 10 Mar 2011 18:07:32 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299772388-15439-1-git-send-email-ext-phil.2.carmody@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Abhilash K V <abhilash.kv@ti.com>
+CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Vaibhav Hiremath <hvaibhav@ti.com>
+Subject: Re: [PATCH] can : TI_HECC : Unintialized variables
+References: <1299774087-8532-1-git-send-email-abhilash.kv@ti.com>
+In-Reply-To: <1299774087-8532-1-git-send-email-abhilash.kv@ti.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 05:53:08PM +0200, Phil Carmody wrote:
-> If we're going to remember which file we accessed, we might as well
-> also remember whether it was a read or a write, and if the latter,
-> some indication of what was written.
-> 
-> e.g.
-> $ echo 1 > /sys/kernel/slab/:at-0000064/sanity_checks
-> $ echo c > /proc/sysrq-trigger
-> ...
-> [  112.457580] last sysfs file (w): /sys/kernel/slab/:at-0000064/sanity_checks
-> [  112.464569]   written: 1
+On 03/10/2011 05:21 PM, Abhilash K V wrote:
+> 1. In ti_hecc_xmit(), "data" is not initialized, causing
+>    undesirable effects like setting the RTR field for every
+>    transmit.
 
-Has this actually helped you out?  I've been thinking of removing this
-line in the dmesg entirely as I haven't seen it help in a very long time
-to track anything down.
+Does it need to be initialized to "data = cf->can_dlc"? If yes, please
+correct the message, if not ...
 
+> 2. In ti_hecc_probe(), the spinlock  priv->mbx_lock is not
+>    inited, causing a spinlock lockup BUG.
 > 
-> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> Acked-by: Anant Gole <anantgole@ti.com>
+> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
 > ---
->  fs/sysfs/file.c |   21 ++++++++++++++++++++-
->  1 files changed, 20 insertions(+), 1 deletions(-)
+>  drivers/net/can/ti_hecc.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-> index da3fefe..281e4dd 100644
-> --- a/fs/sysfs/file.c
-> +++ b/fs/sysfs/file.c
-> @@ -26,9 +26,18 @@
+> diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
+> index 4d07f1e..73c6025 100644
+> --- a/drivers/net/can/ti_hecc.c
+> +++ b/drivers/net/can/ti_hecc.c
+> @@ -503,6 +503,7 @@ static netdev_tx_t ti_hecc_xmit(struct sk_buff *skb, struct net_device *ndev)
+>  	spin_unlock_irqrestore(&priv->mbx_lock, flags);
 >  
->  /* used in crash dumps to help with debugging */
->  static char last_sysfs_file[PATH_MAX];
-> +static char last_sysfs_write[16];
-> +static int last_sysfs_write_len; /* magic value < 0 => read */
->  void sysfs_printk_last_file(void)
->  {
-> -	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
-> +	printk(KERN_EMERG "last sysfs file (%c): %s\n",
-> +	       (last_sysfs_write_len < 0) ? 'r' : 'w',
-> +	       last_sysfs_file);
-> +	if (last_sysfs_write_len >= sizeof(last_sysfs_write))
-> +		printk(KERN_EMERG "  written: %s...(%d chars)\n",
-> +		       last_sysfs_write, last_sysfs_write_len);
-> +	else if (last_sysfs_write_len > 0)
-> +		printk(KERN_EMERG "  written: %s\n", last_sysfs_write);
->  }
->  
->  /*
-> @@ -200,12 +209,19 @@ flush_write_buffer(struct dentry * dentry, struct sysfs_buffer * buffer, size_t
->  	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
->  	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
->  	const struct sysfs_ops * ops = buffer->ops;
-> +	int copylen = min(count, sizeof(last_sysfs_write) - 1);
->  	int rc;
->  
->  	/* need attr_sd for attr and ops, its parent for kobj */
->  	if (!sysfs_get_active(attr_sd))
->  		return -ENODEV;
->  
-> +	while (copylen > 0 && buffer->page[copylen-1] == '\n')
-> +		--copylen; /* never print trailing \n's */
-> +	memcpy(last_sysfs_write, buffer->page, copylen);
-> +	last_sysfs_write[copylen] = '\0';
-> +	last_sysfs_write_len = count;
-> +
->  	rc = ops->store(kobj, attr_sd->s_attr.attr, buffer->page, count);
->  
->  	sysfs_put_active(attr_sd);
-> @@ -363,6 +379,9 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
->  	if (file->f_mode & FMODE_WRITE) {
->  		if (!(inode->i_mode & S_IWUGO) || !ops->store)
->  			goto err_out;
-> +		last_sysfs_write_len = 0;
-> +	} else {
-> +		last_sysfs_write_len = -1; /* magic value */
+>  	/* Prepare mailbox for transmission */
+> +	data = cf->can_dlc;
+>  	if (cf->can_id & CAN_RTR_FLAG) /* Remote transmission request */
+>  		data |= HECC_CANMCF_RTR;
+>  	data |= get_tx_head_prio(priv) << 8;
 
-"magic" values are bad, please use a #define or something else that
-makes more sense to those looking at the code in 5 years.
+... using the following expressions looks more reasonable:
 
-thanks,
-
-greg k-h
+  	data = get_tx_head_prio(priv) << 8;
+ 	if (cf->can_id & CAN_RTR_FLAG) /* Remote transmission request */
+ 		data |= HECC_CANMCF_RTR;
+	
+Wolfgang.
