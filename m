@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab1CJQGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:06:32 -0500
-Received: from protonic.xs4all.nl ([213.84.116.84]:7025 "EHLO protonic.prtnl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751314Ab1CJQGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:06:30 -0500
-Date: Thu, 10 Mar 2011 17:06:27 +0100
-From: David Jander <david.jander@protonic.nl>
-To: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-Cc: Nguyen Dinh-R00091 <R00091@freescale.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Zhang Lily-R58066 <R58066@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
- WFI
-Message-ID: <20110310170627.2d8135a7@archvile>
-In-Reply-To: <20110310133715.GC29521@pengutronix.de>
-References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
-	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
-	<87oc5puwg3.fsf@lebrac.rtp-net.org>
-	<56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
-	<87fwqyvrzf.fsf@lebrac.rtp-net.org>
-	<56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
-	<20110307180700.GQ29521@pengutronix.de>
-	<20110308124023.5a952d13@archvile>
-	<20110310133715.GC29521@pengutronix.de>
-Organization: Protonic Holland
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751816Ab1CJQID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:08:03 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:40524 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab1CJQIB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:08:01 -0500
+X-IronPort-AV: E=Sophos;i="4.62,296,1297036800"; 
+   d="scan'208";a="4727234"
+Subject: [GIT PATCH v2 0/14] xen: events: cleanups + ween off nr_irqs
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Thu, 10 Mar 2011 16:07:59 +0000
+Message-ID: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 14:37:15 +0100
-"s.hauer@pengutronix.de" <s.hauer@pengutronix.de> wrote:
+Changes since last time:
+      * correct return value of xen_irq_from_pirq
+      * WARN if a pirq cannot be allocated for a legacy IRQ
+      * Updated checking comment of "xen: events: do not workaround
+        too-small nr_irqs"
 
-> Hi David,
-> 
-> On Tue, Mar 08, 2011 at 12:40:23PM +0100, David Jander wrote:
-> > 
-> > Hi Sascha,
-> > 
-> > On Mon, 7 Mar 2011 19:07:00 +0100
-> > "s.hauer@pengutronix.de" <s.hauer@pengutronix.de> wrote:
-> > >[...]
-> > > > The current imx for-next tree is not booting on my Babbage board. Is
-> > > > it okay for you with your HW. I'll have to debug the booting part
-> > > > first.
-> > > 
-> > > Probably because other than kconfig states i.MX51 and i.MX53 cannot be
-> > > compiled in one kernel. the for-next branch boots fine on my babbage.
-> > 
-> > Would you mind explaining (or pointing to an explanation) as to why this is
-> > not supposed to work? Given the high level of compatibility between MX51
-> > and MX53, I'd say there must be a very good reason not to enable a single
-> > binary kernel for both. Or is this just temporary brokenness?
-> 
-> i.MX51 and i.MX53 have different phys_offsets. Look at
-> arch/arm/mach-mx5/Makefile.boot:
-> 
->    zreladdr-$(CONFIG_ARCH_MX50) := 0x70008000
-> params_phys-$(CONFIG_ARCH_MX50) := 0x70000100
-> initrd_phys-$(CONFIG_ARCH_MX50) := 0x70800000
->    zreladdr-$(CONFIG_ARCH_MX51) := 0x90008000
-> params_phys-$(CONFIG_ARCH_MX51) := 0x90000100
-> initrd_phys-$(CONFIG_ARCH_MX51) := 0x90800000
->    zreladdr-$(CONFIG_ARCH_MX53) := 0x70008000
-> params_phys-$(CONFIG_ARCH_MX53) := 0x70000100
-> initrd_phys-$(CONFIG_ARCH_MX53) := 0x70800000
-> 
-> Compiling a kernel for i.MX50 and i.MX53 will work, but compiling a
-> kernel for i.MX51 and i.MX53 will and up with a kernel assuming SDRAM
-> at 0x70000000 which will fail on a i.MX51. We need
-> phys_to_virt/virt_to_phys runtime patching to get this right. This
-> will be merged in the next merge window.
+The following series makes a few cleanups to the Xen IRQ infrastructure.
+The most important thing is that it removes the need to know about
+nr_irqs and in particular the reliance on nr_irqs being static.
 
-Ok, so it classifies as "temporary brokenness" ;-)
-Thanks a lot for clarifying.
+Apart from being generally a good thing this is needed because in 2.6.39
+nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
+"genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
+at 2.6.39.
 
-Best regards,
+Dynamically growing nr_irqs also allows us to remove the workaround
+which eats into GSI space if a dynamic IRQ cannot be allocated.
 
--- 
-David Jander
-Protonic Holland.
+There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
+have gone in before, but the penultimate patch really needed to be
+simultaneous) so I haven't bothered to try and pull anything from tip
+into this branch -- it should all be resolved during the merge window
+and bisection won't be too broken since the "eat into GSI space"
+workaround only appears to be needed on a small number of older
+platforms (qemu being the main exception).
+
+I have tested:
+      * Domain 0 on real h/w and under qemu
+      * PV guest, including migration and passthrough of both VF and PF.
+      * PVHVM guest, including migration and passthrough of both VF and
+        PF.
+
+The git pull is a branch on top of konrad/stable/irq.cleanup. However
+there is an interaction with konrad/devel/xen-pciback-0.4.driver (the
+addition of the domid parameter) so for convenience I have also produced
+an irq-pciback branch at the same location which has
+konrad/devel/xen-pciback-0.4.driver merged into this branch.
+
+Note that this series obsoletes an older patcho f mine "xen: events:
+mark cpu_evtchn_mask_p as __refdata" by virtue of removing the code in
+question...
+
+The following changes since commit c5ae07bb307b658c8458f29ca77d237aec0f9327:
+  Ian Campbell (1):
+        xen: events: remove dom0 specific xen_create_msi_irq
+
+are available in the git repository at:
+
+  git://xenbits.xen.org/people/ianc/linux-2.6.git irq
+
+Ian Campbell (14):
+      xen: events: separate two unrelated halves of if condition
+      xen: events: fix xen_map_pirq_gsi error return
+      xen: events: simplify comment
+      xen: events: remove unused public functions
+      xen: events: rename restore_cpu_pirqs -> restore_pirqs
+      xen: events: refactor GSI pirq bindings functions
+      xen: events: use per-cpu variable for cpu_evtchn_mask
+      xen: events: turn irq_info constructors into initialiser functions
+      xen: events: push setup of irq<->{evtchn,ipi,virq,pirq} maps into irq_info init functions
+      xen: events: maintain a list of Xen interrupts
+      xen: events: dynamically allocate irq info structures
+      xen: events: remove use of nr_irqs as upper bound on number of pirqs
+      xen: events: do not workaround too-small nr_irqs
+      xen: events: propagate irq allocation failure instead of panicking
+
+ arch/x86/pci/xen.c   |   41 ++++--
+ drivers/xen/events.c |  357 ++++++++++++++++++++++++++------------------------
+ include/xen/events.h |   24 ++--
+ 3 files changed, 226 insertions(+), 196 deletions(-)
+
