@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab1CJX7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:59:14 -0500
-Received: from kroah.org ([198.145.64.141]:46921 "EHLO coco.kroah.org"
+	id S1754689Ab1CJX5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:57:34 -0500
+Received: from kroah.org ([198.145.64.141]:46895 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754637Ab1CJX5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:32 -0500
+	id S1754311Ab1CJX52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:28 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:38 2011
-Message-Id: <20110310235538.437789526@clark.kroah.org>
+Message-Id: <20110310235538.006843870@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:30 -0800
+Date: Thu, 10 Mar 2011 15:54:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ivan Vecera <ivecera@redhat.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [patch 24/29] drivers/net: Call netif_carrier_off at the end of the probe
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [patch 20/29] netfilter: arpt_mangle: fix return values of checkentry
 In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,48 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Vecera <ivecera@redhat.com>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 0d672e9f8ac320c6d1ea9103db6df7f99ea20361 upstream.
+commit 9d0db8b6b1da9e3d4c696ef29449700c58d589db upstream.
 
-Without calling of netif_carrier_off at the end of the probe the operstate
-is unknown when the device is initially opened. By default the carrier is
-on so when the device is opened and netif_carrier_on is called the link
-watch event is not fired and operstate remains zero (unknown).
+In 135367b "netfilter: xtables: change xt_target.checkentry return type",
+the type returned by checkentry was changed from boolean to int, but the
+return values where not adjusted.
 
-This patch fixes this behavior in forcedeth and r8169.
+arptables: Input/output error
 
-Signed-off-by: Ivan Vecera <ivecera@redhat.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This broke arptables with the mangle target since it returns true
+under success, which is interpreted by xtables as >0, thus
+returning EIO.
+
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/forcedeth.c |    2 ++
- drivers/net/r8169.c     |    2 ++
- 2 files changed, 4 insertions(+)
+ net/ipv4/netfilter/arpt_mangle.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/forcedeth.c
-+++ b/drivers/net/forcedeth.c
-@@ -5816,6 +5816,8 @@ static int __devinit nv_probe(struct pci
- 		goto out_error;
- 	}
+--- a/net/ipv4/netfilter/arpt_mangle.c
++++ b/net/ipv4/netfilter/arpt_mangle.c
+@@ -60,12 +60,12 @@ static int checkentry(const struct xt_tg
  
-+	netif_carrier_off(dev);
-+
- 	dev_printk(KERN_INFO, &pci_dev->dev, "ifname %s, PHY OUI 0x%x @ %d, "
- 		   "addr %2.2x:%2.2x:%2.2x:%2.2x:%2.2x:%2.2x\n",
- 		   dev->name,
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -3236,6 +3236,8 @@ rtl8169_init_one(struct pci_dev *pdev, c
- 	if (pci_dev_run_wake(pdev))
- 		pm_runtime_put_noidle(&pdev->dev);
+ 	if (mangle->flags & ~ARPT_MANGLE_MASK ||
+ 	    !(mangle->flags & ARPT_MANGLE_MASK))
+-		return false;
++		return -EINVAL;
  
-+	netif_carrier_off(dev);
-+
- out:
- 	return rc;
+ 	if (mangle->target != NF_DROP && mangle->target != NF_ACCEPT &&
+ 	   mangle->target != XT_CONTINUE)
+-		return false;
+-	return true;
++		return -EINVAL;
++	return 0;
+ }
  
+ static struct xt_target arpt_mangle_reg __read_mostly = {
 
 
