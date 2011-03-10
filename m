@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab1CJKgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:36:19 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:57563 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1CJKgS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:36:18 -0500
-Message-ID: <2e9ca0040729649ed989a16a07bb2c49.squirrel@webmail.greenhost.nl>
-In-Reply-To: <8b77a7a0de898635c8b25e7612907deb.squirrel@www.ffwll.ch>
-References: <af572f9c6c75d54f1f81e51f508358dd.squirrel@webmail.greenhost.nl>
-    <1298395549-4064-1-git-send-email-daniel.vetter@ffwll.ch>
-    <ed85db84d2d5ea460898d78e1179c6ca.squirrel@webmail.greenhost.nl>
-    <25dfe766fbe767e249ef95d1fda0094c.squirrel@www.ffwll.ch>
-    <0378a20bb9cfafee46c89461fa2dd4d6.squirrel@webmail.greenhost.nl>
-    <8b77a7a0de898635c8b25e7612907deb.squirrel@www.ffwll.ch>
-Date: Thu, 10 Mar 2011 11:36:15 +0100 (CET)
-Subject: Re: [PATCH] drm/i915: fix corruptions on i8xx due to relaxed 
-     fencing
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Daniel Vetter" <daniel@ffwll.ch>
-Cc: "Daniel Vetter" <daniel@ffwll.ch>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org, "LKML" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+	id S1752008Ab1CJKiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:38:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43391 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459Ab1CJKiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 05:38:16 -0500
+Date: Thu, 10 Mar 2011 11:38:14 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Rafi Rubin <rafi@seas.upenn.edu>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        micki@n-trig.com, rydberg@euromail.se, chatty@enac.fr
+Subject: Re: [PATCH 1/2] hid: ntrig NO_INIT_REPORTS
+In-Reply-To: <1299731632-9814-1-git-send-email-rafi@seas.upenn.edu>
+Message-ID: <alpine.LNX.2.00.1103101138040.19969@pobox.suse.cz>
+References: <1299731632-9814-1-git-send-email-rafi@seas.upenn.edu>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 258bd43c1b7c380ff6f1b27dffaa1ebc
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, March 10, 2011 08:52, Daniel Vetter wrote:
-> Am Do, 10.03.2011, 06:06 schrieb Indan Zupancic:
->> This isn't in rc8, can someone make sure it gets into 2.6.38-rc9/2.6.38?
->
-> The patch unfortunately broke gen4+ (more precisely: the unwritten abi
-> guarantee that userspace can tile buffers that don't have a complete last
-> tile row, as long as it promises not to touch it). Hence it got reverted.
-> It was just a enforcement check to prevent broken userspace from fooling
-> itself. The proper fix is to upgrade your userspace (libdrm +
-> xf86-video-intel).
->
-> [Aside: This only happens if you have new enough userspace that supports
-> relaxed tiling. Old userspace and new kernels are _not_ broken.]
+On Wed, 9 Mar 2011, Rafi Rubin wrote:
 
-Yes, I noticed it got reverted when digging into git log, but the
-commit message only said it broke gen4+, not how gen2 should be
-unbroken after the revert.
+> Probing reports does bad things with some ntrig firmwares, better to
+> just leave them alone.
+> 
+> Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+> 
+> ---
+> 
+> This resolves an annoying delay on initialization and reduces the
+> chance of the device coming up in an odd state or crashing.
 
-Which versions fix this, just for reference?
+Applied.
 
-I got libdrm 2.4.23 and xf86-video-intel 2.14.0.
+> ---
+>  drivers/hid/hid-ntrig.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+> index b1e9cca..850ba14 100644
+> --- a/drivers/hid/hid-ntrig.c
+> +++ b/drivers/hid/hid-ntrig.c
+> @@ -837,7 +837,8 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	struct hid_report *report;
+>  
+>  	if (id->driver_data)
+> -		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
+> +		hdev->quirks |= HID_QUIRK_MULTI_INPUT
+> +				| HID_QUIRK_NO_INIT_REPORTS;
+>  
+>  	nd = kmalloc(sizeof(struct ntrig_data), GFP_KERNEL);
+>  	if (!nd) {
+> -- 
+> 1.7.4.1
+> 
 
-(As a side note, do you have version checking on the kernel side?
-If so, you could return 0 for the relaxed fencing feature check
-if the driver is the wrong version.)
-
-To keep things manageable I either upgrade the kernel, or userspace,
-but never both at once. It seems that that doesn't work with graphics.
-
-Thanks,
-
-Indan
-
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
