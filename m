@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1CJX4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:56:54 -0500
-Received: from kroah.org ([198.145.64.141]:45154 "EHLO coco.kroah.org"
+	id S1754339Ab1CJX5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:57:12 -0500
+Received: from kroah.org ([198.145.64.141]:45159 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab1CJX4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:56:53 -0500
-Date: Thu, 10 Mar 2011 15:55:48 -0800
+	id S1754311Ab1CJX5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:36 2011
+Message-Id: <20110310235536.118211033@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Thu, 10 Mar 2011 15:54:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [patch 00/29] 2.6.37.4-stable review
-Message-ID: <20110310235548.GA10103@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: [patch 01/29] cpuset: add a missing unlock in cpuset_write_resmask()
+In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.37.r release.
-There are 29 patches in this series, all will be posted as a response to
-this one.  If anyone has any issues with these being applied, please let
-us know.  If anyone is a maintainer of the proper subsystem, and wants
-to add a Signed-off-by: line to the patch, please respond with it.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Saturday, March 12, 24:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.37.4-rc1.gz
-and the diffstat can be found below.
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-thanks,
+commit b75f38d659e6fc747eda64cb72f3920e29dd44a4 upstream.
 
-greg k-h
+Don't forget to release cgroup_mutex if alloc_trial_cpuset() fails.
+
+[akpm@linux-foundation.org: avoid multiple return points]
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Paul Menage <menage@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/cpuset.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1575,8 +1575,10 @@ static int cpuset_write_resmask(struct c
+ 		return -ENODEV;
+ 
+ 	trialcs = alloc_trial_cpuset(cs);
+-	if (!trialcs)
+-		return -ENOMEM;
++	if (!trialcs) {
++		retval = -ENOMEM;
++		goto out;
++	}
+ 
+ 	switch (cft->private) {
+ 	case FILE_CPULIST:
+@@ -1591,6 +1593,7 @@ static int cpuset_write_resmask(struct c
+ 	}
+ 
+ 	free_trial_cpuset(trialcs);
++out:
+ 	cgroup_unlock();
+ 	return retval;
+ }
 
 
- Makefile                                    |    2 +-
- arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c   |    2 +-
- drivers/char/virtio_console.c               |    8 ++++
- drivers/hid/hid-mosart.c                    |    4 ++
- drivers/media/dvb/dvb-usb/dib0700_devices.c |   21 +++++++++-
- drivers/media/dvb/frontends/dib7000m.c      |   19 +++++++++
- drivers/media/dvb/frontends/dib7000m.h      |   15 +++++++
- drivers/media/video/cx23885/cx23885-i2c.c   |    8 ----
- drivers/media/video/cx25840/cx25840-core.c  |    3 +-
- drivers/media/video/ivtv/ivtv-irq.c         |   58 +++++++++++++++++++++++---
- drivers/misc/bmp085.c                       |    1 +
- drivers/net/forcedeth.c                     |    2 +
- drivers/net/ixgbe/ixgbe_main.c              |    4 ++
- drivers/net/r8169.c                         |   42 +++++++++++++++----
- drivers/net/wireless/ath/ath9k/ath9k.h      |    3 -
- drivers/net/wireless/ath/ath9k/init.c       |    4 --
- drivers/net/wireless/ath/ath9k/main.c       |    4 --
- drivers/s390/char/keyboard.c                |    3 +-
- fs/nfs/nfs4proc.c                           |   44 +++++++++++++++++++-
- fs/nfs/nfs4xdr.c                            |    3 -
- fs/nfsd/nfs4xdr.c                           |    4 +-
- include/keys/rxrpc-type.h                   |    1 -
- include/linux/netdevice.h                   |    3 +
- kernel/cpuset.c                             |    7 ++-
- kernel/sched_rt.c                           |   14 ++++--
- mm/mremap.c                                 |    4 +-
- net/core/dev.c                              |   12 +++++-
- net/ipv4/ip_gre.c                           |    1 +
- net/ipv4/ipip.c                             |    1 +
- net/ipv4/netfilter/arpt_mangle.c            |    6 +-
- net/ipv6/sit.c                              |    2 +-
- net/netfilter/ipvs/ip_vs_ctl.c              |    4 +-
- net/netfilter/nf_log.c                      |    4 ++
- sound/pci/hda/patch_cirrus.c                |    2 +
- sound/pci/hda/patch_realtek.c               |    7 +--
- sound/soc/codecs/wm9081.c                   |    5 ++
- 36 files changed, 255 insertions(+), 72 deletions(-)
