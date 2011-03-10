@@ -1,308 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab1CJEop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 23:44:45 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:43918 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab1CJEom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 23:44:42 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6280"; a="79075809"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>
-Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/3] msm: documentation: Add pil documentation
-Date: Wed,  9 Mar 2011 20:44:34 -0800
-Message-Id: <1299732274-10742-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.1.203.g07873
-In-Reply-To: <1299732274-10742-1-git-send-email-sboyd@codeaurora.org>
-References: <1299732274-10742-1-git-send-email-sboyd@codeaurora.org>
+	id S1751363Ab1CJE5U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 23:57:20 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43453 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab1CJE5T (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 9 Mar 2011 23:57:19 -0500
+Date: Wed, 9 Mar 2011 23:56:47 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH 09/14] xen: events: push setup of
+ irq<->{evtchn,ipi,virq,pirq} maps into irq_info init functions
+Message-ID: <20110310045647.GA10574@dumpdata.com>
+References: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
+ <1299692486-28634-9-git-send-email-ian.campbell@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299692486-28634-9-git-send-email-ian.campbell@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D785A26.00B7,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Saravana Kannan <skannan@codeaurora.org>
+On Wed, Mar 09, 2011 at 05:41:21PM +0000, Ian Campbell wrote:
+> Encapsulate setup of XXX_to_irq array in the relevant
+> xen_irq_info_*_init function.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> ---
+>  drivers/xen/events.c |   42 +++++++++++++++++++++---------------------
+>  1 files changed, 21 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 72725fa..cf372d4 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -126,6 +126,7 @@ static struct irq_info *info_for_irq(unsigned irq)
+>  
+>  /* Constructors for packed IRQ information. */
+>  static void xen_irq_info_common_init(struct irq_info *info,
+> +				     unsigned irq,
+>  				     enum xen_irq_type type,
+>  				     unsigned short evtchn,
+>  				     unsigned short cpu)
+> @@ -136,6 +137,8 @@ static void xen_irq_info_common_init(struct irq_info *info,
+>  	info->type = type;
+>  	info->evtchn = evtchn;
+>  	info->cpu = cpu;
+> +
+> +	evtchn_to_irq[evtchn] = irq;
 
-Change-Id: I471a4b581e0f5f6f4aaf1f585fb3c5805efe0de8
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- Documentation/arm/msm/pil.txt |  264 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 264 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/arm/msm/pil.txt
+Is there any case where this would lead to an over-write? Should we
+have an
+  WARN_ON(evtchn_to_irq[evtchn] != -1)
 
-diff --git a/Documentation/arm/msm/pil.txt b/Documentation/arm/msm/pil.txt
-new file mode 100644
-index 0000000..744ab3e
---- /dev/null
-+++ b/Documentation/arm/msm/pil.txt
-@@ -0,0 +1,264 @@
-+Introduction
-+============
-+
-+The PIL (Peripheral Image Loader) driver loads peripheral images into memory
-+and interfaces with the Peripheral Authentication Service (PAS) to
-+authenticate and reset peripherals embedded in the SoC.
-+
-+The PAS could either be running under secure mode in the application
-+processor (secure boot support) or be running as a non-secure kernel driver
-+(non-secure boot support).
-+
-+The PIL driver also does housekeeping to handle cases where more than one
-+client driver is using the same peripheral.
-+
-+Some examples of peripherals are modem, DSP and sensors.
-+
-+Hardware description
-+====================
-+
-+The memory used by the peripherals for code and data storage will be
-+accessible as normal memory to the application processor.
-+
-+The non-secure code (Linux kernel) will have read/write permissions to the
-+peripheral memory by default.
-+
-+The PAS will have access to a MPU (memory protection unit) that can lock away
-+the pages of memory from the Linux kernel. It will also have access to
-+registers that can reset each peripheral.
-+
-+Software description
-+====================
-+
-+The PAS provides the following three APIs:
-+
-+* Init image - Takes as input the peripheral id and firmware metadata and
-+  returns a status indicating the authenticity of the firmware metadata.  The
-+  firmware metadata consists of a standard ELF32 header followed by a program
-+  header table and an optional blob of data used to authenticate the metadata
-+  and the rest of the firmware.
-+
-+* Verify segment - Takes as input the firmware segment id and the length of
-+  the segment. Authenticates whatever amount (specified by the "length"
-+  parameter) of the firmware segment that has been loaded and removes
-+  non-secure mode read/write permissions for the pages belonging to the
-+  firmware segment. Allows multiple calls for the same firmware segment to
-+  allow partial loading and authentication.
-+
-+* Auth and Reset - Verifies all the necessary firmware segments have been
-+  loaded and authenticated and then resets the peripheral.
-+
-+The user space is expected to provide the firmware metadata and firmware
-+segments as separate files on persistent storage. See "Interface" section for
-+further details.
-+
-+The PIL driver will use the request_firmware API provided by the Linux kernel
-+to read the firmware and firmware metadata from persistent storage.
-+
-+When a client driver requests for a peripheral to be enabled, the PIL driver
-+increments the reference count for that peripheral, loads the firmware
-+metadata and calls the PAS Init Image API that initializes the authentication
-+state machine using the firmware metadata.
-+
-+If the initialization succeeds, the PIL driver loads the appropriate firmware
-+segments into their respective memory locations and call the PAS Verify
-+segment API on each of the loaded segments to authenticate and lock it.
-+
-+After all the firmware segments have been successfully loaded and
-+authenticated, the PAS Auth and Reset API is called to reset the peripheral
-+and initiate its boot sequence.
-+
-+A peripheral enable request to the PIL driver will block until it succeeds
-+(or fails) to initiate the peripheral boot sequence but will NOT block until
-+the peripheral is ready. It is not possible to block until a peripheral is
-+ready since the semantics of "ready" is subjective to the caller.
-+
-+The PIL driver will maintain a reference count for each of the peripherals.
-+So, if a peripheral is already under use and another client driver requests
-+for the peripheral to be enabled, the PIL driver will immediately return a
-+value to indicate success.
-+
-+When all the client drivers of a particular peripheral no longer need the
-+peripheral and the reference count reaches zero, the PIL driver can cleanly
-+shut down the peripheral. Since a lot of drivers in their current state can't
-+handle a peripheral restart, the PIL driver will never let the reference
-+count go back to zero.
-+
-+All information about a peripheral, like firmware filenames, peripheral ID
-+passed to PAS, etc, will be hard coded in the PIL driver.
-+
-+All the PIL APIs will execute in the context of the caller. This includes
-+calls from the PIL driver to the PAS driver. The PAS driver might decide to
-+switch into secure mode from a separate workqueue or in the same context as
-+the caller, but that shouldn't have any implications for the PIL API callers
-+since all the PIL APIs are blocking calls.
-+
-+Dependencies:
-+-------------
-+* Firmware class (CONFIG_FW_LOADER) for using the request_firmware API to
-+  load firmware from persistent storage.
-+* PAS to authenticate firmware and bring a peripheral out of reset.
-+
-+Error cases:
-+------------
-+The PIL driver could fail to enable a peripheral for several reasons like not
-+having enough memory to load firmware and metadata, being unable to
-+communicate with the PAS, the PAS returning with an error, etc. For all
-+possible error cases, the PIL driver does not perform any retries and returns
-+an appropriate error code. The client drivers should always check for success
-+before trying to access the peripheral.
-+
-+Design
-+======
-+
-+Design goals:
-+-------------
-+* The PIL driver must be agnostic to the actual format and method used to
-+  authenticate the firmware.
-+* Allow for future expansion to support demand loading of parts of firmware
-+  for each peripheral.
-+* Move most of the work into the preprocessing/building stage of the firmware.
-+* Provide an API to the client drivers that absolves them from having to know
-+  the structure or names of the firmware in persistent storage.
-+* Handle multiple client drivers wanting to enable the same peripheral.
-+
-+
-+Design reasons:
-+---------------
-+The user space is expected to provide the firmware metadata and segments as
-+separate files for the following reasons:
-+* Don't need to load the whole ELF file if the authentication info is
-+  invalid.
-+* Works better during low memory conditions since the amount of memory used
-+  at any given instant when loading one segment at a time is smaller than
-+  loading the whole ELF file.
-+* Since an ELF segment in memory can be much bigger than on file, having a
-+  flat binary would waste a lot of space due to zero-fills.
-+* Allows for future enhancements to the loading procedure.
-+
-+Design tradeoffs:
-+-----------------
-+* With appropriate changes to the request_firmware API, the firmware blobs
-+  could be directly loaded into the right memory location. But due to the
-+  additional work and community approval that would be needed for modifying
-+  the request_firmware API, we load the firmware blobs into kernel memory and
-+  then copy them into the appropriate locations.
-+
-+Alternate designs:
-+------------------
-+One of the alternate designs that were considered required the firmware to be
-+a flat binary. Although this design would simplify the PIL driver, it would
-+result in the waste of a lot of persistent storage space (due to large
-+zero-fills), prevent demand loading of segments in the future and use a lot
-+more memory while loading the firmware.
-+
-+Software layering:
-+------------------
-+The peripheral authentication, reset and shutdown implementation is factored
-+away into a Peripheral Authentication Service driver to allow the PIL driver
-+to be agnostic of secure vs. non-secure boot and the mechanisms needed for
-+communicating with any code that might be running in secure mode.
-+
-+Power Management
-+================
-+
-+Some of the peripherals might support being turned off when not in use.
-+Support for this might be disabled in the initial implementation of the PIL
-+driver since many of the existing drivers can not handle peripheral restart.
-+
-+SMP/multi-core
-+==============
-+
-+Will use mutexes to protected data that might be shared (reference count,
-+etc).
-+
-+Security
-+========
-+
-+The PIL driver must validate the physical memory addresses specified in the
-+ELF and program header table before loading firmware segments to make sure
-+it's not overwriting any memory used by the kernel and possibly PMEM regions
-+(if it can be done without being an ugly hack). The PIL driver might need to
-+maintain a white list or black list of physical memory address ranges to
-+perform the address validation.
-+
-+Performance
-+===========
-+
-+As mentioned in the design section, the loading of firmware segments is not
-+optimal and has room for improvement.
-+
-+Interface
-+=========
-+
-+In kernel APIs:
-+void * pil_get(char *peripheral_name)
-+	- Enables (if not already enabled) a peripheral and returns a handle
-+	  that can be used to disable the peripheral at a later time. If
-+	  peripheral can't be enabled successfully, then returns an error
-+	  (use IS_ERR) indicating the reason.
-+
-+void pil_put(void *peripheral_handle)
-+	- Inform PIL that this client no longer needs the peripheral to be
-+	  active. Does not necessarily mean that the peripheral would be
-+	  disabled or powered off.
-+
-+
-+User space APIs:
-+All firmware must be located in the path that is expected by the hotplug (or
-+compatible) daemon. A hotplug (or compatible) daemon should be running and be
-+able to handle events from the kernel requesting for a firmware file.
-+
-+The basename of the firmware files will depend on the peripheral. For a given
-+peripheral, the metadata filename should end with a ".mdt" and the firmware
-+segment files should end with ".bXX" where XX denotes the index of the
-+firmware segment starting from 0.
-+
-+Android hotplug compatible daemon expects the firmware files to be under
-+/etc/firmware.
-+
-+Driver parameters
-+=================
-+
-+No module or kernel command line parameters supported.
-+
-+Config options
-+==============
-+
-+This driver is enabled using the MSM_PIL kernel config option and will
-+depend on the CONFIG_FW_LOADER being available.
-+
-+Dependencies
-+============
-+
-+Depends on firmware class module for the request_firmware API.
-+
-+Interacts with the PAS to authenticate the firmware and to initiate the boot
-+sequence of a peripheral.
-+
-+Doesn't communicate with other processors since the secure code, if any, will
-+be running on the application processor cores.
-+
-+User space utilities
-+====================
-+
-+None.
-+
-+Other
-+=====
-+
-+The firmware_class driver might be changed in the future to directly load the
-+firmware into memory locations provided by the caller of request_firmware().
-+
-+Known issues
-+============
-+
-+None.
-+
-+To do
-+=====
-+
-+* Modify request_firmware() to directly copy firmware blobs into the
-+  appropriate memory locations.
-+* Add support for demand loading of firmware segments.
-+* Add support for forced peripheral restarts.
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+just to check?
+>  }
+>  
+>  static void xen_irq_info_evtchn_init(unsigned irq,
+> @@ -143,29 +146,35 @@ static void xen_irq_info_evtchn_init(unsigned irq,
+>  {
+>  	struct irq_info *info = info_for_irq(irq);
+>  
+> -	xen_irq_info_common_init(info, IRQT_EVTCHN, evtchn, 0);
+> +	xen_irq_info_common_init(info, irq, IRQT_EVTCHN, evtchn, 0);
+>  }
+>  
+> -static void xen_irq_info_ipi_init(unsigned irq,
+> +static void xen_irq_info_ipi_init(unsigned cpu,
+> +				  unsigned irq,
+>  				  unsigned short evtchn,
+>  				  enum ipi_vector ipi)
+>  {
+>  	struct irq_info *info = info_for_irq(irq);
+>  
+> -	xen_irq_info_common_init(info, IRQT_IPI, evtchn, 0);
+> +	xen_irq_info_common_init(info, irq, IRQT_IPI, evtchn, 0);
+>  
+>  	info->u.ipi = ipi;
+> +
+> +	per_cpu(ipi_to_irq, cpu)[ipi] = irq;
 
+Ditto. Should we do a check first to see if we are overwritting anything
+but the default value of -1?
+>  }
+>  
+> -static void xen_irq_info_virq_init(unsigned irq,
+> +static void xen_irq_info_virq_init(unsigned cpu,
+> +				   unsigned irq,
+>  				   unsigned short evtchn,
+>  				   unsigned short virq)
+>  {
+>  	struct irq_info *info = info_for_irq(irq);
+>  
+> -	xen_irq_info_common_init(info, IRQT_VIRQ, evtchn, 0);
+> +	xen_irq_info_common_init(info, irq, IRQT_VIRQ, evtchn, 0);
+>  
+>  	info->u.virq = virq;
+> +
+> +	per_cpu(virq_to_irq, cpu)[virq] = irq;
+>  }
+>  
+>  static void xen_irq_info_pirq_init(unsigned irq,
+> @@ -177,12 +186,14 @@ static void xen_irq_info_pirq_init(unsigned irq,
+>  {
+>  	struct irq_info *info = info_for_irq(irq);
+>  
+> -	xen_irq_info_common_init(info, IRQT_PIRQ, evtchn, 0);
+> +	xen_irq_info_common_init(info, irq, IRQT_PIRQ, evtchn, 0);
+>  
+>  	info->u.pirq.pirq = pirq;
+>  	info->u.pirq.gsi = gsi;
+>  	info->u.pirq.vector = vector;
+>  	info->u.pirq.flags = flags;
+> +
+> +	pirq_to_irq[pirq] = irq;
+>  }
+>  
+>  /*
+> @@ -644,7 +655,6 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+>  
+>  	xen_irq_info_pirq_init(irq, 0, pirq, gsi, irq_op.vector,
+>  			       shareable ? PIRQ_SHAREABLE : 0);
+> -	pirq_to_irq[pirq] = irq;
+>  
+>  out:
+>  	spin_unlock(&irq_mapping_update_lock);
+> @@ -682,7 +692,6 @@ int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+>  				      handle_level_irq, name);
+>  
+>  	xen_irq_info_pirq_init(irq, 0, pirq, 0, vector, 0);
+> -	pirq_to_irq[pirq] = irq;
+>  	ret = set_irq_msi(irq, msidesc);
+>  	if (ret < 0)
+>  		goto error_irq;
+> @@ -746,7 +755,6 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+>  		set_irq_chip_and_handler_name(irq, &xen_dynamic_chip,
+>  					      handle_fasteoi_irq, "event");
+>  
+> -		evtchn_to_irq[evtchn] = irq;
+>  		xen_irq_info_evtchn_init(irq, evtchn);
+>  	}
+>  
+> @@ -779,9 +787,7 @@ static int bind_ipi_to_irq(unsigned int ipi, unsigned int cpu)
+>  			BUG();
+>  		evtchn = bind_ipi.port;
+>  
+> -		evtchn_to_irq[evtchn] = irq;
+> -		xen_irq_info_ipi_init(irq, evtchn, ipi);
+> -		per_cpu(ipi_to_irq, cpu)[ipi] = irq;
+> +		xen_irq_info_ipi_init(cpu, irq, evtchn, ipi);
+>  
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+>  	}
+> @@ -814,10 +820,7 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
+>  			BUG();
+>  		evtchn = bind_virq.port;
+>  
+> -		evtchn_to_irq[evtchn] = irq;
+> -		xen_irq_info_virq_init(irq, evtchn, virq);
+> -
+> -		per_cpu(virq_to_irq, cpu)[virq] = irq;
+> +		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
+>  
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+>  	}
+> @@ -1120,7 +1123,6 @@ void rebind_evtchn_irq(int evtchn, int irq)
+>  	   so there should be a proper type */
+>  	BUG_ON(info->type == IRQT_UNBOUND);
+>  
+> -	evtchn_to_irq[evtchn] = irq;
+>  	xen_irq_info_evtchn_init(irq, evtchn);
+>  
+>  	spin_unlock(&irq_mapping_update_lock);
+> @@ -1288,8 +1290,7 @@ static void restore_cpu_virqs(unsigned int cpu)
+>  		evtchn = bind_virq.port;
+>  
+>  		/* Record the new mapping. */
+> -		evtchn_to_irq[evtchn] = irq;
+> -		xen_irq_info_virq_init(irq, evtchn, virq);
+> +		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+>  	}
+>  }
+> @@ -1313,8 +1314,7 @@ static void restore_cpu_ipis(unsigned int cpu)
+>  		evtchn = bind_ipi.port;
+>  
+>  		/* Record the new mapping. */
+> -		evtchn_to_irq[evtchn] = irq;
+> -		xen_irq_info_ipi_init(irq, evtchn, ipi);
+> +		xen_irq_info_ipi_init(cpu, irq, evtchn, ipi);
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+>  	}
+>  }
+> -- 
+> 1.5.6.5
