@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1CJONP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:13:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137Ab1CJONM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:13:12 -0500
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Takao Indoh <tindoh@redhat.com>, WANG Cong <amwang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Len Brown <lenb@kernel.org>, linux-doc@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
-Date: Thu, 10 Mar 2011 22:10:43 +0800
-Message-Id: <1299766243-494-1-git-send-email-amwang@redhat.com>
+	id S1752243Ab1CJOTr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:19:47 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:52161 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab1CJOTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:19:46 -0500
+Date: Thu, 10 Mar 2011 16:19:43 +0200
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Ken MacLeod <ken@bitsko.slc.ut.us>,
+        Shaun Reich <predator106@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
+Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
+ changes
+Message-ID: <20110310141943.GF11410@shisha.kicks-ass.net>
+References: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
+ <201103100948.03628.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103100948.03628.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takao Indoh <tindoh@redhat.com>
+On Thu, Mar 10, 2011 at 09:48:03AM +0100, Arnd Bergmann wrote:
+> On Wednesday 09 March 2011 15:36:51 Alexander Shishkin wrote:
+> > This is another attempt to approach notifying userspace about system
+> > clock changes. The other one is using an eventfd and a syscall [1]. In
+> > the course of discussing the necessity of a syscall for this kind of
+> > notifications, it was suggested that this functionality can be achieved
+> > via timers [2] (and timerfd in particular [3]). This idea got quite
+> > some support [4], [5], [6] and some vague criticism [7], so I decided
+> > to try and go a bit further with it.
+> 
+> I don't understand from your description or from the patch how user
+> space gets notified. From your description, I would have expected
+> to see a change to the timerfd_poll() function to check if the
+> clock has changed, possibly returning POLLPRI, but the only such
+> change I can see is in the timerfd_read() function. Don't you need
+> to change poll() so that a task knows when to call read()?
 
-There is a problem with putting the first kernel in EFI virtual mode,
-it is that when the second kernel comes up it tries to initialize the
-EFI again and once we have put EFI in virtual mode we can not really
-do that.
+Luckily, no changes for the _poll function were required, because the
+notification code reuses the ctx->ticks counter of timerfds. IOW, poll
+wakes up in the same way as before.
 
-Actually, EFI is not necessary for kdump, we can boot the second kernel
-with "noefi" parameter, but the boot will mostly fail because 2nd kernel
-cannot find RSDP.
+> > +/* TFD_NOTIFY_CLOCK_SET timers go here */
+> > +static DEFINE_SPINLOCK(notifiers_lock);
+> > +static LIST_HEAD(notifiers_list);
+> 
+> Maybe I was the only one to be confused by this, but I think t
+> he naming is slightly misleading, because it's easy to confuse
+> with a struct notifier_block. You could of course use the
+> notifier API instead of building your own, but if you don't,
+> I'd recommend coming up with a different name.
 
-In this situation, we introduced "acpi_addr=" kernel parameter,
-so that kexec-tools can pass the "noefi acpi_addr=X" to the second kernel
-to make kdump works.
+Point taken.
 
-Signed-off-by: Takao Indoh <tindoh@redhat.com>
-[amwang@redhat.com: Add documentation.]
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
+> I also think that a mutex would be better here than a spinlock.
+> It's unlikely to be under heavy contention, but if you have
+> a lot of threads, it could be held for a significant amount
+> of time.
 
----
+Indeed, thanks!
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index f4a04c0..0fbbdc6 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -163,6 +163,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 			See also Documentation/power/pm.txt, pci=noacpi
- 
-+	acpi_addr=	[ACPI,EFI]
-+			Pass the RSDP address to the kernel, mostly used
-+			on machines running EFI runtime service to boot the
-+			second kernel for kdump.
-+
- 	acpi_apic_instance=	[ACPI, IOAPIC]
- 			Format: <int>
- 			2: use 2nd APIC table, if available
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index c90c76a..06dfec0 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -238,8 +238,19 @@ void acpi_os_vprintf(const char *fmt, va_list args)
- #endif
- }
- 
-+static unsigned long acpi_addr;
-+static int __init setup_acpi_addr(char *arg)
-+{
-+	acpi_addr = simple_strtoul(arg, NULL, 16);
-+	return 0;
-+}
-+early_param("acpi_addr", setup_acpi_addr);
-+
- acpi_physical_address __init acpi_os_get_root_pointer(void)
- {
-+	if (acpi_addr)
-+		return acpi_addr;
-+
- 	if (efi_enabled) {
- 		if (efi.acpi20 != EFI_INVALID_TABLE_ADDR)
- 			return efi.acpi20;
+Regards,
+--
+Alex
