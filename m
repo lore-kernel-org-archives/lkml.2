@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab1CJOTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:19:47 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:52161 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab1CJOTq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:19:46 -0500
-Date: Thu, 10 Mar 2011 16:19:43 +0200
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Ken MacLeod <ken@bitsko.slc.ut.us>,
-        Shaun Reich <predator106@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
-Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
- changes
-Message-ID: <20110310141943.GF11410@shisha.kicks-ass.net>
-References: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
- <201103100948.03628.arnd@arndb.de>
+	id S1752502Ab1CJOWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:22:49 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37864 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768Ab1CJOWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:22:47 -0500
+Date: Thu, 10 Mar 2011 14:21:53 GMT
+From: tip-bot for Andrey Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, avagin@openvz.org,
+        akpm@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable@kernel.org, tglx@linutronix.de, avagin@openvz.org,
+        mingo@elte.hu
+In-Reply-To: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
+References: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/mm: Handle mm_fault_error() in kernel space
+Message-ID: <tip-f86268549f424f83b9eb0963989270e14fbfc3de@git.kernel.org>
+Git-Commit-ID: f86268549f424f83b9eb0963989270e14fbfc3de
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <201103100948.03628.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Mar 2011 14:21:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 09:48:03AM +0100, Arnd Bergmann wrote:
-> On Wednesday 09 March 2011 15:36:51 Alexander Shishkin wrote:
-> > This is another attempt to approach notifying userspace about system
-> > clock changes. The other one is using an eventfd and a syscall [1]. In
-> > the course of discussing the necessity of a syscall for this kind of
-> > notifications, it was suggested that this functionality can be achieved
-> > via timers [2] (and timerfd in particular [3]). This idea got quite
-> > some support [4], [5], [6] and some vague criticism [7], so I decided
-> > to try and go a bit further with it.
-> 
-> I don't understand from your description or from the patch how user
-> space gets notified. From your description, I would have expected
-> to see a change to the timerfd_poll() function to check if the
-> clock has changed, possibly returning POLLPRI, but the only such
-> change I can see is in the timerfd_read() function. Don't you need
-> to change poll() so that a task knows when to call read()?
+Commit-ID:  f86268549f424f83b9eb0963989270e14fbfc3de
+Gitweb:     http://git.kernel.org/tip/f86268549f424f83b9eb0963989270e14fbfc3de
+Author:     Andrey Vagin <avagin@openvz.org>
+AuthorDate: Wed, 9 Mar 2011 15:22:23 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 10 Mar 2011 09:41:40 +0100
 
-Luckily, no changes for the _poll function were required, because the
-notification code reuses the ctx->ticks counter of timerfds. IOW, poll
-wakes up in the same way as before.
+x86/mm: Handle mm_fault_error() in kernel space
 
-> > +/* TFD_NOTIFY_CLOCK_SET timers go here */
-> > +static DEFINE_SPINLOCK(notifiers_lock);
-> > +static LIST_HEAD(notifiers_list);
-> 
-> Maybe I was the only one to be confused by this, but I think t
-> he naming is slightly misleading, because it's easy to confuse
-> with a struct notifier_block. You could of course use the
-> notifier API instead of building your own, but if you don't,
-> I'd recommend coming up with a different name.
+mm_fault_error() should not execute oom-killer, if page fault
+occurs in kernel space.  E.g. in copy_from_user()/copy_to_user().
 
-Point taken.
+This would happen if we find ourselves in OOM on a
+copy_to_user(), or a copy_from_user() which faults.
 
-> I also think that a mutex would be better here than a spinlock.
-> It's unlikely to be under heavy contention, but if you have
-> a lot of threads, it could be held for a significant amount
-> of time.
+Without this patch, the kernels hangs up in copy_from_user(),
+because OOM killer sends SIG_KILL to current process, but it
+can't handle a signal while in syscall, then the kernel returns
+to copy_from_user(), reexcute current command and provokes
+page_fault again.
 
-Indeed, thanks!
+With this patch the kernel return -EFAULT from copy_from_user().
 
-Regards,
---
-Alex
+The code, which checks that page fault occurred in kernel space,
+has been copied from do_sigbus().
+
+This situation is handled by the same way on powerpc, xtensa,
+tile, ...
+
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <stable@kernel.org>
+LKML-Reference: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/mm/fault.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 7d90ceb..ffc7be1 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -828,6 +828,13 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 	       unsigned long address, unsigned int fault)
+ {
+ 	if (fault & VM_FAULT_OOM) {
++		/* Kernel mode? Handle exceptions or die: */
++		if (!(error_code & PF_USER)) {
++			up_read(&current->mm->mmap_sem);
++			no_context(regs, error_code, address);
++			return;
++		}
++
+ 		out_of_memory(regs, error_code, address);
+ 	} else {
+ 		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
