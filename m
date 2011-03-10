@@ -1,135 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1CJAPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:15:43 -0500
-Received: from gate.crashing.org ([63.228.1.57]:48269 "EHLO gate.crashing.org"
+	id S1754009Ab1CJAQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:16:23 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:43649 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231Ab1CJAPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:15:42 -0500
-Subject: Re: [PATCH 09/16] swim[3]: Convert to bdops->check_events()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org, Laurent Vivier <laurent@lvivier.info>
-In-Reply-To: <1299662016-7721-10-git-send-email-tj@kernel.org>
-References: <1299662016-7721-1-git-send-email-tj@kernel.org>
-	 <1299662016-7721-10-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Mar 2011 11:10:25 +1100
-Message-ID: <1299715825.22236.445.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753875Ab1CJAQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 19:16:21 -0500
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, Daniel Drake <dsd@laptop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] of/flattree: use of_attach_node to build tree, and associated cleanups
+Date: Wed,  9 Mar 2011 16:16:07 -0800
+Message-Id: <1299716167-9656-4-git-send-email-dilinger@queued.net>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1299716167-9656-1-git-send-email-dilinger@queued.net>
+References: <1299716167-9656-1-git-send-email-dilinger@queued.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 10:13 +0100, Tejun Heo wrote:
-> Convert from ->media_changed() to ->check_events().
-> 
-> Both swim and swim3 buffer media changed state and clear it on
-> revalidation.  They will behave correctly with kernel event polling.
+Use a common function (of_attach_node) to build the device tree.  This
+simplifies the flat device tree creation a bit, and as an added bonus allows
+us to drop a (now unused) field from the device_node struct.
 
-No objection. I don't have HW to test at the moment but it looks obvious
-enough provided you compiled tested it :
+There are a few minor cleanups snuck in here as well (comment additions, etc).
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/of/fdt.c   |   42 ++++++++++++++++--------------------------
+ include/linux/of.h |    1 -
+ 2 files changed, 16 insertions(+), 27 deletions(-)
 
-I'll try to dig HW later.
-
-Cheers,
-Ben.
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index af824e7..e70cee8 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -139,16 +139,17 @@ static void *unflatten_dt_alloc(unsigned long *mem, unsigned long size,
+ /**
+  * unflatten_dt_node - Alloc and populate a device_node from the flat tree
+  * @blob: The parent device tree blob
++ * @mem: memory chunk to use for allocating device nodes and properties
+  * @p: pointer to node in flat tree
+  * @dad: Parent struct device_node
+- * @allnextpp: pointer to ->allnext from last allocated device_node
++ * @size_scan: are we figuring out amount of memory to allocate?
+  * @fpsize: Size of the node path up at the current depth.
+  */
+ unsigned long unflatten_dt_node(struct boot_param_header *blob,
+ 				unsigned long mem,
+ 				unsigned long *p,
+ 				struct device_node *dad,
+-				struct device_node ***allnextpp,
++				bool size_scan,
+ 				unsigned long fpsize)
+ {
+ 	struct device_node *np;
+@@ -195,7 +196,7 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
  
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> Cc: Laurent Vivier <laurent@lvivier.info>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
->  drivers/block/swim.c  |    8 +++++---
->  drivers/block/swim3.c |   11 +++++++----
->  2 files changed, 12 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/block/swim.c b/drivers/block/swim.c
-> index 75333d0..24a482f 100644
-> --- a/drivers/block/swim.c
-> +++ b/drivers/block/swim.c
-> @@ -741,11 +741,12 @@ static int floppy_getgeo(struct block_device *bdev, struct hd_geometry *geo)
->  	return 0;
->  }
->  
-> -static int floppy_check_change(struct gendisk *disk)
-> +static unsigned int floppy_check_events(struct gendisk *disk,
-> +					unsigned int clearing)
->  {
->  	struct floppy_state *fs = disk->private_data;
->  
-> -	return fs->ejected;
-> +	return fs->ejected ? DISK_EVENT_MEDIA_CHANGE : 0;
->  }
->  
->  static int floppy_revalidate(struct gendisk *disk)
-> @@ -772,7 +773,7 @@ static const struct block_device_operations floppy_fops = {
->  	.release	 = floppy_release,
->  	.ioctl		 = floppy_ioctl,
->  	.getgeo		 = floppy_getgeo,
-> -	.media_changed	 = floppy_check_change,
-> +	.check_events	 = floppy_check_events,
->  	.revalidate_disk = floppy_revalidate,
->  };
->  
-> @@ -857,6 +858,7 @@ static int __devinit swim_floppy_init(struct swim_priv *swd)
->  		swd->unit[drive].disk->first_minor = drive;
->  		sprintf(swd->unit[drive].disk->disk_name, "fd%d", drive);
->  		swd->unit[drive].disk->fops = &floppy_fops;
-> +		swd->unit[drive].disk->events = DISK_EVENT_MEDIA_CHANGE;
->  		swd->unit[drive].disk->private_data = &swd->unit[drive];
->  		swd->unit[drive].disk->queue = swd->queue;
->  		set_capacity(swd->unit[drive].disk, 2880);
-> diff --git a/drivers/block/swim3.c b/drivers/block/swim3.c
-> index bf3a5b8..4c10f56 100644
-> --- a/drivers/block/swim3.c
-> +++ b/drivers/block/swim3.c
-> @@ -250,7 +250,8 @@ static int floppy_ioctl(struct block_device *bdev, fmode_t mode,
->  			unsigned int cmd, unsigned long param);
->  static int floppy_open(struct block_device *bdev, fmode_t mode);
->  static int floppy_release(struct gendisk *disk, fmode_t mode);
-> -static int floppy_check_change(struct gendisk *disk);
-> +static unsigned int floppy_check_events(struct gendisk *disk,
-> +					unsigned int clearing);
->  static int floppy_revalidate(struct gendisk *disk);
->  
->  static bool swim3_end_request(int err, unsigned int nr_bytes)
-> @@ -975,10 +976,11 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
->  	return 0;
->  }
->  
-> -static int floppy_check_change(struct gendisk *disk)
-> +static unsigned int floppy_check_events(struct gendisk *disk,
-> +					unsigned int clearing)
->  {
->  	struct floppy_state *fs = disk->private_data;
-> -	return fs->ejected;
-> +	return fs->ejected ? DISK_EVENT_MEDIA_CHANGE : 0;
->  }
->  
->  static int floppy_revalidate(struct gendisk *disk)
-> @@ -1025,7 +1027,7 @@ static const struct block_device_operations floppy_fops = {
->  	.open		= floppy_unlocked_open,
->  	.release	= floppy_release,
->  	.ioctl		= floppy_ioctl,
-> -	.media_changed	= floppy_check_change,
-> +	.check_events	= floppy_check_events,
->  	.revalidate_disk= floppy_revalidate,
->  };
->  
-> @@ -1161,6 +1163,7 @@ static int __devinit swim3_attach(struct macio_dev *mdev, const struct of_device
->  	disk->major = FLOPPY_MAJOR;
->  	disk->first_minor = i;
->  	disk->fops = &floppy_fops;
-> +	disk->events = DISK_EVENT_MEDIA_CHANGE;
->  	disk->private_data = &floppy_states[i];
->  	disk->queue = swim3_queue;
->  	disk->flags |= GENHD_FL_REMOVABLE;
-
+ 	np = unflatten_dt_alloc(&mem, sizeof(struct device_node) + allocl,
+ 				__alignof__(struct device_node));
+-	if (allnextpp) {
++	if (!size_scan) {
+ 		memset(np, 0, sizeof(*np));
+ 		np->full_name = ((char *)np) + sizeof(struct device_node);
+ 		if (new_format) {
+@@ -217,19 +218,10 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
+ 		} else
+ 			memcpy(np->full_name, pathp, l);
+ 		prev_pp = &np->properties;
+-		**allnextpp = np;
+-		*allnextpp = &np->allnext;
+-		if (dad != NULL) {
+-			np->parent = dad;
+-			/* we temporarily use the next field as `last_child'*/
+-			if (dad->next == NULL)
+-				dad->child = np;
+-			else
+-				dad->next->sibling = np;
+-			dad->next = np;
+-		}
++		np->parent = dad;
+ 		kref_init(&np->kref);
+ 	}
++	/* process properties */
+ 	while (1) {
+ 		u32 sz, noff;
+ 		char *pname;
+@@ -258,7 +250,7 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
+ 		l = strlen(pname) + 1;
+ 		pp = unflatten_dt_alloc(&mem, sizeof(struct property),
+ 					__alignof__(struct property));
+-		if (allnextpp) {
++		if (!size_scan) {
+ 			/* We accept flattened tree phandles either in
+ 			 * ePAPR-style "phandle" properties, or the
+ 			 * legacy "linux,phandle" properties.  If both
+@@ -301,7 +293,7 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
+ 		sz = (pa - ps) + 1;
+ 		pp = unflatten_dt_alloc(&mem, sizeof(struct property) + sz,
+ 					__alignof__(struct property));
+-		if (allnextpp) {
++		if (!size_scan) {
+ 			pp->name = "name";
+ 			pp->length = sz;
+ 			pp->value = pp + 1;
+@@ -313,7 +305,7 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
+ 				(char *)pp->value);
+ 		}
+ 	}
+-	if (allnextpp) {
++	if (!size_scan) {
+ 		*prev_pp = NULL;
+ 		np->name = of_get_property(np, "name", NULL);
+ 		np->type = of_get_property(np, "device_type", NULL);
+@@ -322,12 +314,14 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
+ 			np->name = "<NULL>";
+ 		if (!np->type)
+ 			np->type = "<NULL>";
++
++		of_attach_node(np);
+ 	}
+ 	while (tag == OF_DT_BEGIN_NODE || tag == OF_DT_NOP) {
+ 		if (tag == OF_DT_NOP)
+ 			*p += 4;
+ 		else
+-			mem = unflatten_dt_node(blob, mem, p, np, allnextpp,
++			mem = unflatten_dt_node(blob, mem, p, np, size_scan,
+ 						fpsize);
+ 		tag = be32_to_cpup((__be32 *)(*p));
+ 	}
+@@ -347,16 +341,13 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
+  * pointers of the nodes so the normal device-tree walking functions
+  * can be used.
+  * @blob: The blob to expand
+- * @mynodes: The device_node tree created by the call
+  * @dt_alloc: An allocator that provides a virtual address to memory
+  * for the resulting tree
+  */
+ void __unflatten_device_tree(struct boot_param_header *blob,
+-			     struct device_node **mynodes,
+ 			     void * (*dt_alloc)(u64 size, u64 align))
+ {
+ 	unsigned long start, mem, size;
+-	struct device_node **allnextp = mynodes;
+ 
+ 	pr_debug(" -> unflatten_device_tree()\n");
+ 
+@@ -378,7 +369,7 @@ void __unflatten_device_tree(struct boot_param_header *blob,
+ 	/* First pass, scan for size */
+ 	start = ((unsigned long)blob) +
+ 		be32_to_cpu(blob->off_dt_struct);
+-	size = unflatten_dt_node(blob, 0, &start, NULL, NULL, 0);
++	size = unflatten_dt_node(blob, 0, &start, NULL, true, 0);
+ 	size = (size | 3) + 1;
+ 
+ 	pr_debug("  size is %lx, allocating...\n", size);
+@@ -394,13 +385,12 @@ void __unflatten_device_tree(struct boot_param_header *blob,
+ 	/* Second pass, do actual unflattening */
+ 	start = ((unsigned long)blob) +
+ 		be32_to_cpu(blob->off_dt_struct);
+-	unflatten_dt_node(blob, mem, &start, NULL, &allnextp, 0);
++	unflatten_dt_node(blob, mem, &start, NULL, false, 0);
+ 	if (be32_to_cpup((__be32 *)start) != OF_DT_END)
+ 		pr_warning("Weird tag at end of tree: %08x\n", *((u32 *)start));
+ 	if (be32_to_cpu(((__be32 *)mem)[size / 4]) != 0xdeadbeef)
+ 		pr_warning("End of tree marker overwritten: %08x\n",
+ 			   be32_to_cpu(((__be32 *)mem)[size / 4]));
+-	*allnextp = NULL;
+ 
+ 	pr_debug(" <- unflatten_device_tree()\n");
+ }
+@@ -423,7 +413,7 @@ void of_fdt_unflatten_tree(unsigned long *blob,
+ {
+ 	struct boot_param_header *device_tree =
+ 		(struct boot_param_header *)blob;
+-	__unflatten_device_tree(device_tree, mynodes, &kernel_tree_alloc);
++	__unflatten_device_tree(device_tree, &kernel_tree_alloc);
+ }
+ EXPORT_SYMBOL_GPL(of_fdt_unflatten_tree);
+ 
+@@ -702,7 +692,7 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
+  */
+ void __init unflatten_device_tree(void)
+ {
+-	__unflatten_device_tree(initial_boot_params, &allnodes,
++	__unflatten_device_tree(initial_boot_params,
+ 				early_init_dt_alloc_memory_arch);
+ 
+ 	/* Get pointer to OF "/chosen" node for use everywhere */
+diff --git a/include/linux/of.h b/include/linux/of.h
+index bb36473..95754ca 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -50,7 +50,6 @@ struct device_node {
+ 	struct	device_node *parent;
+ 	struct	device_node *child;
+ 	struct	device_node *sibling;
+-	struct	device_node *next;	/* next device of same type */
+ 	struct	device_node *allnext;	/* next in list of all nodes */
+ 	struct	proc_dir_entry *pde;	/* this node's proc directory */
+ 	struct	kref kref;
+-- 
+1.7.2.3
 
