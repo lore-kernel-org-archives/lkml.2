@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab1CJUGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:06:54 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:55660 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab1CJUGw (ORCPT
+	id S1752184Ab1CJUJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 15:09:29 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:26269 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab1CJUJ1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:06:52 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6281"; a="79233399"
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dwalker@fifo99.com
-Subject: Re: [PATCH 0/4] SCM fixes and updates
-In-Reply-To: <4D77D502.1090606@codeaurora.org> (Stephen Boyd's message of
-	"Wed, 09 Mar 2011 11:29:06 -0800")
-References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>
-	<4D77D502.1090606@codeaurora.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-Date: Thu, 10 Mar 2011 12:06:59 -0800
-Message-ID: <8yay64magf0.fsf@huya.qualcomm.com>
+	Thu, 10 Mar 2011 15:09:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=r6CrMwIBQWXOWiS4R/HP+PxWsSwb1RNF9gQO+ra9cLMvOZEBNx+jztA7Yb3R+p5/tR
+         GxqU4NK2Y3m5Cp1ZAq0w==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110310061831.GA23736@ghc17.ghc.andrew.cmu.edu>
+References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
+ <20110208013950.GF31569@ghc17.ghc.andrew.cmu.edu> <AANLkTinEnNsu8=PEktXL_EECzGYqsgdf+uogGxe7k4W+@mail.gmail.com>
+ <20110310061831.GA23736@ghc17.ghc.andrew.cmu.edu>
+From: Paul Menage <menage@google.com>
+Date: Thu, 10 Mar 2011 12:01:29 -0800
+Message-ID: <AANLkTikkmfwk0nV0p=omz2ddrw+ZqWF1Lx3EfO6dTjEQ@mail.gmail.com>
+Subject: Re: [PATCH v8 3/3] cgroups: make procs file writable
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+        matthltc@us.ibm.com, oleg@redhat.com,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09 2011, Stephen Boyd wrote:
-
-> On 02/24/2011 10:44 AM, Stephen Boyd wrote:
->> These are a few updates to SCM. The first two patches fix some
->> bad code generation. The next patch saves a couple instructions
->> on the slow path and the final patch determines the cacheline
->> size dynamically instead of statically.
->>
->> Stephen Boyd (4):
->>   msm: scm: Mark inline asm as volatile
->>   msm: scm: Fix improper register assignment
->>   msm: scm: Check for interruption immediately
->>   msm: scm: Get cacheline size from CTR
+On Wed, Mar 9, 2011 at 10:18 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
+>> This BUG_ON() seems unnecessary, given the i++ directly above it.
 >
-> Can we queue up patches 1 to 3 from this series for the next window? It
-> looks like everyone is ok with them. I'll respin the fourth patch once I
-> figure out where to go with it.
+> It's meant to communicate that the loop must go through at least once,
+> so that 'struct cgroup *oldcgrp' will be initialised within a loop later
+> (setting it to NULL in the beginning is just to shut up the compiler.)
 
-Seems reasonable to me.  I'll break the first three out and include them
-into msm-next.
+Right, but it's a do {} while() loop with no break in it - it's
+impossible to not go through at least once...
 
-Stephen Boyd (3):
-  msm: scm: Mark inline asm as volatile
-  msm: scm: Fix improper register assignment
-  msm: scm: Check for interruption immediately
+>> Should we be setting failed_ss here? Doesn't that mean that if all
+>> subsystems pass the can_attach() check but the first one fails a
+>> can_attach_task() check, we don't call any cancel_attach() methods?
+>>
+>> What are the rollback semantics for failing a can_attach_task() check?
+>
+> They are not called in that order - it's for_each_subsys { can_attach();
+> can_attach_task(); }.
 
- arch/arm/mach-msm/scm.c |   58 ++++++++++++++++++++++++++---------------------
- 1 files changed, 32 insertions(+), 26 deletions(-)
+Oh, fair point - I misread that.
 
-I have pulled these changes into my MSM tree, which can be
-found at
+> Although if the deal is that cancel_attach reverts
+> the things that can_attach does (and can_attach_task is separate) (is
+> this the case? it should probably go in the documentation), then passing
+> a can_attach and failing a can_attach_task should cause cancel_attach to
+> get called for that subsystem, which in this code it doesn't. Something
+> like:
+>
+>    retval = ss->can_attach();
+>    if (retval) {
+>        failed_ss = ss;
+>        goto out_cancel_attach;
+>    }
+>    retval = ss->can_attach_task();
+>    if (retval) {
+>        failed_ss = ss;
+>        cancel_extra_ss = true;
+>        goto out_cancel_attach;
+>    }
 
-  git://codeaurora.org/quic/kernel/davidb/linux-msm.git
+Yes, but maybe call the flag cancel_failed_ss? Slightly more obvious,
+to me at least.
 
-in the for-next branch
+>> > + ? ? ? ? ? ? ? ? ? ? ? BUG_ON(!thread_group_leader(tsk));
+>>
+>> Can this race with an exiting/execing group leader?
+>
+> No, rcu_read_lock() is held.
+>
 
-This patch will show up in the next release of the linux-next tree
-(usually sometime within the next 24 hours during the week.)
+But rcu_read_lock() doesn't stop any actions - it just stops the data
+structures from going away. Can't leadership change during an
+execve()?
 
-The path will hopefully also be merged in Linus' tree for the next
--rc kernel release.
+> (However, I did try to test it, and it looks like if a leader calls
+> sys_exit() then the whole group goes away; is this actually guaranteed?)
 
-Thanks,
-David
+I think so, but maybe not instantaneously.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Paul
