@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab1CJJvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:51:22 -0500
-Received: from 85.f6.78ae.static.theplanet.com ([174.120.246.133]:45052 "EHLO
-	nsc.nscmx.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab1CJJvU (ORCPT
+	id S1752755Ab1CJJwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:52:14 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38083 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751922Ab1CJJwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:51:20 -0500
-Message-ID: <a626390129562eeacf0b910d0a6d9b67.squirrel@webmail.devlyn.com.mx>
-Date: Thu, 10 Mar 2011 03:16:01 -0600
-Subject: YOUR MONEY WIRED!!!
-From: "WESTERN" <frank@devlyn.com.mx>
-Reply-To: w.u.m.t2011@msn.com
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
+	Thu, 10 Mar 2011 04:52:13 -0500
+Date: Thu, 10 Mar 2011 01:50:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pidns: Make pid_max per namespace
+Message-Id: <20110310015045.63482b62.akpm@linux-foundation.org>
+In-Reply-To: <4D789B64.9000603@parallels.com>
+References: <4D6F53B5.5090105@parallels.com>
+	<20110307155823.22e47d73.akpm@linux-foundation.org>
+	<4D789B64.9000603@parallels.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - nsc.nscmx.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - devlyn.com.mx
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Western Union Customer,
+On Thu, 10 Mar 2011 12:35:32 +0300 Pavel Emelyanov <xemul@parallels.com> wrote:
 
-You have been awarded with the sum of $200,000.00 USD by our office, as
-one ofour customers who use Western Union in their daily business
-transaction. This award was been selected through the internet, where your
-e-mail address was indicated and notified. Please provide Mr. Jackson
-Stover with the following details listed below so that your fund will be
-remited to you through Western Union.
+> On 03/08/2011 02:58 AM, Andrew Morton wrote:
+> > On Thu, 03 Mar 2011 11:39:17 +0300
+> > Pavel Emelyanov <xemul@parallels.com> wrote:
+> > 
+> >> Rationale:
+> >>
+> >> On x86_64 with big ram people running containers set pid_max on host to 
+> >> large values to be able to launch more containers. At the same time 
+> >> containers running 32-bit software experience problems with large pids - ps
+> >> calls readdir/stat on proc entries and inode's i_ino happen to be too big 
+> >> for the 32-bit API.
+> >>
+> >> Thus, the ability to limit the pid value inside container is required.
+> >>
+> > 
+> > This is a behavioural change, isn't it?  In current kernels a write to
+> > /proc/sys/kernel/pid_max will change the max pid on all processes. 
+> > After this change, that write will only affect processes in the current
+> > namespace.  Anyone who was depending on the old behaviour might run
+> > into problems?
+> 
+> Hardly. If the behavior of some two apps depends on its synchronous change,
+> these two might want to run in the same pid namespace.
 
-1. Name:
-2. Address:
-3. Country:
-4. Phone Number
-5. Occupation:
-6. Sex:
-7. Age:
-
-Mr. Jackson Stover
-Tel: +234 807 070 6119
-E-mail:wumt2011@msn.com
-www.westernunion.com
-
-As soon as these details are received and verified, your fund will be
-transferred to you. Thank you, for using western union.
-
-WESTERN UNION CONGRATULATE YOU...
+I don't understand your answer.  What is this "synchronous change" of which
+you speak?  Does your "might want to run" suggestion mean that userspace 
+changes would be required for this operation to again work correctly?
 
 
+"In current kernels a write to /proc/sys/kernel/pid_max will change the
+max pid on all processes."  Is this incorrect?
+
+"After this change (ie: this patch), that write will only affect
+processes in the current namespace.".  Is this incorrect?
