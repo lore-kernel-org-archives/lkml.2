@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1CJXWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:22:19 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:1749 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab1CJXWO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:22:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=OiJ4X74KYK1klsAUBh4UCniuYlLS/l3muJLMVyLSKV/jg+BhQxuN+MGWxULI4JmqFa
-         QGKwZ+jTljrt2S28/X7g==
+	id S1753929Ab1CJXY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:24:28 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44703 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab1CJXY1 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 10 Mar 2011 18:24:27 -0500
+Date: Thu, 10 Mar 2011 18:23:29 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [GIT PATCH v2 0/14] xen: events: cleanups + ween off nr_irqs
+Message-ID: <20110310232329.GA11684@dumpdata.com>
+References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+ <20110310225726.GA2983@dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <1299683884.15854.154.camel@gandalf.stny.rr.com>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
- <1291421609-14665-5-git-send-email-dhsharp@google.com> <1299627003.20306.94.camel@gandalf.stny.rr.com>
- <20110308.223951.193722389.davem@davemloft.net> <1299683884.15854.154.camel@gandalf.stny.rr.com>
-From: David Sharp <dhsharp@google.com>
-Date: Thu, 10 Mar 2011 15:21:51 -0800
-Message-ID: <AANLkTikKYaxLi-3a-0bdsbQR3scFzhn0txktNd+QPVa3@mail.gmail.com>
-Subject: Re: [PATCH 04/15] ftrace: pack event structures.
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        mrubin@google.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110310225726.GA2983@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D795D98.00D0,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 9, 2011 at 7:18 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-03-08 at 22:39 -0800, David Miller wrote:
->> From: Steven Rostedt <rostedt@goodmis.org>
->> Date: Tue, 08 Mar 2011 18:30:03 -0500
->>
->> > I'm going back through this patch set and looking to incorporate it into
->> > 2.6.39. But I know how touchy sparc is with "packed" data structures. Do
->> > you see this patch as hurting sparc?
->> >
->> > I wonder if we should change this to something like:
->> >
->> > #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
->> > # define do_event_packed __attirbute__((packed))
->> > #else
->> > # define do_event_packed
->> > #endif
->> >
->> > and use "do_event_packed" instead?
->>
->> I think you should elide packed at all costs, and instead tell the compiler
->> what your intentions are by exposing the real types using unions or
->> similar instead of hiding it in an opaque way behind final char[] arrays.
->
-> The problem here is not the issue of char[] but because of the way
-> ftrace's header was 12 bytes and caused everything that had a 8byte word
-> use another 4 bytes to align it.
+> > There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
+> > have gone in before, but the penultimate patch really needed to be
+> > simultaneous) so I haven't bothered to try and pull anything from tip
+> > into this branch -- it should all be resolved during the merge window
+> > and bisection won't be too broken since the "eat into GSI space"
+> > workaround only appears to be needed on a small number of older
+> > platforms (qemu being the main exception).
+> 
+> <nods>
+> > 
+> > I have tested:
+> >       * Domain 0 on real h/w and under qemu
+> >       * PV guest, including migration and passthrough of both VF and PF.
+> >       * PVHVM guest, including migration and passthrough of both VF and
+> >         PF.
+> 
+> I am having difficulties with passthrough of an USB device. Somehow the
+> irq count is not going up at all (both in dom0 and domU) and it looks to
+> be doing just simple polling. I've rebased the xen-pciback to be on top
+> of your changes and apply cleanly. The whole lot is now in #master
+> 
+> MSI and MSI-X devices work just fine in both Dom0 and DomU case so
+> it is something special with the legacy IRQs. Probably forgot something
+> simple...
 
-Not only that, but those extra "4 bytes to align it" have a good
-chance of in fact causing the 8 byte word to become *un*aligned, so
-it's really just wasted space.
+This looks like it would fix the culprit:
+[edit: not entirely]
 
-> As I stated in another email, I think
-> removing the "int lock_depth" from the ftrace header should solve this.
->
-> David (Sharp), the reason for the "packed" was because of that extra 4
-> bytes in the ftrace header, right? So removing the lock_depth should fix
-> the issues that you've seen?
+diff --git a/drivers/xen/pciback/conf_space_header.c b/drivers/xen/pciback/conf_space_header.c
+index 22ad0f5..3eeb197 100644
+--- a/drivers/xen/pciback/conf_space_header.c
++++ b/drivers/xen/pciback/conf_space_header.c
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
++#include <xen/events.h>
+ #include "pciback.h"
+ #include "conf_space.h"
+ 
+@@ -246,7 +247,7 @@ static int pciback_read_device(struct pci_dev *dev, int offset,
+ static int interrupt_read(struct pci_dev *dev, int offset, u8 * value,
+                          void *data)
+ {
+-       *value = (u8) dev->irq;
++       *value = (u8) dev->irq ? xen_pirq_from_irq(dev->irq) : 0;
+ 
+        return 0;
+ }
 
-Yes, I think that should have the same effect. Of course the next time
-we come along and remove other useless fields like 'flags' and
-'preempt_count', a similar condition could arise.
+Thought I am not sure if this is absolutly correct. Are the PIRQs == GSI or should
+we provide another piece of code to extract info->u.pirq.gsi?
 
-(Note I don't necessarily think that 'flags' and 'preempt_count' are
-useless; although I don't know what they're used for, or why they need
-to be in every entry. fwiw, we've taken trace_entry down to 4 bytes of
-{unsigned short type; unsigned short pid;}, and we even have plans to
-completely remove pid.)
+I also see this when using xen-pciback.hide=..
 
->
-> -- Steve
->
->
->
->
+pciback 0000:00:1d.7: found PCI INT A -> IRQ 14
+pciback 0000:00:1d.7: sharing IRQ 14 with 0000:00:1d.0
+pciback 0000:00:1d.0: found PCI INT A -> IRQ 14
+pciback 0000:00:1d.0: sharing IRQ 14 with 0000:00:1d.7
+pciback 0000:00:1d.1: found PCI INT B -> IRQ 5
+pciback 0000:00:1d.1: sharing IRQ 5 with 0000:00:16.3
+pciback 0000:00:1d.1: sharing IRQ 5 with 0000:00:16.7
+pciback 0000:00:1d.1: sharing IRQ 5 with 0000:00:1a.2
+..
+.. which are clearly the Linux IRQ's, not the PIRQ/GSI values,
+so some other patch for the xen-pciback will be needed as well.
