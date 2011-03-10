@@ -1,105 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab1CJHU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 02:20:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:49767 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750928Ab1CJHUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 02:20:53 -0500
-Message-ID: <4D787C30.1020407@cn.fujitsu.com>
-Date: Thu, 10 Mar 2011 15:22:24 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1751116Ab1CJHhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 02:37:01 -0500
+Received: from webbox687.server-home.net ([195.149.74.151]:35314 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab1CJHhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 02:37:00 -0500
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Bill Gatliff <bgat@billgatliff.com>
+Subject: Re: [PWM v7 3/3] PWM: Atmel PWMC driver
+Date: Thu, 10 Mar 2011 08:36:53 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
+References: <1299701596-24665-1-git-send-email-bgat@billgatliff.com> <1299701596-24665-4-git-send-email-bgat@billgatliff.com>
+In-Reply-To: <1299701596-24665-4-git-send-email-bgat@billgatliff.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 3/3 V2] slab,rcu: don't assume the size of struct rcu_head
-References: <4D6CA843.3090103@cn.fujitsu.com>
-In-Reply-To: <4D6CA843.3090103@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-10 15:19:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-10 15:19:38,
-	Serialize complete at 2011-03-10 15:19:38
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201103100836.54361.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of struct rcu_head may be changed. When it becomes larger,
-it may pollute the data after struct slab.
+On Wednesday 09 March 2011, 21:13:16 Bill Gatliff wrote:
+> Driver to allow the Atmel PWMC peripheral found on various
+> AT91 SoCs to be controlled using the Generic PWM framework.
+> Tested on the AT91SAM9263.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/mm/slab.c b/mm/slab.c
-index 37961d1..52cf0b4 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -191,22 +191,6 @@ typedef unsigned int kmem_bufctl_t;
- #define	SLAB_LIMIT	(((kmem_bufctl_t)(~0U))-3)
- 
- /*
-- * struct slab
-- *
-- * Manages the objs in a slab. Placed either at the beginning of mem allocated
-- * for a slab, or allocated from an general cache.
-- * Slabs are chained into three list: fully used, partial, fully free slabs.
-- */
--struct slab {
--	struct list_head list;
--	unsigned long colouroff;
--	void *s_mem;		/* including colour offset */
--	unsigned int inuse;	/* num of objs active in slab */
--	kmem_bufctl_t free;
--	unsigned short nodeid;
--};
--
--/*
-  * struct slab_rcu
-  *
-  * slab_destroy on a SLAB_DESTROY_BY_RCU cache uses this structure to
-@@ -219,8 +203,6 @@ struct slab {
-  *
-  * rcu_read_lock before reading the address, then rcu_read_unlock after
-  * taking the spinlock within the structure expected at that address.
-- *
-- * We assume struct slab_rcu can overlay struct slab when destroying.
-  */
- struct slab_rcu {
- 	struct rcu_head head;
-@@ -229,6 +211,27 @@ struct slab_rcu {
- };
- 
- /*
-+ * struct slab
-+ *
-+ * Manages the objs in a slab. Placed either at the beginning of mem allocated
-+ * for a slab, or allocated from an general cache.
-+ * Slabs are chained into three list: fully used, partial, fully free slabs.
-+ */
-+struct slab {
-+	union {
-+		struct {
-+			struct list_head list;
-+			unsigned long colouroff;
-+			void *s_mem;		/* including colour offset */
-+			unsigned int inuse;	/* num of objs active in slab */
-+			kmem_bufctl_t free;
-+			unsigned short nodeid;
-+		};
-+		struct slab_rcu __slab_cover_slab_rcu;
-+	};
-+};
-+
-+/*
-  * struct array_cache
-  *
-  * Purpose:
---
+As far as I can see, the previosly support for pwm_channel_handler has been 
+dropped. The new API doesn't support such things.
+What do you think about adding this? It might be important to change the PWM 
+setup after a specific amount of time.
+
+Alexander
