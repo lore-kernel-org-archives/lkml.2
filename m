@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab1CJAgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 19:36:37 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60149 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563Ab1CJAge convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 19:36:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=b8dVwLs66po3XfIRsE25PHYLljUgWnZp2QegWE2PMyxf0NubtTKu+rDPGPsC0wxyK8
-         UrwPJ2qe4/88lWqTXBOhE4IXJ/I93xY8xtluj9WCisu4wNo/QMurJtR9MsH0qFhbwUBy
-         aBAWHVWzCc69hmXVl65z4s15E6QOzTHzW6N38=
-MIME-Version: 1.0
-In-Reply-To: <20110309162513.5058c824.akpm@linux-foundation.org>
-References: <1299681411-9227-1-git-send-email-virtuoso@slind.org> <20110309162513.5058c824.akpm@linux-foundation.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 10 Mar 2011 01:36:18 +0100
-Message-ID: <AANLkTinZioShsr3O0Z=xaEQ-S=JBCgs_SS_LdsBnNhZ2@mail.gmail.com>
-Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
-        Ken MacLeod <ken@bitsko.slc.ut.us>,
-        Shaun Reich <predator106@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754317Ab1CJAnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 19:43:24 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:48747 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753508Ab1CJAnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Mar 2011 19:43:22 -0500
+Date: Thu, 10 Mar 2011 11:43:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Subject: linux-next: build failure after merge of the cifs tree
+Message-Id: <20110310114315.eb9aec89.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__10_Mar_2011_11_43_15_+1100_p_jO0g5ZOu2LlNO0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 01:25, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed,  9 Mar 2011 16:36:51 +0200
-> Alexander Shishkin <virtuoso@slind.org> wrote:
->
->> Changes since v3:
->>  - changed timerfd_settime() semantics (see below)
->> Changes since v2:
->>  - replaced sysfs interface with a syscall
->>  - added sysctl/procfs handle to set a limit to the number of users
->>  - fixed issues pointed out by Greg.
->> Changes since v1:
->>  - updated against 2.6.36-rc1,
->>  - added notification/filtering options,
->>  - added Documentation/ABI/sysfs-kernel-time-notify interface description.
+--Signature=_Thu__10_Mar_2011_11_43_15_+1100_p_jO0g5ZOu2LlNO0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> It would be helpful to know if the identified users of this feature
-> actually find it useful and adequate.  I guess the most common
-> application is the 1,001 desktop clock widgets.  Do you have any
-> feedback from any of the owners of those?
+Hi all,
 
-We want it for systemd, to provide cron-like functionality but without
-the need to stupidly wake up every minute and check the system time
-for possible jumps.
+After merging the cifs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-It also sounds useful for a generic resume (after system suspend)
-notification for applications, which isn't really possible today.
+ERROR: ".set_cifs_acl" [fs/cifs/cifs.ko] undefined!
 
-Kay
+Caused by commit 30091b5571eb ("cifs: Allow to set extended attribute
+cifs_acl (try #2)").
+
+I have used the cifs tree from next-20110309 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__10_Mar_2011_11_43_15_+1100_p_jO0g5ZOu2LlNO0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNeB6jAAoJEDMEi1NhKgbs4AYH/2xabeEUr0iCZVING14WMTXK
+YjWC1i7ENdNMmeX0OrCNg2wc91uwydNK8sWB7/0TipTLOC930rIDcr2EOQSU+BGK
++4+gXyeh9EPi5OKSWxBee0s2je1QKS/NybURIA8nOpJQ27kgSzyqKBsBuy656hjt
+MTTGbVrT+ky72/df9A4dehGU7Bgrf4fRALVqNVZUC3Dk4LZ19LyRtlv5ml4Xl24c
+7YKQZvMj6yFfQdTKIttNyc4pykKAsZ59/X1my5YDRYo6NPGkNGlD2VZAAsRb7ng/
+VltX9rRk4OSwK7kGE74BlvSXaYj68b9V3e/UtSMeZqyplOcwnFzCJvo6WdUVru8=
+=BuHA
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__10_Mar_2011_11_43_15_+1100_p_jO0g5ZOu2LlNO0--
