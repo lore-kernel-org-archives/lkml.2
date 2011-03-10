@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab1CJHBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 02:01:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242Ab1CJHBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 02:01:31 -0500
-Message-ID: <4D787747.7080207@redhat.com>
-Date: Thu, 10 Mar 2011 02:01:27 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752755Ab1CJHCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 02:02:23 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42907 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab1CJHCV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 02:02:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=L/HmTVkulLhWi2uiWC/sCMFJYnn7QGA1MZA4byacgpLTun0xNe9c7KO71q3v+rJUuG
+         CHly6CnbAOvAlxD9xMPBthnJWSjGaIffhSyiokKZpMMjVnIc/sUU4WLU1bPrCMOzpEW5
+         25SdXE5+hgbWaRnd7EWmeiBqSxvNMl44P2Ys4=
+Date: Thu, 10 Mar 2011 08:02:15 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Torben Hohn <torbenh@gmx.de>
+Cc: linux-kernel@vger.kernel.org, richard.cochran@omicron.at,
+        johnstul@us.ibm.com, tglx@linutronix.de
+Subject: Re: some patches for the ptp framework
+Message-ID: <20110310070215.GB3195@riccoc20.at.omicron.at>
+References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
+ <20110304062120.GB3824@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        nikola.ciprich@linuxbox.cz, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>
-Subject: Re: [PATCHv2] fix regression caused by	e48672fa25e879f7ae21785c7efd187738139593
-References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz> <4D77F149.8020906@redhat.com> <20110309223651.GC1762@pcnci.linuxbox.cz>
-In-Reply-To: <20110309223651.GC1762@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110304062120.GB3824@riccoc20.at.omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2011 05:36 PM, Nikola Ciprich wrote:
-> commit 387b9f97750444728962b236987fbe8ee8cc4f8c moved kvm_request_guest_time_update(vcpu),
-> breaking 32bit SMP guests using kvm-clock. Fix this by moving (new) clock update function
-> to proper place.
->
-> Signed-off-by: Nikola Ciprich<nikola.ciprich@linuxbox.cz>
-> ---
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 4c27144..ba3f76f 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2101,8 +2101,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->   		if (check_tsc_unstable()) {
->   			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
->   			vcpu->arch.tsc_catchup = 1;
-> -			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->   		}
-> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
->   		if (vcpu->cpu != cpu)
->   			kvm_migrate_timers(vcpu);
->   		vcpu->cpu = cpu;
->
->    
-ACK
+On Fri, Mar 04, 2011 at 07:21:20AM +0100, Richard Cochran wrote:
+> On Thu, Mar 03, 2011 at 06:26:11PM +0100, Torben Hohn wrote:
+> > Richards Patchset didnt apply to tip:core/timer as is.
+> > which branch is it based on ?
+> 
+> I can apply them to
+> 
+>    db1c1cce4a653dcbe6949c72ae7b9f42cab1b929
+> 
+> near the head of timers/core in
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
+> 
+> I guess the newer CLOCK_BOOTTIME commits cause a conflict. I will
+> rebase once again to fix that.
+
+Torben, I don't understand why you couldn't apply V12 to the
+timers/core head. It works fine for me...
+
+Richard
+
+
+a0e5fef2 ptp: Added a clock driver for the National Semiconductor PHYTER.
+a992fe1f ptp: Added a clock driver for the IXP46x.
+d57a0b3e ptp: Added a clock that uses the eTSEC found on the MPC85xx.
+3f341675 ptp: Added a brand new class driver for ptp clocks.
+5cd10e79 hrtimer: Update base[CLOCK_BOOTTIME].offset correctly
+7fdd7f89 timers: Export CLOCK_BOOTTIME via the posix timers interface
+70a08cca timers: Add CLOCK_BOOTTIME hrtimer base
+314ac371 time: Extend get_xtime_and_monotonic_offset() to also return sleep
+abb3a4ea time: Introduce get_monotonic_boottime and ktime_get_boottime
+e06383db hrtimers: extend hrtimer base code to handle more then 2 clockids
+db1c1cce ntp: Remove redundant and incorrect parameter check
+22b7fcda mn10300: Switch do_timer() to xtimer_update()
+0606f422 posix clocks: Introduce dynamic clocks
