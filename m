@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751240Ab1CJKMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:12:09 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43854 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1CJKMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:12:06 -0500
-Subject: Re: [PATCH 0/2] Add struct crypto_alg->cra_check_optimized for
-	crc32c_intel
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@lst.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <1299748387.5263.45.camel@haakon2.linux-iscsi.org>
-References: <1299745272-25477-1-git-send-email-nab@linux-iscsi.org>
-	 <20110310084346.GA10650@gondor.apana.org.au>
-	 <1299747264.5263.35.camel@haakon2.linux-iscsi.org>
-	 <20110310090929.GA10919@gondor.apana.org.au>
-	 <1299748387.5263.45.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain
-Date: Thu, 10 Mar 2011 02:05:17 -0800
-Message-Id: <1299751517.5263.60.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1751601Ab1CJKWE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:22:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405Ab1CJKWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 05:22:02 -0500
+Message-ID: <4D78A642.8020708@redhat.com>
+Date: Thu, 10 Mar 2011 12:21:54 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] KVM: MMU: cleanup pte write path
+References: <4D772F10.3020302@cn.fujitsu.com> <4D772FB7.8060007@cn.fujitsu.com>
+In-Reply-To: <4D772FB7.8060007@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 01:13 -0800, Nicholas A. Bellinger wrote:
-> On Thu, 2011-03-10 at 17:09 +0800, Herbert Xu wrote:
-> > On Thu, Mar 10, 2011 at 12:54:24AM -0800, Nicholas A. Bellinger wrote:
-> > >
-> > > OK, so you mean each struct crypto_alg should define something like a
-> > > 'cra_optimized_name' for which request_module(alg->cra_optimized_name)
-> > > is called somewhere in libcrypto code..?
-> > 
-> > No, what I mean is that whenever we look up an algorithm through
-> > crypto_alg_mod_lookup, we should conditionally call modprobe if
-> > we havn't done so already.
-> > 
-> > So you just need to record one bit of info in each crypto_alg
-> > object to indicate whether we have invoked modprobe.  I suggest
-> > adding a CRYPTO_ALG_* bit.
-> > 
-> 
-> Mmmm, now I am really confused, and please let me apologize in advance
-> for my lack of experience with libcrypto internals..  ;)
-> 
-> I thought the problem was that CONFIG_CRYPTO_ALGFOO=y and
-> CONFIG_CRYPTO_ALGFOO_ARCH_HW_OFFLOAD=m would cause the latter to not
-> explictly call request_module() for this HW offload case..
-> 
-> So what I don't understand how adding a request_module() call to a list
-> of known modules works when crc32c_intel.ko has not been loaded yet..?
-> 
-> Am I missing something obvious wrt to how crc32c.ko can tell libcrypto
-> about which architecture dependent optimized modules it should load..?
-> 
+On 03/09/2011 09:43 AM, Xiao Guangrong wrote:
+> This patch does:
+> - call vcpu->arch.mmu.update_pte directly
+> - use gfn_to_pfn_atomic in update_pte path
+>
+> The suggestion is from Avi.
+>
+>
+>
+> -	mmu_guess_page_from_pte_write(vcpu, gpa, gentry);
+> +	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+> +	smp_rmb();
 
-Just to clarify a bit on my previous comments..
+smp_rmb() should come before, no? but the problem was present in the 
+original code, too.
 
-We are still expecting the libcrypto consumer (iscsi_target_mod.ko) to
-call the arch independent crypto_alloc_hash("crc32c", ...) in order to
-have libcrypto backend logic perform a request_module() upon
-architecture dependent offload modules (like crc32c_intel.ko) that
-libcrypto consumers are not (and should not) be calling directly via
-crypto_alloc_host("crc32c_intel", ...), correct..?
+> +
+>   	spin_lock(&vcpu->kvm->mmu_lock);
+>   	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+>   		gentry = 0;
+> @@ -3365,7 +3345,8 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>   			if (gentry&&
+>   			!((sp->role.word ^ vcpu->arch.mmu.base_role.word)
+>   			&  mask.word))
+> -				mmu_pte_write_new_pte(vcpu, sp, spte,&gentry);
+> +				mmu_pte_write_new_pte(vcpu, sp, spte,&gentry,
+> +						      mmu_seq);
 
-Where I am getting confused is wrt to a new crypto_alg_mod_lookup() ->
-request_module() call for a struct shash_alg that has not yet be loaded
-via arch/x86/crypto/crc32c-intel.c:crc32c_intel_mod_init() ->
-crypto_register_shash().
+Okay, we're only iterating over indirect pages, so we won't call 
+nonpaging_update_pte().
 
-Thanks,
-
---nab
-
+-- 
+error compiling committee.c: too many arguments to function
 
