@@ -1,156 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab1CJGBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 01:01:04 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:39823 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab1CJGBB (ORCPT
+	id S1752017Ab1CJGDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 01:03:54 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64879 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab1CJGDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 01:01:01 -0500
-Message-ID: <6b1e38c22e87fe197fcb3abf4e206ce2.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-    <20110216192658.GA7225@blimp.localdomain>
-    <20110217221329.GA3332@x61.home>
-    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
-    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-    <20110222130440.21a27714@jbarnes-desktop>
-    <20110222223120.GA3567@x61.home>
-    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
-    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
-    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
-    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
-Date: Thu, 10 Mar 2011 07:00:58 +0100 (CET)
-Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after     
-      reopening lid
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Indan Zupancic" <indan@nul.nu>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Alex Riesen" <raa.lkml@gmail.com>,
-        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org,
-        "Takashi Iwai" <tiwai@suse.de>
-User-Agent: SquirrelMail/1.4.17
+	Thu, 10 Mar 2011 01:03:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=ooSBdGwVrsNvik31b0bGLTJzaQTCTI6UKTfdKe5TzobPG7hYwPrsyShJpRCMT18o3V
+         QuA1S3QoPvJkQpFr6T70S0yupAL5ZzCLpBiOake9MuABkkM9lgz+/QsNSN+bKRfY27LP
+         R/x2u8Pjia20xhaNny+22U4m1ikODlQOmwaaI=
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 4c1f0696016754537de762f13eb96caa
+Date: Thu, 10 Mar 2011 17:03:51 +1100
+Message-ID: <AANLkTikTjBAZGBF2BirRpayiL6PX=ewmh+ZEnZkZBr=s@mail.gmail.com>
+Subject: Fix for critical bogoMIPS intermittent calculation failure
+From: Andrew Worsley <amworsley@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf301fc0c315772e049e1a9c23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm/i915: Fix DPMS and suspend interaction for intel_panel.c
+--20cf301fc0c315772e049e1a9c23
+Content-Type: text/plain; charset=ISO-8859-1
 
-When suspending intel_panel_disable_backlight() is never called,
-but intel_panel_enable_backlight() is called at resume. With the
-effect that if the brightness was ever changed after screen
-blanking, the wrong brightness gets restored at resume time.
+Please find attach a fix to the TSC  (Time Stamp Counter) based
+bogoMIPS calculation used on secondary CPUs which has two faults:
 
-Nothing guarantees that those calls will be balanced, so having
-backlight_enabled makes no sense, as the real state can change
-without the panel code noticing. So keep things as stateless as
-possible.
+   1.  Not handling wrapping of the lower 32 bits of the TSC counter
+on 32bit kernel - perhaps TSC is not reset by a warm reset?
+   2.  TSC and Jiffies are no incrementing together properly. Either
+jiffies increment too quickly or Time Stamp Counter isn't incremented
+in during an SMI but the real time clock is and jiffies are incremented.
 
-Signed-off-by: Indan Zupancic <indan@nul.nu>
+Case 1 can result in a factor of 16 too large a value which makes
+udelay() values too small and can cause mysterious driver errors.
+Case 2 appears to give smaller 10-15% errors after averaging but
+enough to cause occasional failures on my own board
 
----
+I have tested this code on my own branch and attach patch suitable for
+current kernel code. See below for examples of the failures and
+how the fix handles these situations now.
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 456f404..4a3d9ed 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -333,7 +333,6 @@ typedef struct drm_i915_private {
+I reported this issue earlier here:
+     Intermittent problem with BogoMIPs calculation on Intel AP CPUs -
+http://marc.info/?l=linux-kernel&m=129947246316875&w=4
 
- 	/* LVDS info */
- 	int backlight_level;  /* restore backlight to this value */
--	bool backlight_enabled;
- 	struct drm_display_mode *panel_fixed_mode;
- 	struct drm_display_mode *lfp_lvds_vbt_mode; /* if any */
- 	struct drm_display_mode *sdvo_lvds_vbt_mode; /* if any */
-@@ -1220,10 +1219,6 @@ void i915_debugfs_cleanup(struct drm_minor *minor);
- extern int i915_save_state(struct drm_device *dev);
- extern int i915_restore_state(struct drm_device *dev);
+I suspect this issue has been seen by others but as it is intermittent
+and bogoMIPS for secondary CPUs are no longer printed out it might
+have been difficult to identify this as the cause.  Perhaps these
+unresolved issues, although quite old, might be relevant as possibly
+this fault has been around for a while. In particular Case 1 may only
+be relevant to 32bit kernels on newer HW (most people run 64bit
+kernels?). Case 2 is less dramatic since the earlier fix in this area
+and also intermittent.
 
--/* i915_suspend.c */
--extern int i915_save_state(struct drm_device *dev);
--extern int i915_restore_state(struct drm_device *dev);
--
- /* intel_i2c.c */
- extern int intel_setup_gmbus(struct drm_device *dev);
- extern void intel_teardown_gmbus(struct drm_device *dev);
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 49fb54f..1b5a32d 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5924,8 +5924,6 @@ static void intel_setup_outputs(struct drm_device *dev)
- 		encoder->base.possible_clones =
- 			intel_encoder_clones(dev, encoder->clone_mask);
- 	}
--
--	intel_panel_setup_backlight(dev);
- }
+   Re: bogomips discrepancy on Intel Core2 Quad CPU -
+http://marc.info/?l=linux-kernel&m=118929277524298&w=4
+   slow system and bogus bogomips  -
+http://marc.info/?l=linux-kernel&m=116791286716107&w=4
+   Re: Re: [RFC-PATCH] clocksource: update lpj if clocksource has -
+http://marc.info/?l=linux-kernel&m=128952775819467&w=4
 
- static void intel_user_framebuffer_destroy(struct drm_framebuffer *fb)
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 2c43104..70e8b82 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -257,7 +257,6 @@ extern void intel_pch_panel_fitting(struct drm_device *dev,
- extern u32 intel_panel_get_max_backlight(struct drm_device *dev);
- extern u32 intel_panel_get_backlight(struct drm_device *dev);
- extern void intel_panel_set_backlight(struct drm_device *dev, u32 level);
--extern void intel_panel_setup_backlight(struct drm_device *dev);
- extern void intel_panel_enable_backlight(struct drm_device *dev);
- extern void intel_panel_disable_backlight(struct drm_device *dev);
+This issue is masked a little by commit
+feae3203d711db0a9965300ee6d592257fdaae4f which only prints out the
+first bogoMIPS value making it
+much harder to notice other values differing. Perhaps it should be
+changed to only suppress them when they are similar values?
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index d860abe..b05631a 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -217,12 +255,11 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
- void intel_panel_disable_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-+	u32 level = intel_panel_get_backlight(dev);
+Here are some outputs showing faults occurring and the new code
+handling them properly. See my earlier message for examples of the
+original failure.
 
--	if (dev_priv->backlight_enabled) {
--		dev_priv->backlight_level = intel_panel_get_backlight(dev);
--		dev_priv->backlight_enabled = false;
--	}
--
-+	if (level == 0)
-+		return;
-+	dev_priv->backlight_level = level;
- 	intel_panel_set_backlight(dev, 0);
- }
+    Case 1:   A Time Stamp Counter wrap:
+...
+Calibrating delay loop (skipped), value calculated using timer
+frequency.. 6332.70 BogoMIPS (lpj=31663540)
+....
+calibrate_delay_direct() timer_rate_max=31666493
+timer_rate_min=31666151 pre_start=4170369255 pre_end=4202035539
+calibrate_delay_direct() timer_rate_max=2425955274
+timer_rate_min=2425954941 pre_start=4265368533 pre_end=2396356387
+calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap
+around start=4265368581 >=post_end=2396356511
+calibrate_delay_direct() timer_rate_max=31666274
+timer_rate_min=31665942 pre_start=2440373374 pre_end=2472039515
+calibrate_delay_direct() timer_rate_max=31666492
+timer_rate_min=31666160 pre_start=2535372139 pre_end=2567038422
+calibrate_delay_direct() timer_rate_max=31666455
+timer_rate_min=31666207 pre_start=2630371084 pre_end=2662037415
+Calibrating delay using timer specific routine.. 6333.28 BogoMIPS (lpj=31666428)
+Total of 2 processors activated (12665.99 BogoMIPS).
+....
 
-@@ -230,17 +267,9 @@ void intel_panel_enable_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
+    Case 2:  Some thing (presumably the SMM interrupt?) causing the
+very low increase in TSC counter for the DELAY_CALIBRATION_TICKS
+increase in jiffies
+...
+Calibrating delay loop (skipped), value calculated using timer
+frequency.. 6333.25 BogoMIPS (lpj=31666270)
+...
+calibrate_delay_direct() timer_rate_max=31666483
+timer_rate_min=31666074 pre_start=4199536526 pre_end=4231202809
+calibrate_delay_direct() timer_rate_max=864348 timer_rate_min=864016
+pre_start=2405343672 pre_end=2406207897
+calibrate_delay_direct() timer_rate_max=31666483
+timer_rate_min=31666179 pre_start=2469540464 pre_end=2501206823
+calibrate_delay_direct() timer_rate_max=31666511
+timer_rate_min=31666122 pre_start=2564539400 pre_end=2596205712
+calibrate_delay_direct() timer_rate_max=31666084
+timer_rate_min=31665685 pre_start=2659538782 pre_end=2691204657
+calibrate_delay_direct() dropping min bogoMips estimate 1 = 864348
+Calibrating delay using timer specific routine.. 6333.27 BogoMIPS (lpj=31666390)
+Total of 2 processors activated (12666.53 BogoMIPS).
+...
 
-+	if (intel_panel_get_backlight(dev))
-+		return;
- 	if (dev_priv->backlight_level == 0)
- 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
--
- 	intel_panel_set_backlight(dev, dev_priv->backlight_level);
--	dev_priv->backlight_enabled = true;
--}
--
--void intel_panel_setup_backlight(struct drm_device *dev)
--{
--	struct drm_i915_private *dev_priv = dev->dev_private;
--
--	dev_priv->backlight_level = intel_panel_get_backlight(dev);
--	dev_priv->backlight_enabled = dev_priv->backlight_level != 0;
- }
+After 70 boots I saw 2 variations <1% slip through
 
+Andrew Worsley
 
+--20cf301fc0c315772e049e1a9c23
+Content-Type: text/x-diff; charset=US-ASCII; name="bogoMIPS.patch"
+Content-Disposition: attachment; filename="bogoMIPS.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gl39cnuo0
+
+ZGlmZiAtLWdpdCBhL2luaXQvY2FsaWJyYXRlLmMgYi9pbml0L2NhbGlicmF0ZS5jCmluZGV4IDI0
+ZmUwMjIuLjExMzY2MjcgMTAwNjQ0Ci0tLSBhL2luaXQvY2FsaWJyYXRlLmMKKysrIGIvaW5pdC9j
+YWxpYnJhdGUuYwpAQCAtMzgsNiArMzgsOSBAQCBzdGF0aWMgdW5zaWduZWQgbG9uZyBfX2NwdWlu
+aXQgY2FsaWJyYXRlX2RlbGF5X2RpcmVjdCh2b2lkKQogCXVuc2lnbmVkIGxvbmcgdGltZXJfcmF0
+ZV9taW4sIHRpbWVyX3JhdGVfbWF4OwogCXVuc2lnbmVkIGxvbmcgZ29vZF90aW1lcl9zdW0gPSAw
+OwogCXVuc2lnbmVkIGxvbmcgZ29vZF90aW1lcl9jb3VudCA9IDA7CisJdW5zaWduZWQgbG9uZyBt
+ZWFzdXJlZF90aW1lc1tNQVhfRElSRUNUX0NBTElCUkFUSU9OX1JFVFJJRVNdOworCWludCBtYXgg
+PSAtMTsgLyogaW5kZXggb2YgbWVhc3VyZWRfdGltZXMgd2l0aCBtYXgvbWluIHZhbHVlcyBvciBu
+b3Qgc2V0ICovCisJaW50IG1pbiA9IC0xOwogCWludCBpOwogCiAJaWYgKHJlYWRfY3VycmVudF90
+aW1lcigmcHJlX3N0YXJ0KSA8IDAgKQpAQCAtOTAsMTcgKzkzLDc0IEBAIHN0YXRpYyB1bnNpZ25l
+ZCBsb25nIF9fY3B1aW5pdCBjYWxpYnJhdGVfZGVsYXlfZGlyZWN0KHZvaWQpCiAJCSAqIElmIHRo
+ZSB1cHBlciBsaW1pdCBhbmQgbG93ZXIgbGltaXQgb2YgdGhlIHRpbWVyX3JhdGUgaXMKIAkJICog
+Pj0gMTIuNSUgYXBhcnQsIHJlZG8gY2FsaWJyYXRpb24uCiAJCSAqLwotCQlpZiAocHJlX3N0YXJ0
+ICE9IDAgJiYgcHJlX2VuZCAhPSAwICYmCisJCXByaW50ayhLRVJOX0RFQlVHCisiY2FsaWJyYXRl
+X2RlbGF5X2RpcmVjdCgpIHRpbWVyX3JhdGVfbWF4PSVsdSB0aW1lcl9yYXRlX21pbj0lbHUgcHJl
+X3N0YXJ0PSVsdSBwcmVfZW5kPSVsdVxuIiwKKwkJCSAgdGltZXJfcmF0ZV9tYXgsIHRpbWVyX3Jh
+dGVfbWluLCBwcmVfc3RhcnQsIHByZV9lbmQpOworCQlpZiAoc3RhcnQgPj0gcG9zdF9lbmQpCisJ
+CQlwcmludGsoS0VSTl9OT1RJQ0UKKwkJCQkiY2FsaWJyYXRlX2RlbGF5X2RpcmVjdCgpIGlnbm9y
+aW5nIHRpbWVyX3JhdGUgYXMgd2UgaGFkIGEgVFNDIHdyYXAgYXJvdW5kIHN0YXJ0PSVsdSA+PXBv
+c3RfZW5kPSVsdVxuIiwKKwkJCQlzdGFydCwgcG9zdF9lbmQpOworCQlpZiAoc3RhcnQgPCBwb3N0
+X2VuZCAmJiBwcmVfc3RhcnQgIT0gMCAmJiBwcmVfZW5kICE9IDAgJiYKIAkJICAgICh0aW1lcl9y
+YXRlX21heCAtIHRpbWVyX3JhdGVfbWluKSA8ICh0aW1lcl9yYXRlX21heCA+PiAzKSkgewogCQkJ
+Z29vZF90aW1lcl9jb3VudCsrOwogCQkJZ29vZF90aW1lcl9zdW0gKz0gdGltZXJfcmF0ZV9tYXg7
+Ci0JCX0KKwkJCW1lYXN1cmVkX3RpbWVzW2ldID0gdGltZXJfcmF0ZV9tYXg7CisJCQlpZiAobWF4
+IDwgMCB8fCB0aW1lcl9yYXRlX21heCA+IG1lYXN1cmVkX3RpbWVzW21heF0pCisJCQkJbWF4ID0g
+aTsKKwkJCWlmIChtaW4gPCAwIHx8IHRpbWVyX3JhdGVfbWF4IDwgbWVhc3VyZWRfdGltZXNbbWlu
+XSkKKwkJCQltaW4gPSBpOworCQl9IGVsc2UKKwkJCW1lYXN1cmVkX3RpbWVzW2ldID0gMDsKKwog
+CX0KIAotCWlmIChnb29kX3RpbWVyX2NvdW50KQotCQlyZXR1cm4gKGdvb2RfdGltZXJfc3VtL2dv
+b2RfdGltZXJfY291bnQpOworCS8qCisJICogRmluZCB0aGUgbWF4aW11bSAmIG1pbmltdW0gLSBp
+ZiB0aGV5IGRpZmZlciB0b28gbXVjaCB0aHJvdyBvdXQgdGhlIG9uZSB3aXRoIAorCSAqIHRoZSBs
+YXJnZXN0IGRpZmZlcmVuY2UgZnJvbSB0aGUgbWVhbiBhbmQgdHJ5IGFnYWluLi4uCisJICovCisJ
+d2hpbGUgKGdvb2RfdGltZXJfY291bnQgPiAxKSB7CisJCXVuc2lnbmVkIGxvbmcgZXN0aW1hdGU7
+CisJCXVuc2lnbmVkIGxvbmcgbWF4ZGlmZjsKKworCQkvKiBjb21wdXRlIHRoZSBlc3RpbWF0ZSAq
+LworCQllc3RpbWF0ZSA9IChnb29kX3RpbWVyX3N1bS9nb29kX3RpbWVyX2NvdW50KTsKKwkJbWF4
+ZGlmZiA9IGVzdGltYXRlID4+IDM7CisKKwkJLyogaWYgcmFuZ2UgaXMgd2l0aGluIDEyJSBsZXQn
+cyB0YWtlIGl0ICovCisJCWlmICgobWVhc3VyZWRfdGltZXNbbWF4XSAtIG1lYXN1cmVkX3RpbWVz
+W21pbl0pIDwgbWF4ZGlmZikKKwkJCXJldHVybiAoZXN0aW1hdGUpOworCisJCS8qIG9rIC0gZHJv
+cCB0aGUgd29yc2UgdmFsdWUgYW5kIHRyeSBhZ2Fpbi4uLiAqLworCQlnb29kX3RpbWVyX3N1bSA9
+IDA7CisJCWdvb2RfdGltZXJfY291bnQgPSAwOworCQlpZiAoKG1lYXN1cmVkX3RpbWVzW21heF0g
+LSBlc3RpbWF0ZSkgPCAoZXN0aW1hdGUgLSBtZWFzdXJlZF90aW1lc1ttaW5dKSkgeworCQkJcHJp
+bnRrKEtFUk5fTk9USUNFCisJImNhbGlicmF0ZV9kZWxheV9kaXJlY3QoKSBkcm9wcGluZyBtaW4g
+Ym9nb01pcHMgZXN0aW1hdGUgJWQgPSAlbHVcbiIsCisJCQkJbWluLCBtZWFzdXJlZF90aW1lc1tt
+aW5dKTsKKwkJCW1lYXN1cmVkX3RpbWVzW21pbl0gPSAwOworCQkJbWluID0gbWF4OworCQl9IGVs
+c2UgeworCQkJcHJpbnRrKEtFUk5fTk9USUNFCisJImNhbGlicmF0ZV9kZWxheV9kaXJlY3QoKSBk
+cm9wcGluZyBtYXggYm9nb01pcHMgZXN0aW1hdGUgJWQgPSAlbHVcbiIsCisJCQkJbWF4LCBtZWFz
+dXJlZF90aW1lc1ttYXhdKTsKKwkJCW1lYXN1cmVkX3RpbWVzW21heF0gPSAwOworCQkJbWF4ID0g
+bWluOworCQl9CisKKwkJZm9yIChpID0gMDsgaSA8IE1BWF9ESVJFQ1RfQ0FMSUJSQVRJT05fUkVU
+UklFUzsgaSsrKSB7CisJCQlpZiAobWVhc3VyZWRfdGltZXNbaV0gPT0gMCkKKwkJCQljb250aW51
+ZTsKKwkJCWdvb2RfdGltZXJfY291bnQrKzsKKwkJCWdvb2RfdGltZXJfc3VtICs9IG1lYXN1cmVk
+X3RpbWVzW2ldOworCQkJaWYgKG1lYXN1cmVkX3RpbWVzW2ldIDwgbWVhc3VyZWRfdGltZXNbbWlu
+XSkKKwkJCQltaW4gPSBpOworCQkJaWYgKG1lYXN1cmVkX3RpbWVzW2ldID4gbWVhc3VyZWRfdGlt
+ZXNbbWF4XSkKKwkJCQltYXggPSBpOworCQl9CisKKwl9CiAKLQlwcmludGsoS0VSTl9XQVJOSU5H
+ICJjYWxpYnJhdGVfZGVsYXlfZGlyZWN0KCkgZmFpbGVkIHRvIGdldCBhIGdvb2QgIgorCXByaW50
+ayhLRVJOX05PVElDRSAiY2FsaWJyYXRlX2RlbGF5X2RpcmVjdCgpIGZhaWxlZCB0byBnZXQgYSBn
+b29kICIKIAkgICAgICAgImVzdGltYXRlIGZvciBsb29wc19wZXJfamlmZnkuXG5Qcm9iYWJseSBk
+dWUgdG8gbG9uZyBwbGF0Zm9ybSBpbnRlcnJ1cHRzLiBDb25zaWRlciB1c2luZyBcImxwaj1cIiBi
+b290IG9wdGlvbi5cbiIpOwogCXJldHVybiAwOwogfQo=
+--20cf301fc0c315772e049e1a9c23--
