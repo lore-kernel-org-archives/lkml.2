@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1CJUVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:21:32 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:57059 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab1CJUVa (ORCPT
+	id S1752497Ab1CJUWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 15:22:42 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:42627 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab1CJUWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:21:30 -0500
-Date: Thu, 10 Mar 2011 20:21:03 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Corey Minyard <minyard@acm.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        YiCheng Doe <yicheng.doe@hp.com>,
-        Tom Mingarelli <thomas.mingarelli@hp.com>,
-        Andy Cress <andy.cress@us.kontron.com>,
-        Mika Lansirine <Mika.Lansirinne@stonesoft.com>,
-        Brian De Wolf <bldewolf@csupomona.edu>,
-        Jean Michel Audet <Jean-Michel.Audet@ca.Kontron.com>,
-        Jozef Sudelsky <jozef.sudolsky@elbiahosting.sk>,
-        Corey Minyard <cminyard@mvista.com>
-Subject: Re: [PATCH] ipmi: Fix IPMI errors due to timing problems
-Message-ID: <20110310202103.GA26268@srcf.ucam.org>
-References: <1299787221-19542-1-git-send-email-minyard@acm.org>
+	Thu, 10 Mar 2011 15:22:41 -0500
+Subject: [PATCH] cciss: Add missing allocation in scsi_cmd_stack_setup and
+	corresponding deallocation
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
+        linux-kernel@vger.kernel.org, smcameron@yahoo.com
+Date: Thu, 10 Mar 2011 14:22:38 -0600
+Message-ID: <20110310202238.30533.92210.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299787221-19542-1-git-send-email-minyard@acm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 02:00:21PM -0600, Corey Minyard wrote:
-> From: Doe, YiCheng <yicheng.doe@hp.com>
-> 
-> This patch fixes an issue in OpenIPMI module where sometimes an ABORT command
-> is sent after sending an IPMI request to BMC causing the IPMI request to fail.
-> 
-> Signed-off-by: YiCheng Doe <yicheng.doe@hp.com>
-> Signed-off-by: Corey Minyard <cminyard@mvista.com>
-> Acked-by: Tom Mingarelli <thomas.mingarelli@hp.com>
-> Tested-by: Andy Cress <andy.cress@us.kontron.com>
-> Tested-by: Mika Lansirine <Mika.Lansirinne@stonesoft.com>
-> Tested-by: Brian De Wolf <bldewolf@csupomona.edu>
-> Cc: Jean Michel Audet <Jean-Michel.Audet@ca.Kontron.com>
-> Cc: Jozef Sudelsky <jozef.sudolsky@elbiahosting.sk>
-> Cc: Matthew Garrett <mjg@redhat.com>
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Acked-by: Matthew Garrett <mjg@redhat.com>
+This bit got lost somewhere along the way.  Without this, panic.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/block/cciss_scsi.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+index 514470d..6961002 100644
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -222,7 +222,12 @@ scsi_cmd_stack_setup(ctlr_info_t *h, struct cciss_scsi_adapter_data_t *sa)
+ 		sa->cmd_sg_list = NULL;
+ 		return -ENOMEM;
+ 	}
+-
++	stk->elem = kmalloc(sizeof(stk->elem[0]) * stk->nelems, GFP_KERNEL);
++	if (!stk->elem) {
++		pci_free_consistent(h->pdev, size, stk->pool,
++		stk->cmd_pool_handle);
++		return -1;
++	}
+ 	for (i = 0; i < stk->nelems; i++) {
+ 		stk->elem[i] = &stk->pool[i];
+ 		stk->elem[i]->busaddr = (__u32) (stk->cmd_pool_handle + 
+@@ -252,6 +257,8 @@ scsi_cmd_stack_free(ctlr_info_t *h)
+ 	pci_free_consistent(h->pdev, size, stk->pool, stk->cmd_pool_handle);
+ 	stk->pool = NULL;
+ 	cciss_free_sg_chain_blocks(sa->cmd_sg_list, stk->nelems);
++	kfree(stk->elem);
++	stk->elem = NULL;
+ }
+ 
+ #if 0
+
