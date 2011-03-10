@@ -1,147 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1CJQ2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:28:49 -0500
-Received: from smtpbg55.qq.com ([64.71.138.44]:55918 "HELO smtpbg55.qq.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750957Ab1CJQ2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:28:48 -0500
-X-QQ-mid: esmtp9t1299774457t845t32195
-X-QQ-SSF: 00000000000000F0F6100F000000000
-Date: Fri, 11 Mar 2011 00:38:18 +0800
-From: "Lina Lu" <lulina_nuaa@foxmail.com>
-To: "Vivek Goyal" <vgoyal@redhat.com>
-Cc: "linux kernel mailing list" <linux-kernel@vger.kernel.org>
-References: <tencent_6A5F95FF2112DFE963C44E4E@qq.com>
-Subject: Re: Re: blk-throttle.c : When limit is changed, must start a new slice
-Message-ID: <201103110038174067110@foxmail.com>
-X-mailer: Foxmail 6, 15, 201, 23 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
+	id S1753499Ab1CJQak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:30:40 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:48491 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020Ab1CJQaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:30:39 -0500
+Message-ID: <4D78FCA6.7010000@eukrea.com>
+Date: Thu, 10 Mar 2011 17:30:30 +0100
+From: =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: =?ISO-8859-1?Q?M=E1rio_Isidoro?= <marioisidoro@gmail.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH n_gsm] GSM Mux in non-transparent mode
+References: <1299724790.1800.135.camel@Paio> <20110310110658.0a46d19d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110310110658.0a46d19d@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-09 04:54:43, Vivek Goyal wrote:
->
->On Tue, Mar 08, 2011 at 11:03:59PM +0800, lina wrote:
+>> There is a problem that happens if the process that is holding the
+>> attached line discipline tries to detach it before a process using a
+>> virtual com manages to close it. Both processes end up dealocked. I
+>> think this has to do with the tty lock. I don't have the backtrace with
+>> me
 
->[..]
->> >>  Unfortunately, the following patch still has 5~10 seconds latency. I have no
->> >>  idea to resolve this problem, it seens hard to find a more suitable func to
->> >>  call throtl_start_new_slice().
->> >
->> >So are you saying that following patch did not solve the latnecy issue?
->> >Resetting slice upon limit change did not work for you?
->> >
->>   
->>  Yes, the following patch did not solve the latency issue. There is still 5~10
->>  seconds latency when I change the limit from a very high value to low. From
->>  blktrace, I find that the throtl_process_limit_change() is called after work 
->>  queue delay.
->>   
->>  Thanks
->>  Lina
->
->Ok,
->
->Can you try the attached patch. I think what was happening that after
->changing limits, work was not being scheduled as there were no queued
->bios hence no slice reset was taking place immediately.
->
->[..]
->
->Thanks
->Vivek
->
+here is the log I get here :
 
-Hi Vivek,
-I have test the following patch, but the latency still there.
+[ 1051.950000] ------------[ cut here ]------------
+[ 1051.950000] WARNING: at drivers/tty/tty_mutex.c:31 tty_lock+0x30/0x50()
+[ 1051.960000] Modules linked in:
+[ 1051.960000] [<c0029478>] (unwind_backtrace+0x0/0xe4) from [<c0034f30>] 
+(warn_slowpath_common+0x4c/0x64)
+[ 1051.970000] [<c0034f30>] (warn_slowpath_common+0x4c/0x64) from [<c0034f60>] 
+(warn_slowpath_null+0x18/0x1c)
+[ 1051.980000] [<c0034f60>] (warn_slowpath_null+0x18/0x1c) from [<c031550c>] 
+(tty_lock+0x30/0x50)
+[ 1051.990000] [<c031550c>] (tty_lock+0x30/0x50) from [<c01af5b0>] 
+(__tty_hangup+0x78/0x47c)
+[ 1052.000000] [<c01af5b0>] (__tty_hangup+0x78/0x47c) from [<c01ba69c>] 
+(gsm_cleanup_mux+0x198/0x214)
+[ 1052.010000] [<c01ba69c>] (gsm_cleanup_mux+0x198/0x214) from [<c01baaf4>] 
+(gsmld_close+0x28/0x4c)
+[ 1052.020000] [<c01baaf4>] (gsmld_close+0x28/0x4c) from [<c01b5974>] 
+(tty_ldisc_close+0x58/0x64)
+[ 1052.030000] [<c01b5974>] (tty_ldisc_close+0x58/0x64) from [<c01b5b48>] 
+(tty_ldisc_release+0x38/0x70)
+[ 1052.040000] [<c01b5b48>] (tty_ldisc_release+0x38/0x70) from [<c01b0e2c>] 
+(tty_release+0x41c/0x480)
+[ 1052.050000] [<c01b0e2c>] (tty_release+0x41c/0x480) from [<c009667c>] 
+(fput+0x108/0x200)
+[ 1052.060000] [<c009667c>] (fput+0x108/0x200) from [<c00939c8>] 
+(filp_close+0x60/0x6c)
+[ 1052.070000] [<c00939c8>] (filp_close+0x60/0x6c) from [<c0036eb8>] 
+(put_files_struct+0x80/0xdc)
+[ 1052.080000] [<c0036eb8>] (put_files_struct+0x80/0xdc) from [<c0038500>] 
+(do_exit+0x1b8/0x6bc)
+[ 1052.080000] [<c0038500>] (do_exit+0x1b8/0x6bc) from [<c0038ac4>] 
+(do_group_exit+0xc0/0xf4)
+[ 1052.090000] [<c0038ac4>] (do_group_exit+0xc0/0xf4) from [<c0044460>] 
+(get_signal_to_deliver+0x3ac/0x40c)
+[ 1052.100000] [<c0044460>] (get_signal_to_deliver+0x3ac/0x40c) from 
+[<c0027190>] (do_signal+0x68/0x614)
+[ 1052.110000] [<c0027190>] (do_signal+0x68/0x614) from [<c0027754>] 
+(do_notify_resume+0x18/0x60)
+[ 1052.120000] [<c0027754>] (do_notify_resume+0x18/0x60) from [<c0024f94>] 
+(work_pending+0x24/0x28)
+[ 1052.130000] ---[ end trace ac06c34c1914deef ]---
 
-I try to find why there are 5~10 seconds latency today. After collect the blktrace, I 
-think the reason is that throtl_trim_slice() don't aways update the tg->slice_start[rw], 
-although we call it once dispatch a bio.
-
-Suppose that if the limits change now from 102400000000 to 1024000, the 
-tg->slice_start[rw] and tg->slice_end[rw] just like in the following chart. There is two 
-throtl_slice in the chart. Here my HZ is 250, so the throtl_slice is 25.
-
-                  jiffies
-                  |
-   |------------------|------------------|
-   |                         |
-start                    end
-
-As the jiffies - start < 25(throtl_slice), throtl_trim_slice() will not update the 
-tg->slice_start[rw] and tg->bytes_disp[rw]. If the tg->bytes_disp[rw] now is 8M, then
-there will be about 7 seconds from jiffies 0 bps as I have set the limits at 1M/s, in 
-these seconds no bio can be dispatched.
-
-As the tg->slice_start[rw] must less than or equal to jiffies, and we can not know the 
-reason of tg->bytes_disp[rw] > the theoretical value with limits 1M/s, So can not just 
-set the tg->slice_start[rw] to jiffies here. If set the start to jiffies, throtl will not work.
-
-I think if we can start a new slice in the next throtl_slice when the limits changed from 
-high to low and the tg->bytes_disp[rw] is critical greater than the theoretical value with
-now limits, this problem can be solved.
-
-Thanks
-Lina
-
->---
-> block/blk-throttle.c |   24 +++++++++++++++++++++++-
-> 1 file changed, 23 insertions(+), 1 deletion(-)
->
->Index: linux-2.6/block/blk-throttle.c
->===================================================================
->--- linux-2.6.orig/block/blk-throttle.c	2011-03-04 13:59:45.000000000 -0500
->+++ linux-2.6/block/blk-throttle.c	2011-03-08 15:41:19.384654732 -0500
->@@ -757,6 +757,14 @@ static void throtl_process_limit_change(
-> 				" riops=%u wiops=%u", tg->bps[READ],
-> 				tg->bps[WRITE], tg->iops[READ],
-> 				tg->iops[WRITE]);
->+			/*
->+			 * Restart the slices for both READ and WRITES. It
->+			 * might happen that a group's limit are dropped
->+			 * suddenly and we don't want to account recently
->+			 * dispatched IO with new low rate
->+			 */
->+			throtl_start_new_slice(td, tg, 0);
->+			throtl_start_new_slice(td, tg, 1);
-> 			tg_update_disptime(td, tg);
-> 			tg->limits_changed = false;
-> 		}
->@@ -825,7 +833,8 @@ throtl_schedule_delayed_work(struct thro
-> 
-> 	struct delayed_work *dwork = &td->throtl_work;
-> 
->-	if (total_nr_queued(td) > 0) {
->+	/* schedule work if limits changed even if no bio is queued */
->+	if (total_nr_queued(td) > 0 || atomic_read(&td->limits_changed)) {
-> 		/*
-> 		 * We might have a work scheduled to be executed in future.
-> 		 * Cancel that and schedule a new one.
->@@ -1023,6 +1032,19 @@ int blk_throtl_bio(struct request_queue 
-> 	/* Bio is with-in rate limit of group */
-> 	if (tg_may_dispatch(td, tg, bio, NULL)) {
-> 		throtl_charge_bio(tg, bio);
->+
->+		/*
->+		 * We need to trim slice even when bios are not being queued
->+		 * otherwise it might happen that a bio is not queued for
->+		 * a long time and slice keeps on extending and trim is not
->+		 * called for a long time. Now if limits are reduced suddenly
->+		 * we take into account all the IO dispatched so far at new
->+		 * low rate and * newly queued IO gets a really long dispatch
->+		 * time.
->+		 *
->+		 * So keep on trimming slice even if bio is not queued.
->+		 */
->+		throtl_trim_slice(td, tg, rw);
-> 		goto out;
-> 	}
- 
-
-
+Eric
