@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1CJQVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:21:00 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:62507 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab1CJQU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:20:58 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Waldemar.Rymarkiewicz@tieto.com, matti.j.aaltonen@nokia.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Date: Thu, 10 Mar 2011 17:20:53 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hthebaud@insidefr.com
-References: <1299766808-2535-1-git-send-email-waldemar.rymarkiewicz@tieto.com> <201103101452.54862.arnd@arndb.de> <99B09243E1A5DA4898CDD8B7001114481082EF2A65@EXMB04.eu.tieto.com>
-In-Reply-To: <99B09243E1A5DA4898CDD8B7001114481082EF2A65@EXMB04.eu.tieto.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103101720.53782.arnd@arndb.de>
-X-Provags-ID: V02:K0:b4PCAvKPNkznZgwix6CTBuCxDzuZlf2vq00ehtU4qbJ
- 4OpJvH+t4c1kl9FzBBJdkfQd0ed50uGnz1OmPYrI/iyKiV0GEH
- tq67yn4R5umA5sgCQ2I/O767jefGcJhXuathrTlGeDkn1OsTUa
- ALimmLLw7OvOB3YgQHdjpPWX5HFJ/uO2Qh65wd85fuwDHTJ3EO
- LhLkAIrTmWhL1WPU/LuyA==
+	id S1753465Ab1CJQVj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:21:39 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48904 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788Ab1CJQVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:21:38 -0500
+From: Abhilash K V <abhilash.kv@ti.com>
+To: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: wg@grandegger.com, linux-omap@vger.kernel.org,
+        Abhilash K V <abhilash.kv@ti.com>, Vaibhav Hiremath <hvaibhav@ti.com>
+Subject: [PATCH] can : TI_HECC : Unintialized variables
+Date: Thu, 10 Mar 2011 21:51:27 +0530
+Message-Id: <1299774087-8532-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 March 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
+1. In ti_hecc_xmit(), "data" is not initialized, causing
+   undesirable effects like setting the RTR field for every
+   transmit.
+2. In ti_hecc_probe(), the spinlock  priv->mbx_lock is not
+   inited, causing a spinlock lockup BUG.
 
-> >What I suggest you do is to work with the maintainers of the existing
-> >pn544 driver (Matti and Jari) to create an NFC core library 
-> >that takes care of the character device interface and that can 
-> >be shared between the two drivers. Instead of each driver 
-> >registering a misc device, make it call a 
-> >nfc_device_register() function that is implemented in a common module.
-> 
-> I've been already thinking about that and it's seems like next obvious step.
+Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Acked-by: Anant Gole <anantgole@ti.com>
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+---
+ drivers/net/can/ti_hecc.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Ok, cool.
+diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
+index 4d07f1e..73c6025 100644
+--- a/drivers/net/can/ti_hecc.c
++++ b/drivers/net/can/ti_hecc.c
+@@ -503,6 +503,7 @@ static netdev_tx_t ti_hecc_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	spin_unlock_irqrestore(&priv->mbx_lock, flags);
+ 
+ 	/* Prepare mailbox for transmission */
++	data = cf->can_dlc;
+ 	if (cf->can_id & CAN_RTR_FLAG) /* Remote transmission request */
+ 		data |= HECC_CANMCF_RTR;
+ 	data |= get_tx_head_prio(priv) << 8;
+@@ -923,6 +924,7 @@ static int ti_hecc_probe(struct platform_device *pdev)
+ 	priv->can.do_get_state = ti_hecc_get_state;
+ 	priv->can.ctrlmode_supported = CAN_CTRLMODE_3_SAMPLES;
+ 
++	spin_lock_init(&priv->mbx_lock);
+ 	ndev->irq = irq->start;
+ 	ndev->flags |= IFF_ECHO;
+ 	platform_set_drvdata(pdev, ndev);
+-- 
+1.6.2.4
 
-> >mdev, rx_waitq and mutex would go into the common module.
-> >I would expect that you also need a tx_waitq. What happens 
-> >when the buffer is full?
-> 
-> Do you mean info->buff ?
-
-Oh, I see you simply do
-
-       ret = i2c_master_send(client, info->buf, len);
-       usleep_range(1000, 10000);
-
-and assume that the buffer can always be written within a milisecond,
-so you just slow down output enough to never have to worry about it,
-right?
-
-A nicer solution would be to have an interrupt driven output
-so you know when the i2c buffers have been flushed.
-
-> >Note that the microread_is_busy() logic does not protect you 
-> >from having multiple concurrent readers, because multiple 
-> >threads may share a single file descriptor.
-> 
-> It's just used to ensure that only one reader can open the device.
-> It's called only in open callback.
-> The mutex actually secures concurrent read operations. 
-
-So if having multiple readers is safe (though possibly not
-meaningful), I guess you don't really need the microread_is_busy()
-logic.
-
-I suppose it doesn't hurt either, it just seems a bit pointless
-when it does the right thing most of the time, but not always.
-
-	Arnd
