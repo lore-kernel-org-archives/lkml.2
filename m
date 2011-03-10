@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab1CJTcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 14:32:15 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:47408 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752458Ab1CJTcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 14:32:14 -0500
-X-ASG-Debug-ID: 1299785532-01de284cf83f230001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D792735.8000604@fusionio.com>
-Date: Thu, 10 Mar 2011 20:32:05 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753878Ab1CJTfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 14:35:22 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36249 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab1CJTfV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 14:35:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=W7tvPoJJB3mHiT8sjr5dSrVnI1x8z/lHpg8afuUQt7fZ0T0ALVso4xU3MLzynSZmNu
+         t/o42t3JArK05sh4QDXlFBty/XRmZZAdt9RDL1F9cicGUxBbP1ikX3qKiPrwrM0XADjV
+         DRX+wlBu5ObhfM8UuJ3oT9lcU6uw2UvOtXjaE=
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
-        <hch@infradead.org>, Mike Snitzer <snitzer@redhat.com>
-Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task plugging
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com> <1295659049-2688-5-git-send-email-jaxboe@fusionio.com> <20110310165452.GE29464@redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH 04/10] block: initial patch for on-stack per-task plugging
-In-Reply-To: <20110310165452.GE29464@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299785532
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57610
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20110310185321.GA22030@rivendell.middle-earth.co.uk>
+References: <20110310185321.GA22030@rivendell.middle-earth.co.uk>
+Date: Thu, 10 Mar 2011 21:35:20 +0200
+X-Google-Sender-Auth: ar91PDRm905hmN6P-4X4QEh_6k8
+Message-ID: <AANLkTikXb_NM0+3ro607k0sz1zFJFTeJwp9MmBn_ngzn@mail.gmail.com>
+Subject: Re: NFS regression in 2.6.37.1 (current stable)
+From: Pekka Enberg <penberg@kernel.org>
+To: Dr Andrew John Hughes <ahughes@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Trond.Myklebust@netapp.com, mkl@pengutronix.de,
+        Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-10 17:54, Vivek Goyal wrote:
-> On Sat, Jan 22, 2011 at 01:17:23AM +0000, Jens Axboe wrote:
-> 
-> [..]
->> -/*
->> - * Only disabling plugging for non-rotational devices if it does tagging
->> - * as well, otherwise we do need the proper merging
->> - */
->> -static inline bool queue_should_plug(struct request_queue *q)
->> -{
->> -	return !(blk_queue_nonrot(q) && blk_queue_tagged(q));
->> -}
->> -
-> 
-> Jens,
-> 
-> While discussing stack plug with Mike Snitzer, this occurred to us that in
-> new code we seem to be plugging even if underlying device is SSD with NCQ.
-> Should we continue to maintain the old behavior of not plugging for NCQ SSD?
+On Thu, Mar 10, 2011 at 8:53 PM, Dr Andrew John Hughes
+<ahughes@redhat.com> wrote:
+> [Please CC me on responses as I'm not subscribed]
+>
+> Hi,
+>
+> I seem to have uncovered a regression in the NFS code between 2.6.37 and 2.6.37.1
+> caused by this changeset:
+>
+> commit 55ea499d60aefa3d03a77fc8590c26b5881faa92
+> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Date:   Sat Jan 8 17:45:38 2011 -0500
+> NFS: Don't use vm_map_ram() in readdir
+> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=commit;h=6650239a4b01077e80d5a4468562756d77afaa59
+>
+> With this change applied, copying of files between NFS and non-NFS
+> mounts seems to be broken.  The easiest way I've found to replicate
+> this myself is to use a VCS to do a clone of a tree on a NFS mount to
+> a directory on a non-NFS mount.  I used Mercurial, as I had Mercurial
+> trees to hand from work on IcedTea, but I assume doing it with a git
+> tree such as the linux tree would also work.  The idea is to do
+> something which involves copying over a bunch of directories and
+> checking the result is readable.
+>
+> $ hg clone $HOME/projects/openjdk/icedtea6-hg
+> destination directory: icedtea6-hg
+> updating to branch default
+> abort:
+> data/contrib/templater/hotspot/src/cpu/CPU/vm/bytecodeInterpreter_CPU.inline.hpp.i@16d04ce16287:
+> no match found!
+>
+> In the above, $HOME is an NFS mount and $PWD is a local reiserfs
+> partition.  I initially hit failures doing builds with source on $HOME
+> and the build directory on a local reiserfs partition.  In that
+> scenario, it would fail as not being able to find files that should
+> have been copied over.
+>
+> Reverting the changeset fixes the issue.  2.6.37.2 still has the bug.
+> I haven't checked 2.6.37.3 yet but I didn't see any NFS changes in there.
 
-The main reason plugging was turned off for SSD's previously was because
-it ended up hammering on the queue lock a lot. So it was turned off to
-speed them up.
+There's some more discussion here:
 
-The new plugging scheme is faster than hitting the queue directly, so
-now it would be a good idea to do the plugging in fact. Plus even for
-high performance SSD's, things like merging are still a good idea.
+https://bugs.gentoo.org/show_bug.cgi?id=357121
 
-So yes, it's on now and on purpose.
+Greg, Trond, as this is a regression in -stable, I wonder if it's best
+that we just revert the commit?
 
--- 
-Jens Axboe
-
+                        Pekka
