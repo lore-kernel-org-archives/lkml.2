@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1CJW4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:56:33 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:22225 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab1CJW4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:56:21 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=owKmQU4W1diZQMIyazM09Qk9lW1C/WwbRqDiDcdpnKb6ZPIocD9Ao9ePU1KzMoP7F
-	ebR9cMaBO8JLVBZ/7IgwQ==
-From: David Sharp <dhsharp@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH perf 2/2] perf: trace-event-parse: support printing short fields
-Date: Thu, 10 Mar 2011 14:55:56 -0800
-Message-Id: <1299797756-13546-3-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1299797756-13546-1-git-send-email-dhsharp@google.com>
-References: <1299797756-13546-1-git-send-email-dhsharp@google.com>
+	id S1753050Ab1CJW7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:59:09 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51907 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab1CJW7I (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 10 Mar 2011 17:59:08 -0500
+Date: Thu, 10 Mar 2011 17:57:26 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [GIT PATCH v2 0/14] xen: events: cleanups + ween off nr_irqs
+Message-ID: <20110310225726.GA2983@dumpdata.com>
+References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D7957B0.0024,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle "%hd" etc. in pretty_print()
+On Thu, Mar 10, 2011 at 04:07:59PM +0000, Ian Campbell wrote:
+> Changes since last time:
+>       * correct return value of xen_irq_from_pirq
+>       * WARN if a pirq cannot be allocated for a legacy IRQ
+>       * Updated checking comment of "xen: events: do not workaround
+>         too-small nr_irqs"
+> 
+> The following series makes a few cleanups to the Xen IRQ infrastructure.
+> The most important thing is that it removes the need to know about
+> nr_irqs and in particular the reliance on nr_irqs being static.
+> 
+> Apart from being generally a good thing this is needed because in 2.6.39
+> nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
+> "genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
+> at 2.6.39.
+> 
+> Dynamically growing nr_irqs also allows us to remove the workaround
+> which eats into GSI space if a dynamic IRQ cannot be allocated.
+> 
+> There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
+> have gone in before, but the penultimate patch really needed to be
+> simultaneous) so I haven't bothered to try and pull anything from tip
+> into this branch -- it should all be resolved during the merge window
+> and bisection won't be too broken since the "eat into GSI space"
+> workaround only appears to be needed on a small number of older
+> platforms (qemu being the main exception).
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/trace-event-parse.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+<nods>
+> 
+> I have tested:
+>       * Domain 0 on real h/w and under qemu
+>       * PV guest, including migration and passthrough of both VF and PF.
+>       * PVHVM guest, including migration and passthrough of both VF and
+>         PF.
 
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 67fe01a..0cf4366 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -2534,6 +2534,9 @@ static void pretty_print(void *data, int size, struct event *event)
- 			case '%':
- 				printf("%%");
- 				break;
-+			case 'h':
-+				ls--;
-+				goto cont_process;
- 			case 'l':
- 				ls++;
- 				goto cont_process;
-@@ -2589,6 +2592,12 @@ static void pretty_print(void *data, int size, struct event *event)
- 					}
- 				}
- 				switch (ls) {
-+				case -2:
-+					printf(format, (char)val);
-+					break;
-+				case -1:
-+					printf(format, (short)val);
-+					break;
- 				case 0:
- 					printf(format, (int)val);
- 					break;
--- 
-1.7.3.1
+I am having difficulties with passthrough of an USB device. Somehow the
+irq count is not going up at all (both in dom0 and domU) and it looks to
+be doing just simple polling. I've rebased the xen-pciback to be on top
+of your changes and apply cleanly. The whole lot is now in #master
 
+MSI and MSI-X devices work just fine in both Dom0 and DomU case so
+it is something special with the legacy IRQs. Probably forgot something
+simple...
