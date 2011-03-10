@@ -1,161 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab1CJWVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:21:04 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58104 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388Ab1CJWVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:21:03 -0500
-Date: Thu, 10 Mar 2011 14:20:34 -0800
-From: Greg KH <gregkh@suse.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Mike Sterling <mike.sterling@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
- driver
-Message-ID: <20110310222034.GA19323@suse.de>
-References: <1299794912-1233-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299794912-1233-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753288Ab1CJWYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:24:07 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37272 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab1CJWYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:24:05 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=UwRGqXM3h7MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1oKFPfMvbG41-orYmXYA:9 a=_FBhTDIMlCVNrypBLtBg9NoJ_dcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/2] jump label: update for .39
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+In-Reply-To: <4D794C7C.5010008@caviumnetworks.com>
+References: <1299771504.15854.347.camel@gandalf.stny.rr.com>
+	 <4D790A13.4060705@caviumnetworks.com>
+	 <1299780241.15854.393.camel@gandalf.stny.rr.com>
+	 <20110310182000.GB2906@redhat.com>
+	 <1299782143.15854.402.camel@gandalf.stny.rr.com>
+	 <4D791CAA.7090108@caviumnetworks.com>
+	 <1299783236.15854.405.camel@gandalf.stny.rr.com>
+	 <4D791F31.6040100@caviumnetworks.com>
+	 <1299785143.15854.407.camel@gandalf.stny.rr.com>
+	 <1299786329.15854.409.camel@gandalf.stny.rr.com>
+	 <BLU0-SMTP311155BEBE5F141636A6E596C80@phx.gbl>
+	 <1299793339.15854.430.camel@gandalf.stny.rr.com>
+	 <4D794C7C.5010008@caviumnetworks.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 17:24:01 -0500
+Message-ID: <1299795841.15854.433.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 02:08:32PM -0800, K. Y. Srinivasan wrote:
-> Make vmbus driver a platform pci driver. This is
-> in preparation to cleaning up irq allocation for this
-> driver.
+On Thu, 2011-03-10 at 14:11 -0800, David Daney wrote:
 
-The idea is nice, but the nameing is a bit confusing.
-
-We have "platform drivers" which are much different from what you are
-doing here, you are just creating a "normal" pci driver.
-
-Very minor comments below.
-
+> But that shouldn't matter because we only emit data to the __jump_table 
+> section from asm().
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
-> Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> ---
->  drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++-----------------
->  1 files changed, 36 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-> index 8b9394a..e4855ac 100644
-> --- a/drivers/staging/hv/vmbus_drv.c
-> +++ b/drivers/staging/hv/vmbus_drv.c
-> @@ -43,6 +43,8 @@
->  
->  static struct device *root_dev; /* Root device */
->  
-> +struct pci_dev *hv_pci_dev;
-> +
->  /* Main vmbus driver data structure */
->  struct vmbus_driver_context {
->  
-> @@ -887,36 +889,24 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
->  	}
->  }
->  
-> -static struct dmi_system_id __initdata microsoft_hv_dmi_table[] = {
-> -	{
-> -		.ident = "Hyper-V",
-> -		.matches = {
-> -			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
-> -			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-> -			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
-> -		},
-> -	},
-> -	{ },
-> -};
-> -MODULE_DEVICE_TABLE(dmi, microsoft_hv_dmi_table);
+> GCC is getting a reference to that table (array of structures really) 
+> from a global variable, I don't see how it can violate the ABI in this case.
 
-You're sure it's safe to delete this now and just rely on the PCI ids,
-right?  For some wierd reason I thought we needed both to catch all
-types of systems, but I can't remember why.
+Right, actually gcc should be completely out of the loop, as it has no
+idea about that section we created. That's done in the assembly phase,
+and the linker should not be adding holes.
 
->  
-> -static int __init vmbus_init(void)
-> +
-> +static int __devinit hv_pci_probe(struct pci_dev *pdev,
-> +				const struct pci_device_id *ent)
->  {
-> -	DPRINT_INFO(VMBUS_DRV,
-> -		"Vmbus initializing.... current log level 0x%x (%x,%x)",
-> -		vmbus_loglevel, HIWORD(vmbus_loglevel), LOWORD(vmbus_loglevel));
-> -	/* Todo: it is used for loglevel, to be ported to new kernel. */
-> +	int err;
->  
-> -	if (!dmi_check_system(microsoft_hv_dmi_table))
-> -		return -ENODEV;
-> +	hv_pci_dev = pdev;
->  
-> -	return vmbus_bus_init();
-> -}
-> +	err = pci_enable_device(pdev);
-> +	if (err)
-> +		return err;
->  
-> -static void __exit vmbus_exit(void)
-> -{
-> -	vmbus_bus_exit();
-> -	/* Todo: it is used for loglevel, to be ported to new kernel. */
-> +	err = vmbus_bus_init();
-> +	if (err)
-> +		pci_disable_device(pdev);
-> +
-> +	return err;
->  }
->  
->  /*
-> @@ -931,10 +921,29 @@ static const struct pci_device_id microsoft_hv_pci_table[] = {
->  };
->  MODULE_DEVICE_TABLE(pci, microsoft_hv_pci_table);
->  
-> +static struct pci_driver platform_driver = {
+-- Steve
 
-"hv_bus_driver"?
 
-> +	.name =           "hv-platform-pci",
-
-How about "hv_bus" as a name, as that's what this really is.  It's a
-"bus adapter", like USB, Firewire, and all sorts of other bus
-controllers.
-
-> +	.probe =          hv_pci_probe,
-> +	.id_table =       microsoft_hv_pci_table,
-> +};
-> +
-> +static int __init hv_pci_init(void)
-> +{
-> +	return pci_register_driver(&platform_driver);
-> +}
-> +
-> +static void __exit hv_pci_exit(void)
-> +{
-> +	vmbus_bus_exit();
-> +	pci_unregister_driver(&platform_driver);
-> +}
-> +
-> +
-> +
->  MODULE_LICENSE("GPL");
->  MODULE_VERSION(HV_DRV_VERSION);
->  module_param(vmbus_irq, int, S_IRUGO);
->  module_param(vmbus_loglevel, int, S_IRUGO);
->  
-> -module_init(vmbus_init);
-> -module_exit(vmbus_exit);
-> +module_init(hv_pci_init);
-> +module_exit(hv_pci_exit);
-> -- 
-> 1.5.5.6
