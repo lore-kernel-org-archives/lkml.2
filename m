@@ -1,49 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1CJWUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:20:39 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35840 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752388Ab1CJWUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:20:38 -0500
-Date: Thu, 10 Mar 2011 14:20:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4] memcg: fix leak on wrong LRU with FUSE
-Message-Id: <20110310142029.5d108e37.akpm@linux-foundation.org>
-In-Reply-To: <20110310150428.f175758c.nishimura@mxp.nes.nec.co.jp>
-References: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110308181832.6386da5f.nishimura@mxp.nes.nec.co.jp>
-	<20110309150750.d570798c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110309164801.3a4c8d10.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110309100020.GD30778@cmpxchg.org>
-	<20110310083659.fd8b1c3f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110310144752.289483d4.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110310150428.f175758c.nishimura@mxp.nes.nec.co.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753714Ab1CJWVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:21:04 -0500
+Received: from cantor.suse.de ([195.135.220.2]:58104 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752388Ab1CJWVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:21:03 -0500
+Date: Thu, 10 Mar 2011 14:20:34 -0800
+From: Greg KH <gregkh@suse.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Mike Sterling <mike.sterling@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
+ driver
+Message-ID: <20110310222034.GA19323@suse.de>
+References: <1299794912-1233-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299794912-1233-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 15:04:28 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Thu, Mar 10, 2011 at 02:08:32PM -0800, K. Y. Srinivasan wrote:
+> Make vmbus driver a platform pci driver. This is
+> in preparation to cleaning up irq allocation for this
+> driver.
 
-> > Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+The idea is nice, but the nameing is a bit confusing.
+
+We have "platform drivers" which are much different from what you are
+doing here, you are just creating a "normal" pci driver.
+
+Very minor comments below.
+
 > 
-> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
+> Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> ---
+>  drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++-----------------
+>  1 files changed, 36 insertions(+), 27 deletions(-)
 > 
-> I hope this can fix the original BZ case.
+> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> index 8b9394a..e4855ac 100644
+> --- a/drivers/staging/hv/vmbus_drv.c
+> +++ b/drivers/staging/hv/vmbus_drv.c
+> @@ -43,6 +43,8 @@
+>  
+>  static struct device *root_dev; /* Root device */
+>  
+> +struct pci_dev *hv_pci_dev;
+> +
+>  /* Main vmbus driver data structure */
+>  struct vmbus_driver_context {
+>  
+> @@ -887,36 +889,24 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
+>  	}
+>  }
+>  
+> -static struct dmi_system_id __initdata microsoft_hv_dmi_table[] = {
+> -	{
+> -		.ident = "Hyper-V",
+> -		.matches = {
+> -			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
+> -			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+> -			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
+> -		},
+> -	},
+> -	{ },
+> -};
+> -MODULE_DEVICE_TABLE(dmi, microsoft_hv_dmi_table);
 
-Do you recall the buzilla bug number?
+You're sure it's safe to delete this now and just rely on the PCI ids,
+right?  For some wierd reason I thought we needed both to catch all
+types of systems, but I can't remember why.
 
-Thanks.
+>  
+> -static int __init vmbus_init(void)
+> +
+> +static int __devinit hv_pci_probe(struct pci_dev *pdev,
+> +				const struct pci_device_id *ent)
+>  {
+> -	DPRINT_INFO(VMBUS_DRV,
+> -		"Vmbus initializing.... current log level 0x%x (%x,%x)",
+> -		vmbus_loglevel, HIWORD(vmbus_loglevel), LOWORD(vmbus_loglevel));
+> -	/* Todo: it is used for loglevel, to be ported to new kernel. */
+> +	int err;
+>  
+> -	if (!dmi_check_system(microsoft_hv_dmi_table))
+> -		return -ENODEV;
+> +	hv_pci_dev = pdev;
+>  
+> -	return vmbus_bus_init();
+> -}
+> +	err = pci_enable_device(pdev);
+> +	if (err)
+> +		return err;
+>  
+> -static void __exit vmbus_exit(void)
+> -{
+> -	vmbus_bus_exit();
+> -	/* Todo: it is used for loglevel, to be ported to new kernel. */
+> +	err = vmbus_bus_init();
+> +	if (err)
+> +		pci_disable_device(pdev);
+> +
+> +	return err;
+>  }
+>  
+>  /*
+> @@ -931,10 +921,29 @@ static const struct pci_device_id microsoft_hv_pci_table[] = {
+>  };
+>  MODULE_DEVICE_TABLE(pci, microsoft_hv_pci_table);
+>  
+> +static struct pci_driver platform_driver = {
+
+"hv_bus_driver"?
+
+> +	.name =           "hv-platform-pci",
+
+How about "hv_bus" as a name, as that's what this really is.  It's a
+"bus adapter", like USB, Firewire, and all sorts of other bus
+controllers.
+
+> +	.probe =          hv_pci_probe,
+> +	.id_table =       microsoft_hv_pci_table,
+> +};
+> +
+> +static int __init hv_pci_init(void)
+> +{
+> +	return pci_register_driver(&platform_driver);
+> +}
+> +
+> +static void __exit hv_pci_exit(void)
+> +{
+> +	vmbus_bus_exit();
+> +	pci_unregister_driver(&platform_driver);
+> +}
+> +
+> +
+> +
+>  MODULE_LICENSE("GPL");
+>  MODULE_VERSION(HV_DRV_VERSION);
+>  module_param(vmbus_irq, int, S_IRUGO);
+>  module_param(vmbus_loglevel, int, S_IRUGO);
+>  
+> -module_init(vmbus_init);
+> -module_exit(vmbus_exit);
+> +module_init(hv_pci_init);
+> +module_exit(hv_pci_exit);
+> -- 
+> 1.5.5.6
