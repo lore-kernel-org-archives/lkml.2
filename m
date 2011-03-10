@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab1CJIu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 03:50:26 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58306 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022Ab1CJIuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 03:50:24 -0500
-Message-ID: <4D7890CE.60800@suse.cz>
-Date: Thu, 10 Mar 2011 09:50:22 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1751678Ab1CJIve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 03:51:34 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:45547 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab1CJIvd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 03:51:33 -0500
+X-IronPort-AV: E=Sophos;i="4.62,295,1297036800"; 
+   d="scan'208";a="4713659"
+Subject: Re: [PATCH 11/14] xen: events: dynamically allocate irq info
+ structures
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+In-Reply-To: <20110310052747.GC10574@dumpdata.com>
+References: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
+	 <1299692486-28634-11-git-send-email-ian.campbell@citrix.com>
+	 <20110310052747.GC10574@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Thu, 10 Mar 2011 08:51:31 +0000
+Message-ID: <1299747091.17339.728.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: RFC: x86: kill binutils 2.16.x?
-References: <4D6E8932.1010405@zytor.com> <alpine.LFD.2.00.1103022152420.2701@localhost6.localdomain6> <4D6EB07C.5040004@zytor.com> <alpine.LFD.2.00.1103022216180.2701@localhost6.localdomain6> <4D6ECBDB.6090307@zytor.com> <20110303083035.GB14854@elte.hu>
-In-Reply-To: <20110303083035.GB14854@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.3.2011 09:30, Ingo Molnar wrote:
-> * H. Peter Anvin <hpa@zytor.com> wrote:
->> kbuild people: is there a way to test for a specific assembler version
->> in Kbuild (and error out the build for it?)
+On Thu, 2011-03-10 at 05:27 +0000, Konrad Rzeszutek Wilk wrote:
+> > @@ -649,10 +653,9 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+> >  
+> >  	spin_lock(&irq_mapping_update_lock);
+> >  
+> > -	if ((pirq > nr_irqs) || (gsi > nr_irqs)) {
+> > -		printk(KERN_WARNING "xen_map_pirq_gsi: %s %s is incorrect!\n",
+> > -			pirq > nr_irqs ? "pirq" :"",
+> > -			gsi > nr_irqs ? "gsi" : "");
+> > +	if (pirq > nr_irqs) {
+> > +		printk(KERN_WARNING "xen_map_pirq_gsi: pirq %d > nr_irqs %d!\n",
+> > +		       pirq, nr_irqs);
 > 
-> Could we add a testcase for one of the more egregious breakages and bail out then? 
-> That way we don't have to get the version information right - broken prereleases 
-> would be covered as well.
-> 
-> For example this sequence:
-> 
-> .irp idx,0,1,2
-> .if 0 > \idx
-> .endif
-> .endr
->
-> Will break on 2.16, right? It builds fine on 2.20.
+> Looks like this belongs to another patch?
 
-This seems to work for me with the binutils version from sles10 (even
-with a vanilla build of binutils):
-$ as -v <<EOF; echo $?
-> .irp idx,0,1,2
-> .if 0 > \idx
-> .endif
-> .endr
-> EOF
-GNU assembler version 2.16.91.0.5 (i586-suse-linux) using BFD version
-2.16.91.0.5 20051219
-0
-$
+To be honest I'm not entirely sure what that check was protecting
+anyway. Possibly it comes from a time when the GSI<->IRQ was 1-1 and
+prevented us from spilling off the end of the irq_info array.
 
-So either the bug is fixed in that version already or you picked a wrong
-example (or I did not understand what should fail here). But don't get
-me wrong, I'm all for checking for actual bugs instead of innocent
-version strings.
+It may be that it is safe to have gsi > nr_irqs in an earlier patch in
+this series (possibly "xen: events: maintain a list of Xen interrupts")
+or even in one of my earlier series which switched to using the core
+interrupt allocation logic and/or removed the 1-1 mapping above
+nr_irqs_gsi in certain cases.
 
-Michal
+Anyway, this is the first patch where I'm pretty sure it is safe to
+allow GSI > nr_irqs since there are no nr_irqs based limitations left
+apart from the pirq one.
+
+Ian.
+
