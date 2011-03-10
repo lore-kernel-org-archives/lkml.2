@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab1CJW7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:59:09 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51907 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab1CJW7I (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 10 Mar 2011 17:59:08 -0500
-Date: Thu, 10 Mar 2011 17:57:26 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [GIT PATCH v2 0/14] xen: events: cleanups + ween off nr_irqs
-Message-ID: <20110310225726.GA2983@dumpdata.com>
-References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+	id S1753642Ab1CJW7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:59:40 -0500
+Received: from www.tglx.de ([62.245.132.106]:47879 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab1CJW7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:59:39 -0500
+Date: Thu, 10 Mar 2011 23:59:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Phil Carmody <ext-phil.2.carmody@nokia.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/1] sysfs: add more info to the oops dump
+In-Reply-To: <20110310143806.7542e929.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1103102354530.2787@localhost6.localdomain6>
+References: <20110310212746.GA3361@suse.de> <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com> <1299796027-3343-2-git-send-email-ext-phil.2.carmody@nokia.com> <20110310143806.7542e929.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4D7957B0.0024,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 04:07:59PM +0000, Ian Campbell wrote:
-> Changes since last time:
->       * correct return value of xen_irq_from_pirq
->       * WARN if a pirq cannot be allocated for a legacy IRQ
->       * Updated checking comment of "xen: events: do not workaround
->         too-small nr_irqs"
-> 
-> The following series makes a few cleanups to the Xen IRQ infrastructure.
-> The most important thing is that it removes the need to know about
-> nr_irqs and in particular the reliance on nr_irqs being static.
-> 
-> Apart from being generally a good thing this is needed because in 2.6.39
-> nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
-> "genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
-> at 2.6.39.
-> 
-> Dynamically growing nr_irqs also allows us to remove the workaround
-> which eats into GSI space if a dynamic IRQ cannot be allocated.
-> 
-> There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
-> have gone in before, but the penultimate patch really needed to be
-> simultaneous) so I haven't bothered to try and pull anything from tip
-> into this branch -- it should all be resolved during the merge window
-> and bisection won't be too broken since the "eat into GSI space"
-> workaround only appears to be needed on a small number of older
-> platforms (qemu being the main exception).
+On Thu, 10 Mar 2011, Andrew Morton wrote:
 
-<nods>
+> On Fri, 11 Mar 2011 00:27:07 +0200
+> Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
 > 
-> I have tested:
->       * Domain 0 on real h/w and under qemu
->       * PV guest, including migration and passthrough of both VF and PF.
->       * PVHVM guest, including migration and passthrough of both VF and
->         PF.
+> > +static int last_sysfs_write_len;
+> >  void sysfs_printk_last_file(void)
+> >  {
+> > -	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
+> > +	printk(KERN_EMERG "last sysfs file (%c): %s%c",
+> > +	       (last_sysfs_write_len == SYSFS_NOT_A_WRITE) ? 'r' : 'w',
+> > +	       last_sysfs_file,
+> > +	       last_sysfs_write_len > 0 ? ' ' : '\n');
+> > +	if (last_sysfs_write_len >= (int)sizeof(last_sysfs_write))
+> > +		printk(KERN_CONT " written: %s...(%d chars)\n",
+> > +		       last_sysfs_write, last_sysfs_write_len);
+> > +	else if (last_sysfs_write_len > 0)
+> > +		printk(KERN_CONT " written: %s\n", last_sysfs_write);
+> >  }
+> 
+> That's going to fail to emit the \n if last_sysfs_write_len<=0. 
+> However there are tricks inside printk() which will fix that up if the
+> next printk starts with KERN_foo.
+> 
+> 
+> 
+> I can recall just one instance in the past 5-6 years in which the
+> last-sysfs-file output enabled me to locate a bug which would otherwise
+> have been unlocatable (within a drivers/md handler, iirc).
+> 
+> I don't think it's a terribly useful feature.  Except for when it _is_
+> useful, when it's very useful ;) The world wouldn't end if we decided
+> to remove it.
 
-I am having difficulties with passthrough of an USB device. Somehow the
-irq count is not going up at all (both in dom0 and domU) and it looks to
-be doing just simple polling. I've rebased the xen-pciback to be on top
-of your changes and apply cleanly. The whole lot is now in #master
+Amen to that.
 
-MSI and MSI-X devices work just fine in both Dom0 and DomU case so
-it is something special with the legacy IRQs. Probably forgot something
-simple...
+It's more of an distraction than anything which is relevant to 99.999%
+of the problems we have to deal with.
+
+Thanks,
+
+	tglx
