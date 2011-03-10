@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab1CJWqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:46:54 -0500
-Received: from www.tglx.de ([62.245.132.106]:35754 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752898Ab1CJWqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:46:53 -0500
-Date: Thu, 10 Mar 2011 23:46:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Mike Sterling <mike.sterling@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 12/21] Staging: hv: Cleanup irq management
-In-Reply-To: <1299794933-1259-1-git-send-email-kys@microsoft.com>
-Message-ID: <alpine.LFD.2.00.1103102338230.2787@localhost6.localdomain6>
-References: <[PATCH 00/21] Staging: hv: Cleanup vmbus driver> <1299794933-1259-1-git-send-email-kys@microsoft.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753564Ab1CJWsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:48:50 -0500
+Received: from blu0-omc1-s27.blu0.hotmail.com ([65.55.116.38]:16941 "EHLO
+	blu0-omc1-s27.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752176Ab1CJWss (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:48:48 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP717C72ABCA411607037A9796C80@phx.gbl>
+Date: Thu, 10 Mar 2011 17:48:43 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: David Daney <ddaney@caviumnetworks.com>, Jason Baron <jbaron@redhat.com>,
+        peterz@infradead.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 0/2] jump label: update for .39
+References: <1299780241.15854.393.camel@gandalf.stny.rr.com> <20110310182000.GB2906@redhat.com> <1299782143.15854.402.camel@gandalf.stny.rr.com> <4D791CAA.7090108@caviumnetworks.com> <1299783236.15854.405.camel@gandalf.stny.rr.com> <4D791F31.6040100@caviumnetworks.com> <1299785143.15854.407.camel@gandalf.stny.rr.com> <1299786329.15854.409.camel@gandalf.stny.rr.com> <BLU0-SMTP311155BEBE5F141636A6E596C80@phx.gbl> <1299793339.15854.430.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1299793339.15854.430.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 17:47:41 up 337 days,  8:37,  5 users,  load average: 0.13, 0.14,
+	0.06
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 10 Mar 2011 22:48:47.0678 (UTC) FILETIME=[5134E5E0:01CBDF75]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011, K. Y. Srinivasan wrote:
-> Now that vmbus_driver is a platform pci driver,
-> cleanup the irq allocation mess by using the standard
-> irq allocation mechanisms.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Thu, 2011-03-10 at 16:22 -0500, Mathieu Desnoyers wrote:
 > 
-> Note that this patch generates an error when the checkpatch
-> script is run because of the IRQF_SAMPLE_RANDOM flag used in
-> request_irq() function. This interrupt is the only
-> external event this VM will get and consequently if this
-> flag (IRQF_SAMPLE_RANDOM) is not  specified, experimentally
-> we have shown that the entropy in the VM will very very low.
+> > > Anyway, I think the best thing for now is to have Jason add
+> > > the .align(sizeof(long)) in the inline assembly for all locations and be
+> > > done with it.
+> > 
+> > You seem to be contradicting yourself here. I'm concerned about having
+> > "structures" of a size not power of two. Can we simply either
+> 
+> But we don't have structures. We have data that has been allocated in
+> assembly. Come to think of it, it may be best to keep these as 
+> ".align 4".
 
-Fair enough. We need to come up with some way to work around
-this though.
- 
->  	}
-> -	vector = VMBUS_IRQ_VECTOR;
->  
-> -	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", vmbus_irq, vector);
-> +	vector = IRQ0_VECTOR + pdev->irq;
-> +	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", pdev->irq,
-> +			IRQ0_VECTOR + pdev->irq);
+The .align 4 is certainly not the right answer, because it will trigger
+unaligned accesses on some 64-bit architectures, as we have faced with
+trace event.
 
-Why evaluating vector first and then not using it for that debug print
-thingy?
+Mathieu
 
-Btw, are you going to replace that DPRINT_* stuff as well ?
-
-Thanks,
-
-	tglx
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
