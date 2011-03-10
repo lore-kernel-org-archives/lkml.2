@@ -1,89 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab1CJV5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 16:57:45 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37774
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752780Ab1CJV5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 16:57:44 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: kys@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Cc: Haiyang Zhang <haiyangz@microsoft.com>,
-        Mike Sterling <mike.sterling@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 08/21] Staging: hv: Change the signature for vmbus_child_device_register()
-Date: Thu, 10 Mar 2011 14:07:21 -0800
-Message-Id: <1299794841-1123-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <[PATCH 00/21] Staging: hv: Cleanup vmbus driver>
-References: <[PATCH 00/21] Staging: hv: Cleanup vmbus driver>
+	id S1753191Ab1CJV6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:58:09 -0500
+Received: from www.tglx.de ([62.245.132.106]:33144 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752749Ab1CJV6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 16:58:08 -0500
+Date: Thu, 10 Mar 2011 22:57:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alexander Shishkin <virtuoso@slind.org>
+cc: linux-kernel@vger.kernel.org, Ken MacLeod <ken@bitsko.slc.ut.us>,
+        Shaun Reich <predator106@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
+ changes
+In-Reply-To: <20110310141241.GE11410@shisha.kicks-ass.net>
+Message-ID: <alpine.LFD.2.00.1103102040190.2787@localhost6.localdomain6>
+References: <1299681411-9227-1-git-send-email-virtuoso@slind.org> <alpine.LFD.2.00.1103101014260.2787@localhost6.localdomain6> <20110310141241.GE11410@shisha.kicks-ass.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for getting rid of the vmbus_child_dev_add() function,
-modify the signature of vmbus_child_device_register(). Note that
-the root device is a global variable.
+On Thu, 10 Mar 2011, Alexander Shishkin wrote:
+> On Thu, Mar 10, 2011 at 10:52:18AM +0100, Thomas Gleixner wrote:
+> Sure. The time daemon that we have here has to stop automatic time updates
+> when some other program changes system time *and* keep that setting
+> effective. Currently, when "the other program" changes the system time
+> right before time daemon changes it, this time setting will be overwritten
+> and lost. I'm thinking that it could be solved with something like
+> 
+>   clock_swaptime(clockid, new_timespec, old_timespec);
+> 
+> but something tells me that it will not be welcome either.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/vmbus_drv.c     |    7 +++----
- drivers/staging/hv/vmbus_private.h |    3 +--
- 2 files changed, 4 insertions(+), 6 deletions(-)
+Aside of that it wont work. You don't have a reference what
+old_timespec means.
 
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index e078c59..0b91eda 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -144,7 +144,7 @@ static struct hv_device *vmbus_device; /* vmbus root device */
-  */
- int vmbus_child_dev_add(struct hv_device *child_dev)
- {
--	return vmbus_child_device_register(vmbus_device, child_dev);
-+	return vmbus_child_device_register(child_dev);
- }
- 
- /*
-@@ -664,8 +664,7 @@ struct hv_device *vmbus_child_device_create(struct hv_guid *type,
- /*
-  * vmbus_child_device_register - Register the child device on the specified bus
-  */
--int vmbus_child_device_register(struct hv_device *root_device_obj,
--				struct hv_device *child_device_obj)
-+int vmbus_child_device_register(struct hv_device *child_device_obj)
- {
- 	int ret = 0;
- 
-@@ -680,7 +679,7 @@ int vmbus_child_device_register(struct hv_device *root_device_obj,
- 
- 	/* The new device belongs to this bus */
- 	child_device_obj->device.bus = &vmbus_drv.bus; /* device->dev.bus; */
--	child_device_obj->device.parent = &root_device_obj->device;
-+	child_device_obj->device.parent = &vmbus_device->device;
- 	child_device_obj->device.release = vmbus_device_release;
- 
- 	/*
-diff --git a/drivers/staging/hv/vmbus_private.h b/drivers/staging/hv/vmbus_private.h
-index 1b88b6f..c176773 100644
---- a/drivers/staging/hv/vmbus_private.h
-+++ b/drivers/staging/hv/vmbus_private.h
-@@ -108,8 +108,7 @@ struct hv_device *vmbus_child_device_create(struct hv_guid *type,
- 					 struct vmbus_channel *channel);
- 
- int vmbus_child_dev_add(struct hv_device *device);
--int vmbus_child_device_register(struct hv_device *root_device_obj,
--				struct hv_device *child_device_obj);
-+int vmbus_child_device_register(struct hv_device *child_device_obj);
- void vmbus_child_device_unregister(struct hv_device *device_obj);
- 
- /* static void */
--- 
-1.5.5.6
+The whole problem space is full of race conditions and always will be
+a horrible hackery when we try to piggy pack on clock_was_set() as we
+have no idea what and when it actually happened. clock_was_set() is
+async. While we can somehow get an event on a counter which tells us
+that the clock was set, any attempt to return useful information aside
+of the fact that the counter changed is going to be inconsistent one
+way or the other.
 
+It really takes some more to make this consistent for all the use
+cases which are interested in notifications and unconditional timer
+cancellation when the underlying clock was set.
+
+After twisting my brain around the corner cases for a while I think
+the only feasible approach to avoid all the lurking races is to:
+
+1) Provide a syscall which returns the current offset of
+   CLOCK_REALTIME vs. CLOCK_MONOTONIC. That offset is changed when
+   CLOCK_REALTIME is set.
+
+2) Provide a mechanism to check consistently the CLOCK_REALTIME
+   vs. CLOCK_MONOTONIC offset and notify about changes.
+
+3) Extend the clock_nanosleep() flags with TIMER_CANCEL_ON_CLOCK_SET
+
+   When the flag is set, then the rmtp pointer, which is currently
+   used to copy the remaining time to user space must contain a valid
+   pointer to the previously retrieved CLOCK_REALTIME offset.
+
+   clock_nanosleep() then checks that user space provided offset under
+   #2 and hooks the caller into the notification mechanism. If the
+   offset has changed before the timer is enqueued the syscall returns
+   immediately with an appropriate error code. If the offset changes
+   after the check, then an eventually enqueued timer will be
+   cancelled and an appropriate error code returned.
+
+   Note: This wont work for signal based timers as we have no sane way
+   to notify user space about a forced cancellation of the timer. Even
+   if we could think about some extra signal for this, it's not worth
+   the trouble and the mess it's going to create.
+
+4) Extend timerfd_settime() as #3 if necessary
+
+   I'd prefer to avoid that, but I can see the charm of the poll
+   facility which is provided by timerfd.
+
+   Again we could reuse the omtr pointer of timerfd_settime() to
+   provide the offset as an incoming parameter when the corresponing
+   flag is set and basically do the same thing as clock_nanosleep() in
+   the setup path - check the offset consistently.
+
+   It needs some thought on the return values from poll and how to
+   handle read, but that's a solvable problem as we can reasonably
+   restrict this functionality to non self rearming timers.
+
+That should solve the most urgent problem of cron alike battery
+wasters. It also should be a reasonable notification mechanism for
+others who are just interested in the fact that clock was set as those
+can simply arm a timer which expires somewhere in the next decade. If
+clock is not set within that time frame then battery life wont suffer
+from that once in a decade regular timer expiry wakeup.
+
+It's not going to solve the "stop updating time when something else
+set the clock" requirement, but as I argued before there is no point
+to even think about that at all.
+
+Thanks,
+
+	tglx
