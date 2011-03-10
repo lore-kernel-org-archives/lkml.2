@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab1CJMO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 07:14:28 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:32809 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab1CJMOY (ORCPT
+	id S1752701Ab1CJMWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 07:22:48 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50649 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab1CJMWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 07:14:24 -0500
-Date: Thu, 10 Mar 2011 13:08:56 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Seblu <seblu@seblu.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Ivan Vecera <ivecera@redhat.com>
-Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
-Message-ID: <20110310120856.GA14219@electric-eye.fr.zoreil.com>
-References: <AANLkTin7GBSTcfZgr_9sNZ8CPMkW7Vstni+fs2v1-ink@mail.gmail.com> <1297581470.2510.18.camel@edumazet-laptop> <20110213135600.GA11382@electric-eye.fr.zoreil.com> <AANLkTikTw71-mv9WsPT8PxC1a1nwEJ=x0UNDhVQGP1A6@mail.gmail.com> <AANLkTikLOJ-XcwfdbWS19DKzh2s91tn5pQjJe0+CeAN-@mail.gmail.com> <20110213203417.GA11442@electric-eye.fr.zoreil.com> <AANLkTi=PrOXMD54hSbEwUtmzXiwsSwiSijE3AJ9n=WDe@mail.gmail.com> <20110218093000.GA12106@electric-eye.fr.zoreil.com> <AANLkTim6tt4yC+1VQ3AtDMf1KKLRqf5kErpipqNSbQkX@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim6tt4yC+1VQ3AtDMf1KKLRqf5kErpipqNSbQkX@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Thu, 10 Mar 2011 07:22:46 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6280"; a="78928476"
+Message-ID: <4D78C2CF.1030708@codeaurora.org>
+Date: Thu, 10 Mar 2011 17:53:43 +0530
+From: Mohan Pallaka <mpallaka@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mohan Pallaka <mpallaka@codeaurora.org>
+CC: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Support for isa1200 haptic chip
+References: <1299496182-26177-1-git-send-email-mpallaka@codeaurora.org>
+In-Reply-To: <1299496182-26177-1-git-send-email-mpallaka@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seblu <seblu@seblu.net> :
-[...]
-> I catched the following trace during my previous torture session.
-> Maybe it can help.
+On 3/7/2011 4:39 PM, Mohan Pallaka wrote:
+> This patchset includes a __weak attributed pwm apis in pwm.h and
+> a ff-memless based isa1200 driver.
+> 
+> ISA1200 chip can operate in two modes and if the chip has been
+> configured for pwm-generation mode, which doesn't use pwm standard
+> apis then it'd encounter compilation errors if the host doesn't
+> support PWM. This driver is based on Park's isa1200 driver that uses
+> haptic class.
+> 
+> Kyungmin Park (1):
+>   input: misc: Add support for isa1200 chip
+> 
+> Mohan Pallaka (1):
+>   pwm: Add __weak attributed functions for pwm operations
+> 
+>  drivers/input/misc/Kconfig    |   12 ++
+>  drivers/input/misc/Makefile   |    1 +
+>  drivers/input/misc/isa1200.c  |  440 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/input/isa1200.h |   45 +++++
+>  include/linux/pwm.h           |   21 ++-
+>  5 files changed, 514 insertions(+), 5 deletions(-)
+>  create mode 100644 drivers/input/misc/isa1200.c
+>  create mode 100644 include/linux/input/isa1200.h
+> 
 
-It's the usual r8169 TX timeout watchdog.
+Ping.
 
-[...]
-> > Can you apply the two attached patches on top of the previous ones and
-> > give it a try ? The debug should not be too verbose if things are stationary
-> > enough.
-> 2.6.38-rc7 with your 2 previous patch change the game. No reboot. No
-> strange message in dmesg.
+Dmitry, could you spend sometime to review this.
 
-?
-
-"strange message" as :
-[ ] netdev watchdog messages
-[ ] 0001 0001 0001 0001 (or similar) message
-[ ] net_ratelimit message
-
-> But some sent packets are lost from some host. Example:
-[...]
-> This is maybe normal under stress, card discard packet after all.
-
-It seems so. 0.08% packet loss. 10 ~ 20kpps (right ?). Sample at 0.1 Hz (ping).
-
-[...]
-> I've a serial cable and a second computer, but my first computer
-> doesn't have a com port. Is it then possible?
-
-Hardly. Forget it for now.
-
-> Do you need more test?
-
-1. 2.6.38-rc7 without the patches
-2. 2.6.38-rc7 with the r8169.c driver of 2.6.38-rc5, without the patches
-3. current setup + pktgen. Lower the packet size as long as it increases
-   the sender's pps.
-
-I do not understand why the bug would be gone if it was in the r8169
-proper.
+Thanks,
+Mohan.
 
 -- 
-Ueimor
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
