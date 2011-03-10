@@ -1,122 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab1CJPGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 10:06:13 -0500
-Received: from 210513-www4.sumeffect.com ([98.129.86.238]:53733 "EHLO
-	210513-www4.sumeffect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab1CJPGM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 10:06:12 -0500
-To: linux-kernel@vger.kernel.org
-Subject: Spirituality
-From: earn2011@yahoo.com
-Reply-To: earn2011@yahoo.com
-Content-Type: text/plain; charset=UTF-8
-Message-Id: <20110310150032.0E712B17A3@210513-www4.sumeffect.com>
-Date: Thu, 10 Mar 2011 09:00:32 -0600 (CST)
+	id S1752301Ab1CJPMz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 10:12:55 -0500
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:22878
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751788Ab1CJPMy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 10:12:54 -0500
+X-SpamScore: -24
+X-BigFish: VS-24(zz542N1432N4015L9371Pzz1202hzz8275bh8275dhz2dh2a8h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>
+Subject: RE: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Thread-Topic: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Thread-Index: AQHL2sQV2wru9FbG9kebNQISz1Arp5QmtSKA
+Date: Thu, 10 Mar 2011 15:12:42 +0000
+Message-ID: <56132A77AB93C141BF06E6B96CA6CFEA19CF8A@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.81.68.39]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Name: Jenifer Jackson
-Email: earn2011@yahoo.com
-Hi Friend, 
+Hi Uwe/Sascha,
 
-Are You Ready For Success $$$$$$$$!?
+Just wondering if you had a chance to review this patch series?
 
-You Are Eligible to Travel this Program Anywhere in the World.
+Thanks,
+Dinh
 
-The Hometown Merchant Marketing Program"Welcome To Our Site!!!
-Make $100-$200 Placing Ads! Get the 2 Sacks Of $$....
+>-----Original Message-----
+>From: Nguyen Dinh-R00091
+>Sent: Friday, March 04, 2011 5:30 PM
+>To: linux-kernel@vger.kernel.org
+>Cc: linux-arm-kernel@lists.infradead.org; linux@arm.linux.org.uk; s.hauer@pengutronix.de; u.kleine-
+>koenig@pengutronix.de; Zhang Lily-R58066; Vaidyanathan Ranjani-RA5478; Nguyen Dinh-R00091
+>Subject: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
+>
+>From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>
+>Implement code for MX51 that allows the SoC to enter WFI when
+>arch_idle is called.
+>
+>This patch is also necessary for correctly suspending the system.
+>
+>Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>---
+> arch/arm/mach-mx5/Makefile              |    2 +-
+> arch/arm/mach-mx5/system.c              |   84 +++++++++++++++++++++++++++++++
+> arch/arm/plat-mxc/include/mach/mxc.h    |    9 +++
+> arch/arm/plat-mxc/include/mach/system.h |    6 ++-
+> 4 files changed, 99 insertions(+), 2 deletions(-)
+> create mode 100644 arch/arm/mach-mx5/system.c
+>
+>diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+>index 0d43be9..1106acd 100644
+>--- a/arch/arm/mach-mx5/Makefile
+>+++ b/arch/arm/mach-mx5/Makefile
+>@@ -3,7 +3,7 @@
+> #
+>
+> # Object file lists.
+>-obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o
+>+obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o system.o
+> obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
+>
+> obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+>diff --git a/arch/arm/mach-mx5/system.c b/arch/arm/mach-mx5/system.c
+>new file mode 100644
+>index 0000000..06d306b
+>--- /dev/null
+>+++ b/arch/arm/mach-mx5/system.c
+>@@ -0,0 +1,84 @@
+>+/*
+>+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
+>+ */
+>+
+>+/*
+>+ * The code contained herein is licensed under the GNU General Public
+>+ * License. You may obtain a copy of the GNU General Public License
+>+ * Version 2 or later at the following locations:
+>+ *
+>+ * http://www.opensource.org/licenses/gpl-license.html
+>+ * http://www.gnu.org/copyleft/gpl.html
+>+ */
+>+#include <linux/platform_device.h>
+>+#include <asm/io.h>
+>+#include <mach/hardware.h>
+>+#include "crm_regs.h"
+>+
+>+/* set cpu low power mode before WFI instruction. This function is called mx5 because
+>+ it can be used for mx50, mx51, and mx53.*/
+>+void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
+>+{
+>+	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
+>+	u32 empgc0, empgc1;
+>+	int stop_mode = 0;
+>+
+>+	/* always allow platform to issue a deep sleep mode request */
+>+	plat_lpc = __raw_readl(MXC_CORTEXA8_PLAT_LPC) &
+>+	    ~(MXC_CORTEXA8_PLAT_LPC_DSM);
+>+	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
+>+	arm_srpgcr = __raw_readl(MXC_SRPG_ARM_SRPGCR) & ~(MXC_SRPGCR_PCR);
+>+	empgc0 = __raw_readl(MXC_SRPG_EMPGC0_SRPGCR) & ~(MXC_SRPGCR_PCR);
+>+	empgc1 = __raw_readl(MXC_SRPG_EMPGC1_SRPGCR) & ~(MXC_SRPGCR_PCR);
+>+
+>+	switch (mode) {
+>+	case WAIT_CLOCKED:
+>+		break;
+>+	case WAIT_UNCLOCKED:
+>+		ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
+>+		break;
+>+	case WAIT_UNCLOCKED_POWER_OFF:
+>+	case STOP_POWER_OFF:
+>+		plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
+>+			    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
+>+		if (mode == WAIT_UNCLOCKED_POWER_OFF) {
+>+			ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
+>+			ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
+>+			ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
+>+			stop_mode = 0;
+>+		} else {
+>+			ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
+>+			ccm_clpcr |= 0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET;
+>+			ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
+>+			ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
+>+			stop_mode = 1;
+>+		}
+>+
+>+		arm_srpgcr |= MXC_SRPGCR_PCR;
+>+		if (stop_mode) {
+>+			empgc0 |= MXC_SRPGCR_PCR;
+>+			empgc1 |= MXC_SRPGCR_PCR;
+>+		}
+>+
+>+		if (tzic_enable_wake(1) != 0)
+>+			return;
+>+		break;
+>+	case STOP_POWER_ON:
+>+		ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
+>+		break;
+>+	default:
+>+		printk(KERN_WARNING "UNKNOWN cpu power mode: %d\n", mode);
+>+		return;
+>+	}
+>+
+>+	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
+>+	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
+>+	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
+>+	/* Enable NEON SRPG for all but MX50TO1.0. */
+>+	__raw_writel(arm_srpgcr, MXC_SRPG_NEON_SRPGCR);
+>+	if (stop_mode) {
+>+		__raw_writel(empgc0, MXC_SRPG_EMPGC0_SRPGCR);
+>+		__raw_writel(empgc1, MXC_SRPG_EMPGC1_SRPGCR);
+>+	}
+>+}
+>+
+>diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
+>index 04c7a26..8a8970d 100644
+>--- a/arch/arm/plat-mxc/include/mach/mxc.h
+>+++ b/arch/arm/plat-mxc/include/mach/mxc.h
+>@@ -181,6 +181,15 @@ struct cpu_op {
+> 	u32 cpu_rate;
+> };
+>
+>+int tzic_enable_wake(int is_idle);
+>+enum mxc_cpu_pwr_mode {
+>+	WAIT_CLOCKED,		/* wfi only */
+>+	WAIT_UNCLOCKED,		/* WAIT */
+>+	WAIT_UNCLOCKED_POWER_OFF,	/* WAIT + SRPG */
+>+	STOP_POWER_ON,		/* just STOP */
+>+	STOP_POWER_OFF,		/* STOP + SRPG */
+>+};
+>+
+> extern struct cpu_op *(*get_cpu_op)(int *op);
+> #endif
+>
+>diff --git a/arch/arm/plat-mxc/include/mach/system.h b/arch/arm/plat-mxc/include/mach/system.h
+>index 95be51b..35283a4 100644
+>--- a/arch/arm/plat-mxc/include/mach/system.h
+>+++ b/arch/arm/plat-mxc/include/mach/system.h
+>@@ -20,6 +20,8 @@
+> #include <mach/hardware.h>
+> #include <mach/common.h>
+>
+>+extern void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode);
+>+
+> static inline void arch_idle(void)
+> {
+> #ifdef CONFIG_ARCH_MXC91231
+>@@ -54,7 +56,9 @@ static inline void arch_idle(void)
+> 			"orr %0, %0, #0x00000004\n"
+> 			"mcr p15, 0, %0, c1, c0, 0\n"
+> 			: "=r" (reg));
+>-	} else
+>+	} else if (cpu_is_mx51())
+>+		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+>+	else
+> 		cpu_do_idle();
+> }
+>
+>--
+>1.6.0.4
 
-IF YOU ARE READY TO MAKE SOME QUICK CONSISTENT MONEY, KEEP READING......
-IF YOU CAN POST 3 FREE ADS A DAY, YOU WILL START GETTING $$$$$$$$ DUMPED INTO 
-YOUR PAYPAL ACCOUNT EVERY DAY!!!!  GUARANTEED!!!
 
-Join Now!! Get Your $680 USD Guaranteed Commissions!!!~
-
-Even during the boom years in any economy it's not possible to find a form 
-of free income, BUT THIS IS EXACTLY THAT! and it will make you free money   
-for the rest of your life.
-
-It's Easy To Make Money Everyday From Home With This Program...Even If 
-You're Starting From Scratch With Zero Knowledge, Experience Or Budget!
-I'll Show You Exactly How.
-
-We've Start putting New 40 Members in YOUR TEAM for the March 8- 15 - /2011
-commission cycle...and GROWING everyday Earn by $100 up to $300 or more.
-
-IMPORTANT:Join before March 15, 2011 is the Cut-Off day to lock in your
-position. First Come first serve the Commissions!!
-
-Go Here To Secure not less than $680 Commission Now and it still growing as 
-many people joining under you. important secure your position right away:
-
-Your commission will Send Arrive Through ,Paypal,or Credit Card in your area  
-on April 20/2011...And Hurry For the 8 Remaining Position This Week!!
-
-Once your Membership are set up, you will be able to earn $680 in less than 
-2 hours a day.  I will show you how we do that and then I will help you  
-through the process so that YOU SUCCEED!
-
-You Can access the $680 in any ATM when you join now before cut-off.
-
-Click below!!
-https://www.plimus.com/jsp/redirect.jsp?contractId=2912206&referrer=earnhere2011
-
-HERE IS A SCREENSHOT OF PAYMENTS THAT I'VE RECEIVED IN A 2 DAY PERIOD WITH THESE ADS.
-
-TYPE  DATE   &  TIME ------ NEW MEMBERS ------------- COUNTRY
-
-P -- March.08  @ 2:38  AM-----Jinky Robinson----------- United States
-P -- March.08  @ 2:53  AM-----Ailaine Smith ----------- United States
-P -- March.08  @ 2:56  AM-----Mandene Jonhson---------- United States
-M -- March.08  @ 4:19  AM-----Cristian Gatmaitan------- Singapore
-P -- March.08  @ 4:28  AM-----Jhon Carmalon------------ Italy
-M -- March.08  @ 6:01  AM-----lalaine Brown------------ Australia
-P -- March.08  @ 7:11  AM-----Rebecca Underwood-------- Hungary
-P -- March.08  @ 7:39  AM-----Jericho Jackson---------- Canada
-P -- March.08  @ 9:42  AM-----Thomas Silva ------------ Sri Lanka
-M -- March.08  @ 9:58  PM-----Grace Taylor------------- United Kingdom
-P -- March.08  @ 10:21 PM-----Gina Henry--------------- New Zealand
-P -- March.08  @ 11:24 PM-----Mohammed Ahmen ---------- Mexico
-M -- March.08  @ 11:33 PM-----Tracey Furlong----------- Puerto Rico
-P -- March.08  @ 11:41 PM-----Jane furlong------------- Potugal
-P -- March.08  @ 11:47 PM-----Janice Youngtown--------- Taiwan
-P -- March.08  @ 11:53 PM-----Shirley Ong-------------- China
-P -- March.08  @ 1:45  AM --- Ryann Lambert ----------- Europe
-M -- March.08  @ 12:34 AM --- Nick Gauci -------------- Calefornia
-M -- March.08  @ 10:24 AM --- Don Riley --------------- Netherland
-P -- March.08  @ 10:30 AM --- Lorne Whittaker --------- Swetzerland
-P -- March.08  @ 02:14 AM --- Ashwani Vohra ----------- Brazil
-M -- March.08  @ 2:34  AM --- Kevin Hunt -------------- Sweden
-P -- March.08  @ 1:54  AM --- Charles James Mills ----- South Africa
-P -- March.08  @ 12:34 AM --- Delia Lane -------------- New York
-P -- March.08  @ 6:45  AM --- Mohamed Salamaikom------- Saudi Arabia
-M -- March.08  @ 5:34  AM --- Aleksandar Gjuroski ----- Japan
-P -- March.08  @ 12:34 PM --- Andrew Karim ------------ England
-P -- March.08  @ 8:23  AM --- Carla Pereira ----------- South Korea
-P -- March.08  @ 2:34  PM --- Carl Krause ------------- United States
-M -- March.08  @ 9:14  AM --- David Cook -------------- Denmark
-
-Therefore, you have a GUARANTEED $680 Commissions  every month from now on!
-
-Earn $17 USD Per Process!Each $17 USD x 40 =$680 Commission will be yours...
-
-Be Sure to Copy the link below & Paste into your browser and press enter:
-To Secure your $680 commission!!!
-
-You will access your money in any ATM when you follow the instructions you receive.
-
-Click below!!
-https://www.plimus.com/jsp/redirect.jsp?contractId=2912206&referrer=earnhere2011
-
-Just one simple payment of 17 USD and you could have earn $680 that is yours,And you    
-have a chance to recieve unlimited commissions every 20th of the month. Today its $680   
-For the start of the month of March  if goes up daily until the end of the month.
-
-You must UPGRADE right away or before others do....
-
-Caring for Your Success, Jenifer Jackson
-
-http://www.truthitnow.com/cart.php?m=product_detail&p=8
