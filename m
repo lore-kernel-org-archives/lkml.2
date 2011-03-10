@@ -1,143 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab1CJXeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:34:09 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40698
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753682Ab1CJXeH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:34:07 -0500
-Date: Thu, 10 Mar 2011 15:34:44 -0800 (PST)
-Message-Id: <20110310.153444.115930379.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754150Ab1CJXjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:39:35 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:37888 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab1CJXje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:39:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=nvE0Q0D8fl4xouslQakWKd2zfWgqxZFvpkjKpeccf2WQ5c4/LYSkm9KMNRStcHVSd4
+         xpfUluT0/aCsZ8tqr11cqFveTxM3pcq0EMNsI9ij8NcxhlH7gHf53S1u80/q9WBoGI7j
+         bFDhQxAoVL8yjOJpeYd8p/Vwoxq5AK37IgYvw=
+Message-ID: <4D796132.1030007@gmail.com>
+Date: Thu, 10 Mar 2011 15:39:30 -0800
+From: Konstantin Svist <fry.kun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Mnenhy/0.8.2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Can I build/test AHCI module on a live system? [was: PMP on Marvell
+ 6121]
+References: <4D77D4FA.50604@gmail.com>
+In-Reply-To: <4D77D4FA.50604@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Is there an easy way of recompiling/trying the AHCI module without 
+having to recompile the entire kernel/rebooting?
 
-I think all the major known regressions are cured and we should be
-ready to go for 2.6.38-final
+Thanks
 
-1) Fix regression in IPV6 route lookups, cures BZ 29252 and 30462
 
-2) We use ifa_address where we mean ifa_local in ipv4 stack,
-   reported by Julian Anastasov.
-
-3) pktgen time reporting units are wrong, fix from Daniel Turull
-
-4) IPV6=m/BRIDGE=y results in broken build, fix from Randy Dunlap.
-
-5) Network modloading security fix needs to handle ip6 tunnel case,
-   fix from Stephen Hemminger.
-
-6) bnx2x driver fixes from Dmitry Kravkov and Eilon Greenstein.
-
-7) smsc911x drops full sized VLAN packets erroneously, fix from Göran
-   Weinholt.
-
-8) Fix Makefile logic for entering net/ipv6 directory for the case
-   where we are only building {exthdrs,addrconf}_core.o Fix from
-   Thomas Graf.
-
-9) Multi-threaded signal handling is botched because we use plain
-   mutex_lock() to synchronize readers in recvmsg(), change to use
-   mutex_lock_interruptible().  Fix from Rainer Weikusat.
-
-10) Bonding driver state machine locking doesn't cover enough code,
-    fix from Nils Carlson.
-
-12) Fix BUG_ON trigger in RDS stack, fix from Neil Horman.
-
-13) Multicase handling fixes to r6040 driver from Shawn Lin.
-
-Please pull, thanks a lot!
-
-The following changes since commit 9179746652faf0aba07b8b7f770dcf29892a24c6:
-
-  Merge branch 'media_fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6 (2011-03-10 13:22:10 -0800)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Daniel Turull (1):
-      pktgen: fix errata in show results
-
-David S. Miller (3):
-      ipv4: Fix erroneous uses of ifa_address.
-      ipv6: Don't create clones of host routes.
-      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
-
-Dmitry Kravkov (4):
-      bnx2x: fix non-pmf device load flow
-      bnx2x: fix link notification
-      bnx2x: (NPAR) prevent HW access in D3 state
-      bnx2x: fix MaxBW configuration
-
-Florian Fainelli (1):
-      r6040: bump to version 0.27 and date 23Feb2011
-
-Göran Weinholt (1):
-      net/smsc911x.c: Set the VLAN1 register to fix VLAN MTU problem
-
-Jon Mason (1):
-      vxge: update MAINTAINERS
-
-Neil Horman (1):
-      rds: prevent BUG_ON triggering on congestion map updates
-
-Nicolas Kaiser (1):
-      drivers/net/macvtap: fix error check
-
-Nils Carlson (2):
-      bonding 802.3ad: Fix the state machine locking v2
-      bonding 802.3ad: Rename rx_machine_lock to state_machine_lock
-
-Rainer Weikusat (1):
-      net: fix multithreaded signal handling in unix recv routines
-
-Randy Dunlap (1):
-      net: bridge builtin vs. ipv6 modular
-
-Shawn Lin (1):
-      r6040: fix multicast operations
-
-Thomas Graf (1):
-      net: Enter net/ipv6/ even if CONFIG_IPV6=n
-
-j223yang@asset.uwaterloo.ca (1):
-      ariadne: remove redundant NULL check
-
-stephen hemminger (1):
-      ip6ip6: autoload ip6 tunnel
-
- MAINTAINERS                       |    5 +-
- drivers/net/ariadne.c             |    5 --
- drivers/net/bnx2x/bnx2x.h         |    5 +-
- drivers/net/bnx2x/bnx2x_cmn.c     |   22 +++++++
- drivers/net/bnx2x/bnx2x_cmn.h     |    9 +++
- drivers/net/bnx2x/bnx2x_ethtool.c |   18 +++---
- drivers/net/bnx2x/bnx2x_main.c    |   19 +++---
- drivers/net/bonding/bond_3ad.c    |   32 ++++++----
- drivers/net/bonding/bond_3ad.h    |    3 +-
- drivers/net/macvtap.c             |    3 +-
- drivers/net/r6040.c               |  115 +++++++++++++++++++++----------------
- drivers/net/smsc911x.c            |    5 ++
- net/Makefile                      |    4 +-
- net/bridge/Kconfig                |    1 +
- net/core/pktgen.c                 |    2 +-
- net/ipv4/devinet.c                |    6 +-
- net/ipv6/ip6_tunnel.c             |    1 +
- net/ipv6/route.c                  |    4 +-
- net/rds/ib_send.c                 |    5 +-
- net/rds/loop.c                    |   11 +++-
- net/unix/af_unix.c                |   17 ++++-
- 21 files changed, 182 insertions(+), 110 deletions(-)
+On 03/09/2011 11:28 AM, Konstantin Svist wrote:
+> I'm trying to get port multiplier working on Marvell 6121 esata port.
+> So far, I've found lkml discussion on how AHCI doesn't seem to support 
+> it [1] and verified that it's still the case.
+> sata_mv doesn't support it either - I only see the 1st drive in the 
+> multiplier
+>
+> There used to be an official Asus driver called mv_thor [2] for really 
+> old versions (2.6.20-something) and someone maintained it until 2.6.27 
+> [3].
+> The good news is I tried it on 2.6.27 (Fedora 10) and it works!
+>
+> Questions:
+> Can someone who knows how the AHCI driver works take a look at the 
+> mv_thor code and figure out why PMP doesn't work in AHCI driver? Most 
+> likely it's just some quirk to get the chip initialized...
+>
+> And since the answer to the previous is most likely "we're too busy, 
+> look at it yourself" the followup question is
+> Is there an easy way of recompiling/trying the AHCI module without 
+> having to recompile the entire kernel/rebooting?
+>
+> Thanks!
+>
+>
+> [1] http://marc.info/?t=121747549500001&r=1&w=1
+> [2] 
+> http://en.wikipedia.org/wiki/List_of_Marvell_Technology_Group_chipsets#Linux_SATA_driver
+> [3] http://forums.gentoo.org/viewtopic-p-5213724.html#5213724
+>
+>
