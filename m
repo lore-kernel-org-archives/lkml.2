@@ -1,150 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab1CJLDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 06:03:12 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52825 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1CJLDK (ORCPT
+	id S1751678Ab1CJLGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 06:06:55 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41662 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751285Ab1CJLGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 06:03:10 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Bob Liu <lliubbo@gmail.com>
-Subject: Re: [PATCH] media: uvc_driver: add NO-MMU arch support
-Date: Thu, 10 Mar 2011 12:03:30 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r1; KDE/4.6.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, mchehab@redhat.com, hverkuil@xs4all.nl,
-        sakari.ailus@maxwell.research.nokia.com, martin_rubli@logitech.com,
-        jarod@redhat.com, tj@kernel.org, arnd@arndb.de, fweisbec@gmail.com,
-        agust@denx.de, gregkh@suse.de, vapier.adi@gmail.com,
-        uclinux-dist-devel@blackfin.uclinux.org
-References: <1299725077-13839-1-git-send-email-lliubbo@gmail.com>
-In-Reply-To: <1299725077-13839-1-git-send-email-lliubbo@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Thu, 10 Mar 2011 06:06:54 -0500
+Date: Thu, 10 Mar 2011 11:06:58 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: =?ISO-8859-14?B?TeFyaW8=?= Isidoro <marioisidoro@gmail.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH n_gsm] GSM Mux in non-transparent mode
+Message-ID: <20110310110658.0a46d19d@lxorguk.ukuu.org.uk>
+In-Reply-To: <1299724790.1800.135.camel@Paio>
+References: <1299724790.1800.135.camel@Paio>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103101203.31563.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bob,
+> These alterations allow the usage of the non-transparent mode of the gsm
+> mux, it works well enough to establish a ppp session using pppd. The
+> increased buffer size allows the usage of the default MRU and MTU sizes
+> in pppd.
 
-Thanks for the patch.
+In the tty like adaption layers the buffer size and PPP sizes are not
+linked, because stuff is diced and packetised. Ok it's probably a
+performance win. Really it needs network support for best results. There
+is some prototype code for the network type ones but there are some
+*horrid* and quite hard to fix races in it that need fixing before that
+goes upstream
 
-On Thursday 10 March 2011 03:44:37 Bob Liu wrote:
-> UVC driver used to have partial no-mmu arch support, but it's removed by
-> commit c29fcff3daafbf46d64a543c1950bbd206ad8c1c.
-> 
-> This patch added them back and expanded to fully support no-mmu arch, so
-> that uvc cameras can be used on no-mmu platforms like Blackfin.
-> 
-> Signed-off-by: Bob Liu <lliubbo@gmail.com>
-> ---
->  drivers/media/video/uvc/uvc_v4l2.c |   36
-> ++++++++++++++++++++++++++++++++++++ drivers/media/video/v4l2-dev.c     | 
->  18 ++++++++++++++++++
->  drivers/usb/gadget/uvc_queue.c     |   15 +++++++++++++++
->  include/media/v4l2-dev.h           |    2 ++
->  4 files changed, 71 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/media/video/uvc/uvc_v4l2.c
-> b/drivers/media/video/uvc/uvc_v4l2.c index 9005a8d..2413ec9 100644
-> --- a/drivers/media/video/uvc/uvc_v4l2.c
-> +++ b/drivers/media/video/uvc/uvc_v4l2.c
-> @@ -1081,6 +1081,39 @@ static unsigned int uvc_v4l2_poll(struct file *file,
-> poll_table *wait) return uvc_queue_poll(&stream->queue, file, wait);
+> There is a problem that happens if the process that is holding the
+> attached line discipline tries to detach it before a process using a
+> virtual com manages to close it. Both processes end up dealocked. I
+> think this has to do with the tty lock. I don't have the backtrace with
+> me
+
+That one is a known recent breakage caused by Arnd's big kernel lock
+removal. Needs looking at but it looks 'interesting' to fix.
+
+>  	gsm->output(gsm, cbuf, len);
+> -	gsm_print_packet("-->", addr, cr, control, NULL, 0);
+> +	gsm_print_packet("->-", addr, cr, control, NULL, 0);
+
+Why ? It's important not to put in gratuitious changes.
+
 >  }
-> 
-> +#ifndef CONFIG_MMU
-> +static unsigned long uvc_v4l2_get_unmapped_area(struct file *file,
-> +		unsigned long addr, unsigned long len, unsigned long pgoff,
-> +		unsigned long flags)
-> +{
-> +	struct uvc_fh *handle = (struct uvc_fh *)file->private_data;
-> +	struct uvc_streaming *stream = handle->stream;
-> +	struct uvc_video_queue *queue = &stream->queue;
-> +	struct uvc_buffer *uninitialized_var(buffer);
-> +	unsigned int i;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&queue->mutex);
-> +	for (i = 0; i < queue->count; ++i) {
-> +		buffer = &queue->buffer[i];
-> +		if ((buffer->buf.m.offset >> PAGE_SHIFT) == pgoff)
-> +			break;
-> +	}
-> +
-> +	if (i == queue->count ||
-> +		PAGE_ALIGN(len) != queue->buf_size) {
-> +		ret = -EINVAL;
-> +		goto done;
-> +	}
-> +
-> +	addr = (unsigned long)queue->mem + buffer->buf.m.offset;
-> +	ret = addr;
-> +done:
-> +	mutex_unlock(&queue->mutex);
-> +	return ret;
-> +}
-> +#endif
+>  
+>  /**
+> @@ -999,22 +1023,25 @@ static void gsm_control_reply(struct gsm_mux
+> *gsm, int cmd, u8 *data,
+>  static void gsm_process_modem(struct tty_struct *tty, struct gsm_dlci
+> *dlci,
+>  							u32 modem)
+>  {
+> -	int  mlines = 0;
+> +	int  mlines = dlci->modem_tx;
+>  	u8 brk = modem >> 6;
+>  
+> +	modem = modem >> 1 ;
 > +
 
-Could you move the core of this function to uvc_queue.c ? Something like
+This seems ot be a symptom of an earlier bug (see below) - plus if you
+did that you'd need to fix the brk flag ?
 
-unsigned long uvc_queue_get_unmapped_area(struct uvc_video_queue *queue,
-	unsigned long addr, unsigned long len, unsigned long pgoff,
-	unsigned long flags),
-
-static unsigned long uvc_v4l2_get_unmapped_area(struct file *file,
-		unsigned long addr, unsigned long len, unsigned long pgoff,
-		unsigned long flags)
-{
-	struct uvc_fh *handle = (struct uvc_fh *)file->private_data;
-	struct uvc_streaming *stream = handle->stream;
-
-	return uvc_queue_get_unmapped_area(queue, addr, len, pgoff, flags);
-}
-
-> diff --git a/drivers/usb/gadget/uvc_queue.c
-> b/drivers/usb/gadget/uvc_queue.c index f7395ac..24378fb 100644
-> --- a/drivers/usb/gadget/uvc_queue.c
-> +++ b/drivers/usb/gadget/uvc_queue.c
-> @@ -431,6 +431,7 @@ uvc_queue_mmap(struct uvc_video_queue *queue, struct
-> vm_area_struct *vma) break;
+>  	/* Flow control/ready to communicate */
+>  	if (modem & MDM_FC) {
+> +		pr_debug("Flux throttled\n");
+>  		/* Need to throttle our output on this device */
+>  		dlci->constipated = 1;
 >  	}
-> 
-> +#ifdef CONFIG_MMU
->  	if (i == queue->count || size != queue->buf_size) {
->  		ret = -EINVAL;
->  		goto done;
-> @@ -452,6 +453,20 @@ uvc_queue_mmap(struct uvc_video_queue *queue, struct
-> vm_area_struct *vma) addr += PAGE_SIZE;
->  		size -= PAGE_SIZE;
+>  	if (modem & MDM_RTC) {
+> -		mlines |= TIOCM_DSR | TIOCM_DTR;
+> +		mlines |= TIOCM_DSR ;
+>  		dlci->constipated = 0;
+>  		gsm_dlci_data_kick(dlci);
 >  	}
-> +#else
-> +	if (i == queue->count ||
-> +		PAGE_ALIGN(size) != queue->buf_size) {
-> +		ret = -EINVAL;
-> +		goto done;
-> +	}
+>  	/* Map modem bits */
+>  	if (modem & MDM_RTR)
+> -		mlines |= TIOCM_RTS | TIOCM_CTS;
+> +		mlines |= TIOCM_CTS;
+>  	if (modem & MDM_IC)
+>  		mlines |= TIOCM_RI;
+>  	if (modem & MDM_DV)
+> @@ -1068,18 +1095,25 @@ static void gsm_control_modem(struct gsm_mux
+> *gsm, u8 *data, int clen)
+>  		return;
+>  	dlci = gsm->dlci[addr];
+>  
+> -	while (gsm_read_ea(&modem, *dp++) == 0) {
+> -		len--;
+> -		if (len == 0)
+> -			return;
 > +
-> +	/* documentation/nommu-mmap.txt */
-> +	vma->vm_flags |= VM_IO | VM_MAYSHARE;
+> +	/* Signals frame comes with EA = 0 in GE863-PRO3*/
+> +	if (len == 1) {
+> +		modem = *dp ;
+
+Probably worth checking the standard here. If not your workaround seems
+reasonable but buggy - surely you need to shift the bits here not in the
+modem processing where you otherwise overdo the shifts on the gsm_read_ea
+path. In fact would it be better to simply be more robust and do
+
+			if (len == 0)
+				break;	/* No EA, try what we have*/
+
+?
+
+> +		while (gsm_read_ea(&modem, *dp++) == 0) {
+> +			len--;
+> +			if (len == 0)
+> +				return;
+
+>  	tty = tty_port_tty_get(&dlci->port);
+>  	gsm_process_modem(tty, dlci, modem);
+>  	if (tty) {
+>  		tty_wakeup(tty);
+>  		tty_kref_put(tty);
+>  	}
+> -	gsm_control_reply(gsm, CMD_MSC, data, clen);
+> +	/*gsm_control_reply(gsm, CMD_MSC, data, clen);*/
+
+We need to reply to control messages in all cases as far as I can see
+from the specification ? Is there a reason for this tweak ?
+
+> +		if (command == CMD_MSC) {
+> +			/* Out of band modem line change indicator for a DLCI */
+> +			gsm_control_modem(gsm, data, clen);
+> +		}
+
+Ah I see what you are trying to do with that - if we get a modem status
+command we need to reply, if we get a response we need not to - but
+doesn't the modem line handling have to be different in each case anyway ?
+
+>  	struct gsm_msg *msg = gsm_data_alloc(gsm, 0, ctrl->len + 1,
+> -							gsm->ftype|PF);
+> +							gsm->ftype/*|PF*/);
+
+Correct - and recently committed fix.
+
+
+>  	case UA:
+>  	case UA|PF:
+> -		if (cr == 0 || dlci == NULL)
+> +		if (dlci == NULL)
+>  			break;
+
+A UA without C/R set is not valid, this change seems wrong ?
+
+> +	/* At least Siemens/Cinterion and Telit modems require that the
+> control
+> +	   channel be open within 5 seconds of starting the cmux mode */
+> +	gsm_dlci_begin_open(dlci);
+
+Correct - which is easy to do from user space, however if we are being
+run as the modem end (we do both) we cannot start sending SABM(P) messages
+at this point as the user has no ability to specify which way they want
+it.
+
+The LDISC doesn't really use write so you've got a pass through after
+setting the ldisc if need be, but 5 seconds to set an ldisc, and issue
+two ioctls isn't hard even in perl...
+
+> @@ -2583,8 +2632,18 @@ static int gsmtty_open(struct tty_struct *tty,
+> struct file *filp)
+>  	/* We could in theory open and close before we wait - eg if we get
+>  	   a DM straight back. This is ok as that will have caused a hangup */
+>  	set_bit(ASYNCB_INITIALIZED, &port->flags);
 > +
-> +	addr = (unsigned long)queue->mem + buffer->buf.m.offset;
-> +	vma->vm_start = addr;
-> +	vma->vm_end = addr +  queue->buf_size;
-> +#endif
-> 
->  	vma->vm_ops = &uvc_vm_ops;
->  	vma->vm_private_data = buffer;
+> +	if (debug & 16)
+> +		pr_debug("Request to open DLCI %d\n", dlci->addr);
+> +
+>  	/* Start sending off SABM messages */
+>  	gsm_dlci_begin_open(dlci);
+> +
+> +	/* Wait for the modem to send a acknowledge to the open command */
+> +	ret = wait_event_interruptible(gsm->event, dlci->state == DLCI_OPEN);
+> +	if (ret < 0)
+> +		return -ERESTARTSYS;
 
-Note that uvc_queue.c will be replaced by videobuf2 in the (near ?) future. 
-NOMMU support will thus be removed once again. If you want to keep it, you 
-should add a patch to videobuf2 to implement NOMMU support there.
+No - we don't want to do this, there are cases where waiting is bad, the
+current code uses the modem responses of the other end to do open
+completion management. Think about O_NDELAY and a failed modem, or think
+about being the modem end.
 
--- 
-Regards,
+> @@ -2661,9 +2725,12 @@ static int gsmtty_tiocmset(struct tty_struct
+> *tty, struct file *filp,
+>  	struct gsm_dlci *dlci = tty->driver_data;
+>  	unsigned int modem_tx = dlci->modem_tx;
+>  
+> -	modem_tx &= clear;
+> +	modem_tx &= ~clear;
+>  	modem_tx |= set;
 
-Laurent Pinchart
+Eep
+
+I think what would be a useful starting point would be to submit several
+*small* patches that each fix one of the things you've touched
+
+eg
+
+- Allow for the missing EA
+- Bracketing on the shifts (stylewise it does look clearer)
+- TIOCMSET fix
+
+then drop out the various random --> to ->- type changes and see what is
+left that needs discussion, checking with the spec and submitting.
+
+Alan
