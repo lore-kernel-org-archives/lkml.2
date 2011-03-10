@@ -1,116 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab1CJNQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 08:16:23 -0500
-Received: from compulab.co.il ([67.18.134.219]:42002 "EHLO compulab.co.il"
+	id S1752606Ab1CJNQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 08:16:46 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:37073 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab1CJNQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 08:16:21 -0500
-Message-ID: <4D78CE98.4040500@compulab.co.il>
-Date: Thu, 10 Mar 2011 15:14:00 +0200
-From: Denis Turischev <denis@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1751405Ab1CJNQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 08:16:45 -0500
+Message-ID: <4D78CF3A.7000408@kernel.dk>
+Date: Thu, 10 Mar 2011 14:16:42 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH v3] pch_uart: reference clock on CM-iTC
-References: <4D74A600.7070302@compulab.co.il> <20110307200733.GA18849@kroah.com> <4D761F7F.2030908@compulab.co.il> <20110309234238.GA4071@kroah.com>
-In-Reply-To: <20110309234238.GA4071@kroah.com>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] DRBD bits for 2.6.39
+References: <201103091523.51815.philipp.reisner@linbit.com> <201103101200.24005.philipp.reisner@linbit.com> <4D78B54B.2060803@kernel.dk> <201103101310.39012.philipp.reisner@linbit.com>
+In-Reply-To: <201103101310.39012.philipp.reisner@linbit.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Default clock source for UARTs on Topcliff is external UART_CLK.
-On CM-iTC USB_48MHz is used instead. After VCO2PLL and DIV
-manipulations UARTs will receive 192 MHz.
-Clock manipulations on Topcliff are controlled in pch_phub.c
+On 2011-03-10 13:10, Philipp Reisner wrote:
+> [...]
+>>
+>> Now that I have your attention... Did you look at the plugging changes?
+> 
+> You always have it :)
+> I looked at the changes, and I noticed that we no longer get the unplug
+> events. 
+> 
+>> As Christoph mentioned, you seem to be passing plugging information on
+>> the wire. What is the reason for that? With the on-stack plugging, these
+>> events are not seen by the block device anymore.
+>>
+> 
+> Imagine DRBD in synchronous mode (protocol C in DRBD speak) on an older
+> kernel. We mirror a write, in order to get the write-ack packet from the
+> peer, the peer needs to unplug as well. -> Send the unplug events via the
+> wire.
+> 
+> Now, it we would connect a current-head-of-git DRBD on one node to
+> a older one (which still needs unplug packets to respond quickly),
+> we would have a tar pit block device. (At least for single synchronous
+> writes)
+> 
+> We are in brainstorming mode right now here.
+> One idea is to have a timer, that gets touched with every request we get
+> in, in case it expires, we send out a unplug event over the wire.
+> 
+> But having the unplug events would be more elegant of course...
 
-v2: redone against the linux-next tree
-v3: redone against linux/kernel/git/next/linux-next.git snapshot
+The unplug is essentially the ->request_fn() being run now. So for older
+clients you could just always include an unplug even when you pulled
+whatever off the queue there is and sent it to the device.
 
-Signed-off-by: Denis Turischev <denis@compulab.co.il>
----
-diff -Nru linux-next-20110310.orig/drivers/misc/pch_phub.c linux-next-20110310/drivers/misc/pch_phub.c
---- linux-next-20110310.orig/drivers/misc/pch_phub.c	2011-03-10 08:31:30.000000000 +0200
-+++ linux-next-20110310/drivers/misc/pch_phub.c	2011-03-10 14:42:05.110978473 +0200
-@@ -27,6 +27,7 @@
- #include <linux/mutex.h>
- #include <linux/if_ether.h>
- #include <linux/ctype.h>
-+#include <linux/dmi.h>
+-- 
+Jens Axboe
 
- #define PHUB_STATUS 0x00		/* Status Register offset */
- #define PHUB_CONTROL 0x04		/* Control Register offset */
-@@ -46,6 +47,13 @@
- #define PCH_MINOR_NOS 1
- #define CLKCFG_CAN_50MHZ 0x12000000
- #define CLKCFG_CANCLK_MASK 0xFF000000
-+#define CLKCFG_UART_MASK			0xFFFFFF
-+
-+/* CM-iTC */
-+#define CLKCFG_UART_48MHZ			(1 << 16)
-+#define CLKCFG_BAUDDIV				(2 << 20)
-+#define CLKCFG_PLL2VCO				(8 << 9)
-+#define CLKCFG_UARTCLKSEL			(1 << 18)
-
- /* Macros for ML7213 */
- #define PCI_VENDOR_ID_ROHM			0x10db
-@@ -618,6 +626,14 @@
- 					       CLKCFG_CAN_50MHZ,
- 					       CLKCFG_CANCLK_MASK);
-
-+		/* quirk for CM-iTC board */
-+		if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
-+			pch_phub_read_modify_write_reg(chip,
-+						(unsigned int)CLKCFG_REG_OFFSET,
-+						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-+						CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-+						CLKCFG_UART_MASK);
-+
- 		/* set the prefech value */
- 		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
- 		/* set the interrupt delay value */
-diff -Nru linux-next-20110310.orig/drivers/tty/serial/pch_uart.c linux-next-20110310/drivers/tty/serial/pch_uart.c
---- linux-next-20110310.orig/drivers/tty/serial/pch_uart.c	2011-03-10 08:31:30.000000000 +0200
-+++ linux-next-20110310/drivers/tty/serial/pch_uart.c	2011-03-10 14:45:46.123478166 +0200
-@@ -20,6 +20,7 @@
- #include <linux/serial_core.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-+#include <linux/dmi.h>
-
- #include <linux/dmaengine.h>
- #include <linux/pch_dma.h>
-@@ -1403,14 +1404,18 @@
- 	if (!rxbuf)
- 		goto init_port_free_txbuf;
-
-+	base_baud = 1843200; /* 1.8432MHz */
-+
-+	/* quirk for CM-iTC board */
-+	if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
-+		base_baud = 192000000; /* 192.0MHz */
-+
- 	switch (port_type) {
- 	case PORT_UNKNOWN:
- 		fifosize = 256; /* EG20T/ML7213: UART0 */
--		base_baud = 1843200; /* 1.8432MHz */
- 		break;
- 	case PORT_8250:
- 		fifosize = 64; /* EG20T:UART1~3  ML7213: UART1~2*/
--		base_baud = 1843200; /* 1.8432MHz */
- 		break;
- 	default:
- 		dev_err(&pdev->dev, "Invalid Port Type(=%d)\n", port_type);
