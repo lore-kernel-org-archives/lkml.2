@@ -1,84 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab1CJXdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:33:13 -0500
-Received: from www.tglx.de ([62.245.132.106]:37590 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753682Ab1CJXdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:33:12 -0500
-Date: Fri, 11 Mar 2011 00:32:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Daney <ddaney@caviumnetworks.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
-        mingo@elte.hu, andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 0/2] jump label: update for .39
-In-Reply-To: <4D795DCE.7050807@caviumnetworks.com>
-Message-ID: <alpine.LFD.2.00.1103110029090.2787@localhost6.localdomain6>
-References: <1299780241.15854.393.camel@gandalf.stny.rr.com>  <20110310182000.GB2906@redhat.com>  <1299782143.15854.402.camel@gandalf.stny.rr.com>  <4D791CAA.7090108@caviumnetworks.com>  <1299783236.15854.405.camel@gandalf.stny.rr.com>  <4D791F31.6040100@caviumnetworks.com>
-  <1299785143.15854.407.camel@gandalf.stny.rr.com>  <1299786329.15854.409.camel@gandalf.stny.rr.com>  <BLU0-SMTP311155BEBE5F141636A6E596C80@phx.gbl>  <1299793339.15854.430.camel@gandalf.stny.rr.com>  <BLU0-SMTP101D168109508CC1B82F0E496C80@phx.gbl>
- <1299798970.15854.484.camel@gandalf.stny.rr.com> <4D795DCE.7050807@caviumnetworks.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754166Ab1CJXeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:34:09 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40698
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753682Ab1CJXeH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:34:07 -0500
+Date: Thu, 10 Mar 2011 15:34:44 -0800 (PST)
+Message-Id: <20110310.153444.115930379.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011, David Daney wrote:
 
-> On 03/10/2011 03:16 PM, Steven Rostedt wrote:
-> > On Thu, 2011-03-10 at 17:48 -0500, Mathieu Desnoyers wrote:
-> > > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > > On Thu, 2011-03-10 at 16:22 -0500, Mathieu Desnoyers wrote:
-> > > > 
-> > > > > > Anyway, I think the best thing for now is to have Jason add
-> > > > > > the .align(sizeof(long)) in the inline assembly for all locations
-> > > > > > and be
-> > > > > > done with it.
-> > > > > 
-> > > > > You seem to be contradicting yourself here. I'm concerned about having
-> > > > > "structures" of a size not power of two. Can we simply either
-> > > > 
-> > > > But we don't have structures. We have data that has been allocated in
-> > > > assembly. Come to think of it, it may be best to keep these as
-> > > > ".align 4".
-> > > 
-> > > The .align 4 is certainly not the right answer, because it will trigger
-> > > unaligned accesses on some 64-bit architectures, as we have faced with
-> > > trace event.
-> > 
-> > Will it? Seems that sparc does this regardless.
-> > 
-> > Remember, this is 3 natural word sized objects, and vmlinux.ld starts
-> > the section off with .ALIGN 8, hence, the section is already 8 byte
-> > aligned, all objects within this section are 8 bytes (for 64bit archs,
-> > and 4 bytes for 32bit), why would saying ".align 4" cause the linker to
-> > add holes to make it 4 byte aligned when it is already 8 byte aligned.
-> > The ".align 4" should work with both 32bit and 64bit archs.
-> > 
-> 
-> It should work, but it hurts my eyes to see the source code forcing a 64-bit
-> word to 32-bit alignment.
+I think all the major known regressions are cured and we should be
+ready to go for 2.6.38-final
 
-We solved such stuff with macros in other places already.
+1) Fix regression in IPV6 route lookups, cures BZ 29252 and 30462
 
-#ifdef 64bit
-# define BLA 8
-#else
-# define BLA 4
-#endif
+2) We use ifa_address where we mean ifa_local in ipv4 stack,
+   reported by Julian Anastasov.
 
-and then use 
+3) pktgen time reporting units are wrong, fix from Daniel Turull
 
-.aling BLA
+4) IPV6=m/BRIDGE=y results in broken build, fix from Randy Dunlap.
 
-Where is the problem?
+5) Network modloading security fix needs to handle ip6 tunnel case,
+   fix from Stephen Hemminger.
 
-Thanks,
+6) bnx2x driver fixes from Dmitry Kravkov and Eilon Greenstein.
 
-	tglx
+7) smsc911x drops full sized VLAN packets erroneously, fix from Göran
+   Weinholt.
+
+8) Fix Makefile logic for entering net/ipv6 directory for the case
+   where we are only building {exthdrs,addrconf}_core.o Fix from
+   Thomas Graf.
+
+9) Multi-threaded signal handling is botched because we use plain
+   mutex_lock() to synchronize readers in recvmsg(), change to use
+   mutex_lock_interruptible().  Fix from Rainer Weikusat.
+
+10) Bonding driver state machine locking doesn't cover enough code,
+    fix from Nils Carlson.
+
+12) Fix BUG_ON trigger in RDS stack, fix from Neil Horman.
+
+13) Multicase handling fixes to r6040 driver from Shawn Lin.
+
+Please pull, thanks a lot!
+
+The following changes since commit 9179746652faf0aba07b8b7f770dcf29892a24c6:
+
+  Merge branch 'media_fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6 (2011-03-10 13:22:10 -0800)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Daniel Turull (1):
+      pktgen: fix errata in show results
+
+David S. Miller (3):
+      ipv4: Fix erroneous uses of ifa_address.
+      ipv6: Don't create clones of host routes.
+      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
+
+Dmitry Kravkov (4):
+      bnx2x: fix non-pmf device load flow
+      bnx2x: fix link notification
+      bnx2x: (NPAR) prevent HW access in D3 state
+      bnx2x: fix MaxBW configuration
+
+Florian Fainelli (1):
+      r6040: bump to version 0.27 and date 23Feb2011
+
+Göran Weinholt (1):
+      net/smsc911x.c: Set the VLAN1 register to fix VLAN MTU problem
+
+Jon Mason (1):
+      vxge: update MAINTAINERS
+
+Neil Horman (1):
+      rds: prevent BUG_ON triggering on congestion map updates
+
+Nicolas Kaiser (1):
+      drivers/net/macvtap: fix error check
+
+Nils Carlson (2):
+      bonding 802.3ad: Fix the state machine locking v2
+      bonding 802.3ad: Rename rx_machine_lock to state_machine_lock
+
+Rainer Weikusat (1):
+      net: fix multithreaded signal handling in unix recv routines
+
+Randy Dunlap (1):
+      net: bridge builtin vs. ipv6 modular
+
+Shawn Lin (1):
+      r6040: fix multicast operations
+
+Thomas Graf (1):
+      net: Enter net/ipv6/ even if CONFIG_IPV6=n
+
+j223yang@asset.uwaterloo.ca (1):
+      ariadne: remove redundant NULL check
+
+stephen hemminger (1):
+      ip6ip6: autoload ip6 tunnel
+
+ MAINTAINERS                       |    5 +-
+ drivers/net/ariadne.c             |    5 --
+ drivers/net/bnx2x/bnx2x.h         |    5 +-
+ drivers/net/bnx2x/bnx2x_cmn.c     |   22 +++++++
+ drivers/net/bnx2x/bnx2x_cmn.h     |    9 +++
+ drivers/net/bnx2x/bnx2x_ethtool.c |   18 +++---
+ drivers/net/bnx2x/bnx2x_main.c    |   19 +++---
+ drivers/net/bonding/bond_3ad.c    |   32 ++++++----
+ drivers/net/bonding/bond_3ad.h    |    3 +-
+ drivers/net/macvtap.c             |    3 +-
+ drivers/net/r6040.c               |  115 +++++++++++++++++++++----------------
+ drivers/net/smsc911x.c            |    5 ++
+ net/Makefile                      |    4 +-
+ net/bridge/Kconfig                |    1 +
+ net/core/pktgen.c                 |    2 +-
+ net/ipv4/devinet.c                |    6 +-
+ net/ipv6/ip6_tunnel.c             |    1 +
+ net/ipv6/route.c                  |    4 +-
+ net/rds/ib_send.c                 |    5 +-
+ net/rds/loop.c                    |   11 +++-
+ net/unix/af_unix.c                |   17 ++++-
+ 21 files changed, 182 insertions(+), 110 deletions(-)
