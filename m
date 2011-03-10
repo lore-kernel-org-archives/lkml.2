@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab1CJNCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 08:02:45 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47097 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab1CJNCo (ORCPT
+	id S1752597Ab1CJNF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 08:05:29 -0500
+Received: from charybdis-ext.suse.de ([195.135.221.2]:41183 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751723Ab1CJNF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 08:02:44 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=XbqWoAS_rckA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=h_w0JG2fg3BU4W-zMnIA:9 a=OEuQTLSCGJ5iklzGwVEA:7 a=VGTCgwH-2PplIUnLymyIl4hbGdwA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH trace-cmd 3/3] Revert "trace-cmd: Use conditional
- assignment of CC and AR"
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com
-In-Reply-To: <4D7873B5.7090602@linux.intel.com>
-References: <1299715137-22768-1-git-send-email-dhsharp@google.com>
-	 <1299715137-22768-3-git-send-email-dhsharp@google.com>
-	 <4D7828F9.7000906@linux.intel.com>
-	 <1299720997.15854.276.camel@gandalf.stny.rr.com>
-	 <4D783038.8080103@linux.intel.com>
-	 <AANLkTikHy1pZP0=cpmSD_HG-jeJvgne3u2ivOif6DHP8@mail.gmail.com>
-	 <1299725486.15854.281.camel@gandalf.stny.rr.com>
-	 <1299727594.15854.310.camel@gandalf.stny.rr.com>
-	 <AANLkTi=WRv2PekEyuEh5k9VOv9LmGCWa6KxXn0BeZVSk@mail.gmail.com>
-	 <4D7873B5.7090602@linux.intel.com>
+	Thu, 10 Mar 2011 08:05:28 -0500
+Subject: Re: [RFC][PATCH 0/2] Allow subsystems to avoid using sysdevs for
+ defining "core" PM callbacks
+From: Kay Sievers <kay.sievers@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Greg KH <gregkh@suse.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de
+In-Reply-To: <201103100131.58206.rjw@sisk.pl>
+References: <201103100131.58206.rjw@sisk.pl>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 08:02:42 -0500
-Message-ID: <1299762162.15854.326.camel@gandalf.stny.rr.com>
+Date: Thu, 10 Mar 2011 14:05:15 +0100
+Message-ID: <1299762315.1875.14.camel@zag>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 22:46 -0800, Darren Hart wrote:
-
-> > This seems to do it all:
-> >
-> > define allow-override
-> >    $(if $(or $(findstring environment,$(origin $(1))),
-> >              $(findstring command line,$(origin $(1)))),,\
-> >      $(eval $(1) = $(2)))
-> > endef
-> >
-> > $(call allow-override,CC,$(CROSS_COMPILE)gcc)
-> > $(call allow-override,AR,$(CROSS_COMPILE)ar)
+On Thu, 2011-03-10 at 01:31 +0100, Rafael J. Wysocki wrote:
+> There are multiple problems with sysdevs, or struct sys_device objects to
+> be precise, that are so annoying that some people have started to think
+> of removind them entirely from the kernel.  To me, personally, the most
+> obvious issue is the way sysdevs are used for defining suspend/resume
+> callbacks to be executed with one CPU on-line and interrupts disabled.
+> Greg and Kay may tell you more about the other problems with sysdevs. :-)
 > 
-> Egads .... that's hideous :-) This level of complexity makes it very 
-> difficult for people to readily understand it. What does this offer over:
-
-Love the world of makefiles ;) Nothing that comments wont solve.
-
+> Some subsystems need to carry out certain operations during suspend after
+> we've disabled non-boot CPUs and interrupts have been switched off on the
+> only on-line one.  Currently, the only way to achieve that is to define
+> sysdev suspend/resume callbacks, but this is cumbersome and inefficient.
+> Namely, to do that, one has to define a sysdev class providing the callbacks
+> and a sysdev actually using them, which is excessively complicated.  Moreover,
+> the sysdev suspend/resume callbacks take arguments that are not really used
+> by the majority of subsystems defining sysdev suspend/resume callbacks
+> (or even if they are used, they don't really _need_ to be used, so they
+> are simply unnecessary).  Of course, if a sysdev is only defined to provide
+> suspend/resume (and maybe shutdown) callbacks, there's no real reason why
+> it should show up in sysfs.
 > 
-> ifdef CROSS_COMPILE
-> CC = $(CROSS_COMPILE)gcc
-> AR = $(CROSS_COMPILE)ar
-> endif
+> For this reason, I thought it would be a good idea to provide a simpler
+> interface for subsystems to define "very late" suspend callbacks and
+> "very early" resume callbacks (and "very late" shutdown callbacks as well)
+> without the entire bloat related to sysdevs.  The interface is introduced
+> by the first of the following patches, while the second patch converts some
+> sysdev users related to the x86 architecture to using the new interface.
 > 
-> besides being 3 lines longer with much more complex Makefile syntax and 
-> conditional statements?
+> I believe that call sysdev users who need to define suspend/resume/shutdown
+> callbacks may be converted to using the interface provided by the first patch,
+> which in turn should allow us to convert the remaining sysdev functionality
+> into "normal" struct device interfaces.  Still, even if that turns out to be
+> too complicated, the bloat reduction resulting from the second patch kind of
+> shows that moving at least some sysdev users to a simpler interface (like in
+> the first patch) is a good idea anyway.
 
-Yes, the above is simple and solves the issue for both you and David,
-but it has a side-effect that David already pointed out. CC is now cc
-and not gcc. I don't like that, as I do have systems that cc is
-different that gcc and I want to use gcc.
+Do I read that right? We get rid of the entire dance of creating
+sysdevs/sysdev_classes and the pointless and broken stuff in /sys?
 
-But if I define CROSS_COMPILE it then suddenly uses gcc. Yes this may
-not seem like a big deal now, but in the future, it could cause a lot of
-headache. I rather have the more complex yet correct solution that is
-consistent than a simple easy to read solution with a subtle side-effect
-that is hidden.
+We just dynamically maintain a list of devices/operations, which is
+list-executed when needed?
 
--- Steve
+These new "core" operations are not included in every device but only
+global per subsystem, just like the sysdev_class did earlier?
 
+Looks all like a nice plan to me.
+
+Thanks,
+Kay
 
