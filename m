@@ -1,195 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab1CJIpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 03:45:31 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:37165 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1CJIp3 (ORCPT
+	id S1751405Ab1CJIs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 03:48:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:55308 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab1CJIs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 03:45:29 -0500
-Message-ID: <5c286d66bf790d7fbdd69c9861edc91d.squirrel@webmail.greenhost.nl>
-In-Reply-To: <s5h4o7btnxq.wl%tiwai@suse.de>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-    <20110216192658.GA7225@blimp.localdomain>
-    <20110217221329.GA3332@x61.home>
-    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
-    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-    <20110222130440.21a27714@jbarnes-desktop>
-    <20110222223120.GA3567@x61.home>
-    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
-    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
-    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
-    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
-    <s5h4o7btnxq.wl%tiwai@suse.de>
-Date: Thu, 10 Mar 2011 09:45:18 +0100 (CET)
-Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after     
-      reopening lid
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Takashi Iwai" <tiwai@suse.de>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Alex Riesen" <raa.lkml@gmail.com>,
-        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Thu, 10 Mar 2011 03:48:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexander Shishkin <virtuoso@slind.org>
+Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
+Date: Thu, 10 Mar 2011 09:48:03 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Ken MacLeod <ken@bitsko.slc.ut.us>,
+        Shaun Reich <predator106@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org
+References: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
+In-Reply-To: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 373e2adaaf179be0df59b6b9982b76fe
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103100948.03628.arnd@arndb.de>
+X-Provags-ID: V02:K0:aBmVHZPZDsKnXJIo9pIHIXSoBUnmzQGsV9yNjKfhQzj
+ 3DTZamhqL99ddYMiY0JnRI15ptXXne3kVAqyF7KegzpzOU+bwU
+ zcC4yoXQ2ydYGaJzkAAl8D9LzqNw4FO3oX29olbllTXa/CgNoZ
+ 92uoMH6h5GulT1jnjY8oM3RiQlByrklO7qJR0fmAjSo2rfrAKk
+ LNiEvucRB27lyXbj8/kLg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, March 10, 2011 08:49, Takashi Iwai wrote:
-> At Thu, 10 Mar 2011 06:50:09 +0100 (CET),
-> Indan Zupancic wrote:
->>
->> Hello,
->>
->> On Fri, March 4, 2011 19:47, Linus Torvalds wrote:
->> > Alex, can you confirm that the revert of 951f3512dba5 plus the
->> > one-liner patch from Takashi that Indan quoted also works for you?
->> >
->> >               Linus
->> >
->> > On Thu, Mar 3, 2011 at 10:53 PM, Indan Zupancic <indan@nul.nu> wrote:
->> >>
->> >> So please revert my patch and apply Takashi Iwai's, which fixes the
->> >> most immediate bug without changing anything else. This should go
->> >> in stable too.
->> >
->>
->> I found another backlight bug:
->>
->> When suspending intel_panel_disable_backlight() is never called,
->> but intel_panel_enable_backlight() is called at resume. With the
->> effect that if the brightness was ever changed after screen
->> blanking, the wrong brightness gets restored.
->>
->> This explains the weird behaviour I've seen. I didn't see it with
->> combination mode, because then the brightness is always the same
->> (zero or the maximum, the BIOS only uses LBPC on my system.) I'll
->> send a patch in a moment.
->>
->> Alternative for reverting the combination mode removal (I can also
->> redo the patch against the revert and Takashi's patch, if that's
->> preferred):
->>
->> --
->>
->> drm/i915: Do handle backlight combination mode specially
->>
->> Add back the combination mode check, but with slightly cleaner code
->> and the weirdness removed: No val >>= 1, but also no val &= ~1. The
->> old code probably confused bit 0 with BLM_LEGACY_MODE, which is bit 16.
->> The other change is clearer calculations: Just check for zero level
->> explicitly instead of avoiding the divide-by-zero.
->>
->> Signed-off-by: Indan Zupancic <indan@nul.nu>
->>
->> ---
->>
->> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
->> index d860abe..b05631a 100644
->> --- a/drivers/gpu/drm/i915/intel_panel.c
->> +++ b/drivers/gpu/drm/i915/intel_panel.c
->> @@ -30,6 +30,10 @@
->>
->>  #include "intel_drv.h"
->>
->> +#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
->> +#define BLM_COMBINATION_MODE (1 << 30)
->> +#define BLM_LEGACY_MODE (1 << 16)
->> +
->>  void
->>  intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
->>  		       struct drm_display_mode *adjusted_mode)
->> @@ -110,6 +114,22 @@ done:
->>  	dev_priv->pch_pf_size = (width << 16) | height;
->>  }
->>
->> +/*
->> + * What about gen 3? If there are no gen 3 systems with ASLE,
->> + * then it doesn't matter, as we don't need to change the
->> + * brightness. But then the gen 2 check can be removed too.
->> + */
->> +static int is_backlight_combination_mode(struct drm_device *dev)
->> +{
->> +	struct drm_i915_private *dev_priv = dev->dev_private;
->> +
->> +	if (INTEL_INFO(dev)->gen >= 4)
->> +		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
->> +	if (IS_GEN2(dev))
->> +		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
->> +	return 0;
->> +}
->> +
->>  static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
->>  {
->>  	u32 val;
->> @@ -163,9 +183,12 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
->>  			max >>= 17;
->>  		} else {
->>  			max >>= 16;
->> +			/* Ignore BLM_LEGACY_MODE bit */
->>  			if (INTEL_INFO(dev)->gen < 4)
->>  				max &= ~1;
->>  		}
->> +		if (is_backlight_combination_mode(dev))
->> +			max *= 0xff;
->>  	}
->>
->>  	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
->> @@ -183,6 +206,12 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
->>  		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
->>  		if (IS_PINEVIEW(dev))
->>  			val >>= 1;
->> +		if (is_backlight_combination_mode(dev)){
->> +			u8 lbpc;
->> +
->> +			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
->> +			val *= lbpc;
->> +		}
->>  	}
->>
->>  	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
->> @@ -205,6 +234,15 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
->>
->>  	if (HAS_PCH_SPLIT(dev))
->>  		return intel_pch_panel_set_backlight(dev, level);
->> +
->> +	if (level && is_backlight_combination_mode(dev)){
->> +		u32 max = intel_panel_get_max_backlight(dev);
->> +		u8 lpbc;
->> +
->> +		lpbc = level * 0xff / max;
->> +		level /= lpbc;
->
-> Hmm, I don't think this calculation is correct.  This would result
-> in level of opregion over its limit.  For example, assume the level
-> max = 100, so total max = 25500.  Passing level=150 here will be:
->
-> 	lbpc = 150 * 0xff / 25500 = 1.5 = 1
-> 	level = 150 / 1 = 150, which is over limit.
->
-> More worse, lbpc can be zero when level is below 100 in the case
-> above...
+On Wednesday 09 March 2011 15:36:51 Alexander Shishkin wrote:
+> This is another attempt to approach notifying userspace about system
+> clock changes. The other one is using an eventfd and a syscall [1]. In
+> the course of discussing the necessity of a syscall for this kind of
+> notifications, it was suggested that this functionality can be achieved
+> via timers [2] (and timerfd in particular [3]). This idea got quite
+> some support [4], [5], [6] and some vague criticism [7], so I decided
+> to try and go a bit further with it.
 
-Yes, you're right. It seems that any simplification I try to do
-creates a new bug.
+I don't understand from your description or from the patch how user
+space gets notified. From your description, I would have expected
+to see a change to the timerfd_poll() function to check if the
+clock has changed, possibly returning POLLPRI, but the only such
+change I can see is in the timerfd_read() function. Don't you need
+to change poll() so that a task knows when to call read()?
 
-Do you have any bright idea why the old code did val &= ~1; too?
-It seems obvious it's related to val >>= 1, but...
+> +/* TFD_NOTIFY_CLOCK_SET timers go here */
+> +static DEFINE_SPINLOCK(notifiers_lock);
+> +static LIST_HEAD(notifiers_list);
 
-Thanks,
+Maybe I was the only one to be confused by this, but I think t
+he naming is slightly misleading, because it's easy to confuse
+with a struct notifier_block. You could of course use the
+notifier API instead of building your own, but if you don't,
+I'd recommend coming up with a different name.
 
-Indan
+I also think that a mutex would be better here than a spinlock.
+It's unlikely to be under heavy contention, but if you have
+a lot of threads, it could be held for a significant amount
+of time.
 
-
+	Arnd
