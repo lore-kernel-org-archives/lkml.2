@@ -1,222 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847Ab1CJKGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:06:35 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:61000 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab1CJKGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:06:33 -0500
-Message-ID: <a04bdafb8c7a97d92593e980b01b37fd.squirrel@webmail.greenhost.nl>
-In-Reply-To: <s5hy64ns7pq.wl%tiwai@suse.de>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-    <20110216192658.GA7225@blimp.localdomain>
-    <20110217221329.GA3332@x61.home>
-    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
-    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-    <20110222130440.21a27714@jbarnes-desktop>
-    <20110222223120.GA3567@x61.home>
-    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
-    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
-    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
-    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
-    <s5h4o7btnxq.wl%tiwai@suse.de> <s5hy64ns7pq.wl%tiwai@suse.de>
-Date: Thu, 10 Mar 2011 11:06:28 +0100 (CET)
-Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after     
-      reopening lid
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Takashi Iwai" <tiwai@suse.de>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Alex Riesen" <raa.lkml@gmail.com>,
-        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
-User-Agent: SquirrelMail/1.4.17
+	id S1751927Ab1CJKHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:07:50 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:20921 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116Ab1CJKHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 05:07:49 -0500
+Message-ID: <4D78A2B8.1030605@parallels.com>
+Date: Thu, 10 Mar 2011 13:06:48 +0300
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 9bf25e62613229f0beb95d8bfda7a7aa
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pidns: Make pid_max per namespace
+References: <4D6F53B5.5090105@parallels.com>	<20110307155823.22e47d73.akpm@linux-foundation.org>	<4D789B64.9000603@parallels.com> <20110310015045.63482b62.akpm@linux-foundation.org>
+In-Reply-To: <20110310015045.63482b62.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, March 10, 2011 09:25, Takashi Iwai wrote:
-> At Thu, 10 Mar 2011 08:49:37 +0100,
-> Takashi Iwai wrote:
+On 03/10/2011 12:50 PM, Andrew Morton wrote:
+> On Thu, 10 Mar 2011 12:35:32 +0300 Pavel Emelyanov <xemul@parallels.com> wrote:
+> 
+>> On 03/08/2011 02:58 AM, Andrew Morton wrote:
+>>> On Thu, 03 Mar 2011 11:39:17 +0300
+>>> Pavel Emelyanov <xemul@parallels.com> wrote:
+>>>
+>>>> Rationale:
+>>>>
+>>>> On x86_64 with big ram people running containers set pid_max on host to 
+>>>> large values to be able to launch more containers. At the same time 
+>>>> containers running 32-bit software experience problems with large pids - ps
+>>>> calls readdir/stat on proc entries and inode's i_ino happen to be too big 
+>>>> for the 32-bit API.
+>>>>
+>>>> Thus, the ability to limit the pid value inside container is required.
+>>>>
+>>>
+>>> This is a behavioural change, isn't it?  In current kernels a write to
+>>> /proc/sys/kernel/pid_max will change the max pid on all processes. 
+>>> After this change, that write will only affect processes in the current
+>>> namespace.  Anyone who was depending on the old behaviour might run
+>>> into problems?
 >>
->> At Thu, 10 Mar 2011 06:50:09 +0100 (CET),
->> Indan Zupancic wrote:
->> >
->> > Hello,
->> >
->> > On Fri, March 4, 2011 19:47, Linus Torvalds wrote:
->> > > Alex, can you confirm that the revert of 951f3512dba5 plus the
->> > > one-liner patch from Takashi that Indan quoted also works for you?
->> > >
->> > >               Linus
->> > >
->> > > On Thu, Mar 3, 2011 at 10:53 PM, Indan Zupancic <indan@nul.nu> wrote:
->> > >>
->> > >> So please revert my patch and apply Takashi Iwai's, which fixes the
->> > >> most immediate bug without changing anything else. This should go
->> > >> in stable too.
->> > >
->> >
->> > I found another backlight bug:
->> >
->> > When suspending intel_panel_disable_backlight() is never called,
->> > but intel_panel_enable_backlight() is called at resume. With the
->> > effect that if the brightness was ever changed after screen
->> > blanking, the wrong brightness gets restored.
->> >
->> > This explains the weird behaviour I've seen. I didn't see it with
->> > combination mode, because then the brightness is always the same
->> > (zero or the maximum, the BIOS only uses LBPC on my system.) I'll
->> > send a patch in a moment.
->> >
->> > Alternative for reverting the combination mode removal (I can also
->> > redo the patch against the revert and Takashi's patch, if that's
->> > preferred):
->> >
->> > --
->> >
->> > drm/i915: Do handle backlight combination mode specially
->> >
->> > Add back the combination mode check, but with slightly cleaner code
->> > and the weirdness removed: No val >>= 1, but also no val &= ~1. The
->> > old code probably confused bit 0 with BLM_LEGACY_MODE, which is bit 16.
->> > The other change is clearer calculations: Just check for zero level
->> > explicitly instead of avoiding the divide-by-zero.
->> >
->> > Signed-off-by: Indan Zupancic <indan@nul.nu>
->> >
->> > ---
->> >
->> > diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
->> > index d860abe..b05631a 100644
->> > --- a/drivers/gpu/drm/i915/intel_panel.c
->> > +++ b/drivers/gpu/drm/i915/intel_panel.c
->> > @@ -30,6 +30,10 @@
->> >
->> >  #include "intel_drv.h"
->> >
->> > +#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
->> > +#define BLM_COMBINATION_MODE (1 << 30)
->> > +#define BLM_LEGACY_MODE (1 << 16)
->> > +
->> >  void
->> >  intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
->> >  		       struct drm_display_mode *adjusted_mode)
->> > @@ -110,6 +114,22 @@ done:
->> >  	dev_priv->pch_pf_size = (width << 16) | height;
->> >  }
->> >
->> > +/*
->> > + * What about gen 3? If there are no gen 3 systems with ASLE,
->> > + * then it doesn't matter, as we don't need to change the
->> > + * brightness. But then the gen 2 check can be removed too.
->> > + */
->> > +static int is_backlight_combination_mode(struct drm_device *dev)
->> > +{
->> > +	struct drm_i915_private *dev_priv = dev->dev_private;
->> > +
->> > +	if (INTEL_INFO(dev)->gen >= 4)
->> > +		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
->> > +	if (IS_GEN2(dev))
->> > +		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
->> > +	return 0;
->> > +}
->> > +
->> >  static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
->> >  {
->> >  	u32 val;
->> > @@ -163,9 +183,12 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
->> >  			max >>= 17;
->> >  		} else {
->> >  			max >>= 16;
->> > +			/* Ignore BLM_LEGACY_MODE bit */
->> >  			if (INTEL_INFO(dev)->gen < 4)
->> >  				max &= ~1;
->> >  		}
->> > +		if (is_backlight_combination_mode(dev))
->> > +			max *= 0xff;
->> >  	}
->> >
->> >  	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
->> > @@ -183,6 +206,12 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
->> >  		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
->> >  		if (IS_PINEVIEW(dev))
->> >  			val >>= 1;
->> > +		if (is_backlight_combination_mode(dev)){
->> > +			u8 lbpc;
->> > +
->> > +			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
->> > +			val *= lbpc;
->> > +		}
->> >  	}
->> >
->> >  	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
->> > @@ -205,6 +234,15 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
->> >
->> >  	if (HAS_PCH_SPLIT(dev))
->> >  		return intel_pch_panel_set_backlight(dev, level);
->> > +
->> > +	if (level && is_backlight_combination_mode(dev)){
->> > +		u32 max = intel_panel_get_max_backlight(dev);
->> > +		u8 lpbc;
->> > +
->> > +		lpbc = level * 0xff / max;
->> > +		level /= lpbc;
->>
->> Hmm, I don't think this calculation is correct.  This would result
->> in level of opregion over its limit.  For example, assume the level
->> max = 100, so total max = 25500.  Passing level=150 here will be:
->>
->> 	lbpc = 150 * 0xff / 25500 = 1.5 = 1
->> 	level = 150 / 1 = 150, which is over limit.
->>
->> More worse, lbpc can be zero when level is below 100 in the case
->> above...
->
-> That is, Chris' original code in that portion was correct:
->
-> 	if (is_backlight_combination_mode(dev)){
-> 		u32 max = intel_panel_get_max_backlight(dev);
-> 		u8 lpbc;
->
-> 		lpbc = level * 0xfe / max + 1;
-> 		level /= lpbc;
-> 		pci_write_config_byte(dev->pdev, PCI_LBPC, lpbc);
-> 	}
->
-> This will fit within the right range.
-> Though, changing like below will give a bit better calculation,
-> closer to the real level.
->
-> 		lpbc = level * 0xfe / max + 1;
-> 		level = (level + lpbc / 2) / lpbc;
+>> Hardly. If the behavior of some two apps depends on its synchronous change,
+>> these two might want to run in the same pid namespace.
+> 
+> I don't understand your answer.  What is this "synchronous change" of which
+> you speak?  Does your "might want to run" suggestion mean that userspace 
+> changes would be required for this operation to again work correctly?
 
-Indeed, though I don't think it makes much difference in practise.
+Your concern was about "anyone who was depending on the old behaviour", where
+the old behavior meant "a write to sys.pid_max will change the max pid on all
+processes".
 
-All in all it seems best to just revert my patch and apply your fix.
-Any "improvements" I may have are either buggy or can be added later.
+I wanted to say, that if someone changes pid_max and expects someone else to
+act differently after this, then these two should live in the same pid namespace.
 
-Care to make a new patch with the above improvement added? You can
-add my acked-by, for what it's worth.
+IOW, if X raises the pid_max, then all the processes X sees in its pid namespace
+*may* have pids up to this value. All the other process, that are not visible
+in X's pid space will have other values, but X doesn't see them, so why should
+we care?
 
-At this point I don't even dare removing that "obviously" bogus
-val &= ~1; I bet it's an undocumented bit having some obscure
-secret function on not well tested systems.
+> "In current kernels a write to /proc/sys/kernel/pid_max will change the
+> max pid on all processes."  Is this incorrect?
 
-Greetings,
+Not 100%. If I have some process with pid N and then I change the pid_max to N/2,
+that process will still have its pid N which is obviously greater, than N/2.
 
-Indan
+> "After this change (ie: this patch), that write will only affect
+> processes in the current namespace.".  Is this incorrect?
 
+With the exception stated above - yes, but I don't understand your concern after
+these two questions :(
 
+Thanks,
+Pavel
