@@ -1,167 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab1CJW2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 17:28:31 -0500
-Received: from mailb.microsoft.com ([131.107.115.215]:53350 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab1CJW2a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 17:28:30 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>,
-        Mike Sterling <Mike.Sterling@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
- driver
-Thread-Topic: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
- driver
-Thread-Index: AQHL325beDuENri3oES+5wMXWQ0GNpQnqf4A//969sA=
-Date: Thu, 10 Mar 2011 22:28:27 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048018AA3@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1299794912-1233-1-git-send-email-kys@microsoft.com>
- <20110310222034.GA19323@suse.de>
-In-Reply-To: <20110310222034.GA19323@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753015Ab1CJWbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 17:31:46 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:21835 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751158Ab1CJWbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 17:31:45 -0500
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: gregkh@suse.de
+Cc: ext-phil.2.carmody@nokia.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 1/1] sysfs: add more info to the oops dump
+Date: Fri, 11 Mar 2011 00:27:07 +0200
+Message-Id: <1299796027-3343-2-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
+In-Reply-To: <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <20110310212746.GA3361@suse.de>
+ <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we're going to remember which file we accessed, we might as well
+also remember whether it was a read or a write, and if the latter,
+some indication of what was written.
 
+e.g.
+$ echo sesquipedalianism > /sys/module/vt/parameters/default_utf8
+$ echo c > /proc/sysrq-trigger
+...
+[   57.522583] last sysfs file (w): /sys/module/vt/parameters/default_utf8  written: sesquipedaliani...(18 chars)
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Thursday, March 10, 2011 5:21 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; Haiyang Zhang; Mike Sterling; Abhishek Kane
-> (Mindtree Consulting PVT LTD); Hank Janssen
-> Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci driver
-> 
-> On Thu, Mar 10, 2011 at 02:08:32PM -0800, K. Y. Srinivasan wrote:
-> > Make vmbus driver a platform pci driver. This is
-> > in preparation to cleaning up irq allocation for this
-> > driver.
-> 
-> The idea is nice, but the nameing is a bit confusing.
-> 
-> We have "platform drivers" which are much different from what you are
-> doing here, you are just creating a "normal" pci driver.
-> 
-> Very minor comments below.
-> 
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
-> > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> > ---
-> >  drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++-------------
-> ----
-> >  1 files changed, 36 insertions(+), 27 deletions(-)
-> >
-> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-> > index 8b9394a..e4855ac 100644
-> > --- a/drivers/staging/hv/vmbus_drv.c
-> > +++ b/drivers/staging/hv/vmbus_drv.c
-> > @@ -43,6 +43,8 @@
-> >
-> >  static struct device *root_dev; /* Root device */
-> >
-> > +struct pci_dev *hv_pci_dev;
-> > +
-> >  /* Main vmbus driver data structure */
-> >  struct vmbus_driver_context {
-> >
-> > @@ -887,36 +889,24 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
-> >  	}
-> >  }
-> >
-> > -static struct dmi_system_id __initdata microsoft_hv_dmi_table[] = {
-> > -	{
-> > -		.ident = "Hyper-V",
-> > -		.matches = {
-> > -			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft
-> Corporation"),
-> > -			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-> > -			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
-> > -		},
-> > -	},
-> > -	{ },
-> > -};
-> > -MODULE_DEVICE_TABLE(dmi, microsoft_hv_dmi_table);
-> 
-> You're sure it's safe to delete this now and just rely on the PCI ids,
-> right?  For some wierd reason I thought we needed both to catch all
-> types of systems, but I can't remember why.
-I have tested this; I don't think we need the dmi table.
+Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+---
+ fs/sysfs/file.c |   24 +++++++++++++++++++++++-
+ 1 files changed, 23 insertions(+), 1 deletions(-)
 
-> 
-> >
-> > -static int __init vmbus_init(void)
-> > +
-> > +static int __devinit hv_pci_probe(struct pci_dev *pdev,
-> > +				const struct pci_device_id *ent)
-> >  {
-> > -	DPRINT_INFO(VMBUS_DRV,
-> > -		"Vmbus initializing.... current log level 0x%x (%x,%x)",
-> > -		vmbus_loglevel, HIWORD(vmbus_loglevel),
-> LOWORD(vmbus_loglevel));
-> > -	/* Todo: it is used for loglevel, to be ported to new kernel. */
-> > +	int err;
-> >
-> > -	if (!dmi_check_system(microsoft_hv_dmi_table))
-> > -		return -ENODEV;
-> > +	hv_pci_dev = pdev;
-> >
-> > -	return vmbus_bus_init();
-> > -}
-> > +	err = pci_enable_device(pdev);
-> > +	if (err)
-> > +		return err;
-> >
-> > -static void __exit vmbus_exit(void)
-> > -{
-> > -	vmbus_bus_exit();
-> > -	/* Todo: it is used for loglevel, to be ported to new kernel. */
-> > +	err = vmbus_bus_init();
-> > +	if (err)
-> > +		pci_disable_device(pdev);
-> > +
-> > +	return err;
-> >  }
-> >
-> >  /*
-> > @@ -931,10 +921,29 @@ static const struct pci_device_id
-> microsoft_hv_pci_table[] = {
-> >  };
-> >  MODULE_DEVICE_TABLE(pci, microsoft_hv_pci_table);
-> >
-> > +static struct pci_driver platform_driver = {
-> 
-> "hv_bus_driver"?
-> 
-> > +	.name =           "hv-platform-pci",
-> 
-> How about "hv_bus" as a name, as that's what this really is.  It's a
-> "bus adapter", like USB, Firewire, and all sorts of other bus
-> controllers.
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index da3fefe..88ac53d 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -26,9 +26,21 @@
+ 
+ /* used in crash dumps to help with debugging */
+ static char last_sysfs_file[PATH_MAX];
++static char last_sysfs_write[16];
++/* To indicate the last operation was a read, use an impossible length */
++#define SYSFS_NOT_A_WRITE -1
++static int last_sysfs_write_len;
+ void sysfs_printk_last_file(void)
+ {
+-	printk(KERN_EMERG "last sysfs file: %s\n", last_sysfs_file);
++	printk(KERN_EMERG "last sysfs file (%c): %s%c",
++	       (last_sysfs_write_len == SYSFS_NOT_A_WRITE) ? 'r' : 'w',
++	       last_sysfs_file,
++	       last_sysfs_write_len > 0 ? ' ' : '\n');
++	if (last_sysfs_write_len >= (int)sizeof(last_sysfs_write))
++		printk(KERN_CONT " written: %s...(%d chars)\n",
++		       last_sysfs_write, last_sysfs_write_len);
++	else if (last_sysfs_write_len > 0)
++		printk(KERN_CONT " written: %s\n", last_sysfs_write);
+ }
+ 
+ /*
+@@ -200,12 +212,19 @@ flush_write_buffer(struct dentry * dentry, struct sysfs_buffer * buffer, size_t
+ 	struct sysfs_dirent *attr_sd = dentry->d_fsdata;
+ 	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
+ 	const struct sysfs_ops * ops = buffer->ops;
++	int copylen = min(count, sizeof(last_sysfs_write) - 1);
+ 	int rc;
+ 
+ 	/* need attr_sd for attr and ops, its parent for kobj */
+ 	if (!sysfs_get_active(attr_sd))
+ 		return -ENODEV;
+ 
++	while (copylen > 0 && buffer->page[copylen-1] == '\n')
++		--copylen; /* never print trailing \n's */
++	memcpy(last_sysfs_write, buffer->page, copylen);
++	last_sysfs_write[copylen] = '\0';
++	last_sysfs_write_len = count;
++
+ 	rc = ops->store(kobj, attr_sd->s_attr.attr, buffer->page, count);
+ 
+ 	sysfs_put_active(attr_sd);
+@@ -363,6 +382,9 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 	if (file->f_mode & FMODE_WRITE) {
+ 		if (!(inode->i_mode & S_IWUGO) || !ops->store)
+ 			goto err_out;
++		last_sysfs_write_len = 0;
++	} else {
++		last_sysfs_write_len = SYSFS_NOT_A_WRITE;
+ 	}
+ 
+ 	/* File needs read support.
+-- 
+1.7.2.rc1.37.gf8c40
 
-Sure; I will make these changes. Would you mind if I submit these name changes as a separate patch.
-
-Regards,
-
-K. Y
