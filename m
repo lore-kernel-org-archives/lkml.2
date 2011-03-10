@@ -1,48 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1CJUhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:37:55 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6641 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007Ab1CJUhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:37:53 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6281"; a="79242329"
-From: David Brown <davidb@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: bryanh@codeaurora.org, linux@arm.linux.org.uk, dwalker@fifo99.com,
-        dima@android.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] msm: gpio-v2: Add missing BIT field macros for interrupt control
-In-Reply-To: <1299522832-31233-1-git-send-email-rvaswani@codeaurora.org>
-	(Rohit Vaswani's message of "Mon, 7 Mar 2011 10:33:52 -0800")
-References: <1299522832-31233-1-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-Date: Thu, 10 Mar 2011 12:37:59 -0800
-Message-ID: <8yaoc5i90ew.fsf@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752804Ab1CJUjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 15:39:18 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:45292 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751493Ab1CJUjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 15:39:17 -0500
+Date: Thu, 10 Mar 2011 20:40:02 +0000
+From: Andres Salomon <dilinger@queued.net>
+To: hpa@zytor.com
+Cc: Daniel Drake <dsd@laptop.org>, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] OLPC: Move CS5536-related constants to cs5535.h
+Message-ID: <20110310204002.182df773@debxo>
+In-Reply-To: <20110210171009.7D8399D401D@zog.reactivated.net>
+References: <20110210171009.7D8399D401D@zog.reactivated.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07 2011, Rohit Vaswani wrote:
+Hi folks,
 
-> The gpio-v2 file was missing the BIT field macros causing incorrect
-> values to be written at incorrect offsets within the TLMM block registers.
-> These registers are used for masking/unmasking interrupts and configuring them
-> This change fixes that problem.
->
-> Change-Id: Ib538a2d09bca039b058627ddc309a7faaaf6bc8d
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+Just a reminder that this patch is still outstanding (at least, i
+don't see it in the x86 tip tree; if I missed it, please let me know).
+I've already Acked it, can someone please merge or Nack it?  Thanks!
 
-Please remember to remove these Change-Id lines from patches before
-sending them out.  I'll remove them from these patches, since there
-don't seem to be any other comments.
 
-Thanks,
-David
+On Thu, 10 Feb 2011 17:10:09 +0000 (GMT) Daniel Drake
+<dsd@laptop.org> wrote:
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> Move these definitions into the relevant header file.
+> This was requested in the review of the upcoming XO-1 suspend/resume
+> code.
+> 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  arch/x86/platform/olpc/olpc-xo1.c |   26 ++++++++------------------
+>  include/linux/cs5535.h            |   21 +++++++++++++++++++++
+>  2 files changed, 29 insertions(+), 18 deletions(-)
+> 
+> diff --git a/arch/x86/platform/olpc/olpc-xo1.c
+> b/arch/x86/platform/olpc/olpc-xo1.c index 1277756..a2210ca 100644
+> --- a/arch/x86/platform/olpc/olpc-xo1.c
+> +++ b/arch/x86/platform/olpc/olpc-xo1.c
+> @@ -12,6 +12,7 @@
+>   * (at your option) any later version.
+>   */
+>  
+> +#include <linux/cs5535.h>
+>  #include <linux/module.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/pm.h>
+> @@ -21,17 +22,6 @@
+>  
+>  #define DRV_NAME "olpc-xo1"
+>  
+> -/* PMC registers (PMS block) */
+> -#define PM_SCLK		0x10
+> -#define PM_IN_SLPCTL	0x20
+> -#define PM_WKXD		0x34
+> -#define PM_WKD		0x30
+> -#define PM_SSC		0x54
+> -
+> -/* PM registers (ACPI block) */
+> -#define PM1_CNT		0x08
+> -#define PM_GPE0_STS	0x18
+> -
+>  static unsigned long acpi_base;
+>  static unsigned long pms_base;
+>  
+> @@ -40,17 +30,17 @@ static void xo1_power_off(void)
+>  	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
+>  
+>  	/* Enable all of these controls with 0 delay */
+> -	outl(0x40000000, pms_base + PM_SCLK);
+> -	outl(0x40000000, pms_base + PM_IN_SLPCTL);
+> -	outl(0x40000000, pms_base + PM_WKXD);
+> -	outl(0x40000000, pms_base + PM_WKD);
+> +	outl(0x40000000, pms_base + CS5536_PM_SCLK);
+> +	outl(0x40000000, pms_base + CS5536_PM_IN_SLPCTL);
+> +	outl(0x40000000, pms_base + CS5536_PM_WKXD);
+> +	outl(0x40000000, pms_base + CS5536_PM_WKD);
+>  
+>  	/* Clear status bits (possibly unnecessary) */
+> -	outl(0x0002ffff, pms_base  + PM_SSC);
+> -	outl(0xffffffff, acpi_base + PM_GPE0_STS);
+> +	outl(0x0002ffff, pms_base  + CS5536_PM_SSC);
+> +	outl(0xffffffff, acpi_base + CS5536_PM_GPE0_STS);
+>  
+>  	/* Write SLP_EN bit to start the machinery */
+> -	outl(0x00002000, acpi_base + PM1_CNT);
+> +	outl(0x00002000, acpi_base + CS5536_PM1_CNT);
+>  }
+>  
+>  static int __devinit olpc_xo1_probe(struct platform_device *pdev)
+> diff --git a/include/linux/cs5535.h b/include/linux/cs5535.h
+> index 6fe2114..e46b8b0 100644
+> --- a/include/linux/cs5535.h
+> +++ b/include/linux/cs5535.h
+> @@ -49,6 +49,27 @@
+>  #define LBAR_ACPI_SIZE		0x40
+>  #define LBAR_PMS_SIZE		0x80
+>  
+> +/*
+> + * PMC registers (PMS block)
+> + * It is only safe to access these registers as dword accesses.
+> + * See CS5536 Specification Update erratas 17 & 18
+> + */
+> +#define CS5536_PM_SCLK		0x10
+> +#define CS5536_PM_IN_SLPCTL	0x20
+> +#define CS5536_PM_WKXD		0x34
+> +#define CS5536_PM_WKD		0x30
+> +#define CS5536_PM_SSC		0x54
+> +
+> +/*
+> + * PM registers (ACPI block)
+> + * It is only safe to access these registers as dword accesses.
+> + * See CS5536 Specification Update erratas 17 & 18
+> + */
+> +#define CS5536_PM1_STS		0x00
+> +#define CS5536_PM1_EN		0x02
+> +#define CS5536_PM1_CNT		0x08
+> +#define CS5536_PM_GPE0_STS	0x18
+> +
+>  /* VSA2 magic values */
+>  #define VSA_VRC_INDEX		0xAC1C
+>  #define VSA_VRC_DATA		0xAC1E
+
