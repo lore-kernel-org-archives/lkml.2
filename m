@@ -1,97 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab1CJUxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:53:51 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64662 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab1CJUxu (ORCPT
+	id S1752963Ab1CJUyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 15:54:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35401 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab1CJUyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:53:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :message-id;
-        b=hO+DKNEeoWpj9qsJp4Qc8d/FuWdQlpHummeg5Z7s2JBLrIYhdIF8OG8UA1RgfYcBV0
-         Do5UtdNiea+dKNScbOpvwyMAlHeV8Z8OnV9MY4SIJCl1HJ2aRngui9bB1GRagQsfLIGA
-         AGr1c2oP7eLZ83rnmZO8eowXRSkjBBRm48JxQ=
-From: Michal =?utf-8?q?Mal=C3=BD?= <madcatxster@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Product ID for Logitech Driving Force Pro wheel
-Date: Thu, 10 Mar 2011 21:53:43 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8-ARCHMOD; KDE/4.6.1; x86_64; ; )
-Cc: jkosina@suse.cz
-MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_YpTeNlWA+vNxYn/"
-Message-Id: <201103102153.44137.madcatxster@gmail.com>
+	Thu, 10 Mar 2011 15:54:36 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=v1n8UvUeJUkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=FJ-O0Z5dBjATENtXZwYA:9 a=MoQl1j82xbRd6Wnv_D0A:7 a=2XJ-r7wPd6RKmi8YImvrLPvVTTkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/2] jump label: introduce static_branch() interface
+From: Steven Rostedt <rostedt@goodmis.org>
+To: davem@davemloft.net
+Cc: Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
+        mathieu.desnoyers@polymtl.ca, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        Avi Kivity <avi@redhat.com>, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <49b4727c7bfee19c2b7284b3339076ed827f3142.1299702291.git.jbaron@redhat.com>
+References: <cover.1299702291.git.jbaron@redhat.com>
+	 <49b4727c7bfee19c2b7284b3339076ed827f3142.1299702291.git.jbaron@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 15:54:32 -0500
+Message-ID: <1299790472.15854.414.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_YpTeNlWA+vNxYn/
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+On Wed, 2011-03-09 at 15:47 -0500, Jason Baron wrote:
 
-This trivial fix adds correct product ID for Logitech Driving Force Pro wheel 
-when it operates in native mode. This is needed to get force feedback working.
+>  arch/mips/include/asm/jump_label.h  |   22 +-
+>  arch/mips/kernel/jump_label.c       |    2 +-
+>  arch/sparc/include/asm/jump_label.h |   25 +-
+>  arch/x86/include/asm/alternative.h  |    3 +-
+>  arch/x86/include/asm/jump_label.h   |   26 +-
+>  arch/x86/kernel/alternative.c       |    2 +-
+>  arch/x86/kernel/jump_label.c        |    2 +-
+>  arch/x86/kernel/module.c            |    1 +
+>  include/asm-generic/vmlinux.lds.h   |   14 +-
+>  include/linux/dynamic_debug.h       |    2 -
+>  include/linux/jump_label.h          |   86 ++++---
+>  include/linux/jump_label_ref.h      |   44 ---
+>  include/linux/perf_event.h          |   26 +-
+>  include/linux/tracepoint.h          |   22 +-
+>  kernel/jump_label.c                 |  537 ++++++++++++++---------------------
+>  kernel/perf_event.c                 |    4 +-
+>  kernel/tracepoint.c                 |   23 +-
+>  17 files changed, 352 insertions(+), 489 deletions(-)
+>  delete mode 100644 include/linux/jump_label_ref.h
+> 
 
---Boundary-00=_YpTeNlWA+vNxYn/
-Content-Type: text/x-patch;
-  charset="UTF-8";
-  name="dfp_id_0.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="dfp_id_0.patch"
 
---- linux.orig/drivers/hid/hid-core.c	2011-03-08 06:09:37.000000000 +0100
-+++ linux/drivers/hid/hid-core.c	2011-03-09 20:09:36.926973002 +0100
-@@ -1368,6 +1368,7 @@
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_FLIGHT_SYSTEM_G940) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WII_WHEEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_RUMBLEPAD2) },
+> diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
+> index 427d468..fc73a82 100644
+> --- a/arch/sparc/include/asm/jump_label.h
+> +++ b/arch/sparc/include/asm/jump_label.h
+> @@ -7,17 +7,20 @@
+>  
+>  #define JUMP_LABEL_NOP_SIZE 4
+>  
+> -#define JUMP_LABEL(key, label)					\
+> -	do {							\
+> -		asm goto("1:\n\t"				\
+> -			 "nop\n\t"				\
+> -			 "nop\n\t"				\
+> -			 ".pushsection __jump_table,  \"a\"\n\t"\
+> -			 ".align 4\n\t"				\
+> -			 ".word 1b, %l[" #label "], %c0\n\t"	\
+> -			 ".popsection \n\t"			\
+> -			 : :  "i" (key) :  : label);\
+> -	} while (0)
+> +static __always_inline bool arch_static_branch(struct jump_label_key *key)
+> +{
+> +		asm goto("1:\n\t"
+> +			 "nop\n\t"
+> +			 "nop\n\t"
+> +			 ".pushsection __jump_table,  \"aw\"\n\t"
+> +			 ".align 4\n\t"
+> +			 ".word 1b, %l[l_yes], %c0\n\t"
+> +			 ".popsection \n\t"
+> +			 : :  "i" (key) : : l_yes);
+> +	return false;
+> +l_yes:
+> +	return true;
+> +}
+>  
+>  #endif /* __KERNEL__ */
+>  
 
---Boundary-00=_YpTeNlWA+vNxYn/
-Content-Type: text/x-patch;
-  charset="UTF-8";
-  name="dfp_id_1.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="dfp_id_1.patch"
+Hi David,
 
---- linux.orig/drivers/hid/hid-lg.c	2011-03-08 06:09:37.000000000 +0100
-+++ linux/drivers/hid/hid-lg.c	2011-03-09 20:09:36.927973002 +0100
-@@ -375,6 +375,8 @@
- 		.driver_data = LG_FF },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2),
- 		.driver_data = LG_FF },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL),
-+		.driver_data = LG_FF },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL),
- 		.driver_data = LG_FF },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WII_WHEEL),
+Can I get your Acked-by for this patch.
 
---Boundary-00=_YpTeNlWA+vNxYn/
-Content-Type: text/x-patch;
-  charset="UTF-8";
-  name="dfp_id_2.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="dfp_id_2.patch"
+Thanks,
 
---- linux.orig/drivers/hid/hid-ids.h	2011-03-08 06:09:37.000000000 +0100
-+++ linux/drivers/hid/hid-ids.h	2011-03-09 20:09:36.923973002 +0100
-@@ -383,6 +383,7 @@
- #define USB_DEVICE_ID_LOGITECH_WHEEL	0xc294
- #define USB_DEVICE_ID_LOGITECH_WINGMAN_FFG	0xc293
- #define USB_DEVICE_ID_LOGITECH_MOMO_WHEEL	0xc295
-+#define USB_DEVICE_ID_LOGITECH_DFP_WHEEL	0xc298
- #define USB_DEVICE_ID_LOGITECH_G25_WHEEL	0xc299
- #define USB_DEVICE_ID_LOGITECH_WII_WHEEL	0xc29c
- #define USB_DEVICE_ID_LOGITECH_ELITE_KBD	0xc30a
+-- Steve
 
---Boundary-00=_YpTeNlWA+vNxYn/--
+
