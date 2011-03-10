@@ -1,78 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab1CJD5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Mar 2011 22:57:11 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:28138 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab1CJD5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Mar 2011 22:57:08 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6280"; a="79071452"
-Message-ID: <4D784BF6.1040700@codeaurora.org>
-Date: Thu, 10 Mar 2011 09:26:38 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1752014Ab1CJEBJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Mar 2011 23:01:09 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38322 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab1CJEBI (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 9 Mar 2011 23:01:08 -0500
+Date: Wed, 9 Mar 2011 23:00:42 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] [PATCH 06/14] xen: events: refactor GSI pirq
+ bindings functions
+Message-ID: <20110310040042.GA7682@dumpdata.com>
+References: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
+ <1299692486-28634-6-git-send-email-ian.campbell@citrix.com>
 MIME-Version: 1.0
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>, davidb@codeaurora.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Linus Walleij <linux.walleij@sterricsson.com>,
-        Thomas Glexiner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Qualcomm PM8921 MFD v2 4/6] mfd: pm8xxx-mpp: Add pm8xxx MPP
- driver
-References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org> <1299564590-30116-5-git-send-email-adharmap@codeaurora.org> <20110308233045.GB2717@opensource.wolfsonmicro.com> <4D784730.4010307@codeaurora.org>
-In-Reply-To: <4D784730.4010307@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299692486-28634-6-git-send-email-ian.campbell@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D784CFA.0161,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Abhi,
-
-On 3/10/2011 9:06 AM, Abhijeet Dharmapurikar wrote:
-> Mark Brown wrote:
->> On Mon, Mar 07, 2011 at 10:09:48PM -0800, adharmap@codeaurora.org wrote:
->>
->>> +    mpp_chip->gpio_chip.label = PM8XXX_MPP_DEV_NAME;
->>> +    mpp_chip->gpio_chip.direction_input = pm8xxx_mpp_dir_input;
->>> +    mpp_chip->gpio_chip.direction_output = pm8xxx_mpp_dir_output;
->>> +    mpp_chip->gpio_chip.to_irq = pm8xxx_mpp_to_irq;
->>> +    mpp_chip->gpio_chip.get = pm8xxx_mpp_get;
->>> +    mpp_chip->gpio_chip.set = pm8xxx_mpp_set;
->>> +    mpp_chip->gpio_chip.dbg_show = pm8xxx_mpp_dbg_show;
->>> +    mpp_chip->gpio_chip.ngpio = pdata->core_data.nmpps;
->>> +    mpp_chip->gpio_chip.can_sleep = 1;
->>> +    mpp_chip->gpio_chip.dev = &pdev->dev;
->>> +    mpp_chip->gpio_chip.base = pdata->mpp_base;
->>
->> It's seems really odd that you're adding gpiolib stuff here when you've
->> also got a separate gpiolib driver.  Possibly this all shouldn't
->> actually be split up as much as it is - there's also the issue with the
->> gpiolib driver needing to peer into the interrupt controller.  It might
->> simplify the code if things were merged more.
+On Wed, Mar 09, 2011 at 05:41:18PM +0000, Ian Campbell wrote:
+> Following the example set by xen_allocate_pirq_msi and
+> xen_bind_pirq_msi_to_irq:
 > 
-> I dont think merging code will help here. gpio lines and mpp lines are very different piece of hardware,they have a different register map and different config attributes. They do fall under the generic 'gpiolib' umbrella, but it seems clean to keep them separate.
+> xen_allocate_pirq becomes xen_allocate_pirq_gsi and now only allocates
+> a pirq number and does not bind it.
 > 
-> I agree with you that gpio code needs to call on interrupt controller ( a complicated hardware design) but I think I have a clean software implementation to manage it.
+> xen_map_pirq_gsi becomes xen_bind_pirq_gsi_to_irq and binds an
+> existing pirq.
 > 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> ---
+>  arch/x86/pci/xen.c   |   40 ++++++++++++++++++++++++++++------------
+>  drivers/xen/events.c |    7 ++++---
+>  include/xen/events.h |   10 +++++++---
+>  3 files changed, 39 insertions(+), 18 deletions(-)
+> 
+> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+> index 8c4085a..b0fb79d 100644
+> --- a/arch/x86/pci/xen.c
+> +++ b/arch/x86/pci/xen.c
+> @@ -50,7 +50,7 @@ static int acpi_register_gsi_xen_hvm(struct device *dev, u32 gsi,
+>  		name = "ioapic-level";
+>  	}
+>  
+> -	irq = xen_map_pirq_gsi(map_irq.pirq, gsi, shareable, name);
+> +	irq = xen_bind_pirq_gsi_to_irq(gsi, map_irq.pirq, shareable, name);
+>  
+>  	printk(KERN_DEBUG "xen: --> irq=%d, pirq=%d\n", irq, map_irq.pirq);
+>  
+> @@ -237,6 +237,7 @@ static int xen_pcifront_enable_irq(struct pci_dev *dev)
+>  {
+>  	int rc;
+>  	int share = 1;
+> +	int pirq;
+>  	u8 gsi;
+>  
+>  	rc = pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &gsi);
+> @@ -246,13 +247,21 @@ static int xen_pcifront_enable_irq(struct pci_dev *dev)
+>  		return rc;
+>  	}
+>  
+> +	rc = xen_allocate_pirq_gsi(gsi);
+> +	if (rc < 0) {
+> +		dev_warn(&dev->dev, "Xen PCI: failed to allocate a PIRQ for GSI%d: %d\n",
+> +			 gsi, rc);
+> +		return rc;
+> +	}
+> +	pirq = rc;
+> +
+>  	if (gsi < NR_IRQS_LEGACY)
+>  		share = 0;
+>  
+> -	rc = xen_allocate_pirq(gsi, share, "pcifront");
+> +	rc = xen_bind_pirq_gsi_to_irq(gsi, pirq, share, "pcifront");
+>  	if (rc < 0) {
+> -		dev_warn(&dev->dev, "Xen PCI: failed to register GSI%d: %d\n",
+> -			 gsi, rc);
+> +		dev_warn(&dev->dev, "Xen PCI: failed to bind GSI%d (PIRQ%d) to IRQ: %d\n",
+> +			 gsi, pirq, rc);
+>  		return rc;
+>  	}
+>  
+> @@ -309,7 +318,7 @@ int __init pci_xen_hvm_init(void)
+>  #ifdef CONFIG_XEN_DOM0
+>  static int xen_register_pirq(u32 gsi, int triggering)
+>  {
+> -	int rc, irq;
+> +	int rc, pirq, irq = -1;
+>  	struct physdev_map_pirq map_irq;
+>  	int shareable = 0;
+>  	char *name;
+> @@ -325,17 +334,20 @@ static int xen_register_pirq(u32 gsi, int triggering)
+>  		name = "ioapic-level";
+>  	}
+>  
+> -	irq = xen_allocate_pirq(gsi, shareable, name);
+> -
+> -	printk(KERN_DEBUG "xen: --> irq=%d\n", irq);
+> +	pirq = xen_allocate_pirq_gsi(gsi);
+> +	if (pirq < 0)
+> +		goto out;
+>  
+> +	irq = xen_bind_pirq_gsi_to_irq(gsi, pirq, shareable, name);
+>  	if (irq < 0)
+>  		goto out;
+>  
+> +	printk(KERN_DEBUG "xen: --> pirq=%d -> irq=%d\n", pirq, irq);
+> +
+>  	map_irq.domid = DOMID_SELF;
+>  	map_irq.type = MAP_PIRQ_TYPE_GSI;
+>  	map_irq.index = gsi;
+> -	map_irq.pirq = irq;
+> +	map_irq.pirq = pirq;
+>  
+>  	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
+>  	if (rc) {
+> @@ -422,13 +434,17 @@ static int __init pci_xen_initial_domain(void)
+>  
+>  void __init xen_setup_pirqs(void)
+>  {
+> -	int irq;
+> +	int pirq, irq;
+>  
+>  	pci_xen_initial_domain();
+>  
+>  	if (0 == nr_ioapics) {
+> -		for (irq = 0; irq < NR_IRQS_LEGACY; irq++)
+> -			xen_allocate_pirq(irq, 0, "xt-pic");
+> +		for (irq = 0; irq < NR_IRQS_LEGACY; irq++) {
+> +			pirq = xen_allocate_pirq_gsi(irq);
+> +			if (pirq < 0)
+> +				break;
 
-It would be good to add that MPP do have more functionality than normal GPIO. So, I expect that in future
-we might have few exported APIs beyond gpiolib integration. 
-
----Trilok Soni
-
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Would it make sense to print a warning here?
