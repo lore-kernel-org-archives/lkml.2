@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab1CJX00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:26:26 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:59914 "EHLO mgw-da02.nokia.com"
+	id S1754109Ab1CJX2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:28:11 -0500
+Received: from www.tglx.de ([62.245.132.106]:51133 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab1CJX0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:26:25 -0500
-Date: Fri, 11 Mar 2011 01:22:28 +0200
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, gregkh@suse.de,
+	id S1753446Ab1CJX2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:28:09 -0500
+Date: Fri, 11 Mar 2011 00:27:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Phil Carmody <ext-phil.2.carmody@nokia.com>, gregkh@suse.de,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCHv3 1/1] sysfs: add more info to the oops dump
-Message-ID: <20110310232228.GI7975@esdhcp04044.research.nokia.com>
-References: <20110310212746.GA3361@suse.de> <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com> <1299796027-3343-2-git-send-email-ext-phil.2.carmody@nokia.com> <20110310143806.7542e929.akpm@linux-foundation.org> <alpine.LFD.2.00.1103102354530.2787@localhost6.localdomain6> <20110310230621.GH7975@esdhcp04044.research.nokia.com> <alpine.LFD.2.00.1103110012060.2787@localhost6.localdomain6>
+In-Reply-To: <20110310152201.bb621c3f.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1103110023310.2787@localhost6.localdomain6>
+References: <20110310212746.GA3361@suse.de> <1299796027-3343-1-git-send-email-ext-phil.2.carmody@nokia.com> <1299796027-3343-2-git-send-email-ext-phil.2.carmody@nokia.com> <20110310143806.7542e929.akpm@linux-foundation.org> <alpine.LFD.2.00.1103102354530.2787@localhost6.localdomain6>
+ <20110310230621.GH7975@esdhcp04044.research.nokia.com> <alpine.LFD.2.00.1103110012060.2787@localhost6.localdomain6> <20110310152201.bb621c3f.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103110012060.2787@localhost6.localdomain6>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Nokia-AV: Clean
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/11 00:13 +0100, ext Thomas Gleixner wrote:
-> On Fri, 11 Mar 2011, Phil Carmody wrote:
-> > On 10/03/11 23:59 +0100, ext Thomas Gleixner wrote:
-> > > On Thu, 10 Mar 2011, Andrew Morton wrote:
-...
-> > > > I don't think it's a terribly useful feature.  Except for when it _is_
-> > > > useful, when it's very useful ;) The world wouldn't end if we decided
-> > > > to remove it.
+On Thu, 10 Mar 2011, Andrew Morton wrote:
+> On Fri, 11 Mar 2011 00:13:58 +0100 (CET)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > > > It's more of an distraction than anything which is relevant to 99.999%
+> > > > of the problems we have to deal with.
 > > > 
-> > > Amen to that.
-> > > 
-> > > It's more of an distraction than anything which is relevant to 99.999%
-> > > of the problems we have to deal with.
+> > > As I indicated before, I've previously thought that too, but thought I
+> > > could 'fix' it by adding to it when I hit the once-in-three-years case.
 > > 
-> > As I indicated before, I've previously thought that too, but thought I
-> > could 'fix' it by adding to it when I hit the once-in-three-years case.
+> > The interesting question is:
+> > 
+> >  How did that info help and was it really the ultimate reason why you
+> >  found the underlying bug ?
 > 
-> The interesting question is:
-> 
->  How did that info help and was it really the ultimate reason why you
->  found the underlying bug ?
+> What happens with sysfs is that if a subsystem's handler is buggy, that
+> tends to cause a crash within sysfs core code.  You get a stack trace
+> which contains only VFS and sysfs functions - there is no symbol in the
+> trace which permits you to identify the offending subsystem.
 
-It's academic now, as I fully support the removal. Perhaps the information
-was most useful simply because it was given to me quickly, there would have
-been other ways of divining it certainly (I can read hex stack dumps, for
-example). Even I don't need this patch any more!
+Reminds me of timer bugs, which popped up way after the fact that some
+stupid driver reinitialized and active timer or freed memory
+containing an active driver.
 
-At least my intrusion has been useful for instigating a little cleanup!
+For some obvious reasons I haven't seen any of those bugs wasting my
+time other than asking the bug reporter to enable debugobjects. :)
 
-Cheers,
-Phil
+Thanks,
+
+	tglx
