@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab1CJX5X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 18:57:23 -0500
-Received: from kroah.org ([198.145.64.141]:46830 "EHLO coco.kroah.org"
+	id S1754594Ab1CJX52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 18:57:28 -0500
+Received: from kroah.org ([198.145.64.141]:46867 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754311Ab1CJX5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:17 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:36 2011
-Message-Id: <20110310235536.846733921@clark.kroah.org>
+	id S1754311Ab1CJX5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 18:57:23 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:37 2011
+Message-Id: <20110310235537.530981817@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:14 -0800
+Date: Thu, 10 Mar 2011 15:54:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: [patch 08/29] nfs4: Ensure that ACL pages sent over NFS were not allocated from the slab (v3)
+        Roel Kluin <roel.kluin@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [patch 15/29] nfsd: wrong index used in inner loop
 In-Reply-To: <20110310235548.GA10103@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,156 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: roel <roel.kluin@gmail.com>
 
-commit e9e3d724e2145f5039b423c290ce2b2c3d8f94bc upstream.
+commit 3ec07aa9522e3d5e9d5ede7bef946756e623a0a0 upstream.
 
-The "bad_page()" page allocator sanity check was reported recently (call
-chain as follows):
+Index i was already used in the outer loop
 
-  bad_page+0x69/0x91
-  free_hot_cold_page+0x81/0x144
-  skb_release_data+0x5f/0x98
-  __kfree_skb+0x11/0x1a
-  tcp_ack+0x6a3/0x1868
-  tcp_rcv_established+0x7a6/0x8b9
-  tcp_v4_do_rcv+0x2a/0x2fa
-  tcp_v4_rcv+0x9a2/0x9f6
-  do_timer+0x2df/0x52c
-  ip_local_deliver+0x19d/0x263
-  ip_rcv+0x539/0x57c
-  netif_receive_skb+0x470/0x49f
-  :virtio_net:virtnet_poll+0x46b/0x5c5
-  net_rx_action+0xac/0x1b3
-  __do_softirq+0x89/0x133
-  call_softirq+0x1c/0x28
-  do_softirq+0x2c/0x7d
-  do_IRQ+0xec/0xf5
-  default_idle+0x0/0x50
-  ret_from_intr+0x0/0xa
-  default_idle+0x29/0x50
-  cpu_idle+0x95/0xb8
-  start_kernel+0x220/0x225
-  _sinittext+0x22f/0x236
-
-It occurs because an skb with a fraglist was freed from the tcp
-retransmit queue when it was acked, but a page on that fraglist had
-PG_Slab set (indicating it was allocated from the Slab allocator (which
-means the free path above can't safely free it via put_page.
-
-We tracked this back to an nfsv4 setacl operation, in which the nfs code
-attempted to fill convert the passed in buffer to an array of pages in
-__nfs4_proc_set_acl, which gets used by the skb->frags list in
-xs_sendpages.  __nfs4_proc_set_acl just converts each page in the buffer
-to a page struct via virt_to_page, but the vfs allocates the buffer via
-kmalloc, meaning the PG_slab bit is set.  We can't create a buffer with
-kmalloc and free it later in the tcp ack path with put_page, so we need
-to either:
-
-1) ensure that when we create the list of pages, no page struct has
-   PG_Slab set
-
- or
-
-2) not use a page list to send this data
-
-Given that these buffers can be multiple pages and arbitrarily sized, I
-think (1) is the right way to go.  I've written the below patch to
-allocate a page from the buddy allocator directly and copy the data over
-to it.  This ensures that we have a put_page free-able page for every
-entry that winds up on an skb frag list, so it can be safely freed when
-the frame is acked.  We do a put page on each entry after the
-rpc_call_sync call so as to drop our own reference count to the page,
-leaving only the ref count taken by tcp_sendpages.  This way the data
-will be properly freed when the ack comes in
-
-Successfully tested by myself to solve the above oops.
-
-Note, as this is the result of a setacl operation that exceeded a page
-of data, I think this amounts to a local DOS triggerable by an
-uprivlidged user, so I'm CCing security on this as well.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/nfs4proc.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 42 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4xdr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -49,6 +49,7 @@
- #include <linux/mount.h>
- #include <linux/module.h>
- #include <linux/sunrpc/bc_xprt.h>
-+#include <linux/mm.h>
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1107,7 +1107,7 @@ nfsd4_decode_create_session(struct nfsd4
  
- #include "nfs4_fs.h"
- #include "delegation.h"
-@@ -3216,6 +3217,35 @@ static void buf_to_pages(const void *buf
- 	}
- }
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i;
++	int i, j;
+ 	int nr_secflavs;
  
-+static int buf_to_pages_noslab(const void *buf, size_t buflen,
-+		struct page **pages, unsigned int *pgbase)
-+{
-+	struct page *newpage, **spages;
-+	int rc = 0;
-+	size_t len;
-+	spages = pages;
-+
-+	do {
-+		len = min(PAGE_CACHE_SIZE, buflen);
-+		newpage = alloc_page(GFP_KERNEL);
-+
-+		if (newpage == NULL)
-+			goto unwind;
-+		memcpy(page_address(newpage), buf, len);
-+                buf += len;
-+                buflen -= len;
-+		*pages++ = newpage;
-+		rc++;
-+	} while (buflen != 0);
-+
-+	return rc;
-+
-+unwind:
-+	for(; rc > 0; rc--)
-+		__free_page(spages[rc-1]);
-+	return -ENOMEM;
-+}
-+
- struct nfs4_cached_acl {
- 	int cached;
- 	size_t len;
-@@ -3384,13 +3414,23 @@ static int __nfs4_proc_set_acl(struct in
- 		.rpc_argp	= &arg,
- 		.rpc_resp	= &res,
- 	};
--	int ret;
-+	int ret, i;
- 
- 	if (!nfs4_server_supports_acls(server))
- 		return -EOPNOTSUPP;
-+	i = buf_to_pages_noslab(buf, buflen, arg.acl_pages, &arg.acl_pgbase);
-+	if (i < 0)
-+		return i;
- 	nfs_inode_return_delegation(inode);
--	buf_to_pages(buf, buflen, arg.acl_pages, &arg.acl_pgbase);
- 	ret = nfs4_call_sync(server, &msg, &arg, &res, 1);
-+
-+	/*
-+	 * Free each page after tx, so the only ref left is
-+	 * held by the network stack
-+	 */
-+	for (; i > 0; i--)
-+		put_page(pages[i-1]);
-+
- 	/*
- 	 * Acl update can result in inode attribute update.
- 	 * so mark the attribute cache invalid.
+ 	READ_BUF(16);
+@@ -1180,7 +1180,7 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (i = 0; i < dummy; ++i)
++			for (j = 0; j < dummy; ++j)
+ 				READ32(dummy);
+ 			break;
+ 		case RPC_AUTH_GSS:
 
 
