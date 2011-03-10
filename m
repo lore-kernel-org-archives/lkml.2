@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab1CJP7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 10:59:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41178 "EHLO
+	id S1752905Ab1CJP7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 10:59:16 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57628 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab1CJP7P (ORCPT
+	with ESMTP id S1752557Ab1CJP7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 10:59:15 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=U_kwPE2YPCQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=wyuh3eUqkQ_FVZpSK7gA:9 a=Mysdrq29yNle8IO9BnyYSe8XJ4wA:4 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 10 Mar 2011 10:59:13 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=iGZYW5WSfGcA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=WIM9DRW691BOJGnlR6EA:9 a=KUPWeXxgSC_v7B5GId4G7iSC40gA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110310155909.430836352@goodmis.org>
+Message-Id: <20110310155912.592150020@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Mar 2011 10:58:02 -0500
+Date: Thu, 10 Mar 2011 10:58:14 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Sharp <dhsharp@google.com>
-Subject: [PATCH 02/15] ring-buffer: Remove unused #include <linux/trace_irq.h>
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 14/15] tracing: Align 4 byte ints together in struct tracer
 References: <20110310155800.478792851@goodmis.org>
-Content-Disposition: inline; filename=0002-ring-buffer-Remove-unused-include-linux-trace_irq.h.patch
+Content-Disposition: inline; filename=0014-tracing-Align-4-byte-ints-together-in-struct-tracer.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Sharp <dhsharp@google.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-LKML-Reference: <1291421609-14665-3-git-send-email-dhsharp@google.com>
+Move elements in struct tracer for better alignment.
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ring_buffer.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ kernel/trace/trace.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 269db80..3237d96 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -5,7 +5,6 @@
-  */
- #include <linux/ring_buffer.h>
- #include <linux/trace_clock.h>
--#include <linux/ftrace_irq.h>
- #include <linux/spinlock.h>
- #include <linux/debugfs.h>
- #include <linux/uaccess.h>
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 951d0b7..5e9dfc6 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -272,8 +272,8 @@ struct tracer {
+ 	/* If you handled the flag setting, return 0 */
+ 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
+ 	struct tracer		*next;
+-	int			print_max;
+ 	struct tracer_flags	*flags;
++	int			print_max;
+ 	int			use_max_tr;
+ };
+ 
 -- 
 1.7.2.3
 
