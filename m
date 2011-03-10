@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab1CJJtc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:49:32 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46305 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab1CJJta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:49:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bzMrhRmhY3eHAKWUQ7hYgoeo7K6cMYfZuUXPmpwetDkX8c2YCsHNvAfWYfl5nxvGzh
-         8yXHqtSNbBszJFWjie0/lvw/FlPPJ2oc/FraKiBAy3q6tvmMUOlvJcOSo/u+CZ05o6os
-         rOmTKuliZ/icmhbxPMtuDlI8dydIUWd/y30ng=
-Date: Thu, 10 Mar 2011 12:49:23 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: James Morris <jmorris@namei.org>
-Cc: David Miller <davem@davemloft.net>, mjt@tls.msk.ru,
-        linux-kernel@vger.kernel.org, arnd@arndb.de, mirqus@gmail.com,
-        netdev@vger.kernel.org, bhutchings@solarflare.com,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
-        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
-        eugene@redhat.com, dan.j.rosenberg@gmail.com
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
- kernel modules
-Message-ID: <20110310094923.GA3945@albatros>
-References: <20110301213313.GA6507@albatros>
- <4D6DEE7C.6020700@msgid.tls.msk.ru>
- <20110309220633.GA14750@albatros>
- <20110309.140928.70185544.davem@davemloft.net>
- <alpine.LRH.2.00.1103100953330.4485@tundra.namei.org>
+	id S1752732Ab1CJJuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:50:12 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36206 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752628Ab1CJJuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 04:50:11 -0500
+Message-ID: <4D789ED1.6060905@kernel.dk>
+Date: Thu, 10 Mar 2011 10:50:09 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1103100953330.4485@tundra.namei.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] DRBD bits for 2.6.39
+References: <201103091523.51815.philipp.reisner@linbit.com>
+In-Reply-To: <201103091523.51815.philipp.reisner@linbit.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
+On 2011-03-09 15:23, Philipp Reisner wrote:
+> The following changes since commit cd9bd3a0b4d9f3943753a949fff411c719530f8c:
+> 
+>   staging: Convert to bdops->check_events() (2011-03-09 10:19:17 +0100)
+> 
+> are available in the git repository at:
+>   git://git.drbd.org/linux-2.6-drbd.git for-jens
 
-On Thu, Mar 10, 2011 at 09:53 +1100, James Morris wrote:
-> I can submit it via my tree.
+Philip, sorry for the extra work, but can I please ask you to rebase
+this on the new for-2.6.39/core? Two things happened:
 
-Thank you!
+- I pulled in the stack-plug changes, it's causing a few conflicts. All
+  of them are trivial, so that's not a real worry.
+
+- I had to rebase for-2.6.39/core to get rid of an OOPS in the
+  ->check_events() changes from Tejun.
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Jens Axboe
+
