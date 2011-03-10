@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab1CJRGB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 12:06:01 -0500
-Received: from kroah.org ([198.145.64.141]:55215 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768Ab1CJRF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 12:05:59 -0500
-Date: Thu, 10 Mar 2011 09:01:43 -0800
-From: Greg KH <greg@kroah.com>
-To: Nikolai Kondrashov <spbnick@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110310170143.GA24559@kroah.com>
-References: <20110209224006.GA11202@kroah.com>
- <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com>
- <20110225210334.GB16860@kroah.com>
- <4D6823DD.6040809@gmail.com>
- <20110225225055.GA5931@kroah.com>
- <4D787714.6060405@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D787714.6060405@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752662Ab1CJRHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 12:07:13 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59189 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab1CJRHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 12:07:11 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=s7jom2g7sBwA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3O4C1wECQaRswuDFdWwA:9 a=NUjL7gliyCi_kv3Xub6QrPmqYYYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 3/6] perf script: move printing of 'common' data from
+ print_event and rename
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Ahern <daahern@cisco.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
+        paulus@samba.org, tglx@linutronix.de
+In-Reply-To: <4D790038.502@cisco.com>
+References: <1299734608-5223-1-git-send-email-daahern@cisco.com>
+	 <1299734608-5223-4-git-send-email-daahern@cisco.com>
+	 <20110310152053.GB12521@home.goodmis.org>
+	 <20110310155109.GB23555@ghostprotocols.net>
+	 <1299773135.15854.352.camel@gandalf.stny.rr.com>
+	 <20110310162038.GC23555@ghostprotocols.net>  <4D790038.502@cisco.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 12:07:08 -0500
+Message-ID: <1299776828.15854.353.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 09:00:36AM +0200, Nikolai Kondrashov wrote:
-> Hi Greg,
+On Thu, 2011-03-10 at 09:45 -0700, David Ahern wrote:
 > 
-> On 02/26/2011 12:50 AM, Greg KH wrote:
-> >On Sat, Feb 26, 2011 at 12:49:17AM +0300, Nikolai Kondrashov wrote:
-> >>On 02/26/2011 12:03 AM, Greg KH wrote:
-> >>>This should work, as we support the N150/N210/N220 versions.
+> On 03/10/11 09:20, Arnaldo Carvalho de Melo wrote:
+> >>> I think the merge with the libraries you mention is something that is
+> >>> not a precondition to merging David's work.
 > >>>
-> >>>Can you provide the output of:
-> >>>	grep ./sys/class/dmi/id/*
-> >>>
-> >>>so I can verify this?
-> >>Sure. Please find it attached. It is taken on a stock Debian kernel, without
-> >>your patch.
+> >>> And his work is at least moving things in the trace parts of tools/,
+> >>> that was so far dormant.
 > >>
-> >>Could I have configured the kernel incorrectly?
-> >
-> >Maybe, that's odd.
-> >
-> >Care to try the version of the patch below to see if that works better
-> >for you or not?
-> Thank you. The result is the same: ENODEV without "force" and "This computer
-> doesn't support SABI" and EINVAL with "force".
+> >> Note, I'm not saying that his work should be put on hold. I actually
+> >> want to start it up again. Maybe I worded this response wrong. It was
+> >> more about bringing David up to speed on what I want to do next than
+> >> saying not to do this work.
+> > 
+> > Right, I just wanted to make sure he doesn't spill his coffee with what
+> > could seem like yet another requirement to work on infrastructure to get
+> > his legitimate feature implementation merged :-)
+> 
+> I appreciate the clarification. Luckily, no coffee in hand.
+> 
+> I need to get the time-of-day strings done next, and someone else is
+> pushing the reverse callchain display (another local change I wanted to
+> get upstream). I could take a look at other requests - like common code
+> - as time allows.
 
-Ok, then I'm afraid that this driver will not support your laptop,
-sorry.
+Right, we could start looking at making the common code on top of your
+changes. I don't want to hinder progress for asking for too much.
 
-greg k-h
+Thanks,
+
+-- Steve
+
+
