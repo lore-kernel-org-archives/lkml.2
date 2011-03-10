@@ -1,37 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1CJJHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:07:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab1CJJHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:07:51 -0500
-Message-ID: <4D7894E0.7070300@redhat.com>
-Date: Thu, 10 Mar 2011 11:07:44 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1752564Ab1CJJIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 04:08:53 -0500
+Received: from smtp-out4.blueyonder.co.uk ([195.188.213.7]:58337 "EHLO
+	smtp-out4.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752262Ab1CJJIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 04:08:51 -0500
+Message-ID: <4D78951E.1000607@blueyonder.co.uk>
+Date: Thu, 10 Mar 2011 09:08:46 +0000
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9 ThunderBrowse/3.3.5
 MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: Zachary Amsden <zamsden@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        nikola.ciprich@linuxbox.cz, Glauber Costa <glommer@redhat.com>
-Subject: Re: [PATCHv2] fix regression caused by	e48672fa25e879f7ae21785c7efd187738139593
-References: <20110307101827.GA1762@pcnci.linuxbox.cz> <4D768A62.3050903@redhat.com> <20110309193003.GB1762@pcnci.linuxbox.cz> <4D77F149.8020906@redhat.com> <20110309223651.GC1762@pcnci.linuxbox.cz>
-In-Reply-To: <20110309223651.GC1762@pcnci.linuxbox.cz>
+To: LKML Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.38-rc8-git1 make headers_install failure
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 12:36 AM, Nikola Ciprich wrote:
-> commit 387b9f97750444728962b236987fbe8ee8cc4f8c moved kvm_request_guest_time_update(vcpu),
-> breaking 32bit SMP guests using kvm-clock. Fix this by moving (new) clock update function
-> to proper place.
->
-
-Applied, thanks.
-
+/usr/src/linux-2.6.38-rc8-git1/usr/include/drm/drm_mode.h:85: found 
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/usr/src/linux-2.6.38-rc8-git1/usr/include/drm/i915_drm.h:120: found 
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/usr/src/linux-2.6.38-rc8-git1/usr/include/drm/mga_drm.h:260: found 
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/usr/src/linux-2.6.38-rc8-git1/usr/include/drm/radeon_drm.h:758: found 
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/usr/src/linux-2.6.38-rc8-git1/usr/include/drm/via_drm.h:117: found 
+__[us]{8,16,32,64} type without #include <linux/types.h>
+   CHECK   include/linux/caif (2 files)
+   CHECK   include/linux/dvb (8 files)
+   CHECK   include/linux/can (4 files)
+   CHECK   include/rdma (1 files)
+   CHECK   include/scsi/fc (4 files)
+   CHECK   include/scsi (3 files)
+   CHECK   include/linux/hdlc (1 files)
+   CHECK   include/linux/isdn (1 files)
+/usr/src/linux-2.6.38-rc8-git1/usr/include/scsi/scsi_netlink.h:108: 
+found __[us]{8,16,32,64} type without #include <linux/types.h>
+   CHECK   include/sound (8 files)
+   CHECK   include/linux/netfilter (64 files)
+   CHECK   include/video (3 files)
+   CHECK   include/linux/netfilter_arp (2 files)
+   CHECK   include/linux/netfilter_ipv4 (14 files)
+   CHECK   include/linux/netfilter_bridge (18 files)
+   CHECK   include/linux/netfilter_ipv6 (11 files)
+   CHECK   include/linux/nfsd (6 files)
+   CHECK   include/linux/raid (2 files)
+   CHECK   include/xen (2 files)
+   CHECK   include/linux/spi (1 files)
+   CHECK   include/linux/sunrpc (1 files)
+   CHECK   include (0 files)
+   CHECK   include/linux/tc_ematch (4 files)
+   CHECK   include/linux/tc_act (7 files)
+   CHECK   include/linux/usb (8 files)
+   CHECK   include/linux/wimax (1 files)
+   CHECK   include/linux (360 files)
+/usr/src/linux-2.6.38-rc8-git1/usr/include/linux/kernel.h:58: userspace 
+cannot reference function or variable defined in the kernel
+/usr/src/linux-2.6.38-rc8-git1/usr/include/linux/quota.h:175: userspace 
+cannot reference function or variable defined in the kernel
+/usr/src/linux-2.6.38-rc8-git1/usr/include/linux/sdla.h:116: userspace 
+cannot reference function or variable defined in the kernel
+/usr/src/linux-2.6.38-rc8-git1/usr/include/linux/soundcard.h:1054: 
+userspace cannot reference function or variable defined in the kernel
+/usr/src/linux-2.6.38-rc8-git1/usr/include/linux/sysctl.h:28: included 
+file 'linux/rcupdate.h' is not exported
+make[3]: *** [/usr/src/linux-2.6.38-rc8-git1/usr/include/linux/.check] 
+Error 123
+make[2]: *** [linux] Error 2
+make[1]: *** [headers_check] Error 2
+make: *** [vmlinux] Error 2
+Regards
+Sid.
 -- 
-error compiling committee.c: too many arguments to function
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Senior Staff Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
