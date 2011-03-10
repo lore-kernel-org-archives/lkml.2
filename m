@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab1CJU47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 15:56:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40561 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab1CJU46 (ORCPT
+	id S1752627Ab1CJVAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 16:00:53 -0500
+Received: from vms173005pub.verizon.net ([206.46.173.5]:59114 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab1CJVAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 15:56:58 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=v1n8UvUeJUkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=FJ-O0Z5dBjATENtXZwYA:9 a=LmoJojtc-SEYK0EblJoA:7 a=3bEtrHdSB4JJpL438IuUcb-1ihMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 1/2] jump label: introduce static_branch() interface
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
-        mathieu.desnoyers@polymtl.ca, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org
-In-Reply-To: <49b4727c7bfee19c2b7284b3339076ed827f3142.1299702291.git.jbaron@redhat.com>
-References: <cover.1299702291.git.jbaron@redhat.com>
-	 <49b4727c7bfee19c2b7284b3339076ed827f3142.1299702291.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 15:56:56 -0500
-Message-ID: <1299790616.15854.417.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Mar 2011 16:00:52 -0500
+X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Mar 2011 16:00:52 EST
+From: Corey Minyard <minyard@acm.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        YiCheng Doe <yicheng.doe@hp.com>,
+        Tom Mingarelli <thomas.mingarelli@hp.com>,
+        Andy Cress <andy.cress@us.kontron.com>,
+        Mika Lansirine <Mika.Lansirinne@stonesoft.com>,
+        Brian De Wolf <bldewolf@csupomona.edu>,
+        Jean Michel Audet <Jean-Michel.Audet@ca.Kontron.com>,
+        Jozef Sudelsky <jozef.sudolsky@elbiahosting.sk>,
+        Matthew Garrett <mjg@redhat.com>, Corey Minyard <cminyard@mvista.com>
+Subject: [PATCH] ipmi: Fix IPMI errors due to timing problems
+Date: Thu, 10 Mar 2011 14:00:21 -0600
+Message-id: <1299787221-19542-1-git-send-email-minyard@acm.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-09 at 15:47 -0500, Jason Baron wrote:
+From: Doe, YiCheng <yicheng.doe@hp.com>
 
->  arch/mips/include/asm/jump_label.h  |   22 +-
->  arch/mips/kernel/jump_label.c       |    2 +-
->  arch/sparc/include/asm/jump_label.h |   25 +-
->  arch/x86/include/asm/alternative.h  |    3 +-
->  arch/x86/include/asm/jump_label.h   |   26 +-
->  arch/x86/kernel/alternative.c       |    2 +-
->  arch/x86/kernel/jump_label.c        |    2 +-
->  arch/x86/kernel/module.c            |    1 +
->  include/asm-generic/vmlinux.lds.h   |   14 +-
->  include/linux/dynamic_debug.h       |    2 -
->  include/linux/jump_label.h          |   86 ++++---
->  include/linux/jump_label_ref.h      |   44 ---
->  include/linux/perf_event.h          |   26 +-
->  include/linux/tracepoint.h          |   22 +-
->  kernel/jump_label.c                 |  537 ++++++++++++++---------------------
->  kernel/perf_event.c                 |    4 +-
->  kernel/tracepoint.c                 |   23 +-
->  17 files changed, 352 insertions(+), 489 deletions(-)
->  delete mode 100644 include/linux/jump_label_ref.h
-> 
-> diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
-> index 7622ccf..1881b31 100644
-> --- a/arch/mips/include/asm/jump_label.h
-> +++ b/arch/mips/include/asm/jump_label.h
-> @@ -20,16 +20,18 @@
->  #define WORD_INSN ".word"
->  #endif
->  
-> -#define JUMP_LABEL(key, label)						\
-> -	do {								\
-> -		asm goto("1:\tnop\n\t"					\
-> -			"nop\n\t"					\
-> -			".pushsection __jump_table,  \"a\"\n\t"		\
-> -			WORD_INSN " 1b, %l[" #label "], %0\n\t"		\
-> -			".popsection\n\t"				\
-> -			: :  "i" (key) :  : label);			\
-> -	} while (0)
-> -
-> +static __always_inline bool arch_static_branch(struct jump_label_key *key)
-> +{
-> +	asm goto("1:\tnop\n\t"
-> +		"nop\n\t"
-> +		".pushsection __jump_table,  \"aw\"\n\t"
-> +		WORD_INSN " 1b, %l[l_yes], %0\n\t"
-> +		".popsection\n\t"
-> +		: :  "i" (key) : : l_yes);
-> +	return false;
-> +l_yes:
-> +	return true;
-> +}
->  
->  #endif /* __KERNEL__ */
->  
-> diff --git a/arch/mips/kernel/jump_label.c b/arch/mips/kernel/jump_label.c
-> index 6001610..09ac7ca 100644
-> --- a/arch/mips/kernel/jump_label.c
-> +++ b/arch/mips/kernel/jump_label.c
-> @@ -6,11 +6,11 @@
->   * Copyright (c) 2010 Cavium Networks, Inc.
->   */
->  
-> -#include <linux/jump_label.h>
->  #include <linux/kernel.h>
->  #include <linux/memory.h>
->  #include <linux/mutex.h>
->  #include <linux/types.h>
-> +#include <linux/jump_label.h>
->  #include <linux/cpu.h>
->  
->  #include <asm/cacheflush.h>
+This patch fixes an issue in OpenIPMI module where sometimes an ABORT command
+is sent after sending an IPMI request to BMC causing the IPMI request to fail.
 
-Hi Ralf,
+Signed-off-by: YiCheng Doe <yicheng.doe@hp.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Acked-by: Tom Mingarelli <thomas.mingarelli@hp.com>
+Tested-by: Andy Cress <andy.cress@us.kontron.com>
+Tested-by: Mika Lansirine <Mika.Lansirinne@stonesoft.com>
+Tested-by: Brian De Wolf <bldewolf@csupomona.edu>
+Cc: Jean Michel Audet <Jean-Michel.Audet@ca.Kontron.com>
+Cc: Jozef Sudelsky <jozef.sudolsky@elbiahosting.sk>
+Cc: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/char/ipmi/ipmi_si_intf.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-Can I get your Acked-by on this patch.
-
-Thanks,
-
--- Steve
-
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 7855f9f..62787e3 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -900,6 +900,14 @@ static void sender(void                *send_info,
+ 	printk("**Enqueue: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+ #endif
+ 
++	/*
++	 * last_timeout_jiffies is updated here to avoid
++	 * smi_timeout() handler passing very large time_diff
++	 * value to smi_event_handler() that causes
++	 * the send command to abort.
++	 */
++	smi_info->last_timeout_jiffies = jiffies;
++
+ 	mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
+ 
+ 	if (smi_info->thread)
+-- 
+1.7.1
 
