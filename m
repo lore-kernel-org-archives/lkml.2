@@ -1,232 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1CJJ4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 04:56:40 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55048 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab1CJJ4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 04:56:37 -0500
-Message-ID: <4D78A0A9.40000@cn.fujitsu.com>
-Date: Thu, 10 Mar 2011 17:58:01 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752653Ab1CJKAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:00:18 -0500
+Received: from nwd2mail11.analog.com ([137.71.25.57]:8229 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922Ab1CJKAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 05:00:15 -0500
+X-IronPort-AV: E=Sophos;i="4.62,295,1297054800"; 
+   d="scan'208";a="30017500"
+From: "Cai, Cliff" <Cliff.Cai@analog.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Cliff Cai <cliffcai.sh@gmail.com>
+CC: "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Date: Thu, 10 Mar 2011 05:04:41 -0500
+Subject: RE: [alsa-devel] [PATCH] Add driver for Analog Devices ADAU1701
+ SigmaDSP
+Thread-Topic: [alsa-devel] [PATCH] Add driver for Analog Devices ADAU1701
+ SigmaDSP
+Thread-Index: AcveQnwtABtOsm0fSaOaS1sCDd5ElwAxYXmw
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16649F4A563@NWD2CMBX1.ad.analog.com>
+References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
+ <20110307114142.GB13471@opensource.wolfsonmicro.com>
+ <AANLkTinmbJWAoFPPT9aNrJQ+E+eb-3a1F_cV-d2J3YGj@mail.gmail.com>
+ <20110309101221.GC6923@opensource.wolfsonmicro.com>
+In-Reply-To: <20110309101221.GC6923@opensource.wolfsonmicro.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] trace-cmd: fold option parsing
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-10 17:55:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-10 17:55:15,
-	Serialize complete at 2011-03-10 17:55:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2AA0R0r000381
 
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- trace-listen.c |   12 +++++-------
- trace-read.c   |   35 +++++++++++++++--------------------
- trace-record.c |   14 +++++---------
- trace-stack.c  |   32 +++++++++++++++-----------------
- 4 files changed, 40 insertions(+), 53 deletions(-)
 
-diff --git a/trace-listen.c b/trace-listen.c
-index e60c96b..daaffca 100644
---- a/trace-listen.c
-+++ b/trace-listen.c
-@@ -647,6 +647,8 @@ static void start_daemon(void)
- 		die("starting daemon");
- }
- 
-+#define OPT_debug	255
-+
- void trace_listen(int argc, char **argv)
- {
- 	char *logfile = NULL;
-@@ -666,7 +668,7 @@ void trace_listen(int argc, char **argv)
- 		static struct option long_options[] = {
- 			{"port", required_argument, NULL, 'p'},
- 			{"help", no_argument, NULL, '?'},
--			{"debug", no_argument, NULL, 0},
-+			{"debug", no_argument, NULL, OPT_debug},
- 			{NULL, 0, NULL, 0}
- 		};
- 
-@@ -696,12 +698,8 @@ void trace_listen(int argc, char **argv)
- 		case 'D':
- 			daemon = 1;
- 			break;
--		case 0:
--			switch (option_index) {
--			case 2:
--				debug = 1;
--				break;
--			}
-+		case OPT_debug:
-+			debug = 1;
- 			break;
- 		default:
- 			usage(argv);
-diff --git a/trace-read.c b/trace-read.c
-index 932f5aa..018476d 100644
---- a/trace-read.c
-+++ b/trace-read.c
-@@ -812,6 +812,10 @@ static void add_functions(struct pevent *pevent, const char *file)
- 	free(buf);
- }
- 
-+#define OPT_cpu		255
-+#define OPT_events	254
-+#define OPT_kallsyms	253
-+
- void trace_report (int argc, char **argv)
- {
- 	struct tracecmd_input *handle;
-@@ -845,10 +849,10 @@ void trace_report (int argc, char **argv)
- 	for (;;) {
- 		int option_index = 0;
- 		static struct option long_options[] = {
--			{"cpu", required_argument, NULL, 0},
--			{"events", no_argument, NULL, 0},
-+			{"cpu", required_argument, NULL, OPT_cpu},
-+			{"events", no_argument, NULL, OPT_events},
- 			{"filter-test", no_argument, NULL, 'T'},
--			{"kallsyms", required_argument, NULL, 0},
-+			{"kallsyms", required_argument, NULL, OPT_kallsyms},
- 			{"help", no_argument, NULL, '?'},
- 			{NULL, 0, NULL, 0}
- 		};
-@@ -917,23 +921,14 @@ void trace_report (int argc, char **argv)
- 		case 'q':
- 			silence_warnings = 1;
- 			break;
--		case 0:
--			switch(option_index) {
--			case 0: /* cpu */
--				parse_cpulist(optarg);
--				break;
--			case 1: /* events */
--				print_events = 1;
--				break;
--			case 2: /* filter-test */
--				test_filters = 1;
--				break;
--			case 3: /* kallsyms */
--				functions = optarg;
--				break;
--			default:
--				usage(argv);
--			}
-+		case OPT_cpu:
-+			parse_cpulist(optarg);
-+			break;
-+		case OPT_events:
-+			print_events = 1;
-+			break;
-+		case OPT_kallsyms:
-+			functions = optarg;
- 			break;
- 		default:
- 			usage(argv);
-diff --git a/trace-record.c b/trace-record.c
-index 2611bfa..1cf13b6 100644
---- a/trace-record.c
-+++ b/trace-record.c
-@@ -1809,6 +1809,8 @@ static void record_all_events(void)
- 	listed_events = list;
- }
- 
-+#define OPT_date	255
-+
- void trace_record (int argc, char **argv)
- {
- 	const char *plugin = NULL;
-@@ -1862,7 +1864,7 @@ void trace_record (int argc, char **argv)
- 	for (;;) {
- 		int option_index = 0;
- 		static struct option long_options[] = {
--			{"date", no_argument, NULL, 0},
-+			{"date", no_argument, NULL, OPT_date},
- 			{"help", no_argument, NULL, '?'},
- 			{NULL, 0, NULL, 0}
- 		};
-@@ -2002,14 +2004,8 @@ void trace_record (int argc, char **argv)
- 		case 'i':
- 			ignore_event_not_found = 1;
- 			break;
--		case 0:
--			switch (option_index) {
--			case 0: /* date */
--				date = 1;
--				break;
--			default:
--				usage(argv);
--			}
-+		case OPT_date:
-+			date = 1;
- 			break;
- 		default:
- 			usage(argv);
-diff --git a/trace-stack.c b/trace-stack.c
-index 3d9f392..24ba194 100644
---- a/trace-stack.c
-+++ b/trace-stack.c
-@@ -153,6 +153,10 @@ static void read_trace(void)
- 	fclose(fp);
- }
- 
-+#define OPT_start	255
-+#define OPT_stop	254
-+#define OPT_reset	253
-+
- void trace_stack (int argc, char **argv)
- {
- 	enum stack_type trace_type = STACK_REPORT;
-@@ -167,9 +171,9 @@ void trace_stack (int argc, char **argv)
- 	for (;;) {
- 		int option_index = 0;
- 		static struct option long_options[] = {
--			{"start", no_argument, NULL, 0},
--			{"stop", no_argument, NULL, 0},
--			{"reset", no_argument, NULL, 0},
-+			{"start", no_argument, NULL, OPT_start},
-+			{"stop", no_argument, NULL, OPT_stop},
-+			{"reset", no_argument, NULL, OPT_reset},
- 			{"help", no_argument, NULL, '?'},
- 			{NULL, 0, NULL, 0}
- 		};
-@@ -183,20 +187,14 @@ void trace_stack (int argc, char **argv)
- 		case 'h':
- 			usage(argv);
- 			break;
--		case 0:
--			switch(option_index) {
--			case 0:
--				trace_type = STACK_START;
--				break;
--			case 1:
--				trace_type = STACK_STOP;
--				break;
--			case 2:
--				trace_type = STACK_RESET;
--				break;
--			default:
--				usage(argv);
--			}
-+		case OPT_start:
-+			trace_type = STACK_START;
-+			break;
-+		case OPT_stop:
-+			trace_type = STACK_STOP;
-+			break;
-+		case OPT_reset:
-+			trace_type = STACK_RESET;
- 			break;
- 		default:
- 			usage(argv);
--- 
-1.7.4
+>-----Original Message-----
+>From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+>Sent: 2011å¹´3æœˆ9æ—¥ 18:12
+>To: Cliff Cai
+>Cc: Cai, Cliff; device-drivers-devel@blackfin.uclinux.org;
+>akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
+>alsa-devel@alsa-project.org; lrg@slimlogic.co.uk
+>Subject: Re: [alsa-devel] [PATCH] Add driver for Analog
+>Devices ADAU1701 SigmaDSP
+>
+>On Wed, Mar 09, 2011 at 03:04:03PM +0800, Cliff Cai wrote:
+>> On Mon, Mar 7, 2011 at 7:41 PM, Mark Brown
+>> > On Mon, Mar 07, 2011 at 09:11:42AM +0800,
+>cliff.cai@analog.com wrote:
+>
+>> > It loooks like the register length is hard coded in every location
+>> > that the register is referenced. ?This doesn't seem ideal
+>- it'd be
+>> > much nicer to have the register I/O functions work this
+>out without
+>> > the callers needing to.
+>
+>> I'm afraid it's not easy to do so.
+>
+>What's the issue?  I'd expect something like a lookup table or
+>switch statement going from register to register length - I'd
+>be surprised if it were any more complicated than getting all
+>the callers right.
 
+All right,just looks nicer.
+
+>> >> +static int adau1701_pcm_prepare(struct snd_pcm_substream
+>> >> +*substream,
+>> >> +                             struct snd_soc_dai *dai) {
+>> >> +     struct snd_soc_codec *codec = dai->codec;
+>> >> +     int reg = 0;
+>
+>> >> +     reg = SEROCTL_MASTER | SEROCTL_OBF16 | SEROCTL_OLF1024;
+>> >> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, reg);
+>
+>> >> +     return 0;
+>> >> +}
+>
+>> > This looks like some of it is DAI format and word length
+>configuration?
+>
+>> no,it makes the processor work in master mode.and output bit
+>clock and
+>> frame clock.
+>
+>This controls the CODEC, not the CPU?  Master/slave should be
+>controlled by set_dai_fmt() rather than being hard coded.
+
+Actually,if the DAI works in master mode,it will always output clocks.
+it's not we want,so we have to make it in slave mode when shutdown,and
+Make it in Master mode before starting to play.
+
+>> >> +static void adau1701_shutdown(struct snd_pcm_substream
+>*substream,
+>> >> +                           struct snd_soc_dai *dai) {
+>> >> +     struct snd_soc_codec *codec = dai->codec;
+>
+>> >> +     adau1701_write_register(codec, ADAU1701_SEROCTL, 2, 0); }
+>
+>> > I suspect this isn't going to work for simultaneous playback and
+>> > capture
+>> > - it's not clear what the code does but I'd guess it will stop
+>> > things completely.
+>
+>> this SigmaDSP doesn't support duplex operation,it can choose either
+>> ADCs or serial port as input source.
+>
+>The driver should be enforcing this constraint, then.
+
+It's the firmware that is in charge of this work.
+
+>> >> +static int adau1701_set_bias_level(struct snd_soc_codec *codec,
+>> >> +                              enum snd_soc_bias_level level) {
+>> >> +     u16 reg;
+>> >> +     switch (level) {
+>> >> +     case SND_SOC_BIAS_ON:
+>> >> +             reg = adau1701_read_register(codec,
+>ADAU1701_AUXNPOW,
+>> >> +2);
+>> >> +             reg &= ~(AUXNPOW_AAPD | AUXNPOW_D0PD |
+>AUXNPOW_D1PD |
+>> >> +AUXNPOW_D2PD |
+>> >> +                      AUXNPOW_D3PD | AUXNPOW_VBPD |
+>AUXNPOW_VRPD);
+>> >> +             adau1701_write_register(codec, ADAU1701_AUXNPOW, 2,
+>> >> +reg);
+>
+>> > You were also updating some of the same register bits in the mute
+>> > function.  This looks buggy.
+>
+>> the processor has no switchs to mute or unmute
+>ADCS/DACs,only thing we
+>> can do is turning them off or on.
+>
+>If mute can't be implemented don't implement it.  Right now
+>the code is clearly not going to do what's expected as you've
+>got two different bits of code trying to control the same
+>thing - at least one set of register updates isn't going to do
+>anything?
+
+All right.
+
+>> >> +     ret = adau1701_setprogram(codec);
+>> >> +     if (ret < 0) {
+>> >> +             printk(KERN_ERR "Loading program data failed\n");
+>> >> +             goto error;
+>> >> +     }
+>> >> +     reg = DSPCTRL_DAM | DSPCTRL_ADM;
+>> >> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
+>> >> +     reg = 0x08;
+>> >> +     adau1701_write_register(codec, ADAU1701_DSPRES, 1, reg);
+>
+>> > Should these DSP configuations things be part of
+>downloading firmware?
+>
+>> these configurations above loading firmware mainly used to avoid
+>> pops/clicks and cleanup some registers in the DSP core.
+>
+>Right, but is this something that's always useful when loading
+>firmware (in which case the firmware load should just wrap it
+>up so it always happens)?
+
+Sure,thanks.
+
+>> >> +     adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, 0);
+>> >> +     reg = AUXADCE_AAEN;
+>> >> +     adau1701_write_register(codec, ADAU1701_AUXADCE, 2, reg);
+>> >> +     reg = DACSET_DACEN;
+>> >> +     adau1701_write_register(codec, ADAU1701_DACSET, 2, reg);
+>> >> +     reg = DSPCTRL_DAM | DSPCTRL_ADM | DSPCTRL_CR;
+>> >> +     adau1701_write_register(codec, ADAU1701_DSPCTRL, 2, reg);
+>> >> +     /* Power-up the oscillator */
+>> >> +     adau1701_write_register(codec, ADAU1701_OSCIPOW, 2, 0);
+>
+>> > This looks like it's all power management which I'd expect to see
+>> > handled in either the bias management functions or ideally
+>DAPM.  It
+>> > also appears that the oscillator is an optional feature so
+>it should
+>> > be used conditionally.
+>
+>> the processor can receive MCLK either from external clock source or
+>> crystal oscillator, currently we use the on board
+>crystal,and it can't
+>> be turned off,otherwise the whole chip will be in an unpredicted
+>> status, only output clocks can be disabled.
+>
+>That's specific to your board design, though.  Another board
+>design might use a different clocking setup.
+
+Yes,so I think I can add a MACRO to indicate it.
+
+Cliff
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
