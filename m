@@ -1,144 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab1CJOcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:32:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43273 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab1CJOcp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:32:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=N+x0mpgKnkvo0YY1e2TdNVFmkMIQEhgk6siW1u5jbFBID9Jdza/p6Mhjh3ni09SOSD
-         cobN3HGoEx0wP44X/g0BrDtWn9Yqw6q93XaO/q5uiYsFb6sRFYqiruUzXjesQ5bFExoX
-         wsB+g2V8uw7DBkOhtHh/2oEu3A74UcQ7hagoA=
+	id S1752388Ab1CJOhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:37:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752052Ab1CJOhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:37:47 -0500
+Date: Thu, 10 Mar 2011 15:28:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: + x86-mm-handle-mm_fault_error-in-kernel-space.patch added to
+	-mm tree
+Message-ID: <20110310142812.GA25224@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110310024355.GG2533@nowhere>
-References: <AANLkTi=vxgHe=dqz+xEPcZ9oBexM1jBxFz3sXA2DJEZA@mail.gmail.com>
-	<20110307180619.GG1873@nowhere>
-	<AANLkTi=rabeXE6m0wRo029jgqHLBaUGQcXYJriLewZeJ@mail.gmail.com>
-	<20110310024355.GG2533@nowhere>
-Date: Thu, 10 Mar 2011 22:32:43 +0800
-Message-ID: <AANLkTikZxDyL-SW7FFbEd4skMNTVWeh7mGDTXfWkvEMR@mail.gmail.com>
-Subject: Re: [PATCH] Add inverted call graph report support to perf tool
-From: Sam Liao <phyomh@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@redhat.com, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 10:43 AM, Frederic Weisbecker
-<fweisbec@gmail.com> wrote:
-> On Tue, Mar 08, 2011 at 04:59:30PM +0800, Sam Liao wrote:
->> On Tue, Mar 8, 2011 at 2:06 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > So, instead of having such temporary copy, could you rather feed the callchain
->> > into the cursor in reverse from perf_session__resolve_callchain() ?
->> >
->> > You can keep the common part inside the loop into a seperate helper
->> > but have two different kinds of loops.
->>
->> In perf_session__resolve_callchain, only the callchain itself can be reversed,
->> which means the root of report will still be the ip of the event with a reversed
->> call chain sub tree. But what is more impressive to user is to make "main" like
->> function to be the root of the report, and this means that both the ip
->> and call chain is
->> involved to the reversion process.
->>
->> Since the ip of event is resolved in event__preprocess_sample, so it is kind
->> hard to do such reversion in a better way.
->
-> You are making an interesting point.
->
-> My view of this feature was limited to the current per hist area: having
-> the callchains on top of hists that can be sorted per ip, dso, pid, etc...
-> like we have today basically. So my view was for this reverse callchain
-> to show us one callers profiling for each hist entry.
->
-> But your idea of turning the callee into the caller would show us a very global
-> profiling. With reverse callchains it can be a very nice overview of the big picture.
->
-> IMO both workflow can be interesting:
->
-> 1) Have a big reversed callchain overview, with one root per entrypoint. This
-> what you wanted.
-> 2) Have a per hist 1)  which means a per hist per entrypoint callchain
->
-> 1) involves reverting both callchains and ip <->caller whereas 2) only involves
-> reverting the callchain.
+(add cc's)
 
-Having both workflow included would be more helpful.
+> Subject: x86/mm: handle mm_fault_error() in kernel space
+> From: Andrey Vagin <avagin@openvz.org>
 >
-> In order to get both features with a maximum flexibility and keep that extendable, I
-> would suggest to decouple that in two independant parts:
+> mm_fault_error() should not execute oom-killer, if page fault occurs in
+> kernel space.  E.g.  in copy_from_user/copy_to_user.
+
+Why? I don't understand this part.
+
+> This would happen if we find ourselves in OOM on a copy_to_user(), or a
+> copy_from_user() which faults.
 >
->        - an option to get reversed callchains. Using the -g option and caller/callee
->        as a third argument.
->
+> Without this patch, the kernels hangs up in copy_from_user, because OOM
+> killer sends SIG_KILL to current process,
 
-This could be easily extended by reversing the callchain symbols as
-you mentioned.
+This depends. OOM can choose another victim, and if it does we shouldn't
+return -EFAULT.
 
->        - a new "caller" sort entry. What defines a hist entry is a set of sort
->        entries: dso, symbol, pid, comm, ... That we use with the -s option in perf report.
->        If you want one hist per entrypoint, we could add a new "caller" sort entry.
->        Then perf report -s caller will (roughly) produce one hist for main(), one hist
->        for kernel_thread(), etc...
->
+> but it can't handle a signal
+> while in syscall, then the kernel returns to copy_from_user, reexcute
+> current command and provokes page_fault again.
 
-I'm not sure adding a "caller" sort entry can get things done. As for
-my limited understanding,
-"sort" is kind way to group events, after we group all the events
-under "main" or "kernel_thread",
-the sub-trees will still rooted as ip entry points with a reversed
-call-chain sub-trees which seems
-just the same as the previous workflow. Am I right? If so, here we
-still have to revert the ip and
-callchain.
+Yes. This is buggy.
 
-> Hence, someone running "perf report -g fractal,0.5,reversed -s dso" is going to have a
-> per dso caller-callchain profiling.
->
-> Someone running "perf report -g fractal,0.5,reversed -s caller" is going to have that
-> global caller profiling you wanted. You'll have one hist per entrypoint.
->
-> The caller sorting mode may sound a bit limited currently, but think about what happens
-> when you push forward the entrypoint, if one day we bring a feature to filter the callchains
-> on some dso address space , we could do a caller callchain profile starting on a shared library
-> and pinpoint which functions are mostly called on it, so that can be coupled with dso sorting mode,
-> etc... So that looks like a right way to go.
+> --- a/arch/x86/mm/fault.c~x86-mm-handle-mm_fault_error-in-kernel-space
+> +++ a/arch/x86/mm/fault.c
+> @@ -827,6 +827,13 @@ mm_fault_error(struct pt_regs *regs, uns
+>  	       unsigned long address, unsigned int fault)
+>  {
+>  	if (fault & VM_FAULT_OOM) {
+> +		/* Kernel mode? Handle exceptions or die: */
+> +		if (!(error_code & PF_USER)) {
+> +			up_read(&current->mm->mmap_sem);
+> +			no_context(regs, error_code, address);
+> +			return;
+> +		}
+> +
 
-This is interesting, we might choose different caller based on dso
-instead of the process/thread entry
-point. This also remind me one thing, at present, though with
-different sort orders, the event trees still
-root in the ip of the event. For an event with call chain like:
-main->func1->func2->lib_func3->ip, what
-about we expand this event to following events:
+At first glance, this is not optimal...
 
-- a direct event with ip called, with full call chain.
-- a indirect event with libfunc3 called, with lib_func3->ip call chain
-- a indirect event with func2 called ...
-- a indirect event with main called,
+Perhaps I missed something, but afaics it is better to call
+out_of_memory() first, then check if current was killed. In this case
+no_context() is fine, we are not going to return to the user-mode.
 
-With these indirect event added(we may also need to add direct count
-and indirect count), we are
-able to check any routine in any dso which functions are mostly
-called. Actually, it much seems like
- the sysprof that Ingo mentioned.
+IOW, what do you think about the (untested/uncompiled) patch below?
 
->
-> Ah and that shouldn't require to overwrite the real ip of an event with the caller.
-> Better create a new "caller" field on struct hist_entry for that.
->
-> Hm?
->
+Oleg.
 
-Thanks,
--Sam
+--- x/arch/x86/mm/fault.c
++++ x/arch/x86/mm/fault.c
+@@ -829,6 +829,11 @@ mm_fault_error(struct pt_regs *regs, uns
+ {
+ 	if (fault & VM_FAULT_OOM) {
+ 		out_of_memory(regs, error_code, address);
++
++		if (!(error_code & PF_USER) && fatal_signal_pending(current)) {
++			no_context(regs, error_code, address);
++			return;
++		}
+ 	} else {
+ 		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
+ 			     VM_FAULT_HWPOISON_LARGE))
+
