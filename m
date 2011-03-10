@@ -1,213 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab1CJFyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 00:54:51 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44422 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab1CJFyr (ORCPT
+	id S1751952Ab1CJGBE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 01:01:04 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:39823 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab1CJGBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 00:54:47 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 10 Mar 2011 14:47:52 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [PATCH v4] memcg: fix leak on wrong LRU with FUSE
-Message-Id: <20110310144752.289483d4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110310083659.fd8b1c3f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110308181832.6386da5f.nishimura@mxp.nes.nec.co.jp>
-	<20110309150750.d570798c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110309164801.3a4c8d10.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110309100020.GD30778@cmpxchg.org>
-	<20110310083659.fd8b1c3f.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Mar 2011 01:01:01 -0500
+Message-ID: <6b1e38c22e87fe197fcb3abf4e206ce2.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
+References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
+    <20110216192658.GA7225@blimp.localdomain>
+    <20110217221329.GA3332@x61.home>
+    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
+    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
+    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
+    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
+    <20110222130440.21a27714@jbarnes-desktop>
+    <20110222223120.GA3567@x61.home>
+    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
+    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
+    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
+    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
+Date: Thu, 10 Mar 2011 07:00:58 +0100 (CET)
+Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after     
+      reopening lid
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Indan Zupancic" <indan@nul.nu>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Alex Riesen" <raa.lkml@gmail.com>,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org,
+        "Takashi Iwai" <tiwai@suse.de>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 4c1f0696016754537de762f13eb96caa
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 08:36:59 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+drm/i915: Fix DPMS and suspend interaction for intel_panel.c
 
-> will add. Thank you !
-> 
+When suspending intel_panel_disable_backlight() is never called,
+but intel_panel_enable_backlight() is called at resume. With the
+effect that if the brightness was ever changed after screen
+blanking, the wrong brightness gets restored at resume time.
 
-Here is v4 based on feedbacks.
-==
+Nothing guarantees that those calls will be balanced, so having
+backlight_enabled makes no sense, as the real state can change
+without the panel code noticing. So keep things as stateless as
+possible.
 
-fs/fuse/dev.c::fuse_try_move_page() does
+Signed-off-by: Indan Zupancic <indan@nul.nu>
 
-   (1) remove a page by ->steal()
-   (2) re-add the page to page cache 
-   (3) link the page to LRU if it was not on LRU at (1)
-
-This implies the page is _on_ LRU when it's added to radix-tree.
-So, the page is added to  memory cgroup while it's on LRU and
-the pave will remain in the old(wrong) memcg.
-By this bug, force_empty()'s LRU scan cannot find the page and
-rmdir() will never ends.
-
-This is the same behavior as SwapCache and needs special care as
- - remove page from LRU before overwrite pc->mem_cgroup.
- - add page to LRU after overwrite pc->mem_cgroup.
-
-This will fixes memcg's rmdir() hang issue with FUSE.
-
-Changelog v3=v4:
-  - moved PageLRU() check into the leaf function.
-  - added comments
-
-Changelog v2=>v3:
-  - fixed double accounting.
-
-Changelog v1=>v2:
-  - clean up.
-  - cover !PageLRU() by pagevec case.
-
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   70 +++++++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 52 insertions(+), 18 deletions(-)
 
-Index: mmotm-0303/mm/memcontrol.c
-===================================================================
---- mmotm-0303.orig/mm/memcontrol.c
-+++ mmotm-0303/mm/memcontrol.c
-@@ -926,18 +926,28 @@ void mem_cgroup_add_lru_list(struct page
- }
- 
- /*
-- * At handling SwapCache, pc->mem_cgroup may be changed while it's linked to
-- * lru because the page may.be reused after it's fully uncharged (because of
-- * SwapCache behavior).To handle that, unlink page_cgroup from LRU when charge
-- * it again. This function is only used to charge SwapCache. It's done under
-- * lock_page and expected that zone->lru_lock is never held.
-+ * At handling SwapCache and other FUSE stuff, pc->mem_cgroup may be changed
-+ * while it's linked to lru because the page may be reused after it's fully
-+ * uncharged. To handle that, unlink page_cgroup from LRU when charge it again.
-+ * It's done under lock_page and expected that zone->lru_lock isnever held.
-  */
--static void mem_cgroup_lru_del_before_commit_swapcache(struct page *page)
-+static void mem_cgroup_lru_del_before_commit(struct page *page)
- {
- 	unsigned long flags;
- 	struct zone *zone = page_zone(page);
- 	struct page_cgroup *pc = lookup_page_cgroup(page);
- 
-+	/*
-+	 * Doing this check without taking ->lru_lock seems wrong but this
-+	 * is safe. Because if page_cgroup's USED bit is unset, the page
-+	 * will not be added to any memcg's LRU. If page_cgroup's USED bit is
-+	 * set, the commit after this will fail, anyway.
-+	 * This all charge/uncharge is done under some mutual execustion.
-+	 * So, we don't need to taking care of changes in USED bit.
-+	 */
-+	if (likely(!PageLRU(page)))
-+		return;
-+
- 	spin_lock_irqsave(&zone->lru_lock, flags);
- 	/*
- 	 * Forget old LRU when this page_cgroup is *not* used. This Used bit
-@@ -948,12 +958,15 @@ static void mem_cgroup_lru_del_before_co
- 	spin_unlock_irqrestore(&zone->lru_lock, flags);
- }
- 
--static void mem_cgroup_lru_add_after_commit_swapcache(struct page *page)
-+static void mem_cgroup_lru_add_after_commit(struct page *page)
- {
- 	unsigned long flags;
- 	struct zone *zone = page_zone(page);
- 	struct page_cgroup *pc = lookup_page_cgroup(page);
- 
-+	/* taking care of that the page is added to LRU while we commit it */
-+	if (likely(!PageLRU(page)))
-+		return;
- 	spin_lock_irqsave(&zone->lru_lock, flags);
- 	/* link when the page is linked to LRU but page_cgroup isn't */
- 	if (PageLRU(page) && !PageCgroupAcctLRU(pc))
-@@ -2431,9 +2444,26 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype);
- 
-+static void
-+__mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *mem,
-+					enum charge_type ctype)
-+{
-+	struct page_cgroup *pc = lookup_page_cgroup(page);
-+	/*
-+	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
-+	 * is already on LRU. It means the page may on some other page_cgroup's
-+	 * LRU. Take care of it.
-+	 */
-+	mem_cgroup_lru_del_before_commit(page);
-+	__mem_cgroup_commit_charge(mem, page, 1, pc, ctype);
-+	mem_cgroup_lru_add_after_commit(page);
-+	return;
-+}
-+
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask)
- {
-+	struct mem_cgroup *mem = NULL;
- 	int ret;
- 
- 	if (mem_cgroup_disabled())
-@@ -2468,14 +2498,22 @@ int mem_cgroup_cache_charge(struct page 
- 	if (unlikely(!mm))
- 		mm = &init_mm;
- 
--	if (page_is_file_cache(page))
--		return mem_cgroup_charge_common(page, mm, gfp_mask,
--				MEM_CGROUP_CHARGE_TYPE_CACHE);
-+	if (page_is_file_cache(page)) {
-+		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &mem, true);
-+		if (ret || !mem)
-+			return ret;
- 
-+		/*
-+		 * FUSE reuses pages without going through the final
-+		 * put that would remove them from the LRU list, make
-+		 * sure that they get relinked properly.
-+		 */
-+		__mem_cgroup_commit_charge_lrucare(page, mem,
-+					MEM_CGROUP_CHARGE_TYPE_CACHE);
-+		return ret;
-+	}
- 	/* shmem */
- 	if (PageSwapCache(page)) {
--		struct mem_cgroup *mem;
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 456f404..4a3d9ed 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -333,7 +333,6 @@ typedef struct drm_i915_private {
+
+ 	/* LVDS info */
+ 	int backlight_level;  /* restore backlight to this value */
+-	bool backlight_enabled;
+ 	struct drm_display_mode *panel_fixed_mode;
+ 	struct drm_display_mode *lfp_lvds_vbt_mode; /* if any */
+ 	struct drm_display_mode *sdvo_lvds_vbt_mode; /* if any */
+@@ -1220,10 +1219,6 @@ void i915_debugfs_cleanup(struct drm_minor *minor);
+ extern int i915_save_state(struct drm_device *dev);
+ extern int i915_restore_state(struct drm_device *dev);
+
+-/* i915_suspend.c */
+-extern int i915_save_state(struct drm_device *dev);
+-extern int i915_restore_state(struct drm_device *dev);
 -
- 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &mem);
- 		if (!ret)
- 			__mem_cgroup_commit_charge_swapin(page, mem,
-@@ -2532,17 +2570,13 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype)
- {
--	struct page_cgroup *pc;
+ /* intel_i2c.c */
+ extern int intel_setup_gmbus(struct drm_device *dev);
+ extern void intel_teardown_gmbus(struct drm_device *dev);
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 49fb54f..1b5a32d 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -5924,8 +5924,6 @@ static void intel_setup_outputs(struct drm_device *dev)
+ 		encoder->base.possible_clones =
+ 			intel_encoder_clones(dev, encoder->clone_mask);
+ 	}
 -
- 	if (mem_cgroup_disabled())
- 		return;
- 	if (!ptr)
- 		return;
- 	cgroup_exclude_rmdir(&ptr->css);
--	pc = lookup_page_cgroup(page);
--	mem_cgroup_lru_del_before_commit_swapcache(page);
--	__mem_cgroup_commit_charge(ptr, page, 1, pc, ctype);
--	mem_cgroup_lru_add_after_commit_swapcache(page);
-+
-+	__mem_cgroup_commit_charge_lrucare(page, ptr, ctype);
- 	/*
- 	 * Now swap is on-memory. This means this page may be
- 	 * counted both as mem and swap....double count.
+-	intel_panel_setup_backlight(dev);
+ }
+
+ static void intel_user_framebuffer_destroy(struct drm_framebuffer *fb)
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 2c43104..70e8b82 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -257,7 +257,6 @@ extern void intel_pch_panel_fitting(struct drm_device *dev,
+ extern u32 intel_panel_get_max_backlight(struct drm_device *dev);
+ extern u32 intel_panel_get_backlight(struct drm_device *dev);
+ extern void intel_panel_set_backlight(struct drm_device *dev, u32 level);
+-extern void intel_panel_setup_backlight(struct drm_device *dev);
+ extern void intel_panel_enable_backlight(struct drm_device *dev);
+ extern void intel_panel_disable_backlight(struct drm_device *dev);
+
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index d860abe..b05631a 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -217,12 +255,11 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+ void intel_panel_disable_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
++	u32 level = intel_panel_get_backlight(dev);
+
+-	if (dev_priv->backlight_enabled) {
+-		dev_priv->backlight_level = intel_panel_get_backlight(dev);
+-		dev_priv->backlight_enabled = false;
+-	}
+-
++	if (level == 0)
++		return;
++	dev_priv->backlight_level = level;
+ 	intel_panel_set_backlight(dev, 0);
+ }
+
+@@ -230,17 +267,9 @@ void intel_panel_enable_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+
++	if (intel_panel_get_backlight(dev))
++		return;
+ 	if (dev_priv->backlight_level == 0)
+ 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+-
+ 	intel_panel_set_backlight(dev, dev_priv->backlight_level);
+-	dev_priv->backlight_enabled = true;
+-}
+-
+-void intel_panel_setup_backlight(struct drm_device *dev)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-
+-	dev_priv->backlight_level = intel_panel_get_backlight(dev);
+-	dev_priv->backlight_enabled = dev_priv->backlight_level != 0;
+ }
+
 
