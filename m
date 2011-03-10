@@ -1,297 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab1CJOXV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 09:23:21 -0500
-Received: from hera.kernel.org ([140.211.167.34]:37884 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab1CJOXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 09:23:20 -0500
-Date: Thu, 10 Mar 2011 14:22:14 GMT
-From: tip-bot for Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
-        stable@kernel.org, aarcange@redhat.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
-        aarcange@redhat.com, stable@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
-References: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mm: Fix pgd_lock deadlock
-Message-ID: <tip-a79e53d85683c6dd9f99c90511028adc2043031f@git.kernel.org>
-Git-Commit-ID: a79e53d85683c6dd9f99c90511028adc2043031f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752275Ab1CJOcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 09:32:46 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43273 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab1CJOcp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 09:32:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=N+x0mpgKnkvo0YY1e2TdNVFmkMIQEhgk6siW1u5jbFBID9Jdza/p6Mhjh3ni09SOSD
+         cobN3HGoEx0wP44X/g0BrDtWn9Yqw6q93XaO/q5uiYsFb6sRFYqiruUzXjesQ5bFExoX
+         wsB+g2V8uw7DBkOhtHh/2oEu3A74UcQ7hagoA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Mar 2011 14:22:16 +0000 (UTC)
+In-Reply-To: <20110310024355.GG2533@nowhere>
+References: <AANLkTi=vxgHe=dqz+xEPcZ9oBexM1jBxFz3sXA2DJEZA@mail.gmail.com>
+	<20110307180619.GG1873@nowhere>
+	<AANLkTi=rabeXE6m0wRo029jgqHLBaUGQcXYJriLewZeJ@mail.gmail.com>
+	<20110310024355.GG2533@nowhere>
+Date: Thu, 10 Mar 2011 22:32:43 +0800
+Message-ID: <AANLkTikZxDyL-SW7FFbEd4skMNTVWeh7mGDTXfWkvEMR@mail.gmail.com>
+Subject: Re: [PATCH] Add inverted call graph report support to perf tool
+From: Sam Liao <phyomh@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@redhat.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a79e53d85683c6dd9f99c90511028adc2043031f
-Gitweb:     http://git.kernel.org/tip/a79e53d85683c6dd9f99c90511028adc2043031f
-Author:     Andrea Arcangeli <aarcange@redhat.com>
-AuthorDate: Wed, 16 Feb 2011 15:45:22 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 10 Mar 2011 09:41:57 +0100
+On Thu, Mar 10, 2011 at 10:43 AM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> On Tue, Mar 08, 2011 at 04:59:30PM +0800, Sam Liao wrote:
+>> On Tue, Mar 8, 2011 at 2:06 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > So, instead of having such temporary copy, could you rather feed the callchain
+>> > into the cursor in reverse from perf_session__resolve_callchain() ?
+>> >
+>> > You can keep the common part inside the loop into a seperate helper
+>> > but have two different kinds of loops.
+>>
+>> In perf_session__resolve_callchain, only the callchain itself can be reversed,
+>> which means the root of report will still be the ip of the event with a reversed
+>> call chain sub tree. But what is more impressive to user is to make "main" like
+>> function to be the root of the report, and this means that both the ip
+>> and call chain is
+>> involved to the reversion process.
+>>
+>> Since the ip of event is resolved in event__preprocess_sample, so it is kind
+>> hard to do such reversion in a better way.
+>
+> You are making an interesting point.
+>
+> My view of this feature was limited to the current per hist area: having
+> the callchains on top of hists that can be sorted per ip, dso, pid, etc...
+> like we have today basically. So my view was for this reverse callchain
+> to show us one callers profiling for each hist entry.
+>
+> But your idea of turning the callee into the caller would show us a very global
+> profiling. With reverse callchains it can be a very nice overview of the big picture.
+>
+> IMO both workflow can be interesting:
+>
+> 1) Have a big reversed callchain overview, with one root per entrypoint. This
+> what you wanted.
+> 2) Have a per hist 1)  which means a per hist per entrypoint callchain
+>
+> 1) involves reverting both callchains and ip <->caller whereas 2) only involves
+> reverting the callchain.
 
-x86/mm: Fix pgd_lock deadlock
+Having both workflow included would be more helpful.
+>
+> In order to get both features with a maximum flexibility and keep that extendable, I
+> would suggest to decouple that in two independant parts:
+>
+>        - an option to get reversed callchains. Using the -g option and caller/callee
+>        as a third argument.
+>
 
-It's forbidden to take the page_table_lock with the irq disabled
-or if there's contention the IPIs (for tlb flushes) sent with
-the page_table_lock held will never run leading to a deadlock.
+This could be easily extended by reversing the callchain symbols as
+you mentioned.
 
-Nobody takes the pgd_lock from irq context so the _irqsave can be
-removed.
+>        - a new "caller" sort entry. What defines a hist entry is a set of sort
+>        entries: dso, symbol, pid, comm, ... That we use with the -s option in perf report.
+>        If you want one hist per entrypoint, we could add a new "caller" sort entry.
+>        Then perf report -s caller will (roughly) produce one hist for main(), one hist
+>        for kernel_thread(), etc...
+>
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <stable@kernel.org>
-LKML-Reference: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/mm/fault.c    |    7 +++----
- arch/x86/mm/init_64.c  |    6 +++---
- arch/x86/mm/pageattr.c |   18 ++++++++----------
- arch/x86/mm/pgtable.c  |   11 ++++-------
- arch/x86/xen/mmu.c     |   10 ++++------
- 5 files changed, 22 insertions(+), 30 deletions(-)
+I'm not sure adding a "caller" sort entry can get things done. As for
+my limited understanding,
+"sort" is kind way to group events, after we group all the events
+under "main" or "kernel_thread",
+the sub-trees will still rooted as ip entry points with a reversed
+call-chain sub-trees which seems
+just the same as the previous workflow. Am I right? If so, here we
+still have to revert the ip and
+callchain.
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index ffc7be1..20e3f87 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -229,15 +229,14 @@ void vmalloc_sync_all(void)
- 	for (address = VMALLOC_START & PMD_MASK;
- 	     address >= TASK_SIZE && address < FIXADDR_TOP;
- 	     address += PMD_SIZE) {
--
--		unsigned long flags;
- 		struct page *page;
- 
--		spin_lock_irqsave(&pgd_lock, flags);
-+		spin_lock(&pgd_lock);
- 		list_for_each_entry(page, &pgd_list, lru) {
- 			spinlock_t *pgt_lock;
- 			pmd_t *ret;
- 
-+			/* the pgt_lock only for Xen */
- 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
- 
- 			spin_lock(pgt_lock);
-@@ -247,7 +246,7 @@ void vmalloc_sync_all(void)
- 			if (!ret)
- 				break;
- 		}
--		spin_unlock_irqrestore(&pgd_lock, flags);
-+		spin_unlock(&pgd_lock);
- 	}
- }
- 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 71a5929..c14a542 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -105,18 +105,18 @@ void sync_global_pgds(unsigned long start, unsigned long end)
- 
- 	for (address = start; address <= end; address += PGDIR_SIZE) {
- 		const pgd_t *pgd_ref = pgd_offset_k(address);
--		unsigned long flags;
- 		struct page *page;
- 
- 		if (pgd_none(*pgd_ref))
- 			continue;
- 
--		spin_lock_irqsave(&pgd_lock, flags);
-+		spin_lock(&pgd_lock);
- 		list_for_each_entry(page, &pgd_list, lru) {
- 			pgd_t *pgd;
- 			spinlock_t *pgt_lock;
- 
- 			pgd = (pgd_t *)page_address(page) + pgd_index(address);
-+			/* the pgt_lock only for Xen */
- 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
- 			spin_lock(pgt_lock);
- 
-@@ -128,7 +128,7 @@ void sync_global_pgds(unsigned long start, unsigned long end)
- 
- 			spin_unlock(pgt_lock);
- 		}
--		spin_unlock_irqrestore(&pgd_lock, flags);
-+		spin_unlock(&pgd_lock);
- 	}
- }
- 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index d343b3c..90825f2 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -57,12 +57,10 @@ static unsigned long direct_pages_count[PG_LEVEL_NUM];
- 
- void update_page_count(int level, unsigned long pages)
- {
--	unsigned long flags;
--
- 	/* Protect against CPA */
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	direct_pages_count[level] += pages;
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- }
- 
- static void split_page_count(int level)
-@@ -394,7 +392,7 @@ static int
- try_preserve_large_page(pte_t *kpte, unsigned long address,
- 			struct cpa_data *cpa)
- {
--	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
-+	unsigned long nextpage_addr, numpages, pmask, psize, addr, pfn;
- 	pte_t new_pte, old_pte, *tmp;
- 	pgprot_t old_prot, new_prot, req_prot;
- 	int i, do_split = 1;
-@@ -403,7 +401,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	if (cpa->force_split)
- 		return 1;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	/*
- 	 * Check for races, another CPU might have split this page
- 	 * up already:
-@@ -498,14 +496,14 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	}
- 
- out_unlock:
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- 
- 	return do_split;
- }
- 
- static int split_large_page(pte_t *kpte, unsigned long address)
- {
--	unsigned long flags, pfn, pfninc = 1;
-+	unsigned long pfn, pfninc = 1;
- 	unsigned int i, level;
- 	pte_t *pbase, *tmp;
- 	pgprot_t ref_prot;
-@@ -519,7 +517,7 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	if (!base)
- 		return -ENOMEM;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	/*
- 	 * Check for races, another CPU might have split this page
- 	 * up for us already:
-@@ -591,7 +589,7 @@ out_unlock:
- 	 */
- 	if (base)
- 		__free_page(base);
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- 
- 	return 0;
- }
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index 500242d..0113d19 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -121,14 +121,12 @@ static void pgd_ctor(struct mm_struct *mm, pgd_t *pgd)
- 
- static void pgd_dtor(pgd_t *pgd)
- {
--	unsigned long flags; /* can be called from interrupt context */
--
- 	if (SHARED_KERNEL_PMD)
- 		return;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	pgd_list_del(pgd);
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- }
- 
- /*
-@@ -260,7 +258,6 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
- {
- 	pgd_t *pgd;
- 	pmd_t *pmds[PREALLOCATED_PMDS];
--	unsigned long flags;
- 
- 	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP);
- 
-@@ -280,12 +277,12 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
- 	 * respect to anything walking the pgd_list, so that they
- 	 * never see a partially populated pgd.
- 	 */
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 
- 	pgd_ctor(mm, pgd);
- 	pgd_prepopulate_pmd(mm, pgd, pmds);
- 
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- 
- 	return pgd;
- 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 5e92b61..f608942 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -986,10 +986,9 @@ static void xen_pgd_pin(struct mm_struct *mm)
-  */
- void xen_mm_pin_all(void)
- {
--	unsigned long flags;
- 	struct page *page;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 
- 	list_for_each_entry(page, &pgd_list, lru) {
- 		if (!PagePinned(page)) {
-@@ -998,7 +997,7 @@ void xen_mm_pin_all(void)
- 		}
- 	}
- 
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- }
- 
- /*
-@@ -1099,10 +1098,9 @@ static void xen_pgd_unpin(struct mm_struct *mm)
-  */
- void xen_mm_unpin_all(void)
- {
--	unsigned long flags;
- 	struct page *page;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 
- 	list_for_each_entry(page, &pgd_list, lru) {
- 		if (PageSavePinned(page)) {
-@@ -1112,7 +1110,7 @@ void xen_mm_unpin_all(void)
- 		}
- 	}
- 
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- }
- 
- void xen_activate_mm(struct mm_struct *prev, struct mm_struct *next)
+> Hence, someone running "perf report -g fractal,0.5,reversed -s dso" is going to have a
+> per dso caller-callchain profiling.
+>
+> Someone running "perf report -g fractal,0.5,reversed -s caller" is going to have that
+> global caller profiling you wanted. You'll have one hist per entrypoint.
+>
+> The caller sorting mode may sound a bit limited currently, but think about what happens
+> when you push forward the entrypoint, if one day we bring a feature to filter the callchains
+> on some dso address space , we could do a caller callchain profile starting on a shared library
+> and pinpoint which functions are mostly called on it, so that can be coupled with dso sorting mode,
+> etc... So that looks like a right way to go.
+
+This is interesting, we might choose different caller based on dso
+instead of the process/thread entry
+point. This also remind me one thing, at present, though with
+different sort orders, the event trees still
+root in the ip of the event. For an event with call chain like:
+main->func1->func2->lib_func3->ip, what
+about we expand this event to following events:
+
+- a direct event with ip called, with full call chain.
+- a indirect event with libfunc3 called, with lib_func3->ip call chain
+- a indirect event with func2 called ...
+- a indirect event with main called,
+
+With these indirect event added(we may also need to add direct count
+and indirect count), we are
+able to check any routine in any dso which functions are mostly
+called. Actually, it much seems like
+ the sysprof that Ingo mentioned.
+
+>
+> Ah and that shouldn't require to overwrite the real ip of an event with the caller.
+> Better create a new "caller" field on struct hist_entry for that.
+>
+> Hm?
+>
+
+Thanks,
+-Sam
