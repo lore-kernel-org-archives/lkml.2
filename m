@@ -1,108 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1CJQ0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:26:07 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:38883 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752770Ab1CJQ0E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:26:04 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=L4Cdv4vNki4XK/i6EH/0FA4rBikJmEaQhK3KPUxm/NBhUxjjUfOmA+EgxrYTP50NElImVuI2YZi4kQSl3gTeaWAhQEl1jG9aSIh6oytw5Nq690CN6YnAgljeraOZ5hPA;
-Date: Thu, 10 Mar 2011 08:26:00 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Takao Indoh <tindoh@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Len Brown <lenb@kernel.org>,
-        linux-doc@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
-Message-Id: <20110310082600.b52de7fb.rdunlap@xenotime.net>
-In-Reply-To: <1299766243-494-1-git-send-email-amwang@redhat.com>
-References: <1299766243-494-1-git-send-email-amwang@redhat.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1753413Ab1CJQ2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:28:49 -0500
+Received: from smtpbg55.qq.com ([64.71.138.44]:55918 "HELO smtpbg55.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750957Ab1CJQ2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:28:48 -0500
+X-QQ-mid: esmtp9t1299774457t845t32195
+X-QQ-SSF: 00000000000000F0F6100F000000000
+Date: Fri, 11 Mar 2011 00:38:18 +0800
+From: "Lina Lu" <lulina_nuaa@foxmail.com>
+To: "Vivek Goyal" <vgoyal@redhat.com>
+Cc: "linux kernel mailing list" <linux-kernel@vger.kernel.org>
+References: <tencent_6A5F95FF2112DFE963C44E4E@qq.com>
+Subject: Re: Re: blk-throttle.c : When limit is changed, must start a new slice
+Message-ID: <201103110038174067110@foxmail.com>
+X-mailer: Foxmail 6, 15, 201, 23 [cn]
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain;
+	charset="gb2312"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 22:10:43 +0800 Amerigo Wang wrote:
+On 2011-03-09 04:54:43, Vivek Goyal wrote:
+>
+>On Tue, Mar 08, 2011 at 11:03:59PM +0800, lina wrote:
 
-> From: Takao Indoh <tindoh@redhat.com>
-> 
-> There is a problem with putting the first kernel in EFI virtual mode,
-> it is that when the second kernel comes up it tries to initialize the
-> EFI again and once we have put EFI in virtual mode we can not really
-> do that.
-> 
-> Actually, EFI is not necessary for kdump, we can boot the second kernel
-> with "noefi" parameter, but the boot will mostly fail because 2nd kernel
-> cannot find RSDP.
-> 
-> In this situation, we introduced "acpi_addr=" kernel parameter,
-> so that kexec-tools can pass the "noefi acpi_addr=X" to the second kernel
-> to make kdump works.
-> 
-> Signed-off-by: Takao Indoh <tindoh@redhat.com>
-> [amwang@redhat.com: Add documentation.]
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> 
-> ---
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index f4a04c0..0fbbdc6 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -163,6 +163,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  
->  			See also Documentation/power/pm.txt, pci=noacpi
->  
-> +	acpi_addr=	[ACPI,EFI]
-> +			Pass the RSDP address to the kernel, mostly used
-> +			on machines running EFI runtime service to boot the
-> +			second kernel for kdump.
-> +
+>[..]
+>> >>  Unfortunately, the following patch still has 5~10 seconds latency. I have no
+>> >>  idea to resolve this problem, it seens hard to find a more suitable func to
+>> >>  call throtl_start_new_slice().
+>> >
+>> >So are you saying that following patch did not solve the latnecy issue?
+>> >Resetting slice upon limit change did not work for you?
+>> >
+>>   
+>>  Yes, the following patch did not solve the latency issue. There is still 5~10
+>>  seconds latency when I change the limit from a very high value to low. From
+>>  blktrace, I find that the throtl_process_limit_change() is called after work 
+>>  queue delay.
+>>   
+>>  Thanks
+>>  Lina
+>
+>Ok,
+>
+>Can you try the attached patch. I think what was happening that after
+>changing limits, work was not being scheduled as there were no queued
+>bios hence no slice reset was taking place immediately.
+>
+>[..]
+>
+>Thanks
+>Vivek
+>
 
-I think that "acpi_addr" is a bit too generic.  How about
-acpi_rsdp or acpi_root instead?
+Hi Vivek,
+I have test the following patch, but the latency still there.
+
+I try to find why there are 5~10 seconds latency today. After collect the blktrace, I 
+think the reason is that throtl_trim_slice() don't aways update the tg->slice_start[rw], 
+although we call it once dispatch a bio.
+
+Suppose that if the limits change now from 102400000000 to 1024000, the 
+tg->slice_start[rw] and tg->slice_end[rw] just like in the following chart. There is two 
+throtl_slice in the chart. Here my HZ is 250, so the throtl_slice is 25.
+
+                  jiffies
+                  |
+   |------------------|------------------|
+   |                         |
+start                    end
+
+As the jiffies - start < 25(throtl_slice), throtl_trim_slice() will not update the 
+tg->slice_start[rw] and tg->bytes_disp[rw]. If the tg->bytes_disp[rw] now is 8M, then
+there will be about 7 seconds from jiffies 0 bps as I have set the limits at 1M/s, in 
+these seconds no bio can be dispatched.
+
+As the tg->slice_start[rw] must less than or equal to jiffies, and we can not know the 
+reason of tg->bytes_disp[rw] > the theoretical value with limits 1M/s, So can not just 
+set the tg->slice_start[rw] to jiffies here. If set the start to jiffies, throtl will not work.
+
+I think if we can start a new slice in the next throtl_slice when the limits changed from 
+high to low and the tg->bytes_disp[rw] is critical greater than the theoretical value with
+now limits, this problem can be solved.
+
+Thanks
+Lina
+
+>---
+> block/blk-throttle.c |   24 +++++++++++++++++++++++-
+> 1 file changed, 23 insertions(+), 1 deletion(-)
+>
+>Index: linux-2.6/block/blk-throttle.c
+>===================================================================
+>--- linux-2.6.orig/block/blk-throttle.c	2011-03-04 13:59:45.000000000 -0500
+>+++ linux-2.6/block/blk-throttle.c	2011-03-08 15:41:19.384654732 -0500
+>@@ -757,6 +757,14 @@ static void throtl_process_limit_change(
+> 				" riops=%u wiops=%u", tg->bps[READ],
+> 				tg->bps[WRITE], tg->iops[READ],
+> 				tg->iops[WRITE]);
+>+			/*
+>+			 * Restart the slices for both READ and WRITES. It
+>+			 * might happen that a group's limit are dropped
+>+			 * suddenly and we don't want to account recently
+>+			 * dispatched IO with new low rate
+>+			 */
+>+			throtl_start_new_slice(td, tg, 0);
+>+			throtl_start_new_slice(td, tg, 1);
+> 			tg_update_disptime(td, tg);
+> 			tg->limits_changed = false;
+> 		}
+>@@ -825,7 +833,8 @@ throtl_schedule_delayed_work(struct thro
+> 
+> 	struct delayed_work *dwork = &td->throtl_work;
+> 
+>-	if (total_nr_queued(td) > 0) {
+>+	/* schedule work if limits changed even if no bio is queued */
+>+	if (total_nr_queued(td) > 0 || atomic_read(&td->limits_changed)) {
+> 		/*
+> 		 * We might have a work scheduled to be executed in future.
+> 		 * Cancel that and schedule a new one.
+>@@ -1023,6 +1032,19 @@ int blk_throtl_bio(struct request_queue 
+> 	/* Bio is with-in rate limit of group */
+> 	if (tg_may_dispatch(td, tg, bio, NULL)) {
+> 		throtl_charge_bio(tg, bio);
+>+
+>+		/*
+>+		 * We need to trim slice even when bios are not being queued
+>+		 * otherwise it might happen that a bio is not queued for
+>+		 * a long time and slice keeps on extending and trim is not
+>+		 * called for a long time. Now if limits are reduced suddenly
+>+		 * we take into account all the IO dispatched so far at new
+>+		 * low rate and * newly queued IO gets a really long dispatch
+>+		 * time.
+>+		 *
+>+		 * So keep on trimming slice even if bio is not queued.
+>+		 */
+>+		throtl_trim_slice(td, tg, rw);
+> 		goto out;
+> 	}
+ 
 
 
->  	acpi_apic_instance=	[ACPI, IOAPIC]
->  			Format: <int>
->  			2: use 2nd APIC table, if available
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index c90c76a..06dfec0 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -238,8 +238,19 @@ void acpi_os_vprintf(const char *fmt, va_list args)
->  #endif
->  }
->  
-> +static unsigned long acpi_addr;
-> +static int __init setup_acpi_addr(char *arg)
-> +{
-> +	acpi_addr = simple_strtoul(arg, NULL, 16);
-> +	return 0;
-> +}
-> +early_param("acpi_addr", setup_acpi_addr);
-> +
->  acpi_physical_address __init acpi_os_get_root_pointer(void)
->  {
-> +	if (acpi_addr)
-> +		return acpi_addr;
-> +
->  	if (efi_enabled) {
->  		if (efi.acpi20 != EFI_INVALID_TABLE_ADDR)
->  			return efi.acpi20;
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
