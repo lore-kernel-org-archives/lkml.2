@@ -1,138 +1,902 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1CJSIb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 13:08:31 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:7848 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab1CJSIa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 13:08:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=DIYz6BvacErF0vhb+3+45qZSIviHExJMlIUyZI8h6cRkj11yLnr96R5IIxak+/m++n
-         jBFZWcVLfq5RIS/dwRyA==
+	id S1752858Ab1CJSKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 13:10:14 -0500
+Received: from kroah.org ([198.145.64.141]:36288 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569Ab1CJSKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 13:10:11 -0500
+Date: Thu, 10 Mar 2011 10:09:59 -0800
+From: Greg KH <greg@kroah.com>
+To: Nikolai Kondrashov <spbnick@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110310180959.GA26927@kroah.com>
+References: <20110209224006.GA11202@kroah.com>
+ <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com>
+ <20110225210334.GB16860@kroah.com>
+ <4D6823DD.6040809@gmail.com>
+ <20110225225055.GA5931@kroah.com>
+ <4D787714.6060405@gmail.com>
+ <20110310170143.GA24559@kroah.com>
+ <AANLkTinyqJx76=nzepa9fe5VDzqiXRGCQ=E1SsKm2npE@mail.gmail.com>
+ <20110310171940.GA24972@kroah.com>
+ <4D790A20.3050105@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110309142237.6ab82523.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1299619256-12661-1-git-send-email-teravest@google.com> <20110309142237.6ab82523.kamezawa.hiroyu@jp.fujitsu.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Thu, 10 Mar 2011 10:08:03 -0800
-Message-ID: <AANLkTimRRAEp75CfyJFxU-5wOYfety6gjq=msZf0Wp8P@mail.gmail.com>
-Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, vgoyal@redhat.com,
-        linux-kernel@vger.kernel.org, ryov@valinux.co.jp, taka@valinux.co.jp,
-        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
-        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
-        mrubin@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: multipart/mixed; boundary="sdtB3X0nJg68CQEu"
+Content-Disposition: inline
+In-Reply-To: <4D790A20.3050105@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 8, 2011 at 9:22 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Tue,  8 Mar 2011 13:20:50 -0800
-> Justin TerAvest <teravest@google.com> wrote:
->
->> This patchset adds tracking to the page_cgroup structure for which cgroup has
->> dirtied a page, and uses that information to provide isolation between
->> cgroups performing writeback.
->>
->> I know that there is some discussion to remove request descriptor limits
->> entirely, but I included a patch to introduce per-cgroup limits to enable
->> this functionality. Without it, we didn't see much isolation improvement.
->>
->> I think most of this material has been discussed on lkml previously, this is
->> just another attempt to make a patchset that handles buffered writes for CFQ.
->>
->> There was a lot of previous discussion at:
->>   http://thread.gmane.org/gmane.linux.kernel/1007922
->>
->> Thanks to Andrea Righi, Kamezawa Hiroyuki, Munehiro Ikeda, Nauman Rafique,
->> and Vivek Goyal for work on previous versions of these patches.
->>
->
-> 2 points from me.
->
-> 1. If you know there is a thread, please join even if it's a bit little thread.
-> 2. In these days, I got many comments as 'page_cgroup is toooo big', so
->   I don't feel fun when I see a patch which increases size of page_cgroup.
->
-> I don't like to increase size of page_cgroup but I think you can record
-> information without increasing size of page_cgroup.
->
-> A) As Andrea did, encode it to pc->flags.
->   But I'm afraid that there is a racy case because memory cgroup uses some
->   test_and_set() bits.
-> B) I wonder why the information cannot be recorded in page->private.
->   When page has buffers, you can record the information to buffer struct.
->   About swapio (if you take care of), you can record information to bio.
 
-Hi Kame,
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'm concerned that by using something like buffer_heads stored in
-page->private, we will only be supported on some filesystems and not
-others. In addition, I'm not sure if all filesystems attach buffer
-heads at the same time; if page->private is modified in the flusher
-thread, we might not be able to determine the thread that dirtied the
-page in the first place.
+On Thu, Mar 10, 2011 at 07:28:00PM +0200, Nikolai Kondrashov wrote:
+> On 03/10/2011 07:19 PM, Greg KH wrote:
+> >Can you provide me the output of:
+> >	grep . /sys/class/dmi/id/*
+> >so I can try to add support for this machine to the driver?
+> Sure, here it is.
 
-For now, I think I will encode the data to pc->flags. Let me know if I
-misunderstood your suggestion.
+Great, here's a new version of the samsung-laptop.c file, can you
+replace it whereever you were building the previous one, rebuild it and
+test it for this machine to see if it works?
 
-Thanks,
-Justin
+thanks,
 
->
-> Anyway, thank you for the work. And please join the discussion and explain
-> "Without it, we didn't see much isolation improvement." with real data.
->
-> Regards,
-> -Kame
->
->
->
->>
->>  Documentation/block/biodoc.txt |   10 +
->>  block/blk-cgroup.c             |  204 +++++++++++++++++++++-
->>  block/blk-cgroup.h             |    9 +-
->>  block/blk-core.c               |  216 +++++++++++++++--------
->>  block/blk-settings.c           |    2 +-
->>  block/blk-sysfs.c              |   60 ++++---
->>  block/cfq-iosched.c            |  390 +++++++++++++++++++++++++++++++---------
->>  block/cfq.h                    |    6 +-
->>  block/elevator.c               |   11 +-
->>  fs/buffer.c                    |    2 +
->>  fs/direct-io.c                 |    2 +
->>  include/linux/blk_types.h      |    2 +
->>  include/linux/blkdev.h         |   81 ++++++++-
->>  include/linux/blkio-track.h    |   89 +++++++++
->>  include/linux/elevator.h       |   14 ++-
->>  include/linux/iocontext.h      |    1 +
->>  include/linux/memcontrol.h     |    6 +
->>  include/linux/mmzone.h         |    4 +-
->>  include/linux/page_cgroup.h    |   12 +-
->>  init/Kconfig                   |   16 ++
->>  mm/Makefile                    |    3 +-
->>  mm/bounce.c                    |    2 +
->>  mm/filemap.c                   |    2 +
->>  mm/memcontrol.c                |    6 +
->>  mm/memory.c                    |    6 +
->>  mm/page-writeback.c            |   14 ++-
->>  mm/page_cgroup.c               |   29 ++-
->>  mm/swap_state.c                |    2 +
->>  28 files changed, 985 insertions(+), 216 deletions(-)
->>
->> [PATCH 1/6] Add IO cgroup tracking for buffered writes.
->> [PATCH 2/6] Make async queues per cgroup.
->> [PATCH 3/6] Modify CFQ to use IO tracking information.
->> [PATCH 4/6] With per-cgroup async, don't special case queues.
->> [PATCH 5/6] Add stat for per cgroup writeout done by flusher.
->> [PATCH 6/6] Per cgroup request descriptor counts
->>
->
->
+greg k-h
+
+--sdtB3X0nJg68CQEu
+Content-Type: text/x-c++src; charset=us-ascii
+Content-Disposition: attachment; filename="samsung-laptop.c"
+
+/*
+ * Samsung Laptop driver
+ *
+ * Copyright (C) 2009,2011 Greg Kroah-Hartman (gregkh@suse.de)
+ * Copyright (C) 2009,2011 Novell Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
+ *
+ */
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/delay.h>
+#include <linux/pci.h>
+#include <linux/backlight.h>
+#include <linux/fb.h>
+#include <linux/dmi.h>
+#include <linux/platform_device.h>
+#include <linux/rfkill.h>
+
+/*
+ * This driver is needed because a number of Samsung laptops do not hook
+ * their control settings through ACPI.  So we have to poke around in the
+ * BIOS to do things like brightness values, and "special" key controls.
+ */
+
+/*
+ * We have 0 - 8 as valid brightness levels.  The specs say that level 0 should
+ * be reserved by the BIOS (which really doesn't make much sense), we tell
+ * userspace that the value is 0 - 7 and then just tell the hardware 1 - 8
+ */
+#define MAX_BRIGHT	0x07
+
+
+#define SABI_IFACE_MAIN			0x00
+#define SABI_IFACE_SUB			0x02
+#define SABI_IFACE_COMPLETE		0x04
+#define SABI_IFACE_DATA			0x05
+
+/* Structure to get data back to the calling function */
+struct sabi_retval {
+	u8 retval[20];
+};
+
+struct sabi_header_offsets {
+	u8 port;
+	u8 re_mem;
+	u8 iface_func;
+	u8 en_mem;
+	u8 data_offset;
+	u8 data_segment;
+};
+
+struct sabi_commands {
+	/*
+	 * Brightness is 0 - 8, as described above.
+	 * Value 0 is for the BIOS to use
+	 */
+	u8 get_brightness;
+	u8 set_brightness;
+
+	/*
+	 * first byte:
+	 * 0x00 - wireless is off
+	 * 0x01 - wireless is on
+	 * second byte:
+	 * 0x02 - 3G is off
+	 * 0x03 - 3G is on
+	 * TODO, verify 3G is correct, that doesn't seem right...
+	 */
+	u8 get_wireless_button;
+	u8 set_wireless_button;
+
+	/* 0 is off, 1 is on */
+	u8 get_backlight;
+	u8 set_backlight;
+
+	/*
+	 * 0x80 or 0x00 - no action
+	 * 0x81 - recovery key pressed
+	 */
+	u8 get_recovery_mode;
+	u8 set_recovery_mode;
+
+	/*
+	 * on seclinux: 0 is low, 1 is high,
+	 * on swsmi: 0 is normal, 1 is silent, 2 is turbo
+	 */
+	u8 get_performance_level;
+	u8 set_performance_level;
+
+	/*
+	 * Tell the BIOS that Linux is running on this machine.
+	 * 81 is on, 80 is off
+	 */
+	u8 set_linux;
+};
+
+struct sabi_performance_level {
+	const char *name;
+	u8 value;
+};
+
+struct sabi_config {
+	const char *test_string;
+	u16 main_function;
+	const struct sabi_header_offsets header_offsets;
+	const struct sabi_commands commands;
+	const struct sabi_performance_level performance_levels[4];
+	u8 min_brightness;
+	u8 max_brightness;
+};
+
+static const struct sabi_config sabi_configs[] = {
+	{
+		.test_string = "SECLINUX",
+
+		.main_function = 0x4c49,
+
+		.header_offsets = {
+			.port = 0x00,
+			.re_mem = 0x02,
+			.iface_func = 0x03,
+			.en_mem = 0x04,
+			.data_offset = 0x05,
+			.data_segment = 0x07,
+		},
+
+		.commands = {
+			.get_brightness = 0x00,
+			.set_brightness = 0x01,
+
+			.get_wireless_button = 0x02,
+			.set_wireless_button = 0x03,
+
+			.get_backlight = 0x04,
+			.set_backlight = 0x05,
+
+			.get_recovery_mode = 0x06,
+			.set_recovery_mode = 0x07,
+
+			.get_performance_level = 0x08,
+			.set_performance_level = 0x09,
+
+			.set_linux = 0x0a,
+		},
+
+		.performance_levels = {
+			{
+				.name = "silent",
+				.value = 0,
+			},
+			{
+				.name = "normal",
+				.value = 1,
+			},
+			{ },
+		},
+		.min_brightness = 1,
+		.max_brightness = 8,
+	},
+	{
+		.test_string = "SwSmi@",
+
+		.main_function = 0x5843,
+
+		.header_offsets = {
+			.port = 0x00,
+			.re_mem = 0x04,
+			.iface_func = 0x02,
+			.en_mem = 0x03,
+			.data_offset = 0x05,
+			.data_segment = 0x07,
+		},
+
+		.commands = {
+			.get_brightness = 0x10,
+			.set_brightness = 0x11,
+
+			.get_wireless_button = 0x12,
+			.set_wireless_button = 0x13,
+
+			.get_backlight = 0x2d,
+			.set_backlight = 0x2e,
+
+			.get_recovery_mode = 0xff,
+			.set_recovery_mode = 0xff,
+
+			.get_performance_level = 0x31,
+			.set_performance_level = 0x32,
+
+			.set_linux = 0xff,
+		},
+
+		.performance_levels = {
+			{
+				.name = "normal",
+				.value = 0,
+			},
+			{
+				.name = "silent",
+				.value = 1,
+			},
+			{
+				.name = "overclock",
+				.value = 2,
+			},
+			{ },
+		},
+		.min_brightness = 0,
+		.max_brightness = 8,
+	},
+	{ },
+};
+
+static const struct sabi_config *sabi_config;
+
+static void __iomem *sabi;
+static void __iomem *sabi_iface;
+static void __iomem *f0000_segment;
+static struct backlight_device *backlight_device;
+static struct mutex sabi_mutex;
+static struct platform_device *sdev;
+static struct rfkill *rfk;
+
+static int force;
+module_param(force, bool, 0);
+MODULE_PARM_DESC(force,
+		"Disable the DMI check and forces the driver to be loaded");
+
+static int debug;
+module_param(debug, bool, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(debug, "Debug enabled or not");
+
+static int sabi_get_command(u8 command, struct sabi_retval *sretval)
+{
+	int retval = 0;
+	u16 port = readw(sabi + sabi_config->header_offsets.port);
+	u8 complete, iface_data;
+
+	mutex_lock(&sabi_mutex);
+
+	/* enable memory to be able to write to it */
+	outb(readb(sabi + sabi_config->header_offsets.en_mem), port);
+
+	/* write out the command */
+	writew(sabi_config->main_function, sabi_iface + SABI_IFACE_MAIN);
+	writew(command, sabi_iface + SABI_IFACE_SUB);
+	writeb(0, sabi_iface + SABI_IFACE_COMPLETE);
+	outb(readb(sabi + sabi_config->header_offsets.iface_func), port);
+
+	/* write protect memory to make it safe */
+	outb(readb(sabi + sabi_config->header_offsets.re_mem), port);
+
+	/* see if the command actually succeeded */
+	complete = readb(sabi_iface + SABI_IFACE_COMPLETE);
+	iface_data = readb(sabi_iface + SABI_IFACE_DATA);
+	if (complete != 0xaa || iface_data == 0xff) {
+		pr_warn("SABI get command 0x%02x failed with completion flag 0x%02x and data 0x%02x\n",
+		        command, complete, iface_data);
+		retval = -EINVAL;
+		goto exit;
+	}
+	/*
+	 * Save off the data into a structure so the caller use it.
+	 * Right now we only want the first 4 bytes,
+	 * There are commands that need more, but not for the ones we
+	 * currently care about.
+	 */
+	sretval->retval[0] = readb(sabi_iface + SABI_IFACE_DATA);
+	sretval->retval[1] = readb(sabi_iface + SABI_IFACE_DATA + 1);
+	sretval->retval[2] = readb(sabi_iface + SABI_IFACE_DATA + 2);
+	sretval->retval[3] = readb(sabi_iface + SABI_IFACE_DATA + 3);
+
+exit:
+	mutex_unlock(&sabi_mutex);
+	return retval;
+
+}
+
+static int sabi_set_command(u8 command, u8 data)
+{
+	int retval = 0;
+	u16 port = readw(sabi + sabi_config->header_offsets.port);
+	u8 complete, iface_data;
+
+	mutex_lock(&sabi_mutex);
+
+	/* enable memory to be able to write to it */
+	outb(readb(sabi + sabi_config->header_offsets.en_mem), port);
+
+	/* write out the command */
+	writew(sabi_config->main_function, sabi_iface + SABI_IFACE_MAIN);
+	writew(command, sabi_iface + SABI_IFACE_SUB);
+	writeb(0, sabi_iface + SABI_IFACE_COMPLETE);
+	writeb(data, sabi_iface + SABI_IFACE_DATA);
+	outb(readb(sabi + sabi_config->header_offsets.iface_func), port);
+
+	/* write protect memory to make it safe */
+	outb(readb(sabi + sabi_config->header_offsets.re_mem), port);
+
+	/* see if the command actually succeeded */
+	complete = readb(sabi_iface + SABI_IFACE_COMPLETE);
+	iface_data = readb(sabi_iface + SABI_IFACE_DATA);
+	if (complete != 0xaa || iface_data == 0xff) {
+		pr_warn("SABI set command 0x%02x failed with completion flag 0x%02x and data 0x%02x\n",
+		       command, complete, iface_data);
+		retval = -EINVAL;
+	}
+
+	mutex_unlock(&sabi_mutex);
+	return retval;
+}
+
+static void test_backlight(void)
+{
+	struct sabi_retval sretval;
+
+	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
+	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
+
+	sabi_set_command(sabi_config->commands.set_backlight, 0);
+	printk(KERN_DEBUG "backlight should be off\n");
+
+	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
+	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
+
+	msleep(1000);
+
+	sabi_set_command(sabi_config->commands.set_backlight, 1);
+	printk(KERN_DEBUG "backlight should be on\n");
+
+	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
+	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
+}
+
+static void test_wireless(void)
+{
+	struct sabi_retval sretval;
+
+	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
+	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
+
+	sabi_set_command(sabi_config->commands.set_wireless_button, 0);
+	printk(KERN_DEBUG "wireless led should be off\n");
+
+	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
+	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
+
+	msleep(1000);
+
+	sabi_set_command(sabi_config->commands.set_wireless_button, 1);
+	printk(KERN_DEBUG "wireless led should be on\n");
+
+	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
+	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
+}
+
+static u8 read_brightness(void)
+{
+	struct sabi_retval sretval;
+	int user_brightness = 0;
+	int retval;
+
+	retval = sabi_get_command(sabi_config->commands.get_brightness,
+				  &sretval);
+	if (!retval) {
+		user_brightness = sretval.retval[0];
+		if (user_brightness != 0)
+			user_brightness -= sabi_config->min_brightness;
+	}
+	return user_brightness;
+}
+
+static void set_brightness(u8 user_brightness)
+{
+	u8 user_level = user_brightness - sabi_config->min_brightness;
+
+	sabi_set_command(sabi_config->commands.set_brightness, user_level);
+}
+
+static int get_brightness(struct backlight_device *bd)
+{
+	return (int)read_brightness();
+}
+
+static int update_status(struct backlight_device *bd)
+{
+	set_brightness(bd->props.brightness);
+
+	if (bd->props.power == FB_BLANK_UNBLANK)
+		sabi_set_command(sabi_config->commands.set_backlight, 1);
+	else
+		sabi_set_command(sabi_config->commands.set_backlight, 0);
+	return 0;
+}
+
+static const struct backlight_ops backlight_ops = {
+	.get_brightness	= get_brightness,
+	.update_status	= update_status,
+};
+
+static int rfkill_set(void *data, bool blocked)
+{
+	/* Do something with blocked...*/
+	/*
+	 * blocked == false is on
+	 * blocked == true is off
+	 */
+	if (blocked)
+		sabi_set_command(sabi_config->commands.set_wireless_button, 0);
+	else
+		sabi_set_command(sabi_config->commands.set_wireless_button, 1);
+
+	return 0;
+}
+
+static struct rfkill_ops rfkill_ops = {
+	.set_block = rfkill_set,
+};
+
+static int init_wireless(struct platform_device *sdev)
+{
+	int retval;
+
+	rfk = rfkill_alloc("samsung-wifi", &sdev->dev, RFKILL_TYPE_WLAN,
+			   &rfkill_ops, NULL);
+	if (!rfk)
+		return -ENOMEM;
+
+	retval = rfkill_register(rfk);
+	if (retval) {
+		rfkill_destroy(rfk);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static void destroy_wireless(void)
+{
+	rfkill_unregister(rfk);
+	rfkill_destroy(rfk);
+}
+
+static ssize_t get_performance_level(struct device *dev,
+				     struct device_attribute *attr, char *buf)
+{
+	struct sabi_retval sretval;
+	int retval;
+	int i;
+
+	/* Read the state */
+	retval = sabi_get_command(sabi_config->commands.get_performance_level,
+				  &sretval);
+	if (retval)
+		return retval;
+
+	/* The logic is backwards, yeah, lots of fun... */
+	for (i = 0; sabi_config->performance_levels[i].name; ++i) {
+		if (sretval.retval[0] == sabi_config->performance_levels[i].value)
+			return sprintf(buf, "%s\n", sabi_config->performance_levels[i].name);
+	}
+	return sprintf(buf, "%s\n", "unknown");
+}
+
+static ssize_t set_performance_level(struct device *dev,
+				struct device_attribute *attr, const char *buf,
+				size_t count)
+{
+	if (count >= 1) {
+		int i;
+		for (i = 0; sabi_config->performance_levels[i].name; ++i) {
+			const struct sabi_performance_level *level =
+				&sabi_config->performance_levels[i];
+			if (!strncasecmp(level->name, buf, strlen(level->name))) {
+				sabi_set_command(sabi_config->commands.set_performance_level,
+						 level->value);
+				break;
+			}
+		}
+		if (!sabi_config->performance_levels[i].name)
+			return -EINVAL;
+	}
+	return count;
+}
+static DEVICE_ATTR(performance_level, S_IWUSR | S_IRUGO,
+		   get_performance_level, set_performance_level);
+
+
+static int __init dmi_check_cb(const struct dmi_system_id *id)
+{
+	pr_info("found laptop model '%s'\n",
+		id->ident);
+	return 0;
+}
+
+static struct dmi_system_id __initdata samsung_dmi_table[] = {
+	{
+		.ident = "N128",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "N128"),
+			DMI_MATCH(DMI_BOARD_NAME, "N128"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "N130",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "N130"),
+			DMI_MATCH(DMI_BOARD_NAME, "N130"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "X125",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "X125"),
+			DMI_MATCH(DMI_BOARD_NAME, "X125"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "X120/X170",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "X120/X170"),
+			DMI_MATCH(DMI_BOARD_NAME, "X120/X170"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "NC10",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "NC10"),
+			DMI_MATCH(DMI_BOARD_NAME, "NC10"),
+		},
+		.callback = dmi_check_cb,
+	},
+		{
+		.ident = "NP-Q45",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "SQ45S70S"),
+			DMI_MATCH(DMI_BOARD_NAME, "SQ45S70S"),
+		},
+		.callback = dmi_check_cb,
+		},
+	{
+		.ident = "X360",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "X360"),
+			DMI_MATCH(DMI_BOARD_NAME, "X360"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "R410 Plus",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "R410P"),
+			DMI_MATCH(DMI_BOARD_NAME, "R460"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "R518",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "R518"),
+			DMI_MATCH(DMI_BOARD_NAME, "R518"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "R519/R719",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "R519/R719"),
+			DMI_MATCH(DMI_BOARD_NAME, "R519/R719"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "N150/N210/N220/N230",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220/N230"),
+			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220/N230"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "N150P/N210P/N220P",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "N150P/N210P/N220P"),
+			DMI_MATCH(DMI_BOARD_NAME, "N150P/N210P/N220P"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "R530/R730",
+		.matches = {
+		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+		      DMI_MATCH(DMI_PRODUCT_NAME, "R530/R730"),
+		      DMI_MATCH(DMI_BOARD_NAME, "R530/R730"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "NF110/NF210/NF310",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
+			DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "N145P/N250P/N260P",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
+			DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "R70/R71",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR,
+					"SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "R70/R71"),
+			DMI_MATCH(DMI_BOARD_NAME, "R70/R71"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{
+		.ident = "P460",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "P460"),
+			DMI_MATCH(DMI_BOARD_NAME, "P460"),
+		},
+		.callback = dmi_check_cb,
+	},
+	{ },
+};
+MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
+
+static int find_signature(void __iomem *memcheck, const char *testStr)
+{
+	int i = 0;
+	int loca;
+
+	for (loca = 0; loca < 0xffff; loca++) {
+		char temp = readb(memcheck + loca);
+
+		if (temp == testStr[i]) {
+			if (i == strlen(testStr)-1)
+				break;
+			++i;
+		} else {
+			i = 0;
+		}
+	}
+	return loca;
+}
+
+static int __init samsung_init(void)
+{
+	struct backlight_properties props;
+	struct sabi_retval sretval;
+	unsigned int ifaceP;
+	int i;
+	int loca;
+	int retval;
+
+	mutex_init(&sabi_mutex);
+
+	if (!force && !dmi_check_system(samsung_dmi_table))
+		return -ENODEV;
+
+	f0000_segment = ioremap_nocache(0xf0000, 0xffff);
+	if (!f0000_segment) {
+		pr_err("Can't map the segment at 0xf0000\n");
+		return -EINVAL;
+	}
+
+	/* Try to find one of the signatures in memory to find the header */
+	for (i = 0; sabi_configs[i].test_string != 0; ++i) {
+		sabi_config = &sabi_configs[i];
+		loca = find_signature(f0000_segment, sabi_config->test_string);
+		if (loca != 0xffff)
+			break;
+	}
+
+	if (loca == 0xffff) {
+		pr_err("This computer does not support SABI\n");
+		goto error_no_signature;
+	}
+
+	/* point to the SMI port Number */
+	loca += 1;
+	sabi = (f0000_segment + loca);
+
+	if (debug) {
+		printk(KERN_DEBUG "This computer supports SABI==%x\n",
+			loca + 0xf0000 - 6);
+		printk(KERN_DEBUG "SABI header:\n");
+		printk(KERN_DEBUG " SMI Port Number = 0x%04x\n",
+			readw(sabi + sabi_config->header_offsets.port));
+		printk(KERN_DEBUG " SMI Interface Function = 0x%02x\n",
+			readb(sabi + sabi_config->header_offsets.iface_func));
+		printk(KERN_DEBUG " SMI enable memory buffer = 0x%02x\n",
+			readb(sabi + sabi_config->header_offsets.en_mem));
+		printk(KERN_DEBUG " SMI restore memory buffer = 0x%02x\n",
+			readb(sabi + sabi_config->header_offsets.re_mem));
+		printk(KERN_DEBUG " SABI data offset = 0x%04x\n",
+			readw(sabi + sabi_config->header_offsets.data_offset));
+		printk(KERN_DEBUG " SABI data segment = 0x%04x\n",
+			readw(sabi + sabi_config->header_offsets.data_segment));
+	}
+
+	/* Get a pointer to the SABI Interface */
+	ifaceP = (readw(sabi + sabi_config->header_offsets.data_segment) & 0x0ffff) << 4;
+	ifaceP += readw(sabi + sabi_config->header_offsets.data_offset) & 0x0ffff;
+	sabi_iface = ioremap_nocache(ifaceP, 16);
+	if (!sabi_iface) {
+		pr_err("Can't remap %x\n", ifaceP);
+		goto exit;
+	}
+	if (debug) {
+		printk(KERN_DEBUG "ifaceP = 0x%08x\n", ifaceP);
+		printk(KERN_DEBUG "sabi_iface = %p\n", sabi_iface);
+
+		test_backlight();
+		test_wireless();
+
+		retval = sabi_get_command(sabi_config->commands.get_brightness,
+					  &sretval);
+		printk(KERN_DEBUG "brightness = 0x%02x\n", sretval.retval[0]);
+	}
+
+	/* Turn on "Linux" mode in the BIOS */
+	if (sabi_config->commands.set_linux != 0xff) {
+		retval = sabi_set_command(sabi_config->commands.set_linux,
+					  0x81);
+		if (retval) {
+			pr_warn("Linux mode was not set!\n");
+			goto error_no_platform;
+		}
+	}
+
+	/* knock up a platform device to hang stuff off of */
+	sdev = platform_device_register_simple("samsung", -1, NULL, 0);
+	if (IS_ERR(sdev))
+		goto error_no_platform;
+
+	/* create a backlight device to talk to this one */
+	memset(&props, 0, sizeof(struct backlight_properties));
+	props.max_brightness = sabi_config->max_brightness;
+	backlight_device = backlight_device_register("samsung", &sdev->dev,
+						     NULL, &backlight_ops,
+						     &props);
+	if (IS_ERR(backlight_device))
+		goto error_no_backlight;
+
+	backlight_device->props.brightness = read_brightness();
+	backlight_device->props.power = FB_BLANK_UNBLANK;
+	backlight_update_status(backlight_device);
+
+	retval = init_wireless(sdev);
+	if (retval)
+		goto error_no_rfk;
+
+	retval = device_create_file(&sdev->dev, &dev_attr_performance_level);
+	if (retval)
+		goto error_file_create;
+
+exit:
+	return 0;
+
+error_file_create:
+	destroy_wireless();
+
+error_no_rfk:
+	backlight_device_unregister(backlight_device);
+
+error_no_backlight:
+	platform_device_unregister(sdev);
+
+error_no_platform:
+	iounmap(sabi_iface);
+
+error_no_signature:
+	iounmap(f0000_segment);
+	return -EINVAL;
+}
+
+static void __exit samsung_exit(void)
+{
+	/* Turn off "Linux" mode in the BIOS */
+	if (sabi_config->commands.set_linux != 0xff)
+		sabi_set_command(sabi_config->commands.set_linux, 0x80);
+
+	device_remove_file(&sdev->dev, &dev_attr_performance_level);
+	backlight_device_unregister(backlight_device);
+	destroy_wireless();
+	iounmap(sabi_iface);
+	iounmap(f0000_segment);
+	platform_device_unregister(sdev);
+}
+
+module_init(samsung_init);
+module_exit(samsung_exit);
+
+MODULE_AUTHOR("Greg Kroah-Hartman <gregkh@suse.de>");
+MODULE_DESCRIPTION("Samsung Backlight driver");
+MODULE_LICENSE("GPL");
+
+--sdtB3X0nJg68CQEu--
