@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab1CJIzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 03:55:44 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60401 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab1CJIzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 03:55:43 -0500
-Date: Thu, 10 Mar 2011 09:55:33 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86, numa, emu: only transform numa_distance if SLIT
- is there
-Message-ID: <20110310085533.GA25171@elte.hu>
-References: <4D6EEDF2.6090201@kernel.org>
- <4D6EEEC0.3040001@kernel.org>
- <20110303062259.GI28266@mtj.dyndns.org>
+	id S1751927Ab1CJI5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 03:57:39 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:45771 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1CJI5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 03:57:38 -0500
+X-IronPort-AV: E=Sophos;i="4.62,295,1297036800"; 
+   d="scan'208";a="4713833"
+Subject: Re: [PATCH 12/14] xen: events: remove use of nr_irqs as upper
+ bound on number of pirqs
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+In-Reply-To: <20110310053305.GD10574@dumpdata.com>
+References: <1299692459.17339.700.camel@zakaz.uk.xensource.com>
+	 <1299692486-28634-12-git-send-email-ian.campbell@citrix.com>
+	 <20110310053305.GD10574@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Thu, 10 Mar 2011 08:57:36 +0000
+Message-ID: <1299747456.17339.734.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303062259.GI28266@mtj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tejun Heo <tj@kernel.org> wrote:
-
-> On Wed, Mar 02, 2011 at 05:28:32PM -0800, Yinghai Lu wrote:
-> > 
-> > during copying should only copy with NEW numa_dist_cnt size.
-> > need to call numa_alloc_dist() at first,  and it will set default values.
-> > 
-> > So we will not need to go over the big matrix without meaning.
-> > 
-> > Need to make numa_alloc_distance to return new numa_dist_cnt
-> > 
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On Thu, 2011-03-10 at 05:33 +0000, Konrad Rzeszutek Wilk wrote:
+> >  int xen_irq_from_pirq(unsigned pirq)
+> >  {
+> > -	return pirq_to_irq[pirq];
+> > +	int irq;
+> > +
+> > +	struct irq_info *info;
+> > +
+> > +	spin_lock(&irq_mapping_update_lock);
+> > +
+> > +	list_for_each_entry(info, &xen_irq_list_head, list) {
+> > +		if (info == NULL || info->type != IRQT_PIRQ)
+> > +			continue;
+> > +		irq = info->irq;
+> > +		if (info->u.pirq.pirq == pirq)
+> > +			goto out;
+> > +	}
+> > +	irq = -1;
+> > +out:
+> > +	spin_lock(&irq_mapping_update_lock);
+> > +
+> > +	return -1;
 > 
-> I'm not taking this.  You can't send the same change twice and expect
-> different result.
+> Shouldn't this be:
+> 
+>   return irq
 
-Ping: what's the status of this - Yinghai, are you working on an improved version of 
-these (and related) patches, as per the review suggestions from Tejun - or are you 
-dropping them?
+Yes. The impact of not doing so is that xen_hvm_setup_msi_irqs would
+allocate a fresh PIRQ each time an MSI was reused, instead of resuing
+the old one -- i.e. it's a leak. I retested PVHVM PCI hotplug with the
+following patch.
 
-Thanks,
+> How come you are using the spin_lock here, but not
+> in other places when iterating over the xen_irq_list_head?
 
-	Ingo
+Those other places already hold the lock in their caller (or are known
+to be single threaded -- e.g. resume). Callers of xen_irq_from_pirq do
+not hold the lock.
+
+Ian.
+
+8<------------------------
+
+>From 9b1686b874c4893a3b014e400185940dcba43676 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Thu, 10 Mar 2011 08:54:06 +0000
+Subject: [PATCH] xen: events: fix return value from xen_irq_from_pirq
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+---
+ drivers/xen/events.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 77c2b43..dc5b575 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -765,7 +765,7 @@ int xen_irq_from_pirq(unsigned pirq)
+ out:
+ 	spin_lock(&irq_mapping_update_lock);
+ 
+-	return -1;
++	return irq;
+ }
+ 
+ 
+-- 
+1.5.6.5
+
+
+
