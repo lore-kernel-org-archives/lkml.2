@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab1CJKqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 05:46:40 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54924 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751601Ab1CJKqj (ORCPT
+	id S1751456Ab1CJKvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 05:51:47 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46557 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab1CJKvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 05:46:39 -0500
-Date: Thu, 10 Mar 2011 02:44:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pidns: Make pid_max per namespace
-Message-Id: <20110310024459.e54fd99e.akpm@linux-foundation.org>
-In-Reply-To: <4D78A2B8.1030605@parallels.com>
-References: <4D6F53B5.5090105@parallels.com>
-	<20110307155823.22e47d73.akpm@linux-foundation.org>
-	<4D789B64.9000603@parallels.com>
-	<20110310015045.63482b62.akpm@linux-foundation.org>
-	<4D78A2B8.1030605@parallels.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Mar 2011 05:51:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=ek+6lZJEVCMCvD4bcOJQNjSxXYKOkR6PMq0H3n2/WMEwHK03rp+9wn33qfgOFrTV2f
+         TyVftuipLB1vdmiveNUkVa3rrn5cn/61jHLS9PjqUpcNsFQtn1dQIP17dcc1NKOYqDXS
+         w58F7Ikk6o9ARDBbpjgKwU6kkUSvyi+yqtR+Q=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH v2 00/21] staging: ft1000: Coding style and minor fixes.
+Date: Thu, 10 Mar 2011 11:51:14 +0100
+Message-Id: <1299754295-8493-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 13:06:48 +0300 Pavel Emelyanov <xemul@parallels.com> wrote:
+Resend because not compilable after last post.
 
-> On 03/10/2011 12:50 PM, Andrew Morton wrote:
-> > On Thu, 10 Mar 2011 12:35:32 +0300 Pavel Emelyanov <xemul@parallels.com> wrote:
-> > 
-> >> On 03/08/2011 02:58 AM, Andrew Morton wrote:
-> >>> On Thu, 03 Mar 2011 11:39:17 +0300
-> >>> Pavel Emelyanov <xemul@parallels.com> wrote:
-> >>>
-> >>>> Rationale:
-> >>>>
-> >>>> On x86_64 with big ram people running containers set pid_max on host to 
-> >>>> large values to be able to launch more containers. At the same time 
-> >>>> containers running 32-bit software experience problems with large pids - ps
-> >>>> calls readdir/stat on proc entries and inode's i_ino happen to be too big 
-> >>>> for the 32-bit API.
-> >>>>
-> >>>> Thus, the ability to limit the pid value inside container is required.
-> >>>>
-> >>>
-> >>> This is a behavioural change, isn't it?  In current kernels a write to
-> >>> /proc/sys/kernel/pid_max will change the max pid on all processes. 
-> >>> After this change, that write will only affect processes in the current
-> >>> namespace.  Anyone who was depending on the old behaviour might run
-> >>> into problems?
-> >>
-> >> Hardly. If the behavior of some two apps depends on its synchronous change,
-> >> these two might want to run in the same pid namespace.
-> > 
-> > I don't understand your answer.  What is this "synchronous change" of which
-> > you speak?  Does your "might want to run" suggestion mean that userspace 
-> > changes would be required for this operation to again work correctly?
-> 
-> Your concern was about "anyone who was depending on the old behaviour", where
-> the old behavior meant "a write to sys.pid_max will change the max pid on all
-> processes".
-> 
-> I wanted to say, that if someone changes pid_max and expects someone else to
-> act differently after this, then these two should live in the same pid namespace.
+V2: - update 2 patches (11,14) according review
+    - fix compilation problem
 
-So it's a non-back-compatible change to the userspace interface.  uh-oh.
+Marek Belisko (21):
+  staging: ft1000: Replace camelcase CardSendCommand function name.
+  staging: ft1000: Fix coding style in card_send_command function.
+  staging: ft1000: Fix coding style in dsp_reload function.
+  staging: ft1000: Fix coding style in ft1000_reset_asic function.
+  staging: ft1000: Fix coding style in ft1000_reset_card function.
+  staging: ft1000: Fix identation in ftnet_ops struct.
+  staging: ft1000: Fix coding style in init_ft1000_netdev function.
+  staging: ft1000: Change return value for init_ft1000_netdev function.
+  staging: ft1000: Fix coding style in reg_ft1000_netdev function.
+  staging: ft1000: Fix coding style in ft1000_reset function.
+  staging: ft1000: Fix coding style in ft1000_usb_transmit_complete
+    function.
+  staging: ft1000: Fix coding style in ft1000_copy_down_pkt function.
+  staging: ft1000: Fix coding style in ft1000_start_xmit function.
+  staging: ft1000: Fix coding style in ft1000_submit_rx_urb function.
+  staging: ft1000: Fix coding style in ft1000_copy_up_pkt function.
+  staging: ft1000: Fix coding style in ft1000_open function.
+  staging: ft1000: Fix coding style in ft1000_close function.
+  staging: ft1000: Fix coding style in ft1000_chkcard function.
+  staging: ft1000: Fix coding style in ft1000_receive_cmd function.
+  staging: ft1000: Fix coding style in ft1000_dsp_prov function.
+  staging: ft1000: Fix coding style in ft1000_proc_drvmsg function.
 
-> IOW, if X raises the pid_max, then all the processes X sees in its pid namespace
-> *may* have pids up to this value. All the other process, that are not visible
-> in X's pid space will have other values, but X doesn't see them, so why should
-> we care?
-
-Current userspace has no *need* to be running in the same pidns to
-alter the pid_max of some processes.  So the chances are good that
-any current userspace takes advantage of this.
-
-Silly example:
-
-	if (fork() == 0) {
-		/* child */
-		create_new_pidns();
-		start_doing_stuff();
-	} else {
-		/* parent */
-		increase_pid_max();
-	}
-
-Another example would be logging into a system as root in the init_ns
-and modifying /proc/sys/kernel/pid_max by hand.
-
-I don't have a clue how much code is out there using pid namespaces,
-not how much of that code alters the default pid_max.  Hard.
-
-
-The proposed interface is a bit weird and hacky anyway, isn't it?  We
-have a single pseudo-file in a well-known location -
-/proc/sys/kernel/pid_max.  One would expect alteration of that
-system-wide file to have system-wide effects, only that isn't the case.
-Instead a modification to the system-wide file has local-pidns-only
-effects.  It would be much more logical to have a per-pidns pid_max
-pseudo file.
-
-And if we do that, we then need to work out what to do with writes to
-/proc/sys/kernel/pid_max.  Remember the user expects those writes to
-alter all processes on the machine!  I guess it would be acceptable to
-permit that to continue to happen - a write to /proc/sys/kernel/pid_max
-will overwrite all the per-pidns pid_max settings.
+ drivers/staging/ft1000/ft1000-usb/ft1000_debug.c |    6 +-
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c    | 1724 +++++++++++-----------
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h   |    4 +-
+ 3 files changed, 872 insertions(+), 862 deletions(-)
 
