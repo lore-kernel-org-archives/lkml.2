@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1CJQy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 11:54:56 -0500
-Received: from ams-iport-2.cisco.com ([144.254.224.141]:34556 "EHLO
-	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab1CJQyz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 11:54:55 -0500
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Mar 2011 11:54:54 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqkEABaPeE2Q/khMgWdsb2JhbACmKRQBARYmJaRRnECFYgSFJIcfg0qCIw
-X-IronPort-AV: E=Sophos;i="4.62,296,1297036800"; 
-   d="scan'208";a="21213183"
-Message-ID: <4D790038.502@cisco.com>
-Date: Thu, 10 Mar 2011 09:45:44 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753580Ab1CJQzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 11:55:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753524Ab1CJQzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 11:55:03 -0500
+Date: Thu, 10 Mar 2011 11:54:52 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, hch@infradead.org,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task plugging
+Message-ID: <20110310165452.GE29464@redhat.com>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+ <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/6] perf script: move printing of 'common' data from
- print_event and rename
-References: <1299734608-5223-1-git-send-email-daahern@cisco.com> <1299734608-5223-4-git-send-email-daahern@cisco.com> <20110310152053.GB12521@home.goodmis.org> <20110310155109.GB23555@ghostprotocols.net> <1299773135.15854.352.camel@gandalf.stny.rr.com> <20110310162038.GC23555@ghostprotocols.net>
-In-Reply-To: <20110310162038.GC23555@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jan 22, 2011 at 01:17:23AM +0000, Jens Axboe wrote:
 
+[..]
+> -/*
+> - * Only disabling plugging for non-rotational devices if it does tagging
+> - * as well, otherwise we do need the proper merging
+> - */
+> -static inline bool queue_should_plug(struct request_queue *q)
+> -{
+> -	return !(blk_queue_nonrot(q) && blk_queue_tagged(q));
+> -}
+> -
 
-On 03/10/11 09:20, Arnaldo Carvalho de Melo wrote:
->>> I think the merge with the libraries you mention is something that is
->>> not a precondition to merging David's work.
->>>
->>> And his work is at least moving things in the trace parts of tools/,
->>> that was so far dormant.
->>
->> Note, I'm not saying that his work should be put on hold. I actually
->> want to start it up again. Maybe I worded this response wrong. It was
->> more about bringing David up to speed on what I want to do next than
->> saying not to do this work.
-> 
-> Right, I just wanted to make sure he doesn't spill his coffee with what
-> could seem like yet another requirement to work on infrastructure to get
-> his legitimate feature implementation merged :-)
+Jens,
 
-I appreciate the clarification. Luckily, no coffee in hand.
+While discussing stack plug with Mike Snitzer, this occurred to us that in
+new code we seem to be plugging even if underlying device is SSD with NCQ.
+Should we continue to maintain the old behavior of not plugging for NCQ SSD?
 
-I need to get the time-of-day strings done next, and someone else is
-pushing the reverse callchain display (another local change I wanted to
-get upstream). I could take a look at other requests - like common code
-- as time allows.
-
-David
-
-
-> 
-> - Arnaldo
+Thanks
+Vivek
