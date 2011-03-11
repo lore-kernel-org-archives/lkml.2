@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1CKMXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 07:23:41 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36415 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab1CKMXk convert rfc822-to-8bit (ORCPT
+	id S1754945Ab1CKMZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 07:25:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34808 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751675Ab1CKMZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 07:23:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YBYxir4iJ7bkaO83mS1cgPCAexGkwWeL8LTrlqusbSQqnEuoEfRK4mEMJE74bLzamT
-         xGCM3X9J/ejUsr7l5AY+0J/a5/NbN6AkU3mlGnO3mka9Q51Yi4TTwfxd9M15Jf/vQOvW
-         OsR9VuJvp/fL5tiU2YddKIzhDPCMJvvU9/pd8=
+	Fri, 11 Mar 2011 07:25:38 -0500
+Date: Fri, 11 Mar 2011 12:25:37 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/4] regulator: add set_voltage_time[_sel]
+ infrastructure
+Message-ID: <20110311122536.GG1760@opensource.wolfsonmicro.com>
+References: <1299840868-20613-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <20110311121704.GF1760@opensource.wolfsonmicro.com>
-References: <1299703580-3957-1-git-send-email-marek.belisko@open-nandra.com>
-	<20110311121704.GF1760@opensource.wolfsonmicro.com>
-Date: Fri, 11 Mar 2011 13:23:37 +0100
-Message-ID: <AANLkTintYQ=qO3PALBL-bkiYKQFw0+JiW3=-oZmkRhZ1@mail.gmail.com>
-Subject: Re: [PATCH RFC] arm: mini2440: Fix uda134x codec problem.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: ben-linux@fluff.org, perex@perex.cz, tiwai@suse.de, lrg@slimlogic.co.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299840868-20613-1-git-send-email-linus.walleij@stericsson.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 1:17 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, Mar 09, 2011 at 09:46:20PM +0100, Marek Belisko wrote:
->> ASoC audio for mini2440 platform in current kenrel doesn't work.
->> First problem is samsung_asoc_dma device is missing in initialization.
->> Next problem is with codec. Codec is initialized but never probed
->
-> Applied, thanks.  With changes like this you should really split things
-> up into a small patch series - if you ever find yourself writing
-> "Next problem..." or "Also..." then going on to describe a separate
-> change that's a sign that you should be writing a separate patch.
-You're right. I think sending whole patch to help understand what
-I'm trying to do (because wasn't sure). You apply just asoc part right?
-Thanks for comments!
->
+On Fri, Mar 11, 2011 at 11:54:28AM +0100, Linus Walleij wrote:
 
-regards,
+> +	/* Don't obtain this if it's not going to be used */
+> +	if (rdev->desc->ops->set_voltage_time) {
+> +		int old_voltage = -1;
+> +
+> +		ret = _regulator_get_voltage(rdev);
+> +		if (ret < 0)
+> +			return ret;
+> +		old_voltage = ret;
+> +		/* Here we can figure out desired delay immediately */
+> +		ret = rdev->desc->ops->set_voltage_time(rdev, old_voltage,
+> +							min_uV, max_uV);
 
-marek
+I think this should be taking to as the argument rather than min and
+max.  We're going to figure out an actual concrete voltage or selector
+during the set voltage process so there's no point in having to go
+through and pick a specific voltage twice.  Actually, given that
+list_voltage() pretty much mandates selectors we can probably just only
+have a selector based version of this API then use the selector that got
+returned when we set the voltage.
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+I also think we should be exporting this to consumers as things like
+cpufreq are interested in the latency for voltage changes.
