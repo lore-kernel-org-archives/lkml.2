@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab1CKNy7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 08:54:59 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54113 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753115Ab1CKNy6 (ORCPT
+	id S1754090Ab1CKN4b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 08:56:31 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:61331 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab1CKN4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 08:54:58 -0500
-Date: Fri, 11 Mar 2011 13:55:02 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH 3/3] tty: serial: Check UPF_FOURPORT, when
- CONFIG_SERIAL_8250_FOURPORT is defined
-Message-ID: <20110311135502.1add15c9@lxorguk.ukuu.org.uk>
-In-Reply-To: <1299848292-17101-3-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-References: <1299848292-17101-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-	<1299848292-17101-3-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 11 Mar 2011 08:56:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/3] tty: serial: Use hub6_serial_X when CONFIG_SERIAL_8250_HUB6 is defined
+Date: Fri, 11 Mar 2011 14:56:15 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+References: <1299848292-17101-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com> <20110311135024.400582fd@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110311135024.400582fd@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103111456.15705.arnd@arndb.de>
+X-Provags-ID: V02:K0:+wBtZdd5VEdnOoBtOan4vLgIT9SedG5yKkHUiun8ET7
+ 0j6t5N0IjP0TjJ9Cdaez4dB5lFu7F+v9p4T36ReH3cp448vgXt
+ dq5odnXQub6r56nXy71wMlhWiUbIgahqgu6LO7AaNFCkFtBCqg
+ KCO42RoncJbg2ncTjjPOfE515h1bY8AB1xP652AoQLGTQisx8c
+ umGkULiEpACwQwl91UKVA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011 21:58:12 +0900
-Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com> wrote:
+On Friday 11 March 2011, Alan Cox wrote:
+> Most of these are not needed
+> 
+> It is also such a miniscule amount of code it seems like it does not
+> justify the complexity of being configurable this way.
 
-> When CONFIG_SERIAL_8250_FOURPORT is defined, driver uses UPF_FOURPORT in port.flags.
-> Though CONFIG_SERIAL_8250_FOURPORT is not defined, there is a case to check UPF_FOURPORT.
-> When CONFIG_SERIAL_8250_FOURPORT is defined only, this checks UPF_FOURPORT.
+The point is that the 8250 driver stands in the way of allowing
+to build the kernel on architectures that do not support ISA or PCI
+I/O spaces. Right now, the common solution is to do
 
-Again all this can be avoided by defining WARN traps for the unsupported
-I/O methods in your architecture.
+#define inb(x) readb(void __iomem *)(x))
 
-Alan
+or some variation of this. It's fine as long as this code never gets
+called, but incorrect nonetheless.
+
+I think it would be much cleaner if architectures that cannot do this
+would not have to define those functions and we could make sure that
+all drivers that do inb() have correct Kconfig dependencies.
+
+	Arnd
