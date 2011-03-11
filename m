@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab1CKQpW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:45:22 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:38708 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751800Ab1CKQpV (ORCPT
+	id S1754432Ab1CKQsy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:48:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40019 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751816Ab1CKQsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:45:21 -0500
-Date: Fri, 11 Mar 2011 11:45:20 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: andy.green@linaro.org
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	Fri, 11 Mar 2011 11:48:52 -0500
+Date: Fri, 11 Mar 2011 16:48:50 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <greg@kroah.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
         Linux USB list <linux-usb@vger.kernel.org>,
         lkml <linux-kernel@vger.kernel.org>
 Subject: Re: RFC: Platform data for onboard USB assets
-In-Reply-To: <4D7A4D52.6010501@linaro.org>
-Message-ID: <Pine.LNX.4.44L0.1103111141270.1975-100000@iolanthe.rowland.org>
+Message-ID: <20110311164850.GT1760@opensource.wolfsonmicro.com>
+References: <4D79F068.2080009@linaro.org>
+ <201103111331.13932.arnd@arndb.de>
+ <20110311152938.GB29920@sirena.org.uk>
+ <201103111654.04089.arnd@arndb.de>
+ <20110311160308.GQ1760@opensource.wolfsonmicro.com>
+ <20110311161421.GA7843@kroah.com>
+ <20110311162759.GS1760@opensource.wolfsonmicro.com>
+ <20110311163522.GA9291@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311163522.GA9291@kroah.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Andy Green wrote:
+On Fri, Mar 11, 2011 at 08:35:22AM -0800, Greg KH wrote:
+> On Fri, Mar 11, 2011 at 04:27:59PM +0000, Mark Brown wrote:
 
-> > Like I say, it's not just MAC addresses that can need configuring this
-> > way - it can be other random "you're wired up this way" type
-> > information that would normally be figured out from the USB IDs.
-> 
-> Yes that's exactly why I was thinking it's a class of requirement that 
-> could reasonably be a little API and extending platform_data to it.  So 
-> anyone with onboard USB device can take advantage if they need to, 
-> because I guess we see gradually more boards like that.
-> 
-> The driver knows well all about the actual device, but there is a class 
-> of configuration information that is defined by the physical board 
-> itself - as you say "how it is wired" - and needs to be passed into the 
-> driver to inform it of its "functional configuration".  When that 
-> functional configuration information is a feature of the board alone, 
-> actually the board definition file is the right place for it.
+> > I'm actually not that fussed about the MAC address use case itself and
+> > do tend to agree with you that that's handlable in userspace but for the
+> > other things that might need to be configured there's a lot of things
+> > that for non-discoverable buses we're currently passing through platform
+> > data so switching to bouncing things through userspace would itself be a
+> > substantial change from other systems.
 
-I don't see the point of doing this for USB devices, or hot-pluggable 
-devices in general.
+> But USB _is_ discoverable, that's my point.
 
-Suppose you bought another USB device that was just like the on-board
-one, and plugged it into the system.  Why should the driver need to
-treat the on-board device any different from the hot-plugged device?
+USB itself is discoverable but the when the USB bus you're looking at is
+one that's soldered down onto a board in a specific design all bets are
+off regarding how complete the information you get will be.  On a basic
+level the designers may have done things like omit the configuration
+EEPROMs that would set the device IDs that the driver should be relying
+on to identify the hardware configuration.  There may be other, nastier,
+things going on.
 
-Or to put it another way...  With external, hot-plugged USB devices,
-there is no need to know "how it is wired".  The fact that it is on a 
-USB bus is the only information necessary.  Why does anyone need to
-know more than this for on-board USB devices?
+> > You can't in general rely on the system being neatly abstracted and
+> > while discoverable buses do avoid many problems in this sort of area
+> > there are still things which can only be discovered through reference to
+> > the schematics or similar, especially if you care about the microamps.
 
-Alan Stern
+> Again, that's not USB, so it isn't relevant here.
 
+You really can't make this assumption about discoverable buses on
+embedded devices.  The discoverability will get you most of the way
+there but not always all of the way there.
