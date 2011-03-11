@@ -1,200 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab1CKHCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 02:02:53 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:39663 "EHLO
-	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab1CKHCp (ORCPT
+	id S1753310Ab1CKHHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 02:07:23 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49754 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab1CKHHU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 02:02:45 -0500
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: mingo@elte.hu
-Cc: hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gorcunov@openvz.org,
-        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCHv4 2/2] x86: cleanup apic.h and apic.h
-Date: Fri, 11 Mar 2011 08:02:36 +0100
-Message-Id: <1299826956-8607-2-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1299826956-8607-1-git-send-email-henne@nachtwindheim.de>
-References: <1299826956-8607-1-git-send-email-henne@nachtwindheim.de>
+	Fri, 11 Mar 2011 02:07:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=SCLJ92ghes4jvCJKF6HvyNqvkM80j/EFnFV/ESLjOo4snMNSrh6gPobym0fiftP1S2
+         d1nPSaugq6SbasCEx61+ZH2LY9AdTxcti+0GWoQQO9zBM9okAVRdKeM+mpWZqhHUg5H8
+         VxkToGM9ydpc9e3DT5pEh/eedb2/WCp1mS7vw=
+MIME-Version: 1.0
+In-Reply-To: <20110310124530.GA3378@polaris.bitmath.org>
+References: <1299686450-5475-1-git-send-email-benjamin.tissoires@enac.fr>
+	<1299686450-5475-2-git-send-email-benjamin.tissoires@enac.fr>
+	<20110310124530.GA3378@polaris.bitmath.org>
+Date: Fri, 11 Mar 2011 08:07:18 +0100
+X-Google-Sender-Auth: znP2-kBFZ82hBrW_Sy_VzISOluI
+Message-ID: <AANLkTinL4TL_BMv_1KwCjKwbEthj6Ho1L8UvM2ad1t0x@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] hid-multitouch: Auto detection of maxcontacts
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves some functions and variables into init sections,
-makes a function static and removes some lines of cruft.
+Hi Henrik,
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- arch/x86/include/asm/apic.h |    4 --
- arch/x86/kernel/apic/apic.c |   65 ++++++++++++++----------------------------
- 2 files changed, 22 insertions(+), 47 deletions(-)
+thanks for the review.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index dbd558c..a279d98 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -220,7 +220,6 @@ extern void enable_IR_x2apic(void);
- 
- extern int get_physical_broadcast(void);
- 
--extern void apic_disable(void);
- extern int lapic_get_maxlvt(void);
- extern void clear_local_APIC(void);
- extern void connect_bsp_APIC(void);
-@@ -228,7 +227,6 @@ extern void disconnect_bsp_APIC(int virt_wire_setup);
- extern void disable_local_APIC(void);
- extern void lapic_shutdown(void);
- extern int verify_local_APIC(void);
--extern void cache_APIC_registers(void);
- extern void sync_Arb_IDs(void);
- extern void init_bsp_APIC(void);
- extern void setup_local_APIC(void);
-@@ -239,7 +237,6 @@ void register_lapic_address(unsigned long address);
- extern void setup_boot_APIC_clock(void);
- extern void setup_secondary_APIC_clock(void);
- extern int APIC_init_uniprocessor(void);
--extern void enable_NMI_through_LVT0(void);
- extern int apic_force_enable(unsigned long addr);
- 
- /*
-@@ -261,7 +258,6 @@ static inline void lapic_shutdown(void) { }
- #define local_apic_timer_c2_ok		1
- static inline void init_apic_mappings(void) { }
- static inline void disable_local_APIC(void) { }
--static inline void apic_disable(void) { }
- # define setup_boot_APIC_clock x86_init_noop
- # define setup_secondary_APIC_clock x86_init_noop
- #endif /* !CONFIG_X86_LOCAL_APIC */
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 6c464a3..966673f 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -93,7 +93,7 @@ DEFINE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid, BAD_APICID);
-  *
-  * +1=force-enable
-  */
--static int force_enable_local_apic;
-+static int force_enable_local_apic __initdata;
- /*
-  * APIC command line parameters
-  */
-@@ -163,7 +163,7 @@ early_param("nox2apic", setup_nox2apic);
- unsigned long mp_lapic_addr;
- int disable_apic;
- /* Disable local APIC timer from the kernel commandline or via dmi quirk */
--static int disable_apic_timer __cpuinitdata;
-+static int disable_apic_timer __initdata;
- /* Local APIC timer works in C2 */
- int local_apic_timer_c2_ok;
- EXPORT_SYMBOL_GPL(local_apic_timer_c2_ok);
-@@ -187,29 +187,8 @@ static struct resource lapic_resource = {
- 
- static unsigned int calibration_result;
- 
--static int lapic_next_event(unsigned long delta,
--			    struct clock_event_device *evt);
--static void lapic_timer_setup(enum clock_event_mode mode,
--			      struct clock_event_device *evt);
--static void lapic_timer_broadcast(const struct cpumask *mask);
- static void apic_pm_activate(void);
- 
--/*
-- * The local apic timer can be used for any function which is CPU local.
-- */
--static struct clock_event_device lapic_clockevent = {
--	.name		= "lapic",
--	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT
--			| CLOCK_EVT_FEAT_C3STOP | CLOCK_EVT_FEAT_DUMMY,
--	.shift		= 32,
--	.set_mode	= lapic_timer_setup,
--	.set_next_event	= lapic_next_event,
--	.broadcast	= lapic_timer_broadcast,
--	.rating		= 100,
--	.irq		= -1,
--};
--static DEFINE_PER_CPU(struct clock_event_device, lapic_events);
--
- static unsigned long apic_phys;
- 
- /*
-@@ -248,7 +227,7 @@ static int modern_apic(void)
-  * right after this call apic become NOOP driven
-  * so apic->write/read doesn't do anything
-  */
--void apic_disable(void)
-+static void __init apic_disable(void)
- {
- 	pr_info("APIC: switched to apic NOOP\n");
- 	apic = &apic_noop;
-@@ -292,23 +271,6 @@ u64 native_apic_icr_read(void)
- 	return icr1 | ((u64)icr2 << 32);
- }
- 
--/**
-- * enable_NMI_through_LVT0 - enable NMI through local vector table 0
-- */
--void __cpuinit enable_NMI_through_LVT0(void)
--{
--	unsigned int v;
--
--	/* unmask and set to NMI */
--	v = APIC_DM_NMI;
--
--	/* Level triggered for 82489DX (32bit mode) */
--	if (!lapic_is_integrated())
--		v |= APIC_LVT_LEVEL_TRIGGER;
--
--	apic_write(APIC_LVT0, v);
--}
--
- #ifdef CONFIG_X86_32
- /**
-  * get_physical_broadcast - Get number of physical broadcast IDs
-@@ -518,6 +480,23 @@ static void lapic_timer_broadcast(const struct cpumask *mask)
- #endif
- }
- 
-+
-+/*
-+ * The local apic timer can be used for any function which is CPU local.
-+ */
-+static struct clock_event_device lapic_clockevent = {
-+	.name		= "lapic",
-+	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT
-+			| CLOCK_EVT_FEAT_C3STOP | CLOCK_EVT_FEAT_DUMMY,
-+	.shift		= 32,
-+	.set_mode	= lapic_timer_setup,
-+	.set_next_event	= lapic_next_event,
-+	.broadcast	= lapic_timer_broadcast,
-+	.rating		= 100,
-+	.irq		= -1,
-+};
-+static DEFINE_PER_CPU(struct clock_event_device, lapic_events);
-+
- /*
-  * Setup the local APIC timer for this CPU. Copy the initialized values
-  * of the boot CPU and register the clock event in the framework.
-@@ -1560,7 +1539,7 @@ static int __init detect_init_APIC(void)
- }
- #else
- 
--static int apic_verify(void)
-+static int __init apic_verify(void)
- {
- 	u32 features, h, l;
- 
-@@ -1585,7 +1564,7 @@ static int apic_verify(void)
- 	return 0;
- }
- 
--int apic_force_enable(unsigned long addr)
-+int __init apic_force_enable(unsigned long addr)
- {
- 	u32 h, l;
- 
--- 
-1.7.4.1
+On Thu, Mar 10, 2011 at 13:45, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+> thanks for this, just a couple of things...
+>
+>> @@ -126,9 +127,19 @@ struct mt_class mt_classes[] = {
+>>  static void mt_feature_mapping(struct hid_device *hdev,
+>>               struct hid_field *field, struct hid_usage *usage)
+>>  {
+>> -     if (usage->hid == HID_DG_INPUTMODE) {
+>> -             struct mt_device *td = hid_get_drvdata(hdev);
+>> +     struct mt_device *td = hid_get_drvdata(hdev);
+>> +
+>> +     switch (usage->hid) {
+>> +     case HID_DG_INPUTMODE:
+>>               td->inputmode = field->report->id;
+>> +             break;
+>> +     case HID_DG_CONTACTMAX:
+>> +             td->maxcontacts = *(field->value);
+>
+> field->value[0] seems more standard-ish
 
+If you want
+
+>
+>> +             if (td->mtclass->maxcontacts > td->maxcontacts)
+>> +                     /* check if the maxcontacts is given by the class */
+>> +                     td->maxcontacts = td->mtclass->maxcontacts;
+>> +
+>> +             break;
+>>       }
+>>  }
+>>
+>> @@ -317,7 +327,7 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+>>       struct mt_device *td = hid_get_drvdata(hid);
+>>       __s32 quirks = td->mtclass->quirks;
+>>
+>> -     if (hid->claimed & HID_CLAIMED_INPUT) {
+>> +     if (hid->claimed & HID_CLAIMED_INPUT && td->slots) {
+>
+> The extra test could in principle be placed after the usage switch, which would prevent partially filled contact data, should this ever occur. Something like
+>
+> if (!td->slots)
+>   break;
+
+I don't know where these "break" comes from. We can add the test after
+the switch before the mt_complete_slot and mt_emit_event. But please
+note than it can in all cases introduce truncated slots reports as all
+the slots in the report may not have been completed. To be honest, I'm
+not sure this will ever matter as it's a race at the connection of the
+device, and the reports will come to correct anything wrong.
+
+>
+>>               switch (usage->hid) {
+>>               case HID_DG_INRANGE:
+>>                       if (quirks & MT_QUIRK_VALID_IS_INRANGE)
+>> @@ -415,9 +425,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>        */
+>>       hdev->quirks |= HID_QUIRK_NO_INPUT_SYNC;
+>>
+>> -     td = kzalloc(sizeof(struct mt_device) +
+>> -                             mtclass->maxcontacts * sizeof(struct mt_slot),
+>> -                             GFP_KERNEL);
+>> +     td = kzalloc(sizeof(struct mt_device), GFP_KERNEL);
+>>       if (!td) {
+>>               dev_err(&hdev->dev, "cannot allocate multitouch data\n");
+>>               return -ENOMEM;
+>> @@ -434,6 +442,14 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>       if (ret)
+>>               goto fail;
+>>
+>> +     td->slots = kzalloc(td->maxcontacts * sizeof(struct mt_slot),
+>> +                             GFP_KERNEL);
+>> +     if (!td->slots) {
+>> +             dev_err(&hdev->dev, "cannot allocate multitouch slots\n");
+>> +             ret = -ENOMEM;
+>> +             goto fail;
+>
+> This exit leaves the device running.
+
+Yep, will do sth.
+
+Thanks
+Benjamin
+
+>
+>> +     }
+>> +
+>>       mt_set_input_mode(hdev);
+>>
+>>       return 0;
+>> @@ -455,6 +471,7 @@ static void mt_remove(struct hid_device *hdev)
+>>  {
+>>       struct mt_device *td = hid_get_drvdata(hdev);
+>>       hid_hw_stop(hdev);
+>> +     kfree(td->slots);
+>>       kfree(td);
+>>       hid_set_drvdata(hdev, NULL);
+>>  }
+>> --
+>> 1.7.4
+>>
+>
+> Thanks,
+> Henrik
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
