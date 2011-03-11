@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab1CKJuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 04:50:44 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51195 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab1CKJui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 04:50:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:content-type:content-transfer-encoding;
-        b=KcFiA7llsxUsn9z0YVfYpMfabvRHMbtQF4YGUA3nMWGMx7qbDadb/P7WxGakdhrVEe
-         tjnNq/zsYXEHo7YWjBf+KPOuODo9Er9xT5qIaKKg5SlrF5vegwuioQvnHhPmfenLAR6w
-         Md6qHDuH/sWoSyTsGmG/zEpqgu/iQKDybwrIQ=
-Message-ID: <4D79F068.2080009@linaro.org>
-Date: Fri, 11 Mar 2011 09:50:32 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
+	id S1754311Ab1CKJwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 04:52:01 -0500
+Received: from hera.kernel.org ([140.211.167.34]:38619 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838Ab1CKJwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 04:52:00 -0500
+Date: Fri, 11 Mar 2011 09:51:44 GMT
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <20110218145219.GD2604@jolsa.brq.redhat.com>
+References: <20110218145219.GD2604@jolsa.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Explain about unstable clock on resume with ring buffer warning
+Message-ID: <tip-31274d72f01604f4b02d933b4f3cac84d2c201fd@git.kernel.org>
+Git-Commit-ID: 31274d72f01604f4b02d933b4f3cac84d2c201fd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Linux USB list <linux-usb@vger.kernel.org>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: RFC: Platform data for onboard USB assets
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Mar 2011 09:51:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi -
+Commit-ID:  31274d72f01604f4b02d933b4f3cac84d2c201fd
+Gitweb:     http://git.kernel.org/tip/31274d72f01604f4b02d933b4f3cac84d2c201fd
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 18 Feb 2011 15:52:19 +0100
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 10 Mar 2011 10:34:47 -0500
 
-platform_data is a well established way in Linux to pass configuration 
-data up to on-board assets from a machine file like mach-xyz.c.  It's 
-also supported to pass platform_data up to devices that are probed 
-asynchronously from busses like i2c as well, which is very handy.
+tracing: Explain about unstable clock on resume with ring buffer warning
 
-However AFAIK it's not possible to bind platform_data to probed USB 
-devices as it stands.
+The "Delta way too big" warning might appear on a system with a
+unstable shed clock right after the system is resumed and tracing
+was enabled at time of suspend.
 
-There are now boards which have on-board USB assets, for example OMAP4 
-Panda which has a USB <-> Ethernet bridge wired up permanently.  It'd be 
-convenient to also be able to pass optional platform_data to these 
-devices when they are asynchronously probed.
+Since it's not realy a bug, and the unstable sched clock is working
+fast and reliable otherwise, Steven suggested to keep using the
+sched clock in any case and just to make note in the warning itself.
 
-So what's the feeling about a new api to register an array of 
-platform_data pointers bound to static "devpath" names in the machine file?
+v2 changes:
+- added #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
 
-When a usb device is instantiated, it can check through this array if it 
-exists, matching on devname, and attach the platform_data to the 
-underlying probed usb device's dev->platform_data, which it seems is 
-currently unused.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+LKML-Reference: <20110218145219.GD2604@jolsa.brq.redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ring_buffer.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-The particular use that suggested this is on Panda, it would be ideal to 
-be able to set a flag in the usb device's platform data that forces it 
-to be named eth%d since it's a hardwired asset on the board with an RJ45 
-socket.
-
-Comments, implementation suggestions, enquiries as to my level of crack 
-consumption etc welcomed ^^
-
--Andy
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 3237d96..db7b439 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2172,11 +2172,19 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 	if (likely(ts >= cpu_buffer->write_stamp)) {
+ 		delta = diff;
+ 		if (unlikely(test_time_stamp(delta))) {
++			int local_clock_stable = 1;
++#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
++			local_clock_stable = sched_clock_stable;
++#endif
+ 			WARN_ONCE(delta > (1ULL << 59),
+-				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n",
++				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n%s",
+ 				  (unsigned long long)delta,
+ 				  (unsigned long long)ts,
+-				  (unsigned long long)cpu_buffer->write_stamp);
++				  (unsigned long long)cpu_buffer->write_stamp,
++				  local_clock_stable ? "" :
++				  "If you just came from a suspend/resume,\n"
++				  "please switch to the trace global clock:\n"
++				  "  echo global > /sys/kernel/debug/tracing/trace_clock\n");
+ 			add_timestamp = 1;
+ 		}
+ 	}
