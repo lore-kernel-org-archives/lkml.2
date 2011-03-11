@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1CKI2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 03:28:05 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43794 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab1CKI2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 03:28:01 -0500
-Date: Fri, 11 Mar 2011 09:27:49 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/15] [GIT PULL] tracing: updates for 2.6.39
-Message-ID: <20110311082749.GD7624@elte.hu>
-References: <20110310155800.478792851@goodmis.org>
+	id S1752568Ab1CKI3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 03:29:47 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49419 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1CKI3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 03:29:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VwFkqNGNbh8nAajilbHesq+AQtKonB/WW/1btsp90eZz2251yt1guqQC4EFuidbn20
+         8BFD/amk4Nm9+PnGsUFc4+KSzcEsnNb/RuJ6yUCeKtvDB90bW5RJS71qiymE4nmRFXWZ
+         bAfCqp5ZhFgv3IWUdxqN9Q1jyDUVF+a1Ue4NM=
+Date: Fri, 11 Mar 2011 09:29:38 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
+ handling
+Message-ID: <20110311082938.GC13038@htj.dyndns.org>
+References: <20110302165545.GR3319@htj.dyndns.org>
+ <4D6E91EC.6040906@kernel.org>
+ <20110302190208.GD28266@mtj.dyndns.org>
+ <4D6E9541.2040201@kernel.org>
+ <20110302191338.GE28266@mtj.dyndns.org>
+ <4D6EA975.8070200@kernel.org>
+ <20110302205704.GF28266@mtj.dyndns.org>
+ <4D6EB335.8000306@kernel.org>
+ <20110303061711.GG28266@mtj.dyndns.org>
+ <4D791C9F.1010500@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110310155800.478792851@goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D791C9F.1010500@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey, Yinghai.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+On Thu, Mar 10, 2011 at 10:46:55AM -0800, Yinghai Lu wrote:
+> that will duplicate the code:
+> 
+>         nodes_parsed = numa_nodes_parsed;
+>         numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
+> 
+>         for_each_node_mask(i, nodes_parsed)
+>                 cnt = i;
+>         cnt++;
+> 
+> in numa_alloc_distance().
+> 
+> Why just let numa_alloc_distance() to be called at first and return cnt ?
 
-> Ingo,
-> 
-> Please pull the latest tip/perf/core tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/core
-> 
-> 
-> David Sharp (8):
->       tracing: Add an 'overwrite' trace_option.
->       ring-buffer: Remove unused #include <linux/trace_irq.h>
->       tracing: Fix event alignment: ftrace:context_switch and ftrace:wakeup
->       tracing: Fix event alignment: module:module_request
->       tracing: Fix event alignment: kvm:kvm_hv_hypercall
->       tracing: Fix event alignment: mce:mce_record
->       tracing: Fix event alignment: skb:kfree_skb
->       tracing: Adjust conditional expression latency formatting.
-> 
-> Jiri Olsa (1):
->       tracing: Explain about unstable clock on resume with ring buffer warning
-> 
-> Steven Rostedt (5):
->       tracing: Remove lock_depth from event entry
->       ftrace: Add .ref.text as one of the safe areas to trace
->       ftrace/graph: Trace function entry before updating index
->       tracing: Align 4 byte ints together in struct tracer
->       tracing: Fix irqoff selftest expanding max buffer
-> 
-> Yuanhan Liu (1):
->       tracing: Export trace_set_clr_event()
-> 
-> ----
->  Documentation/trace/ftrace.txt |    5 +++++
->  arch/x86/kernel/ftrace.c       |   15 ++++++++-------
->  arch/x86/kvm/trace.h           |    8 ++++----
->  include/linux/ftrace_event.h   |    1 -
->  include/linux/ring_buffer.h    |    2 ++
->  include/trace/events/mce.h     |    8 ++++----
->  include/trace/events/module.h  |    5 ++---
->  include/trace/events/skb.h     |    4 ++--
->  kernel/trace/ring_buffer.c     |   24 +++++++++++++++++++++---
->  kernel/trace/trace.c           |   34 +++++++++++++++++++++++-----------
->  kernel/trace/trace.h           |    3 ++-
->  kernel/trace/trace_entries.h   |    6 +++---
->  kernel/trace/trace_events.c    |    2 +-
->  kernel/trace/trace_output.c    |   36 ++++++++++++++++++++----------------
->  scripts/recordmcount.c         |    3 ++-
->  scripts/recordmcount.pl        |    1 +
->  16 files changed, 100 insertions(+), 57 deletions(-)
+Look at your patch.  It exports numa_alloc_distanc() and calls the
+function explicitly just to use for (i...) loop instead of
+for_each_node_mask().
 
-Pulled, thanks a lot Steve!
+If you look at how numa_set_distance() is used, it's supposed to be
+fire-and-forget thing.  Specific NUMA configuration implementations
+provide the information to the generic code but they don't have to
+care how it's managed or whether something fails for whatever reason
+and I'd like to keep it that way.  It's a small distinction but small
+abstractions and simplifications like that add up to make the code
+base easier to understand and maintain.  And you wanna break that for
+what?  for (i...) instead of for_each_node_mask().
 
-	Ingo
+Also, I don't think your patch is correct.  Even if there is phys_dist
+table, emu distance tables should be built because emulated nids don't
+map to physical nids one to one.  ie. Two different emulated nids can
+share a physical node and the distance table should explicitly reflect
+that.
+
+Nobody cares if we spend a bit more cycles going over numa bitmap some
+more times during boot for frigging NUMA emulation.  It doesn't matter
+AT ALL.  Don't micro optimize where it doesn't matter at the cost of
+code readability and maintainability.  It is actively harmful.
+
+Thanks.
+
+-- 
+tejun
