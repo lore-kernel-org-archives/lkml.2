@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab1CKIai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 03:30:38 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:35390 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab1CKIah (ORCPT
+	id S1753180Ab1CKId4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 03:33:56 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60452 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab1CKIdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 03:30:37 -0500
-Message-ID: <b98da048b445e86006be4bae706a0247.squirrel@webmail.greenhost.nl>
-In-Reply-To: <s5hei6erugz.wl%tiwai@suse.de>
-References: <5e60ae646a15c73f5be0c309f51d1c63.squirrel@webmail.greenhost.nl>
-    <s5hei6erugz.wl%tiwai@suse.de>
-Date: Fri, 11 Mar 2011 09:30:27 +0100 (CET)
-Subject: Re: drm/i915: Fix DPMS and suspend interaction for intel_panel.c
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Takashi Iwai" <tiwai@suse.de>
-Cc: "Keith Packard" <keithp@keithp.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+	Fri, 11 Mar 2011 03:33:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EjreNyrTBjJFjt7PGOSJATXs7QRnHcO6R1bSiIdZ5QdMaQVuFXOk3w/SkpZZ2qv56t
+         GIpbuGWQSpeQ5I91ypEVACFQ/mBapHiMvxpNtcdj89E9+Gd9VL7ZfloDm3/jsdysOnlv
+         +V79oeI5jTU4ryDUm4tiGDJXYxsIUG8gEqvyA=
+Date: Fri, 11 Mar 2011 09:33:51 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
+ handling
+Message-ID: <20110311083351.GD13038@htj.dyndns.org>
+References: <4D6E91EC.6040906@kernel.org>
+ <20110302190208.GD28266@mtj.dyndns.org>
+ <4D6E9541.2040201@kernel.org>
+ <20110302191338.GE28266@mtj.dyndns.org>
+ <4D6EA975.8070200@kernel.org>
+ <20110302205704.GF28266@mtj.dyndns.org>
+ <4D6EB335.8000306@kernel.org>
+ <20110303061711.GG28266@mtj.dyndns.org>
+ <4D791C9F.1010500@kernel.org>
+ <20110311082938.GC13038@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 4c3c8b3d32e7d0cfaf2d58264fc1daa3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311082938.GC13038@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, March 11, 2011 08:23, Takashi Iwai wrote:
-> [Removed stable-kernel from Cc]
->
-> At Fri, 11 Mar 2011 02:35:45 +0100 (CET),
-> Indan Zupancic wrote:
->>
->> drm/i915: Fix DPMS and suspend interaction for intel_panel.c
->>
->> When suspending intel_panel_disable_backlight() is never called,
->> but intel_panel_enable_backlight() is called at resume. With the
->> effect that if the brightness was ever changed after screen
->> blanking, the wrong brightness gets restored at resume time.
->>
->> Nothing guarantees that those calls will be balanced, so having
->> backlight_enabled makes no sense, as the real state can change
->> without the panel code noticing. So keep things as stateless as
->> possible.
->>
->> Signed-off-by: Indan Zupancic <indan@nul.nu>
->
-> Indan, when you need a patch to be added to stable kernel, just put
-> Cc to stable kernel around your sign-off line.  Then Greg will pick it
-> up automatically once when the patch is merged to Linus tree.
+On Fri, Mar 11, 2011 at 09:29:38AM +0100, Tejun Heo wrote:
+> Also, I don't think your patch is correct.  Even if there is phys_dist
+                                                              ^
+							      no
+> table, emu distance tables should be built because emulated nids don't
+> map to physical nids one to one.  ie. Two different emulated nids can
+> share a physical node and the distance table should explicitly reflect
+> that.
 
-Ah, okay. I'll do that in the future.
-
-Reading through Documentation/stable_kernel_rules.txt I'm not
-sure if this patch applies. It does fix a bug that bothers me
-personally, but otherwise it's not very important.
-
-> Anyway, the patch looks good to me.  A nice clean-up.
-
-That was a nice side effect. I like it when fixing code makes
-it cleaner. Unfortunately it didn't work for the LBPC thing,
-but here it does. My combination removal patch hid this bug
-accidentally because PWM was kept at max, it was the main
-reason I thought something was horribly wrong with the LBPC
-fiddling. But it was just improper state tracking, fixed by
-this patch, and my combination removal patch was bogus. Oh
-well.
-
-> Reviewed-by: Takashi Iwai <tiwai@suse.de>
->
->
-> thanks,
->
-> Takashi
->
-
-Greetings,
-
-Indan
-
-
+-- 
+tejun
