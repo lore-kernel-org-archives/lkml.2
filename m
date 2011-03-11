@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab1CKOII (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:08:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59620 "EHLO
+	id S1755306Ab1CKOQX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:16:23 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:64071 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab1CKOIG (ORCPT
+	with ESMTP id S1753685Ab1CKOQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:08:06 -0500
+	Fri, 11 Mar 2011 09:16:22 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU) driver
-Date: Fri, 11 Mar 2011 15:07:59 +0100
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 2/3] tty: serial: Fix build on architecture that does not have ioport
+Date: Fri, 11 Mar 2011 15:16:18 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-media@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        " =?euc-kr?q?=27=B4=EB=C0=CE=B1=E2=27?=" <inki.dae@samsung.com>,
-        " =?euc-kr?q?=27=B0=AD=B9=CE=B1=D4=27?=" <mk7.kang@samsung.com>,
-        "'KyongHo Cho'" <pullip.cho@samsung.com>, linux-kernel@vger.kernel.org
-References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111250.51252.arnd@arndb.de> <000001cbdfe8$ce444b20$6acce160$%szyprowski@samsung.com>
-In-Reply-To: <000001cbdfe8$ce444b20$6acce160$%szyprowski@samsung.com>
+Cc: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+References: <1299848292-17101-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com> <1299848292-17101-2-git-send-email-nobuhiro.iwamatsu.yj@renesas.com> <20110311135414.2725b861@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110311135414.2725b861@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="euc-kr"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103111507.59825.arnd@arndb.de>
-X-Provags-ID: V02:K0:20/IIe56rXkjSzD3KhQkDLVGroMhTy7sudZzHY1ZX4+
- 22wGhchWQZjd0CKH6kl9lEG1xI+oJnc/9aQRB1vZ6Bxy1walTV
- QIQoTUyocYCjI6q3MZlmzqiBEdat+RIPLpkOeE+asgPZj+m0iA
- 4LmJNEV1Mz1/xQ58hPH8SgUj7XHRBzKe6lOqbgJFhBRer4s0Tu
- 1MMlM8sKWZ70DOKLEEpog==
+Message-Id: <201103111516.19155.arnd@arndb.de>
+X-Provags-ID: V02:K0:aCgM72WTKGU6WIM5W1hzJ6thBP3ADGqVImoy7pIZ6U2
+ gO9nDkD2e5QkIYBQT0llBLARedCp43zzKafswYvLFZ4pVE8ZB+
+ hItG+eKzy4vcEXmDdZwiOeSWt9vFYJUoskQRVuc+UvykqnX9HE
+ TcpC7+zndpxzHbsTZqFaTyunM8xd5g9ZhORM/GxE+vxic/yE5i
+ tKKK7vIfl2CC0QrKa1FWQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 March 2011, Marek Szyprowski wrote:
-> > The iommu API is not really meant to be KVM specific, it's just that the
-> > in-tree users are basically limited to KVM at the moment. Another user that
-> > is coming up soon is the vmio device driver that can be used to transparently
-> > pass devices to user space. The idea behind the IOMMU API is that you can
-> > map arbitrary bus addresses to physical memory addresses, but it does not
-> > deal with allocating the bus addresses or providing buffer management such
-> > as cache flushes.
+On Friday 11 March 2011, Alan Cox wrote:
+> > Some CPU's do not have ioport. Therefore, these do not have inX/outX.
 > 
-> Yea, I've noticed this and this basically what we expect from iommu driver. 
-> However the iommu.h API requires a separate call to map each single memory page.
-> This is quite ineffective approach and imho the API need to be extended to allow
-> mapping of the arbitrary set of pages.
+> The results of doing that are usually horrible and add a lot of
+> configuration and ifdefs.
 
-We can always discuss extensions to the existing infrastructure, adding
-an interface for mapping an array of page pointers in the iommu API
-sounds like a good idea.
+I guess a different implementation of this patch could convert the
+driver to use ioport_map and ioread/iowrite to get rid of the
+#ifdef. This might even make the driver simpler because it
+does not have to special-case mmio vs. pio accesses.
 
-I also think that we should not really have separate iommu and dma-mapping
-interfaces, but rather have a portable way to define an iommu so that it
-can be used through the dma-mapping interfaces. I'm not asking you to
-do that as a prerequisite to merging your driver, but it may be good to
-keep in mind that the current situation is still lacking and that any
-suggestion for improving this as part of your work to support the
-samsung IOMMU is welcome.
+Note that the 8250 driver is the basically the only driver that
+uses inb/outb that can be built without setting CONFIG_ISA
+or CONFIG_PCI.
+ 
+> You will then get a backtrace if the methods are called rather than
+> having to hack all the drivers. In addition if your platform ever has a
+> PCI bridge attached to it you will now be able to replace those methods
+> and provide PCI I/O space access, as you will need for many PCI devices.
 
-Note that the ARM implementation of the dma-mapping.h interface currently
-does not support IOMMUs, but that could be changed by wrapping it
-using the include/asm-generic/dma-mapping-common.h infrastructure.
+That does not seem easier than writing new I/O space functions and
+removing CONFIG_NO_IOPORT.
 
 	Arnd
