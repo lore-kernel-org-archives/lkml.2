@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab1CKXRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 18:17:41 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42252 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750963Ab1CKXRk (ORCPT
+	id S1754241Ab1CKX0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 18:26:53 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38698 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752052Ab1CKX0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 18:17:40 -0500
-Subject: Re: [PATCH-FOR-38] target: Fix READ_CAPACITY_16 regression
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Ben Jarvis <bjarvismn@gmail.com>
-In-Reply-To: <1299109971-27268-1-git-send-email-nab@linux-iscsi.org>
-References: <1299109971-27268-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Mar 2011 17:17:35 -0600
-Message-ID: <1299885455.6938.6.camel@mulgrave.site>
+	Fri, 11 Mar 2011 18:26:52 -0500
+Date: Fri, 11 Mar 2011 15:26:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
+Subject: Re: [PATCHv3 0/4] Improve fallback LPJ calculation
+Message-Id: <20110311152640.47d06e9d.akpm@linux-foundation.org>
+In-Reply-To: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-02 at 15:52 -0800, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> Hi James,
-> 
-> This patch fixes a regression for READ_CAPACITY to trigger SAI READ_CAPACITY_16 for
-> >= 0xffffffff virtual backends.  This occured during v4.0.0-rc6 when the backend
-> read_capacity* handlers where moved into generic target_core_cdb.c code, and the
-> 'unsigned long long blocks_long' piece was dropped from target_emulate_readcapacity().
-> 
-> This fix has been tested with TCM_Loop on .38-rc7 with lio-4.1 and is working as expected
-> with large block virtual backends:
-> 
-> [67826.897061] TARGET_CORE[loopback]->TPG[1]_LUN[0] - Adding READ-WRITE access for LUN in Demo Mode
-> [67826.897061] scsi 7:0:1:0: Direct-Access     LIO-ORG  FILEIO           4.0  PQ: 0 ANSI: 5
-> [67826.900933] sd 7:0:1:0: [sdd] 2621440000001 512-byte logical blocks: (1.34 PB/1.19 PiB)
-> [67826.901510] sd 7:0:1:0: [sdd] Write Protect is off
-> [67826.901684] sd 7:0:1:0: [sdd] Mode Sense: 2f 00 00 00
-> 
-> Please include into scsi-rc-fixes going to Linus for-38 mainline target code.
+On Thu, 10 Mar 2011 16:48:03 +0200
+Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
 
-So the piece you didn't say is that this only affects volumes >2TB
-volume which misreport the capacity (which is actually what the bug
-description should have been).
+> 
+> Apologies for picking on you, Andrew, and sending this out of the blue,
 
-That's hardly an oopsworthy fix at this stage ... I'll put it into misc
-with a cc stable.
+Someone has to do it.  This code hasn't really been touched for half a
+decade or more.
 
-James
+> but I didn't have much luck with my previous attempt, and I quite like
+> this patchset, so thought it was worth trying again.
+> (http://lkml.org/lkml/2010/9/28/121)
+> 
+> The guts of this patchset are in patch 2/4. The motivation for that patch
+> is that currently our OMAP calibrates itself using the trial-and-error 
+> binary chop fallback that some other architectures no longer need to 
+> perform. This is a lengthy process, taking 0.2s in an environment where 
+> boot time is of great interest.
+> 
+> Patch 2/4 has two optimisations. Firstly, it replaces the initial repeated-
+> doubling to find the relevant power of 2 with a tight loop that just does 
+> as much as it can in a jiffy. Secondly, it doesn't binary chop over an 
+> entire power of 2 range, it choses a much smaller range based on how much 
+> it squeezed in, and failed to squeeze in, during the first stage. Both 
+> are significant optimisations, and bring our calibration down from 23 
+> jiffies to 5, and, in the process, often arrive at a more accurate lpj 
+> value.
 
+A worthwhile benefit.
 
+> The 'bands' and 'sub-logarithmic' growth may look over-engineered, but 
+> they only cost a small level of inaccuracy in the initial guess (for all 
+> architectures) in order to avoid the very large inaccuracies that appeared
+> during testing (on x86_64 architectures, and presumably others with less 
+> metronomic operation). Note that due to the existence of the TSC and 
+> other timers, the x86_64 will not typically use this fallback routine, 
+> but I wanted to code defensively, able to cope with all kinds of processor 
+> behaviours and kernel command line options.
+> 
+> Patch 3/4 is an additional trap for the nightmare scenario where the
+> initial estimate is very inaccurate, possibly due to things like SMIs.
+> It simply retries with a larger bound.
+> 
+> 1/4 is simply cosmetic to prepare for 2/4. 
+> 4/4 is simply to assist testing and not intended for integration.
+> 
+> 
+> Changes since initial RFC:
+>  - More informational commit messages
+>  - Inserted patch 3/4 after discovering that x86_64 had a failure case.
+
+OK, I guess we'll toss it in there and see how it goes.
