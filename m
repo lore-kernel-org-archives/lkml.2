@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1CKH7x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 02:59:53 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:49250 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750957Ab1CKH7v (ORCPT
+	id S1752755Ab1CKIEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 03:04:14 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:51944 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab1CKIEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 02:59:51 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 11 Mar 2011 09:02:43 +0100
-To: Wang Lei <f3d27b@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
-Message-ID: <20110311080243.GA1640@polaris.bitmath.org>
-References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
- <20110310213340.GA1821@polaris.bitmath.org>
- <4d796f2c.20f98e0a.3266.fffff4e2@mx.google.com>
+	Fri, 11 Mar 2011 03:04:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Subject: Re: [PATCH 2/2] tty: serial: Check UPF_FOURPORT, when CONFIG_SERIAL_8250_FOURPORT is defined
+Date: Fri, 11 Mar 2011 09:04:03 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
+References: <1299822897-7047-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com> <1299822897-7047-2-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+In-Reply-To: <1299822897-7047-2-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4d796f2c.20f98e0a.3266.fffff4e2@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1PxxGE-0006Ur-7T.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PxxGE-0006Ur-7T 042143a3dac80f6247638f5d6e67082f
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103110904.03898.arnd@arndb.de>
+X-Provags-ID: V02:K0:ynhMQHAZQ49NXLLE3KINJB3SB+9rhvdQFWLMnBOB2E7
+ 3Qamtqia3CfiAlC9vV0qoxvaL2ODDhwHTDzyRKTAusFwfMn9R7
+ pmErYUtlEtHbflX7r2/wu26y3fQwXgxEqEvAE6VCSdqWTa4LuD
+ SGXxaLFq0RligvyDBCq4GfwLsGVZ9BuEmaJ4KsNlAgHThahxt1
+ YGCOTidCWc5LzFOAkcFAQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I've confirmed the commit that caused the problem and sent a mail.
+On Friday 11 March 2011 06:54:57 Nobuhiro Iwamatsu wrote:
 > 
-> I don't know if these two problem are related, because i ran your
-> command but there is no `/sys/module/*/srcversion' in my system. I think
-> this is because of some configs i didn't enable. But I'll wait to see if
-> I've provided enough information to help your hackers fix it.
+> When CONFIG_SERIAL_8250_FOURPORT is defined, driver uses UPF_FOURPORT in port.flags.
+> Though CONFIG_SERIAL_8250_FOURPORT is not defined, there is a case to check UPF_FOURPORT.
+> When CONFIG_SERIAL_8250_FOURPORT is defined only, this checks UPF_FOURPORT.
+> 
+> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
 
-Hm, looks like a different problem, then. Mine stops at
+Looks good to me.
 
-commit b7bd182176960fdd139486cadb9962b39f8a2b50
-Author: Michal Marek <mmarek@suse.cz>
-
-    fixdep: Do not record dependency on the source file itself
-
-This looks like a build change, so perhaps a symptom rather than the
-actual problem. Nevertheless, that's where it stops.
-
-Thanks,
-Henrik
+Acked-by: Arnd Bergmann <arnd@arndb.de>
