@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab1CKOnb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:43:31 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:61790 "EHLO mgw-da02.nokia.com"
+	id S1755403Ab1CKOpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:45:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751590Ab1CKOn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:43:28 -0500
-Message-ID: <4D7A34F1.7070601@nokia.com>
-Date: Fri, 11 Mar 2011 16:42:57 +0200
-From: Roger Quadros <roger.quadros@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1752834Ab1CKOp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:45:29 -0500
+Date: Fri, 11 Mar 2011 11:45:08 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Sam Liao <phyomh@gmail.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] Add inverted call graph report support to perf tool
+Message-ID: <20110311144508.GI14438@ghostprotocols.net>
+References: <AANLkTi=vxgHe=dqz+xEPcZ9oBexM1jBxFz3sXA2DJEZA@mail.gmail.com> <20110307180619.GG1873@nowhere> <AANLkTi=rabeXE6m0wRo029jgqHLBaUGQcXYJriLewZeJ@mail.gmail.com> <20110310024355.GG2533@nowhere> <20110310064816.GF9289@elte.hu> <20110311105118.GA1826@nowhere>
 MIME-Version: 1.0
-To: <andy.green@linaro.org>
-CC: ext Andy Green <andy@warmcat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-References: <4D79F068.2080009@linaro.org> <201103111331.13932.arnd@arndb.de> <4D7A191B.7040100@linaro.org>
-In-Reply-To: <4D7A191B.7040100@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [131.228.1.90]
-X-OriginalArrivalTime: 11 Mar 2011 14:42:59.0121 (UTC) FILETIME=[9DB9D210:01CBDFFA]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311105118.GA1826@nowhere>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Fri, Mar 11, 2011 at 11:51:22AM +0100, Frederic Weisbecker escreveu:
+> On Thu, Mar 10, 2011 at 07:48:16AM +0100, Ingo Molnar wrote:
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-On 03/11/2011 02:44 PM, ext Andy Green wrote:
+> > > But your idea of turning the callee into the caller would show us a very global 
+> > > profiling. With reverse callchains it can be a very nice overview of the big 
+> > > picture.
 
->
-> I suggested this myself on #15 of the bug you linked to. However, it
-> seems to me there is a generic issue here and it is not to do with
-> whether stuff can be discovered on the bus or not; bugging the usbnet
-> guys to accept devname-based commandline params and solving it for
-> usbnet only would be covering up the actual issue.
+> > Very much agreed - i think that matches the sysprof display structure as well, 
+> > right?
 
-I fail to see the problem. USB is a dynamically probed bus.
-Whether the USB peripheral is hard-wired to the board or not, it is 
-still dynamically probed. The board files are not expected to know 
-anything about USB peripherals prior to enumeration, so platform data 
-does not make sense for USB.
+> Yeah indeed, IIRC.
 
->
-> The I2C implementation does not limit itself to providing I2C addresses
-> and binding to driver names so it can be probed, it also provides for
-> sending platform_data into the device when it is instantiated. That is
-> very useful and I don't think the I2C guys will be accepting patches to
-> remove that capability.
+> > This could then be propagated not just into perf report but perf top --tui as well.
 
-Platform data makes perfect sense for I2C because it is not a 
-dynamically probed bus and board writers need to define which I2C chips 
-are present on the board.
+> Probably yeah. Are callchains already supported by perf top?
 
->
-> There is no reason I can see that onboard USB assets should continue to
-> be treated differently to miss out on the same capability because they
-> are USB and not I2C, particularly as a permanently NULL platform_data
-> pointer is already sitting there in the usb_device's .dev already
-> exactly for this use.
+No, they arent, the move to get 'struct hist_entry' (used by report) and 'struct
+sym_entry' (used by top) is underway, I want to merge the hists browser
+with the top browser, at that point it all becomes just one tool:
 
-What do you want to set in platform data? the ethernet device name? 
-Isn't that better done in user space using udev rules?
+start with 'perf top'
 
--- 
-regards,
--roger
+press F -> freeze:
+
+it becomes 'perf report'
+
+in both modes press 'A' and you get annotation, if in top mode, live, if
+in 'report' mode, static.
+
+Having this all integrated and easily switched to/from various modes is
+what, in my view, makes the TUI (and GUI at some point) compelling.
+
+- Arnaldo
