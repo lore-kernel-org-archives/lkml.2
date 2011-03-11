@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab1CKP1Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:27:25 -0500
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:47820 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752417Ab1CKP1Y (ORCPT
+	id S1755660Ab1CKP1t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:27:49 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63212 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755619Ab1CKP1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:27:24 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: [PATCH] regulator: switch the ab3100 to use enable_time()
-Date: Fri, 11 Mar 2011 16:26:18 +0100
-Message-ID: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 11 Mar 2011 10:27:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=nPMr624iT2REca1HZPq3gRs/qVkOfWvzuQUB5F35xxCkePBE4tqdHW2SZ8MM/EKwfT
+         xQrub9BZUTMGSyKnHGymBfrDB1UJT0C45hlBz6wkcIaAuEKIi64qbtQLjvjx8Ssm8Cbp
+         IWy5dsvtk67JxCc72EWPr9ax0xJj3YdV91qf4=
+Subject: Re: [PATCH n_gsm] GSM Mux in non-transparent mode
+From: =?ISO-8859-1?Q?M=E1rio?= Isidoro <marioisidoro@gmail.com>
+To: Eric =?ISO-8859-1?Q?B=E9nard?= <eric@eukrea.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <4D7A24CF.9070805@eukrea.com>
+References: <1299724790.1800.135.camel@Paio>  <4D7A24CF.9070805@eukrea.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Mar 2011 15:27:41 +0000
+Message-ID: <1299857261.4444.14.camel@Paio>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Hi Eric
+My GE863-Pro^3 works well without it, however, without it the control
+signals from the computer side do not seem to work correctly.
 
-This switches the ab3100 core to use the enable_time()
-infrastructure from the regulator core.
+>From my tests, without the patch, the value in modem_tx will never
+change when we send TIOCMSET commands.
 
-Cc: Mattias Wallin <mattias.wallin@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/regulator/ab3100.c |   51 ++++++++++++++++++++++++-------------------
- 1 files changed, 28 insertions(+), 23 deletions(-)
+By the way, can you confirm if your Telit modems respect the EA bit on
+the MSC frame ? 
 
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index ed6feaf..585e494 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -205,29 +205,6 @@ static int ab3100_enable_regulator(struct regulator_dev *reg)
- 		return err;
- 	}
- 
--	/* Per-regulator power on delay from spec */
--	switch (abreg->regreg) {
--	case AB3100_LDO_A: /* Fallthrough */
--	case AB3100_LDO_C: /* Fallthrough */
--	case AB3100_LDO_D: /* Fallthrough */
--	case AB3100_LDO_E: /* Fallthrough */
--	case AB3100_LDO_H: /* Fallthrough */
--	case AB3100_LDO_K:
--		udelay(200);
--		break;
--	case AB3100_LDO_F:
--		udelay(600);
--		break;
--	case AB3100_LDO_G:
--		udelay(400);
--		break;
--	case AB3100_BUCK:
--		mdelay(1);
--		break;
--	default:
--		break;
--	}
--
- 	return 0;
- }
- 
-@@ -449,11 +426,37 @@ static int ab3100_get_voltage_regulator_external(struct regulator_dev *reg)
- 	return abreg->plfdata->external_voltage;
- }
- 
-+static int ab3100_enable_time_regulator(struct regulator_dev *reg)
-+{
-+	struct ab3100_regulator *abreg = reg->reg_data;
-+
-+	/* Per-regulator power on delay from spec */
-+	switch (abreg->regreg) {
-+	case AB3100_LDO_A: /* Fallthrough */
-+	case AB3100_LDO_C: /* Fallthrough */
-+	case AB3100_LDO_D: /* Fallthrough */
-+	case AB3100_LDO_E: /* Fallthrough */
-+	case AB3100_LDO_H: /* Fallthrough */
-+	case AB3100_LDO_K:
-+		return 200;
-+	case AB3100_LDO_F:
-+		return 600;
-+	case AB3100_LDO_G:
-+		return 400;
-+	case AB3100_BUCK:
-+		return 1000;
-+	default:
-+		break;
-+	}
-+	return 0;
-+}
-+
- static struct regulator_ops regulator_ops_fixed = {
- 	.enable      = ab3100_enable_regulator,
- 	.disable     = ab3100_disable_regulator,
- 	.is_enabled  = ab3100_is_enabled_regulator,
- 	.get_voltage = ab3100_get_voltage_regulator,
-+	.enable_time = ab3100_enable_time_regulator,
- };
- 
- static struct regulator_ops regulator_ops_variable = {
-@@ -463,6 +466,7 @@ static struct regulator_ops regulator_ops_variable = {
- 	.get_voltage = ab3100_get_voltage_regulator,
- 	.set_voltage = ab3100_set_voltage_regulator,
- 	.list_voltage = ab3100_list_voltage_regulator,
-+	.enable_time = ab3100_enable_time_regulator,
- };
- 
- static struct regulator_ops regulator_ops_variable_sleepable = {
-@@ -473,6 +477,7 @@ static struct regulator_ops regulator_ops_variable_sleepable = {
- 	.set_voltage = ab3100_set_voltage_regulator,
- 	.set_suspend_voltage = ab3100_set_suspend_voltage_regulator,
- 	.list_voltage = ab3100_list_voltage_regulator,
-+	.enable_time = ab3100_enable_time_regulator,
- };
- 
- /*
--- 
-1.7.3.2
+Thank you,
+
+Mário Isidoro
+
+On Fri, 2011-03-11 at 14:34 +0100, Eric Bénard wrote:
+> Hi Mário,
+> 
+> On 10/03/2011 03:39, Mário Isidoro wrote:
+> > @@ -2661,9 +2725,12 @@ static int gsmtty_tiocmset(struct tty_struct
+> > *tty, struct file *filp,
+> >   	struct gsm_dlci *dlci = tty->driver_data;
+> >   	unsigned int modem_tx = dlci->modem_tx;
+> >
+> > -	modem_tx &= clear;
+> > +	modem_tx &= ~clear;
+> >   	modem_tx |= set;
+> >
+> good catch : this fix (and only this one in your patch) makes Telit modems 
+> work realiable here with ppp (which was failing before).
+> Tested on GC864-QUAD-V2, UC864-E and UC864-WD
+> 
+> Thanks !
+> 
+> Eric
+
 
