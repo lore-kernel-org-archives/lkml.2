@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab1CKW0V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 17:26:21 -0500
-Received: from kroah.org ([198.145.64.141]:33501 "EHLO coco.kroah.org"
+	id S1753461Ab1CKWaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 17:30:16 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58635 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab1CKW0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 17:26:19 -0500
-Date: Fri, 11 Mar 2011 14:25:29 -0800
-From: Greg KH <greg@kroah.com>
-To: Denis Turischev <denis@compulab.co.il>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: [PATCH v3] pch_uart: reference clock on CM-iTC
-Message-ID: <20110311222529.GA14675@kroah.com>
-References: <4D74A600.7070302@compulab.co.il>
- <20110307200733.GA18849@kroah.com>
- <4D761F7F.2030908@compulab.co.il>
- <20110309234238.GA4071@kroah.com>
- <4D78CE98.4040500@compulab.co.il>
+	id S1752365Ab1CKWaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 17:30:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,305,1297065600"; 
+   d="scan'208";a="666432999"
+From: Andi Kleen <andi@firstfloor.org>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [REVIEW] NVM Express driver
+References: <20110303204749.GY3663@linux.intel.com>
+Date: Fri, 11 Mar 2011 14:29:19 -0800
+In-Reply-To: <20110303204749.GY3663@linux.intel.com> (Matthew Wilcox's message
+	of "Thu, 3 Mar 2011 15:47:49 -0500")
+Message-ID: <m24o79cmv4.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D78CE98.4040500@compulab.co.il>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 03:14:00PM +0200, Denis Turischev wrote:
-> Default clock source for UARTs on Topcliff is external UART_CLK.
-> On CM-iTC USB_48MHz is used instead. After VCO2PLL and DIV
-> manipulations UARTs will receive 192 MHz.
-> Clock manipulations on Topcliff are controlled in pch_phub.c
-> 
-> v2: redone against the linux-next tree
-> v3: redone against linux/kernel/git/next/linux-next.git snapshot
-> 
-> Signed-off-by: Denis Turischev <denis@compulab.co.il>
-> ---
-> diff -Nru linux-next-20110310.orig/drivers/misc/pch_phub.c linux-next-20110310/drivers/misc/pch_phub.c
-> --- linux-next-20110310.orig/drivers/misc/pch_phub.c	2011-03-10 08:31:30.000000000 +0200
-> +++ linux-next-20110310/drivers/misc/pch_phub.c	2011-03-10 14:42:05.110978473 +0200
-> @@ -618,6 +626,14 @@
->  					       CLKCFG_CAN_50MHZ,
->  					       CLKCFG_CANCLK_MASK);
-> 
-> +		/* quirk for CM-iTC board */
-> +		if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
-> +			pch_phub_read_modify_write_reg(chip,
-> +						(unsigned int)CLKCFG_REG_OFFSET,
-> +						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-> +						CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-> +						CLKCFG_UART_MASK);
+Matthew Wilcox <willy@linux.intel.com> writes:
 > +
+> +static struct nvme_queue *get_nvmeq(struct nvme_ns *ns)
+> +{
+> +	int qid, cpu = get_cpu();
+> +	if (cpu < ns->dev->queue_count)
+> +		qid = cpu + 1;
+> +	else
+> +		qid = (cpu % rounddown_pow_of_two(ns->dev->queue_count))
+> + 1;
 
-This is the chunk that is causing problems.  I guess someone else
-modified this file in the linux-next tree, and I can't apply it in mine.
-Any ideas who did this change?  Can you look at the linux-next tree and
-see what caused this merge issue?
+This will be likely a full divide, better use a mask.
 
-thanks,
+> +	nprps = DIV_ROUND_UP(length, PAGE_SIZE);
+> +	npages = DIV_ROUND_UP(8 * nprps, PAGE_SIZE);
+> +	prps = kmalloc(sizeof(*prps) + sizeof(__le64 *) * npages, GFP_ATOMIC);
+> +	prp_page = 0;
+> +	if (nprps <= (256 / 8)) {
+> +		pool = dev->prp_small_pool;
+> +		prps->npages = 0;
 
-greg k-h
+
+Unchecked GFP_ATOMIC allocation? That will oops soon.
+Besides GFP_ATOMIC a very risky thing to do on a low memory situation,
+which can trigger writeouts.
+
+
+> +	} else {
+> +		pool = dev->prp_page_pool;
+> +		prps->npages = npages;
+> +	}
+> +
+> +	prp_list = dma_pool_alloc(pool, GFP_ATOMIC, &prp_dma);
+> +	prps->list[prp_page++] = prp_list;
+
+And another one.
+
+
+Didn't read all of it.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
