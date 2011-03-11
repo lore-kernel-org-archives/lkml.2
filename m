@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1CKAJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:09:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24015 "EHLO mx1.redhat.com"
+	id S1754475Ab1CKAK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 19:10:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44622 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754112Ab1CKAJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 19:09:17 -0500
-Date: Fri, 11 Mar 2011 00:09:01 +0000
-From: Dr Andrew John Hughes <ahughes@redhat.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Trond.Myklebust@netapp.com
-Subject: Re: NFS regression in 2.6.37.1 (current stable)
-Message-ID: <20110311000901.GC22030@rivendell.middle-earth.co.uk>
-References: <20110310185321.GA22030@rivendell.middle-earth.co.uk>
- <4D791FA3.3070100@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D791FA3.3070100@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754187Ab1CKAK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 19:10:26 -0500
+Subject: Re: isci for 2.6.39?
+From: James Bottomley <James.Bottomley@suse.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Jiang <dave.jiang@intel.com>,
+        Ed Nadolski <edmund.nadolski@intel.com>,
+        Ed Ciechanowski <ed.ciechanowski@intel.com>,
+        Jacek Danecki <jacek.danecki@intel.com>,
+        Jeff Skirvin <jeffrey.d.skirvin@intel.com>
+In-Reply-To: <1299801757.8641.21.camel@dwillia2-linux>
+References: <1299801757.8641.21.camel@dwillia2-linux>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Mar 2011 18:10:19 -0600
+Message-ID: <1299802219.11933.175.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19:59 Thu 10 Mar     , Marc Kleine-Budde wrote:
-> Hello Andrew,
-> 
-> On 03/10/2011 07:53 PM, Dr Andrew John Hughes wrote:
-> > [Please CC me on responses as I'm not subscribed]
-> > 
-> > Hi,
-> > 
-> > I seem to have uncovered a regression in the NFS code between 2.6.37 and 2.6.37.1
-> > caused by this changeset:
-> > 
-> > commit 55ea499d60aefa3d03a77fc8590c26b5881faa92
-> > Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > Date:   Sat Jan 8 17:45:38 2011 -0500
-> > NFS: Don't use vm_map_ram() in readdir
-> > http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=commit;h=6650239a4b01077e80d5a4468562756d77afaa59
-> > 
-> > With this change applied, copying of files between NFS and non-NFS
-> > mounts seems to be broken.  The easiest way I've found to replicate
-> > this myself is to use a VCS to do a clone of a tree on a NFS mount to
-> > a directory on a non-NFS mount.  I used Mercurial, as I had Mercurial
-> > trees to hand from work on IcedTea, but I assume doing it with a git
-> > tree such as the linux tree would also work.  The idea is to do
-> > something which involves copying over a bunch of directories and
-> > checking the result is readable.
-> > 
-> > $ hg clone $HOME/projects/openjdk/icedtea6-hg
-> > destination directory: icedtea6-hg
-> > updating to branch default
-> > abort:
-> > data/contrib/templater/hotspot/src/cpu/CPU/vm/bytecodeInterpreter_CPU.inline.hpp.i@16d04ce16287:
-> > no match found!
-> > 
-> > In the above, $HOME is an NFS mount and $PWD is a local reiserfs
-> > partition.  I initially hit failures doing builds with source on $HOME
-> > and the build directory on a local reiserfs partition.  In that
-> > scenario, it would fail as not being able to find files that should
-> > have been copied over.
-> > 
-> > Reverting the changeset fixes the issue.  2.6.37.2 still has the bug.
-> > I haven't checked 2.6.37.3 yet but I didn't see any NFS changes in there.
-> 
-> Which arch are you using? As this patch is also part of the upcoming
-> 2.6.38, can you check if the latest .38 is affected, too?
-> 
+On Thu, 2011-03-10 at 16:02 -0800, Dan Williams wrote:
+> Given the impending opening of the 2.6.39 merge window I would like to
+> discuss the options for merging the isci driver.  Review has been
+> intermittent which is understandable given the size and flux of the
+> codebase.  It has received a good amount of cleanups, but additional
+> review issues and cleanups are still all too easy to spot.  I know you
+> have expressed reservations about taking scsi drivers through -staging
+> in the past [1], so I would like to propose an alternative.  Merge the
+> driver into scsi-misc but with a -staging style TODO file that tracks
+> the review issues.  If the TODO file is not addressed by the 2.6.40
+> window the driver would be moved to -staging.  This has the benefit of
+> keeping the driver under your purview and expected location, but still
+> have the imminent prospect of being de-staged to ensure the community's
+> concerns are ultimately addressed.  We fully intend to maintain the
+> current momentum on the driver cleanup effort and be ready in advance of
+> 2.6.40.
 
-Sorry, I should have said; it's x86_64.  I'll give .38 a go.  It sounds,
-from the other responses, like that has the required fix and it just needs
-to be backported to the 2.6.37 tree.
+Given that you only posted the core files today, I think it's a bit late
+for the 2.6.39 merge window, which will be opening in under a week.
 
-> cheers, Marc
-> 
-> -- 
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-> 
+You could send it all to staging ... it's just that pretty much seems to
+guarantee no SCSI review, which is what you seem to need at the moment.
 
-Cheers,
--- 
-Andrew :)
+> As a side note I'm still looking for a disposition for:
+> "libsas: flush initial device discovery before completing ->scan_finished()" [2]
+> "libsas: fix/amend device gone notification in sas_deform_port()" [3]
 
-Free Java Software Engineer
-Red Hat, Inc. (http://www.redhat.com)
+I thought I commented ... I'll go back and dig them out of email.
+
+James
+
 
