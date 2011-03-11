@@ -1,115 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1CKUi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:38:56 -0500
-Received: from www.tglx.de ([62.245.132.106]:37100 "EHLO www.tglx.de"
+	id S1754438Ab1CKUmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:42:10 -0500
+Received: from kroah.org ([198.145.64.141]:37215 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754408Ab1CKUiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:38:54 -0500
-Date: Fri, 11 Mar 2011 21:37:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-cc: davidb@codeaurora.org, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@sterricsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Qualcomm PM8921 MFD v2 2/6] mfd: pm8xxx: Add irq support
-In-Reply-To: <4D7A80DD.7000909@codeaurora.org>
-Message-ID: <alpine.LFD.2.00.1103112112310.2787@localhost6.localdomain6>
-References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org> <1299564590-30116-3-git-send-email-adharmap@codeaurora.org> <alpine.LFD.2.00.1103081201520.2787@localhost6.localdomain6> <4D770E47.6050402@codeaurora.org>
- <alpine.LFD.2.00.1103101126100.2787@localhost6.localdomain6> <4D79A85D.8000301@codeaurora.org> <alpine.LFD.2.00.1103111853480.2787@localhost6.localdomain6> <4D7A71B9.9000306@codeaurora.org> <alpine.LFD.2.00.1103112020370.2787@localhost6.localdomain6>
- <4D7A80DD.7000909@codeaurora.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753950Ab1CKUmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:42:08 -0500
+Date: Fri, 11 Mar 2011 12:41:26 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/17] 2.6.32.33-longterm review
+Message-ID: <20110311204126.GA7223@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Abhijeet Dharmapurikar wrote:
-> Thomas Gleixner wrote:
-> > Simply because this kind of misdesigned hardware will creep up over
-> > and over and we want to handle these cases in the core. Even for a
-> > sinlge instance like yours solving it in the core is the right thing
-> > to do, because it's a ~3 lines patch to the core code to get this
-> > done.
-> 
-> ~3 lines patch to the code sounds promising. Please tell me how?
+This is the start of the longterm review cycle for the 2.6.32.33 release.
+There are 17 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-So I deduce, that your HW has no way to mark the wakeup
-interrupts. Whack your HW designer on my behalf, please! :)
+Responses should be made by Sunday, March 13, 2011, 20:00:00 UTC.
+Anything received after that time might be too late.
 
-Patch below against:
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.33-rc1.gz
+and the diffstat can be found below.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq/core
+thanks,
 
-It's 8 lines, but that's still at least an order of magnitude less
-than solving this with an workaround. :)
+greg k-h
 
-Thanks,
-
-	tglx
-
----------->
-Subject: genirq-force-mask-on-suspend.patch
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 11 Mar 2011 21:22:14 +0100
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/irq.h |    2 ++
- kernel/irq/pm.c     |   14 ++++++++++----
- 2 files changed, 12 insertions(+), 4 deletions(-)
-
-Index: linux-2.6-tip/include/linux/irq.h
-===================================================================
---- linux-2.6-tip.orig/include/linux/irq.h
-+++ linux-2.6-tip/include/linux/irq.h
-@@ -330,10 +330,12 @@ struct irq_chip {
-  *
-  * IRQCHIP_SET_TYPE_MASKED:	Mask before calling chip.irq_set_type()
-  * IRQCHIP_EOI_IF_HANDLED:	Only issue irq_eoi() when irq was handled
-+ * IRQCHIP_MASK_ON_SUSPEND:	Mask non wake irqs in the suspend path
-  */
- enum {
- 	IRQCHIP_SET_TYPE_MASKED		= (1 <<  0),
- 	IRQCHIP_EOI_IF_HANDLED		= (1 <<  1),
-+	IRQCHIP_MASK_ON_SUSPEND		= (2 <<  1),
- };
- 
- /* This include will go away once we isolated irq_desc usage to core code */
-Index: linux-2.6-tip/kernel/irq/pm.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/pm.c
-+++ linux-2.6-tip/kernel/irq/pm.c
-@@ -68,10 +68,16 @@ int check_wakeup_irqs(void)
- 	struct irq_desc *desc;
- 	int irq;
- 
--	for_each_irq_desc(irq, desc)
--		if (irqd_is_wakeup_set(&desc->irq_data) &&
--		    (desc->istate & IRQS_PENDING))
--			return -EBUSY;
-+	for_each_irq_desc(irq, desc) {
-+		if (irqd_is_wakeup_set(&desc->irq_data)) {
-+			if (desc->istate & IRQS_PENDING)
-+				return -EBUSY;
-+			continue;
-+		}
-+		if (desc->istate & IRQS_SUSPENDED &&
-+		    irq_desc_get_chip(desc)->flags & IRQCHIP_MASK_ON_SUSPEND)
-+			mask_irq(desc);
-+	}
- 
- 	return 0;
- }
+ Makefile                                        |    2 +-
+ arch/powerpc/include/asm/hvcall.h               |    1 +
+ arch/powerpc/kernel/crash.c                     |   11 +++++-
+ arch/powerpc/kernel/machine_kexec_64.c          |   25 +++++++++++++++
+ arch/powerpc/kernel/setup_64.c                  |   17 ++++++++--
+ arch/powerpc/platforms/pseries/hvCall.S         |   38 +++++++++++++++++++++++
+ arch/powerpc/platforms/pseries/lpar.c           |   35 ++++++++++++--------
+ arch/powerpc/platforms/pseries/plpar_wrappers.h |   18 +++++++++++
+ drivers/net/ixgbe/ixgbe_main.c                  |    4 ++
+ drivers/net/r8169.c                             |    6 ++-
+ drivers/s390/char/keyboard.c                    |    3 +-
+ drivers/staging/comedi/drivers/jr3_pci.c        |    7 +++-
+ fs/nfsd/nfs4xdr.c                               |    4 +-
+ include/keys/rxrpc-type.h                       |    1 -
+ include/linux/netdevice.h                       |    4 ++
+ kernel/cpuset.c                                 |    7 +++-
+ mm/mremap.c                                     |    4 +--
+ net/core/dev.c                                  |   12 ++++++-
+ net/ipv4/ip_gre.c                               |    1 +
+ net/ipv4/ipip.c                                 |    1 +
+ net/ipv6/sit.c                                  |    2 +-
+ net/netfilter/nf_log.c                          |    4 ++
+ 22 files changed, 170 insertions(+), 37 deletions(-)
