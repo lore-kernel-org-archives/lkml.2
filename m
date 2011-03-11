@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab1CKUI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:08:29 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:35357 "EHLO kernel.dk"
+	id S1753723Ab1CKUKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:10:34 -0500
+Received: from mga02.intel.com ([134.134.136.20]:18162 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752465Ab1CKUI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:08:28 -0500
-Message-ID: <4D7A8139.3010101@kernel.dk>
-Date: Fri, 11 Mar 2011 21:08:25 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752476Ab1CKUKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:10:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,304,1297065600"; 
+   d="scan'208";a="719232671"
+From: Seth Heasley <seth.heasley@intel.com>
+Organization: Intel Corporation
+To: jgarzik@pobox.com
+Subject: [PATCH 2.6.37.3] ahci: AHCI mode SATA patch for Intel Patsburg SATA RAID controller
+Date: Fri, 11 Mar 2011 11:57:42 -0800
+User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-default; KDE/4.1.3; x86_64; ; )
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        seth.heasley@intel.com
 MIME-Version: 1.0
-To: scameron@beardog.cce.hp.com
-CC: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com
-Subject: Re: [PATCH] cciss: Add missing allocation in scsi_cmd_stack_setup
- and  corresponding deallocation
-References: <20110310202238.30533.92210.stgit@beardog.cce.hp.com> <4D7A7373.8090800@kernel.dk> <20110311194644.GE12760@beardog.cce.hp.com>
-In-Reply-To: <20110311194644.GE12760@beardog.cce.hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201103111157.42656.seth.heasley@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-11 20:46, scameron@beardog.cce.hp.com wrote:
-> On Fri, Mar 11, 2011 at 08:09:39PM +0100, Jens Axboe wrote:
->> On 2011-03-10 21:22, Stephen M. Cameron wrote:
->>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
->>>
->>> This bit got lost somewhere along the way.  Without this, panic.
->>
->> This doesn't apply cleanly, neither hunk. I hand applied it. Please let
->> me know what a patch is against in the future, if it doesn't apply
->> "anywhere".
-> 
-> Oh... I see what happened.
-> 
-> That patch was fixing something which was accidentally 
-> left out of this patch:
-> 
-> http://marc.info/?l=linux-kernel&m=129840572232151&w=2
-> 
-> which I mistakenly thought was present in 2.6.38-rc7,
-> but it's not present (quite likely because without the
-> missing bit, it causes a panic), It's sitting in my stack of
-> patches still.
-> 
-> [scameron@localhost linux-2.6.38-rc7]$ stg series | grep cciss
-> + cciss-hoist-tag-masking-out-of-loop
-> + cciss-inform-controller-we-are-using-32-bit-tags
-> + cciss-mask-off-error-bits-before-calling-pci-free-consistent
-> + cciss-remove-unnecessary-casts
-> + cciss-fix-missed-command-status-value-CMD_UNABORTABLE
-> + cciss-add-cciss_tape_cmds-module-parameter
-> + cciss-fix-missing-initialization-in-scsi-cmd-stack-setup
-> + cciss-export-resettable-host-attribute
-> + cciss-fix-sense-data-copying-code
-> 
-> What needs to happen is I combine cciss-add-cciss_tape_cmds-module-parameter
-> and cciss-fix-missing-initialization-in-scsi-cmd-stack-setup into one 
-> working patch.
+This patch adds an updated SATA RAID DeviceID for the Intel Patsburg PCH.
 
-Please check what is missing for my for-2.6.39/drivers branch and send
-me the patches.
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
--- 
-Jens Axboe
-
+--- linux-2.6.37.3/drivers/ata/ahci.c.orig	2011-03-09 10:30:44.000000000 -0800
++++ linux-2.6.37.3/drivers/ata/ahci.c	2011-03-09 10:31:08.000000000 -0800
+@@ -260,6 +260,7 @@
+ 	{ PCI_VDEVICE(INTEL, 0x1d02), board_ahci }, /* PBG AHCI */
+ 	{ PCI_VDEVICE(INTEL, 0x1d04), board_ahci }, /* PBG RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1d06), board_ahci }, /* PBG RAID */
++	{ PCI_VDEVICE(INTEL, 0x2826), board_ahci }, /* PBG RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
