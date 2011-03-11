@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab1CKAjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:39:17 -0500
-Received: from eddie.linux-mips.org ([78.24.191.182]:37537 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823Ab1CKAjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 19:39:15 -0500
-Date: Fri, 11 Mar 2011 01:38:46 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] jump label: update for .39
-Message-ID: <20110311003846.GA23548@linux-mips.org>
-References: <4D790A13.4060705@caviumnetworks.com>
- <1299780241.15854.393.camel@gandalf.stny.rr.com>
- <20110310182000.GB2906@redhat.com>
- <1299782143.15854.402.camel@gandalf.stny.rr.com>
- <4D791CAA.7090108@caviumnetworks.com>
- <1299783236.15854.405.camel@gandalf.stny.rr.com>
- <4D791F31.6040100@caviumnetworks.com>
- <1299785143.15854.407.camel@gandalf.stny.rr.com>
- <1299786329.15854.409.camel@gandalf.stny.rr.com>
- <BLU0-SMTP39EE03AE86CF0F0E5C570596C80@phx.gbl>
+	id S1754880Ab1CKAkD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 19:40:03 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33795 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab1CKAkA (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 10 Mar 2011 19:40:00 -0500
+Date: Thu, 10 Mar 2011 19:38:41 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] Re: [GIT PATCH v2 0/14] xen: events: cleanups +
+ ween off nr_irqs
+Message-ID: <20110311003841.GA3063@dumpdata.com>
+References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+ <20110310225726.GA2983@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BLU0-SMTP39EE03AE86CF0F0E5C570596C80@phx.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110310225726.GA2983@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D796F58.009C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 04:22:14PM -0500, Mathieu Desnoyers wrote:
+> I am having difficulties with passthrough of an USB device. Somehow the
+> irq count is not going up at all (both in dom0 and domU) and it looks to
+> be doing just simple polling. I've rebased the xen-pciback to be on top
+> of your changes and apply cleanly. The whole lot is now in #master
 
-> You seem to be contradicting yourself here. I'm concerned about having
-> "structures" of a size not power of two. Can we simply either
-> 
-> - Add a padding element at the end
-> or
-> - use .align 4*sizeof(long) at the beginning
-> 
-> to make sure the linker won't put any holes when it puts objects 
-> together ?
+I think your patchset breaks the 'xc_physdev_map_pirq' call. Looks like
+libxl_pci.c reads from /sys/bus/pci/devices/<BDF>/irq to figure out what value
+to pass. With these patches we wouldn't neccessarily pass in the right
+PIRQ value. Any ideas?
 
-It may only be a technicality but but careful with .align.  On some
-architectures .align x will align to a multiple of x; on other
-architectures to 2^x.  Another reason to stick to C wherever possible.
-
-  Ralf
