@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab1CKNKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 08:10:53 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39861 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab1CKNKv (ORCPT
+	id S1755231Ab1CKNRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 08:17:54 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:36887 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213Ab1CKNRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 08:10:51 -0500
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: [PATCH 3/3] tty: serial: Check UPF_FOURPORT, when CONFIG_SERIAL_8250_FOURPORT is defined
-Date: Fri, 11 Mar 2011 21:58:12 +0900
-Message-Id: <1299848292-17101-3-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299848292-17101-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-References: <1299848292-17101-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+	Fri, 11 Mar 2011 08:17:50 -0500
+X-IronPort-AV: E=Sophos;i="4.62,303,1297036800"; 
+   d="scan'208";a="4744568"
+Date: Fri, 11 Mar 2011 13:17:23 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: <linux-kernel@vger.kernel.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>
+Subject: [GIT PULL tip/x86/mm] xen/x86 fixes
+Message-ID: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_SERIAL_8250_FOURPORT is defined, driver uses UPF_FOURPORT in port.flags.
-Though CONFIG_SERIAL_8250_FOURPORT is not defined, there is a case to check UPF_FOURPORT.
-When CONFIG_SERIAL_8250_FOURPORT is defined only, this checks UPF_FOURPORT.
+Hello,
+recently we had a couple of long discussions with Yinghai about boot
+crashes on xen, related to pagetable initialization.
+As a result we came up with three patches, two of them fix the first [1]
+boot crash and provide a nice cleanup on native:
 
-Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/tty/serial/8250.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index 837bb39..6e16ce2 100644
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -1297,17 +1297,20 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
- static void autoconfig_irq(struct uart_8250_port *up)
- {
- 	unsigned char save_mcr, save_ier;
--	unsigned char save_ICP = 0;
--	unsigned int ICP = 0;
- 	unsigned long irqs;
- 	int irq;
- 
-+#ifdef CONFIG_SERIAL_8250_FOURPORT
-+	unsigned char save_ICP = 0;
-+	unsigned int ICP = 0;
-+
- 	if (up->port.flags & UPF_FOURPORT) {
- 		ICP = (up->port.iobase & 0xfe0) | 0x1f;
- 		save_ICP = inb_p(ICP);
- 		outb_p(0x80, ICP);
- 		(void) inb_p(ICP);
- 	}
-+#endif /* CONFIG_SERIAL_8250_FOURPORT */
- 
- 	/* forget possible initially masked and pending IRQ */
- 	probe_irq_off(probe_irq_on());
-@@ -1337,8 +1340,10 @@ static void autoconfig_irq(struct uart_8250_port *up)
- 	serial_outp(up, UART_MCR, save_mcr);
- 	serial_outp(up, UART_IER, save_ier);
- 
-+#ifdef CONFIG_SERIAL_8250_FOURPORT
- 	if (up->port.flags & UPF_FOURPORT)
- 		outb_p(save_ICP, ICP);
-+#endif
- 
- 	up->port.irq = (irq > 0) ? irq : 0;
- }
-@@ -2199,6 +2204,7 @@ dont_test_tx_en:
- 	up->ier = UART_IER_RLSI | UART_IER_RDI;
- 	serial_outp(up, UART_IER, up->ier);
- 
-+#ifdef CONFIG_SERIAL_8250_FOURPORT
- 	if (up->port.flags & UPF_FOURPORT) {
- 		unsigned int icp;
- 		/*
-@@ -2208,6 +2214,7 @@ dont_test_tx_en:
- 		outb_p(0x80, icp);
- 		(void) inb_p(icp);
- 	}
-+#endif
- 
- 	return 0;
- }
-@@ -2225,11 +2232,13 @@ static void serial8250_shutdown(struct uart_port *port)
- 	serial_outp(up, UART_IER, 0);
- 
- 	spin_lock_irqsave(&up->port.lock, flags);
-+#ifdef CONFIG_SERIAL_8250_FOURPORT
- 	if (up->port.flags & UPF_FOURPORT) {
- 		/* reset interrupts on the AST Fourport board */
- 		inb((up->port.iobase & 0xfe0) | 0x1f);
- 		up->port.mctrl |= TIOCM_OUT1;
- 	} else
-+#endif
- 		up->port.mctrl &= ~TIOCM_OUT2;
- 
- 	serial8250_set_mctrl(&up->port, up->port.mctrl);
--- 
-1.7.2.3
+Stefano Stabellini (1):
+      xen: set max_pfn_mapped to the last pfn mapped
+Yinghai Lu (1):
+      x86: Cleanup highmap after brk is concluded
 
+
+The third is a xen patch that fixes the other boot crash [2], indirectly
+caused by the new initial kernel pagetable allocation strategy:
+
+
+Stefano Stabellini (1):
+      xen: update mask_rw_pte after kernel page tables init changes
+
+
+I have put together a branch with these three patches, based on
+tip/x86/mm:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-tip-fixes
+
+Could you please pull from it?
+
+
+[1] https://lkml.org/lkml/2011/1/31/232
+[2] https://lkml.org/lkml/2011/3/1/281 
+
+The list of commits with a diffstat follows:
+
+Stefano Stabellini (2):
+      xen: set max_pfn_mapped to the last pfn mapped
+      xen: update mask_rw_pte after kernel page tables init changes
+
+Yinghai Lu (1):
+      x86: Cleanup highmap after brk is concluded
+
+ arch/x86/kernel/head64.c |    3 ---
+ arch/x86/kernel/setup.c  |   25 +++----------------------
+ arch/x86/mm/init_64.c    |   11 ++++++-----
+ arch/x86/xen/mmu.c       |   21 ++++++++++++---------
+ 4 files changed, 21 insertions(+), 39 deletions(-)
+
+Thanks,
+
+Stefano
