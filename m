@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab1CKSbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:31:07 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58629 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab1CKSbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:31:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=miFACWEhPtRMGO/kVChuVPZyAebFKs1x1lypPQrXWpsxayWzojFiXnDche2hckcI3F
-         dTpdaAjqTNdpVaIzYlPGGwe3+tKl9mmcC6624EjVPpuA9EDYJVMPDxjjDFlD33TgYSn7
-         /zpjz8EF3ew97RTKxioej1PcBZ1RxIfeJWB4A=
+	id S1753315Ab1CKSbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:31:55 -0500
+Received: from mx2.compro.net ([12.186.155.4]:42390 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753171Ab1CKSby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 13:31:54 -0500
+X-IronPort-AV: E=Sophos;i="4.62,304,1297054800"; 
+   d="scan'208";a="6396164"
+Message-ID: <4D7A6A99.5070304@compro.net>
+Date: Fri, 11 Mar 2011 13:31:53 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin_2yo705Ka3KO_09nK3ZUEi_0uYfi6fKQqwBVV@mail.gmail.com>
-References: <1299864633-27542-1-git-send-email-felipe.contreras@nokia.com>
-	<AANLkTi=Hy18s5fOziHSNdG6QUZE85bg0Bb9cAqE42mVQ@mail.gmail.com>
-	<AANLkTin_2yo705Ka3KO_09nK3ZUEi_0uYfi6fKQqwBVV@mail.gmail.com>
-Date: Fri, 11 Mar 2011 20:31:03 +0200
-Message-ID: <AANLkTik+tjZvyagV3PE4grjJJx-q_AEuKCa3z+e99WzC@mail.gmail.com>
-Subject: Re: [RESEND PATCH] staging: tidspbridge: protect dmm_map properly
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Tuomas Kulve <tuomas@kulve.fi>
-Content-Type: text/plain; charset=UTF-8
+To: Linux-kernel <linux-kernel@vger.kernel.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: kernel git bisect question
+References: <4D793414.4090206@compro.net> <20110310215438.GE12521@home.goodmis.org>
+In-Reply-To: <20110310215438.GE12521@home.goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 8:05 PM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
-> On Fri, Mar 11, 2011 at 11:38 AM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> Omar, 2.6.38 is imminent, if this patch has any chance of getting in,
->> I think you would need to push it soon.
->
-> I'll push it to my queue, however I don't think this would be even
-> considered to make it before the official 2.6.38 which should happen
-> in the next few days, given that it should climb to staging tree first
-> and from there to mainline... we could attempt to shot directly to the
-> mainline kernel, but that would raise a few eyebrows and in the end be
-> rejected as well because this is a staging driver which is still in
-> process of cleanup.
+On 03/10/2011 04:54 PM, Steven Rostedt wrote:
+> On Thu, Mar 10, 2011 at 03:27:00PM -0500, Mark Hounschell wrote:
+>> Between git bisect [good | bad ]s should I always "make clean" or can I
+>> count on the build system to take care of everything properly?
+> 
 
-Well, not crashing is better than crashing, regardless of the status
-of the driver. And there's no reason not to include the fix.
+I'm trying to bisect between 2.6.35 and 2.6.36. What have I done wrong?
+Here is exactly what I've done. Why after my second "git bisect bad" do
+I get a Makefile for 2.6.35-rc1 and then after the fourth I get a Makefile
+for 2.6.34??
+ 
 
-But if you send it to Greg, then it's Greg's call.
+harley:/usr/src # git clone git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-2.6-allstable.git
+Initialized empty Git repository in /usr/src/linux-2.6-allstable/.git/
+remote: Counting objects: 1971777, done.
+remote: Compressing objects: 100% (332768/332768), done.
+remote: Total 1971777 (delta 1640306), reused 1952128 (delta 1621734)
+Receiving objects: 100% (1971777/1971777), 402.59 MiB | 2.15 MiB/s, done.
+Resolving deltas: 100% (1640306/1640306), done.
 
-> OTOH, this patch was there long ago, since December, but I just lost
-> the track of it at the moment, along with the other proposed
-> solutions, so I take it as my fault for not picking it up then.
+harley:/usr/src # cd linux-2.6-allstable
+harley:/usr/src/linux-2.6-allstable # git bisect start
+harley:/usr/src/linux-2.6-allstable # git bisect bad v2.6.36
+harley:/usr/src/linux-2.6-allstable # git bisect good v2.6.35
+Bisecting: 5103 revisions left to test after this (roughly 12 steps)
+[78417334b5cb6e1f915b8fdcc4fce3f1a1b4420c] Merge branch 'bkl/core' of git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing
 
-I don't think there was any consensus as which fix was supposed to go
-forward or how, but now there is.
 
-Cheers.
+harley:/usr/src/linux-2.6-allstable # git bisect bad
+Bisecting: 2414 revisions left to test after this (roughly 11 steps)
+[6ba74014c1ab0e37af7de6f64b4eccbbae3cb9e7] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
 
--- 
-Felipe Contreras
+
+harley:/usr/src/linux-2.6-allstable # git bisect bad       (Why did this one give me a 2.6.35-rc1 Makefile)
+Bisecting: 1366 revisions left to test after this (roughly 10 steps)
+[b7753c8cd51dce67a0b152efb456a21ff1cc241b] cfg80211: fix dev <-> wiphy typo
+
+
+harley:/usr/src/linux-2.6-allstable # git bisect bad       (Still a 2.6.35-rc1 Makefile)
+Bisecting: 643 revisions left to test after this (roughly 9 steps)
+[ef2519b1dd3994074e3e438d67f2d91d07c3a5a8] netxen: fail when try to setup unsupported features
+
+
+harley:/usr/src/linux-2.6-allstable # git bisect bad       (Still a 2.6.35-rc1 Makefile)
+Bisecting: 319 revisions left to test after this (roughly 8 steps)
+[14599f1e341ee219abdd15f4eee5872d6f2d29f1] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6
+
+
+harley:/usr/src/linux-2.6-allstable # git bisect bad       (Why did this one give me a 2.6.34 Makefile)
+Bisecting: 161 revisions left to test after this (roughly 7 steps)
+[86cc652dfe57f365533cf2e64e08ff37a510d42e] iwlwifi: remove debug frame dumping
+
+
+Thanks again
+Mark
