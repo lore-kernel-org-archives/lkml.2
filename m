@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab1CKLz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 06:55:59 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57429 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab1CKLzy (ORCPT
+	id S1754828Ab1CKL4b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 06:56:31 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42100 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab1CKL4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 06:55:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Indan Zupancic" <indan@nul.nu>
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-Date: Fri, 11 Mar 2011 12:55:44 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Sage Weil" <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net> <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net> <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
-In-Reply-To: <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+	Fri, 11 Mar 2011 06:56:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=dMhARy45pqHc2x5qkLgAa4EjEg0jQe6IhHDvciBWXEYppy3pkoCLrzpGo9NbnHTv9v
+         y63DiDtT7/xRy650oDdpZYAInEIJezS03s+w2NMiPfNHkJ5znvkDR8ycw2n7KdmtxdJt
+         b5ucUJ7NHXgsNqlhaXuzYdJskEDh0KFyWWQIg=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103111255.44979.arnd@arndb.de>
-X-Provags-ID: V02:K0:bDU4pHUc31r9VA3feu0q/ZBR+OcgfklBnSGHLNQOHay
- vHwmMOvENRKmdJTvAyqry+dihbtia4jkvr5gOR0mu11Wns56ee
- CZ955LuymESuKSsKaDQesbcu/W6xsLeQewsWpFtKYYOdMyWBcC
- Gp/Neq0XAXjfQT+Y23cs1Qw7wScynCJABPl2VwvA/tcZm+HRvy
- b/MFbM1YtPOxnsM1vlVrA==
+In-Reply-To: <20110311111321.GA5553@siel.b>
+References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
+	<1299173174-348-3-git-send-email-torbenh@gmx.de>
+	<1299180844.28285.111.camel@work-vm>
+	<20110304064639.GD3824@riccoc20.at.omicron.at>
+	<1299355687.28285.130.camel@work-vm>
+	<20110306132834.GA11790@riccoc20.at.omicron.at>
+	<20110311111321.GA5553@siel.b>
+Date: Fri, 11 Mar 2011 12:56:29 +0100
+X-Google-Sender-Auth: n8SErOw-z4xwidDAkbaiTBSIdnA
+Message-ID: <AANLkTim9gBw2cZQNHCq4n-tR+b0R_Ha3t0nWPpqdQ7Zm@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ptp: add a software clock based on clock_monotonic_raw
+From: Christian Riesch <christian.riesch@omicron.at>
+To: torbenh <torbenh@gmx.de>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        richard.cochran@omicron.at, tglx@linutronix.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 March 2011, Indan Zupancic wrote:
-> >       http://marc.info/?l=linux-fsdevel&amp;m=127970513829285&amp;w=2
-> 
-> The patch there seems much more reasonable than introducing a whole
-> new systemcall just for 20 lines of kernel code. New system calls are
-> added too easily nowadays.
+Torben,
 
-The only problem with adding new system calls is that we are stuck with
-the interface until the end of time, so we must be sure not to get it
-wrong. The same thing is true for any other interface such as ioctl
-or extensions to existing system calls. People usually get away with
-adding new ioctls more easily because it is less obvious when they
-are added.
+On Fri, Mar 11, 2011 at 12:13 PM, torbenh <torbenh@gmx.de> wrote:
+> On the audio lists, we have a guy now claiming that software ptp would
+> confuse the whole h/w ptp infrastructure. His main agenda seems to be to
+> prevent a software only ptp/avb implementatation.
 
-	Arnd
+could you please post a link to that discussion?
+Thanks,
+Christian
