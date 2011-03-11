@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1CKMlE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 07:41:04 -0500
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:37576 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753646Ab1CKMlB (ORCPT
+	id S1755199Ab1CKMlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 07:41:32 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:56468 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753743Ab1CKMl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 07:41:01 -0500
+	Fri, 11 Mar 2011 07:41:29 -0500
 From: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
 To: LKML <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
@@ -34,9 +34,9 @@ Cc: <maxime_coquelin@yahoo.fr>, ext Nishanth Menon <nm@ti.com>,
         "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
-Subject: [RFC PATCHv2 1/2] Export SoC info through sysfs
-Date: Fri, 11 Mar 2011 13:35:10 +0100
-Message-ID: <1299846911-15782-2-git-send-email-maxime.coquelin-nonst@stericsson.com>
+Subject: [RFC PATCHv2 2/2] ux500: Export U8500 SoC info through sysfs
+Date: Fri, 11 Mar 2011 13:35:11 +0100
+Message-ID: <1299846911-15782-3-git-send-email-maxime.coquelin-nonst@stericsson.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299846911-15782-1-git-send-email-maxime.coquelin-nonst@stericsson.com>
 References: <1299846911-15782-1-git-send-email-maxime.coquelin-nonst@stericsson.com>
@@ -46,210 +46,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Common base to export System-on-Chip related informations through sysfs.
-
-Creation of a "socinfo" directory under /sys/.
-Creation of SoC information entries.
+ST-Ericsson's U8500 implementation.
+Register sysfs SoC interface, and exports:
+	- Machine name
+	- Family name
+	- SoC ID
+	- Silicon process
+	- Silicon revision number.
 
 Signed-off-by: Maxime COQUELIN <maxime.coquelin-nonst@stericsson.com>
----
- Documentation/ABI/testing/sysfs-socinfo |   16 ++++++
- drivers/base/Kconfig                    |    3 +
- drivers/base/Makefile                   |    1 +
- drivers/base/soc.c                      |   79 +++++++++++++++++++++++++++++++
- include/linux/sys_soc.h                 |   50 +++++++++++++++++++
- 5 files changed, 149 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-socinfo
- create mode 100644 drivers/base/soc.c
- create mode 100644 include/linux/sys_soc.h
 
-diff --git a/Documentation/ABI/testing/sysfs-socinfo b/Documentation/ABI/testing/sysfs-socinfo
-new file mode 100644
-index 0000000..afd9da2
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-socinfo
-@@ -0,0 +1,16 @@
-+What:		/sys/socinfo
-+Date:		March 2011
-+contact:	Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
-+Description:
-+		The /sys/socinfo directory contains information about the
-+		System-on-Chip.	It is only available if platform implements it.
-+		This directory contains two kind of attributes :
-+			- common attributes: 
-+				* machine: the name of the machine.
-+				* family: the family name of the SoC
-+			- SoC-specific attributes: The SoC vendor can declare attributes
-+			  to export some strings to user-space, like the serial-number for
-+			  example.
-+
-+Users:
-+		User-space applications which needs these kind of attributes.
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index d57e8d0..372ef3a 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -168,4 +168,7 @@ config SYS_HYPERVISOR
- 	bool
- 	default n
+socinfo : ux500 part 2
+---
+ arch/arm/mach-ux500/Kconfig |    1 +
+ arch/arm/mach-ux500/id.c    |   70 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
+index 7f8620f..08f9859 100644
+--- a/arch/arm/mach-ux500/Kconfig
++++ b/arch/arm/mach-ux500/Kconfig
+@@ -23,6 +23,7 @@ config MACH_U8500
+ 	bool "U8500 Development platform"
+ 	depends on UX500_SOC_DB8500
+ 	select TPS6105X
++	select SYS_SOC
+ 	help
+ 	  Include support for the mop500 development platform.
  
-+config SYS_SOC
-+	bool
-+
- endmenu
-diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-index 5f51c3b..f3bcfb3 100644
---- a/drivers/base/Makefile
-+++ b/drivers/base/Makefile
-@@ -18,6 +18,7 @@ ifeq ($(CONFIG_SYSFS),y)
- obj-$(CONFIG_MODULES)	+= module.o
- endif
- obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
-+obj-$(CONFIG_SYS_SOC) += soc.o
- 
- ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
- 
-diff --git a/drivers/base/soc.c b/drivers/base/soc.c
-new file mode 100644
-index 0000000..046b43b
---- /dev/null
-+++ b/drivers/base/soc.c
-@@ -0,0 +1,79 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2011
-+ * Author: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com> for ST-Ericsson.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#include <linux/sysfs.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/stat.h>
-+#include <linux/slab.h>
+diff --git a/arch/arm/mach-ux500/id.c b/arch/arm/mach-ux500/id.c
+index d35122e..457b48e 100644
+--- a/arch/arm/mach-ux500/id.c
++++ b/arch/arm/mach-ux500/id.c
+@@ -8,6 +8,9 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
 +#include <linux/sys_soc.h>
++#include <linux/slab.h>
++#include <linux/stat.h>
+ 
+ #include <asm/cputype.h>
+ #include <asm/tlbflush.h>
+@@ -105,3 +108,70 @@ void __init ux500_map_io(void)
+ 
+ 	ux500_print_soc_info(asicid);
+ }
 +
-+struct kobject *soc_object;
 +
-+ssize_t show_soc_info(struct kobject *kobj,
-+			struct kobj_attribute *attr, char *buf)
++#ifdef CONFIG_SYS_SOC
++#define U8500_BB_UID_BASE (U8500_BACKUPRAM1_BASE + 0xFC0)
++#define U8500_BB_UID_LENGTH 5
++
++static ssize_t ux500_get_machine(char *buf, struct sysfs_soc_info *si)
 +{
-+	struct sysfs_soc_info *si = container_of(attr,
-+				struct sysfs_soc_info, attr);
-+
-+	if (si->info)
-+		return sprintf(buf, "%s\n", si->info);
-+
-+	return si->get_info(buf, si);
++	return sprintf(buf, "DB%4x\n", dbx500_partnumber());
 +}
 +
-+int __init register_sysfs_soc_info(struct sysfs_soc_info *info, int nb_info)
++static ssize_t ux500_get_soc_id(char *buf, struct sysfs_soc_info *si)
 +{
-+	int i, ret;
++	void __iomem *uid_base;
++	int i;
++	ssize_t sz = 0;
 +
-+	for (i = 0; i < nb_info; i++) {
-+		ret = sysfs_create_file(soc_object, &info[i].attr.attr);
-+		if (ret) {
-+			for (i -= 1; i >= 0; i--)
-+				sysfs_remove_file(soc_object, &info[i].attr.attr);
-+			break;
-+		}
++	if (dbx500_partnumber() == 0x8500) {
++		uid_base = __io_address(U8500_BB_UID_BASE);
++		for (i = 0; i < U8500_BB_UID_LENGTH; i++)
++			sz += sprintf(buf + sz, "%08x", readl(uid_base + i * sizeof(u32)));
++		sz += sprintf(buf + sz, "\n");
++	}
++	else {
++		/* Don't know where it is located for U5500 */
++		sz = sprintf(buf, "N/A\n");
 +	}
 +
-+	return ret;
++	return sz;
 +}
 +
-+static struct attribute *soc_attrs[] = {
-+	NULL,
-+};
-+
-+static struct attribute_group soc_attr_group = {
-+	.attrs = soc_attrs,
-+};
-+
-+int __init register_sysfs_soc(struct sysfs_soc_info *info, size_t num)
++static ssize_t ux500_get_revision(char *buf, struct sysfs_soc_info *si)
 +{
-+	int ret;
++	unsigned int rev = dbx500_revision();
 +
-+	soc_object = kobject_create_and_add("socinfo", NULL);
-+	if (!soc_object) {
-+		ret = -ENOMEM;
-+		goto exit;
-+	}
++	if (rev == 0x01)
++		return sprintf(buf, "%s\n", "ED");
++	else if (rev >= 0xA0)
++		return sprintf(buf, "%d.%d\n" , (rev >> 4) - 0xA + 1, rev & 0xf);
 +
-+	ret = sysfs_create_group(soc_object, &soc_attr_group);
-+	if (ret)
-+		goto kset_exit;
-+
-+	ret = register_sysfs_soc_info(info, num);
-+	if (ret)
-+		goto group_exit;
-+
-+	return 0;
-+
-+group_exit:
-+	sysfs_remove_group(soc_object, &soc_attr_group);
-+kset_exit:
-+	kobject_put(soc_object);
-+exit:
-+	return ret;
++	return sprintf(buf, "%s", "Unknown\n");
 +}
 +
-diff --git a/include/linux/sys_soc.h b/include/linux/sys_soc.h
-new file mode 100644
-index 0000000..05e5529
---- /dev/null
-+++ b/include/linux/sys_soc.h
-@@ -0,0 +1,50 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2011
-+ * Author: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com> for ST-Ericsson.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+#ifndef __SYS_SOC_H
-+#define __SYS_SOC_H
++static ssize_t ux500_get_process(char *buf, struct sysfs_soc_info *si)
++{
++	if (dbx500_id.process == 0x00)
++		return sprintf(buf, "Standard\n");
 +
-+#include <linux/kobject.h>
++	return sprintf(buf, "%02xnm\n", dbx500_id.process);
++}
 +
-+/**
-+ * struct sys_soc_info - SoC exports related informations
-+ * @name: name of the export
-+ * @info: pointer on the key to export
-+ * @get_info: callback to retrieve key if info field is NULL
-+ * @attr: export's sysdev class attribute
-+ */
-+struct sysfs_soc_info {
-+	const char *info;
-+	ssize_t (*get_info)(char *buf, struct sysfs_soc_info *);
-+	struct kobj_attribute attr;
++static struct sysfs_soc_info soc_info[] = {
++	SYSFS_SOC_ATTR_CALLBACK("machine", ux500_get_machine),
++	SYSFS_SOC_ATTR_VALUE("family", "Ux500"),
++	SYSFS_SOC_ATTR_CALLBACK("soc_id", ux500_get_soc_id),
++	SYSFS_SOC_ATTR_CALLBACK("revision", ux500_get_revision),
++	SYSFS_SOC_ATTR_CALLBACK("process", ux500_get_process),
 +};
 +
-+ssize_t show_soc_info(struct kobject *, struct kobj_attribute *, char *);
-+
-+#define SYSFS_SOC_ATTR_VALUE(_name, _value) {		\
-+	.attr.attr.name = _name,			\
-+	.attr.attr.mode = S_IRUGO,			\
-+	.attr.show	= show_soc_info,		\
-+	.info           = _value,			\
++static int __init ux500_sys_soc_init(void)
++{
++	return register_sysfs_soc(soc_info, ARRAY_SIZE(soc_info));
 +}
 +
-+#define SYSFS_SOC_ATTR_CALLBACK(_name, _callback) {	\
-+	.attr.attr.name = _name,			\
-+	.attr.attr.mode = S_IRUGO,			\
-+	.attr.show	= show_soc_info,		\
-+	.get_info       = _callback,			\
-+}
++module_init(ux500_sys_soc_init);
++#endif
 +
-+/**
-+ * register_sys_soc - register the soc information
-+ * @name: name of the machine
-+ * @info: pointer on the info table to export
-+ * @num: number of info to export
-+ *
-+ * NOTE: This function must only be called once
-+ */
-+int register_sysfs_soc(struct sysfs_soc_info *info, size_t num);
-+
-+#endif /* __SYS_SOC_H */
 -- 
 1.7.1
 
