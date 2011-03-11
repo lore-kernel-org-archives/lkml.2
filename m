@@ -1,59 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1CKDso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 22:48:44 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:27174 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab1CKDsm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 22:48:42 -0500
-Date: Fri, 11 Mar 2011 12:48:31 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: linux-next: manual merge of the cpufreq tree with the s5p tree
-In-reply-to: <20110311143230.c5d65b3c.sfr@canb.auug.org.au>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Dave Jones'" <davej@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Rafael J. Wysocki'" <rjw@sisk.pl>
-Message-id: <00f101cbdf9f$361b1610$a2514230$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvfnP6gxvbzjNWxSj2dEZOfhUE60gAAhFOw
-References: <20110311133542.8ffb094e.sfr@au1.ibm.com>
- <20110311143230.c5d65b3c.sfr@canb.auug.org.au>
+	id S1752653Ab1CKDvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 22:51:31 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50630 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249Ab1CKDv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 22:51:28 -0500
+Message-ID: <4D799C6E.1050101@cn.fujitsu.com>
+Date: Fri, 11 Mar 2011 11:52:14 +0800
+From: Mi Jinlong <mijinlong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, roel <roel.kluin@gmail.com>,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: wrong index used in inner loop
+References: <4D76A06A.4090405@gmail.com> <20110309154230.66bc2c36.akpm@linux-foundation.org> <20110310180800.GA31984@fieldses.org>
+In-Reply-To: <20110310180800.GA31984@fieldses.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-11 11:50:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-11 11:50:11,
+	Serialize complete at 2011-03-11 11:50:11
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
+
+
+J. Bruce Fields:
+> On Wed, Mar 09, 2011 at 03:42:30PM -0800, Andrew Morton wrote:
+>> On Tue, 08 Mar 2011 22:32:26 +0100
+>> roel <roel.kluin@gmail.com> wrote:
+>>
+>>> Index i was already used in the outer loop
+>>>
+>>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+>>> ---
+>>>  fs/nfsd/nfs4xdr.c |    4 ++--
+>>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> Not 100% sure this one is needed but it looks suspicious.
+>>>
+>>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+>>> index 1275b86..615f0a9 100644
+>>> --- a/fs/nfsd/nfs4xdr.c
+>>> +++ b/fs/nfsd/nfs4xdr.c
+>>> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>>  
+>>>  	u32 dummy;
+>>>  	char *machine_name;
+>>> -	int i;
+>>> +	int i, j;
+>>>  	int nr_secflavs;
+>>>  
+>>>  	READ_BUF(16);
+>>> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>>  			READ_BUF(4);
+>>>  			READ32(dummy);
+>>>  			READ_BUF(dummy * 4);
+>>> -			for (i = 0; i < dummy; ++i)
+>>> +			for (j = 0; j < dummy; ++j)
+>>>  				READ32(dummy);
+>>>  			break;
+>>>  		case RPC_AUTH_GSS:
+>> ooh, big bug.
+>>
+>> I wonder why it was not previously detected at runtime.  Perhaps
+>> nr_secflavs is always 1.
 > 
-> Hi all,
+> Yeah, no client uses this calback security information yet.
 > 
-> On Fri, 11 Mar 2011 13:35:42 +1100 Stephen Rothwell <sfr@au1.ibm.com>
-wrote:
-> >
-> 
-> Please do not reply to the sender address on the preceding email (the
-> ibm.com one), please reply to this one instead.  Sorry for the
-> inconvenience.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+> Mi Jinlong, do you think this is something we could have caught with
+> another pynfs test?
 
-Oops, sorry. I did :(
-I read this after that.
+  Yes, we must test it.
 
-Sorry for bothering....
+  After testing, the following test case is OK.
 
-Thanks.
-
-Best regards,
-Kgene.
 --
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+thanks,
+Mi Jinlong
+
+
+>From 1afac3444b37bac66970f19c409660a304a53fb4 Mon Sep 17 00:00:00 2001
+From: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Date: Sun, 11 Mar 2011 09:05:22 +0800
+Subject: [PATCH] CLNT: test a decode problem which use wrong index
+
+Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+---
+ nfs4.1/server41tests/st_create_session.py |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/nfs4.1/server41tests/st_create_session.py b/nfs4.1/server41tests/st_create_session.py
+index ff55d10..e3a8421 100644
+--- a/nfs4.1/server41tests/st_create_session.py
++++ b/nfs4.1/server41tests/st_create_session.py
+@@ -252,6 +252,22 @@ def testCbSecParms(t, env):
+     c1 = env.c1.new_client(env.testname(t))
+     sess1 = c1.create_session(sec=sec)
+ 
++def testCbSecParmsDec(t, env):
++    """A decode problem was found at NFS server that 
++       wrong index used in inner loop, 
++       http://marc.info/?l=linux-kernel&m=129961996327640&w=2
++
++    FLAGS: create_session all
++    CODE: CSESS16a
++    """
++    sec = [callback_sec_parms4(AUTH_NONE),
++           callback_sec_parms4(RPCSEC_GSS, cbsp_gss_handles=gss_cb_handles4(RPC_GSS_SVC_PRIVACY, "Handle from server", "Client handle")),
++           callback_sec_parms4(AUTH_SYS, cbsp_sys_cred=authsys_parms(5, "Random machine name", 7, 11, [])),
++           ]
++                               
++    c1 = env.c1.new_client(env.testname(t))
++    sess1 = c1.create_session(sec=sec)
++
+ def testRdmaArray0(t, env):
+     """Test 0 length rdma arrays
+ 
+-- 
+1.7.4.1
+
 
