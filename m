@@ -1,123 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab1CKACI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:02:08 -0500
-Received: from kroah.org ([198.145.64.141]:46843 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754438Ab1CJX5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:37 2011
-Message-Id: <20110310235537.042357423@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:16 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mohammed Shafi <mshajakhan@atheros.com>,
-        =?ISO-8859-15?q?Thomas=20B=E4chler?= <thomas@archlinux.org>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Mohammed Shajakhan <Mohammed.Shajakhan@atheros.com>
-Subject: [patch 10/29] ath9k: Fix ath9k prevents CPU to enter C3 states
-In-Reply-To: <20110310235548.GA10103@kroah.com>
+	id S1754721Ab1CKACU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 19:02:20 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39853 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754119Ab1CKACQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 19:02:16 -0500
+Date: Thu, 10 Mar 2011 16:01:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Daniel Poelzleithner <poelzi@poelzi.org>
+Subject: Re: [PATCH v4] memcg: fix leak on wrong LRU with FUSE
+Message-Id: <20110310160116.289b378f.akpm@linux-foundation.org>
+In-Reply-To: <20110311084551.883c8aeb.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110308135612.e971e1f3.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110308181832.6386da5f.nishimura@mxp.nes.nec.co.jp>
+	<20110309150750.d570798c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110309164801.3a4c8d10.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110309100020.GD30778@cmpxchg.org>
+	<20110310083659.fd8b1c3f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110310144752.289483d4.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110310150428.f175758c.nishimura@mxp.nes.nec.co.jp>
+	<20110310142029.5d108e37.akpm@linux-foundation.org>
+	<20110311084551.883c8aeb.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Fri, 11 Mar 2011 08:45:51 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-------------------
+> On Thu, 10 Mar 2011 14:20:29 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Thu, 10 Mar 2011 15:04:28 +0900
+> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > 
+> > > > Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> > > 
+> > > I hope this can fix the original BZ case.
+> > 
+> > Do you recall the buzilla bug number?
+> > 
+> 
+> Bug 30432
+
+OK, well please let's not lose track of these things.  It's useful for
+maintaining the bug database and it helps with the rather important
+step of crediting the bug reporters who help us.
+
+> The patch works only when the user use FUSE.
+> We need to confirm that.
+
+Daniel, are you able to test the proposed fix?
 
 
-From: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
 
-This is a backport of upstream commit 0f5cd45960173ba5b36727decbb4a241cbd35ef9.
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-The DMA latency issue is observed only in Intel pinetrail platforms
-but in the driver we had a default PM-QOS value of 55. This caused
-unnecessary power consumption and battery drain in other platforms.
+fs/fuse/dev.c::fuse_try_move_page() does
 
-Remove the pm-qos thing in the driver code and address the throughput
-issue in Intel pinetrail platfroms in user space using any one of
-the scripts in below links:
+   (1) remove a page by ->steal()
+   (2) re-add the page to page cache
+   (3) link the page to LRU if it was not on LRU at (1)
 
-http://www.kernel.org/pub/linux/kernel/people/mcgrof/scripts/cpudmalatency.c
-http://johannes.sipsolutions.net/files/netlatency.c.txt
+This implies the page is _on_ LRU when it's added to radix-tree.  So, the
+page is added to memory cgroup while it's on LRU.  because LRU is lazy and
+no one flushs it.
 
-More details can be found in the following bugzilla link:
+This is the same behavior as SwapCache and needs special care as
+ - remove page from LRU before overwrite pc->mem_cgroup.
+ - add page to LRU after overwrite pc->mem_cgroup.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=27532
+And we need to taking care of pagevec.
 
-Signed-off-by: Thomas Bächler <thomas@archlinux.org>
-Acked-by: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+If PageLRU(page) is set before we add PCG_USED bit, the page will not be
+added to memcg's LRU (in short period).  So, regardlress of PageLRU(page)
+value before commit_charge(), we need to check PageLRU(page) after
+commit_charge().
 
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=30432
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Balbir Singh <balbir@in.ibm.com>
+Reported-by: Daniel Poelzleithner <poelzi@poelzi.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/net/wireless/ath/ath9k/ath9k.h |    3 ---
- drivers/net/wireless/ath/ath9k/init.c  |    4 ----
- drivers/net/wireless/ath/ath9k/main.c  |    4 ----
- 3 files changed, 11 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -21,7 +21,6 @@
- #include <linux/device.h>
- #include <linux/leds.h>
- #include <linux/completion.h>
--#include <linux/pm_qos_params.h>
- 
- #include "debug.h"
- #include "common.h"
-@@ -647,8 +646,6 @@ struct ath_softc {
- 	struct ath_descdma txsdma;
- 
- 	struct ath_ant_comb ant_comb;
--
--	struct pm_qos_request_list pm_qos_req;
- };
- 
- struct ath_wiphy {
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -758,9 +758,6 @@ int ath9k_init_device(u16 devid, struct
- 	ath_init_leds(sc);
- 	ath_start_rfkill_poll(sc);
- 
--	pm_qos_add_request(&sc->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
--			   PM_QOS_DEFAULT_VALUE);
--
- 	return 0;
- 
- error_world:
-@@ -829,7 +826,6 @@ void ath9k_deinit_device(struct ath_soft
- 	}
- 
- 	ieee80211_unregister_hw(hw);
--	pm_qos_remove_request(&sc->pm_qos_req);
- 	ath_rx_cleanup(sc);
- 	ath_tx_cleanup(sc);
- 	ath9k_deinit_softc(sc);
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1245,8 +1245,6 @@ static int ath9k_start(struct ieee80211_
- 			ath9k_btcoex_timer_resume(sc);
- 	}
- 
--	pm_qos_update_request(&sc->pm_qos_req, 55);
--
- mutex_unlock:
- 	mutex_unlock(&sc->mutex);
- 
-@@ -1425,8 +1423,6 @@ static void ath9k_stop(struct ieee80211_
- 
- 	sc->sc_flags |= SC_OP_INVALID;
- 
--	pm_qos_update_request(&sc->pm_qos_req, PM_QOS_DEFAULT_VALUE);
--
- 	mutex_unlock(&sc->mutex);
- 
- 	ath_print(common, ATH_DBG_CONFIG, "Driver halt\n");
+ mm/memcontrol.c |   70 ++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 52 insertions(+), 18 deletions(-)
 
+diff -puN mm/memcontrol.c~memcg-fix-leak-on-wrong-lru-with-fuse mm/memcontrol.c
+--- a/mm/memcontrol.c~memcg-fix-leak-on-wrong-lru-with-fuse
++++ a/mm/memcontrol.c
+@@ -926,18 +926,28 @@ void mem_cgroup_add_lru_list(struct page
+ }
+ 
+ /*
+- * At handling SwapCache, pc->mem_cgroup may be changed while it's linked to
+- * lru because the page may.be reused after it's fully uncharged (because of
+- * SwapCache behavior).To handle that, unlink page_cgroup from LRU when charge
+- * it again. This function is only used to charge SwapCache. It's done under
+- * lock_page and expected that zone->lru_lock is never held.
++ * At handling SwapCache and other FUSE stuff, pc->mem_cgroup may be changed
++ * while it's linked to lru because the page may be reused after it's fully
++ * uncharged. To handle that, unlink page_cgroup from LRU when charge it again.
++ * It's done under lock_page and expected that zone->lru_lock isnever held.
+  */
+-static void mem_cgroup_lru_del_before_commit_swapcache(struct page *page)
++static void mem_cgroup_lru_del_before_commit(struct page *page)
+ {
+ 	unsigned long flags;
+ 	struct zone *zone = page_zone(page);
+ 	struct page_cgroup *pc = lookup_page_cgroup(page);
+ 
++	/*
++	 * Doing this check without taking ->lru_lock seems wrong but this
++	 * is safe. Because if page_cgroup's USED bit is unset, the page
++	 * will not be added to any memcg's LRU. If page_cgroup's USED bit is
++	 * set, the commit after this will fail, anyway.
++	 * This all charge/uncharge is done under some mutual execustion.
++	 * So, we don't need to taking care of changes in USED bit.
++	 */
++	if (likely(!PageLRU(page)))
++		return;
++
+ 	spin_lock_irqsave(&zone->lru_lock, flags);
+ 	/*
+ 	 * Forget old LRU when this page_cgroup is *not* used. This Used bit
+@@ -948,12 +958,15 @@ static void mem_cgroup_lru_del_before_co
+ 	spin_unlock_irqrestore(&zone->lru_lock, flags);
+ }
+ 
+-static void mem_cgroup_lru_add_after_commit_swapcache(struct page *page)
++static void mem_cgroup_lru_add_after_commit(struct page *page)
+ {
+ 	unsigned long flags;
+ 	struct zone *zone = page_zone(page);
+ 	struct page_cgroup *pc = lookup_page_cgroup(page);
+ 
++	/* taking care of that the page is added to LRU while we commit it */
++	if (likely(!PageLRU(page)))
++		return;
+ 	spin_lock_irqsave(&zone->lru_lock, flags);
+ 	/* link when the page is linked to LRU but page_cgroup isn't */
+ 	if (PageLRU(page) && !PageCgroupAcctLRU(pc))
+@@ -2431,9 +2444,26 @@ static void
+ __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
+ 					enum charge_type ctype);
+ 
++static void
++__mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *mem,
++					enum charge_type ctype)
++{
++	struct page_cgroup *pc = lookup_page_cgroup(page);
++	/*
++	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
++	 * is already on LRU. It means the page may on some other page_cgroup's
++	 * LRU. Take care of it.
++	 */
++	mem_cgroup_lru_del_before_commit(page);
++	__mem_cgroup_commit_charge(mem, page, 1, pc, ctype);
++	mem_cgroup_lru_add_after_commit(page);
++	return;
++}
++
+ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 				gfp_t gfp_mask)
+ {
++	struct mem_cgroup *mem = NULL;
+ 	int ret;
+ 
+ 	if (mem_cgroup_disabled())
+@@ -2468,14 +2498,22 @@ int mem_cgroup_cache_charge(struct page 
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
+ 
+-	if (page_is_file_cache(page))
+-		return mem_cgroup_charge_common(page, mm, gfp_mask,
+-				MEM_CGROUP_CHARGE_TYPE_CACHE);
++	if (page_is_file_cache(page)) {
++		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &mem, true);
++		if (ret || !mem)
++			return ret;
+ 
++		/*
++		 * FUSE reuses pages without going through the final
++		 * put that would remove them from the LRU list, make
++		 * sure that they get relinked properly.
++		 */
++		__mem_cgroup_commit_charge_lrucare(page, mem,
++					MEM_CGROUP_CHARGE_TYPE_CACHE);
++		return ret;
++	}
+ 	/* shmem */
+ 	if (PageSwapCache(page)) {
+-		struct mem_cgroup *mem;
+-
+ 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &mem);
+ 		if (!ret)
+ 			__mem_cgroup_commit_charge_swapin(page, mem,
+@@ -2532,17 +2570,13 @@ static void
+ __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
+ 					enum charge_type ctype)
+ {
+-	struct page_cgroup *pc;
+-
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 	if (!ptr)
+ 		return;
+ 	cgroup_exclude_rmdir(&ptr->css);
+-	pc = lookup_page_cgroup(page);
+-	mem_cgroup_lru_del_before_commit_swapcache(page);
+-	__mem_cgroup_commit_charge(ptr, page, 1, pc, ctype);
+-	mem_cgroup_lru_add_after_commit_swapcache(page);
++
++	__mem_cgroup_commit_charge_lrucare(page, ptr, ctype);
+ 	/*
+ 	 * Now swap is on-memory. This means this page may be
+ 	 * counted both as mem and swap....double count.
+_
 
