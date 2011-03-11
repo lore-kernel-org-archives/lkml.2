@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab1CKN2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 08:28:53 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:5442 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab1CKN2v (ORCPT
+	id S1752670Ab1CKNjH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 08:39:07 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:37308 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750735Ab1CKNjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 08:28:51 -0500
-X-IronPort-AV: E=Sophos;i="4.62,303,1297036800"; 
-   d="scan'208";a="4744792"
-Subject: Re: [Xen-devel] Re: [GIT PATCH v2 0/14] xen: events: cleanups +
- ween off nr_irqs
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	Fri, 11 Mar 2011 08:39:02 -0500
+X-Authenticated: #911537
+X-Provags-ID: V01U2FsdGVkX19xi0kKJcFxpxqdI9T65/inmsSKimSx3YsEUH8Eat
+	F4d1fa1kSO89Rk
+Date: Fri, 11 Mar 2011 14:38:52 +0100
+From: torbenh <torbenh@gmx.de>
+To: Christian Riesch <christian.riesch@omicron.at>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        john stultz <johnstul@us.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-In-Reply-To: <1299842689.17339.1986.camel@zakaz.uk.xensource.com>
-References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
-	 <20110310225726.GA2983@dumpdata.com>
-	 <1299834774.17339.1799.camel@zakaz.uk.xensource.com>
-	 <1299842689.17339.1986.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Fri, 11 Mar 2011 13:28:48 +0000
-Message-ID: <1299850128.17339.2007.camel@zakaz.uk.xensource.com>
+        Richard Cochran <richard.cochran@omicron.at>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [PATCH 2/3] ptp: add a software clock based on
+ clock_monotonic_raw
+Message-ID: <20110311133852.GB5553@siel.b>
+Mail-Followup-To: Christian Riesch <christian.riesch@omicron.at>,
+	Richard Cochran <richardcochran@gmail.com>,
+	john stultz <johnstul@us.ibm.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Richard Cochran <richard.cochran@omicron.at>,
+	"tglx@linutronix.de" <tglx@linutronix.de>
+References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
+ <1299173174-348-3-git-send-email-torbenh@gmx.de>
+ <1299180844.28285.111.camel@work-vm>
+ <20110304064639.GD3824@riccoc20.at.omicron.at>
+ <1299355687.28285.130.camel@work-vm>
+ <20110306132834.GA11790@riccoc20.at.omicron.at>
+ <20110311111321.GA5553@siel.b>
+ <95DC1AA8EC908B48939B72CF375AA5E3011C9E20A4@alice.at.omicron.at>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <95DC1AA8EC908B48939B72CF375AA5E3011C9E20A4@alice.at.omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-11 at 11:24 +0000, Ian Campbell wrote:
-> On Fri, 2011-03-11 at 09:12 +0000, Ian Campbell wrote:
-> > On Thu, 2011-03-10 at 22:57 +0000, Konrad Rzeszutek Wilk wrote:
-> > > On Thu, Mar 10, 2011 at 04:07:59PM +0000, Ian Campbell wrote:
-> > > > Changes since last time:
-> > > >       * correct return value of xen_irq_from_pirq
-> > > >       * WARN if a pirq cannot be allocated for a legacy IRQ
-> > > >       * Updated checking comment of "xen: events: do not workaround
-> > > >         too-small nr_irqs"
-> > > > 
-> > > > The following series makes a few cleanups to the Xen IRQ infrastructure.
-> > > > The most important thing is that it removes the need to know about
-> > > > nr_irqs and in particular the reliance on nr_irqs being static.
-> > > > 
-> > > > Apart from being generally a good thing this is needed because in 2.6.39
-> > > > nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
-> > > > "genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
-> > > > at 2.6.39.
-> > > > 
-> > > > Dynamically growing nr_irqs also allows us to remove the workaround
-> > > > which eats into GSI space if a dynamic IRQ cannot be allocated.
-> > > > 
-> > > > There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
-> > > > have gone in before, but the penultimate patch really needed to be
-> > > > simultaneous) so I haven't bothered to try and pull anything from tip
-> > > > into this branch -- it should all be resolved during the merge window
-> > > > and bisection won't be too broken since the "eat into GSI space"
-> > > > workaround only appears to be needed on a small number of older
-> > > > platforms (qemu being the main exception).
-> > > 
-> > > <nods>
-> > > > 
-> > > > I have tested:
-> > > >       * Domain 0 on real h/w and under qemu
-> > > >       * PV guest, including migration and passthrough of both VF and PF.
-> > > >       * PVHVM guest, including migration and passthrough of both VF and
-> > > >         PF.
-> > > 
-> > > I am having difficulties with passthrough of an USB device. Somehow the
-> > > irq count is not going up at all (both in dom0 and domU) and it looks to
-> > > be doing just simple polling. I've rebased the xen-pciback to be on top
-> > > of your changes and apply cleanly. The whole lot is now in #master
-> > > 
-> > > MSI and MSI-X devices work just fine in both Dom0 and DomU case so
-> > > it is something special with the legacy IRQs. Probably forgot something
-> > > simple...
-> > 
-> > Thanks, I'll take a look. Did you mean "legacy IRQ" as in <16 or as in
-> > not-MSI(-X)?
+On Fri, Mar 11, 2011 at 12:37:57PM +0100, Christian Riesch wrote:
+> Torben,
 > 
-> Works for me in a PV guest, at least under the second interpretation (I
-> don't have any useful devices IRQ < 16). This is with your pciback 0.5.
+> On Friday, March 11, 2011 12:13, torbenh wrote:
+> >On the audio lists, we have a guy now claiming that software ptp would
+> >confuse the whole h/w ptp infrastructure. His main agenda seems to be to
+> >prevent a software only ptp/avb implementatation.
 > 
-> I see something like what you describe under HVM, although pciback is
-> not used in that case. xc_physdev_map_pirq is used but not with
-> the /sys/.../bdf node AFAICT.
-> 
-> More digging required I guess...
+> could you please post a link to that discussion?
 
-If I just pass through the EHCI device it doesn't work. However if I
-also pass-through the associated UHCI controller then I do see the
-usb-storage device, interrupts and all. The EHCI controller still
-doesn't work though. Note that with a PV guest passing-through the EHCI
-controller by itself does work.
+duncan started somewhat like this:
+http://article.gmane.org/gmane.comp.audio.jackit/23606
+http://article.gmane.org/gmane.comp.audio.jackit/23612
 
-The issue I'm seeing seems to have more to do with accessing the memory
-mapped BAR than IRQs though:
+then it seems that he somehow turned his head:
+http://www.mail-archive.com/linux-audio-dev@lists.linuxaudio.org/msg11765.html
 
-        ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-        PHYSDEVOP_map_pirq mapped gsi 46 to pirq 18
-        xen_allocate_pirq_gsi for gsi 46, pirq 18 "ioapic-level"
-        xen: --> irq=46, pirq=18
-        ehci_hcd 0000:00:07.0: PCI INT C -> GSI 46 (level, low) -> IRQ 46
-        ehci: remapped rsrc 0xf3021000 to c8064000
-        ehci_hcd 0000:00:07.0: setting latency timer to 64
-        ehci_hcd 0000:00:07.0: EHCI Host Controller
-        ehci_hcd 0000:00:07.0: new USB bus registered, assigned bus number 1
-        ehci_reset: handshake failed with -19. regs c80640ff
-        ehci_hcd 0000:00:07.0: Enabling legacy PCI PM
-        __startup_pirq: irq46 bound to evtchn 19
-        ehci_hcd 0000:00:07.0: irq 46, io mem 0xf3021000
-        ehci_reset: handshake failed with -19. regs c80640ff
-        ehci_run: ehci_reset failed with -19
-        ehci_hcd 0000:00:07.0: startup error -19
-        ehci_hcd 0000:00:07.0: USB bus 1 deregistered
-        ehci_hcd 0000:00:07.0: PCI INT C disabled
-        ehci_hcd 0000:00:07.0: init 0000:00:07.0 fail, -19
+maybe we have a communication problem, with the definition of "play"
+i only want to be able to generate an RTP stream on my computer.
 
-The -19 is -ENODEV from driver/usb/host/ehci-hcd.c:handshake() which is
-a readl with nothing to do with IRQs.
+the actual conversion from packets to analog signal would be happening on a
+networked soundcard. the goal is to achieve low latency in the range of
+2-3ms ...
 
-Ian.
+maybe he interprets playing the rtp stream, as converting the rtp
+packets to analog audio.
+this obviously wouldnt work with software ptp, because we would need
+nanoseconds accuracy of the clock.
 
+but to just create an rtp stream, where a 2ms buffer doesnt underflow,
+just requires a clock accuracy of 500us.
+
+all in all this discussion might be a bit confusing.
+
+
+> Thanks,
+> Christian
+
+-- 
+torben Hohn
