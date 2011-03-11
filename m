@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1CKId4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 03:33:56 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60452 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab1CKIdz (ORCPT
+	id S1753380Ab1CKJGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 04:06:45 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:48632 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1CKJGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 03:33:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EjreNyrTBjJFjt7PGOSJATXs7QRnHcO6R1bSiIdZ5QdMaQVuFXOk3w/SkpZZ2qv56t
-         GIpbuGWQSpeQ5I91ypEVACFQ/mBapHiMvxpNtcdj89E9+Gd9VL7ZfloDm3/jsdysOnlv
-         +V79oeI5jTU4ryDUm4tiGDJXYxsIUG8gEqvyA=
-Date: Fri, 11 Mar 2011 09:33:51 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
- handling
-Message-ID: <20110311083351.GD13038@htj.dyndns.org>
-References: <4D6E91EC.6040906@kernel.org>
- <20110302190208.GD28266@mtj.dyndns.org>
- <4D6E9541.2040201@kernel.org>
- <20110302191338.GE28266@mtj.dyndns.org>
- <4D6EA975.8070200@kernel.org>
- <20110302205704.GF28266@mtj.dyndns.org>
- <4D6EB335.8000306@kernel.org>
- <20110303061711.GG28266@mtj.dyndns.org>
- <4D791C9F.1010500@kernel.org>
- <20110311082938.GC13038@htj.dyndns.org>
+	Fri, 11 Mar 2011 04:06:35 -0500
+Message-ID: <540c8e591f4cada4fb4646e69fd776e4.squirrel@webmail.greenhost.nl>
+In-Reply-To: <b7da2f$qmkuio@fmsmga001.fm.intel.com>
+References: <5e60ae646a15c73f5be0c309f51d1c63.squirrel@webmail.greenhost.nl>
+    <b7da2f$qmkuio@fmsmga001.fm.intel.com>
+Date: Fri, 11 Mar 2011 10:06:26 +0100 (CET)
+Subject: Re: drm/i915: Fix DPMS and suspend interaction for intel_panel.c
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Chris Wilson" <chris@chris-wilson.co.uk>
+Cc: "Keith Packard" <keithp@keithp.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Takashi Iwai" <tiwai@suse.de>,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110311082938.GC13038@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: a2d32f98be707cbcda8602d5fffa976a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 09:29:38AM +0100, Tejun Heo wrote:
-> Also, I don't think your patch is correct.  Even if there is phys_dist
-                                                              ^
-							      no
-> table, emu distance tables should be built because emulated nids don't
-> map to physical nids one to one.  ie. Two different emulated nids can
-> share a physical node and the distance table should explicitly reflect
-> that.
+On Fri, March 11, 2011 09:07, Chris Wilson wrote:
+>> Nothing guarantees that those calls will be balanced, so having
+>> backlight_enabled makes no sense, as the real state can change
+>> without the panel code noticing. So keep things as stateless as
+>> possible.
+>
+> The problem is wider than described since the BIOS/ACPI may modify
+> the registers without notifying the driver, and we fail to honour
+> any user requests whilst the panel is off. Also, there is the greater
+> of problem that the PWM registers simply have no effect on many
+> machines, and we need to make an ACPI call to adjust the backlight.
 
--- 
-tejun
+Actually, that makes more sense than what ASLE does: There you
+have to make an ACPI call which generates the ASLE interrupt and
+lets the driver change it, while the BIOS already knows how to
+change the backlight, as it does it at boot.
+
+Is the PWM totally ignored, or only when non-zero? Otherwise you
+may need to clear bit 31 in BLC_PWM_CLT2 instead. That might be a
+better way to enable/disable the backlight for gen >= 4 hardware
+anyway, as you don't need to store the current backlight anymore.
+But this is 2.6.39 material for sure.
+
+> However, this behaviour has been there since the inception, we can
+> wait until the next merge cycle.
+
+I think it was introduced in 2.6.37, at least that when the backlight
+problems started for me.
+
+In my opinion this is a patch that fixes a bug by making the code
+simpler, so I would merge it this cycle. I am uncertain whether
+this bug is important enough to get fixed in stable too though.
+Maybe once it has proven itself in 2.6.38 for a while. If you want
+to fix it the next cycle then that's fine too, but only delays
+things. I think at this point the backlight problems are known
+well enough that the fix is obvious and low risk enough, but I've
+sent too hasty patches before.
+
+Greetings,
+
+Indan
+
+
