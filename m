@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab1CKSvf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:51:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43122 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab1CKSvc (ORCPT
+	id S1753532Ab1CKSvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:51:33 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49241 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab1CKSvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:51:32 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1JSC8Zogx6oCcTooWtcA:9 a=5MCM3AF_gMplxGXQLYzRXU5amSsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: kernel git bisect question
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Mark Hounschell <markh@compro.net>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110311183711.GA559@merkur.ravnborg.org>
-References: <4D793414.4090206@compro.net>
-	 <20110310215438.GE12521@home.goodmis.org> <4D7A6A99.5070304@compro.net>
-	 <20110311183711.GA559@merkur.ravnborg.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 11 Mar 2011 13:51:30 -0500
-Message-ID: <1299869490.9910.49.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Mar 2011 13:51:31 -0500
+Date: Fri, 11 Mar 2011 10:51:18 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation
+	problem
+Message-ID: <20110311185118.GB1110@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110310235722.GA1110@tux1.beaverton.ibm.com> <1299860233-sup-4443@think>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299860233-sup-4443@think>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-11 at 19:37 +0100, Sam Ravnborg wrote:
-> On Fri, Mar 11, 2011 at 01:31:53PM -0500, Mark Hounschell wrote:
-> > On 03/10/2011 04:54 PM, Steven Rostedt wrote:
-> > > On Thu, Mar 10, 2011 at 03:27:00PM -0500, Mark Hounschell wrote:
-> > >> Between git bisect [good | bad ]s should I always "make clean" or can I
-> > >> count on the build system to take care of everything properly?
-> > > 
+On Fri, Mar 11, 2011 at 11:34:05AM -0500, Chris Mason wrote:
+> Excerpts from Darrick J. Wong's message of 2011-03-10 18:57:22 -0500:
+> > On Tue, Mar 08, 2011 at 03:56:26PM +1100, Dave Chinner wrote:
 > > 
-> > I'm trying to bisect between 2.6.35 and 2.6.36. What have I done wrong?
-> > Here is exactly what I've done. Why after my second "git bisect bad" do
-> > I get a Makefile for 2.6.35-rc1 and then after the fourth I get a Makefile
-> > for 2.6.34??
+> > > On Fri, Mar 04, 2011 at 01:07:24PM -0800, Darrick J. Wong wrote:
+> > > > On Mon, Feb 28, 2011 at 07:54:05AM -0500, Chris Mason wrote:
+> > > > > Excerpts from Darrick J. Wong's message of 2011-02-24 13:27:32 -0500:
+> > > > > > On Thu, Feb 24, 2011 at 12:37:53PM -0500, Chris Mason wrote:
+> > > > > > > Excerpts from Jan Kara's message of 2011-02-24 11:47:58 -0500:
+> > > > > > > > On Wed 23-02-11 15:35:11, Chris Mason wrote:
+> > > > > > > > > Excerpts from Joel Becker's message of 2011-02-23 15:24:47 -0500:
+> > > > > > > > > > On Tue, Feb 22, 2011 at 11:45:44AM -0500, Martin K. Petersen wrote:
+> > > > > > > > > > > Also, DIX is only the tip of the iceberg. Many other impending
+> > > > > > > > > > > technologies feature checksums and require pages to be stable during I/O
+> > > > > > > > > > > due to checksumming, encryption and so on.
+> > > > > > > > > > > 
+> > > > > > > > > > > The VM is already trying to do the right thing. We just need the
+> > > > > > > > > > > relevant filesystems to catch up.
+> > > > > > > > > > 
+> > > > > > > > > >     ocfs2 handles stable metadata for its checksums when feeding
+> > > > > > > > > > things to the journal.  If we're doing pagecache-based I/O, is the
+> > > > > > > > > > pagecache going to help here for data?
+> > > > > > > > > 
+> > > > > > > > > Data is much easier than metadata.  All you really need is to wait on
+> > > > > > > > > writeback in file_write, wait on writeback in page_mkwrite, and make
+> > 
+> > Hrm... I've been looking for a file_write in ext4; was the aio_write function
+> > pointer what you had in mind here?
 > 
-> The development is not linear.
-> So you see a commit developed on top of 2.6.34 that was included in 2.6.35.
-> This is normal.
+> Your change to grab_cache_page_write_begin looks good to me, at least
+> for ext4.  For ext3 you have to actually go in and wait for each of the
+> buffer heads in the page, since ext3 (and reiserfs) will write the buffer heads
+> directly without using writepage.
 
-Right.
+Heh, I hadn't really given much thought to ext2/3 yet.  I'm still trying to
+figure out what causes the occasional ext4 failures. :)
 
-Mark, don't be embarrassed, this is a common question for those that
-start using git bisect. Because of the way git merges branches, you may
-end up in an old version of a kernel, while looking between two newer
-versions.
+> Have you confirmed by looking at the block mapping that your crc errors
+> are from data blocks?
 
+Yes, debugfs confirms that they are data blocks.
 
-
-    v2.6.36
-        |
-        +
-        |\
-        | \
-v2.6.35 +  \
-        |   +---- developers branch
-        |  /
-        | /
-        |/
-        +--- v 2.6.34
-        |
-
-If a developer branched off of 2.6.34 and then his work got merged after
-v2.6.35, your bisect may easily go into that developers branch between
-2.6.35 and 2.6.36, where you will suddenly see 2.6.34 appear and
-disappear within bisect iterations. IOW, don't trust what you see in the
-Makefile ;)
-
-Understand?
-
--- Steve
-
-
-
-
+--D
