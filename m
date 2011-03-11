@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab1CKSaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:30:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab1CKSaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:30:08 -0500
-Message-ID: <4D7A6A26.5000501@redhat.com>
-Date: Fri, 11 Mar 2011 19:29:58 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1753249Ab1CKSbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:31:07 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58629 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab1CKSbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 13:31:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=miFACWEhPtRMGO/kVChuVPZyAebFKs1x1lypPQrXWpsxayWzojFiXnDche2hckcI3F
+         dTpdaAjqTNdpVaIzYlPGGwe3+tKl9mmcC6624EjVPpuA9EDYJVMPDxjjDFlD33TgYSn7
+         /zpjz8EF3ew97RTKxioej1PcBZ1RxIfeJWB4A=
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        Andi Kleen <ak@linux.intel.com>, dm-crypt@saout.de,
-        linux-kernel@vger.kernel.org, Alasdair G Kergon <agk@redhat.com>
-Subject: Re: dm-crypt: Performance Regression 2.6.37 -> 2.6.38-rc8
-References: <20110308164508.GA8729@darkside.kls.lan> <20110310165730.GC20504@alboin.amr.corp.intel.com> <20110310175411.GB25027@darkside.kls.lan> <20110311011842.GA5698@alboin.amr.corp.intel.com> <20110311180334.GA11382@darkside.kls.lan>
-In-Reply-To: <20110311180334.GA11382@darkside.kls.lan>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTin_2yo705Ka3KO_09nK3ZUEi_0uYfi6fKQqwBVV@mail.gmail.com>
+References: <1299864633-27542-1-git-send-email-felipe.contreras@nokia.com>
+	<AANLkTi=Hy18s5fOziHSNdG6QUZE85bg0Bb9cAqE42mVQ@mail.gmail.com>
+	<AANLkTin_2yo705Ka3KO_09nK3ZUEi_0uYfi6fKQqwBVV@mail.gmail.com>
+Date: Fri, 11 Mar 2011 20:31:03 +0200
+Message-ID: <AANLkTik+tjZvyagV3PE4grjJJx-q_AEuKCa3z+e99WzC@mail.gmail.com>
+Subject: Re: [RESEND PATCH] staging: tidspbridge: protect dmm_map properly
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Tuomas Kulve <tuomas@kulve.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 07:03 PM, Mario 'BitKoenig' Holbe wrote:
+On Fri, Mar 11, 2011 at 8:05 PM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
+> On Fri, Mar 11, 2011 at 11:38 AM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+>> Omar, 2.6.38 is imminent, if this patch has any chance of getting in,
+>> I think you would need to push it soon.
+>
+> I'll push it to my queue, however I don't think this would be even
+> considered to make it before the official 2.6.38 which should happen
+> in the next few days, given that it should climb to staging tree first
+> and from there to mainline... we could attempt to shot directly to the
+> mainline kernel, but that would raise a few eyebrows and in the end be
+> rejected as well because this is a staging driver which is still in
+> process of cleanup.
 
->> You probably need to find some way
->> to make pcrypt (parallel crypt layer) work for dmcrypt. That may
->> actually give you more speedup too than your old hack because
->> it can balance over more cores. 
+Well, not crashing is better than crashing, regardless of the status
+of the driver. And there's no reason not to include the fix.
 
-dmcrypt is already using async crypto interface, it is ready
-for parallelization on this level.
+But if you send it to Greg, then it's Greg's call.
 
-Perhaps the problem is that pcrypt is not yet implemented for needed
-algorithms?
+> OTOH, this patch was there long ago, since December, but I just lost
+> the track of it at the moment, along with the other proposed
+> solutions, so I take it as my fault for not picking it up then.
 
-Milan
+I don't think there was any consensus as which fix was supposed to go
+forward or how, but now there is.
 
+Cheers.
+
+-- 
+Felipe Contreras
