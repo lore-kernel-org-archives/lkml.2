@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1CKR5x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 12:57:53 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46432 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab1CKR5v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 12:57:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type
-         :content-transfer-encoding;
-        b=BmgwGqIjQOd/Y8QDCKuks/UjHqSWB+A+FWVGLbmjskLx0+xiVLCRg6+1zQH0ixuBib
-         RzG2aX9y3/x6s5cC6LvueN4DseyyE1uPnGBTqLkDkWqjMVeb6BMA03LMx7t+bHpd/Cfm
-         kGzD1sb5V7xUyMTaQP/khW5PhmHoMiq4gZq+U=
+	id S1752836Ab1CKR61 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 12:58:27 -0500
+Received: from www.tglx.de ([62.245.132.106]:46639 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab1CKR6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 12:58:23 -0500
+Date: Fri, 11 Mar 2011 18:57:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+cc: davidb@codeaurora.org, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Collins <collinsd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linux.walleij@sterricsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Qualcomm PM8921 MFD v2 2/6] mfd: pm8xxx: Add irq support
+In-Reply-To: <4D79A85D.8000301@codeaurora.org>
+Message-ID: <alpine.LFD.2.00.1103111853480.2787@localhost6.localdomain6>
+References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org> <1299564590-30116-3-git-send-email-adharmap@codeaurora.org> <alpine.LFD.2.00.1103081201520.2787@localhost6.localdomain6> <4D770E47.6050402@codeaurora.org>
+ <alpine.LFD.2.00.1103101126100.2787@localhost6.localdomain6> <4D79A85D.8000301@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-From: Tommaso Massimi <tmassimi@gmail.com>
-Date: Fri, 11 Mar 2011 18:57:30 +0100
-Message-ID: <AANLkTinApC_rSNWax7fND-vGdLr-UrhNLFekvnVTqKiF@mail.gmail.com>
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 08:09 PM, Greg KH wrote:
->On Thu, Mar 10, 2011 at 07:28:00PM +0200, Nikolai Kondrashov wrote:
-> > On 03/10/2011 07:19 PM, Greg KH wrote:
-> > >Can you provide me the output of:
-> > > grep . /sys/class/dmi/id/*
-> > >so I can try to add support for this machine to the driver?
-> > Sure, here it is.
->
-> Great, here's a new version of the samsung-laptop.c file, can you
-> replace it whereever you were building the previous one, rebuild it and
-> test it for this machine to see if it works?
+On Thu, 10 Mar 2011, Abhijeet Dharmapurikar wrote:
+> Thomas Gleixner wrote:
+> > On Tue, 8 Mar 2011, Abhijeet Dharmapurikar wrote:
+> > > > ack is called before mask and it
+> > > > should never be called when the interrupt is masked.
+> > > I didnt quite understand this comment. handle_level_irq calls mask_ack
+> > > which
+> > > masks the interrupt and then acks it. In this case the ack is called after
+> > > the
+> > 
+> > Indeed, sorry. So the right way to deal with that is to provide a
+> > mask_ack() callback which does it in the correct order for your
+> > HW. That way you avoid all the local state storage.
+> 
+> 
+> Yes however while updating the code I noticed that I would need to keep
+> account of all the interrupts enabled and all the interrupts marked wakeup.
+> This aids in switching to the wakeup set in the suspend callback and the
+> enabled set in the resume callback. I will update the resume callback to
+> enable the interrupts in irqs_allowed(the local state storage) in the next
+> patch (my current patch does not do that).
+> 
+> IOW I need to keep the local state storage.
 
-Hi,
-here the output you required from my laptop:
+Wrong. The interrupts are disabled and reenabled by the core code and
+not by some extra suspend/resume callbacks in your driver. The core
+checks those marked as IRQ_WAKE, the wake callback to the irq chip is
+only there if you need to set up some hardware register in order to
+make the wake functionality work. So again, you don't need local state
+as the core tracks the state for you.
 
-tom@localhost tom_samsung]$ grep . /sys/class/dmi/id/*
-/sys/class/dmi/id/bios_date:09/21/2009
-/sys/class/dmi/id/bios_vendor:Phoenix Technologies Ltd.
-/sys/class/dmi/id/bios_version:04IA.M005.20090921.KSY
-/sys/class/dmi/id/board_name:X420/X520
-grep: /sys/class/dmi/id/board_serial: Permission denied
-/sys/class/dmi/id/board_vendor:SAMSUNG ELECTRONICS CO., LTD.
-/sys/class/dmi/id/board_version:Not Applicable
-/sys/class/dmi/id/chassis_asset_tag:No Asset Tag
-grep: /sys/class/dmi/id/chassis_serial: Permission denied
-/sys/class/dmi/id/chassis_type:10
-/sys/class/dmi/id/chassis_vendor:SAMSUNG ELECTRONICS CO., LTD.
-/sys/class/dmi/id/chassis_version:N/A
-/sys/class/dmi/id/modalias:dmi:bvnPhoenixTechnologiesLtd.:bvr04IA.M005.20090921.KSY:bd09/21/2009:svnSAMSUNGELECTRONICSCO.,LTD.:pnX420/X520:pvrNotApplicable:rvnSAMSUNGELECTRONICSCO.,LTD.:rnX420/X520:rvrNotApplicable:cvnSAMSUNGELECTRONICSCO.,LTD.:ct10:cvrN/A:
-/sys/class/dmi/id/product_name:X420/X520
-grep: /sys/class/dmi/id/product_serial: Permission denied
-grep: /sys/class/dmi/id/product_uuid: Permission denied
-/sys/class/dmi/id/product_version:Not Applicable
-/sys/class/dmi/id/sys_vendor:SAMSUNG ELECTRONICS CO., LTD.
-/sys/class/dmi/id/uevent:MODALIAS=dmi:bvnPhoenixTechnologiesLtd.:bvr04IA.M005.20090921.KSY:bd09/21/2009:svnSAMSUNGELECTRONICSCO.,LTD.:pnX420/X520:pvrNotApplicable:rvnSAMSUNGELECTRONICSCO.,LTD.:rnX420/X520:rvrNotApplicable:cvnSAMSUNGELECTRONICSCO.,LTD.:ct10:cvrN/A:
+Thanks,
 
-I have added these lines to your source file
-
-668a669,677
->               {
->               .ident = "X520",
->               .matches = {
->                       DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
->                       DMI_MATCH(DMI_PRODUCT_NAME, "X520"),
->                       DMI_MATCH(DMI_BOARD_NAME, "X520"),
->               },
->               .callback = dmi_check_cb,
->       },
-
-When I load the module with the option debug=1,
-it turns on and off my backligth and my wireless card,
-so I think it is working fine.
-Here what dmesg says:
-
-samsung_laptop: module is from the staging directory, the quality is
-unknown, you have been warned.
-samsung_laptop: found laptop model 'X520'
-This computer supports SABI==f48b4
-SABI header:
- SMI Port Number = 0x00b2
- SMI Interface Function = 0xc0
- SMI enable memory buffer = 0xc1
- SMI restore memory buffer = 0xc2
- SABI data offset = 0x0f00
- SABI data segment = 0xdf01
-ifaceP = 0x000dff10
-sabi_iface = ffff8800000dff10
-backlight = 0x01
-backlight should be off
-backlight = 0x00
-backlight should be on
-backlight = 0x01
-wireless led = 0x01
-wireless led should be off
-wireless led = 0x00
-wireless led should be on
-wireless led = 0x01
-brightness = 0x08
-atkbd serio0: Unknown key pressed (translated set 2, code 0x89 on
-isa0060/serio0).
-atkbd serio0: Use 'setkeycodes e009 <keycode>' to make it known.
-
-Now I think I need only to use the setkeycodes command to have
-these new commands under my fingers :)
-
-Thanks for that!!
-
-Tom
-
-PS: I'm not subscribed to the list, so please CC me if you need some other info
+	tglx
