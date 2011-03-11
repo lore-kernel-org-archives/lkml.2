@@ -1,139 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab1CKLBO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 06:01:14 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:54176 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab1CKLBJ (ORCPT
+	id S1754468Ab1CKLFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 06:05:01 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:58228 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752131Ab1CKLE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 06:01:09 -0500
-Message-ID: <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
-In-Reply-To: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
-    <20110303072223.GA28133@elie> <87bp1sziqn.fsf@linux.vnet.ibm.com>
-    <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
-    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
-Date: Fri, 11 Mar 2011 12:01:02 +0100 (CET)
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Sage Weil" <sage@newdream.net>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, arnd@arndb.de, mtk.manpages@gmail.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
-User-Agent: SquirrelMail/1.4.17
+	Fri, 11 Mar 2011 06:04:59 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 11 Mar 2011 12:07:27 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] hid-multitouch: migrate 3M PCT touch screens to
+ hid-multitouch
+Message-ID: <20110311110727.GA3145@polaris.bitmath.org>
+References: <1299686450-5475-1-git-send-email-benjamin.tissoires@enac.fr>
+ <1299686450-5475-5-git-send-email-benjamin.tissoires@enac.fr>
+ <20110310155225.GA23034@polaris.bitmath.org>
+ <AANLkTi=jnd_gq8U+Fv7YSNk1iqt19paFQ3do=f5VrcSC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 01ccc3eb840dc35651f50b798cb06ae8
+In-Reply-To: <AANLkTi=jnd_gq8U+Fv7YSNk1iqt19paFQ3do=f5VrcSC@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1Py093-0001op-6m.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1Py093-0001op-6m 3150bae3bc7e67fe331b3946ec5be90d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> > I realize several of the entries are missing maxcontacts now, so all
+> > patches needs to be checked...
+> 
+> This is really annoying. The idea behind the auto-detection was to
+> simplify the writing of the driver and to let the device inform us on
+> its capabilities.
+> It's not a bug, it's a feature in this particular case. My idea was to
+> remove all those .maxcontact (for instance, I know that it works for
+> cypress, stantum and 3M) but I didn't want to bother my testers about
+> such a little change.
+> 
+> Can I remember you that you where the first complaining about the
+> maxcontact? You asked if it could not be given by the device. And as
+> we where in a hurry, we didn't include it and said that we will do it
+> later.
 
-On Thu, March 10, 2011 20:31, Sage Weil wrote:
-> It is frequently useful to sync a single file system, instead of all
-> mounted file systems via sync(2):
->
->  - On machines with many mounts, it is not at all uncommon for some of
->    them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
->    those and may never get to the one you do care about (e.g., /).
->  - Some applications write lots of data to the file system and then
->    want to make sure it is flushed to disk.  Calling fsync(2) on each
->    file introduces unnecessary ordering constraints that result in a large
->    amount of sub-optimal writeback/flush/commit behavior by the file
->    system.
->
-> There are currently two ways (that I know of) to sync a single super_block:
->
->  - BLKFLSBUF ioctl on the block device: That also invalidates the bdev
->    mapping, which isn't usually desirable, and doesn't work for non-block
->    file systems.
->  - 'mount -o remount,rw' will call sync_filesystem as an artifact of the
->    current implemention.  Relying on this little-known side effect for
->    something like data safety sounds foolish.
->
-> Both of these approaches require root privileges, which some applications
-> do not have (nor should they need?) given that sync(2) is an unprivileged
-> operation.
->
-> This patch introduces a new system call syncfs(2) that takes an fd and
-> syncs only the file system it references.  Maybe someday we can
->
->  $ sync /some/path
->
-> and not get
->
->  sync: ignoring all arguments
->
-> The syscall is motivated by comments by Al and Christoph at the last LSF.
-> syncfs(2) seems like an appropriate name given statfs(2).
->
-> A similar ioctl was also proposed a while back, see
-> 	http://marc.info/?l=linux-fsdevel&m=127970513829285&w=2
+*sigh*
 
-The patch there seems much more reasonable than introducing a whole
-new systemcall just for 20 lines of kernel code. New system calls are
-added too easily nowadays.
+The generally problem seems to be that the patch cycles are too short,
+leading to buggy implementations.
 
-As an alternative to the ioctl, I propose extending sync_file_range()
-instead. E.g. add a SYNC_FILE_MOUNT flag and use that, either on any
-fd on the mount or the root dir fd. That syscall is non-standard and
-close enough that it can implement this behaviour too.
+> And this one would be false: should I write 10 or 60? As it depends on
+> the device, we'll have to let the device decide.
+> If you remember the commit message of the auto-detection patch, I have
+> written that we keep the .maxcontact field in case the device _lies_.
+> And 3M does not lie.
 
-Greetings,
+Which is why max(default-value, device-value) was suggested.
 
-Indan
+> >>                       field->logical_maximum = 1;
+> >>                       field->logical_minimum = 0;
+> >>                       set_abs(hi->input, ABS_MT_ORIENTATION, field, 0);
+> >
+> > These limits are not right - I doubt they are for any device.
+> 
+> I was a little surprise too while looking at these. But This is not
+> related to ABS_MT_TOUCH_MINOR, but ABS_MT_ORIENTATION.
+> And if I'm forced to modify those values this way it's because _you_
+> made me introduce the set_abs function which takes in parameter the
+> field. Thus, it's more complicated to introduce new fields and usages.
 
----
+Enough with the accusations. Simply replace those lines with
 
-Something like:
+input_set_abs_params(hi->input, ABS_MT_ORIENTATION, 0, 1, 0, 0);
 
-diff --git a/fs/sync.c b/fs/sync.c
-index ba76b96..9fa073c 100644
---- a/fs/sync.c
-+++ b/fs/sync.c
-@@ -18,7 +18,7 @@
- #include "internal.h"
+> > Also, this line needs to be added in case no feature reports are sent:
+> >
+> > @@ -481,6 +481,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+> >                return -ENOMEM;
+> >        }
+> >        td->mtclass = mtclass;
+> > +       td->maxcontacts = mtclass->maxcontacts;
+> >        td->inputmode = -1;
+> >        hid_set_drvdata(hdev, td);
+> >
+> 
+> So:
+> 1) If a device does not send the feature report related to maxcontact,
+> then it won't pass the Win7 certification, then we will need to write
+> a special driver for it.
+> 2) This is wrong because I do not want to add in all those classes the
+> field maxcontact. So I'll revert the MT_DEFAULT_MAXCONTACT, and I will
+> add this sort of line just before allocating the slots.
+> Oh, and I'll remove the .maxcontact = 2 for MT_CLS_DEFAULT.
 
- #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
--			SYNC_FILE_RANGE_WAIT_AFTER)
-+			SYNC_FILE_RANGE_WAIT_AFTER|SYNC_FILE_MOUNT)
+Take a deep breath and take your time. We don't want to waste anybodys
+time by going through more cycles than necessary.
 
- /*
-  * Do the filesystem syncing work. For simple filesystems
-@@ -330,6 +330,15 @@ SYSCALL_DEFINE(sync_file_range)(int fd, loff_t offset, loff_t nbytes,
- 	}
-
- 	ret = 0;
-+	if (flags & SYNC_FILE_MOUNT) {
-+		struct super_block *sb;
-+
-+		sb = file->f_dentry->d_sb;
-+		down_read(&sb->s_umount);
-+		ret = sync_filesystem(sb);
-+		up_read(&sb->s_umount);
-+		goto out_put;
-+	}
- 	if (flags & SYNC_FILE_RANGE_WAIT_BEFORE) {
- 		ret = filemap_fdatawait_range(mapping, offset, endbyte);
- 		if (ret < 0)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e38b50a..53e427e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -373,6 +373,7 @@ struct inodes_stat_t {
- #define SYNC_FILE_RANGE_WAIT_BEFORE	1
- #define SYNC_FILE_RANGE_WRITE		2
- #define SYNC_FILE_RANGE_WAIT_AFTER	4
-+#define SYNC_FILE_MOUNT 		8
-
- #ifdef __KERNEL__
-
-
-
+Henrik
