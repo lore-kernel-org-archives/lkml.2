@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1CKMZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 07:25:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57212 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab1CKMZk convert rfc822-to-8bit (ORCPT
+	id S1754991Ab1CKM0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 07:26:42 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34817 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753149Ab1CKM0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 07:25:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=hhxzKAkTCBm66e8FRIh+tiTe9MP7f0NU1t64CrPjYNukvcN4iHeHLOu5q5iSVmzV6u
-         lwZLLGf55Hz5KaPKYrKS6Y4IeMvyEhf1z5UAWDxm7lSH0r+MUlF3O6uCSSEIWsFhvYEQ
-         A4336AFPePJ4CUceRnP43S2zWtv0xH8inZw4o=
+	Fri, 11 Mar 2011 07:26:39 -0500
+Date: Fri, 11 Mar 2011 12:26:37 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: ben-linux@fluff.org, perex@perex.cz, tiwai@suse.de, lrg@slimlogic.co.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH RFC] arm: mini2440: Fix uda134x codec problem.
+Message-ID: <20110311122637.GH1760@opensource.wolfsonmicro.com>
+References: <1299703580-3957-1-git-send-email-marek.belisko@open-nandra.com>
+ <20110311121704.GF1760@opensource.wolfsonmicro.com>
+ <AANLkTintYQ=qO3PALBL-bkiYKQFw0+JiW3=-oZmkRhZ1@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 11 Mar 2011 13:21:52 +0100
-X-Google-Sender-Auth: AewUIC9i77DsxCRQsjv1nS0gJxs
-Message-ID: <AANLkTi=Hg4s5kEMQZu_KGePf4W_7jAFm0_WifM9W3PR6@mail.gmail.com>
-Subject: [next] xfs: error: called object 'panic' is not a function
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: xfs-masters@oss.sgi.com, xfs@oss.sgi.com
-Cc: Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTintYQ=qO3PALBL-bkiYKQFw0+JiW3=-oZmkRhZ1@mail.gmail.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/3977742/:
+On Fri, Mar 11, 2011 at 01:23:37PM +0100, Belisko Marek wrote:
 
-| fs/xfs/linux-2.6/xfs_message.c:116: error: called object 'panic' is
-not a function
-| make[3]: *** [fs/xfs/linux-2.6/xfs_message.o] Error 1
+> You're right. I think sending whole patch to help understand what
+> I'm trying to do (because wasn't sure). You apply just asoc part right?
+> Thanks for comments!
 
-Lemme guess, the problem fixed by commit
-cf78859f520f8275318f47d7864f4459d940cb6b (xfs: Do not name variables "panic")
-has reincarnated somewhere else?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I applied everything, Ben has said he is very busy so it seemed easiest
+to just merge the whole thing.
