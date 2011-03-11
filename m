@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab1CKSMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:12:14 -0500
-Received: from gabe.freedesktop.org ([131.252.210.177]:45611 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab1CKSMM (ORCPT
+	id S1753085Ab1CKSWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:22:08 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58259 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab1CKSWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:12:12 -0500
-X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Mar 2011 13:12:12 EST
-From: Eric Anholt <eric@anholt.net>
-To: linux-kernel@vger.kernel.org
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Eric Anholt <eric@anholt.net>
-Subject: x86, mtrr, pat: fix one cpu getting out of sync during resume
-Date: Fri, 11 Mar 2011 10:02:19 -0800
-Message-Id: <1299866539-16315-1-git-send-email-eric@anholt.net>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 11 Mar 2011 13:22:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=XQSeYp+9ecVUKkGiVDvwb4BSDY5FIUvlxJmuehaLIpAUv9Rr0BT7XGBnfd4MaToFg2
+         t2EWf6yTOvA70h1iYSwJ1mO0UoSVqCLYDTl5jv6+0vQQlZQOj8JX+wHbX3dYEn3t6OtD
+         KabcjOhMqD/JgSMnvHZBeYDdCvHT2Wk0289nw=
+Date: Fri, 11 Mar 2011 19:19:58 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
+ handling
+Message-ID: <20110311181958.GJ13038@htj.dyndns.org>
+References: <4D6EA975.8070200@kernel.org>
+ <20110302205704.GF28266@mtj.dyndns.org>
+ <4D6EB335.8000306@kernel.org>
+ <20110303061711.GG28266@mtj.dyndns.org>
+ <4D791C9F.1010500@kernel.org>
+ <20110311082938.GC13038@htj.dyndns.org>
+ <20110311083351.GD13038@htj.dyndns.org>
+ <4D7A4430.1030301@kernel.org>
+ <20110311155446.GH13038@htj.dyndns.org>
+ <AANLkTim31ZDBRtBFL2J5HD8j8__tzkSF_HdD-HVt6V49@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim31ZDBRtBFL2J5HD8j8__tzkSF_HdD-HVt6V49@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+Hello,
 
-On laptops with core i5/i7, there were reports that after resume
-graphics workloads were performing poorly on a specific AP, while
-the other cpu's were ok. This was observed on a 32bit kernel
-specifically.
+On Fri, Mar 11, 2011 at 10:02:41AM -0800, Yinghai Lu wrote:
+> > No, NUMA implementation can skip numa_set_distance() entirely if the
+> > distance is LOCAL_DISTANCE if nids are equal, REMOTE_DISTANCE
+> > otherwise.  In fact, any amdtopology configuraiton would behave this
+> > way, so it's incorrect to fill the table with LOCAL_DISTANCE.  You
+> > have to check the physnid mapping and build new table whether physical
+> > table exists or not.  Lack of physical distance table doesn't mean all
+> > nodes are LOCAL_DISTANCE.
+> 
+> too bad. We should call numa_alloc_distance in amdtopology to set
+> default value in that array.
 
-Debug showed that the PAT init was not happening on that AP
-during resume and hence it contributing to the poor workload
-performance on that cpu.
+I'm not following.  If there's no distance table, the distance is
+assumed to be LOCAL between the same node and REMOTE if the nodes are
+different, which is exactly the way it should be for those machines.
+Why is this bad and why would you allocate distance table for such
+configurations?
 
-On this system, resume flow looked like this:
-
-1. BP starts the resume sequence and we reinit BP's MTRR's/PAT
-   early on using mtrr_bp_restore()
-
-2. Resume sequence brings all AP's online
-
-3. Resume sequence now kicks off the MTRR reinit on all the AP's.
-
-4. For some reason, between point 2 and 3, we moved from BP
-   to one of the AP's. My guess is that printk() during resume
-   sequence is contributing to this. We don't see similar
-   behavior with the 64bit kernel but there is no guarantee that
-   at this point the remaining resume sequence (after AP's bringup)
-   has to happen on BP.
-
-5. set_mtrr() was assuming that we are still on BP and skipped the
-   MTRR/PAT init on that cpu (because of 1 above)
-
-6. But we were on an AP and this led to not reprogramming PAT
-   on this cpu leading to bad performance.
-
-Fix this by doing unconditional mtrr_if->set_all() in set_mtrr()
-during MTRR/PAT init. This might be unnecessary if we are still
-running on BP. But it is of no harm and will guarantee that after
-resume, all the cpu's will be in sync with respect to the
-MTRR/PAT registers.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Tested-by: Keith Packard <keithp@keithp.com>
-Cc: stable@kernel.org	[v2.6.32+]
----
- arch/x86/kernel/cpu/mtrr/main.c |   20 +++++++++++++++-----
- 1 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index bebabec..151787e 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -292,14 +292,24 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
- 
- 	/*
- 	 * HACK!
--	 * We use this same function to initialize the mtrrs on boot.
--	 * The state of the boot cpu's mtrrs has been saved, and we want
--	 * to replicate across all the APs.
--	 * If we're doing that @reg is set to something special...
-+	 *
-+	 * We use this same function to initialize the mtrrs during boot,
-+	 * resume, runtime cpu online and on an explicit request to set a
-+	 * specific MTRR.
-+	 *
-+	 * During boot or suspend, the state of the boot cpu's mtrrs has been
-+	 * saved, and we want to replicate that across all the cpus that come
-+	 * online (either at the end of boot or resume or during a runtime cpu
-+	 * online). If we're doing that, @reg is set to something special and on
-+	 * this cpu we still do mtrr_if->set_all(). During boot/resume, this
-+	 * is unnecessary if at this point we are still on the cpu that started
-+	 * the boot/resume sequence. But there is no guarantee that we are still
-+	 * on the same cpu. So we do mtrr_if->set_all() on this cpu aswell to be
-+	 * sure that we are in sync with everyone else.
- 	 */
- 	if (reg != ~0U)
- 		mtrr_if->set(reg, base, size, type);
--	else if (!mtrr_aps_delayed_init)
-+	else
- 		mtrr_if->set_all();
- 
- 	/* Wait for the others */
+-- 
+tejun
