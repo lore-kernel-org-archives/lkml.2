@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1CKTNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 14:13:23 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5497 "EHLO mga11.intel.com"
+	id S1753721Ab1CKTSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 14:18:53 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60143 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753851Ab1CKTNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 14:13:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,304,1297065600"; 
-   d="scan'208";a="666384173"
-From: Andi Kleen <andi@firstfloor.org>
-To: robert.richter@amd.com
-Cc: linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] oprofile: Allow setting EDGE/INV/CMASK for Intel counter events
-Date: Fri, 11 Mar 2011 11:12:28 -0800
-Message-Id: <1299870748-13319-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4
+	id S1753256Ab1CKTSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 14:18:50 -0500
+Message-ID: <4D7A7598.4020301@kernel.dk>
+Date: Fri, 11 Mar 2011 20:18:48 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for March 11 (block/mm/fs)
+References: <20110311184115.33404b77.sfr@canb.auug.org.au> <20110311095325.10ec7383.randy.dunlap@oracle.com>
+In-Reply-To: <20110311095325.10ec7383.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 2011-03-11 18:53, Randy Dunlap wrote:
+> On Fri, 11 Mar 2011 18:41:15 +1100 Stephen Rothwell wrote:
+> 
+>> Hi all,
+>>
+>> Changes since 20110310:
+>>
+>> The block tree lost its build failure but gained another for which I
+>> applied a patch.
+> 
+> 
+> When CONFIG_BLOCK is not enabled:
+> 
+> mm/filemap.c:1257: error: storage size of 'plug' isn't known
+> mm/filemap.c:2450: error: storage size of 'plug' isn't known
+> mm/readahead.c:112: error: storage size of 'plug' isn't known
+> fs/aio.c:1625: error: storage size of 'plug' isn't known
 
-For some performance events it's useful to set the EDGE and INV
-bits and the CMASK mask in the counter control register. The list
-of predefined events Intel releases for each CPU has some events which
-require these settings to get more "natural" to use higher level events.
+Thanks Randy, I fixed it up.
 
-oprofile currently doesn't allow this.
-
-This patch adds new extra configuration fields for them, so that
-they can be specified in oprofilefs.
-
-An updated oprofile daemon can then make use of this to set them.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/oprofile/nmi_int.c    |    4 ++++
- arch/x86/oprofile/op_counter.h |    1 +
- 2 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index e2b7b0c..bace252 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -49,6 +49,9 @@ u64 op_x86_get_ctrl(struct op_x86_model_spec const *model,
- 	val |= counter_config->user ? ARCH_PERFMON_EVENTSEL_USR : 0;
- 	val |= counter_config->kernel ? ARCH_PERFMON_EVENTSEL_OS : 0;
- 	val |= (counter_config->unit_mask & 0xFF) << 8;
-+	val |= counter_config->extra & (ARCH_PERFMON_EVENTSEL_INV|
-+					ARCH_PERFMON_EVENTSEL_EDGE|
-+					ARCH_PERFMON_EVENTSEL_CMASK);
- 	event &= model->event_mask ? model->event_mask : 0xFF;
- 	val |= event & 0xFF;
- 	val |= (event & 0x0F00) << 24;
-@@ -440,6 +443,7 @@ static int nmi_create_files(struct super_block *sb, struct dentry *root)
- 		oprofilefs_create_ulong(sb, dir, "unit_mask", &counter_config[i].unit_mask);
- 		oprofilefs_create_ulong(sb, dir, "kernel", &counter_config[i].kernel);
- 		oprofilefs_create_ulong(sb, dir, "user", &counter_config[i].user);
-+		oprofilefs_create_ulong(sb, dir, "extra", &counter_config[i].extra);
- 	}
- 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 91fa428..16a902f 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1297,15 +1297,18 @@ static inline long nr_blockdev_pages(void)
  	return 0;
-diff --git a/arch/x86/oprofile/op_counter.h b/arch/x86/oprofile/op_counter.h
-index e28398d..0b7b7b1 100644
---- a/arch/x86/oprofile/op_counter.h
-+++ b/arch/x86/oprofile/op_counter.h
-@@ -22,6 +22,7 @@ struct op_counter_config {
- 	unsigned long kernel;
- 	unsigned long user;
- 	unsigned long unit_mask;
-+	unsigned long extra;
- };
+ }
  
- extern struct op_counter_config counter_config[];
+-static inline void blk_start_plug(struct list_head *list)
++struct blk_plug {
++};
++
++static inline void blk_start_plug(struct blk_plug *plug)
+ {
+ }
+ 
+-static inline void blk_finish_plug(struct list_head *list)
++static inline void blk_finish_plug(struct blk_plug *plug)
+ {
+ }
+ 
+-static inline void blk_flush_plug(struct task_struct *tsk)
++static inline void blk_flush_plug(struct task_struct *task)
+ {
+ }
+ 
+
 -- 
-1.7.4
+Jens Axboe
 
