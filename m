@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab1CKUnK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:43:10 -0500
-Received: from kroah.org ([198.145.64.141]:46547 "EHLO coco.kroah.org"
+	id S1755011Ab1CKUnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:43:18 -0500
+Received: from kroah.org ([198.145.64.141]:46620 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab1CKUnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:43:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:10 2011
-Message-Id: <20110311204109.932601421@clark.kroah.org>
+	id S1754931Ab1CKUnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:43:14 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:11 2011
+Message-Id: <20110311204110.957498798@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 11 Mar 2011 12:40:07 -0800
+Date: Fri, 11 Mar 2011 12:40:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
-Subject: [06/17] powerpc/kdump: CPUs assume the context of the oopsing CPU
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [16/17] Staging: comedi: jr3_pci: Dont ioremap too much space. Check result.
 In-Reply-To: <20110311204126.GA7223@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 0644079410065567e3bb31fcb8e6441f2b7685a9 upstream.
+commit fa5c5f4ce0c9ba03a670c640cad17e14cb35678b upstream.
 
-We wrap the crash_shutdown_handles[] calls with longjmp/setjmp, so if any
-of them fault we can recover. The problem is we add a hook to the debugger
-fault handler hook which calls longjmp unconditionally.
+For the JR3/PCI cards, the size of the PCIBAR0 region depends on the
+number of channels.  Don't try and ioremap space for 4 channels if the
+card has fewer channels.  Also check for ioremap failure.
 
-This first part of kdump is run before we marshall the other CPUs, so there
-is a very good chance some CPU on the box is going to page fault. And when
-it does it hits the longjmp code and assumes the context of the oopsing CPU.
-The machine gets very confused when it has 10 CPUs all with the same stack,
-all thinking they have the same CPU id. I get even more confused trying
-to debug it.
+Thanks to Anders Blomdell for input and Sami Hussein for testing.
 
-The patch below adds crash_shutdown_cpu and uses it to specify which cpu is
-in the protected region. Since it can only be -1 or the oopsing CPU, we don't
-need to use memory barriers since it is only valid on the local CPU - no other
-CPU will ever see a value that matches it's local CPU id.
-
-Eventually we should switch the order and marshall all CPUs before doing the
-crash_shutdown_handles[] calls, but that is a bigger fix.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/crash.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/jr3_pci.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/crash.c
-+++ b/arch/powerpc/kernel/crash.c
-@@ -347,10 +347,12 @@ int crash_shutdown_unregister(crash_shut
- EXPORT_SYMBOL(crash_shutdown_unregister);
- 
- static unsigned long crash_shutdown_buf[JMP_BUF_LEN];
-+static int crash_shutdown_cpu = -1;
- 
- static int handle_fault(struct pt_regs *regs)
- {
--	longjmp(crash_shutdown_buf, 1);
-+	if (crash_shutdown_cpu == smp_processor_id())
-+		longjmp(crash_shutdown_buf, 1);
- 	return 0;
- }
- 
-@@ -388,6 +390,7 @@ void default_machine_crash_shutdown(stru
- 	 */
- 	old_handler = __debugger_fault_handler;
- 	__debugger_fault_handler = handle_fault;
-+	crash_shutdown_cpu = smp_processor_id();
- 	for (i = 0; crash_shutdown_handles[i]; i++) {
- 		if (setjmp(crash_shutdown_buf) == 0) {
- 			/*
-@@ -401,6 +404,7 @@ void default_machine_crash_shutdown(stru
- 			asm volatile("sync; isync");
- 		}
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -856,8 +856,11 @@ static int jr3_pci_attach(struct comedi_
  	}
-+	crash_shutdown_cpu = -1;
- 	__debugger_fault_handler = old_handler;
  
- 	/*
+ 	devpriv->pci_enabled = 1;
+-	devpriv->iobase =
+-	    ioremap(pci_resource_start(card, 0), sizeof(struct jr3_t));
++	devpriv->iobase = ioremap(pci_resource_start(card, 0),
++			offsetof(struct jr3_t, channel[devpriv->n_channels]));
++	if (!devpriv->iobase)
++		return -ENOMEM;
++
+ 	result = alloc_subdevices(dev, devpriv->n_channels);
+ 	if (result < 0)
+ 		goto out;
 
 
