@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab1CKMln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 07:41:43 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:40637 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754694Ab1CKMlb (ORCPT
+	id S1755176Ab1CKMoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 07:44:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47774 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab1CKMoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 07:41:31 -0500
-From: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "eduardo.valentin@nokia.com" <eduardo.valentin@nokia.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ryan Mallon <ryan@bluewatersys.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: <maxime_coquelin@yahoo.fr>, ext Nishanth Menon <nm@ti.com>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
-        Ambresh <a0393775@ti.com>, Jouni Hogander <jouni.hogander@nokia.com>,
-        Lee Jones <Lee.Jones@linaro.org>,
-        Rabin VINCENT <rabin.vincent@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas ABERG <jonas.aberg@stericsson.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        David Brown <davidb@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Andrei Warkentin <andreiw@motorola.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
-Subject: [RFC PATCHv2 0/2] Export SoC info through sysfs
-Date: Fri, 11 Mar 2011 13:35:09 +0100
-Message-ID: <1299846911-15782-1-git-send-email-maxime.coquelin-nonst@stericsson.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 11 Mar 2011 07:44:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=lYgq2ctmAxSr77odIQXQv7EYIIqm8zTps/W7cWuG0BkvJ6owDkfo4lpK7c9kQ/GL+t
+         DW3zGulEUyl4nUM+L56nKq/CADS//bXlZg3w89UrHfJM1689bCkO7wbjppA7Y7IMk2SB
+         MaXHcNMAO9+iJYY/ZZrWJw4TZHIlvQbHpWtMc=
+Message-ID: <4D7A191B.7040100@linaro.org>
+Date: Fri, 11 Mar 2011 12:44:11 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <4D79F068.2080009@linaro.org> <201103111331.13932.arnd@arndb.de>
+In-Reply-To: <201103111331.13932.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the second version of the proposal to export SoC related information to user-space through sysFS interface.
+On 03/11/2011 12:31 PM, Somebody in the thread at some point said:
 
-The first patch introduces the common part, which provides an interface to the platform to export platform-defined IDs to user-space.
-The IDs strings can be provided in two ways: either with a pointer to the string, or by a callback fullfilling the sysfs's "show" callback buffer.
+Hi -
 
-The second patch is given as example for the ux500 architecture. It registers the socinfo interface, and exports 5 values (Family name, machine name, silicon process, silicon revision, and serial number).
+>> platform_data is a well established way in Linux to pass configuration
+>> data up to on-board assets from a machine file like mach-xyz.c.  It's
+>> also supported to pass platform_data up to devices that are probed
+>> asynchronously from busses like i2c as well, which is very handy.
+>>
+>> However AFAIK it's not possible to bind platform_data to probed USB
+>> devices as it stands.
+>>
+>> There are now boards which have on-board USB assets, for example OMAP4
+>> Panda which has a USB<->  Ethernet bridge wired up permanently.  It'd be
+>> convenient to also be able to pass optional platform_data to these
+>> devices when they are asynchronously probed.
+>
+> Sorry, but I think it's a bad idea to use platform data for this.
+> USB is a bus that we can reasonably probe, while we use platform_data
+> only for stuff that we can by definition not probe at all.
 
-Here is the output for DB8500:
-root@ME:/sys/socinfo ls -l
--r--r--r-- 1 root root 4096 Jan  2 03:35 family
--r--r--r-- 1 root root 4096 Jan  2 03:35 machine
--r--r--r-- 1 root root 4096 Jan  2 03:35 process
--r--r--r-- 1 root root 4096 Jan  2 03:35 revision
--r--r--r-- 1 root root 4096 Jan  2 03:35 soc_id
-root@ME:/sys/socinfo cat machine
-DB8500
-root@ME:/sys/socinfo cat family
-Ux500
-root@ME:/sys/socinfo cat process
-Standard
-root@ME:/sys/socinfo cat revision
-2.0
-root@ME:/sys/socinfo cat soc_id
-2ba07ce9e5835d6185321e9577462ef2ea2129cf
+...
 
--------------------------------------------------------------------------------
-v1:
-	Conclusion about first version :
-		* /sys/devices/system is not right place for this interface.
-		* "mach_name" should be declared as other attributes to simplify code.
-		* The get_info callback should use directly the "show" callback buffer.
-		* Documentation was missing (ABI description required)
-		* Errors were not reported at registration time.
-		* Macros should be used to create attributes.
-		* Some kernel coding rules not followed.
+> One relatively easy solution would be to allow passing a MAC address
+> to this particular device driver as a module parameter, and generating
+> a fixed MAC address in the regular vendor space when installing the
+> boot loader. That would also solve the problem that a DHCP server
+> currently assigns a new IP address to a panda board at every boot.
 
--------------------------------------------------------------------------------
+I suggested this myself on #15 of the bug you linked to.  However, it 
+seems to me there is a generic issue here and it is not to do with 
+whether stuff can be discovered on the bus or not; bugging the usbnet 
+guys to accept devname-based commandline params and solving it for 
+usbnet only would be covering up the actual issue.
 
-Any comments are welcome.
+The I2C implementation does not limit itself to providing I2C addresses 
+and binding to driver names so it can be probed, it also provides for 
+sending platform_data into the device when it is instantiated.  That is 
+very useful and I don't think the I2C guys will be accepting patches to 
+remove that capability.
 
-Note that I will be off from 13th to 21th of March.
+There is no reason I can see that onboard USB assets should continue to 
+be treated differently to miss out on the same capability because they 
+are USB and not I2C, particularly as a permanently NULL platform_data 
+pointer is already sitting there in the usb_device's .dev already 
+exactly for this use.
 
-Regards,
-Maxime
-
--------------------------------------------------------------------------------
-
-Maxime Coquelin (2):
-  Export SoC info through sysfs
-  ux500: Export U8500 SoC info through sysfs
-
- Documentation/ABI/testing/sysfs-socinfo |   16 ++++++
- arch/arm/mach-ux500/Kconfig             |    1 +
- arch/arm/mach-ux500/id.c                |   70 +++++++++++++++++++++++++++
- drivers/base/Kconfig                    |    3 +
- drivers/base/Makefile                   |    1 +
- drivers/base/soc.c                      |   79 +++++++++++++++++++++++++++++++
- include/linux/sys_soc.h                 |   50 +++++++++++++++++++
- 7 files changed, 220 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-socinfo
- create mode 100644 drivers/base/soc.c
- create mode 100644 include/linux/sys_soc.h
-
+-Andy
