@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab1CKCJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 21:09:19 -0500
-Received: from mailc.microsoft.com ([131.107.115.214]:49516 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab1CKCJS convert rfc822-to-8bit (ORCPT
+	id S1755239Ab1CKCQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 21:16:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44064 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab1CKCQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 21:09:18 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Hank Janssen <hjanssen@microsoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Mike Sterling" <Mike.Sterling@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Subject: RE: [PATCH 12/21] Staging: hv: Cleanup irq management
-Thread-Topic: [PATCH 12/21] Staging: hv: Cleanup irq management
-Thread-Index: AQHL325oF0iGwgacC0me7/v84Jbl85QnsSMAgAACSwD//6+s8A==
-Date: Fri, 11 Mar 2011 02:09:15 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048018B3E@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <[PATCH 00/21] Staging: hv: Cleanup vmbus driver>
- <1299794933-1259-1-git-send-email-kys@microsoft.com>,<alpine.LFD.2.00.1103102338230.2787@localhost6.localdomain6>
- <E2765C4D-2B98-4D06-8007-3416952F19FD@microsoft.com>
-In-Reply-To: <E2765C4D-2B98-4D06-8007-3416952F19FD@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 10 Mar 2011 21:16:04 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=v1n8UvUeJUkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=WPyIoOwQAAAA:8 a=5Ddlv3wuwEKHWlM6bdgA:9 a=weULVtmu2G12KcOeCoJs9nhuws4A:4 a=PUjeQqilurYA:10 a=1DbiqZag68YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/2] jump label: introduce static_branch() interface
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
+        mathieu.desnoyers@polymtl.ca, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <20110311020540.GA26622@linux-mips.org>
+References: <cover.1299702291.git.jbaron@redhat.com>
+	 <49b4727c7bfee19c2b7284b3339076ed827f3142.1299702291.git.jbaron@redhat.com>
+	 <1299790616.15854.417.camel@gandalf.stny.rr.com>
+	 <20110311020540.GA26622@linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 10 Mar 2011 21:15:59 -0500
+Message-ID: <1299809759.15854.822.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-03-11 at 03:05 +0100, Ralf Baechle wrote:
 
+> I'm happy with the change to arch/mips/include/asm/jump_label.h and
+> assuming that the change to arch/mips/kernel/jump_label.c will be dropped
 
-> -----Original Message-----
-> From: Hank Janssen
-> Sent: Thursday, March 10, 2011 5:54 PM
-> To: Thomas Gleixner
-> Cc: KY Srinivasan; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Mike
-> Sterling; Abhishek Kane (Mindtree Consulting PVT LTD)
-> Subject: Re: [PATCH 12/21] Staging: hv: Cleanup irq management
-> 
-> 
-> 
-> 
-> 
-> 
-> On Mar 10, 2011, at 14:46, "Thomas Gleixner" <tglx@linutronix.de> wrote:
-> >>
-> >
-> >>    }
-> >> -    vector = VMBUS_IRQ_VECTOR;
-> >>
-> >> -    DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", vmbus_irq, vector);
-> >> +    vector = IRQ0_VECTOR + pdev->irq;
-> >> +    DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", pdev->irq,
-> >> +            IRQ0_VECTOR + pdev->irq);
-> >
-> > Why evaluating vector first and then not using it for that debug print
-> > thingy?
-Good point; I will fix this before Hank gets rid of the DPRINT_INFO altogether.
+Noted.
 
-Regards,
+> 
+> Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-K. Y
+Jason,
+
+Could you respin the patchset and send it out again with the comments
+that were made. And please Cc Ralf on any patch that touches the mips
+arch.
+
+Thanks,
+
+-- Steve
+
 
