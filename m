@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab1CKJuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 04:50:52 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38571 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306Ab1CKJur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 04:50:47 -0500
-Date: Fri, 11 Mar 2011 09:50:31 GMT
-From: tip-bot for David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, dhsharp@google.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, dhsharp@google.com, tglx@linutronix.de
-In-Reply-To: <1291421609-14665-13-git-send-email-dhsharp@google.com>
-References: <1291421609-14665-13-git-send-email-dhsharp@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Adjust conditional expression latency formatting.
-Message-ID: <tip-10da37a645b5e915d8572cc2b1f5eb11ada3ea4f@git.kernel.org>
-Git-Commit-ID: 10da37a645b5e915d8572cc2b1f5eb11ada3ea4f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754301Ab1CKJuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 04:50:44 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51195 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab1CKJui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 04:50:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:content-type:content-transfer-encoding;
+        b=KcFiA7llsxUsn9z0YVfYpMfabvRHMbtQF4YGUA3nMWGMx7qbDadb/P7WxGakdhrVEe
+         tjnNq/zsYXEHo7YWjBf+KPOuODo9Er9xT5qIaKKg5SlrF5vegwuioQvnHhPmfenLAR6w
+         Md6qHDuH/sWoSyTsGmG/zEpqgu/iQKDybwrIQ=
+Message-ID: <4D79F068.2080009@linaro.org>
+Date: Fri, 11 Mar 2011 09:50:32 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Mar 2011 09:50:32 +0000 (UTC)
+To: Linux USB list <linux-usb@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: RFC: Platform data for onboard USB assets
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  10da37a645b5e915d8572cc2b1f5eb11ada3ea4f
-Gitweb:     http://git.kernel.org/tip/10da37a645b5e915d8572cc2b1f5eb11ada3ea4f
-Author:     David Sharp <dhsharp@google.com>
-AuthorDate: Fri, 3 Dec 2010 16:13:26 -0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 10 Mar 2011 10:34:35 -0500
+Hi -
 
-tracing: Adjust conditional expression latency formatting.
+platform_data is a well established way in Linux to pass configuration 
+data up to on-board assets from a machine file like mach-xyz.c.  It's 
+also supported to pass platform_data up to devices that are probed 
+asynchronously from busses like i2c as well, which is very handy.
 
-Formatting change only to improve code readability. No code changes except to
-introduce intermediate variables.
+However AFAIK it's not possible to bind platform_data to probed USB 
+devices as it stands.
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-LKML-Reference: <1291421609-14665-13-git-send-email-dhsharp@google.com>
+There are now boards which have on-board USB assets, for example OMAP4 
+Panda which has a USB <-> Ethernet bridge wired up permanently.  It'd be 
+convenient to also be able to pass optional platform_data to these 
+devices when they are asynchronously probed.
 
-[ Keep variable declarations and assignment separate ]
+So what's the feeling about a new api to register an array of 
+platform_data pointers bound to static "devpath" names in the machine file?
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_output.c |   26 ++++++++++++++++++--------
- 1 files changed, 18 insertions(+), 8 deletions(-)
+When a usb device is instantiated, it can check through this array if it 
+exists, matching on devname, and attach the platform_data to the 
+underlying probed usb device's dev->platform_data, which it seems is 
+currently unused.
 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 151f32e..456be90 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -533,20 +533,30 @@ seq_print_ip_sym(struct trace_seq *s, unsigned long ip, unsigned long sym_flags)
-  */
- int trace_print_lat_fmt(struct trace_seq *s, struct trace_entry *entry)
- {
--	int hardirq, softirq;
-+	char hardsoft_irq;
-+	char need_resched;
-+	char irqs_off;
-+	int hardirq;
-+	int softirq;
- 	int ret;
- 
- 	hardirq = entry->flags & TRACE_FLAG_HARDIRQ;
- 	softirq = entry->flags & TRACE_FLAG_SOFTIRQ;
- 
-+	irqs_off =
-+		(entry->flags & TRACE_FLAG_IRQS_OFF) ? 'd' :
-+		(entry->flags & TRACE_FLAG_IRQS_NOSUPPORT) ? 'X' :
-+		'.';
-+	need_resched =
-+		(entry->flags & TRACE_FLAG_NEED_RESCHED) ? 'N' : '.';
-+	hardsoft_irq =
-+		(hardirq && softirq) ? 'H' :
-+		hardirq ? 'h' :
-+		softirq ? 's' :
-+		'.';
-+
- 	if (!trace_seq_printf(s, "%c%c%c",
--			      (entry->flags & TRACE_FLAG_IRQS_OFF) ? 'd' :
--				(entry->flags & TRACE_FLAG_IRQS_NOSUPPORT) ?
--				  'X' : '.',
--			      (entry->flags & TRACE_FLAG_NEED_RESCHED) ?
--				'N' : '.',
--			      (hardirq && softirq) ? 'H' :
--				hardirq ? 'h' : softirq ? 's' : '.'))
-+			      irqs_off, need_resched, hardsoft_irq))
- 		return 0;
- 
- 	if (entry->preempt_count)
+The particular use that suggested this is on Panda, it would be ideal to 
+be able to set a flag in the usb device's platform data that forces it 
+to be named eth%d since it's a hardwired asset on the board with an RJ45 
+socket.
+
+Comments, implementation suggestions, enquiries as to my level of crack 
+consumption etc welcomed ^^
+
+-Andy
