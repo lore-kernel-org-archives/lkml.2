@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1CKVfG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 16:35:06 -0500
-Received: from cantor.suse.de ([195.135.220.2]:49112 "EHLO mx1.suse.de"
+	id S1755637Ab1CKVfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 16:35:24 -0500
+Received: from fieldses.org ([174.143.236.118]:55875 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754016Ab1CKVfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 16:35:04 -0500
-From: Michal Marek <mmarek@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kbuild: Fix computing srcversion for modules
-Date: Fri, 11 Mar 2011 22:34:47 +0100
-Message-Id: <1299879287-30889-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20110311092811.GA2079@polaris.bitmath.org>
-References: <20110311092811.GA2079@polaris.bitmath.org>
+	id S1755523Ab1CKVfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 16:35:22 -0500
+Date: Fri, 11 Mar 2011 16:35:19 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Mark Moseley <moseleymark@gmail.com>, linux-nfs@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] more vfs fixes for final
+Message-ID: <20110311213519.GA9404@fieldses.org>
+References: <20110310110931.GF22723@ZenIV.linux.org.uk>
+ <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com>
+ <20110310115856.GG22723@ZenIV.linux.org.uk>
+ <20110311210938.GB8211@hostway.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311210938.GB8211@hostway.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent change to fixdep:
+On Fri, Mar 11, 2011 at 01:09:38PM -0800, Simon Kirby wrote:
+> On Thu, Mar 10, 2011 at 11:58:56AM +0000, Al Viro wrote:
+> 
+> > commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
+> > Author: J. Bruce Fields <bfields@fieldses.org>
+> > Date:   Tue Jan 18 15:45:09 2011 -0500
+> > 
+> >     fs/dcache: allow d_obtain_alias() to return unhashed dentries
+> 
+> Hmm, I was hoping this or something recently would fix nfs_inode_cache
+> growing forever and flush processes taking lots of system time since
+> 2.6.36. For example:
+> 
+>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+> 3457486 3454365  99%    0.95K 105601       33   3379232K nfs_inode_cache
+> 469638 248761  52%    0.10K  12042       39     48168K buffer_head
+> 243712 216348  88%    0.02K    952      256      3808K kmalloc-16
+> 232785 202185  86%    0.19K  11085       21     44340K dentry
+> 149696  54633  36%    0.06K   2339       64      9356K kmalloc-64
+> 115976 106806  92%    0.55K   4142       28     66272K radix_tree_node
+>  76064  45680  60%    0.12K   2377       32      9508K kmalloc-128
+>  62336  53427  85%    0.03K    487      128      1948K kmalloc-32
+>  41958  41250  98%    0.75K   1998       21     31968K ext3_inode_cache
+> 
+> This clears them all, similar to what you posted:
+> 
+> echo 2 > /proc/sys/vm/drop_caches
+> sync
+> echo 2 > /proc/sys/vm/drop_caches
+> 
+> ...but 2.6.38-rc8 still doesn't seem to fix it.
+> 
+> http://0x.ca/sim/ref/2.6.37/cpu3_nfs.png
+> http://www.spinics.net/lists/linux-nfs/msg18212.html
+> 
+> Any ideas?  This started with 2.6.36.
 
-    commit b7bd182176960fdd139486cadb9962b39f8a2b50
-    Author: Michal Marek <mmarek@suse.cz>
-    Date:   Thu Feb 17 15:13:54 2011 +0100
+Do you have NFSv4 clients that are doing locking?  Then it's probably
+0997b17360 and 529d7b2a7f on the for-2.6.39 branch at:
 
-    fixdep: Do not record dependency on the source file itself
+	git://linux-nfs.org/~bfields/linux.git for-2.6.39
 
-changed the format of the *.cmd files without realizing that it is also
-used by modpost. Put the path to the source file to the file back, in a
-special variable, so that modpost sees all source files when calculating
-srcversion for modules.
+Let me know if not.
 
-Reported-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- scripts/basic/fixdep.c   |   19 +++++++++++++------
- scripts/mod/sumversion.c |   19 +++++++++++++++++--
- 2 files changed, 30 insertions(+), 8 deletions(-)
+Those should go into 2.6.39 and stable when the merge window opens.  I
+would have tried to slip them into 2.6.38 but they just didn't seem
+quite trivial enough given where we are in the release process.
 
-diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
-index 6c94c6c..291228e 100644
---- a/scripts/basic/fixdep.c
-+++ b/scripts/basic/fixdep.c
-@@ -309,6 +309,11 @@ static void do_config_file(const char *filename)
- 	close(fd);
- }
- 
-+/*
-+ * Important: The below generated source_foo.o and deps_foo.o variable
-+ * assignments are parsed not only by make, but also by the rather simple
-+ * parser in scripts/mod/sumversion.c.
-+ */
- static void parse_dep_file(void *map, size_t len)
- {
- 	char *m = map;
-@@ -323,7 +328,6 @@ static void parse_dep_file(void *map, size_t len)
- 		exit(1);
- 	}
- 	memcpy(s, m, p-m); s[p-m] = 0;
--	printf("deps_%s := \\\n", target);
- 	m = p+1;
- 
- 	clear_config();
-@@ -343,12 +347,15 @@ static void parse_dep_file(void *map, size_t len)
- 		    strrcmp(s, "arch/um/include/uml-config.h") &&
- 		    strrcmp(s, ".ver")) {
- 			/*
--			 * Do not output the first dependency (the
--			 * source file), so that kbuild is not confused
--			 * if a .c file is rewritten into .S or vice
--			 * versa.
-+			 * Do not list the source file as dependency, so that
-+			 * kbuild is not confused if a .c file is rewritten
-+			 * into .S or vice versa. Storing it in source_* is
-+			 * needed for modpost to compute srcversions.
- 			 */
--			if (!first)
-+			if (first) {
-+				printf("source_%s := %s\n\n", target, s);
-+				printf("deps_%s := \\\n", target);
-+			} else
- 				printf("  %s \\\n", s);
- 			do_config_file(s);
- 		}
-diff --git a/scripts/mod/sumversion.c b/scripts/mod/sumversion.c
-index ecf9c7d..9dfcd6d 100644
---- a/scripts/mod/sumversion.c
-+++ b/scripts/mod/sumversion.c
-@@ -300,8 +300,8 @@ static int is_static_library(const char *objfile)
- 		return 0;
- }
- 
--/* We have dir/file.o.  Open dir/.file.o.cmd, look for deps_ line to
-- * figure out source file. */
-+/* We have dir/file.o.  Open dir/.file.o.cmd, look for source_ and deps_ line
-+ * to figure out source files. */
- static int parse_source_files(const char *objfile, struct md4_ctx *md)
- {
- 	char *cmd, *file, *line, *dir;
-@@ -340,6 +340,21 @@ static int parse_source_files(const char *objfile, struct md4_ctx *md)
- 	*/
- 	while ((line = get_next_line(&pos, file, flen)) != NULL) {
- 		char* p = line;
-+
-+		if (strncmp(line, "source_", sizeof("source_")-1) == 0) {
-+			p = strrchr(line, ' ');
-+			if (!p) {
-+				warn("malformed line: %s\n", line);
-+				goto out_file;
-+			}
-+			p++;
-+			if (!parse_file(p, md)) {
-+				warn("could not open %s: %s\n",
-+				     p, strerror(errno));
-+				goto out_file;
-+			}
-+			continue;
-+		}
- 		if (strncmp(line, "deps_", sizeof("deps_")-1) == 0) {
- 			check_files = 1;
- 			continue;
--- 
-1.7.4.1
-
+--b.
