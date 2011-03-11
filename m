@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab1CKPPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:15:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54917 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab1CKPPH (ORCPT
+	id S1755539Ab1CKPUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:20:40 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33978 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753842Ab1CKPUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:15:07 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU) driver
-Date: Fri, 11 Mar 2011 16:15:01 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-media@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        " =?euc-kr?q?=27=B4=EB=C0=CE=B1=E2=27?=" <inki.dae@samsung.com>,
-        " =?euc-kr?q?=27=B0=AD=B9=CE=B1=D4=27?=" <mk7.kang@samsung.com>,
-        "'KyongHo Cho'" <pullip.cho@samsung.com>, linux-kernel@vger.kernel.org
-References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111507.59825.arnd@arndb.de> <000101cbdffb$e1844b00$a48ce100$%szyprowski@samsung.com>
-In-Reply-To: <000101cbdffb$e1844b00$a48ce100$%szyprowski@samsung.com>
+	Fri, 11 Mar 2011 10:20:39 -0500
+Date: Fri, 11 Mar 2011 15:20:37 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/4] regulator: add set_voltage_time[_sel]
+ infrastructure
+Message-ID: <20110311152037.GL1760@opensource.wolfsonmicro.com>
+References: <1299840868-20613-1-git-send-email-linus.walleij@stericsson.com>
+ <20110311122536.GG1760@opensource.wolfsonmicro.com>
+ <AANLkTim+woyefRXw83RxEDFLmbxHKc25MPa7XQB2_fxE@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="euc-kr"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103111615.01829.arnd@arndb.de>
-X-Provags-ID: V02:K0:6yGSCcxMFCT3TTg76rSE3Btgq6rLVpmZd8zJfdZMl9I
- xHie/0vMF6Yw+ZKq/gMWK+uTfTz7RHAhahpfR+XTmMoACf485j
- LZ2qnokdjtxMtDDzSlHaRyIxJvEbOaH7jrfTQcPhOiGeYBHesN
- JtqD4y7LLmEnUey6XK23sebusxhcZFadhHnHiEs75+hpXHa7Zw
- NMFL/0wGkCUr5lC6xiRHg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim+woyefRXw83RxEDFLmbxHKc25MPa7XQB2_fxE@mail.gmail.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 March 2011, Marek Szyprowski wrote:
-> On Friday, March 11, 2011 3:08 PM Arnd Bergmann wrote:
-> 
-> > On Friday 11 March 2011, Marek Szyprowski wrote:
-> > > > The iommu API is not really meant to be KVM specific, it's just that the
-> > > > in-tree users are basically limited to KVM at the moment. Another user that
-> > > > is coming up soon is the vmio device driver that can be used to transparently
-> > > > pass devices to user space. The idea behind the IOMMU API is that you can
-> > > > map arbitrary bus addresses to physical memory addresses, but it does not
-> > > > deal with allocating the bus addresses or providing buffer management such
-> > > > as cache flushes.
-> > >
-> > > Yea, I've noticed this and this basically what we expect from iommu driver.
-> > > However the iommu.h API requires a separate call to map each single memory page.
-> > > This is quite ineffective approach and imho the API need to be extended to allow
-> > > mapping of the arbitrary set of pages.
-> > 
-> > We can always discuss extensions to the existing infrastructure, adding
-> > an interface for mapping an array of page pointers in the iommu API
-> > sounds like a good idea.
-> 
-> We will investigate this API further. From the first sight it looks it won't take
-> much work to port/rewrite our driver to fit into iommu.h API.
+On Fri, Mar 11, 2011 at 03:45:39PM +0100, Linus Walleij wrote:
+> On Fri, Mar 11, 2011 at 1:25 PM, Mark Brown
 
-Ok, sounds good.
+> +               /*
+> +                * If we can't obtain the old selector there is not enough
+> +                * info to call set_voltage_time_sel().
+> +                */
+> +               if (rdev->desc->ops->set_voltage_time_sel &&
+> +                   rdev->desc->ops->get_voltage_sel) {
+> +                       unsigned int old_selector = 0;
+> +
+> +                       ret = rdev->desc->ops->get_voltage_sel(rdev);
+> +                       if (ret < 0)
+> +                               return ret;
+> +                       old_selector = ret;
+> +                       delay = rdev->desc->ops->set_voltage_time_sel(rdev,
+> +                                               old_selector, selector);
+> +               }
+> +
 
-> > I also think that we should not really have separate iommu and dma-mapping
-> > interfaces, but rather have a portable way to define an iommu so that it
-> > can be used through the dma-mapping interfaces. I'm not asking you to
-> > do that as a prerequisite to merging your driver, but it may be good to
-> > keep in mind that the current situation is still lacking and that any
-> > suggestion for improving this as part of your work to support the
-> > samsung IOMMU is welcome.
-> 
-> Well creating a portable iommu framework and merging it with dma-mapping interface
-> looks like a much harder (and time consuming) task. There is definitely a need for
-> it. I hope that it can be developed incrementally starting from the current iommu.h
-> and dma-mapping.h interfaces.
+Hrm, right.  This means we can only support this for selector based
+get_voltage().  That's probably fine, I think.
 
-Yes, that is the idea. Maybe we should add it to the list things that the
-Linaro kernel working group can target for the November release?
+> > I also think we should be exporting this to consumers as things like
+> > cpufreq are interested in the latency for voltage changes.
 
-> Please note that there might be some subtle differences
-> in the hardware that such framework must be aware. The first obvious one is the
-> hardware design. Some platform has central iommu unit, other (like Samsung Exynos4)
-> has a separate iommu unit per each device driver (this is still a simplification,
-> because a video codec device has 2 memory interfaces and 2 iommu units). Currently
-> I probably have not enough knowledge to predict the other possible issues that need
-> to be taken into account in the portable and generic iommu/dma-mapping frame-work.
+> Can we take that when we have a consumer that wants it? Looking
+> at it it becomes rather complex, since consumers don't know the
+> core-internal selectors, just discrete enumerated voltages, so these
+> have to be mapped back to selectors etc, that's pretty much ovehead
+> code that sits unused.
 
-The dma-mapping API can deal well with one IOMMU per device, but would
-need some tricks to work with one device that has two separate IOMMUs.
+> (If you insist, I will implement it.)
 
-I'm not very familar with the iommu API, but in the common KVM scenario,
-you need one IOMMU per device, so it should handle that just fine as well.
-
-> > Note that the ARM implementation of the dma-mapping.h interface currently
-> > does not support IOMMUs, but that could be changed by wrapping it
-> > using the include/asm-generic/dma-mapping-common.h infrastructure.
-> 
-> ARM dma-mapping framework also requires some additional research for better DMA
-> support (there are still issues with multiple mappings to be resolved).
-
-You mean mapping the same memory into multiple devices, or a different problem?
-
-	Arnd
+Consumers know about the set of selectors as they are used to enumerate
+the supported voltages via list_voltage().  An existing cpufreq driver
+such as the s3c64xx one would be able to take advantage of this very
+quickly.
