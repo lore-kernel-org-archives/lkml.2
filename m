@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab1CKQtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:49:32 -0500
-Received: from www.tglx.de ([62.245.132.106]:40746 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab1CKQtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:49:31 -0500
-Date: Fri, 11 Mar 2011 17:49:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: linux-kernel@vger.kernel.org, x86@kernel.org, sodaville@linutronix.de
-Subject: Re: [PATCH] x86/ce4100: set pci ops via callback instead of module
- init
-In-Reply-To: <20110311152247.GA14273@www.tglx.de>
-Message-ID: <alpine.LFD.2.00.1103111747460.2787@localhost6.localdomain6>
-References: <20110311152247.GA14273@www.tglx.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751807Ab1CKQwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:52:34 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49922 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab1CKQwa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 11:52:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=ww1v+323L6EXL32W460s50NdIfmodSBNkafEtkYmPrYnptOHOsTb4Q6addvpbZHuWi
+         SyC2BpvlTBd2+Cj0997NuSrwxld8WHrdGyMzE/D0qPFRSB3gZXO3UpFzWtNPeyd2A2z1
+         xDuz4Sk31wJnhH/zr6E47s80kG5wrQpSaW5Do=
+Message-ID: <4D7A5329.6080507@linaro.org>
+Date: Fri, 11 Mar 2011 16:51:53 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <Pine.LNX.4.44L0.1103111141270.1975-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1103111141270.1975-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Sebastian Andrzej Siewior wrote:
->  
->  struct sim_reg {
-> @@ -306,10 +307,8 @@ struct pci_raw_ops ce4100_pci_conf = {
->  	.write = ce4100_conf_write,
->  };
->  
-> -static int __init ce4100_pci_init(void)
+On 03/11/2011 04:45 PM, Somebody in the thread at some point said:
 
-Why don't you keep the function name and make it non static, add the
-call to pci_legacy_init() and just set the init.pci pointer to this?
+Hi -
 
-So all pci is stuff is where it belongs
+> Or to put it another way...  With external, hot-plugged USB devices,
+> there is no need to know "how it is wired".  The fact that it is on a
+> USB bus is the only information necessary.  Why does anyone need to
+> know more than this for on-board USB devices?
 
-Thanks,
+For example, the USB device is a chip with option pins.  On the board it 
+is placed on, some of the option pins are tied in a particular way that 
+impacts its actual function, but can't be seen from the chip itself. 
+The driver covers all the options, but it needs to be told which mode 
+the chip was wired up for.
 
-	tglx
+Another example, it's a USB chip with GPIO pins, analogous to a I2C GPIO 
+extender.  Some of the GPIO are wired to LEDs also on the board, which 
+you want to expose as generic GPIO.  The board definition file is in a 
+position to do all that because it knows what the board is and what it 
+is wired up to.
 
-> +void __init ce4100_init_pci_ops(void)
->  {
->  	init_sim_regs();
->  	raw_pci_ops = &ce4100_pci_conf;
-> -	return 0;
->  }
-> -subsys_initcall(ce4100_pci_init);
-> diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-> index 68c0dbc..93b4e3c 100644
-> --- a/arch/x86/platform/ce4100/ce4100.c
-> +++ b/arch/x86/platform/ce4100/ce4100.c
-> @@ -15,6 +15,7 @@
->  #include <linux/serial_reg.h>
->  #include <linux/serial_8250.h>
->  
-> +#include <asm/ce4100.h>
->  #include <asm/prom.h>
->  #include <asm/setup.h>
->  #include <asm/i8259.h>
-> @@ -125,6 +126,13 @@ static void __cpuinit sdv_pci_init(void)
->  }
->  #endif
->  
-> +static int __cpuinit ce4100_pci_init(void)
-> +{
-> +	ce4100_init_pci_ops();
-> +	pci_legacy_init();
-> +	return 0;
-> +}
-> +
->  /*
->   * CE4100 specific x86_init function overrides and early setup
->   * calls.
-> @@ -136,6 +144,7 @@ void __init x86_ce4100_early_setup(void)
->  	x86_init.resources.probe_roms = x86_init_noop;
->  	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
->  	x86_init.mpparse.find_smp_config = x86_init_noop;
-> +	x86_init.pci.init = ce4100_pci_init;
->  
->  #ifdef CONFIG_X86_IO_APIC
->  	x86_init.pci.init_irq = sdv_pci_init;
-> -- 
-> 1.7.4
-> 
+That the USB chips in these examples are 'discoverable' has nothing to 
+do with anything.  In fact the board definition file has knowledge about 
+the "functional implemntation" of the instances of those chips -- just 
+exactly those instances soldered to the board.  If you plugged another 
+of these chips, the board definition file has nothing to say about it 
+because they are not "on the board" and in-scope for it.
+
+-Andy
