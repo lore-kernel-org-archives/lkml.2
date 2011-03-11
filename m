@@ -1,94 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab1CKFz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 00:55:56 -0500
-Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:60155 "HELO
-	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751358Ab1CKFzz (ORCPT
+	id S1752059Ab1CKGC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 01:02:27 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50787 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab1CKGCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 00:55:55 -0500
-From: Roland Dreier <roland@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Benjamin LaHaise <bcrl@kvack.org>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH] aio: Wake all waiters when destroying ctx
-Date: Thu, 10 Mar 2011 21:55:37 -0800
-Message-Id: <1299822937-6522-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 11 Mar 2011 01:02:24 -0500
+From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Subject: [PATCH 1/2] tty: serial: Fix build on architecture that does not have ioport
+Date: Fri, 11 Mar 2011 14:54:56 +0900
+Message-Id: <1299822897-7047-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@purestorage.com>
+Some CPU's do not have ioport. Therefore, these do not have inX/outX.
+Because they define CONFIG_NO_IOPORT, These CPU's use this and do not
+use inX/outX.
 
-The test program below will hang because io_getevents() uses
-add_wait_queue_exclusive(), which means the wake_up() in io_destroy()
-only wakes up one of the threads.  Fix this by using wake_up_all() in
-the aio code paths where we want to make sure no one gets stuck.
-
-	// t.c -- compile with gcc -lpthread -laio t.c
-
-	#include <libaio.h>
-	#include <pthread.h>
-	#include <stdio.h>
-	#include <unistd.h>
-
-	static const int nthr = 2;
-
-	void *getev(void *ctx)
-	{
-		struct io_event ev;
-		io_getevents(ctx, 1, 1, &ev, NULL);
-		printf("io_getevents returned\n");
-		return NULL;
-	}
-
-	int main(int argc, char *argv[])
-	{
-		io_context_t ctx = 0;
-		pthread_t thread[nthr];
-		int i;
-
-		io_setup(1024, &ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_create(&thread[i], NULL, getev, ctx);
-
-		sleep(1);
-
-		io_destroy(ctx);
-
-		for (i = 0; i < nthr; ++i)
-			pthread_join(thread[i], NULL);
-
-		return 0;
-	}
-
-Cc: <stable@kernel.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
 ---
- fs/aio.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/serial/8250.c        |   18 ++++++++++++++++--
+ drivers/tty/serial/8250_early.c  |    4 ++++
+ drivers/tty/serial/serial_core.c |    4 ++++
+ 3 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 26869cd..88f0ed5 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -520,7 +520,7 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
- 	ctx->reqs_active--;
+diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+index 3975df6..5c1f353 100644
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -387,6 +387,7 @@ static inline int map_8250_out_reg(struct uart_port *p, int offset)
  
- 	if (unlikely(!ctx->reqs_active && ctx->dead))
--		wake_up(&ctx->wait);
-+		wake_up_all(&ctx->wait);
+ #endif
+ 
++#ifndef CONFIG_NO_IOPORT
+ static unsigned int hub6_serial_in(struct uart_port *p, int offset)
+ {
+ 	offset = map_8250_in_reg(p, offset) << p->regshift;
+@@ -400,6 +401,7 @@ static void hub6_serial_out(struct uart_port *p, int offset, int value)
+ 	outb(p->hub6 - 1 + offset, p->iobase);
+ 	outb(value, p->iobase + 1);
+ }
++#endif /* CONFIG_NO_IOPORT */
+ 
+ static unsigned int mem_serial_in(struct uart_port *p, int offset)
+ {
+@@ -491,6 +493,7 @@ static void dwapb32_serial_out(struct uart_port *p, int offset, int value)
+ 	dwapb_check_clear_ier(p, save_offset);
  }
  
- static void aio_fput_routine(struct work_struct *data)
-@@ -1229,7 +1229,7 @@ static void io_destroy(struct kioctx *ioctx)
- 	 * by other CPUs at this point.  Right now, we rely on the
- 	 * locking done by the above calls to ensure this consistency.
- 	 */
--	wake_up(&ioctx->wait);
-+	wake_up_all(&ioctx->wait);
- 	put_ioctx(ioctx);	/* once for the lookup */
++#ifndef CONFIG_NO_IOPORT
+ static unsigned int io_serial_in(struct uart_port *p, int offset)
+ {
+ 	offset = map_8250_in_reg(p, offset) << p->regshift;
+@@ -502,17 +505,19 @@ static void io_serial_out(struct uart_port *p, int offset, int value)
+ 	offset = map_8250_out_reg(p, offset) << p->regshift;
+ 	outb(value, p->iobase + offset);
+ }
++#endif
+ 
+ static void set_io_from_upio(struct uart_port *p)
+ {
+ 	struct uart_8250_port *up =
+ 		container_of(p, struct uart_8250_port, port);
+ 	switch (p->iotype) {
++#ifndef CONFIG_NO_IOPORT
+ 	case UPIO_HUB6:
+ 		p->serial_in = hub6_serial_in;
+ 		p->serial_out = hub6_serial_out;
+ 		break;
+-
++#endif
+ 	case UPIO_MEM:
+ 		p->serial_in = mem_serial_in;
+ 		p->serial_out = mem_serial_out;
+@@ -545,8 +550,10 @@ static void set_io_from_upio(struct uart_port *p)
+ 		break;
+ 
+ 	default:
++#ifndef CONFIG_NO_IOPORT
+ 		p->serial_in = io_serial_in;
+ 		p->serial_out = io_serial_out;
++#endif
+ 		break;
+ 	}
+ 	/* Remember loaded iotype */
+@@ -2539,11 +2546,13 @@ static int serial8250_request_std_resource(struct uart_8250_port *up)
+ 		}
+ 		break;
+ 
++#ifndef CONFIG_NO_IOPORT
+ 	case UPIO_HUB6:
+ 	case UPIO_PORT:
+ 		if (!request_region(up->port.iobase, size, "serial"))
+ 			ret = -EBUSY;
+ 		break;
++#endif
+ 	}
+ 	return ret;
+ }
+@@ -2570,10 +2579,12 @@ static void serial8250_release_std_resource(struct uart_8250_port *up)
+ 		release_mem_region(up->port.mapbase, size);
+ 		break;
+ 
++#ifndef CONFIG_NO_IOPORT
+ 	case UPIO_HUB6:
+ 	case UPIO_PORT:
+ 		release_region(up->port.iobase, size);
+ 		break;
++#endif
+ 	}
  }
  
+@@ -2584,6 +2595,7 @@ static int serial8250_request_rsa_resource(struct uart_8250_port *up)
+ 	int ret = -EINVAL;
+ 
+ 	switch (up->port.iotype) {
++#ifndef CONFIG_NO_IOPORT
+ 	case UPIO_HUB6:
+ 	case UPIO_PORT:
+ 		start += up->port.iobase;
+@@ -2593,7 +2605,7 @@ static int serial8250_request_rsa_resource(struct uart_8250_port *up)
+ 			ret = -EBUSY;
+ 		break;
+ 	}
+-
++#endif
+ 	return ret;
+ }
+ 
+@@ -2603,11 +2615,13 @@ static void serial8250_release_rsa_resource(struct uart_8250_port *up)
+ 	unsigned int size = 8 << up->port.regshift;
+ 
+ 	switch (up->port.iotype) {
++#ifndef CONFIG_NO_IOPORT
+ 	case UPIO_HUB6:
+ 	case UPIO_PORT:
+ 		release_region(up->port.iobase + offset, size);
+ 		break;
+ 	}
++#endif
+ }
+ 
+ static void serial8250_release_port(struct uart_port *port)
+diff --git a/drivers/tty/serial/8250_early.c b/drivers/tty/serial/8250_early.c
+index eaafb98..5169f9e 100644
+--- a/drivers/tty/serial/8250_early.c
++++ b/drivers/tty/serial/8250_early.c
+@@ -55,8 +55,10 @@ static unsigned int __init serial_in(struct uart_port *port, int offset)
+ 		return readb(port->membase + offset);
+ 	case UPIO_MEM32:
+ 		return readl(port->membase + (offset << 2));
++#if defined(CONFIG_NO_IOPORT)
+ 	case UPIO_PORT:
+ 		return inb(port->iobase + offset);
++#endif
+ 	default:
+ 		return 0;
+ 	}
+@@ -71,9 +73,11 @@ static void __init serial_out(struct uart_port *port, int offset, int value)
+ 	case UPIO_MEM32:
+ 		writel(value, port->membase + (offset << 2));
+ 		break;
++#if defined(CONFIG_NO_IOPORT)
+ 	case UPIO_PORT:
+ 		outb(value, port->iobase + offset);
+ 		break;
++#endif
+ 	}
+ }
+ 
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 460a72d..eb7ceba 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2126,6 +2126,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
+ 	char address[64];
+ 
+ 	switch (port->iotype) {
++#ifndef CONFIG_NO_IOPORT
+ 	case UPIO_PORT:
+ 		snprintf(address, sizeof(address), "I/O 0x%lx", port->iobase);
+ 		break;
+@@ -2133,6 +2134,7 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
+ 		snprintf(address, sizeof(address),
+ 			 "I/O 0x%lx offset 0x%x", port->iobase, port->hub6);
+ 		break;
++#endif
+ 	case UPIO_MEM:
+ 	case UPIO_MEM32:
+ 	case UPIO_AU:
+@@ -2549,11 +2551,13 @@ int uart_match_port(struct uart_port *port1, struct uart_port *port2)
+ 		return 0;
+ 
+ 	switch (port1->iotype) {
++#ifndef CONFIG_NO_IOPORT
+ 	case UPIO_PORT:
+ 		return (port1->iobase == port2->iobase);
+ 	case UPIO_HUB6:
+ 		return (port1->iobase == port2->iobase) &&
+ 		       (port1->hub6   == port2->hub6);
++#endif
+ 	case UPIO_MEM:
+ 	case UPIO_MEM32:
+ 	case UPIO_AU:
+-- 
+1.7.2.3
+
