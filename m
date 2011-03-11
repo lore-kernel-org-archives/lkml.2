@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab1CKUnX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:43:23 -0500
-Received: from kroah.org ([198.145.64.141]:46609 "EHLO coco.kroah.org"
+	id S1755051Ab1CKUnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:43:20 -0500
+Received: from kroah.org ([198.145.64.141]:46615 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754618Ab1CKUnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:43:12 -0500
+	id S1754909Ab1CKUnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:43:13 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:10 2011
-Message-Id: <20110311204110.753145113@clark.kroah.org>
+Message-Id: <20110311204110.858185108@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 11 Mar 2011 12:40:15 -0800
+Date: Fri, 11 Mar 2011 12:40:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roel Kluin <roel.kluin@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [14/17] nfsd: wrong index used in inner loop
+        Ivan Vecera <ivecera@redhat.com>,
+        Francois Romieu <romieu@fr.zoreil.com>, Hayes <hayeswang@realtek.com>
+Subject: [15/17] r8169: use RxFIFO overflow workaround for 8168c chipset.
 In-Reply-To: <20110311204126.GA7223@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: roel <roel.kluin@gmail.com>
+From: Ivan Vecera <ivecera@redhat.com>
 
-commit 3ec07aa9522e3d5e9d5ede7bef946756e623a0a0 upstream.
+commit b5ba6d12bdac21bc0620a5089e0f24e362645efd upstream.
 
-Index i was already used in the outer loop
+I found that one of the 8168c chipsets (concretely XID 1c4000c0) starts
+generating RxFIFO overflow errors. The result is an infinite loop in
+interrupt handler as the RxFIFOOver is handled only for ...MAC_VER_11.
+With the workaround everything goes fine.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Hayes <hayeswang@realtek.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4xdr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/r8169.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1114,7 +1114,7 @@ nfsd4_decode_create_session(struct nfsd4
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -3741,7 +3741,8 @@ static void rtl_hw_start_8168(struct net
+ 	RTL_W16(IntrMitigate, 0x5151);
  
- 	u32 dummy;
- 	char *machine_name;
--	int i;
-+	int i, j;
- 	int nr_secflavs;
+ 	/* Work around for RxFIFO overflow. */
+-	if (tp->mac_version == RTL_GIGA_MAC_VER_11) {
++	if (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_22) {
+ 		tp->intr_event |= RxFIFOOver | PCSTimeout;
+ 		tp->intr_event &= ~RxOverflow;
+ 	}
+@@ -4633,7 +4634,8 @@ static irqreturn_t rtl8169_interrupt(int
  
- 	READ_BUF(16);
-@@ -1187,7 +1187,7 @@ nfsd4_decode_create_session(struct nfsd4
- 			READ_BUF(4);
- 			READ32(dummy);
- 			READ_BUF(dummy * 4);
--			for (i = 0; i < dummy; ++i)
-+			for (j = 0; j < dummy; ++j)
- 				READ32(dummy);
+ 		/* Work around for rx fifo overflow */
+ 		if (unlikely(status & RxFIFOOver) &&
+-		(tp->mac_version == RTL_GIGA_MAC_VER_11)) {
++		    (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
++		     tp->mac_version == RTL_GIGA_MAC_VER_22)) {
+ 			netif_stop_queue(dev);
+ 			rtl8169_tx_timeout(dev);
  			break;
- 		case RPC_AUTH_GSS:
 
 
