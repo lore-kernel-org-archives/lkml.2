@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab1CKV1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 16:27:20 -0500
-Received: from peace.netnation.com ([204.174.223.2]:41640 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab1CKV1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 16:27:19 -0500
-X-Greylist: delayed 1059 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Mar 2011 16:27:19 EST
-Date: Fri, 11 Mar 2011 13:09:38 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Mark Moseley <moseleymark@gmail.com>, linux-nfs@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] more vfs fixes for final
-Message-ID: <20110311210938.GB8211@hostway.ca>
-References: <20110310110931.GF22723@ZenIV.linux.org.uk> <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com> <20110310115856.GG22723@ZenIV.linux.org.uk>
+	id S1755505Ab1CKV2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 16:28:49 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:43891 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754940Ab1CKV2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 16:28:47 -0500
+Date: Fri, 11 Mar 2011 13:27:47 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        David Howells <dhowells@redhat.com>, Eugene Teo <eugeneteo@kernel.sg>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH] proc: protect mm start_code/end_code in /proc/pid/stat
+Message-ID: <20110311212747.GA27618@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110310115856.GG22723@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 11:58:56AM +0000, Al Viro wrote:
+While mm->start_stack was protected from cross-uid viewing (commit
+f83ce3e6b02d5e48b3a43b001390e2b58820389d), the start_code and end_code
+values were not. This would allow the text location of a PIE binary to
+leak, defeating ASLR.
 
-> commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
-> Author: J. Bruce Fields <bfields@fieldses.org>
-> Date:   Tue Jan 18 15:45:09 2011 -0500
-> 
->     fs/dcache: allow d_obtain_alias() to return unhashed dentries
+Note that the value "1" is used instead of "0" for a protected value
+since "ps", "killall", and likely other readers of /proc/pid/stat, take
+start_code of "0" to mean a kernel thread and will misbehave. Thanks to
+Brad Spengler for pointing this out.
 
-Hmm, I was hoping this or something recently would fix nfs_inode_cache
-growing forever and flush processes taking lots of system time since
-2.6.36. For example:
+CVE-2011-0726
 
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-3457486 3454365  99%    0.95K 105601       33   3379232K nfs_inode_cache
-469638 248761  52%    0.10K  12042       39     48168K buffer_head
-243712 216348  88%    0.02K    952      256      3808K kmalloc-16
-232785 202185  86%    0.19K  11085       21     44340K dentry
-149696  54633  36%    0.06K   2339       64      9356K kmalloc-64
-115976 106806  92%    0.55K   4142       28     66272K radix_tree_node
- 76064  45680  60%    0.12K   2377       32      9508K kmalloc-128
- 62336  53427  85%    0.03K    487      128      1948K kmalloc-32
- 41958  41250  98%    0.75K   1998       21     31968K ext3_inode_cache
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Cc: stable@kernel.org
+---
+ fs/proc/array.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-This clears them all, similar to what you posted:
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 7c99c1c..5e4f776 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -489,8 +489,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 		vsize,
+ 		mm ? get_mm_rss(mm) : 0,
+ 		rsslim,
+-		mm ? mm->start_code : 0,
+-		mm ? mm->end_code : 0,
++		mm ? (permitted ? mm->start_code : 1) : 0,
++		mm ? (permitted ? mm->end_code : 1) : 0,
+ 		(permitted && mm) ? mm->start_stack : 0,
+ 		esp,
+ 		eip,
+-- 
+1.7.4.1
 
-echo 2 > /proc/sys/vm/drop_caches
-sync
-echo 2 > /proc/sys/vm/drop_caches
-
-...but 2.6.38-rc8 still doesn't seem to fix it.
-
-http://0x.ca/sim/ref/2.6.37/cpu3_nfs.png
-http://www.spinics.net/lists/linux-nfs/msg18212.html
-
-Any ideas?  This started with 2.6.36.
-
-Simon-
+-- 
+Kees Cook
+Ubuntu Security Team
