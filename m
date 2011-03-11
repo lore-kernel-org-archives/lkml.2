@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab1CKX1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 18:27:54 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41125 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751147Ab1CKX1v (ORCPT
+	id S1754196Ab1CKXkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 18:40:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38149 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab1CKXkA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 18:27:51 -0500
-Date: Fri, 11 Mar 2011 15:27:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Subject: Re: [PATCH 3/4] calibrate: retry with wider bounds when converge
- seems to fail
-Message-Id: <20110311152744.ad5ef129.akpm@linux-foundation.org>
-In-Reply-To: <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
-	<1299768487-13200-2-git-send-email-ext-phil.2.carmody@nokia.com>
-	<1299768487-13200-3-git-send-email-ext-phil.2.carmody@nokia.com>
-	<1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Mar 2011 18:40:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <4D7AA674.2050705@linaro.org>
+References: <4D79F068.2080009@linaro.org> <AANLkTi=+6cp=F1ZDiH1vFwqvseU-Punwpq99P1j-U4Q1@mail.gmail.com>
+ <4D7AA674.2050705@linaro.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 11 Mar 2011 16:39:39 -0700
+X-Google-Sender-Auth: pvwqnk_9WhFDn1HcCahHbIZLQO8
+Message-ID: <AANLkTimwUUBNtQ7qG5NXCOs+fODZHypNesA9mooseW9+@mail.gmail.com>
+Subject: Re: RFC: Platform data for onboard USB assets
+To: andy.green@linaro.org
+Cc: Andy Green <andy@warmcat.com>, Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 16:48:06 +0200
-Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
-
-> Systems with unmaskable interrupts such as SMIs may massively underestimate
-> loops_per_jiffy, and fail to converge anywhere near the real value. A case
-> seen on x86_64 was an initial estimate of 256<<12, which converged to 511<<12
-> where the real value should have been over 630<<12. This admitedly requires
-> bypassing the TSC calibration (lpj_fine), and a failure to settle in the
-> direct calibration too, but is physically possible. This failure does not
-> depend on my previous calibration optimisation, but by luck is easy to fix
-> with the optimisation in place with a trivial retry loop.
-> 
-> In the context of the optimised converging method, as we can no longer trust
-> the starting estimate, enlarge the search bounds exponentially so that the
-> number of retries is logarithmically bounded.
-> 
-> ...
+On Fri, Mar 11, 2011 at 3:47 PM, Andy Green <andy@warmcat.com> wrote:
+> On 03/11/2011 10:45 PM, Somebody in the thread at some point said:
+>>
+>> On Fri, Mar 11, 2011 at 2:50 AM, Andy Green<andy@warmcat.com>  wrote:
+>>>
+>>> Hi -
+>>>
+>>> platform_data is a well established way in Linux to pass configuration
+>>> data
+>>> up to on-board assets from a machine file like mach-xyz.c.  It's also
+>>> supported to pass platform_data up to devices that are probed
+>>> asynchronously
+>>> from busses like i2c as well, which is very handy.
+>>>
+>>> However AFAIK it's not possible to bind platform_data to probed USB
+>>> devices
+>>> as it stands.
+>>
+>> Oh, please no.
+>>
+>> platform_data is an ugly non-type-checked anonymous pointer.  If you
+>> need to pass data to a driver, use something better designed.  A
+>> device tree fragment would work, or provide some kind of query api.
+>> platform_data is definitely the wrong approach.
 >
-> @@ -165,6 +169,16 @@ static unsigned long __cpuinit calibrate_delay_converge(void)
->  			lpj -= loopadd;
->  		loopadd >>= 1;
->  	}
-> +	/*
-> +	 * If we incremented every single time possible, presume we've
-> +	 * massively underestimated initially, and retry with a higher
-> +	 * start, and larger range. (Only seen on x86_64.)
-> +	 */
-> +	if (lpj + loopadd * 2 == lpj_base + loopadd_base * 2) {
-> +		lpj_base = lpj;
-> +		loopadd_base <<= 2;
-> +		goto recalibrate;
-> +	}
+> $ grep platform_data drivers/* -R | wc -l
+> 2110
 
-This is more informative, no?
+I'm not disputing that it is widely used; and it does make a certain
+amount of sense for static device registrations, but it is not a nice
+interface, and it is a horrible idea for dynamic devices.
 
---- a/init/calibrate.c~calibrate-retry-with-wider-bounds-when-converge-seems-to-fail-fix
-+++ a/init/calibrate.c
-@@ -172,7 +172,7 @@ recalibrate:
- 	/*
- 	 * If we incremented every single time possible, presume we've
- 	 * massively underestimated initially, and retry with a higher
--	 * start, and larger range. (Only seen on x86_64.)
-+	 * start, and larger range. (Only seen on x86_64, due to SMIs)
- 	 */
- 	if (lpj + loopadd * 2 == lpj_base + loopadd_base * 2) {
- 		lpj_base = lpj;
-_
-
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
