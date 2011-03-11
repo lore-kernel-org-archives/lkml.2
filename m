@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab1CKODl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:03:41 -0500
-Received: from www.tglx.de ([62.245.132.106]:51501 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab1CKODj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:03:39 -0500
-Date: Fri, 11 Mar 2011 15:02:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiri Slaby <jslaby@suse.cz>
-cc: Len Brown <lenb@kernel.org>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: Why is max_cstate=1 still needed?
-In-Reply-To: <4D7A1322.4050706@suse.cz>
-Message-ID: <alpine.LFD.2.00.1103111445520.2787@localhost6.localdomain6>
-References: <4D7A1322.4050706@suse.cz>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754350Ab1CKOII (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:08:08 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:59620 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab1CKOIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:08:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU) driver
+Date: Fri, 11 Mar 2011 15:07:59 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        " =?euc-kr?q?=27=B4=EB=C0=CE=B1=E2=27?=" <inki.dae@samsung.com>,
+        " =?euc-kr?q?=27=B0=AD=B9=CE=B1=D4=27?=" <mk7.kang@samsung.com>,
+        "'KyongHo Cho'" <pullip.cho@samsung.com>, linux-kernel@vger.kernel.org
+References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111250.51252.arnd@arndb.de> <000001cbdfe8$ce444b20$6acce160$%szyprowski@samsung.com>
+In-Reply-To: <000001cbdfe8$ce444b20$6acce160$%szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="euc-kr"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103111507.59825.arnd@arndb.de>
+X-Provags-ID: V02:K0:20/IIe56rXkjSzD3KhQkDLVGroMhTy7sudZzHY1ZX4+
+ 22wGhchWQZjd0CKH6kl9lEG1xI+oJnc/9aQRB1vZ6Bxy1walTV
+ QIQoTUyocYCjI6q3MZlmzqiBEdat+RIPLpkOeE+asgPZj+m0iA
+ 4LmJNEV1Mz1/xQ58hPH8SgUj7XHRBzKe6lOqbgJFhBRer4s0Tu
+ 1MMlM8sKWZ70DOKLEEpog==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Jiri Slaby wrote:
-> there are still reports against the latest kernels, that people need to
-> pass processor/intel_idle.max_cstate=1 to successfully boot the kernel.
-> The symptoms are always the same, until the parameter is specified OR
-> until the user presses a key, the system won't boot up.
+On Friday 11 March 2011, Marek Szyprowski wrote:
+> > The iommu API is not really meant to be KVM specific, it's just that the
+> > in-tree users are basically limited to KVM at the moment. Another user that
+> > is coming up soon is the vmio device driver that can be used to transparently
+> > pass devices to user space. The idea behind the IOMMU API is that you can
+> > map arbitrary bus addresses to physical memory addresses, but it does not
+> > deal with allocating the bus addresses or providing buffer management such
+> > as cache flushes.
 > 
-> This started to appear between 2.6.31 and 2.6.34 (possibly a 2.6.33
-> regression) and continues to be reported against the latest stable
-> 2.6.37.3. For example:
-> https://bugzilla.kernel.org/show_bug.cgi?id=15289
-> https://bugzilla.novell.com/show_bug.cgi?id=579932
-> https://bugzilla.novell.com/show_bug.cgi?id=673589
-> https://bugzilla.novell.com/show_bug.cgi?id=675161
-> 
-> I see that there were some fixes in .38-rc in this bug report (they look
-> unrelated):
-> https://bugzilla.kernel.org/show_bug.cgi?id=29992
-> 
-> Should they give .38-rc a try?
+> Yea, I've noticed this and this basically what we expect from iommu driver. 
+> However the iommu.h API requires a separate call to map each single memory page.
+> This is quite ineffective approach and imho the API need to be extended to allow
+> mapping of the arbitrary set of pages.
 
-Trying does no damage :(
- 
-> Any help would be appreciated.
+We can always discuss extensions to the existing infrastructure, adding
+an interface for mapping an array of page pointers in the iommu API
+sounds like a good idea.
 
-I went through the bug reports briefly. While they all report the same
-symptoms (hangs until key pressed) the root cause varies.
+I also think that we should not really have separate iommu and dma-mapping
+interfaces, but rather have a portable way to define an iommu so that it
+can be used through the dma-mapping interfaces. I'm not asking you to
+do that as a prerequisite to merging your driver, but it may be good to
+keep in mind that the current situation is still lacking and that any
+suggestion for improving this as part of your work to support the
+samsung IOMMU is welcome.
 
-   - SMM C1E handler broken (affects AMD only)
-   - HPET issues (mostly AMD)
-   - The usual ACPI/BIOS madness
+Note that the ARM implementation of the dma-mapping.h interface currently
+does not support IOMMUs, but that could be changed by wrapping it
+using the include/asm-generic/dma-mapping-common.h infrastructure.
 
-On most of those systems nohz=off hides the problem as well as it
-prevents deeper power states, so the local apic timer just keeps
-ticking and the broadcast via PIT/HPET is not activated. hpet=disable
-is another way to work around it.
-
-To be honest we have no real handle on all of this as much of the
-wreckage is hidden deep in that black hole of ACPI/BIOS. We grew some
-quirks and detection mechanisms over time, but there seems to be a
-never ending source of trouble especially as HW vendors seem to add
-more power related features into the BIOS. We've seen perf wreckage as
-well as some of those abuse performance counters :(
-
-Of course those "features" are only tested against that other OS, some
-of them even require a driver counterpart for the other OS. Of course
-we have no information about that at all and the HW vendors are
-helpful as ever.
-
-Yes, it's sad, but reality.
-
-Thanks,
-
-	tglx
+	Arnd
