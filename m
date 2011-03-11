@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab1CKI3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 03:29:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49419 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1CKI3p (ORCPT
+	id S1752933Ab1CKIai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 03:30:38 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:35390 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab1CKIah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 03:29:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VwFkqNGNbh8nAajilbHesq+AQtKonB/WW/1btsp90eZz2251yt1guqQC4EFuidbn20
-         8BFD/amk4Nm9+PnGsUFc4+KSzcEsnNb/RuJ6yUCeKtvDB90bW5RJS71qiymE4nmRFXWZ
-         bAfCqp5ZhFgv3IWUdxqN9Q1jyDUVF+a1Ue4NM=
-Date: Fri, 11 Mar 2011 09:29:38 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
- handling
-Message-ID: <20110311082938.GC13038@htj.dyndns.org>
-References: <20110302165545.GR3319@htj.dyndns.org>
- <4D6E91EC.6040906@kernel.org>
- <20110302190208.GD28266@mtj.dyndns.org>
- <4D6E9541.2040201@kernel.org>
- <20110302191338.GE28266@mtj.dyndns.org>
- <4D6EA975.8070200@kernel.org>
- <20110302205704.GF28266@mtj.dyndns.org>
- <4D6EB335.8000306@kernel.org>
- <20110303061711.GG28266@mtj.dyndns.org>
- <4D791C9F.1010500@kernel.org>
+	Fri, 11 Mar 2011 03:30:37 -0500
+Message-ID: <b98da048b445e86006be4bae706a0247.squirrel@webmail.greenhost.nl>
+In-Reply-To: <s5hei6erugz.wl%tiwai@suse.de>
+References: <5e60ae646a15c73f5be0c309f51d1c63.squirrel@webmail.greenhost.nl>
+    <s5hei6erugz.wl%tiwai@suse.de>
+Date: Fri, 11 Mar 2011 09:30:27 +0100 (CET)
+Subject: Re: drm/i915: Fix DPMS and suspend interaction for intel_panel.c
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Takashi Iwai" <tiwai@suse.de>
+Cc: "Keith Packard" <keithp@keithp.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D791C9F.1010500@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 4c3c8b3d32e7d0cfaf2d58264fc1daa3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Yinghai.
+On Fri, March 11, 2011 08:23, Takashi Iwai wrote:
+> [Removed stable-kernel from Cc]
+>
+> At Fri, 11 Mar 2011 02:35:45 +0100 (CET),
+> Indan Zupancic wrote:
+>>
+>> drm/i915: Fix DPMS and suspend interaction for intel_panel.c
+>>
+>> When suspending intel_panel_disable_backlight() is never called,
+>> but intel_panel_enable_backlight() is called at resume. With the
+>> effect that if the brightness was ever changed after screen
+>> blanking, the wrong brightness gets restored at resume time.
+>>
+>> Nothing guarantees that those calls will be balanced, so having
+>> backlight_enabled makes no sense, as the real state can change
+>> without the panel code noticing. So keep things as stateless as
+>> possible.
+>>
+>> Signed-off-by: Indan Zupancic <indan@nul.nu>
+>
+> Indan, when you need a patch to be added to stable kernel, just put
+> Cc to stable kernel around your sign-off line.  Then Greg will pick it
+> up automatically once when the patch is merged to Linus tree.
 
-On Thu, Mar 10, 2011 at 10:46:55AM -0800, Yinghai Lu wrote:
-> that will duplicate the code:
-> 
->         nodes_parsed = numa_nodes_parsed;
->         numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
-> 
->         for_each_node_mask(i, nodes_parsed)
->                 cnt = i;
->         cnt++;
-> 
-> in numa_alloc_distance().
-> 
-> Why just let numa_alloc_distance() to be called at first and return cnt ?
+Ah, okay. I'll do that in the future.
 
-Look at your patch.  It exports numa_alloc_distanc() and calls the
-function explicitly just to use for (i...) loop instead of
-for_each_node_mask().
+Reading through Documentation/stable_kernel_rules.txt I'm not
+sure if this patch applies. It does fix a bug that bothers me
+personally, but otherwise it's not very important.
 
-If you look at how numa_set_distance() is used, it's supposed to be
-fire-and-forget thing.  Specific NUMA configuration implementations
-provide the information to the generic code but they don't have to
-care how it's managed or whether something fails for whatever reason
-and I'd like to keep it that way.  It's a small distinction but small
-abstractions and simplifications like that add up to make the code
-base easier to understand and maintain.  And you wanna break that for
-what?  for (i...) instead of for_each_node_mask().
+> Anyway, the patch looks good to me.  A nice clean-up.
 
-Also, I don't think your patch is correct.  Even if there is phys_dist
-table, emu distance tables should be built because emulated nids don't
-map to physical nids one to one.  ie. Two different emulated nids can
-share a physical node and the distance table should explicitly reflect
-that.
+That was a nice side effect. I like it when fixing code makes
+it cleaner. Unfortunately it didn't work for the LBPC thing,
+but here it does. My combination removal patch hid this bug
+accidentally because PWM was kept at max, it was the main
+reason I thought something was horribly wrong with the LBPC
+fiddling. But it was just improper state tracking, fixed by
+this patch, and my combination removal patch was bogus. Oh
+well.
 
-Nobody cares if we spend a bit more cycles going over numa bitmap some
-more times during boot for frigging NUMA emulation.  It doesn't matter
-AT ALL.  Don't micro optimize where it doesn't matter at the cost of
-code readability and maintainability.  It is actively harmful.
+> Reviewed-by: Takashi Iwai <tiwai@suse.de>
+>
+>
+> thanks,
+>
+> Takashi
+>
 
-Thanks.
+Greetings,
 
--- 
-tejun
+Indan
+
+
