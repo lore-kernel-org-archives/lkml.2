@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1CKJI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 04:08:26 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:55801 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab1CKJIX (ORCPT
+	id S1753199Ab1CKJNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 04:13:01 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:31150 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab1CKJMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 04:08:23 -0500
-Message-ID: <6137e754bd8453a60f892b0f03663352.squirrel@webmail.greenhost.nl>
-In-Reply-To: <s5hd3lyrubr.wl%tiwai@suse.de>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-    <20110216192658.GA7225@blimp.localdomain>
-    <20110217221329.GA3332@x61.home>
-    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
-    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-    <20110222130440.21a27714@jbarnes-desktop>
-    <20110222223120.GA3567@x61.home>
-    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
-    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
-    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
-    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
-    <s5h4o7btnxq.wl%tiwai@suse.de> <s5hy64ns7pq.wl%tiwai@suse.de>
-    <a04bdafb8c7a97d92593e980b01b37fd.squirrel@webmail.greenhost.nl>
-    <s5hr5afm8mj.wl%tiwai@suse.de>
-    <334e13a8513c5863dc9a5d278831777f.squirrel@webmail.greenhost.nl>
-    <s5hd3lyrubr.wl%tiwai@suse.de>
-Date: Fri, 11 Mar 2011 10:08:21 +0100 (CET)
-Subject: Re: [PATCH] drm/i915: Revive combination mode for backlight control
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Takashi Iwai" <tiwai@suse.de>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Alex Riesen" <raa.lkml@gmail.com>,
-        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Fri, 11 Mar 2011 04:12:55 -0500
+X-IronPort-AV: E=Sophos;i="4.62,302,1297036800"; 
+   d="scan'208";a="4737950"
+Subject: Re: [GIT PATCH v2 0/14] xen: events: cleanups + ween off nr_irqs
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+In-Reply-To: <20110310225726.GA2983@dumpdata.com>
+References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+	 <20110310225726.GA2983@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Fri, 11 Mar 2011 09:12:54 +0000
+Message-ID: <1299834774.17339.1799.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 71684ae416b12bc74806129cb02de027
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, March 11, 2011 08:26, Takashi Iwai wrote:
-> At Fri, 11 Mar 2011 02:23:08 +0100 (CET),
-> Indan Zupancic wrote:
->>
->> Hi,
->>
->> Some nitpicks below. I know you're just restoring the original code,
->> but if we improve it we can as well do it now.
->
-> Well, Linus already merged my patch quickly.  So, we can improve the
-> readability as an additional patch, but I think it's likely a 2.6.39
-> material.
->
-> All you comments below look reasonable.  Could you send a new patch?
+On Thu, 2011-03-10 at 22:57 +0000, Konrad Rzeszutek Wilk wrote:
+> On Thu, Mar 10, 2011 at 04:07:59PM +0000, Ian Campbell wrote:
+> > Changes since last time:
+> >       * correct return value of xen_irq_from_pirq
+> >       * WARN if a pirq cannot be allocated for a legacy IRQ
+> >       * Updated checking comment of "xen: events: do not workaround
+> >         too-small nr_irqs"
+> > 
+> > The following series makes a few cleanups to the Xen IRQ infrastructure.
+> > The most important thing is that it removes the need to know about
+> > nr_irqs and in particular the reliance on nr_irqs being static.
+> > 
+> > Apart from being generally a good thing this is needed because in 2.6.39
+> > nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
+> > "genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
+> > at 2.6.39.
+> > 
+> > Dynamically growing nr_irqs also allows us to remove the workaround
+> > which eats into GSI space if a dynamic IRQ cannot be allocated.
+> > 
+> > There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
+> > have gone in before, but the penultimate patch really needed to be
+> > simultaneous) so I haven't bothered to try and pull anything from tip
+> > into this branch -- it should all be resolved during the merge window
+> > and bisection won't be too broken since the "eat into GSI space"
+> > workaround only appears to be needed on a small number of older
+> > platforms (qemu being the main exception).
+> 
+> <nods>
+> > 
+> > I have tested:
+> >       * Domain 0 on real h/w and under qemu
+> >       * PV guest, including migration and passthrough of both VF and PF.
+> >       * PVHVM guest, including migration and passthrough of both VF and
+> >         PF.
+> 
+> I am having difficulties with passthrough of an USB device. Somehow the
+> irq count is not going up at all (both in dom0 and domU) and it looks to
+> be doing just simple polling. I've rebased the xen-pciback to be on top
+> of your changes and apply cleanly. The whole lot is now in #master
+> 
+> MSI and MSI-X devices work just fine in both Dom0 and DomU case so
+> it is something special with the legacy IRQs. Probably forgot something
+> simple...
 
-Well, my main concern was the slightly incorrect commit message,
-but oh well, too late for that now. I'll probably send a patch
-after 2.6.38 is released.
+Thanks, I'll take a look. Did you mean "legacy IRQ" as in <16 or as in
+not-MSI(-X)?
 
-Greetings,
-
-Indan
-
+Ian.
 
