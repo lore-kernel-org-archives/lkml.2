@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab1CKAoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:44:18 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:38897 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752732Ab1CKAoR (ORCPT
+	id S1754579Ab1CKArR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 19:47:17 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:52928 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754029Ab1CKArP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 19:44:17 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=BFO9XT0rmLdquOz5N3ve6dZN1clkJOUaFGJHk8BRl9zjf4lVfkJ5rMJ8R4S8wuN58oE41c5tac4cc5CBUZvxznjwbU9zVMBeJcwRlBtzeFUcDNRDyLAw3sR91URIDiXV;
-Date: Thu, 10 Mar 2011 16:44:14 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] kbuild: reenable section mismatch analysis
-Message-Id: <20110310164414.2892219e.rdunlap@xenotime.net>
-In-Reply-To: <20110310164100.5af81e3b.akpm@linux-foundation.org>
-References: <20110216200734.GA25184@merkur.ravnborg.org>
-	<1298062040-2774-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<20110310164100.5af81e3b.akpm@linux-foundation.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
+	Thu, 10 Mar 2011 19:47:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jLIdSCsDZ2WptWv4NN+vOvvg20CkAZcBygmWY1sXIlzzNmTw6VkVR2ukhoIrolljWY
+         Cq2lKBKnBZ550zTT6Gug==
+MIME-Version: 1.0
+In-Reply-To: <1299803678.13462.14.camel@localhost>
+References: <1299204400.2812.35.camel@localhost>
+	<1299362366.2570.27.camel@localhost>
+	<1299377017.2341.50.camel@localhost>
+	<AANLkTimU9qV11p+wTDz4SCvaoYyxpja8tmJ5D7-ki==B@mail.gmail.com>
+	<1299445446.2310.157.camel@localhost>
+	<1299803678.13462.14.camel@localhost>
+Date: Thu, 10 Mar 2011 16:47:11 -0800
+Message-ID: <AANLkTikEr-1WU1=bOOZO6HpN_ej2OHoAXRhdyS06n4at@mail.gmail.com>
+Subject: Re: BUG at mm/mmap.c:2309 when cx18.ko and cx18-alsa.ko loaded
+From: Hugh Dickins <hughd@google.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        David Miller <davem@davemloft.net>, linux-media@vger.kernel.org,
+        Devin Heitmueller <dheitmueller@kernellabs.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 16:41:00 -0800 Andrew Morton wrote:
+On Thu, Mar 10, 2011 at 4:34 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+> On Sun, 2011-03-06 at 16:04 -0500, Andy Walls wrote:
+>> On Sun, 2011-03-06 at 10:37 -0800, Hugh Dickins wrote:
+>
+>> > I do expect the underlying problem to be somewhere down the driver
+>> > end, given that nobody else has been reporting these issues.  I'm
+>> > hoping that once the cx18 guys have time to try to reproduce it,
+>> > they'll be better able to track it down.
+>
+> Hi Hugh,
+>
+> You were correct.  The mistake was in the cx18 driver, in the last thing
+> that I touched, of course.  The code causing the bug isn't anywhere
+> aside from my private repo.
 
-> On Fri, 18 Feb 2011 21:47:20 +0100
-> Uwe Kleine-K__nig  <u.kleine-koenig@pengutronix.de> wrote:
-> 
-> > This was disabled in commit
-> > 
-> > 	e5f95c8 (kbuild: print only total number of section mismatces found)
-> > 
-> > because there were too many warnings.  Now we're down to a reasonable
-> > number again, so we start scaring people with the details.
-> > 
-> > Signed-off-by: Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de>
-> > ---
-> >  lib/Kconfig.debug |    4 ----
-> >  1 files changed, 0 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> > index 2b97418..0f77ed1 100644
-> > --- a/lib/Kconfig.debug
-> > +++ b/lib/Kconfig.debug
-> > @@ -102,11 +102,7 @@ config HEADERS_CHECK
-> >  
-> >  config DEBUG_SECTION_MISMATCH
-> >  	bool "Enable full Section mismatch analysis"
-> > -	depends on UNDEFINED || (BLACKFIN)
-> >  	default y
-> > -	# This option is on purpose disabled for now.
-> > -	# It will be enabled when we are down to a reasonable number
-> > -	# of section mismatch warnings (< 10 for an allyesconfig build)
-> >  	help
-> >  	  The section mismatch analysis checks if there are illegal
-> >  	  references from one section to another section.
-> 
-> eaaaargh!  650 lines of crap added to my i386 allmodconfig build output.
+Thanks a lot for reporting back, Andy: relief all round.
 
-Each message is a bit longish, yes.
-
-> I'll be locally opting out of this one, thanks.
-> --
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Hugh
