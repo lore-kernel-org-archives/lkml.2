@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1CKSqJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:46:09 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:60757 "EHLO
+	id S1753829Ab1CKSro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:47:44 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:30780 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678Ab1CKSqF (ORCPT
+	with ESMTP id S1753803Ab1CKSrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:46:05 -0500
+	Fri, 11 Mar 2011 13:47:40 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=X6r4PUAuZIDKPkLB2Eudsd2dk/TiUu6crHzLqjaQMdO7XbfqBxJMyfwfXD11udT6T
-	aj3uQdpzURZY5qSbfrjsA==
+	b=bOVdW5zTOEDEiGlOrBUCueack07vS1j17PLgeSqjHHK7cB+nM9RMwgCfc++2k/d+1
+	KRk2B/cLrKPV28379jWsA==
 From: Greg Thelen <gthelen@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -27,9 +27,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Chad Talbott <ctalbott@google.com>,
         Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>,
         Greg Thelen <gthelen@google.com>
-Subject: [PATCH v6 3/9] memcg: add dirty page accounting infrastructure
-Date: Fri, 11 Mar 2011 10:43:25 -0800
-Message-Id: <1299869011-26152-4-git-send-email-gthelen@google.com>
+Subject: [PATCH v6 9/9] memcg: make background writeback memcg aware
+Date: Fri, 11 Mar 2011 10:43:31 -0800
+Message-Id: <1299869011-26152-10-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1299869011-26152-1-git-send-email-gthelen@google.com>
 References: <1299869011-26152-1-git-send-email-gthelen@google.com>
@@ -37,193 +37,219 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add memcg routines to track dirty, writeback, and unstable_NFS pages.
-These routines are not yet used by the kernel to count such pages.
-A later change adds kernel calls to these new routines.
+Add an memcg parameter to bdi_start_background_writeback().  If a memcg
+is specified then the resulting background writeback call to
+wb_writeback() will run until the memcg dirty memory usage drops below
+the memcg background limit.  This is used when balancing memcg dirty
+memory with mem_cgroup_balance_dirty_pages().
+
+If the memcg parameter is not specified, then background writeback runs
+globally system dirty memory usage falls below the system background
+limit.
 
 Signed-off-by: Greg Thelen <gthelen@google.com>
-Signed-off-by: Andrea Righi <arighi@develer.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 ---
-Changelog since v5:
-- Updated enum mem_cgroup_page_stat_item comment.
+ fs/fs-writeback.c           |   63 ++++++++++++++++++++----------------------
+ include/linux/backing-dev.h |    3 +-
+ mm/memcontrol.c             |    2 +-
+ mm/page-writeback.c         |    2 +-
+ 4 files changed, 34 insertions(+), 36 deletions(-)
 
-Changelog since v1:
-- Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
-  memory.stat to match /proc/meminfo.
-- Rename (for clarity):
-  - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
-  - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
-- Remove redundant comments.
-- Made mem_cgroup_move_account_page_stat() inline.
-
- include/linux/memcontrol.h |    8 ++++-
- mm/memcontrol.c            |   87 ++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 86 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 5a5ce70..549fa7c 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -25,9 +25,15 @@ struct page_cgroup;
- struct page;
- struct mm_struct;
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 59c6e49..975741d 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -20,6 +20,7 @@
+ #include <linux/sched.h>
+ #include <linux/fs.h>
+ #include <linux/mm.h>
++#include <linux/memcontrol.h>
+ #include <linux/kthread.h>
+ #include <linux/freezer.h>
+ #include <linux/writeback.h>
+@@ -35,6 +36,7 @@
+ struct wb_writeback_work {
+ 	long nr_pages;
+ 	struct super_block *sb;
++	struct mem_cgroup *mem_cgroup;	/* NULL for global (root cgroup) */
+ 	enum writeback_sync_modes sync_mode;
+ 	unsigned int for_kupdate:1;
+ 	unsigned int range_cyclic:1;
+@@ -113,7 +115,8 @@ static void bdi_queue_work(struct backing_dev_info *bdi,
  
--/* Stats that can be updated by kernel. */
-+/*
-+ * Per mem_cgroup page counts tracked by kernel.  As pages enter and leave these
-+ * states, the kernel notifies memcg using mem_cgroup_{inc,dec}_page_stat().
-+ */
- enum mem_cgroup_page_stat_item {
- 	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
-+	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
-+	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
-+	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
- };
+ static void
+ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+-		      bool range_cyclic)
++		      bool range_cyclic, bool for_background,
++		      struct mem_cgroup *mem_cgroup)
+ {
+ 	struct wb_writeback_work *work;
  
- extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+@@ -133,6 +136,8 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+ 	work->sync_mode	= WB_SYNC_NONE;
+ 	work->nr_pages	= nr_pages;
+ 	work->range_cyclic = range_cyclic;
++	work->for_background = for_background;
++	work->mem_cgroup = mem_cgroup;
+ 
+ 	bdi_queue_work(bdi, work);
+ }
+@@ -150,7 +155,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+  */
+ void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages)
+ {
+-	__bdi_start_writeback(bdi, nr_pages, true);
++	__bdi_start_writeback(bdi, nr_pages, true, false, NULL);
+ }
+ 
+ /**
+@@ -163,16 +168,10 @@ void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages)
+  *   some IO is happening if we are over background dirty threshold.
+  *   Caller need not hold sb s_umount semaphore.
+  */
+-void bdi_start_background_writeback(struct backing_dev_info *bdi)
++void bdi_start_background_writeback(struct backing_dev_info *bdi,
++				    struct mem_cgroup *mem_cgroup)
+ {
+-	/*
+-	 * We just wake up the flusher thread. It will perform background
+-	 * writeback as soon as there is no other work to do.
+-	 */
+-	trace_writeback_wake_background(bdi);
+-	spin_lock_bh(&bdi->wb_lock);
+-	bdi_wakeup_flusher(bdi);
+-	spin_unlock_bh(&bdi->wb_lock);
++	__bdi_start_writeback(bdi, LONG_MAX, true, true, mem_cgroup);
+ }
+ 
+ /*
+@@ -593,10 +592,22 @@ static void __writeback_inodes_sb(struct super_block *sb,
+  */
+ #define MAX_WRITEBACK_PAGES     1024
+ 
+-static inline bool over_bground_thresh(void)
++static inline bool over_bground_thresh(struct mem_cgroup *mem_cgroup)
+ {
+ 	unsigned long background_thresh, dirty_thresh;
+ 
++	if (mem_cgroup) {
++		struct dirty_info info;
++
++		if (!mem_cgroup_hierarchical_dirty_info(
++			    determine_dirtyable_memory(), false,
++			    mem_cgroup, &info))
++			return false;
++
++		return info.nr_file_dirty +
++			info.nr_unstable_nfs > info.background_thresh;
++	}
++
+ 	global_dirty_limits(&background_thresh, &dirty_thresh);
+ 
+ 	return (global_page_state(NR_FILE_DIRTY) +
+@@ -683,7 +694,8 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		 * For background writeout, stop when we are below the
+ 		 * background dirty threshold
+ 		 */
+-		if (work->for_background && !over_bground_thresh())
++		if (work->for_background &&
++		    !over_bground_thresh(work->mem_cgroup))
+ 			break;
+ 
+ 		wbc.more_io = 0;
+@@ -761,23 +773,6 @@ static unsigned long get_nr_dirty_pages(void)
+ 		get_nr_dirty_inodes();
+ }
+ 
+-static long wb_check_background_flush(struct bdi_writeback *wb)
+-{
+-	if (over_bground_thresh()) {
+-
+-		struct wb_writeback_work work = {
+-			.nr_pages	= LONG_MAX,
+-			.sync_mode	= WB_SYNC_NONE,
+-			.for_background	= 1,
+-			.range_cyclic	= 1,
+-		};
+-
+-		return wb_writeback(wb, &work);
+-	}
+-
+-	return 0;
+-}
+-
+ static long wb_check_old_data_flush(struct bdi_writeback *wb)
+ {
+ 	unsigned long expired;
+@@ -839,15 +834,17 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+ 		 */
+ 		if (work->done)
+ 			complete(work->done);
+-		else
++		else {
++			if (work->mem_cgroup)
++				mem_cgroup_bg_writeback_done(work->mem_cgroup);
+ 			kfree(work);
++		}
+ 	}
+ 
+ 	/*
+ 	 * Check for periodic writeback, kupdated() style
+ 	 */
+ 	wrote += wb_check_old_data_flush(wb);
+-	wrote += wb_check_background_flush(wb);
+ 	clear_bit(BDI_writeback_running, &wb->bdi->state);
+ 
+ 	return wrote;
+@@ -934,7 +931,7 @@ void wakeup_flusher_threads(long nr_pages)
+ 	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list) {
+ 		if (!bdi_has_dirty_io(bdi))
+ 			continue;
+-		__bdi_start_writeback(bdi, nr_pages, false);
++		__bdi_start_writeback(bdi, nr_pages, false, false, NULL);
+ 	}
+ 	rcu_read_unlock();
+ }
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 4ce34fa..f794604 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -103,7 +103,8 @@ int bdi_register_dev(struct backing_dev_info *bdi, dev_t dev);
+ void bdi_unregister(struct backing_dev_info *bdi);
+ int bdi_setup_and_register(struct backing_dev_info *, char *, unsigned int);
+ void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages);
+-void bdi_start_background_writeback(struct backing_dev_info *bdi);
++void bdi_start_background_writeback(struct backing_dev_info *bdi,
++				    struct mem_cgroup *mem_cgroup);
+ int bdi_writeback_thread(void *data);
+ int bdi_has_dirty_io(struct backing_dev_info *bdi);
+ void bdi_arm_supers_timer(void);
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 4407dd0..b8f517d 100644
+index 25dc077..41ba94f 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -83,8 +83,11 @@ enum mem_cgroup_stat_index {
+@@ -1489,7 +1489,7 @@ void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
+ 			 * mem_cgroup_bg_writeback_done().
+ 			 */
+ 			css_get(&memcg->css);
+-			bdi_start_background_writeback(bdi);
++			bdi_start_background_writeback(bdi, memcg);
+ 		}
+ 
+ 		/* continue walking up hierarchy enabled parents */
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index f6a8dd6..492c3db 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -597,7 +597,7 @@ static void balance_dirty_pages(struct address_space *mapping,
  	 */
- 	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
- 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
--	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
-+	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
-+	MEM_CGROUP_STAT_FILE_DIRTY,	/* # of dirty pages in page cache */
-+	MEM_CGROUP_STAT_FILE_WRITEBACK,		/* # of pages under writeback */
-+	MEM_CGROUP_STAT_FILE_UNSTABLE_NFS,	/* # of NFS unstable pages */
- 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
- 	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
- 	MEM_CGROUP_STAT_NSTATS,
-@@ -1692,6 +1695,44 @@ void mem_cgroup_update_page_stat(struct page *page,
- 			ClearPageCgroupFileMapped(pc);
- 		idx = MEM_CGROUP_STAT_FILE_MAPPED;
- 		break;
-+
-+	case MEMCG_NR_FILE_DIRTY:
-+		/* Use Test{Set,Clear} to only un/charge the memcg once. */
-+		if (val > 0) {
-+			if (TestSetPageCgroupFileDirty(pc))
-+				val = 0;
-+		} else {
-+			if (!TestClearPageCgroupFileDirty(pc))
-+				val = 0;
-+		}
-+		idx = MEM_CGROUP_STAT_FILE_DIRTY;
-+		break;
-+
-+	case MEMCG_NR_FILE_WRITEBACK:
-+		/*
-+		 * This counter is adjusted while holding the mapping's
-+		 * tree_lock.  Therefore there is no race between settings and
-+		 * clearing of this flag.
-+		 */
-+		if (val > 0)
-+			SetPageCgroupFileWriteback(pc);
-+		else
-+			ClearPageCgroupFileWriteback(pc);
-+		idx = MEM_CGROUP_STAT_FILE_WRITEBACK;
-+		break;
-+
-+	case MEMCG_NR_FILE_UNSTABLE_NFS:
-+		/* Use Test{Set,Clear} to only un/charge the memcg once. */
-+		if (val > 0) {
-+			if (TestSetPageCgroupFileUnstableNFS(pc))
-+				val = 0;
-+		} else {
-+			if (!TestClearPageCgroupFileUnstableNFS(pc))
-+				val = 0;
-+		}
-+		idx = MEM_CGROUP_STAT_FILE_UNSTABLE_NFS;
-+		break;
-+
- 	default:
- 		BUG();
- 	}
-@@ -2251,6 +2292,17 @@ void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
+ 	if ((laptop_mode && pages_written) ||
+ 	    (!laptop_mode && (nr_reclaimable > background_thresh)))
+-		bdi_start_background_writeback(bdi);
++		bdi_start_background_writeback(bdi, NULL);
  }
- #endif
  
-+static inline
-+void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
-+				       struct mem_cgroup *to,
-+				       enum mem_cgroup_stat_index idx)
-+{
-+	preempt_disable();
-+	__this_cpu_dec(from->stat->count[idx]);
-+	__this_cpu_inc(to->stat->count[idx]);
-+	preempt_enable();
-+}
-+
- /**
-  * mem_cgroup_move_account - move account of the page
-  * @page: the page
-@@ -2299,13 +2351,18 @@ static int mem_cgroup_move_account(struct page *page,
- 
- 	move_lock_page_cgroup(pc, &flags);
- 
--	if (PageCgroupFileMapped(pc)) {
--		/* Update mapped_file data for mem_cgroup */
--		preempt_disable();
--		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		preempt_enable();
--	}
-+	if (PageCgroupFileMapped(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_MAPPED);
-+	if (PageCgroupFileDirty(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_DIRTY);
-+	if (PageCgroupFileWriteback(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_WRITEBACK);
-+	if (PageCgroupFileUnstableNFS(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
- 	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
- 	if (uncharge)
- 		/* This is not "cancel", but cancel_charge does all we need. */
-@@ -3772,6 +3829,9 @@ enum {
- 	MCS_PGPGIN,
- 	MCS_PGPGOUT,
- 	MCS_SWAP,
-+	MCS_FILE_DIRTY,
-+	MCS_WRITEBACK,
-+	MCS_UNSTABLE_NFS,
- 	MCS_INACTIVE_ANON,
- 	MCS_ACTIVE_ANON,
- 	MCS_INACTIVE_FILE,
-@@ -3794,6 +3854,9 @@ struct {
- 	{"pgpgin", "total_pgpgin"},
- 	{"pgpgout", "total_pgpgout"},
- 	{"swap", "total_swap"},
-+	{"dirty", "total_dirty"},
-+	{"writeback", "total_writeback"},
-+	{"nfs_unstable", "total_nfs_unstable"},
- 	{"inactive_anon", "total_inactive_anon"},
- 	{"active_anon", "total_active_anon"},
- 	{"inactive_file", "total_inactive_file"},
-@@ -3823,6 +3886,14 @@ mem_cgroup_get_local_stat(struct mem_cgroup *mem, struct mcs_total_stat *s)
- 		s->stat[MCS_SWAP] += val * PAGE_SIZE;
- 	}
- 
-+	/* dirty stat */
-+	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_DIRTY);
-+	s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
-+	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_WRITEBACK);
-+	s->stat[MCS_WRITEBACK] += val * PAGE_SIZE;
-+	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
-+	s->stat[MCS_UNSTABLE_NFS] += val * PAGE_SIZE;
-+
- 	/* per zone stat */
- 	val = mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON);
- 	s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
+ void set_page_dirty_balance(struct page *page, int page_mkwrite)
 -- 
 1.7.3.1
 
