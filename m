@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab1CKQ5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:57:31 -0500
-Received: from kroah.org ([198.145.64.141]:59879 "EHLO coco.kroah.org"
+	id S1751569Ab1CKRAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 12:00:17 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:43487 "EHLO smtp2-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963Ab1CKQ52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:57:28 -0500
-Date: Fri, 11 Mar 2011 08:56:42 -0800
-From: Greg KH <greg@kroah.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110311165642.GA9996@kroah.com>
-References: <4D79F068.2080009@linaro.org>
- <201103111331.13932.arnd@arndb.de>
- <20110311152938.GB29920@sirena.org.uk>
- <201103111654.04089.arnd@arndb.de>
- <20110311160308.GQ1760@opensource.wolfsonmicro.com>
- <20110311161421.GA7843@kroah.com>
- <20110311162759.GS1760@opensource.wolfsonmicro.com>
- <20110311163522.GA9291@kroah.com>
- <20110311164850.GT1760@opensource.wolfsonmicro.com>
+	id S1750819Ab1CKRAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 12:00:15 -0500
+Message-ID: <4D7A5516.5080806@eukrea.com>
+Date: Fri, 11 Mar 2011 18:00:06 +0100
+From: =?UTF-8?B?RXJpYyBCw6luYXJk?= <eric@eukrea.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110311164850.GT1760@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?TcOhcmlvIElzaWRvcm8=?= <marioisidoro@gmail.com>
+CC: gregkh@suse.de, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH n_gsm] GSM Mux in non-transparent mode
+References: <1299724790.1800.135.camel@Paio>  <4D7A24CF.9070805@eukrea.com> <1299857261.4444.14.camel@Paio>
+In-Reply-To: <1299857261.4444.14.camel@Paio>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 04:48:50PM +0000, Mark Brown wrote:
-> On Fri, Mar 11, 2011 at 08:35:22AM -0800, Greg KH wrote:
-> > On Fri, Mar 11, 2011 at 04:27:59PM +0000, Mark Brown wrote:
-> 
-> > > I'm actually not that fussed about the MAC address use case itself and
-> > > do tend to agree with you that that's handlable in userspace but for the
-> > > other things that might need to be configured there's a lot of things
-> > > that for non-discoverable buses we're currently passing through platform
-> > > data so switching to bouncing things through userspace would itself be a
-> > > substantial change from other systems.
-> 
-> > But USB _is_ discoverable, that's my point.
-> 
-> USB itself is discoverable but the when the USB bus you're looking at is
-> one that's soldered down onto a board in a specific design all bets are
-> off regarding how complete the information you get will be.  On a basic
-> level the designers may have done things like omit the configuration
-> EEPROMs that would set the device IDs that the driver should be relying
-> on to identify the hardware configuration.  There may be other, nastier,
-> things going on.
+Hi Mário,
 
-Then you use the existing platform data for your USB host controller
-driver.  Doesn't that work today just fine?
+On 11/03/2011 16:27, Mário Isidoro wrote:
+> Hi Eric
+> My GE863-Pro^3 works well without it, however, without it the control
+> signals from the computer side do not seem to work correctly.
+>
+here without this fix, ppp gets blocked during init.
 
-> > > You can't in general rely on the system being neatly abstracted and
-> > > while discoverable buses do avoid many problems in this sort of area
-> > > there are still things which can only be discovered through reference to
-> > > the schematics or similar, especially if you care about the microamps.
-> 
-> > Again, that's not USB, so it isn't relevant here.
-> 
-> You really can't make this assumption about discoverable buses on
-> embedded devices.  The discoverability will get you most of the way
-> there but not always all of the way there.
+>> From my tests, without the patch, the value in modem_tx will never
+> change when we send TIOCMSET commands.
+>
+> By the way, can you confirm if your Telit modems respect the EA bit on
+> the MSC frame ?
+>
+I get the exact same byte sequence as you do.
 
-Then the bus is not really USB, sorry.  USB is discoverable, _and_ can
-support enumeration in non-deterministic ways.  If people are using it
-in other ways then it is not USB and is something else.
-
-thanks,
-
-greg k-h
+Eric
