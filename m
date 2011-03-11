@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab1CKTzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 14:55:19 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:47015 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab1CKTzO (ORCPT
+	id S1753406Ab1CKT5Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 14:57:25 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55560 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751677Ab1CKT5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 14:55:14 -0500
-Date: Fri, 11 Mar 2011 19:55:00 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Greg KH <greg@kroah.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110311195500.GA20784@srcf.ucam.org>
-References: <20110305042431.GA22840@kroah.com> <20110311174339.GJ16652@srcf.ucam.org> <20110311193512.GC14204@kroah.com> <20110311194422.GA20490@srcf.ucam.org> <20110311195221.GA14719@kroah.com>
+	Fri, 11 Mar 2011 14:57:21 -0500
+Date: Fri, 11 Mar 2011 19:57:19 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, davidb@codeaurora.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Collins <collinsd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Linus Walleij <linus.walleij@sterricsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Qualcomm PM8921 MFD v2 2/6] mfd: pm8xxx: Add irq support
+Message-ID: <20110311195719.GX1760@opensource.wolfsonmicro.com>
+References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org>
+ <1299564590-30116-3-git-send-email-adharmap@codeaurora.org>
+ <alpine.LFD.2.00.1103081201520.2787@localhost6.localdomain6>
+ <4D770E47.6050402@codeaurora.org>
+ <alpine.LFD.2.00.1103101126100.2787@localhost6.localdomain6>
+ <4D79A85D.8000301@codeaurora.org>
+ <alpine.LFD.2.00.1103111853480.2787@localhost6.localdomain6>
+ <4D7A71B9.9000306@codeaurora.org>
+ <alpine.LFD.2.00.1103112020370.2787@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110311195221.GA14719@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <alpine.LFD.2.00.1103112020370.2787@localhost6.localdomain6>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 11:52:21AM -0800, Greg KH wrote:
+On Fri, Mar 11, 2011 at 08:43:08PM +0100, Thomas Gleixner wrote:
 
-> I wouldn't mind just doing a DMI match on all Samsung laptops, it would
-> save me having to constantly send patch updates, so I'll let this be
-> your call :)
+> Sigh, why insist people on working around core code instead of talking
+> to the responsible maintainers about their problem in the first place?
 
-I think it'd be worth a go, at least. dell-laptop has example alias 
-lines for that, there's a few different DMI classes that can be used for 
-laptops so you'd need to check which one Samsung are using.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I don't know if it's the case here but with a lot of the people I speak
+to it's because they're used to working on proprietary OSs where there's
+no possibility of fixing the core and they haven't yet realised that
+this is a possibility.
