@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1CKMbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 07:31:21 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:52002 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab1CKMbS (ORCPT
+	id S1755128Ab1CKMfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 07:35:44 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:30572 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab1CKMfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 07:31:18 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: andy.green@linaro.org
-Subject: Re: RFC: Platform data for onboard USB assets
-Date: Fri, 11 Mar 2011 13:31:13 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <4D79F068.2080009@linaro.org>
-In-Reply-To: <4D79F068.2080009@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103111331.13932.arnd@arndb.de>
-X-Provags-ID: V02:K0:v6fKKEYUVLPb0ppd0GhErVyjDCBTZfvF4d/srN4J9iX
- NfEfapAcczVbtt/QOqYaS3tlceoQtEQWZ10RRONd5nM1s+vfqT
- FSZ53rcK/165qtsHFaRMxrDxHWj2D0UMbZfBZoXRohuys7CNZ9
- q6/lJKIynWSZ0MOK1LwKj0N8cPHHrfYmJ5B7M4DlwKe+ARvyt7
- c9OdwuZYTCzLAiMq75sBQ==
+	Fri, 11 Mar 2011 07:35:43 -0500
+Date: Fri, 11 Mar 2011 13:35:21 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU)
+ driver
+In-reply-to: <201103111250.51252.arnd@arndb.de>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        =?ks_c_5601-1987?B?J7TrwM6x4ic=?= <inki.dae@samsung.com>,
+        =?ks_c_5601-1987?B?J7Ctuc6x1Cc=?= <mk7.kang@samsung.com>,
+        "'KyongHo Cho'" <pullip.cho@samsung.com>, linux-kernel@vger.kernel.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
+Message-id: <000001cbdfe8$ce444b20$6acce160$%szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Acvf4pjWSXaXmr4mTKOEFnE5J4TkVwAAtMKQ
+References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com>
+ <201103101552.15536.arnd@arndb.de>
+ <002101cbdfcb$5c657820$15306860$%szyprowski@samsung.com>
+ <201103111250.51252.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Hello,
 
-On Friday 11 March 2011, Andy Green wrote:
+On Friday, March 11, 2011 12:51 PM Arnd Bergmann wrote:
+
+> On Friday 11 March 2011, Marek Szyprowski wrote:
+> >
+> > We followed the style of iommu API for other mainline ARM platforms (both OMAP and MSM
+> > also have custom API for their iommu modules). I've briefly checked include/linux/iommu.h
+> > API and I've noticed that it has been designed mainly for KVM support. There is also
+> > include/linux/intel-iommu.h interface, but I it is very specific to intel gfx chips.
 > 
-> platform_data is a well established way in Linux to pass configuration 
-> data up to on-board assets from a machine file like mach-xyz.c.  It's 
-> also supported to pass platform_data up to devices that are probed 
-> asynchronously from busses like i2c as well, which is very handy.
+> The MSM code actually uses the generic iommu.h code, using register_iommu, so
+> the drivers can use the regular iommu_map.
 > 
-> However AFAIK it's not possible to bind platform_data to probed USB 
-> devices as it stands.
+> I believe the omap code predates the iommu API, and should really be changed
+> to use that. At least it was added before I started reviewing the code.
 > 
-> There are now boards which have on-board USB assets, for example OMAP4 
-> Panda which has a USB <-> Ethernet bridge wired up permanently.  It'd be 
-> convenient to also be able to pass optional platform_data to these 
-> devices when they are asynchronously probed.
+> The iommu API is not really meant to be KVM specific, it's just that the
+> in-tree users are basically limited to KVM at the moment. Another user that
+> is coming up soon is the vmio device driver that can be used to transparently
+> pass devices to user space. The idea behind the IOMMU API is that you can
+> map arbitrary bus addresses to physical memory addresses, but it does not
+> deal with allocating the bus addresses or providing buffer management such
+> as cache flushes.
 
-Sorry, but I think it's a bad idea to use platform data for this.
-USB is a bus that we can reasonably probe, while we use platform_data
-only for stuff that we can by definition not probe at all.
+Yea, I've noticed this and this basically what we expect from iommu driver. 
+However the iommu.h API requires a separate call to map each single memory page.
+This is quite ineffective approach and imho the API need to be extended to allow
+mapping of the arbitrary set of pages.
 
-> The particular use that suggested this is on Panda, it would be ideal to 
-> be able to set a flag in the usb device's platform data that forces it 
-> to be named eth%d since it's a hardwired asset on the board with an RJ45 
-> socket.
+> > Is there any example how include/linux/dma-mapping.h interface can be used for iommu
+> > mappings?
+> 
+> The dma-mapping API is the normal interface that you should use for IOMMUs
+> that sit between DMA devices and kernel memory. The idea is that you
+> completely abstract the concept of an IOMMU so the device driver uses
+> the same code for talking to a device with an IOMMU and another device with
+> a linear mapping or an swiotlb bounce buffer.
+> 
+> This means that the user of the dma-mapping API does not get to choose the
+> bus addresses, but instead you use the API to get a bus address for a
+> chunk of memory, and then you can pass that address to a device.
+> 
+> See arch/powerpc/kernel/iommu.c and arch/x86/kernel/amd_iommu.c for common
+> examples of how this is implemented. The latter one actually implements
+> both the iommu_ops for iommu.h and dma_map_ops for dma-mapping.h.
 
-I understand the problem, but IMHO there really needs to be a better
-solution for this. As far as I understand, the underlying problem is
-that USB ethernet devices with a proper MAC address get a different
-device name from devices with a generated random MAC address, and
-the people that designed this board were trying to save a few cents
-by not allocating a MAC address for the ethernet device [1], right?
+Thanks for your comments! We will check how is it suitable for our case.
 
-I believe we should fix this particular problem locally, instead of
-coming up with generic infrastructure for broken hardware.
+Best regards
+--
+Marek Szyprowski
+Samsung Poland R&D Center
 
-One relatively easy solution would be to allow passing a MAC address
-to this particular device driver as a module parameter, and generating
-a fixed MAC address in the regular vendor space when installing the
-boot loader. That would also solve the problem that a DHCP server
-currently assigns a new IP address to a panda board at every boot.
 
-	Arnd
----
-[1] https://bugs.launchpad.net/linux-linaro/+bug/622429
