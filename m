@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab1CKQXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:23:55 -0500
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:45686 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754890Ab1CKQXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:23:37 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: qy.q_AsVM1lKfuq14t944i7nIS.thf8GMj8nRtAtdTuJh9D
- tRcQm6MPJ_PsyrYYuKnsgiZTmjyaGoZlyDrgomSACOt.bByYi9_CJ8HipQCw
- kr0cCr0xp7.Na_NhZuz_o622ITKwakQFq0dV7h0AtpO5utD9Six6dnpBD4w1
- 9fJxSxltSlZAmPy3deLF2iMVSJYXU5gHOQdHz0DL.Jteav8u8eyG8XfCHj10
- oAKhGDqBWx7CQOCJCWTzBf0IPKRvrgxu3KkiZMlQaVjd7Uf1rg7QW3LIuUyb
- nvifvZTVnG3M6LTPZEQMA_D9M2_FNivmjLkG90DzB4Cgb1GM-
-X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110311162334.774583751@linux.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 11 Mar 2011 10:23:13 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kernel@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [x86 this_cpu_has V1 3/4] x86: Use this_cpu_has for thermal_interrupt
-References: <20110311162310.124405247@linux.com>
-Content-Disposition: inline; filename=thermal_interrupt
+	id S1756018Ab1CKQYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:24:19 -0500
+Received: from www.tglx.de ([62.245.132.106]:37305 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753009Ab1CKQYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 11:24:15 -0500
+Date: Fri, 11 Mar 2011 17:23:36 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Alexander Shishkin <virtuoso@slind.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: timerfd-add-tfd_notify_clock_set-to-watch-for-clock-changes.patch
+ added to -mm tree
+In-Reply-To: <20110311135023.GA23552@redhat.com>
+Message-ID: <alpine.LFD.2.00.1103111722521.2787@localhost6.localdomain6>
+References: <20110311135023.GA23552@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is more effective to use a segment prefix instead of calculating the
-address of the current cpu area amd then testing flags.
+On Fri, 11 Mar 2011, Oleg Nesterov wrote:
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+> > @@ -218,10 +266,12 @@ SYSCALL_DEFINE4(timerfd_settime, int, uf
+> >  	 * it to the new values.
+> >  	 */
+> >  	for (;;) {
+> > +		spin_lock(&notifiers_lock);
+> >  		spin_lock_irq(&ctx->wqh.lock);
+> > -		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
+> > +		if (!list_empty(&notifiers_list) || hrtimer_try_to_cancel(&ctx->tmr) >= 0)
+> >  			break;
+> 
+> Confused. Why do we check the global notifiers_list?
+> 
+> IOW. Suppose that this list is not empty and timerfd_settime() is called
+> without TFD_NOTIFY_CLOCK_SET. Now we are going to reprogramm the timer
+> without stopping it?
+> 
+> And. What if timerfd_settime(TFD_NOTIFY_CLOCK_SET, utmr => NULL) is called
+> twice? timerfd_setup() blindly does list_add(), and we corrupt the list, no?
 
----
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+And why is this hack in -mm at all ?
 
-Index: linux-2.6/arch/x86/kernel/cpu/mcheck/therm_throt.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/therm_throt.c	2011-03-11 10:17:42.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/cpu/mcheck/therm_throt.c	2011-03-11 10:18:34.000000000 -0600
-@@ -355,7 +355,6 @@ static void notify_thresholds(__u64 msr_
- static void intel_thermal_interrupt(void)
- {
- 	__u64 msr_val;
--	struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
- 
- 	rdmsrl(MSR_IA32_THERM_STATUS, msr_val);
- 
-@@ -367,19 +366,19 @@ static void intel_thermal_interrupt(void
- 				CORE_LEVEL) != 0)
- 		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
- 
--	if (cpu_has(c, X86_FEATURE_PLN))
-+	if (this_cpu_has(X86_FEATURE_PLN))
- 		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
- 					POWER_LIMIT_EVENT,
- 					CORE_LEVEL) != 0)
- 			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
- 
--	if (cpu_has(c, X86_FEATURE_PTS)) {
-+	if (this_cpu_has(X86_FEATURE_PTS)) {
- 		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
- 		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
- 					THERMAL_THROTTLING_EVENT,
- 					PACKAGE_LEVEL) != 0)
- 			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
--		if (cpu_has(c, X86_FEATURE_PLN))
-+		if (this_cpu_has(X86_FEATURE_PLN))
- 			if (therm_throt_process(msr_val &
- 					PACKAGE_THERM_STATUS_POWER_LIMIT,
- 					POWER_LIMIT_EVENT,
+Thanks,
 
+	tglx
