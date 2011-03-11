@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab1CKRAR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 12:00:17 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:43487 "EHLO smtp2-g21.free.fr"
+	id S1751751Ab1CKRDs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 12:03:48 -0500
+Received: from kroah.org ([198.145.64.141]:33451 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab1CKRAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 12:00:15 -0500
-Message-ID: <4D7A5516.5080806@eukrea.com>
-Date: Fri, 11 Mar 2011 18:00:06 +0100
-From: =?UTF-8?B?RXJpYyBCw6luYXJk?= <eric@eukrea.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751072Ab1CKRDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 12:03:46 -0500
+Date: Fri, 11 Mar 2011 09:03:13 -0800
+From: Greg KH <greg@kroah.com>
+To: Nikolai Kondrashov <spbnick@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110311170313.GA10202@kroah.com>
+References: <20110225225055.GA5931@kroah.com>
+ <4D787714.6060405@gmail.com>
+ <20110310170143.GA24559@kroah.com>
+ <AANLkTinyqJx76=nzepa9fe5VDzqiXRGCQ=E1SsKm2npE@mail.gmail.com>
+ <20110310171940.GA24972@kroah.com>
+ <4D790A20.3050105@gmail.com>
+ <20110310180959.GA26927@kroah.com>
+ <4D793D05.3070908@gmail.com>
+ <20110310211519.GA11862@kroah.com>
+ <4D79CB47.2030405@gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?TcOhcmlvIElzaWRvcm8=?= <marioisidoro@gmail.com>
-CC: gregkh@suse.de, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH n_gsm] GSM Mux in non-transparent mode
-References: <1299724790.1800.135.camel@Paio>  <4D7A24CF.9070805@eukrea.com> <1299857261.4444.14.camel@Paio>
-In-Reply-To: <1299857261.4444.14.camel@Paio>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D79CB47.2030405@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mário,
+On Fri, Mar 11, 2011 at 09:12:07AM +0200, Nikolai Kondrashov wrote:
+> On 03/10/2011 11:15 PM, Greg KH wrote:
+> >Are you sure the driver is loaded?
+> It doesn't load - it fails on inserting.
+> I should've probably reminded you that in my recent messages.
+> 
+> >What happens if you do:
+> >	rmmod samsung-laptop
+> >	dmesg -c
+> >	modprobe samsung-laptop debug=1
+> >
+> >can you send me the output of 'dmesg' after doing the above as root?
+> Sure:
+> 
+> nick@merry:~$ dmesg
+> nick@merry:~$ sudo modprobe samsung-laptop debug=1
+> FATAL: Error inserting samsung_laptop (/lib/modules/2.6.37+/kernel/drivers/staging/samsung-laptop/samsung-laptop.ko):
+> No such device
+> nick@merry:~$ dmesg
+> [  179.689516] samsung_laptop: module is from the staging directory,
+> the quality is unknown, you have been warned.
+> nick@merry:~$ sudo modprobe samsung-laptop debug=1 force=1
+> FATAL: Error inserting samsung_laptop (/lib/modules/2.6.37+/kernel/drivers/staging/samsung-laptop/samsung-laptop.ko):
+> Invalid argument
+> nick@merry:~$ dmesg
+> [  179.689516] samsung_laptop: module is from the staging directory,
+> the quality is unknown, you have been warned.
+> [  190.474615] samsung_laptop: module is from the staging directory,
+> the quality is unknown, you have been warned.
+> [  190.479681] This computer does not support SABI
 
-On 11/03/2011 16:27, Mário Isidoro wrote:
-> Hi Eric
-> My GE863-Pro^3 works well without it, however, without it the control
-> signals from the computer side do not seem to work correctly.
->
-here without this fix, ppp gets blocked during init.
+Are you sure this was the driver you just built that I sent you?  Can
+you send the output of 'modinfo samsung-laptop'?
 
->> From my tests, without the patch, the value in modem_tx will never
-> change when we send TIOCMSET commands.
->
-> By the way, can you confirm if your Telit modems respect the EA bit on
-> the MSC frame ?
->
-I get the exact same byte sequence as you do.
+thanks,
 
-Eric
+greg k-h
