@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab1CKPHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:07:45 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:28483 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab1CKPHn (ORCPT
+	id S1754674Ab1CKPJD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:09:03 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:47253 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab1CKPJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:07:43 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: [01/22] sched: Provide scheduler_ipi() callback in response to
- smp_send_reschedule()
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-Id: <sched-ipi-callback-comment@mdm.bga.com>
-In-Reply-To: <20110302174120.313761743@chello.nl>
-References: <20110302174120.313761743@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Date: Fri, 11 Mar 2011 09:07:13 -0600
-X-Originating-IP: 71.22.127.106
+	Fri, 11 Mar 2011 10:09:00 -0500
+Date: Fri, 11 Mar 2011 17:08:57 +0200
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
+Subject: Re:
+ timerfd-add-tfd_notify_clock_set-to-watch-for-clock-changes.patch added to
+ -mm tree
+Message-ID: <20110311150857.GJ11410@shisha.kicks-ass.net>
+References: <20110311135023.GA23552@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311135023.GA23552@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Mar 2011 17:38:32 -0000, To: Peter Zijlstra wrote:
-
-> For future rework of try_to_wake_up() we'd like to push part of that
-> onto the CPU the task is actually going to run on, in order to do so we
-> need a generic callback from the existing scheduler IPI.
+On Fri, Mar 11, 2011 at 02:50:23PM +0100, Oleg Nesterov wrote:
+> > @@ -218,10 +266,12 @@ SYSCALL_DEFINE4(timerfd_settime, int, uf
+> >  	 * it to the new values.
+> >  	 */
+> >  	for (;;) {
+> > +		spin_lock(&notifiers_lock);
+> >  		spin_lock_irq(&ctx->wqh.lock);
+> > -		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
+> > +		if (!list_empty(&notifiers_list) || hrtimer_try_to_cancel(&ctx->tmr) >= 0)
+> >  			break;
 > 
-> This patch introduces such a generic callback: scheduler_ipi() and
-> implements it as a NOP.
+> Confused. Why do we check the global notifiers_list?
+
+You're right, it's a bug, should be &ctx->notifiers_list.
+
+> IOW. Suppose that this list is not empty and timerfd_settime() is called
+> without TFD_NOTIFY_CLOCK_SET. Now we are going to reprogramm the timer
+> without stopping it?
 > 
-> BenH notes: PowerPC might use this IPI on offline CPUs under rare
-> conditions!!
-..
-> Index: linux-2.6/arch/powerpc/kernel/smp.c
-> ===================================================================
-> --- linux-2.6.orig/arch/powerpc/kernel/smp.c
-> +++ linux-2.6/arch/powerpc/kernel/smp.c
-> @@ -98,6 +98,7 @@ void smp_message_recv(int msg)
->  		break;
->  	case PPC_MSG_RESCHEDULE:
->  		/* we notice need_resched on exit */
+> And. What if timerfd_settime(TFD_NOTIFY_CLOCK_SET, utmr => NULL) is called
+> twice? timerfd_setup() blindly does list_add(), and we corrupt the list, no?
 
-This comment should also be removed, as it was documenting the empty action.
+Another catch.
 
-> +		scheduler_ipi();
->  		break;
->  	case PPC_MSG_CALL_FUNC_SINGLE:
->  		generic_smp_call_function_single_interrupt();
-> @@ -127,7 +128,7 @@ static irqreturn_t call_function_action(
->  
->  static irqreturn_t reschedule_action(int irq, void *data)
->  {
-> -	/* we just need the return path side effect of checking need_resched */
-> +	scheduler_ipi();
->  	return IRQ_HANDLED;
->  }
->  
+There will be a quite a bit of rework required, though, considering tglx's
+comments.
 
-Thanks,
-milton
+Thanks!
+--
+Alex
