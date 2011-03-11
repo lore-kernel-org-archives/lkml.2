@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab1CKMSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 07:18:54 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49960 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab1CKMSu (ORCPT
+	id S1754902Ab1CKMVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 07:21:14 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55822 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab1CKMVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 07:18:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :x-enigmail-version:content-type:content-transfer-encoding;
-        b=YkXanCUyl72oQLdaNw2ozNUeHjuaZVankB+XrGa895Vx0tJ4bF2W2+bDH7DgE0soZy
-         FyriGtrrwr78wSSvBbDnuInnaYpdSpy9iX15J4dGJ2NjbLHGMYEKqvSepIBsZ1iGPjMs
-         YPXNqtXsm+KdOjOGF4xjqTkwy2xIVR/ZEgMiw=
-Message-ID: <4D7A1322.4050706@suse.cz>
-Date: Fri, 11 Mar 2011 13:18:42 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Fri, 11 Mar 2011 07:21:11 -0500
+Message-ID: <4D7A135F.5030004@ru.mvista.com>
+Date: Fri, 11 Mar 2011 15:19:43 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: linux-pm <linux-pm@lists.linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Why is max_cstate=1 still needed?
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+To: Abhilash K V <abhilash.kv@ti.com>
+CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        Sriramakrishnan <srk@ti.com>
+Subject: Re: [PATCH] can : AM3517EVM : add platform specific init
+References: <1299775153-16766-1-git-send-email-abhilash.kv@ti.com>
+In-Reply-To: <1299775153-16766-1-git-send-email-abhilash.kv@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello.
 
-there are still reports against the latest kernels, that people need to
-pass processor/intel_idle.max_cstate=1 to successfully boot the kernel.
-The symptoms are always the same, until the parameter is specified OR
-until the user presses a key, the system won't boot up.
+On 10-03-2011 19:39, Abhilash K V wrote:
 
-This started to appear between 2.6.31 and 2.6.34 (possibly a 2.6.33
-regression) and continues to be reported against the latest stable
-2.6.37.3. For example:
-https://bugzilla.kernel.org/show_bug.cgi?id=15289
-https://bugzilla.novell.com/show_bug.cgi?id=579932
-https://bugzilla.novell.com/show_bug.cgi?id=673589
-https://bugzilla.novell.com/show_bug.cgi?id=675161
+> CAN module on AM3517 requires programming of IO expander
+> as part of init sequence. Added transceiver_switch
+> callback to handle this.
 
-I see that there were some fixes in .38-rc in this bug report (they look
-unrelated):
-https://bugzilla.kernel.org/show_bug.cgi?id=29992
+> Signed-off-by: Sriramakrishnan<srk@ti.com>
+> Reviewed-by:  Vaibhav Hiremath<hvaibhav@ti.com>
+> Signed-off-by: Abhilash K V<abhilash.kv@ti.com>
+> ---
+>   arch/arm/mach-omap2/board-am3517evm.c |   18 ++++++++++++++++++
+>   1 files changed, 18 insertions(+), 0 deletions(-)
 
-Should they give .38-rc a try?
+> diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+> index 2e4aad2..782d72d 100644
+> --- a/arch/arm/mach-omap2/board-am3517evm.c
+> +++ b/arch/arm/mach-omap2/board-am3517evm.c
+> @@ -734,6 +734,23 @@ static struct omap_board_mux board_mux[] __initdata = {
+>   };
+>   #endif
+>
+> +/*
+> + * HECC information
+> + */
+> +
+> +#define CAN_STB         214
+> +static void hecc_phy_control(int on)
+> +{
+> +        int r;
+> +
+> +        r = gpio_request(CAN_STB, "can_stb");
+> +        if (r) {
+> +                printk(KERN_ERR "failed to get can_stb \n");
 
-Any help would be appreciated.
+    Have you run the patch thru checkpatch.pl? IIRC, it warns about spaces 
+before '\n'...
 
-thanks,
--- 
-js
-suse labs
+WBR, Sergei
