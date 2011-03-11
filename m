@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab1CKRl7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 12:41:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44660 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751838Ab1CKRlw (ORCPT
+	id S1752389Ab1CKRnj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 12:43:39 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:33909 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab1CKRnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 12:41:52 -0500
-Date: Fri, 11 Mar 2011 17:41:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <greg@kroah.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110311174149.GW1760@opensource.wolfsonmicro.com>
-References: <20110311152938.GB29920@sirena.org.uk>
- <201103111654.04089.arnd@arndb.de>
- <20110311160308.GQ1760@opensource.wolfsonmicro.com>
- <20110311161421.GA7843@kroah.com>
- <20110311162759.GS1760@opensource.wolfsonmicro.com>
- <20110311163522.GA9291@kroah.com>
- <20110311164850.GT1760@opensource.wolfsonmicro.com>
- <20110311165642.GA9996@kroah.com>
- <20110311170807.GV1760@opensource.wolfsonmicro.com>
- <20110311172345.GA10876@kroah.com>
+	Fri, 11 Mar 2011 12:43:37 -0500
+Date: Fri, 11 Mar 2011 17:43:29 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Frederick van der Wyck <fvanderwyck@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, gregkh@suse.de,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Platform: Samsung Q10 backlight driver
+Message-ID: <20110311174329.GI16652@srcf.ucam.org>
+References: <20110221223743.GA8548@lat.lan> <20110222052709.GA11681@core.coreip.homeip.net> <20110222212703.GA7292@lat.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110311172345.GA10876@kroah.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110222212703.GA7292@lat.lan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 09:23:45AM -0800, Greg KH wrote:
-> On Fri, Mar 11, 2011 at 05:08:07PM +0000, Mark Brown wrote:
+Hm. This patch makes both git-am and patch very unhappy, in that they 
+fail to create samsung-q10.c despite it not already existing. How did 
+you generate it?
 
-> > Wrong end of the bus.  This stuff is simple enough to deal with in a
-> > system specific fashion, the standard solution would be to patch the
-> > relevant drivers to hard code whatever is required.
-
-> What drivers need this?  Specifics please.
-
-I can't discuss specific systems I've seen this on unfortunately.  I
-guess the most obvious thing in mainline would be applying quirks like
-various drivers have based on data other than device ID information -
-it's pretty much the same problem.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
