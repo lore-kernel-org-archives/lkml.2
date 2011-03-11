@@ -1,95 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab1CKLir (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 06:38:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54627 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab1CKLio (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 06:38:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=U3nMcc+GtVAYlhz29uKZ/xpwfNJna3kZgJ57RCPp2jDXwG223uqvoBKHTLXEEIulKK
-         OZH8DdIilzEhbEsoLXoTEsN3V4ouCf7v0ztM3YT5BOJHI90Tr06aJbK+1Dapj93S4XvI
-         Kfn62NTOuxwiemEBdmOkA2/WKZHoqo62DfHdU=
-Date: Fri, 11 Mar 2011 12:38:39 +0100
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Wang Lei <f3d27b@gmail.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
-Message-ID: <20110311113839.GA4717@alberich.amd.com>
-References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
- <201103092125.43950.rjw@sisk.pl>
- <4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
- <201103100106.36678.rjw@sisk.pl>
- <4d796b47.20f98e0a.2695.fffff615@mx.google.com>
- <20110311074156.GD13156@alberich.amd.com>
- <4d79fdbd.43392b0a.0aae.0712@mx.google.com>
+	id S1754731Ab1CKLrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 06:47:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33507 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751800Ab1CKLrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 06:47:03 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] cpupowerutils - cpufrequtils extended with quite some features
+Date: Fri, 11 Mar 2011 12:46:59 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.1-1.2-desktop; KDE/4.6.0; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        discuss@lesswatts.org, power@bughost.org, cpufreq@vger.kernel.org,
+        linux@dominikbrodowski.net, Mattia Dongili <malattia@linux.it>,
+        Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        herrmann.der.user@googlemail.com, linux-omap@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4d79fdbd.43392b0a.0aae.0712@mx.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Length: 5164
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103111247.00212.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 06:47:34PM +0800, Wang Lei wrote:
-> Hi Andreas,
-> 
-> Thanks for your reply.
-> 
-> Andreas Herrmann <andreas.herrmann3@amd.com> writes:
-> 
-> > Hi Lei,
-> >
-> > can you please provide information, which system you are using.  dmesg
-> > (please use apic=debug kernel parameter), output of lspci -nnxxxx (as
-> > root),
-> >
-> 
-> I'm using debian sid with customized kernel. dmesg and lspci are
-> attached. 
+Hi,
 
-> Initializing cgroup subsys cpuset
-> Initializing cgroup subsys cpu
-> Linux version 2.6.38-rc6+ (root@localhost) (gcc version 4.4.5 (Debian 4.4.5-12) ) #1 SMP Fri Feb 25 20:01:40 CST 2011
-> Command line: BOOT_IMAGE=/boot/vmlinuz-2.6.38-rc6+ root=/dev/sda1 ro apic=debug
+cpupowerutils is based on the well known cpufrequtils project.
 
-So that was the good case (all working as expected).
+Where do I find it?
+-------------------
 
->  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
->  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
->  BIOS-e820: 00000000000e0000 - 0000000000100000 (reserved)
->  BIOS-e820: 0000000000100000 - 0000000097fb0000 (usable)
->  BIOS-e820: 0000000097fb0000 - 0000000097fc8000 (reserved)
->  BIOS-e820: 0000000097fc8000 - 0000000097fe7fb8 (ACPI NVS)
->  BIOS-e820: 0000000097fe7fb8 - 00000000a0000000 (reserved)
->  BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
->  BIOS-e820: 00000000fec00000 - 00000000fec02000 (reserved)
->  BIOS-e820: 00000000ffbc0000 - 00000000ffcc0000 (reserved)
->  BIOS-e820: 00000000fff00000 - 0000000100000000 (reserved)
-> NX (Execute Disable) protection: active
-> DMI 2.4 present.
-> DMI: Hewlett-Packard HP Compaq 6515b (GL087PA#AB2)/30C2, BIOS 68YTT Ver. F.05 04/26/2007
+A git repository is hosted on gitorious:
+git://gitorious.org/cpupowerutils/cpupowerutils.git
+Be careful, it's not the default, but the cpupowerutils branch!
 
-                       ^^^^^^^^^^^^^^^
+You can also directly download a tarball of the cpupowerutils branch:
+wget http://gitorious.org/cpupowerutils/cpupowerutils/archive-
+tarball/cpupowerutils cpupowerutils.tar.gz
 
-Hmm, I thought that this might be the case.
+How to make it run
+------------------
 
-Can you please try to boot -rc7 with kernel parameter acpi_skip_timer_override
-and send the same output (dmesg again also with apic=debug and lspci -nnxxxx)
+You need the pcitutils package (or whatever provides libpci) at runtime
+and pcitutils-devel package (or whatever provides /usr/include/pci/pci.h)
+at compile time.
+Also a gcc version that provides cpuid.h is needed, but it's in there for
+some time already afaik.
 
+Don't forget to use the right branch if you use the git repo:
+git branch --track cpupowerutils origin/cpupowerutils
+git checkout cpupowerutils
+
+make
+# There is nothing for choosing lib vs lib64, default is
+# /usr/lib,therefore you might need:
+libdir=/usr/lib64 make install-lib
+ldconfig
+./cpupower
+
+There is one known compile warning in get_cpu_topology, it's
+on the ToDo list.
+
+Why is there need for another tool?
+-----------------------------------
+
+CPU power consumption vs performance tuning is not about
+CPU frequency switching anymore for quite some time.
+Deep sleep states, traditional dynamic frequency scaling and
+hidden turbo/boost frequencies are tight close together and
+depend on each other. The first two exist on different architectures
+like PPC, Itanium and ARM the latter only on X86.
+On X86 the APU (CPU+GPU) will only run most efficiently if CPU
+and GPU has proper power management in place.
+
+Users and Developers want to have *one* tool to get an overview what their 
+system supports and to monitor and debug CPU power management in detail.
+
+The tool should compile and work on as much architectures as
+possible.
+
+What is this tool doing?
+------------------------
+
+It provides all features cpufrequtils does.
+It got enhanced with cpuidle and turbo/boost mode (on X86) statistics.
+On AMD the exact amount of supported boost states and their frequencies
+are shown. On Intel only turbo/boost support is shown.
+
+It got enhanced with a generic HW monitor tool (cpupower monitor).
+
+The generic HW monitor tool is the most powerful enhancement.
+It is a framework to monitor kernel or HW power statistics.
+It's easy to extend with additional, architecture or processor model
+specific counters.
+It's based on turbostat which got merged into the kernel recently:
+tools/power/x86/turbostat
+
+In fact turbostat functionality is integrated as three separate monitors
+implementing the cpupower monitor API:
+  - Nehalem
+  - SandyBridge
+  - Mperf
+While Nehalem and SandyBridge HW sleep counters are Intel specific, the
+mperf functionality is now available on other HW than Intel, supporting 
+the
+needed registers (Functionality includes: average frequency including
+turbo/boost frequency, C0 vs Cx idle count).
+
+Additionally there is a monitor to collect kernel idle statistics and 
+display them (separate or together) in the same format. This works on all 
+architectures using the cpuidle kernel framework including different ARM
+architectures and there were patches for powerpc (not in the mainline
+kernel yet).
+This allows to compare kernel and HW statistics on specific workloads and
+figure out how the HW performs compared to OS behavior.
+
+Additionally there is an AMD Liano (fam 12h) and Ontario (fam 14h) family 
+specific monitor. This one shows different Package Core (!PC0, PC1, PC7)
+sleep state statistics directly read out from HW, similar to Nehalem
+and SandyBridge coutners.
+The registers are accessed via PCI and therefore can still be read out 
+while cores have been offlined.
+The Liano/Ontario monitor has one special counter: NBP1 (North Bridge P1).
+This one always returns 0 or 1, depending on whether the North Bridge P1
+power state got entered at least once during measure time.
+Being able to enter NBP1 state also depends on graphics power management.
+Therefore this counter can be used to verify whether the graphics' driver
+power management is working as expected. (E.g. this counter proves that
+radeon KMS graphics drivers are missing functionality and NBP1 will only
+be entered when using the fglrx driver).
+
+
+Some examples
+-------------
+
+On a somewhat older Intel machine where turbostat complaints about:
+/archteam/trenn/packages/turbostat/turbostat
+No invariant TSC
+
+You still get mperf statistics (here core 1 is 100% utilized):
+/archteam/trenn/git/latest_cpupowerutils/cpufrequtils/cpupower monitor 
+    |Mperf               || Idle_Stats                
+CPU | C0   | Cx   | Freq || POLL | C1   | C2   | C3   
+   0|  3.71| 96.29|  2833||  0.00|  0.00|  0.02| 96.32
+   1| 100.0| -0.00|  2833||  0.00|  0.00|  0.00|  0.00
+   2|  9.06| 90.94|  1983||  0.00|  7.69|  6.98| 76.45
+   3|  7.43| 92.57|  2039||  0.00|  2.60| 12.62| 77.52
+
+Hm, mperf (C0 vs Cx) implementation also depends on a correct working
+TSC, but shows sane values on this machine. But it can be implemented
+in another way using gettimeofday and not tsc as well.
+
+For above machine, listing available monitors/counters via:
+"cpupower monitor -l" shows:
+
+Monitor "Mperf" (3 states) - Might overflow after 922000000 s
+C0      [T] -> Processor Core not idle
+Cx      [T] -> Processor Core in an idle state
+Freq    [T] -> Average Frequency (including boost) in MHz
+Monitor "Idle_Stats" (3 states) - Might overflow after 4294967295 s
+POLL    [T] -> CPUIDLE CORE POLL IDLE
+C1      [T] -> ACPI FFH INTEL MWAIT 0x0
+C2      [T] -> ACPI FFH INTEL MWAIT 0x10
+C3      [T] -> ACPI FFH INTEL MWAIT 0x30
+
+On a Tylersburg/Nehalem you get an additional one:
+Monitor "Nehalem" (4 states) - Might overflow after 922000000 s
+C3      [C] -> Processor Core C3
+C6      [C] -> Processor Core C6
+PC3     [P] -> Processor Package C3
+PC6     [P] -> Processor Package C6
+
+On a SandyBridge you have yet another monitor:
+Monitor "SandyBridge" (3 states) - Might overflow after 922000000 s
+C7      [C] -> Processor Core C7
+PC2     [P] -> Processor Package C2
+PC7     [P] -> Processor Package C7
+
+If output is too much or you only want to compare specific stats,
+use:
+./cpupower monitor -m "SandyBridge,Mperf"
+and only SandyBridge and Mperf counters are shown in the order you
+pass them.
+
+On an AMD (at least latest fam10h with mperf/boost support) one
+would of course not get the Nehalem or SandyBridge, but
+still the Mperf counters. 
+
+Additionlly on Ontario (fam 14h) or Liano (fam 12h) you get some
+AMD specific sleep state residency HW counters:
+
+Monitor "Ontario" (4 states) - Might overflow after 343 s
+!PC0    [P] -> Package in sleep state (PC1 or deeper)
+PC1     [P] -> Processor Package C1
+PC6     [P] -> Processor Package C6
+NBP1    [P] -> North Bridge P1 boolean counter (returns 0 or 1)
+
+
+Kernel Idle_Stats counter is the only one also working without root
+privileges and is architecture independent (should provide info on quite
+some ARM models and possibly soon on powerpc as well if cpuidle support
+is implemented in the kernel there):
+
+./cpupower monitor
+Available monitor Mperf needs root access
+    |Idle_Stats                 
+CPU | POLL | C1   | C2   | C3   
+   0|  0.00|  0.00|  3.20| 89.86
+   1|  0.00|  0.00|  2.27| 82.62
+   2|  0.00|  0.00| 23.44| 68.78
+   3|  0.00| 15.38|  9.34| 65.31
+
+If you want to monitor specific workload the turbostat feature to
+measure specific commands is available as well:
+
+./cpupower monitor cp xorg-x11-driver-video-7.6-163.1.x86_64.rpm /tmp/
+cp took 0.23406 seconds and exited with status 0
+    |Ontario                    || Mperf              || Idle_Stats         
+CPU | !PC0 | PC1  | PC6  | NBP1 || C0   | Cx   | Freq || POLL | C1   | C2   
+   0| 72.38|  1.47| 19.39|     0|| 21.16| 78.84|   800||  0.00| 90.59|  
+0.00
+   1| 72.38|  1.47| 19.39|     0||  2.91| 97.09|  1184||  0.00| 97.42|  
+0.00
+
+This output reveals quite some kernel bugs:
+- C2 is not entered -> dma_latency set too high by ath9k -> fixed already
+                    -> But microcode still insures deep sleep states are
+                       entered. Using C2 should be more efficient, though.
+                       That can get proofed with some more measures...
+
+- NorthBridge P1 not entered -> Kernel radeon driver missing some PM.
+                             -> fglrx would show 1 here.
+- Frequency of the wrong core is switched up?
+       -> Just realized that, might be related to:
+          http://comments.gmane.org/gmane.linux.kernel.cpufreq/6977
+          Hm, it's not always reproducable, anyway the tool works...
+
+
+What next?
+----------
+
+Happy testing..., if you have a recent machine, you'll like it!
+
+After some testing phase it would be great to get this tool
+merged into the kernel git repo under:
+tools/power/cpupower
+and replace the Intel HW only supporting tools in tools/power/x86.
 
 Thanks,
 
-Andreas
-
-PS: My assumption is that the patch in -rc7 leads to usage of IO-APIC
-    pin2 for timer interrupt (potentially I have broken chipset
-    revision determination for some SB600.)
+   Thomas
