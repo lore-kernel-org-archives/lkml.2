@@ -1,91 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1CKAiq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:38:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46002 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767Ab1CKAip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 19:38:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,299,1297065600"; 
-   d="scan'208";a="896072468"
-Subject: Re: isci for 2.6.39?
-From: Dan Williams <dan.j.williams@intel.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Jiang, Dave" <dave.jiang@intel.com>,
-        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
-        "Ciechanowski, Ed" <ed.ciechanowski@intel.com>,
-        "Danecki, Jacek" <jacek.danecki@intel.com>,
-        "Skirvin, Jeffrey D" <jeffrey.d.skirvin@intel.com>
-In-Reply-To: <1299802219.11933.175.camel@mulgrave.site>
-References: <1299801757.8641.21.camel@dwillia2-linux>
-	 <1299802219.11933.175.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Mar 2011 16:40:10 -0800
-Message-ID: <1299804010.8641.46.camel@dwillia2-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1754738Ab1CKAjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 19:39:11 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41033 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926Ab1CKAjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 19:39:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=DGaJv39f/2Y2H+L8gN2Be1jjheTnlMF8pKgvA5nGhwBxDtMrnoaa2EuGpftin7MTgo
+         FLANF2tdMudVwaXO5GnLjk88jJsUc+ZjuBshatUnT88dkQYYs0NvigKnJpNpDmAhnl8a
+         H7DtUoj9TeP1bcM/TizhzoZxx/hVTHV+1BL9A=
+From: Wang Lei <f3d27b@gmail.com>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
+References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
+	<20110310213340.GA1821@polaris.bitmath.org>
+Date: Fri, 11 Mar 2011 08:39:26 +0800
+In-Reply-To: <20110310213340.GA1821@polaris.bitmath.org> (Henrik Rydberg's
+	message of "Thu, 10 Mar 2011 22:33:40 +0100")
+Message-ID: <4d796f2c.20f98e0a.3266.fffff4e2@mx.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 16:10 -0800, James Bottomley wrote:
-> On Thu, 2011-03-10 at 16:02 -0800, Dan Williams wrote:
-> > Given the impending opening of the 2.6.39 merge window I would like to
-> > discuss the options for merging the isci driver.  Review has been
-> > intermittent which is understandable given the size and flux of the
-> > codebase.  It has received a good amount of cleanups, but additional
-> > review issues and cleanups are still all too easy to spot.  I know you
-> > have expressed reservations about taking scsi drivers through -staging
-> > in the past [1], so I would like to propose an alternative.  Merge the
-> > driver into scsi-misc but with a -staging style TODO file that tracks
-> > the review issues.  If the TODO file is not addressed by the 2.6.40
-> > window the driver would be moved to -staging.  This has the benefit of
-> > keeping the driver under your purview and expected location, but still
-> > have the imminent prospect of being de-staged to ensure the community's
-> > concerns are ultimately addressed.  We fully intend to maintain the
-> > current momentum on the driver cleanup effort and be ready in advance of
-> > 2.6.40.
-> 
-> Given that you only posted the core files today, I think it's a bit late
-> for the 2.6.39 merge window, which will be opening in under a week.
 
-The core has been available for review via the git tree for a month.  We
-waited to roll out the core in patch form to be considerate of people's
-review bandwidth and to get focus on the lldd portion while additional
-cleanups were applied to the core.
+Hi, Henrik Rydberg.
 
-> You could send it all to staging ... it's just that pretty much seems to
-> guarantee no SCSI review, which is what you seem to need at the moment.
+"Henrik Rydberg" <rydberg@euromail.se> writes:
 
-Right, hence the proposal for provisional acceptance into scsi-misc.
-Either way there will be a TODO file with issues to address by 2.6.40.
-I realize this is unprecedented, but I believe you can derive the team's
-ability and willingness to cleanup the driver from the git history [1]
-(Note the Reported-by tags for all the review comments received to
-date).
+> Hi,
+>
+>> [~]$ cat /sys/class/thermal/thermal_zone0/trip_point_*_temp
+>> 105000
+>> 15900
+>> 15900
+>> 15900
+>> 15900
+>> 15900
+>> [~]$ 
+>> 
+>> This is the output at v2.6.38-rc6+:
+>> 
+>> [~]$ cat /sys/class/thermal/thermal_zone0/trip_point_*_temp
+>> 105000
+>> 95000
+>> 75000
+>> 65000
+>> 55000
+>> 40000
+>> [~]$
+>> 
+>> Any help is appreciated.
+>> 
+>> Cheers,
+>> Lei
+>
+> I wonder if this problem is related, present in latest git (35d34df71):
+>
+> mainline>cat /sys/module/*/srcversion | sort | uniq -c
+>       1 03B88A441752AC2157DBD6A
+>       1 0C932B9F52535F81D3FFF93
+>       1 1BB88B035855B2AE7F47229
+>       1 2100DB8F374F0EE1AA607F2
+>       1 2BBC9DD51CFC881CF5F60AA
+>       1 3D4D8AFD09A0C71D9B19948
+>       1 3EF20C25CC62BD750F4C3F3
+>       1 41024DA8E830C7DAE171017
+>       1 47AD35AE180473EB06EED32
+>      19 533BB7E5866E52F63B9ACCB
+>       1 598C709DDDAB55EB331379A
+>       1 5AC5CB9DA8C242CBC76EEC0
+>       1 6961679677DB019310F9046
+>       1 6BBB3E29D835F5EC8C2FCF9
+>       1 78FBC4BE6E0D68CC70FBFEC
+>       1 97A6441C3D26B1B6A9B2B2B
+>       1 AAD974CC23F320629986F38
+>       2 AEBBDFD273E0316FD4E5D04
+>       1 CC2F5468F15E654BA13360D
+>       1 CD18C3E8FA6CD119EE11935
+>       1 EA10C238A334BB44445DC83
+>       1 EF2B1B70D28CB9290D97726
+>
+> It shows that 19 modules exhibit the same module srcversion... This
+> behavior showed up late in -rc's, I am going to bisect now (unless
+> this is already done).
+>
+> Henrik
 
-If the team gets hit by a bus and stops making cleanups we can always
-de-stage the driver.
+I've confirmed the commit that caused the problem and sent a mail.
 
-As a matter of process do you ever take git pull requests, or only
-patches?
+I don't know if these two problem are related, because i ran your
+command but there is no `/sys/module/*/srcversion' in my system. I think
+this is because of some configs i didn't enable. But I'll wait to see if
+I've provided enough information to help your hackers fix it.
 
-> > As a side note I'm still looking for a disposition for:
-> > "libsas: flush initial device discovery before completing ->scan_finished()" [2]
-> > "libsas: fix/amend device gone notification in sas_deform_port()" [3]
-> 
-> I thought I commented ... I'll go back and dig them out of email.
+Thanks!
 
-You did comment on the sas_flush_discovery() one, and I found that
-flush_workqueue does not account for new work queued as a result of the
-flush.
-
---
-Dan
-
-[1]: git://git.kernel.org/pub/scm/linux/kernel/git/djbw/isci.git
-
+-- 
+Regards,
+Lei
