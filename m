@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab1CKT5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 14:57:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55560 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751677Ab1CKT5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 14:57:21 -0500
-Date: Fri, 11 Mar 2011 19:57:19 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, davidb@codeaurora.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Linus Walleij <linus.walleij@sterricsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Qualcomm PM8921 MFD v2 2/6] mfd: pm8xxx: Add irq support
-Message-ID: <20110311195719.GX1760@opensource.wolfsonmicro.com>
-References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org>
- <1299564590-30116-3-git-send-email-adharmap@codeaurora.org>
- <alpine.LFD.2.00.1103081201520.2787@localhost6.localdomain6>
- <4D770E47.6050402@codeaurora.org>
- <alpine.LFD.2.00.1103101126100.2787@localhost6.localdomain6>
- <4D79A85D.8000301@codeaurora.org>
- <alpine.LFD.2.00.1103111853480.2787@localhost6.localdomain6>
- <4D7A71B9.9000306@codeaurora.org>
- <alpine.LFD.2.00.1103112020370.2787@localhost6.localdomain6>
+	id S1753671Ab1CKT5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 14:57:55 -0500
+Received: from www.tglx.de ([62.245.132.106]:33189 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751677Ab1CKT5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 14:57:53 -0500
+Date: Fri, 11 Mar 2011 20:56:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Scott James Remnant <scott@netsplit.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
+        Ken MacLeod <ken@bitsko.slc.ut.us>,
+        Shaun Reich <predator106@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock
+ changes
+In-Reply-To: <AANLkTi=_DG8uYLxDnXF=so5daUE=w-pxL67mYaFAGkkL@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1103112054540.2787@localhost6.localdomain6>
+References: <1299681411-9227-1-git-send-email-virtuoso@slind.org> <20110309162513.5058c824.akpm@linux-foundation.org> <AANLkTin7=rK2Sc2D7aMhPnPWU9LJq7KMSvwxv_PHERcK@mail.gmail.com> <20110310002534.f984f8b2.akpm@linux-foundation.org>
+ <AANLkTi=_DG8uYLxDnXF=so5daUE=w-pxL67mYaFAGkkL@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103112020370.2787@localhost6.localdomain6>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-244858380-1299873414=:2787"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 08:43:08PM +0100, Thomas Gleixner wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Sigh, why insist people on working around core code instead of talking
-> to the responsible maintainers about their problem in the first place?
+---1463795968-244858380-1299873414=:2787
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-I don't know if it's the case here but with a lot of the people I speak
-to it's because they're used to working on proprietary OSs where there's
-no possibility of fixing the core and they haven't yet realised that
-this is a possibility.
+On Fri, 11 Mar 2011, Scott James Remnant wrote:
+> On Thu, Mar 10, 2011 at 12:25 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Wed, 9 Mar 2011 18:01:09 -0800 Scott James Remnant <scott@netsplit.com> wrote:
+> >
+> >> > It would be helpful to know if the identified users of this feature
+> >> > actually find it useful and adequate. __I guess the most common
+> >> > application is the 1,001 desktop clock widgets. __Do you have any
+> >> > feedback from any of the owners of those?
+> >> >
+> >> cron is another obvious one (or init systems attempting to replace
+> >> cron). Having to wakeup and check the time every minute can be
+> >> non-conducive to power savings, it would be better if we could just
+> >> sleep until the next alarm and be woken up if the time changes in
+> >> between.
+> >>
+> >> (That being said, we also need to poll for and/or check for timezone
+> >> changes - but those are entirely userspace, so we can deal with that
+> >> separately)
+> >
+> > Sure, there will be lots of applications.
+> >
+> > But what I'm asking isn't "it is a good feature".  I'm asking "is the
+> > feature implemented well".  Ideally someone would get down and modify
+> > cron to use the interface in this patch.
+> >
+> So I've just been thinking today - and I'm actually not sure whether
+> this is needed at all for this case.
+> 
+> A good cron implementation is going to set timers according to
+> CLOCK_REALTIME; in the case where the clock changes forwards, those
+> timers will fire as part of the clock changing already no? And in the
+> case where the clock changes backwards, you don't want to re-run old
+> ones anyway.
+> 
+> Even the hourly/daily cases are actually at a fixed time, so would be
+> triggered - and a decent implementation wouldn't trigger a given
+> script more than once.
+
+Yeah, I was wondering about today as well. Though when you set back
+your clock several days, stuff might be surprised if it's not woken up
+for several days :)
+
+Thanks,
+
+	tglx
+---1463795968-244858380-1299873414=:2787--
