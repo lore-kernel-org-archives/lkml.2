@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab1CKPyR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:54:17 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56111 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab1CKPyQ (ORCPT
+	id S1755864Ab1CKPyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:54:52 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48246 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab1CKPyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:54:16 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: RFC: Platform data for onboard USB assets
-Date: Fri, 11 Mar 2011 16:54:03 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: andy.green@linaro.org, Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <4D79F068.2080009@linaro.org> <201103111331.13932.arnd@arndb.de> <20110311152938.GB29920@sirena.org.uk>
-In-Reply-To: <20110311152938.GB29920@sirena.org.uk>
+	Fri, 11 Mar 2011 10:54:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rSP+RoBzt3bnqS32ztO3uMigSY80aNyZ8+A/YglgpmqyqO9MFb3HannbGykf87Mis0
+         7xCq4R+VJ2SovbDmaGWXJgIlxRRijDuyc+003pUrhpmshxSGcVPPwtuLtanUt4NTERCT
+         8lJy/U45saaAIqsVtBibzuQ2m9SYEtEem8WhI=
+Date: Fri, 11 Mar 2011 16:54:46 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
+ handling
+Message-ID: <20110311155446.GH13038@htj.dyndns.org>
+References: <4D6E9541.2040201@kernel.org>
+ <20110302191338.GE28266@mtj.dyndns.org>
+ <4D6EA975.8070200@kernel.org>
+ <20110302205704.GF28266@mtj.dyndns.org>
+ <4D6EB335.8000306@kernel.org>
+ <20110303061711.GG28266@mtj.dyndns.org>
+ <4D791C9F.1010500@kernel.org>
+ <20110311082938.GC13038@htj.dyndns.org>
+ <20110311083351.GD13038@htj.dyndns.org>
+ <4D7A4430.1030301@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103111654.04089.arnd@arndb.de>
-X-Provags-ID: V02:K0:/zNu6pf7GETAR9MkonbRLKnkUnQ1Q9Xj8jLjhVquuVV
- +DEY2M5ZnTsJDfOmrWfn9OQPYZypsXEm4NUwqFzqkywDkpNc4b
- 028XP4uAPVZYnKeusVZnfx2zJhuplBeG23+JYu3McQnWDJMbDt
- yjuTOcJEyXx8lnJg7gDx059kCcKuKkGBApVyNKD4S1C2UhYAZ+
- QQ3zd/Qgoqx3w5P0G5ruQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7A4430.1030301@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 March 2011, Mark Brown wrote:
-> On Fri, Mar 11, 2011 at 01:31:13PM +0100, Arnd Bergmann wrote:
+On Fri, Mar 11, 2011 at 07:48:00AM -0800, Yinghai Lu wrote:
+> On 03/11/2011 12:33 AM, Tejun Heo wrote:
+> > On Fri, Mar 11, 2011 at 09:29:38AM +0100, Tejun Heo wrote:
+> >> Also, I don't think your patch is correct.  Even if there is phys_dist
+> >                                                               ^
+> > 							      no
+> >> table, emu distance tables should be built because emulated nids don't
+> >> map to physical nids one to one.  ie. Two different emulated nids can
+> >> share a physical node and the distance table should explicitly reflect
+> >> that.
 > 
-> > I understand the problem, but IMHO there really needs to be a better
-> > solution for this. As far as I understand, the underlying problem is
-> > that USB ethernet devices with a proper MAC address get a different
-> > device name from devices with a generated random MAC address, and
-> > the people that designed this board were trying to save a few cents
-> > by not allocating a MAC address for the ethernet device [1], right?
-> 
-> > I believe we should fix this particular problem locally, instead of
-> > coming up with generic infrastructure for broken hardware.
-> 
-> It's arguable if this stuff is broken at all, from a hardware design
-> point of view it's perfectly reasonable and if you're shipping volumes
-> in the millions very small savings add up to interesting numbers easily.
+> ok, when original SLIT is not there, mean only one really node.
+> so the new distance table should be filled with LOCAL_DISTANCE.
 
-It may be reasonable if you don't expect anyone to connect the
-device to an ethernet port, but in that case you could save much
-more by removing the ethernet chip and the socket along with the
-eeprom.
+No, NUMA implementation can skip numa_set_distance() entirely if the
+distance is LOCAL_DISTANCE if nids are equal, REMOTE_DISTANCE
+otherwise.  In fact, any amdtopology configuraiton would behave this
+way, so it's incorrect to fill the table with LOCAL_DISTANCE.  You
+have to check the physnid mapping and build new table whether physical
+table exists or not.  Lack of physical distance table doesn't mean all
+nodes are LOCAL_DISTANCE.
 
-Really, any machine without a fixed MAC address is a huge pain
-for users, just google for "pandaboard mac address" to see
-how much work this has caused people.
-
-	Arnd
+-- 
+tejun
