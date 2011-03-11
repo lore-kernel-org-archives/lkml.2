@@ -1,59 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab1CKOgJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:36:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8295 "EHLO mx1.redhat.com"
+	id S1755398Ab1CKOgd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:36:33 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:45526 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab1CKOgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:36:06 -0500
-Date: Fri, 11 Mar 2011 09:35:57 -0500
-From: Andy Gospodarek <andy@greyhouse.net>
-To: Cong Wang <amwang@redhat.com>
-Cc: Andy Gospodarek <andy@greyhouse.net>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        netdev@vger.kernel.org
-Subject: Re: [Patch V2] bonding: fix netpoll in active-backup mode
-Message-ID: <20110311143557.GY11864@gospo.rdu.redhat.com>
-References: <1299578336-5888-1-git-send-email-amwang@redhat.com> <20110308212405.GX11864@gospo.rdu.redhat.com> <4D7773E3.5050708@redhat.com>
+	id S1754437Ab1CKOgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:36:32 -0500
+Message-ID: <4D7A336C.30905@kernel.dk>
+Date: Fri, 11 Mar 2011 15:36:28 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D7773E3.5050708@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Lukas Czerner <lczerner@redhat.com>
+CC: Jeff Moyer <jmoyer@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: Re: [PATCH v2] block: fix mis-synchronisation in  blkdev_issue_zeroout()
+References: <1299830784-6622-1-git-send-email-lczerner@redhat.com> <x49bp1hhh2g.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1103111530120.3686@dhcp-27-109.brq.redhat.com>
+In-Reply-To: <alpine.LFD.2.00.1103111530120.3686@dhcp-27-109.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 08:34:43PM +0800, Cong Wang wrote:
-> 于 2011年03月09日 05:24, Andy Gospodarek 写道:
->> On Tue, Mar 08, 2011 at 05:58:56PM +0800, Amerigo Wang wrote:
->>> V2: avoid calling slave_diable_netpoll() with write_lock_bh() held.
->>>
->>> netconsole doesn't work in active-backup mode, because we don't do anything
->>> for nic failover in active-backup mode. We should disable netpoll on the
->>> failing slave when it is detected down and enable netpoll when it becomes
->>> the active slave.
->>>
->>> Tested by ifdown the current active slave and ifup it again for several times,
->>> netconsole works well.
->>>
->>> Signed-off-by: WANG Cong<amwang@redhat.com>
->>> Cc: Neil Horman<nhorman@tuxdriver.com>
->>>
+On 2011-03-11 15:31, Lukas Czerner wrote:
+> On Fri, 11 Mar 2011, Jeff Moyer wrote:
+> 
+>> Lukas Czerner <lczerner@redhat.com> writes:
 >>
->> It seems like you are going to a lot of trouble to fix a bug where
->> netpoll will not be setup on any interface that is down when enslaved.
->> That seems to be the only path that would not have slave->np setup
->> properly at enslavement.
+>>> BZ29402
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=29402
+>>>
+>>> We can hit serious mis-synchronization in bio completion path of
+>>> blkdev_issue_zeroout() leading to a panic.
+>>>
+>>> The problem is that when we are going to wait_for_completion() in
+>>> blkdev_issue_zeroout() we check if the bb.done equals issued (number of
+>>> submitted bios). If it does, we can skip the wait_for_completition()
+>>> and just out of the function since there is nothing to wait for.
+>>> However, there is a ordering problem because bio_batch_end_io() is
+>>> calling atomic_inc(&bb->done) before complete(), hence it might seem to
+>>> blkdev_issue_zeroout() that all bios has been completed and exit. At
+>>> this point when bio_batch_end_io() is going to call complete(bb->wait),
+>>> bb and wait does not longer exist since it was allocated on stack in
+>>> blkdev_issue_zeroout() ==> panic!
+>>>
+>>> (thread 1)                      (thread 2)
+>>> bio_batch_end_io()              blkdev_issue_zeroout()
+>>>   if(bb) {                      ...
+>>>     if (bb->end_io)             ...
+>>>       bb->end_io(bio, err);     ...
+>>>     atomic_inc(&bb->done);      ...
+>>>     ...                         while (issued != atomic_read(&bb.done))
+>>>     ...                         (let issued == bb.done)
+>>>     ...                         (do the rest of the function)
+>>>     ...                         return ret;
+>>>     complete(bb->wait);
+>>>     ^^^^^^^^
+>>>     panic
+>>>
+>>> We can fix this easily by simplifying bio_batch and completion counting.
+>>>
+>>> Also remove bio_end_io_t *end_io since it is not used.
+>>>
+>>> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+>>> Reported-by: Eric Whitney <eric.whitney@hp.com>
+>>> Tested-by: Eric Whitney <eric.whitney@hp.com>
+>>> CC: Jens Axboe <axboe@kernel.dk>
+>>> CC: Dmitry Monakhov <dmonakhov@openvz.org>
+>>> CC: Jeff Moyer <jmoyer@redhat.com>
+>>> ---
+>>>  block/blk-lib.c |   19 +++++++------------
+>>>  1 files changed, 7 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/block/blk-lib.c b/block/blk-lib.c
+>>> index eec78be..bd3e8df 100644
+>>> --- a/block/blk-lib.c
+>>> +++ b/block/blk-lib.c
+>>> @@ -109,7 +109,6 @@ struct bio_batch
+>>>  	atomic_t 		done;
+>>>  	unsigned long 		flags;
+>>>  	struct completion 	*wait;
+>>> -	bio_end_io_t		*end_io;
+>>>  };
+>>>  
+>>>  static void bio_batch_end_io(struct bio *bio, int err)
+>>> @@ -122,12 +121,9 @@ static void bio_batch_end_io(struct bio *bio, int err)
+>>>  		else
+>>>  			clear_bit(BIO_UPTODATE, &bb->flags);
+>>>  	}
+>>> -	if (bb) {
+>>> -		if (bb->end_io)
+>>> -			bb->end_io(bio, err);
+>>> -		atomic_inc(&bb->done);
+>>> -		complete(bb->wait);
+>>> -	}
+>>> +	if (bb)
+>>> +		if (atomic_dec_and_test(&bb->done))
+>>> +			complete(bb->wait);
 >>
->> Did you ever try just this?
->
-> That was my first thought, but I was over-worried about the failing slave.
-> This way should work too. Mind to send it as a normal patch? :)
->
+>> I think bb will always be set here, no real need to check.
+>>
+>> Anyway, I though I already added my:
+>>
+>> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+>>
+>> to this.  No?
+>>
+>> Cheers,
+>> Jeff
+> 
+> Yes, you did and I forgot to add it into the patch. Sorry about that.
 
-I'm happy to submit the patch if it works in your environment.
+No worries, I added it now.
 
-I do not think anyone likes un-tested patches.
+-- 
+Jens Axboe
 
