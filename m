@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab1CKShQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:37:16 -0500
-Received: from pfepb.post.tele.dk ([195.41.46.236]:46156 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab1CKShN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:37:13 -0500
-Date: Fri, 11 Mar 2011 19:37:11 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Mark Hounschell <markh@compro.net>
-Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: kernel git bisect question
-Message-ID: <20110311183711.GA559@merkur.ravnborg.org>
-References: <4D793414.4090206@compro.net> <20110310215438.GE12521@home.goodmis.org> <4D7A6A99.5070304@compro.net>
+	id S1753368Ab1CKShr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:37:47 -0500
+Received: from mga11.intel.com ([192.55.52.93]:25083 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752054Ab1CKShq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 13:37:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,304,1297065600"; 
+   d="scan'208";a="896357863"
+Date: Fri, 11 Mar 2011 10:36:54 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>, dm-crypt@saout.de,
+        linux-kernel@vger.kernel.org, Alasdair G Kergon <agk@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: dm-crypt: Performance Regression 2.6.37 -> 2.6.38-rc8
+Message-ID: <20110311183654.GA3272@tassilo.jf.intel.com>
+References: <20110308164508.GA8729@darkside.kls.lan>
+ <20110310165730.GC20504@alboin.amr.corp.intel.com>
+ <20110310175411.GB25027@darkside.kls.lan>
+ <20110311011842.GA5698@alboin.amr.corp.intel.com>
+ <20110311180334.GA11382@darkside.kls.lan>
+ <4D7A6A26.5000501@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D7A6A99.5070304@compro.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D7A6A26.5000501@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 01:31:53PM -0500, Mark Hounschell wrote:
-> On 03/10/2011 04:54 PM, Steven Rostedt wrote:
-> > On Thu, Mar 10, 2011 at 03:27:00PM -0500, Mark Hounschell wrote:
-> >> Between git bisect [good | bad ]s should I always "make clean" or can I
-> >> count on the build system to take care of everything properly?
-> > 
+On Fri, Mar 11, 2011 at 07:29:58PM +0100, Milan Broz wrote:
+> On 03/11/2011 07:03 PM, Mario 'BitKoenig' Holbe wrote:
 > 
-> I'm trying to bisect between 2.6.35 and 2.6.36. What have I done wrong?
-> Here is exactly what I've done. Why after my second "git bisect bad" do
-> I get a Makefile for 2.6.35-rc1 and then after the fourth I get a Makefile
-> for 2.6.34??
+> >> You probably need to find some way
+> >> to make pcrypt (parallel crypt layer) work for dmcrypt. That may
+> >> actually give you more speedup too than your old hack because
+> >> it can balance over more cores. 
+> 
+> dmcrypt is already using async crypto interface, it is ready
+> for parallelization on this level.
+> 
+> Perhaps the problem is that pcrypt is not yet implemented for needed
+> algorithms?
 
-The development is not linear.
-So you see a commit developed on top of 2.6.34 that was included in 2.6.35.
-This is normal.
+It needs some glue according to Herbert. I forgot the details.
 
-	Sam
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
