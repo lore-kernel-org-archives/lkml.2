@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1CKToj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 14:44:39 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:54766 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab1CKToh (ORCPT
+	id S1752884Ab1CKTqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 14:46:47 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:17239 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab1CKTqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 14:44:37 -0500
-Date: Fri, 11 Mar 2011 19:44:22 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Greg KH <greg@kroah.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110311194422.GA20490@srcf.ucam.org>
-References: <20110305042431.GA22840@kroah.com> <20110311174339.GJ16652@srcf.ucam.org> <20110311193512.GC14204@kroah.com>
-MIME-Version: 1.0
+	Fri, 11 Mar 2011 14:46:46 -0500
+Date: Fri, 11 Mar 2011 13:46:44 -0600
+From: scameron@beardog.cce.hp.com
+To: Jens Axboe <axboe@kernel.dk>
+Cc: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
+        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH] cciss: Add missing allocation in scsi_cmd_stack_setup and  corresponding deallocation
+Message-ID: <20110311194644.GE12760@beardog.cce.hp.com>
+References: <20110310202238.30533.92210.stgit@beardog.cce.hp.com> <4D7A7373.8090800@kernel.dk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110311193512.GC14204@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4D7A7373.8090800@kernel.dk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 11:35:12AM -0800, Greg KH wrote:
-> On Fri, Mar 11, 2011 at 05:43:39PM +0000, Matthew Garrett wrote:
-> > Applied, thanks.
+On Fri, Mar 11, 2011 at 08:09:39PM +0100, Jens Axboe wrote:
+> On 2011-03-10 21:22, Stephen M. Cameron wrote:
+> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > 
+> > This bit got lost somewhere along the way.  Without this, panic.
 > 
-> Great, any pointers to where it was applied?  I think I need to send you
-> a few more 'add a new device id' patches and I want to make sure I get
-> the right version to patch against.
+> This doesn't apply cleanly, neither hunk. I hand applied it. Please let
+> me know what a patch is against in the future, if it doesn't apply
+> "anywhere".
 
-http://git.kernel.org/?p=linux/kernel/git/mjg59/platform-drivers-x86.git;a=shortlog;h=refs/heads/linux-next 
-- ideally we'd just have it id against all Samsung laptops and check for 
-SABI? Or are there machines where that might break?
+Oh... I see what happened.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+That patch was fixing something which was accidentally 
+left out of this patch:
+
+http://marc.info/?l=linux-kernel&m=129840572232151&w=2
+
+which I mistakenly thought was present in 2.6.38-rc7,
+but it's not present (quite likely because without the
+missing bit, it causes a panic), It's sitting in my stack of
+patches still.
+
+[scameron@localhost linux-2.6.38-rc7]$ stg series | grep cciss
++ cciss-hoist-tag-masking-out-of-loop
++ cciss-inform-controller-we-are-using-32-bit-tags
++ cciss-mask-off-error-bits-before-calling-pci-free-consistent
++ cciss-remove-unnecessary-casts
++ cciss-fix-missed-command-status-value-CMD_UNABORTABLE
++ cciss-add-cciss_tape_cmds-module-parameter
++ cciss-fix-missing-initialization-in-scsi-cmd-stack-setup
++ cciss-export-resettable-host-attribute
++ cciss-fix-sense-data-copying-code
+
+What needs to happen is I combine cciss-add-cciss_tape_cmds-module-parameter
+and cciss-fix-missing-initialization-in-scsi-cmd-stack-setup into one 
+working patch.
+
+Sorry about that.  I need to slow down.  I'm making too many mistakes.
+
+-- steve
+
+
+
+> 
+> I marked this one as stable backport, too.
+> 
+> -- 
+> Jens Axboe
