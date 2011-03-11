@@ -1,45 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1CKUCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:02:23 -0500
-Received: from mga11.intel.com ([192.55.52.93]:22208 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab1CKUCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:02:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,304,1297065600"; 
-   d="scan'208";a="666398324"
-Date: Fri, 11 Mar 2011 21:02:21 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1/ds1wm: silence warnings related to mfd_get_cell
- changes
-Message-ID: <20110311200221.GB20247@sortiz-mobl>
-References: <20110301135507.738d23c1@debxo>
+	id S1753397Ab1CKUGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:06:04 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32867 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab1CKUF7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:05:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=mr8FnNh5GUliFGDzXRL3ZOLV98R0jFNPi3nC/am0kvDEl/bDLo/Rud+m85dpmo7P+C
+         ZZZ5QXQA7B+ILrn3ZC/v527QvbyDAVfvA7I3UodwdH9D8pBLOSSDxu7i1hRKXZsQx7ZW
+         45FkAtZQbdDtiCfc/jrWqfw65HyxlTrM64fcY=
+Message-ID: <4D7A80A4.6040008@linaro.org>
+Date: Fri, 11 Mar 2011 20:05:56 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110301135507.738d23c1@debxo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <Pine.LNX.4.44L0.1103111406270.1975-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1103111406270.1975-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andres,
+On 03/11/2011 07:12 PM, Somebody in the thread at some point said:
 
-On Tue, Mar 01, 2011 at 01:55:07PM -0800, Andres Salomon wrote:
-> 
-> mfd_get_cell returns a const, so change the ds1wm client to store
-> a const mfd cell.  This silences type mismatch warnings.
-> 
-> Since we're guaranteed to have the mfd_cell, we can also simplify
-> the code a bit to get rid of a temporary variable and NULL check.
-Patch applied, thanks a lot.
+Hi -
 
-Cheers,
-Samuel.
+>> I don't believe I referred to class devices anywhere.  It does not
+>> matter if the main chip function is class device or not.
+>
+> It matters because the class specification for a USB device is never
+> going to mention information sources that are outside the USB protocol,
+> such as board definitions.  Consequently a class driver will never need
+> to use such a thing.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Is a gadget driver a class driver?  Because I can set the MAC address 
+for my g_ether from the kernel commandline which is most definitely an 
+"information source outside the USB protocol".  That is exactly the kind 
+of thing I am talking about enabling also to be taken from 
+usb_device->dev.platform_data.
+
+>>> Also, do you have a real example of a USB driver today that needs this?
+>>
+>> I think you find without devpath ->  platform_data mapping, the kind of
+>> layout given above is made quite difficult to support in Linux.
+>
+> What would be needed to support such a mapping?  It seems to me that we
+> probably have all the necessary ingredients in place already.
+
+What I was imagining is getting the platform data structs from a header 
+in include/linux/
+
+#include <linux/onboard_device_1.h>
+#include <linux/onboard_device_2.h>
+
+Using a .name defined to be the first member to match to specific bus 
+member devpath prepended with bus class:
+
+struct onboard_device_1_platform_data device_1_platform_data {
+	.name = "usb\1-0",
+	.some_feature = 1,
+};
+
+struct onboard_device_2_platform_data device_2_platform_data {
+	.name = "usb\1-1",
+	.some_feature = 2,
+};
+
+Aggregating them into an array
+
+void *devpath_to_platform_data_mapping[] = {
+	device_1_platform_data,
+	device_2_platform_data,
+};
+
+Registering the array in the machine file
+
+register_platform_data_by_devpath(devpath_to_platform_data_mapping,
+	ARRAY_SIZE(devpath_to_platform_data_mapping));
+
+It needs to set two globals for pointer and member count
+
+void
+register_platform_data_by_devpath(void *map, int count)
+{
+	platform_data_mapping = map;
+	platform_data_mapping_count = count;
+}
+
+Later, when a USB device is instantiated, if platform_data_mapping is 
+not NULL, it checks to see if the devname it just synthesized matches 
+any in the table that have static usb/ prefix, and if so, sets 
+usb_device->dev.platform_data to the table entry.
+
+Well, it's an RFC so if you have a better plan I am all ears.
+
+-Andy
