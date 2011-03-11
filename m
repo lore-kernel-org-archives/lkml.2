@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab1CKJwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 04:52:01 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38619 "EHLO hera.kernel.org"
+	id S1754410Ab1CKJw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 04:52:28 -0500
+Received: from hera.kernel.org ([140.211.167.34]:38635 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab1CKJwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 04:52:00 -0500
-Date: Fri, 11 Mar 2011 09:51:44 GMT
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+	id S1754272Ab1CKJwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 04:52:25 -0500
+Date: Fri, 11 Mar 2011 09:52:07 GMT
+From: tip-bot for Yuanhan Liu <yuanhan.liu@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+        fweisbec@gmail.com, yuanhan.liu@linux.intel.com, rostedt@goodmis.org,
+        tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <20110218145219.GD2604@jolsa.brq.redhat.com>
-References: <20110218145219.GD2604@jolsa.brq.redhat.com>
+        yuanhan.liu@linux.intel.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+In-Reply-To: <1289196312-25323-1-git-send-email-yuanhan.liu@linux.intel.com>
+References: <1289196312-25323-1-git-send-email-yuanhan.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Explain about unstable clock on resume with ring buffer warning
-Message-ID: <tip-31274d72f01604f4b02d933b4f3cac84d2c201fd@git.kernel.org>
-Git-Commit-ID: 31274d72f01604f4b02d933b4f3cac84d2c201fd
+Subject: [tip:perf/core] tracing: Export trace_set_clr_event()
+Message-ID: <tip-56355b83e2a24ce7e1870c8479205e2cdd332225@git.kernel.org>
+Git-Commit-ID: 56355b83e2a24ce7e1870c8479205e2cdd332225
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Mar 2011 09:51:44 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Mar 2011 09:52:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  31274d72f01604f4b02d933b4f3cac84d2c201fd
-Gitweb:     http://git.kernel.org/tip/31274d72f01604f4b02d933b4f3cac84d2c201fd
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 18 Feb 2011 15:52:19 +0100
+Commit-ID:  56355b83e2a24ce7e1870c8479205e2cdd332225
+Gitweb:     http://git.kernel.org/tip/56355b83e2a24ce7e1870c8479205e2cdd332225
+Author:     Yuanhan Liu <yuanhan.liu@linux.intel.com>
+AuthorDate: Mon, 8 Nov 2010 14:05:12 +0800
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 10 Mar 2011 10:34:47 -0500
+CommitDate: Thu, 10 Mar 2011 10:34:51 -0500
 
-tracing: Explain about unstable clock on resume with ring buffer warning
+tracing: Export trace_set_clr_event()
 
-The "Delta way too big" warning might appear on a system with a
-unstable shed clock right after the system is resumed and tracing
-was enabled at time of suspend.
+Trace events belonging to a module only exists when the module is
+loaded. Well, we can use trace_set_clr_event funtion to enable some
+trace event at the module init routine, so that we will not miss
+something while loading then module.
 
-Since it's not realy a bug, and the unstable sched clock is working
-fast and reliable otherwise, Steven suggested to keep using the
-sched clock in any case and just to make note in the warning itself.
+So, Export the trace_set_clr_event function so that module can use it.
 
-v2 changes:
-- added #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <20110218145219.GD2604@jolsa.brq.redhat.com>
+Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+LKML-Reference: <1289196312-25323-1-git-send-email-yuanhan.liu@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ring_buffer.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ kernel/trace/trace_events.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 3237d96..db7b439 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2172,11 +2172,19 @@ rb_reserve_next_event(struct ring_buffer *buffer,
- 	if (likely(ts >= cpu_buffer->write_stamp)) {
- 		delta = diff;
- 		if (unlikely(test_time_stamp(delta))) {
-+			int local_clock_stable = 1;
-+#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
-+			local_clock_stable = sched_clock_stable;
-+#endif
- 			WARN_ONCE(delta > (1ULL << 59),
--				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n",
-+				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n%s",
- 				  (unsigned long long)delta,
- 				  (unsigned long long)ts,
--				  (unsigned long long)cpu_buffer->write_stamp);
-+				  (unsigned long long)cpu_buffer->write_stamp,
-+				  local_clock_stable ? "" :
-+				  "If you just came from a suspend/resume,\n"
-+				  "please switch to the trace global clock:\n"
-+				  "  echo global > /sys/kernel/debug/tracing/trace_clock\n");
- 			add_timestamp = 1;
- 		}
- 	}
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index e1d579b..e88f74f 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -325,6 +325,7 @@ int trace_set_clr_event(const char *system, const char *event, int set)
+ {
+ 	return __ftrace_set_clr_event(NULL, system, event, set);
+ }
++EXPORT_SYMBOL_GPL(trace_set_clr_event);
+ 
+ /* 128 should be much more than enough */
+ #define EVENT_BUF_SIZE		127
