@@ -1,40 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab1CKQx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:53:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40726 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750893Ab1CKQx2 (ORCPT
+	id S1751737Ab1CKQzz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:55:55 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:43049 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab1CKQzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:53:28 -0500
-Date: Fri, 11 Mar 2011 16:53:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: andy.green@linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110311165325.GU1760@opensource.wolfsonmicro.com>
-References: <4D7A4D52.6010501@linaro.org>
- <Pine.LNX.4.44L0.1103111141270.1975-100000@iolanthe.rowland.org>
+	Fri, 11 Mar 2011 11:55:52 -0500
+X-Auth-Info: 4FRB5DJAByHPqInn084cAMCztpQWK7tlZ0muQzXngeY=
+Message-ID: <4D7A5497.4070801@grandegger.com>
+Date: Fri, 11 Mar 2011 17:57:59 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1103111141270.1975-100000@iolanthe.rowland.org>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Abhilash K V <abhilash.kv@ti.com>
+CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        Sriramakrishnan <srk@ti.com>
+Subject: Re: [PATCH] can : AM3517EVM : add platform specific init
+References: <1299775153-16766-1-git-send-email-abhilash.kv@ti.com>
+In-Reply-To: <1299775153-16766-1-git-send-email-abhilash.kv@ti.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 11:45:20AM -0500, Alan Stern wrote:
+On 03/10/2011 05:39 PM, Abhilash K V wrote:
+> CAN module on AM3517 requires programming of IO expander
+> as part of init sequence. Added transceiver_switch
+> callback to handle this.
+> 
+> Signed-off-by: Sriramakrishnan <srk@ti.com>
+> Reviewed-by:  Vaibhav Hiremath <hvaibhav@ti.com>
+> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+> ---
+>  arch/arm/mach-omap2/board-am3517evm.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+> index 2e4aad2..782d72d 100644
+> --- a/arch/arm/mach-omap2/board-am3517evm.c
+> +++ b/arch/arm/mach-omap2/board-am3517evm.c
+> @@ -734,6 +734,23 @@ static struct omap_board_mux board_mux[] __initdata = {
+>  };
+>  #endif
+>  
+> +/*
+> + * HECC information
+> + */
+> +
+> +#define CAN_STB         214
+> +static void hecc_phy_control(int on)
+> +{
+> +        int r;
+> +
+> +        r = gpio_request(CAN_STB, "can_stb");
+> +        if (r) {
+> +                printk(KERN_ERR "failed to get can_stb \n");
+> +                return;
+> +        }
+> +
+> +        gpio_direction_output(CAN_STB, (on==1)?0:1);
+> +}
 
-> Or to put it another way...  With external, hot-plugged USB devices,
-> there is no need to know "how it is wired".  The fact that it is on a 
-> USB bus is the only information necessary.  Why does anyone need to
-> know more than this for on-board USB devices?
+This function is called ony *any* ifconfig up and down request. I would
+expect gpio_request() will return -EBUSY when it's called more than once.
 
-Examples I'm aware of include things like power control beyond what the
-USB spec does and not programming device identification or configuration
-information that would normally be initialised by the hardware, relying
-on the AP to program it at runtime.
+Wolfgang.
+
