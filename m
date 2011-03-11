@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab1CKSvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:51:33 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49241 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab1CKSvb (ORCPT
+	id S1753589Ab1CKSzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:55:41 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44003 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab1CKSzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:51:31 -0500
-Date: Fri, 11 Mar 2011 10:51:18 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation
-	problem
-Message-ID: <20110311185118.GB1110@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110310235722.GA1110@tux1.beaverton.ibm.com> <1299860233-sup-4443@think>
+	Fri, 11 Mar 2011 13:55:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=J7auxa3hrDbPV5WWP8HQZO3IC6H1oh6gnYUQyPcATWWPVz+uGXgmxQbcG6YHQdpLzQ
+         +Rk5ZlmCvh2FzJqLlnWeHUbEBG6Wzikit3NWtg2CzIJS8X7zrOzFtE5kY9fMQQusyoAx
+         xbE2SlOe2r3XSYg2yCaRznMuyuEdQjh8QWj1c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299860233-sup-4443@think>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Date: Fri, 11 Mar 2011 13:55:39 -0500
+Message-ID: <AANLkTikwjHbPWp5xwZFLStEupck46mFw5dqEUcQOXiD6@mail.gmail.com>
+Subject: How to use gma500 framebuffer driver?
+From: Greg Brigley <gbrigley@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 11:34:05AM -0500, Chris Mason wrote:
-> Excerpts from Darrick J. Wong's message of 2011-03-10 18:57:22 -0500:
-> > On Tue, Mar 08, 2011 at 03:56:26PM +1100, Dave Chinner wrote:
-> > 
-> > > On Fri, Mar 04, 2011 at 01:07:24PM -0800, Darrick J. Wong wrote:
-> > > > On Mon, Feb 28, 2011 at 07:54:05AM -0500, Chris Mason wrote:
-> > > > > Excerpts from Darrick J. Wong's message of 2011-02-24 13:27:32 -0500:
-> > > > > > On Thu, Feb 24, 2011 at 12:37:53PM -0500, Chris Mason wrote:
-> > > > > > > Excerpts from Jan Kara's message of 2011-02-24 11:47:58 -0500:
-> > > > > > > > On Wed 23-02-11 15:35:11, Chris Mason wrote:
-> > > > > > > > > Excerpts from Joel Becker's message of 2011-02-23 15:24:47 -0500:
-> > > > > > > > > > On Tue, Feb 22, 2011 at 11:45:44AM -0500, Martin K. Petersen wrote:
-> > > > > > > > > > > Also, DIX is only the tip of the iceberg. Many other impending
-> > > > > > > > > > > technologies feature checksums and require pages to be stable during I/O
-> > > > > > > > > > > due to checksumming, encryption and so on.
-> > > > > > > > > > > 
-> > > > > > > > > > > The VM is already trying to do the right thing. We just need the
-> > > > > > > > > > > relevant filesystems to catch up.
-> > > > > > > > > > 
-> > > > > > > > > >     ocfs2 handles stable metadata for its checksums when feeding
-> > > > > > > > > > things to the journal.  If we're doing pagecache-based I/O, is the
-> > > > > > > > > > pagecache going to help here for data?
-> > > > > > > > > 
-> > > > > > > > > Data is much easier than metadata.  All you really need is to wait on
-> > > > > > > > > writeback in file_write, wait on writeback in page_mkwrite, and make
-> > 
-> > Hrm... I've been looking for a file_write in ext4; was the aio_write function
-> > pointer what you had in mind here?
-> 
-> Your change to grab_cache_page_write_begin looks good to me, at least
-> for ext4.  For ext3 you have to actually go in and wait for each of the
-> buffer heads in the page, since ext3 (and reiserfs) will write the buffer heads
-> directly without using writepage.
+Hi all,
 
-Heh, I hadn't really given much thought to ext2/3 yet.  I'm still trying to
-figure out what causes the occasional ext4 failures. :)
+I'm trying to test the poulsbo/gma500 driver recently added to
+drivers/staging in linux-next, and having trouble.  I'm hoping someone
+can help me get going (or let me know if I should be asking somewhere
+other than the main kernel list.)
 
-> Have you confirmed by looking at the block mapping that your crc errors
-> are from data blocks?
+I did a git clone of linux-next. I got errors trying to build the
+gma500 driver on the head, so I did a checkout to
+0e83f46d3869a5255a04b875bb885bd141a609ef, from Feb 26 - the last
+commit on drivers/staging/gma500, and now I can build successfully,
+but have not succeeded in producing video output.
 
-Yes, debugfs confirms that they are data blocks.
+I guess I'll start by saying what I'm trying to do, to make sure I'm
+not misguided in trying this in the first place.  I want to run Xfbdev
+and drive both an LVDS and HDMI display at the same time (mirrored).
+I don't need 2d or 3d acceleration.  I don't see an indication that
+anyone else has tried mirrored displays with this driver, and I don't
+mind being the first, but should it work in theory?  If it's not
+supported, would it be difficult to add?
 
---D
+My hardware is an embedded system, containing one of these:
+http://www.radisys.com/Products/COM-Express/COM-Express-Modules/Procelerant-CEZ5XT.html.
+ I've successfully driven the two displays using Ubuntu 10.10 with
+added poulsbo drivers and other pieces, so I know the hardware is good
+and can work this way if the driver supports it.
+
+So here are my questions for those who have used the staging driver:
+* Should I be compiling it as a module, or as part of the kernel?
+* If I'm compiling it as part of the kernel, what kernel parameters do
+I use to activate it?   I tried to guess based on past experience with
+non-DRM framebuffer drivers, but I get the impression that DRM
+framebuffers are different, and I don't really have any experience
+there.
+* If I'm compiling it as a module, is there some sort of incantation
+to make the framebuffer device show up when I insert the module?
+Currently, when I insmod psb_gfx.ko, nothing appears in /proc/fb, or
+in /dev.  I'm using udev.  If I do "mknod /dev/fb0 c 29 0", then both
+fbset and Xfbdev give me "no such device" errors.
+
+I'll stop there for now, in case I'm entirely on the wrong track, but
+I'm happy to provide more detail if anyone is able to help.  I'm very
+motivated to get this working, and if there's anything I can do to
+help with development or testing of the driver going forward, I'd be
+happy to do so.
+
+Thanks,
+Greg
