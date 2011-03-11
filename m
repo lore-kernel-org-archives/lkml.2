@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab1CKGtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 01:49:07 -0500
-Received: from web31813.mail.mud.yahoo.com ([68.142.207.76]:35720 "HELO
-	web31813.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752459Ab1CKGtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 01:49:04 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=dcikE39yy/d16bM0Prg2PfFvKpi0i3iSoAc24HFaQUL4WoKIE4vqm4JRvy1/XMDden7bA8DTp7WrKc5kkkMP/XcrhVLT+imoVu/IrvhhWNOi7hYYdawdfuoLwj/4avEPhWuq/0QIJGjOSHBdPnG+gCp7sIV6SK4WBeKb7MtWUr8=;
-Message-ID: <206682.3247.qm@web31813.mail.mud.yahoo.com>
-X-YMail-OSG: QCcWmIsVM1ltufAjWZ0LNhRl2Fx5x.n5eu4YYf8Fy4Fpy2E
- dgESRgAPgEMuBazW8HNOGjKhDN28LD57A040CUxPMuYS6Akb8n_k_FcYXv1m
- KL787D_bh0FZc5GzSpPf6KuhvxpnMrBIucZ_JK5Vx2mU5tZYbjBCjjTS9AFY
- .kFV7lqsMDeqmwkNA0q7KFC2ueoM3l0OmmiSQlY3BVnXFLwRJHsu49UXbxDk
- phcq_uQO3N9sDoxEIRqpke5YxxTj9FAirsmyGIOE1gfa3vbJA.Omv1XcH.XO
- QWUMjb9YOLNs3RRQNpffR_xAGQDohQkRVrzWEO2SGLYqWf9PXuoymFq73Hec
- tOOp04iVysKuCDDh8ImnHb99_CgKPVlMmkzy6o_jxneeJ39keKl.W5rO87mB
- 4
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.110.296531
-Date: Thu, 10 Mar 2011 22:49:02 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: UASP: updates and merges
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753051Ab1CKG6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 01:58:36 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41317 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab1CKG6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 01:58:34 -0500
+Date: Fri, 11 Mar 2011 17:58:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>
+Subject: linux-next: build failure after merge of the final tree (block tree
+ related)
+Message-Id: <20110311175830.29a387b2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB Attached SCSI Protocol driver (UAS, UASP) saw the following update:
+Hi all,
 
-[USB] UASP: TMF IU TTBM can also be reserved
-    
-If the TMF is not ABORT TASK and not QUERY TASK
-then the TTBM field in the TMF IU shall be
-reserved.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-The branch can be found here off of master:
-https://github.com/ltuikov/linux-2.6
+drivers/char/tpm/tpm_tis.c:96: warning: 'is_itpm' defined but not used
+drivers/block/drbd/drbd_bitmap.c: In function '__bm_change_bits_to':
+drivers/block/drbd/drbd_bitmap.c:1287: error: implicit declaration of function 'generic___test_and_set_le_bit'
+drivers/block/drbd/drbd_bitmap.c:1289: error: implicit declaration of function 'generic___test_and_clear_le_bit'
+drivers/block/drbd/drbd_bitmap.c: In function 'drbd_bm_test_bit':
+drivers/block/drbd/drbd_bitmap.c:1438: error: implicit declaration of function 'generic_test_le_bit'
 
-Original posting of the UASP driver can be found here:
-http://marc.info/?l=linux-usb&m=129165511732388&w=2
+Caused by commit 4b0715f09655 ("drbd: allow petabyte storage on 64bit
+arch").
 
-    Luben
+I have applied this patch for today (surely there is a better way):
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 11 Mar 2011 17:54:54 +1100
+Subject: [PATCH] drbd: need include for bitops functions declarations
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/block/drbd/drbd_bitmap.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
+index b62dd5f..f0ae63d 100644
+--- a/drivers/block/drbd/drbd_bitmap.c
++++ b/drivers/block/drbd/drbd_bitmap.c
+@@ -28,6 +28,9 @@
+ #include <linux/drbd.h>
+ #include <linux/slab.h>
+ #include <asm/kmap_types.h>
++
++#include <asm-generic/bitops/le.h>
++
+ #include "drbd_int.h"
+ 
+ 
+-- 
+1.7.4.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
