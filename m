@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab1CKQeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:34:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab1CKQeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:34:03 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20110310202516.GA16122@suse.de>
-References: <20110310202516.GA16122@suse.de> <20110307210656.GA1750@suse.de> <18893.1299607373@redhat.com>
-To: Tony Jones <tonyj@suse.de>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: PATCH [1/1]: audit: acquire creds selectively to reduce atomic op overhead
-Date: Fri, 11 Mar 2011 16:33:52 +0000
-Message-ID: <29980.1299861232@redhat.com>
+	id S1754822Ab1CKQe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:34:59 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36930 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679Ab1CKQey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 11:34:54 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
+In-reply-to: <20110310235722.GA1110@tux1.beaverton.ibm.com>
+References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110310235722.GA1110@tux1.beaverton.ibm.com>
+Date: Fri, 11 Mar 2011 11:34:05 -0500
+Message-Id: <1299860233-sup-4443@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D7A4F1D.0163,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Jones <tonyj@suse.de> wrote:
+Excerpts from Darrick J. Wong's message of 2011-03-10 18:57:22 -0500:
+> On Tue, Mar 08, 2011 at 03:56:26PM +1100, Dave Chinner wrote:
+> 
+> > On Fri, Mar 04, 2011 at 01:07:24PM -0800, Darrick J. Wong wrote:
+> > > On Mon, Feb 28, 2011 at 07:54:05AM -0500, Chris Mason wrote:
+> > > > Excerpts from Darrick J. Wong's message of 2011-02-24 13:27:32 -0500:
+> > > > > On Thu, Feb 24, 2011 at 12:37:53PM -0500, Chris Mason wrote:
+> > > > > > Excerpts from Jan Kara's message of 2011-02-24 11:47:58 -0500:
+> > > > > > > On Wed 23-02-11 15:35:11, Chris Mason wrote:
+> > > > > > > > Excerpts from Joel Becker's message of 2011-02-23 15:24:47 -0500:
+> > > > > > > > > On Tue, Feb 22, 2011 at 11:45:44AM -0500, Martin K. Petersen wrote:
+> > > > > > > > > > Also, DIX is only the tip of the iceberg. Many other impending
+> > > > > > > > > > technologies feature checksums and require pages to be stable during I/O
+> > > > > > > > > > due to checksumming, encryption and so on.
+> > > > > > > > > > 
+> > > > > > > > > > The VM is already trying to do the right thing. We just need the
+> > > > > > > > > > relevant filesystems to catch up.
+> > > > > > > > > 
+> > > > > > > > >     ocfs2 handles stable metadata for its checksums when feeding
+> > > > > > > > > things to the journal.  If we're doing pagecache-based I/O, is the
+> > > > > > > > > pagecache going to help here for data?
+> > > > > > > > 
+> > > > > > > > Data is much easier than metadata.  All you really need is to wait on
+> > > > > > > > writeback in file_write, wait on writeback in page_mkwrite, and make
+> 
+> Hrm... I've been looking for a file_write in ext4; was the aio_write function
+> pointer what you had in mind here?
 
-> I'm not seeing the 'tsk->real_cred' usage, can you clarify?
+Your change to grab_cache_page_write_begin looks good to me, at least
+for ext4.  For ext3 you have to actually go in and wait for each of the
+buffer heads in the page, since ext3 (and reiserfs) will write the buffer heads
+directly without using writepage.
 
-get_task_cred() and task_cred_xxxx() call __task_cred() which uses
-tsk->real_cred.  These are the real credentials of the process, and the ones
-that are used when the process is being acted upon and the ones that are
-visible through /proc.
+Have you confirmed by looking at the block mapping that your crc errors
+are from data blocks?
 
-However, if a task is acting upon something, task->cred is used instead.  These
-are not visible from the outside and may be overridden.  current_cred_xxx()
-uses these.
-
-It's possible that the credentials being used in audit_filter_rules() are
-incorrect under most circumstances and should be task->cred, not
-task->real_cred.
-
-David
+-chris
