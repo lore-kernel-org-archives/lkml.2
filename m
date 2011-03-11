@@ -1,92 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1CKPXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:23:39 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:51683 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517Ab1CKPXi (ORCPT
+	id S1755614Ab1CKP1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:27:25 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:47820 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752417Ab1CKP1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:23:38 -0500
-X-IronPort-AV: E=Sophos;i="4.62,303,1297036800"; 
-   d="scan'208";a="4747709"
-Subject: Re: [PATCH] xen/e820: Don't mark balloon memory as E820_UNUSABLE
- when running as guest.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-In-Reply-To: <1299789405-30802-2-git-send-email-konrad.wilk@oracle.com>
-References: <1299789405-30802-1-git-send-email-konrad.wilk@oracle.com>
-	 <1299789405-30802-2-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Fri, 11 Mar 2011 15:23:36 +0000
-Message-ID: <1299857016.17339.2071.camel@zakaz.uk.xensource.com>
+	Fri, 11 Mar 2011 10:27:24 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Subject: [PATCH] regulator: switch the ab3100 to use enable_time()
+Date: Fri, 11 Mar 2011 16:26:18 +0100
+Message-ID: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 20:36 +0000, Konrad Rzeszutek Wilk wrote:
-> If we have a guest that asked for:
-> 
-> memory=1024
-> maxmem=20448
-> 
-> Which means we want 1GB now, and create pagetables so that we can expand
-> up to 2GB, we would have this E820 layout:
-> 
-> [    0.000000] BIOS-provided physical RAM map:
-> [    0.000000]  Xen: 0000000000000000 - 00000000000a0000 (usable)
-> [    0.000000]  Xen: 00000000000a0000 - 0000000000100000 (reserved)
-> [    0.000000]  Xen: 0000000000100000 - 0000000080800000 (usable)
-> 
-> Due to patch: "xen/setup: Inhibit resource API from using System RAM E820 gaps as PCI mem gaps."
-> we would mark the memory past the 1GB mark as unusuable resulting in:
-> 
-> [    0.000000] BIOS-provided physical RAM map:
-> [    0.000000]  Xen: 0000000000000000 - 00000000000a0000 (usable)
-> [    0.000000]  Xen: 00000000000a0000 - 0000000000100000 (reserved)
-> [    0.000000]  Xen: 0000000000100000 - 0000000040000000 (usable)
-> [    0.000000]  Xen: 0000000040000000 - 0000000080800000 (unusable)
-> 
-> which meant that we could not balloon up anymore. We could
-> balloon the guest down. The fix is to run the code introduced
-> by the above mentioned patch only for the initial domain.
-> 
-> We will have to revisit this once we start introducing a modified
-> E820 for PCI passthrough so that we can utilize the P2M identity code.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/setup.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index 2a4add9..6e676fa 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -200,7 +200,8 @@ char * __init xen_memory_setup(void)
->  			 * used as potential resource for I/O address (happens
->  			 * when 'allocate_resource' is called).
->  			 */
-> -			if (delta && end < 0x100000000UL)
-> +			if (delta &&
-> +				(xen_initial_domain() && end < 0x100000000UL))
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Not a new problem but 0x100000000 will overflow an unsigned long on 32
-bit:
-  CC      arch/x86/xen/setup.o
-arch/x86/xen/setup.c: In function 'xen_memory_setup':
-arch/x86/xen/setup.c:254: warning: integer constant is too large for 'unsigned long' type
+This switches the ab3100 core to use the enable_time()
+infrastructure from the regulator core.
 
-I think you want ULL? (end is "unsigned long long").
+Cc: Mattias Wallin <mattias.wallin@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/regulator/ab3100.c |   51 ++++++++++++++++++++++++-------------------
+ 1 files changed, 28 insertions(+), 23 deletions(-)
 
-Ian.
-
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index ed6feaf..585e494 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -205,29 +205,6 @@ static int ab3100_enable_regulator(struct regulator_dev *reg)
+ 		return err;
+ 	}
+ 
+-	/* Per-regulator power on delay from spec */
+-	switch (abreg->regreg) {
+-	case AB3100_LDO_A: /* Fallthrough */
+-	case AB3100_LDO_C: /* Fallthrough */
+-	case AB3100_LDO_D: /* Fallthrough */
+-	case AB3100_LDO_E: /* Fallthrough */
+-	case AB3100_LDO_H: /* Fallthrough */
+-	case AB3100_LDO_K:
+-		udelay(200);
+-		break;
+-	case AB3100_LDO_F:
+-		udelay(600);
+-		break;
+-	case AB3100_LDO_G:
+-		udelay(400);
+-		break;
+-	case AB3100_BUCK:
+-		mdelay(1);
+-		break;
+-	default:
+-		break;
+-	}
+-
+ 	return 0;
+ }
+ 
+@@ -449,11 +426,37 @@ static int ab3100_get_voltage_regulator_external(struct regulator_dev *reg)
+ 	return abreg->plfdata->external_voltage;
+ }
+ 
++static int ab3100_enable_time_regulator(struct regulator_dev *reg)
++{
++	struct ab3100_regulator *abreg = reg->reg_data;
++
++	/* Per-regulator power on delay from spec */
++	switch (abreg->regreg) {
++	case AB3100_LDO_A: /* Fallthrough */
++	case AB3100_LDO_C: /* Fallthrough */
++	case AB3100_LDO_D: /* Fallthrough */
++	case AB3100_LDO_E: /* Fallthrough */
++	case AB3100_LDO_H: /* Fallthrough */
++	case AB3100_LDO_K:
++		return 200;
++	case AB3100_LDO_F:
++		return 600;
++	case AB3100_LDO_G:
++		return 400;
++	case AB3100_BUCK:
++		return 1000;
++	default:
++		break;
++	}
++	return 0;
++}
++
+ static struct regulator_ops regulator_ops_fixed = {
+ 	.enable      = ab3100_enable_regulator,
+ 	.disable     = ab3100_disable_regulator,
+ 	.is_enabled  = ab3100_is_enabled_regulator,
+ 	.get_voltage = ab3100_get_voltage_regulator,
++	.enable_time = ab3100_enable_time_regulator,
+ };
+ 
+ static struct regulator_ops regulator_ops_variable = {
+@@ -463,6 +466,7 @@ static struct regulator_ops regulator_ops_variable = {
+ 	.get_voltage = ab3100_get_voltage_regulator,
+ 	.set_voltage = ab3100_set_voltage_regulator,
+ 	.list_voltage = ab3100_list_voltage_regulator,
++	.enable_time = ab3100_enable_time_regulator,
+ };
+ 
+ static struct regulator_ops regulator_ops_variable_sleepable = {
+@@ -473,6 +477,7 @@ static struct regulator_ops regulator_ops_variable_sleepable = {
+ 	.set_voltage = ab3100_set_voltage_regulator,
+ 	.set_suspend_voltage = ab3100_set_suspend_voltage_regulator,
+ 	.list_voltage = ab3100_list_voltage_regulator,
++	.enable_time = ab3100_enable_time_regulator,
+ };
+ 
+ /*
+-- 
+1.7.3.2
 
