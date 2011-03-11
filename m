@@ -1,73 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1CKUM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:12:58 -0500
-Received: from www.tglx.de ([62.245.132.106]:48245 "EHLO www.tglx.de"
+	id S1753985Ab1CKUNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:13:18 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52171 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465Ab1CKUM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:12:56 -0500
-Date: Fri, 11 Mar 2011 21:12:13 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, davidb@codeaurora.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Linus Walleij <linus.walleij@sterricsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Qualcomm PM8921 MFD v2 2/6] mfd: pm8xxx: Add irq support
-In-Reply-To: <20110311195719.GX1760@opensource.wolfsonmicro.com>
-Message-ID: <alpine.LFD.2.00.1103112100240.2787@localhost6.localdomain6>
-References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org> <1299564590-30116-3-git-send-email-adharmap@codeaurora.org> <alpine.LFD.2.00.1103081201520.2787@localhost6.localdomain6> <4D770E47.6050402@codeaurora.org>
- <alpine.LFD.2.00.1103101126100.2787@localhost6.localdomain6> <4D79A85D.8000301@codeaurora.org> <alpine.LFD.2.00.1103111853480.2787@localhost6.localdomain6> <4D7A71B9.9000306@codeaurora.org> <alpine.LFD.2.00.1103112020370.2787@localhost6.localdomain6>
- <20110311195719.GX1760@opensource.wolfsonmicro.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753031Ab1CKUNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:13:12 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [RFC][Update][PATCH 1/2] Introduce struct syscore_ops and related functionality
+Date: Fri, 11 Mar 2011 21:13:13 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, mingo@redhat.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@suse.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        tglx@linutronix.de
+References: <Pine.LNX.4.44L0.1103092224480.3620-100000@netrider.rowland.org> <201103101230.45569.rjw@sisk.pl> <20110311171131.GA10437@suse.de>
+In-Reply-To: <20110311171131.GA10437@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103112113.13807.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Mark Brown wrote:
-
-> On Fri, Mar 11, 2011 at 08:43:08PM +0100, Thomas Gleixner wrote:
+On Friday, March 11, 2011, Greg KH wrote:
+> On Thu, Mar 10, 2011 at 12:30:45PM +0100, Rafael J. Wysocki wrote:
+> > On Thursday, March 10, 2011, Alan Stern wrote:
+> > > On Thu, 10 Mar 2011, Rafael J. Wysocki wrote:
+> > > 
+> > > > Some subsystems need to carry out suspend/resume and shutdown
+> > > > operations with one CPU on-line and interrupts disabled.  The only
+> > > > way to register such operations is to define a sysdev class and
+> > > > a sysdev specifically for this purpose which is cumbersome and
+> > > > inefficient.  Moreover, the arguments taken by sysdev suspend,
+> > > > resume and shutdown callbacks are practically never necessary.
+> > > > 
+> > > > For this reason, introduce a simpler interface allowing subsystems
+> > > > to register operations to be executed very late during system suspend
+> > > > and shutdown and very early during resume in the form of
+> > > > strcut syscore_ops objects.
+> > > 
+> > > ...
+> > > 
+> > > > Index: linux-2.6/drivers/base/syscore.c
+> > > > ===================================================================
+> > > > --- /dev/null
+> > > > +++ linux-2.6/drivers/base/syscore.c
+> > > 
+> > > It's true that the existing sys.c file lies in drivers/base; this is
+> > > presumably because it handles a bunch of class-related registration
+> > > stuff.  Now you're getting rid of all that, leaving just the
+> > > power-related operations, so doesn't it make more sense to put this
+> > > file in drivers/base/power?
+> > > 
+> > > > +/**
+> > > > + * syscore_suspend - Execute all the registered system core suspend callbacks.
+> > > > + *
+> > > > + * This function is executed with one CPU on-line and disabled interrupts.
+> > > > + */
+> > > > +int syscore_suspend(void)
+> > > > +{
+> > > > +	struct syscore_ops *ops;
+> > > > +
+> > > > +	list_for_each_entry_reverse(ops, &syscore_ops_list, node)
+> > > > +		if (ops->suspend) {
+> > > > +			int ret = ops->suspend();
+> > > > +			if (ret) {
+> > > > +				pr_err("PM: System core suspend callback "
+> > > > +					"%pF failed.\n", ops->suspend);
+> > > > +				return ret;
+> > > 
+> > > If an error occurs, you need to go back and resume all the things that
+> > > were suspended.  At least, that's what the code in sysdev_suspend does.
+> > > 
+> > > > +			}
+> > > > +		}
+> > > > +
+> > > > +	return 0;
+> > > > +}
+> > 
+> > Below is a new version of the patch.  I've taken your comment on the failing
+> > suspend into account, fix the list traversal direction in syscore_shutdown()
+> > and added some debug statements.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> > Some subsystems need to carry out suspend/resume and shutdown
+> > operations with one CPU on-line and interrupts disabled.  The only
+> > way to register such operations is to define a sysdev class and
+> > a sysdev specifically for this purpose which is cumbersome and
+> > inefficient.  Moreover, the arguments taken by sysdev suspend,
+> > resume and shutdown callbacks are practically never necessary.
+> > 
+> > For this reason, introduce a simpler interface allowing subsystems
+> > to register operations to be executed very late during system suspend
+> > and shutdown and very early during resume in the form of
+> > strcut syscore_ops objects.
+> > 
+> > ---
+> >  drivers/base/Makefile       |    2 
+> >  drivers/base/syscore.c      |  107 ++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/syscore_ops.h |   29 +++++++++++
+> >  kernel/power/hibernate.c    |    9 +++
+> >  kernel/power/suspend.c      |    4 +
+> >  kernel/sys.c                |    4 +
+> >  6 files changed, 154 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6/include/linux/syscore_ops.h
+> > ===================================================================
+> > --- /dev/null
+> > +++ linux-2.6/include/linux/syscore_ops.h
+> > @@ -0,0 +1,29 @@
+> > +/*
+> > + *  syscore_ops.h - System core operations.
+> > + *
+> > + *  Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Novell Inc.
+> > + *
+> > + *  This file is released under the GPLv2.
+> > + */
+> > +
+> > +#ifndef _LINUX_SYSCORE_OPS_H
+> > +#define _LINUX_SYSCORE_OPS_H
+> > +
+> > +#include <linux/list.h>
+> > +
+> > +struct syscore_ops {
+> > +	struct list_head node;
+> > +	int (*suspend)(void);
+> > +	void (*resume)(void);
+> > +	void (*shutdown)(void);
+> > +};
+> > +
+> > +extern void register_syscore_ops(struct syscore_ops *ops);
+> > +extern void unregister_syscore_ops(struct syscore_ops *ops);
+> > +#ifdef CONFIG_PM_SLEEP
+> > +extern int syscore_suspend(void);
+> > +extern void syscore_resume(void);
+> > +#endif
 > 
-> > Sigh, why insist people on working around core code instead of talking
-> > to the responsible maintainers about their problem in the first place?
-> 
-> I don't know if it's the case here but with a lot of the people I speak
-> to it's because they're used to working on proprietary OSs where there's
-> no possibility of fixing the core and they haven't yet realised that
-> this is a possibility.
+> Minor nit, provide inline functions for these when CONFIG_PM_SLEEP is
+> not defined so the code still builds?
 
-Good point. If I only knew a way to get this message to those folks
-once and forever.
+The code using them depends on CONFIG_PM_SLEEP and they are nobody else's
+business. :-)
 
-There are several good reasons to avoid working around core code:
+I could avoid using the #ifdef here, but I thought I'd make it clear that
+these things were only available when CONFIG_PM_SLEEP was set.
 
- - It's usually simpler and faster as the core code has all the
-   necessary information. So that's even an argument which managers
-   might understand.
+> Other than that, this looks great to me, thanks for doing this.
 
- - Such workarounds, when not caught, tend to spread themself
-   magically because driver writers checkout the existing code of
-   similar devices and copy/paste/modify^Wuglify them over and over.
+No problem. :-)
 
- - In the worst case such workarounds make the core maintainence
-   harder and in some cases impossible, because they silently imply
-   semantics on the core w/o the core maintainer knowing about them.
+> Do you want me to take it through my tree, or yours?
 
-I'm going to give a talk about that at the collab summit :)
+I can handle it if you give me an ack.
+
+Do you think I should push [1/2] alone for 2.6.39 or wait for the patches
+converting subsystems to use this stuff to be ready?  I think it'll take
+some time to prepare them, especialy for things in the ARM tree that use
+sysdevs in some interesting ways ...
 
 Thanks,
-
-	tglx
-
+Rafael
