@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab1CKScw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:32:52 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36740 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab1CKScv (ORCPT
+	id S1753340Ab1CKShQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:37:16 -0500
+Received: from pfepb.post.tele.dk ([195.41.46.236]:46156 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab1CKShN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:32:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=D5xQVXBX4NZBG9aopl93L9lIKW1GErsVojZ6qPRUt4NeF6818DFEEf+B+2z3kXm5KH
-         b03cugx1yXQpgo4F1yy1E4UsfpkwT9sDik84edoHm/BxTHZsZwjfG9DVmOFZhpOCo8TA
-         34Auoczk0GLEtl/Pfe8dVVStp+ly4bVLoEZNg=
-Date: Fri, 11 Mar 2011 19:29:40 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
- handling
-Message-ID: <20110311182940.GK13038@htj.dyndns.org>
-References: <4D6EB335.8000306@kernel.org>
- <20110303061711.GG28266@mtj.dyndns.org>
- <4D791C9F.1010500@kernel.org>
- <20110311082938.GC13038@htj.dyndns.org>
- <20110311083351.GD13038@htj.dyndns.org>
- <4D7A4430.1030301@kernel.org>
- <20110311155446.GH13038@htj.dyndns.org>
- <AANLkTim31ZDBRtBFL2J5HD8j8__tzkSF_HdD-HVt6V49@mail.gmail.com>
- <20110311181958.GJ13038@htj.dyndns.org>
- <AANLkTimAA-NF43DtrZTHZWLyYMVdDkw89QCLcfsC0Rbh@mail.gmail.com>
+	Fri, 11 Mar 2011 13:37:13 -0500
+Date: Fri, 11 Mar 2011 19:37:11 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Mark Hounschell <markh@compro.net>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: kernel git bisect question
+Message-ID: <20110311183711.GA559@merkur.ravnborg.org>
+References: <4D793414.4090206@compro.net> <20110310215438.GE12521@home.goodmis.org> <4D7A6A99.5070304@compro.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimAA-NF43DtrZTHZWLyYMVdDkw89QCLcfsC0Rbh@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D7A6A99.5070304@compro.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 10:25:23AM -0800, Yinghai Lu wrote:
-> now even emulation have that distance array.
+On Fri, Mar 11, 2011 at 01:31:53PM -0500, Mark Hounschell wrote:
+> On 03/10/2011 04:54 PM, Steven Rostedt wrote:
+> > On Thu, Mar 10, 2011 at 03:27:00PM -0500, Mark Hounschell wrote:
+> >> Between git bisect [good | bad ]s should I always "make clean" or can I
+> >> count on the build system to take care of everything properly?
+> > 
 > 
-> why keep it simple to make all path have that array?
+> I'm trying to bisect between 2.6.35 and 2.6.36. What have I done wrong?
+> Here is exactly what I've done. Why after my second "git bisect bad" do
+> I get a Makefile for 2.6.35-rc1 and then after the fourth I get a Makefile
+> for 2.6.34??
 
-Okay, I don't know, maybe, but I don't think it's gonna buy much.  We
-need boundary check in the distance testing function anyway in case
-someone calls in with out-of-bound nid's and not having distance table
-is just a degenerate case of the generic sanity check, so there really
-isn't much to be gained by allocating dummy table.
+The development is not linear.
+So you see a commit developed on top of 2.6.34 that was included in 2.6.35.
+This is normal.
 
--- 
-tejun
+	Sam
