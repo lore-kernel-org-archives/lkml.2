@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1CKSlc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:41:32 -0500
-Received: from mx2.compro.net ([12.186.155.4]:51559 "EHLO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054Ab1CKSlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:41:31 -0500
-X-IronPort-AV: E=Sophos;i="4.62,304,1297054800"; 
-   d="scan'208";a="6396194"
-Message-ID: <4D7A6CDA.4070402@compro.net>
-Date: Fri, 11 Mar 2011 13:41:30 -0500
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: kernel git bisect question
-References: <4D793414.4090206@compro.net> <20110310215438.GE12521@home.goodmis.org> <4D7A6A99.5070304@compro.net> <20110311183711.GA559@merkur.ravnborg.org>
-In-Reply-To: <20110311183711.GA559@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753426Ab1CKSnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:43:07 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:36613 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752054Ab1CKSnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 13:43:04 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 0/2] hid-input: Keyboard and MT support for MacBookPro8
+Date: Fri, 11 Mar 2011 19:45:21 +0100
+Message-Id: <1299869123-18346-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.4.1
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1Py7IL-0001JB-4c.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Py7IL-0001JB-4c 6157993e5a08b5d059de1dd39e1784fe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 01:37 PM, Sam Ravnborg wrote:
-> On Fri, Mar 11, 2011 at 01:31:53PM -0500, Mark Hounschell wrote:
->> On 03/10/2011 04:54 PM, Steven Rostedt wrote:
->>> On Thu, Mar 10, 2011 at 03:27:00PM -0500, Mark Hounschell wrote:
->>>> Between git bisect [good | bad ]s should I always "make clean" or can I
->>>> count on the build system to take care of everything properly?
->>>
->>
->> I'm trying to bisect between 2.6.35 and 2.6.36. What have I done wrong?
->> Here is exactly what I've done. Why after my second "git bisect bad" do
->> I get a Makefile for 2.6.35-rc1 and then after the fourth I get a Makefile
->> for 2.6.34??
-> 
-> The development is not linear.
-> So you see a commit developed on top of 2.6.34 that was included in 2.6.35.
-> This is normal.
-> 
+Hi Jiri, Dmitry,
 
-OK, thanks again. I'll continue on with the process then.
+Keyboard and MT support for the new MacBookPro models. The first patch
+is against HID, the second against Input. As usual, they need to be
+synced.
 
-Mark
+The patches have been tested on the Ubuntu forums, many thanks to Andy
+for the nice patches.
+
+Thanks,
+Henrik
+
+Andy Botting (2):
+  HID: hid-apple: Add keyboard support for MacBookPro8
+  Input: bcm5974 - add support for MacBookPro8
+
+ drivers/hid/hid-apple.c       |    6 ++++++
+ drivers/hid/hid-core.c        |    6 ++++++
+ drivers/hid/hid-ids.h         |    3 +++
+ drivers/input/mouse/bcm5974.c |   20 ++++++++++++++++++++
+ 4 files changed, 35 insertions(+), 0 deletions(-)
+
+-- 
+1.7.4.1
+
