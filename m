@@ -1,55 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab1CKK6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 05:58:09 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55861 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab1CKK6H (ORCPT
+	id S1754317Ab1CKLBO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 06:01:14 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:54176 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab1CKLBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 05:58:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=x/P2NH/xQTjEhsc9xZ/QArDoD0VpR8JAyfTnINjxdylCPBXBLdN52BmLQyCX7MHgoi
-         pEjEYz95j5K0BSFyU0NopTErmqq+e6KZKYSt09Esx6OSGRJNI5vda9qKgsNYFtuvzJ/G
-         2Pe1huZe4mPwKgm4Hibz7GJypsZPoSt6J/RlM=
-Date: Fri, 11 Mar 2011 11:51:22 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Sam Liao <phyomh@gmail.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] Add inverted call graph report support to perf tool
-Message-ID: <20110311105118.GA1826@nowhere>
-References: <AANLkTi=vxgHe=dqz+xEPcZ9oBexM1jBxFz3sXA2DJEZA@mail.gmail.com>
- <20110307180619.GG1873@nowhere>
- <AANLkTi=rabeXE6m0wRo029jgqHLBaUGQcXYJriLewZeJ@mail.gmail.com>
- <20110310024355.GG2533@nowhere>
- <20110310064816.GF9289@elte.hu>
+	Fri, 11 Mar 2011 06:01:09 -0500
+Message-ID: <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+In-Reply-To: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+    <20110303072223.GA28133@elie> <87bp1sziqn.fsf@linux.vnet.ibm.com>
+    <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net>
+    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+Date: Fri, 11 Mar 2011 12:01:02 +0100 (CET)
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Sage Weil" <sage@newdream.net>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, arnd@arndb.de, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110310064816.GF9289@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 01ccc3eb840dc35651f50b798cb06ae8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 07:48:16AM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > But your idea of turning the callee into the caller would show us a very global 
-> > profiling. With reverse callchains it can be a very nice overview of the big 
-> > picture.
-> 
-> Very much agreed - i think that matches the sysprof display structure as well, 
-> right?
+Hello,
 
-Yeah indeed, IIRC.
- 
-> This could then be propagated not just into perf report but perf top --tui as well.
+On Thu, March 10, 2011 20:31, Sage Weil wrote:
+> It is frequently useful to sync a single file system, instead of all
+> mounted file systems via sync(2):
+>
+>  - On machines with many mounts, it is not at all uncommon for some of
+>    them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
+>    those and may never get to the one you do care about (e.g., /).
+>  - Some applications write lots of data to the file system and then
+>    want to make sure it is flushed to disk.  Calling fsync(2) on each
+>    file introduces unnecessary ordering constraints that result in a large
+>    amount of sub-optimal writeback/flush/commit behavior by the file
+>    system.
+>
+> There are currently two ways (that I know of) to sync a single super_block:
+>
+>  - BLKFLSBUF ioctl on the block device: That also invalidates the bdev
+>    mapping, which isn't usually desirable, and doesn't work for non-block
+>    file systems.
+>  - 'mount -o remount,rw' will call sync_filesystem as an artifact of the
+>    current implemention.  Relying on this little-known side effect for
+>    something like data safety sounds foolish.
+>
+> Both of these approaches require root privileges, which some applications
+> do not have (nor should they need?) given that sync(2) is an unprivileged
+> operation.
+>
+> This patch introduces a new system call syncfs(2) that takes an fd and
+> syncs only the file system it references.  Maybe someday we can
+>
+>  $ sync /some/path
+>
+> and not get
+>
+>  sync: ignoring all arguments
+>
+> The syscall is motivated by comments by Al and Christoph at the last LSF.
+> syncfs(2) seems like an appropriate name given statfs(2).
+>
+> A similar ioctl was also proposed a while back, see
+> 	http://marc.info/?l=linux-fsdevel&m=127970513829285&w=2
 
-Probably yeah. Are callchains already supported by perf top?
+The patch there seems much more reasonable than introducing a whole
+new systemcall just for 20 lines of kernel code. New system calls are
+added too easily nowadays.
+
+As an alternative to the ioctl, I propose extending sync_file_range()
+instead. E.g. add a SYNC_FILE_MOUNT flag and use that, either on any
+fd on the mount or the root dir fd. That syscall is non-standard and
+close enough that it can implement this behaviour too.
+
+Greetings,
+
+Indan
+
+---
+
+Something like:
+
+diff --git a/fs/sync.c b/fs/sync.c
+index ba76b96..9fa073c 100644
+--- a/fs/sync.c
++++ b/fs/sync.c
+@@ -18,7 +18,7 @@
+ #include "internal.h"
+
+ #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
+-			SYNC_FILE_RANGE_WAIT_AFTER)
++			SYNC_FILE_RANGE_WAIT_AFTER|SYNC_FILE_MOUNT)
+
+ /*
+  * Do the filesystem syncing work. For simple filesystems
+@@ -330,6 +330,15 @@ SYSCALL_DEFINE(sync_file_range)(int fd, loff_t offset, loff_t nbytes,
+ 	}
+
+ 	ret = 0;
++	if (flags & SYNC_FILE_MOUNT) {
++		struct super_block *sb;
++
++		sb = file->f_dentry->d_sb;
++		down_read(&sb->s_umount);
++		ret = sync_filesystem(sb);
++		up_read(&sb->s_umount);
++		goto out_put;
++	}
+ 	if (flags & SYNC_FILE_RANGE_WAIT_BEFORE) {
+ 		ret = filemap_fdatawait_range(mapping, offset, endbyte);
+ 		if (ret < 0)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e38b50a..53e427e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -373,6 +373,7 @@ struct inodes_stat_t {
+ #define SYNC_FILE_RANGE_WAIT_BEFORE	1
+ #define SYNC_FILE_RANGE_WRITE		2
+ #define SYNC_FILE_RANGE_WAIT_AFTER	4
++#define SYNC_FILE_MOUNT 		8
+
+ #ifdef __KERNEL__
+
+
+
