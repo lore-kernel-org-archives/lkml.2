@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab1CKV2t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 16:28:49 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:43891 "EHLO smtp.outflux.net"
+	id S1755477Ab1CKVfG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 16:35:06 -0500
+Received: from cantor.suse.de ([195.135.220.2]:49112 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab1CKV2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 16:28:47 -0500
-Date: Fri, 11 Mar 2011 13:27:47 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        David Howells <dhowells@redhat.com>, Eugene Teo <eugeneteo@kernel.sg>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH] proc: protect mm start_code/end_code in /proc/pid/stat
-Message-ID: <20110311212747.GA27618@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1754016Ab1CKVfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 16:35:04 -0500
+From: Michal Marek <mmarek@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kbuild: Fix computing srcversion for modules
+Date: Fri, 11 Mar 2011 22:34:47 +0100
+Message-Id: <1299879287-30889-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20110311092811.GA2079@polaris.bitmath.org>
+References: <20110311092811.GA2079@polaris.bitmath.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While mm->start_stack was protected from cross-uid viewing (commit
-f83ce3e6b02d5e48b3a43b001390e2b58820389d), the start_code and end_code
-values were not. This would allow the text location of a PIE binary to
-leak, defeating ASLR.
+Recent change to fixdep:
 
-Note that the value "1" is used instead of "0" for a protected value
-since "ps", "killall", and likely other readers of /proc/pid/stat, take
-start_code of "0" to mean a kernel thread and will misbehave. Thanks to
-Brad Spengler for pointing this out.
+    commit b7bd182176960fdd139486cadb9962b39f8a2b50
+    Author: Michal Marek <mmarek@suse.cz>
+    Date:   Thu Feb 17 15:13:54 2011 +0100
 
-CVE-2011-0726
+    fixdep: Do not record dependency on the source file itself
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Cc: stable@kernel.org
+changed the format of the *.cmd files without realizing that it is also
+used by modpost. Put the path to the source file to the file back, in a
+special variable, so that modpost sees all source files when calculating
+srcversion for modules.
+
+Reported-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- fs/proc/array.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ scripts/basic/fixdep.c   |   19 +++++++++++++------
+ scripts/mod/sumversion.c |   19 +++++++++++++++++--
+ 2 files changed, 30 insertions(+), 8 deletions(-)
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 7c99c1c..5e4f776 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -489,8 +489,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
- 		vsize,
- 		mm ? get_mm_rss(mm) : 0,
- 		rsslim,
--		mm ? mm->start_code : 0,
--		mm ? mm->end_code : 0,
-+		mm ? (permitted ? mm->start_code : 1) : 0,
-+		mm ? (permitted ? mm->end_code : 1) : 0,
- 		(permitted && mm) ? mm->start_stack : 0,
- 		esp,
- 		eip,
+diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
+index 6c94c6c..291228e 100644
+--- a/scripts/basic/fixdep.c
++++ b/scripts/basic/fixdep.c
+@@ -309,6 +309,11 @@ static void do_config_file(const char *filename)
+ 	close(fd);
+ }
+ 
++/*
++ * Important: The below generated source_foo.o and deps_foo.o variable
++ * assignments are parsed not only by make, but also by the rather simple
++ * parser in scripts/mod/sumversion.c.
++ */
+ static void parse_dep_file(void *map, size_t len)
+ {
+ 	char *m = map;
+@@ -323,7 +328,6 @@ static void parse_dep_file(void *map, size_t len)
+ 		exit(1);
+ 	}
+ 	memcpy(s, m, p-m); s[p-m] = 0;
+-	printf("deps_%s := \\\n", target);
+ 	m = p+1;
+ 
+ 	clear_config();
+@@ -343,12 +347,15 @@ static void parse_dep_file(void *map, size_t len)
+ 		    strrcmp(s, "arch/um/include/uml-config.h") &&
+ 		    strrcmp(s, ".ver")) {
+ 			/*
+-			 * Do not output the first dependency (the
+-			 * source file), so that kbuild is not confused
+-			 * if a .c file is rewritten into .S or vice
+-			 * versa.
++			 * Do not list the source file as dependency, so that
++			 * kbuild is not confused if a .c file is rewritten
++			 * into .S or vice versa. Storing it in source_* is
++			 * needed for modpost to compute srcversions.
+ 			 */
+-			if (!first)
++			if (first) {
++				printf("source_%s := %s\n\n", target, s);
++				printf("deps_%s := \\\n", target);
++			} else
+ 				printf("  %s \\\n", s);
+ 			do_config_file(s);
+ 		}
+diff --git a/scripts/mod/sumversion.c b/scripts/mod/sumversion.c
+index ecf9c7d..9dfcd6d 100644
+--- a/scripts/mod/sumversion.c
++++ b/scripts/mod/sumversion.c
+@@ -300,8 +300,8 @@ static int is_static_library(const char *objfile)
+ 		return 0;
+ }
+ 
+-/* We have dir/file.o.  Open dir/.file.o.cmd, look for deps_ line to
+- * figure out source file. */
++/* We have dir/file.o.  Open dir/.file.o.cmd, look for source_ and deps_ line
++ * to figure out source files. */
+ static int parse_source_files(const char *objfile, struct md4_ctx *md)
+ {
+ 	char *cmd, *file, *line, *dir;
+@@ -340,6 +340,21 @@ static int parse_source_files(const char *objfile, struct md4_ctx *md)
+ 	*/
+ 	while ((line = get_next_line(&pos, file, flen)) != NULL) {
+ 		char* p = line;
++
++		if (strncmp(line, "source_", sizeof("source_")-1) == 0) {
++			p = strrchr(line, ' ');
++			if (!p) {
++				warn("malformed line: %s\n", line);
++				goto out_file;
++			}
++			p++;
++			if (!parse_file(p, md)) {
++				warn("could not open %s: %s\n",
++				     p, strerror(errno));
++				goto out_file;
++			}
++			continue;
++		}
+ 		if (strncmp(line, "deps_", sizeof("deps_")-1) == 0) {
+ 			check_files = 1;
+ 			continue;
 -- 
 1.7.4.1
 
--- 
-Kees Cook
-Ubuntu Security Team
