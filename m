@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab1CKGij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 01:38:39 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46607 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751278Ab1CKGig (ORCPT
+	id S1752941Ab1CKGtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 01:49:07 -0500
+Received: from web31813.mail.mud.yahoo.com ([68.142.207.76]:35720 "HELO
+	web31813.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752459Ab1CKGtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 01:38:36 -0500
-Message-ID: <4D79C3AC.7090900@metafoo.de>
-Date: Fri, 11 Mar 2011 07:39:40 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	Fri, 11 Mar 2011 01:49:04 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=dcikE39yy/d16bM0Prg2PfFvKpi0i3iSoAc24HFaQUL4WoKIE4vqm4JRvy1/XMDden7bA8DTp7WrKc5kkkMP/XcrhVLT+imoVu/IrvhhWNOi7hYYdawdfuoLwj/4avEPhWuq/0QIJGjOSHBdPnG+gCp7sIV6SK4WBeKb7MtWUr8=;
+Message-ID: <206682.3247.qm@web31813.mail.mud.yahoo.com>
+X-YMail-OSG: QCcWmIsVM1ltufAjWZ0LNhRl2Fx5x.n5eu4YYf8Fy4Fpy2E
+ dgESRgAPgEMuBazW8HNOGjKhDN28LD57A040CUxPMuYS6Akb8n_k_FcYXv1m
+ KL787D_bh0FZc5GzSpPf6KuhvxpnMrBIucZ_JK5Vx2mU5tZYbjBCjjTS9AFY
+ .kFV7lqsMDeqmwkNA0q7KFC2ueoM3l0OmmiSQlY3BVnXFLwRJHsu49UXbxDk
+ phcq_uQO3N9sDoxEIRqpke5YxxTj9FAirsmyGIOE1gfa3vbJA.Omv1XcH.XO
+ QWUMjb9YOLNs3RRQNpffR_xAGQDohQkRVrzWEO2SGLYqWf9PXuoymFq73Hec
+ tOOp04iVysKuCDDh8ImnHb99_CgKPVlMmkzy6o_jxneeJ39keKl.W5rO87mB
+ 4
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.110.296531
+Date: Thu, 10 Mar 2011 22:49:02 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: UASP: updates and merges
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: linux-next: manual merge of the usb tree with the s5p tree
-References: <20110311170912.0fb48cf4.sfr@canb.auug.org.au>
-In-Reply-To: <20110311170912.0fb48cf4.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 07:09 AM, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the usb tree got a conflict in
-> arch/arm/mach-s3c2440/mach-gta02.c between commit 326d05c15f7f ("ARM:
-> S3C2440: Request usb pullup pin before using it on GTA02") from the s5p
-> tree and commit e27c3c5c7e0f ("ARM: s3c24xx: Switch to common GPIO
-> controlled UDC pullup implementation") from the usb tree.
-> 
-> The latter commit removes the function gta02_udc_command() which is
-> modified by the former.  I removed the function.
-> 
+The USB Attached SCSI Protocol driver (UAS, UASP) saw the following update:
 
-Hi
+[USB] UASP: TMF IU TTBM can also be reserved
+    
+If the TMF is not ABORT TASK and not QUERY TASK
+then the TTBM field in the TMF IU shall be
+reserved.
 
-Kukjin could you drop 326d05c15f7f ("ARM: S3C2440: Request usb pullup pin
-before using it on GTA02") from your tree? It has been superseded by the other
-commit in Gregs tree.
+The branch can be found here off of master:
+https://github.com/ltuikov/linux-2.6
 
-- Lars
+Original posting of the UASP driver can be found here:
+http://marc.info/?l=linux-usb&m=129165511732388&w=2
+
+    Luben
+
