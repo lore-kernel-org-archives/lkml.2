@@ -1,57 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1CKCQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 21:16:21 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44064 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755176Ab1CKCQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 21:16:04 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=v1n8UvUeJUkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=WPyIoOwQAAAA:8 a=5Ddlv3wuwEKHWlM6bdgA:9 a=weULVtmu2G12KcOeCoJs9nhuws4A:4 a=PUjeQqilurYA:10 a=1DbiqZag68YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 1/2] jump label: introduce static_branch() interface
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
-        mathieu.desnoyers@polymtl.ca, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org
-In-Reply-To: <20110311020540.GA26622@linux-mips.org>
-References: <cover.1299702291.git.jbaron@redhat.com>
-	 <49b4727c7bfee19c2b7284b3339076ed827f3142.1299702291.git.jbaron@redhat.com>
-	 <1299790616.15854.417.camel@gandalf.stny.rr.com>
-	 <20110311020540.GA26622@linux-mips.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 10 Mar 2011 21:15:59 -0500
-Message-ID: <1299809759.15854.822.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755044Ab1CKCP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 21:15:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752947Ab1CKCP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 21:15:56 -0500
+Date: Thu, 10 Mar 2011 21:15:31 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Andreas Dilger <adilger@dilger.ca>,
+        Justin TerAvest <teravest@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        m-ikeda <m-ikeda@ds.jp.nec.com>, jaxboe <jaxboe@fusionio.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ryov <ryov@valinux.co.jp>,
+        taka <taka@valinux.co.jp>, "righi.andrea" <righi.andrea@gmail.com>,
+        guijianfeng <guijianfeng@cn.fujitsu.com>,
+        balbir <balbir@linux.vnet.ibm.com>, ctalbott <ctalbott@google.com>,
+        nauman <nauman@google.com>, mrubin <mrubin@google.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC] Storing cgroup id in page->private (Was: Re: [RFC] [PATCH
+ 0/6] Provide cgroup isolation for buffered writes.)
+Message-ID: <20110311021531.GA11710@redhat.com>
+References: <AANLkTimRRAEp75CfyJFxU-5wOYfety6gjq=msZf0Wp8P@mail.gmail.com>
+ <20110310181529.GF29464@redhat.com>
+ <AANLkTi=LL6JEwOcZfSsapYn-isA3RBrV8kPq8EK6va8=@mail.gmail.com>
+ <20110310191115.GG29464@redhat.com>
+ <20110310194106.GH29464@redhat.com>
+ <1299791640-sup-1874@think>
+ <3EC7D30A-B8F7-416B-8B1D-A19350C57D82@dilger.ca>
+ <20110310213832.GK29464@redhat.com>
+ <1299793340-sup-9066@think>
+ <20110311014618.GC15097@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311014618.GC15097@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-11 at 03:05 +0100, Ralf Baechle wrote:
+On Fri, Mar 11, 2011 at 12:46:18PM +1100, Dave Chinner wrote:
+> On Thu, Mar 10, 2011 at 04:43:31PM -0500, Chris Mason wrote:
+> > Excerpts from Vivek Goyal's message of 2011-03-10 16:38:32 -0500:
+> > > On Thu, Mar 10, 2011 at 02:24:07PM -0700, Andreas Dilger wrote:
+> > > > On 2011-03-10, at 2:15 PM, Chris Mason wrote:
+> > > > > Excerpts from Vivek Goyal's message of 2011-03-10 14:41:06 -0500:
+> > > > >> On Thu, Mar 10, 2011 at 02:11:15PM -0500, Vivek Goyal wrote:
+> > > > >>>>> I think the person who dirtied the page can store the information in
+> > > > >>>>> page->private (assuming buffer heads were not generated) and if flusher
+> > > > >>>>> thread later ends up generating buffer heads and ends up modifying
+> > > > >>>>> page->private, this can be copied in buffer heads?
+> > > > >>>> 
+> > > > >>>> This scares me a bit.
+> > > > >>>> 
+> > > > >>>> As I understand it, fs/ code expects total ownership of page->private.
+> > > > >>>> This adds a responsibility for every user to copy the data through and
+> > > > >>>> store it in the buffer head (or anything else). btrfs seems to do
+> > > > >>>> something entirely different in some cases and store a different kind
+> > > > >>>> of value.
+> > > > >>> 
+> > > > >>> If filesystems are using page->private for some other purpose also, then
+> > > > >>> I guess we have issues. 
+> > > > >>> 
+> > > > >>> I am ccing linux-fsdevel to have some feedback on the idea of trying
+> > > > >>> to store cgroup id of page dirtying thread in page->private and/or buffer
+> > > > >>> head for tracking which group originally dirtied the page in IO controller
+> > > > >>> during writeback.
+> > > > >> 
+> > > > >> A quick "grep" showed that btrfs, ceph and logfs are using page->private
+> > > > >> for other purposes also.
+> > > > >> 
+> > > > >> I was under the impression that either page->private is null or it 
+> > > > >> points to buffer heads for the writeback case. So storing the info
+> > > > >> directly in either buffer head directly or first in page->private and
+> > > > >> then transferring it to buffer heads would have helped. 
+> > > > > 
+> > > > > Right, btrfs has its own uses for page->private, and we expect to own
+> > > > > it.  With a proper callback, the FS could store the extra information you
+> > > > > need in out own structs.
+> > > > 
+> > > > There is no requirement that page->private ever points to a
+> > > > buffer_head, and Lustre clients use it for its own tracking
+> > > > structure (never touching buffer_heads at all).  Any
+> > > > assumption about what a filesystem is storing in page->private
+> > > > in other parts of the code is just broken.
+> > > 
+> > > Andreas,
+> > > 
+> > > As Chris mentioned, will providing callbacks so that filesystem
+> > > can save/restore page->private be reasonable?
+> > 
+> > Just to clarify, I think saving/restoring page->private is going
+> > to be hard.  I'd rather just have a call back that says here's a
+> > page, storage this for the block io controller please, and another
+> > one that returns any previously stored info.
+> 
+> Agreed - there is absolutely no guarantee that some other thread
+> doesn't grab the page while it is under writeback and dereference
+> page->private expecting there to be buffer heads or some filesystem
+> specific structure to be there. Hence swapping out the expected
+> structure with something different is problematic.
+> 
+> However, I think there's bigger issues. e.g.  page->private might
+> point to multiple bufferheads that map to non-contiguous disk blocks
+> that were written by different threads - what happens if we get two
+> concurrent IOs to the one page, perhaps with different cgroup IDs?
 
-> I'm happy with the change to arch/mips/include/asm/jump_label.h and
-> assuming that the change to arch/mips/kernel/jump_label.c will be dropped
+I guess in such cases we can afford to lose some accuracy and a 
+simple approximation can be the last writer's cgroup id is used
+for whole page.
+ 
+> 
+> Further, page->private might not even point to a per-page specific
+> structure - it might point to a structure shared by multiple pages
+> (e.g. an extent map). Adding a callback like this requires
+> filesystems to be able to store per-page or per-block information
+> for external users. Indeed, one of the areas of development in XFS
+> right now is to move away from storing internal per-block/per-page
+> information because of the memory overhead it causes.
 
-Noted.
+Ok, if filesystem is trying to move away from per page information then
+these kind of callbacks become a burden.
 
 > 
-> Acked-by: Ralf Baechle <ralf@linux-mips.org>
+> IMO, if you really need some per-page information, then just put it
+> in the struct page - you can't hide the memory overhead just by
+> having the filesystem to store it for you. That just adds
+> unnecessary complexity...
 
-Jason,
+Ok. I guess adding anything to struct page is going to be hard and 
+we might have to fall back to looking into using page_cgroup for
+tracking page state. I was trying to explore the ways so that we don't
+have to instantiate whole page_cgroup structure just for trying
+to figure out who dirtied the page.
 
-Could you respin the patchset and send it out again with the comments
-that were made. And please Cc Ralf on any patch that touches the mips
-arch.
-
-Thanks,
-
--- Steve
-
-
+Thanks
+Vivek 
