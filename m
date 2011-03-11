@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1CKUnZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:43:25 -0500
-Received: from kroah.org ([198.145.64.141]:46627 "EHLO coco.kroah.org"
+	id S1755153Ab1CKUnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:43:23 -0500
+Received: from kroah.org ([198.145.64.141]:46609 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943Ab1CKUnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:43:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:11 2011
-Message-Id: <20110311204111.052816290@clark.kroah.org>
+	id S1754618Ab1CKUnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:43:12 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:10 2011
+Message-Id: <20110311204110.753145113@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 11 Mar 2011 12:40:18 -0800
+Date: Fri, 11 Mar 2011 12:40:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>
-Subject: [17/17] net: dont allow CAP_NET_ADMIN to load non-netdev kernel modules
+        Roel Kluin <roel.kluin@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [14/17] nfsd: wrong index used in inner loop
 In-Reply-To: <20110311204126.GA7223@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,141 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: roel <roel.kluin@gmail.com>
 
-commit 8909c9ad8ff03611c9c96c9a92656213e4bb495b upstream.
+commit 3ec07aa9522e3d5e9d5ede7bef946756e623a0a0 upstream.
 
-Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
-CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
-that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are
-limited to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't
-allow anybody load any module not related to networking.
+Index i was already used in the outer loop
 
-This patch restricts an ability of autoloading modules to netdev modules
-with explicit aliases.  This fixes CVE-2011-1019.
-
-Arnd Bergmann suggested to leave untouched the old pre-v2.6.32 behavior
-of loading netdev modules by name (without any prefix) for processes
-with CAP_SYS_MODULE to maintain the compatibility with network scripts
-that use autoloading netdev modules by aliases like "eth0", "wlan0".
-
-Currently there are only three users of the feature in the upstream
-kernel: ipip, ip_gre and sit.
-
-    root@albatros:~# capsh --drop=$(seq -s, 0 11),$(seq -s, 13 34) --
-    root@albatros:~# grep Cap /proc/$$/status
-    CapInh:	0000000000000000
-    CapPrm:	fffffff800001000
-    CapEff:	fffffff800001000
-    CapBnd:	fffffff800001000
-    root@albatros:~# modprobe xfs
-    FATAL: Error inserting xfs
-    (/lib/modules/2.6.38-rc6-00001-g2bf4ca3/kernel/fs/xfs/xfs.ko): Operation not permitted
-    root@albatros:~# lsmod | grep xfs
-    root@albatros:~# ifconfig xfs
-    xfs: error fetching interface information: Device not found
-    root@albatros:~# lsmod | grep xfs
-    root@albatros:~# lsmod | grep sit
-    root@albatros:~# ifconfig sit
-    sit: error fetching interface information: Device not found
-    root@albatros:~# lsmod | grep sit
-    root@albatros:~# ifconfig sit0
-    sit0      Link encap:IPv6-in-IPv4
-	      NOARP  MTU:1480  Metric:1
-
-    root@albatros:~# lsmod | grep sit
-    sit                    10457  0
-    tunnel4                 2957  1 sit
-
-For CAP_SYS_MODULE module loading is still relaxed:
-
-    root@albatros:~# grep Cap /proc/$$/status
-    CapInh:	0000000000000000
-    CapPrm:	ffffffffffffffff
-    CapEff:	ffffffffffffffff
-    CapBnd:	ffffffffffffffff
-    root@albatros:~# ifconfig xfs
-    xfs: error fetching interface information: Device not found
-    root@albatros:~# lsmod | grep xfs
-    xfs                   745319  0
-
-Reference: https://lkml.org/lkml/2011/2/24/203
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Kees Cook <kees.cook@canonical.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/netdevice.h |    4 ++++
- net/core/dev.c            |   12 ++++++++++--
- net/ipv4/ip_gre.c         |    1 +
- net/ipv4/ipip.c           |    1 +
- net/ipv6/sit.c            |    2 +-
- 5 files changed, 17 insertions(+), 3 deletions(-)
+ fs/nfsd/nfs4xdr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2015,6 +2015,10 @@ static inline u32 dev_ethtool_get_flags(
- 		return 0;
- 	return dev->ethtool_ops->get_flags(dev);
- }
-+
-+#define MODULE_ALIAS_NETDEV(device) \
-+	MODULE_ALIAS("netdev-" device)
-+
- #endif /* __KERNEL__ */
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1114,7 +1114,7 @@ nfsd4_decode_create_session(struct nfsd4
  
- #endif	/* _LINUX_NETDEVICE_H */
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1037,13 +1037,21 @@ EXPORT_SYMBOL(netdev_bonding_change);
- void dev_load(struct net *net, const char *name)
- {
- 	struct net_device *dev;
-+	int no_module;
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i;
++	int i, j;
+ 	int nr_secflavs;
  
- 	read_lock(&dev_base_lock);
- 	dev = __dev_get_by_name(net, name);
- 	read_unlock(&dev_base_lock);
- 
--	if (!dev && capable(CAP_NET_ADMIN))
--		request_module("%s", name);
-+	no_module = !dev;
-+	if (no_module && capable(CAP_NET_ADMIN))
-+		no_module = request_module("netdev-%s", name);
-+	if (no_module && capable(CAP_SYS_MODULE)) {
-+		if (!request_module("%s", name))
-+			pr_err("Loading kernel module for a network device "
-+"with CAP_SYS_MODULE (deprecated).  Use CAP_NET_ADMIN and alias netdev-%s "
-+"instead\n", name);
-+	}
- }
- EXPORT_SYMBOL(dev_load);
- 
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -1708,3 +1708,4 @@ module_exit(ipgre_fini);
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_RTNL_LINK("gre");
- MODULE_ALIAS_RTNL_LINK("gretap");
-+MODULE_ALIAS_NETDEV("gre0");
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -853,3 +853,4 @@ static void __exit ipip_fini(void)
- module_init(ipip_init);
- module_exit(ipip_fini);
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS_NETDEV("tunl0");
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1101,4 +1101,4 @@ static int __init sit_init(void)
- module_init(sit_init);
- module_exit(sit_cleanup);
- MODULE_LICENSE("GPL");
--MODULE_ALIAS("sit0");
-+MODULE_ALIAS_NETDEV("sit0");
+ 	READ_BUF(16);
+@@ -1187,7 +1187,7 @@ nfsd4_decode_create_session(struct nfsd4
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (i = 0; i < dummy; ++i)
++			for (j = 0; j < dummy; ++j)
+ 				READ32(dummy);
+ 			break;
+ 		case RPC_AUTH_GSS:
 
 
