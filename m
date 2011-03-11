@@ -1,45 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab1CKPs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:48:26 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43165 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab1CKPsW (ORCPT
+	id S1755819Ab1CKPsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:48:50 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37363 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755762Ab1CKPst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:48:22 -0500
-Message-ID: <4D7A4430.1030301@kernel.org>
-Date: Fri, 11 Mar 2011 07:48:00 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+	Fri, 11 Mar 2011 10:48:49 -0500
+Subject: memmap_valid_within problem with sparsely populated sections
+From: Will Deacon <will.deacon@arm.com>
+To: linux@arm.linux.org.uk, mel@csn.ul.ie
+Cc: linux-arm-kernel@lists.infradead.org, catalin.marinas@arm.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
-References: <4D6E91EC.6040906@kernel.org> <20110302190208.GD28266@mtj.dyndns.org> <4D6E9541.2040201@kernel.org> <20110302191338.GE28266@mtj.dyndns.org> <4D6EA975.8070200@kernel.org> <20110302205704.GF28266@mtj.dyndns.org> <4D6EB335.8000306@kernel.org> <20110303061711.GG28266@mtj.dyndns.org> <4D791C9F.1010500@kernel.org> <20110311082938.GC13038@htj.dyndns.org> <20110311083351.GD13038@htj.dyndns.org>
-In-Reply-To: <20110311083351.GD13038@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Mar 2011 15:48:12 +0000
+Message-ID: <1299858492.11981.6.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4D7A4439.01D2,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 12:33 AM, Tejun Heo wrote:
-> On Fri, Mar 11, 2011 at 09:29:38AM +0100, Tejun Heo wrote:
->> Also, I don't think your patch is correct.  Even if there is phys_dist
->                                                               ^
-> 							      no
->> table, emu distance tables should be built because emulated nids don't
->> map to physical nids one to one.  ie. Two different emulated nids can
->> share a physical node and the distance table should explicitly reflect
->> that.
+Hello,
 
-ok, when original SLIT is not there, mean only one really node.
-so the new distance table should be filled with LOCAL_DISTANCE.
+In commit eb33575c ("[ARM] Double check memmap is actually valid with a memmap
+has unexpected holes V2"), a new function, memmap_valid_within, was introduced
+to mmzone.h so that holes in the memmap which pass pfn_valid in SPARSEMEM
+configurations can be detected and avoided.
 
-Yinghai
+The fix to this problem checks that the pfn <-> page linkages are correct by
+calculating the page for the pfn and then checking that page_to_pfn on that
+page returns the original pfn. Unfortunately, in SPARSEMEM configurations, this
+results in reading from the page flags to determine the correct section. Since
+the memmap here has been freed, junk is read from memory and the check is no
+longer robust.
+
+In the best case, reading from /proc/pagetypeinfo will give you the wrong
+answer. In the worst case, you get SEGVs, Kernel OOPses and hung CPUs.
+
+It seems that the only code which can really tell you if the pfn has a valid
+corresponding page is architecture-specific. Indeed, the ARM implementation of
+pfn_valid will give you the correct answer. I think that memmap_valid_within
+needs to check whether the pfn has a struct page associated with it before
+blindly reading the page flags:
+
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index cddd684..ce406e5 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -273,6 +273,13 @@ static void arm_memory_present(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
++int arch_has_mapping(phys_addr_t paddr)
++{
++       return memblock_is_memory(paddr);
++}
++#endif
++
+ static int __init meminfo_cmp(const void *_a, const void *_b)
+ {
+        const struct membank *a = _a, *b = _b;
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 02ecb01..0a17c9b 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -1130,6 +1130,7 @@ unsigned long __init node_memmap_size_bytes(int, unsigned long, unsigned long);
+  * the zone and PFN linkages are still valid. This is expensive, but walkers
+  * of the full memmap are extremely rare.
+  */
++int arch_has_mapping(phys_addr_t paddr);
+ int memmap_valid_within(unsigned long pfn,
+                                        struct page *page, struct zone *zone);
+ #else
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index f5b7d17..9f14b8e 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -78,6 +78,9 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
+ int memmap_valid_within(unsigned long pfn,
+                                        struct page *page, struct zone *zone)
+ {
++       if (!arch_has_mapping(pfn << PAGE_SHIFT))
++               return 0;
++
+        if (page_to_pfn(page) != pfn)
+                return 0;
+ 
+
+It may be that we can leave the architecture code to define memmap_valid_within
+in its entirety, but maybe the page_to_pfn stuff is useful in some scenarios.
+
+Any thoughts on the above?
+
+Cheers,
+
+Will
+
 
