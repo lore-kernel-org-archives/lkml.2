@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1CKXkF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 18:40:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38149 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab1CKXkA convert rfc822-to-8bit (ORCPT
+	id S1754259Ab1CKXqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 18:46:03 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:41345 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab1CKXqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 18:40:00 -0500
+	Fri, 11 Mar 2011 18:46:00 -0500
+Message-ID: <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201103111255.44979.arnd@arndb.de>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+    <201103111255.44979.arnd@arndb.de>
+Date: Sat, 12 Mar 2011 00:45:47 +0100 (CET)
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Sage Weil" <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <4D7AA674.2050705@linaro.org>
-References: <4D79F068.2080009@linaro.org> <AANLkTi=+6cp=F1ZDiH1vFwqvseU-Punwpq99P1j-U4Q1@mail.gmail.com>
- <4D7AA674.2050705@linaro.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 11 Mar 2011 16:39:39 -0700
-X-Google-Sender-Auth: pvwqnk_9WhFDn1HcCahHbIZLQO8
-Message-ID: <AANLkTimwUUBNtQ7qG5NXCOs+fODZHypNesA9mooseW9+@mail.gmail.com>
-Subject: Re: RFC: Platform data for onboard USB assets
-To: andy.green@linaro.org
-Cc: Andy Green <andy@warmcat.com>, Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 4b95630a2805109a2fafe329e7ec4fd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 3:47 PM, Andy Green <andy@warmcat.com> wrote:
-> On 03/11/2011 10:45 PM, Somebody in the thread at some point said:
+On Fri, March 11, 2011 12:55, Arnd Bergmann wrote:
+> On Friday 11 March 2011, Indan Zupancic wrote:
+>> >       http://marc.info/?l=linux-fsdevel&amp;m=127970513829285&amp;w=2
 >>
->> On Fri, Mar 11, 2011 at 2:50 AM, Andy Green<andy@warmcat.com>  wrote:
->>>
->>> Hi -
->>>
->>> platform_data is a well established way in Linux to pass configuration
->>> data
->>> up to on-board assets from a machine file like mach-xyz.c.  It's also
->>> supported to pass platform_data up to devices that are probed
->>> asynchronously
->>> from busses like i2c as well, which is very handy.
->>>
->>> However AFAIK it's not possible to bind platform_data to probed USB
->>> devices
->>> as it stands.
->>
->> Oh, please no.
->>
->> platform_data is an ugly non-type-checked anonymous pointer.  If you
->> need to pass data to a driver, use something better designed.  A
->> device tree fragment would work, or provide some kind of query api.
->> platform_data is definitely the wrong approach.
+>> The patch there seems much more reasonable than introducing a whole
+>> new systemcall just for 20 lines of kernel code. New system calls are
+>> added too easily nowadays.
 >
-> $ grep platform_data drivers/* -R | wc -l
-> 2110
+> The only problem with adding new system calls is that we are stuck
+> with the interface until the end of time, so we must be sure not
+> to get it wrong. The same thing is true for any other interface
+> such as ioctl or extensions to existing system calls. People usually
+> get away with adding new ioctls more easily because it is less
+> obvious when they are added.
 
-I'm not disputing that it is widely used; and it does make a certain
-amount of sense for static device registrations, but it is not a nice
-interface, and it is a horrible idea for dynamic devices.
+Agreed.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+I'm not sure this feature is important enough to add. I can't really
+think of a regular use case where this would be useful, generally
+it's transparent on which mount files are. Add symlinks, and you
+give users a lot of rope. Any user has to make sure that all the
+files they want to sync are on the same file system.
+
+About the arguments against sync(2):
+
+>  - On machines with many mounts, it is not at all uncommon for some of
+>    them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
+>    those and may never get to the one you do care about (e.g., /).
+
+It would be better to fix NFS, or mount it with the fsc option (assuming
+a sync will write to the local cache instead of hanging forever then).
+
+>  - Some applications write lots of data to the file system and then
+>    want to make sure it is flushed to disk.  Calling fsync(2) on each
+>    file introduces unnecessary ordering constraints that result in a large
+>    amount of sub-optimal writeback/flush/commit behavior by the file
+>    system.
+
+You can use sync_file_range() on those files to schedule the writes
+and then do the fsync(2) as usual (both on files and dirs).
+
+If there still is a good reason to implement this, please don't add it
+as a new system call, but add it to sync_file_range(), as that seems
+the best place for odd file synchronisation operations.
+
+Greetings,
+
+Indan
+
+
