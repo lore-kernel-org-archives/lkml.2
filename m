@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab1CKACi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 19:02:38 -0500
-Received: from kroah.org ([198.145.64.141]:46822 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392Ab1CJX5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 18:57:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 10 15:55:36 2011
-Message-Id: <20110310235536.747224966@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Thu, 10 Mar 2011 15:54:13 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Axel Lin <axel.lin@gmail.com>, Shubhrajyoti D <shubhrajyoti@ti.com>,
-        Christoph Mair <christoph.mair@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [patch 07/29] drivers/misc/bmp085.c: add MODULE_DEVICE_TABLE
-In-Reply-To: <20110310235548.GA10103@kroah.com>
+	id S1754848Ab1CKACr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 19:02:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46881 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754004Ab1CKACo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 19:02:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimnHtVS=SFopgyjAAQDW8bXDKDXf+YvEtPdpPsA@mail.gmail.com>
+References: <20110310.153444.115930379.davem@davemloft.net> <AANLkTimnHtVS=SFopgyjAAQDW8bXDKDXf+YvEtPdpPsA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 10 Mar 2011 16:01:54 -0800
+Message-ID: <AANLkTimXqZS4+1WgQcaAFG9CY2G-RPNy7UbXdjn8+_e4@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Thu, Mar 10, 2011 at 3:49 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Now, I admit that it's a git usability bug: for normal "git commit",
+> git will _force_ you to write a message, and sadly, for merges, I made
+> it instead just do the message automatically. My bad. I designed it
+> for the kind of merges I do, where the the automatic merge message
+> actually tells you what the merge is all about.
 
-------------------
+Btw, the reason I got really upset this time (and I've let it slide
+before), is that this time your back-merge not only had that totally
+useless merge message (that's happened before), but *because* you did
+that back-merge, it also ends up making _my_ merge message totally
+useless - the one that normally contains good and useful information
+(a valid source of merging, and the abbreviated shortlog of what was
+merged).
 
-From: Axel Lin <axel.lin@gmail.com>
+Why? Because you had done the back-merge very recently, my pull
+request then ends up being a fast-forward, so your _useless_ merge
+message basically entirely replaces the one that would have been
+useful.
 
-commit 97e419a082461f8a3a0818834eb88ad41219a1da upstream.
+Yes, I could do it with "git pull --no-ff", but I have to admit to
+hating adding more artificial merges into the tree just to get the
+merge information. I didn't think the "--no-ff" flag was a good idea,
+and I've never used it so far, but I have to say that now I'm
+wavering.
 
-The device table is required to load modules based on modaliases.
+I probably also should just talk to Junio and tell him that the whole
+"totally automatic merge messages" was another horrible design
+mistake. But if we do fix that in git, I suspect it will (a) break
+scripts that expected the automatic silent merge and (b) take a long
+time to percolate to people. So it might be one of those "we have to
+live with it due to backwards compatibility reasons". Ugh.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: Christoph Mair <christoph.mair@gmail.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/misc/bmp085.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/misc/bmp085.c
-+++ b/drivers/misc/bmp085.c
-@@ -449,6 +449,7 @@ static const struct i2c_device_id bmp085
- 	{ "bmp085", 0 },
- 	{ }
- };
-+MODULE_DEVICE_TABLE(i2c, bmp085_id);
- 
- static struct i2c_driver bmp085_driver = {
- 	.driver = {
-
-
+                                    Linus
