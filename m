@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1CKDRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 22:17:49 -0500
-Received: from smtp.microsoft.com ([131.107.115.214]:31046 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab1CKDRr convert rfc822-to-8bit (ORCPT
+	id S1752092Ab1CKDUQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 22:20:16 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44813 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab1CKDUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 22:17:47 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Mike Sterling" <Mike.Sterling@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: RE: [PATCH 13/21] [PATCH 13/21] Staging: hv: Rename
- vmbus_driver_context structure
-Thread-Topic: [PATCH 13/21] [PATCH 13/21] Staging: hv: Rename
- vmbus_driver_context structure
-Thread-Index: AQHL33NwKc0pOySQ6kS2FqvDfbI2lJQnsgwA///BrCA=
-Date: Fri, 11 Mar 2011 03:17:46 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048018BBD@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <[PATCH 00/21] Staging: hv: Cleanup vmbus driver>
- <1299795131-1335-1-git-send-email-kys@microsoft.com>
- <alpine.LFD.2.00.1103102347450.2787@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103102347450.2787@localhost6.localdomain6>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 10 Mar 2011 22:20:14 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 11 Mar 2011 12:13:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+        Andreas Dilger <adilger@dilger.ca>,
+        Justin TerAvest <teravest@google.com>, m-ikeda <m-ikeda@ds.jp.nec.com>,
+        jaxboe <jaxboe@fusionio.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ryov <ryov@valinux.co.jp>,
+        taka <taka@valinux.co.jp>, "righi.andrea" <righi.andrea@gmail.com>,
+        guijianfeng <guijianfeng@cn.fujitsu.com>,
+        balbir <balbir@linux.vnet.ibm.com>, ctalbott <ctalbott@google.com>,
+        nauman <nauman@google.com>, mrubin <mrubin@google.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC] Storing cgroup id in page->private (Was: Re: [RFC] [PATCH
+ 0/6] Provide cgroup isolation for buffered writes.)
+Message-Id: <20110311121343.23c61461.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110311031503.GC11710@redhat.com>
+References: <AANLkTi=LL6JEwOcZfSsapYn-isA3RBrV8kPq8EK6va8=@mail.gmail.com>
+	<20110310191115.GG29464@redhat.com>
+	<20110310194106.GH29464@redhat.com>
+	<1299791640-sup-1874@think>
+	<3EC7D30A-B8F7-416B-8B1D-A19350C57D82@dilger.ca>
+	<20110310213832.GK29464@redhat.com>
+	<1299793340-sup-9066@think>
+	<20110311014618.GC15097@dastard>
+	<20110311021531.GA11710@redhat.com>
+	<20110311115235.3663792c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110311031503.GC11710@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 10 Mar 2011 22:15:04 -0500
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Thursday, March 10, 2011 5:50 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Mike
-> Sterling; Abhishek Kane (Mindtree Consulting PVT LTD); Hank Janssen
-> Subject: Re: [PATCH 13/21] [PATCH 13/21] Staging: hv: Rename
-> vmbus_driver_context structure
+> On Fri, Mar 11, 2011 at 11:52:35AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 10 Mar 2011 21:15:31 -0500
+> > Vivek Goyal <vgoyal@redhat.com> wrote:
+> >  
+> > > > IMO, if you really need some per-page information, then just put it
+> > > > in the struct page - you can't hide the memory overhead just by
+> > > > having the filesystem to store it for you. That just adds
+> > > > unnecessary complexity...
+> > > 
+> > > Ok. I guess adding anything to struct page is going to be hard and 
+> > > we might have to fall back to looking into using page_cgroup for
+> > > tracking page state. I was trying to explore the ways so that we don't
+> > > have to instantiate whole page_cgroup structure just for trying
+> > > to figure out who dirtied the page.
+> > > 
+> > 
+> > Is this bad ?
+> > ==
 > 
-> On Thu, 10 Mar 2011, K. Y. Srinivasan wrote:
-> > Now that struct vmbus_driver_context is properly
-> > cleaned up, rename this structure appropriately and
-> > cleanup the code.
+> Sounds like an interesting idea. I am primarily concered about the radix
+> tree node size increase. Not sure how big a concern this is.
 > 
-> > @@ -877,10 +873,10 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
-> >  	/* Schedules a dpc if necessary */
-> >  	if (ret > 0) {
-> >  		if (test_bit(0, (unsigned long *)&ret))
-> > -			tasklet_schedule(&vmbus_drv.msg_dpc);
-> > +			tasklet_schedule(&hv_bus.msg_dpc);
-> >
-> >  		if (test_bit(1, (unsigned long *)&ret))
-> > -			tasklet_schedule(&vmbus_drv.event_dpc);
-> > +			tasklet_schedule(&hv_bus.event_dpc);
+> Also tracking is useful for two things.
 > 
-> What's the plan to convert that tasklet/work stuff to threaded irqs ?
+> - Proportinal IO
+> - IO throttling
+> 
+> For proportional IO, anyway we have to use it with memory controller to
+> control per cgroup dirty ratio so storing info in page_cgroup should
+> not hurt. 
+> 
 
+dirty-ratio for memcg will be implemented. It's definitely necessary.
 
-This is on my plate; I was going to work on this after I addressed all other issues 
-preventing the vmbus driver from exiting staging.
+> The only other case where dependence on page_cgroup hurts is IO throttling
+> where IO controller does not really need memory cgroup controller (I hope
+> so). But we are still not sure if throttling IO at device level is a
+> good idea and how to resolve issues related to priority inversion.
+> 
+Yes, that's priority inversion is my concern.
 
-Regards,
-
-K. Y 
-
+Thanks,
+-Kame
 
