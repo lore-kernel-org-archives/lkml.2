@@ -1,83 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab1CKBTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 20:19:07 -0500
-Received: from ozlabs.org ([203.10.76.45]:47443 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753200Ab1CKBTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 20:19:05 -0500
-Subject: Re: [PATCH 0/2] jump label: update for .39
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Jason Baron <jbaron@redhat.com>, peterz@infradead.org, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110311003846.GA23548@linux-mips.org>
-References: <4D790A13.4060705@caviumnetworks.com>
-	 <1299780241.15854.393.camel@gandalf.stny.rr.com>
-	 <20110310182000.GB2906@redhat.com>
-	 <1299782143.15854.402.camel@gandalf.stny.rr.com>
-	 <4D791CAA.7090108@caviumnetworks.com>
-	 <1299783236.15854.405.camel@gandalf.stny.rr.com>
-	 <4D791F31.6040100@caviumnetworks.com>
-	 <1299785143.15854.407.camel@gandalf.stny.rr.com>
-	 <1299786329.15854.409.camel@gandalf.stny.rr.com>
-	 <BLU0-SMTP39EE03AE86CF0F0E5C570596C80@phx.gbl>
-	 <20110311003846.GA23548@linux-mips.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-Y+dSBof8YrcFC+qDI/Yz"
-Date: Fri, 11 Mar 2011 12:19:05 +1100
-Message-ID: <1299806345.22649.42.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754719Ab1CKBXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 20:23:15 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:40765 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab1CKBXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 20:23:13 -0500
+Message-ID: <334e13a8513c5863dc9a5d278831777f.squirrel@webmail.greenhost.nl>
+In-Reply-To: <s5hr5afm8mj.wl%tiwai@suse.de>
+References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
+    <20110216192658.GA7225@blimp.localdomain>
+    <20110217221329.GA3332@x61.home>
+    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
+    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
+    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
+    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
+    <20110222130440.21a27714@jbarnes-desktop>
+    <20110222223120.GA3567@x61.home>
+    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
+    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
+    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
+    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
+    <s5h4o7btnxq.wl%tiwai@suse.de> <s5hy64ns7pq.wl%tiwai@suse.de>
+    <a04bdafb8c7a97d92593e980b01b37fd.squirrel@webmail.greenhost.nl>
+    <s5hr5afm8mj.wl%tiwai@suse.de>
+Date: Fri, 11 Mar 2011 02:23:08 +0100 (CET)
+Subject: Re: [PATCH] drm/i915: Revive combination mode for backlight control
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Takashi Iwai" <tiwai@suse.de>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Alex Riesen" <raa.lkml@gmail.com>,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 72be745e4a817e3b6c39dafddcade14f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-Y+dSBof8YrcFC+qDI/Yz
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Some nitpicks below. I know you're just restoring the original code,
+but if we improve it we can as well do it now.
 
-On Fri, 2011-03-11 at 01:38 +0100, Ralf Baechle wrote:
-> On Thu, Mar 10, 2011 at 04:22:14PM -0500, Mathieu Desnoyers wrote:
->=20
-> > You seem to be contradicting yourself here. I'm concerned about having
-> > "structures" of a size not power of two. Can we simply either
-> >=20
-> > - Add a padding element at the end
-> > or
-> > - use .align 4*sizeof(long) at the beginning
-> >=20
-> > to make sure the linker won't put any holes when it puts objects=20
-> > together ?
->=20
-> It may only be a technicality but but careful with .align.  On some
-> architectures .align x will align to a multiple of x; on other
-> architectures to 2^x.  Another reason to stick to C wherever possible.
+On Thu, March 10, 2011 14:02, Takashi Iwai wrote:
+> This reverts commit 951f3512dba5bd44cda3e5ee22b4b522e4bb09fb
+>
+>     drm/i915: Do not handle backlight combination mode specially
+>
+> since this commit introduced other regressions due to untouched LBPC
+> register, e.g. the backlight dimmed after resume.
 
-.balign is saner:
+The regression was that, if ALSE was used, the maximum brightness
+would be the brightness at boot, because LBPC isn't touched and
+the BIOS restores it at boot. So the sympom would be less brightness
+levels or lower maximum brightness.
 
-http://sourceware.org/binutils/docs-2.21/as/Balign.html
+Systems with no ASLE support work fine because there the code is only
+used to save and restore the PWM register. LBPC is saved and restored
+by the BIOS.
 
-cheers
+The backlight dimming after resume/blanking was the original bug
+caused by the bogus val <<=1 shift.
 
---=-Y+dSBof8YrcFC+qDI/Yz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> In addition to the revert, this patch includes a fix for the original
+> issue (weird backlight levels) by removing the wrong bit shift for
+> computing the current backlight level.
+> Also, including typo fixes (lpbc -> lbpc).
+>
+> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=34524
+> Acked-by: Indan Zupancic <indan@nul.nu>
+> Cc: <stable@kernel.org>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/gpu/drm/i915/i915_reg.h    |   10 ++++++++++
+>  drivers/gpu/drm/i915/intel_panel.c |   36 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 46 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+> index 3e6f486..2abe240 100644
+> --- a/drivers/gpu/drm/i915/i915_reg.h
+> +++ b/drivers/gpu/drm/i915/i915_reg.h
+> @@ -1553,7 +1553,17 @@
+>
+>  /* Backlight control */
+>  #define BLC_PWM_CTL		0x61254
+> +#define   BACKLIGHT_MODULATION_FREQ_SHIFT		(17)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+This one isn't used anywhere.
 
-iEYEABECAAYFAk15eIkACgkQdSjSd0sB4dLTiQCeJ9HhrFiefYhEiNgmbryJOs65
-0q4AnjgTz9unvhfwJvZLcCd+dwze7Vh1
-=DFL5
------END PGP SIGNATURE-----
+>  #define BLC_PWM_CTL2		0x61250 /* 965+ only */
+> +#define   BLM_COMBINATION_MODE (1 << 30)
+> +/*
+> + * This is the most significant 15 bits of the number of backlight cycles in a
+> + * complete cycle of the modulated backlight control.
+> + *
+> + * The actual value is this field multiplied by two.
+> + */
+> +#define   BACKLIGHT_MODULATION_FREQ_MASK		(0x7fff << 17)
 
---=-Y+dSBof8YrcFC+qDI/Yz--
+This one isn't used and the comment is misleading, I think.
+
+> +#define   BLM_LEGACY_MODE				(1 << 16)
+>  /*
+>   * This is the number of cycles out of the backlight modulation cycle for which
+>   * the backlight is on.
+> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+> index d860abe..f8f86e5 100644
+> --- a/drivers/gpu/drm/i915/intel_panel.c
+> +++ b/drivers/gpu/drm/i915/intel_panel.c
+> @@ -30,6 +30,8 @@
+>
+>  #include "intel_drv.h"
+>
+> +#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
+> +
+
+I'd either put all the defines in i915_reg.h, or have all combination
+mode specific defines here. Though I guess LBPC is an odd one.
+
+>  void
+>  intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
+>  		       struct drm_display_mode *adjusted_mode)
+> @@ -110,6 +112,19 @@ done:
+>  	dev_priv->pch_pf_size = (width << 16) | height;
+>  }
+>
+> +static int is_backlight_combination_mode(struct drm_device *dev)
+> +{
+> +	struct drm_i915_private *dev_priv = dev->dev_private;
+> +
+> +	if (INTEL_INFO(dev)->gen >= 4)
+> +		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
+> +
+> +	if (IS_GEN2(dev))
+> +		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
+> +
+> +	return 0;
+> +}
+> +
+>  static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
+>  {
+>  	u32 val;
+> @@ -166,6 +181,9 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
+>  			if (INTEL_INFO(dev)->gen < 4)
+>  				max &= ~1;
+
+I'd add a comment that this is to clear the BLM_LEGACY_MODE bit.
+
+>  		}
+> +
+> +		if (is_backlight_combination_mode(dev))
+> +			max *= 0xff;
+>  	}
+>
+>  	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
+> @@ -183,6 +201,14 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
+>  		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
+>  		if (IS_PINEVIEW(dev))
+>  			val >>= 1;
+> +
+> +		if (is_backlight_combination_mode(dev)){
+> +			u8 lbpc;
+> +
+> +			val &= ~1;
+> +			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
+> +			val *= lbpc;
+> +		}
+>  	}
+>
+>  	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
+> @@ -205,6 +231,16 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+>
+>  	if (HAS_PCH_SPLIT(dev))
+>  		return intel_pch_panel_set_backlight(dev, level);
+> +
+> +	if (is_backlight_combination_mode(dev)){
+> +		u32 max = intel_panel_get_max_backlight(dev);
+> +		u8 lbpc;
+> +
+> +		lbpc = level * 0xfe / max + 1;
+> +		level /= lbpc;
+> +		pci_write_config_byte(dev->pdev, PCI_LBPC, lbpc);
+> +	}
+> +
+>  	tmp = I915_READ(BLC_PWM_CTL);
+>  	if (IS_PINEVIEW(dev)) {
+>  		tmp &= ~(BACKLIGHT_DUTY_CYCLE_MASK - 1);
+
+After this patch, combined with my new patch
+
+"drm/i915: Fix DPMS and suspend interaction for intel_panel.c"
+
+all known backlight problems should be fixed.
+
+Greetings,
+
+Indan
+
 
