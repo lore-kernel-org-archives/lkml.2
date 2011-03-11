@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab1CKUpT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:45:19 -0500
-Received: from kroah.org ([198.145.64.141]:46572 "EHLO coco.kroah.org"
+	id S1754890Ab1CKUpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:45:38 -0500
+Received: from kroah.org ([198.145.64.141]:46553 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754763Ab1CKUnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:43:08 -0500
+	id S1754704Ab1CKUnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:43:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:10 2011
-Message-Id: <20110311204110.223967480@clark.kroah.org>
+Message-Id: <20110311204110.032665901@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 11 Mar 2011 12:40:10 -0800
+Date: Fri, 11 Mar 2011 12:40:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Neuling <mikey@neuling.org>,
+        Anton Blanchard <anton@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kamalesh babulal <kamalesh@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>
-Subject: [09/17] powerpc/pseries: Add hcall to read 4 ptes at a time in real mode
+        Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
+Subject: [07/17] powerpc/kdump: Use chip->shutdown to disable IRQs
 In-Reply-To: <20110311204126.GA7223@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,109 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit f90ece28c1f5b3ec13fe481406857fe92f4bc7d1 upstream.
+commit 5d7a87217de48b234b3c8ff8a73059947d822e07 upstream.
 
-This adds plpar_pte_read_4_raw() which can be used read 4 PTEs from
-PHYP at a time, while in real mode.
+I saw this in a kdump kernel:
 
-It also creates a new hcall9 which can be used in real mode.  It's the
-same as plpar_hcall9 but minus the tracing hcall statistics which may
-require variables outside the RMO.
+IOMMU table initialized, virtual merging enabled
+Interrupt 155954 (real) is invalid, disabling it.
+Interrupt 155953 (real) is invalid, disabling it.
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
+ie we took some spurious interrupts. default_machine_crash_shutdown tries
+to disable all interrupt sources but uses chip->disable which maps to
+the default action of:
+
+static void default_disable(unsigned int irq)
+{
+}
+
+If we use chip->shutdown, then we actually mask the IRQ:
+
+static void default_shutdown(unsigned int irq)
+{
+        struct irq_desc *desc = irq_to_desc(irq);
+
+        desc->chip->mask(irq);
+        desc->status |= IRQ_MASKED;
+}
+
+Not sure why we don't implement a ->disable action for xics.c, or why
+default_disable doesn't mask the interrupt.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
-Cc: Anton Blanchard <anton@samba.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/include/asm/hvcall.h               |    1 
- arch/powerpc/platforms/pseries/hvCall.S         |   38 ++++++++++++++++++++++++
- arch/powerpc/platforms/pseries/plpar_wrappers.h |   18 +++++++++++
- 3 files changed, 57 insertions(+)
+ arch/powerpc/kernel/crash.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/hvcall.h
-+++ b/arch/powerpc/include/asm/hvcall.h
-@@ -268,6 +268,7 @@ long plpar_hcall_raw(unsigned long opcod
-  */
- #define PLPAR_HCALL9_BUFSIZE 9
- long plpar_hcall9(unsigned long opcode, unsigned long *retbuf, ...);
-+long plpar_hcall9_raw(unsigned long opcode, unsigned long *retbuf, ...);
+--- a/arch/powerpc/kernel/crash.c
++++ b/arch/powerpc/kernel/crash.c
+@@ -381,7 +381,7 @@ void default_machine_crash_shutdown(stru
+ 			desc->chip->eoi(i);
  
- /* For hcall instrumentation.  One structure per-hcall, per-CPU */
- struct hcall_stats {
---- a/arch/powerpc/platforms/pseries/hvCall.S
-+++ b/arch/powerpc/platforms/pseries/hvCall.S
-@@ -202,3 +202,41 @@ _GLOBAL(plpar_hcall9)
- 	mtcrf	0xff,r0
+ 		if (!(desc->status & IRQ_DISABLED))
+-			desc->chip->disable(i);
++			desc->chip->shutdown(i);
+ 	}
  
- 	blr				/* return r3 = status */
-+
-+/* See plpar_hcall_raw to see why this is needed */
-+_GLOBAL(plpar_hcall9_raw)
-+	HMT_MEDIUM
-+
-+	mfcr	r0
-+	stw	r0,8(r1)
-+
-+	std     r4,STK_PARM(r4)(r1)     /* Save ret buffer */
-+
-+	mr	r4,r5
-+	mr	r5,r6
-+	mr	r6,r7
-+	mr	r7,r8
-+	mr	r8,r9
-+	mr	r9,r10
-+	ld	r10,STK_PARM(r11)(r1)	 /* put arg7 in R10 */
-+	ld	r11,STK_PARM(r12)(r1)	 /* put arg8 in R11 */
-+	ld	r12,STK_PARM(r13)(r1)    /* put arg9 in R12 */
-+
-+	HVSC				/* invoke the hypervisor */
-+
-+	mr	r0,r12
-+	ld	r12,STK_PARM(r4)(r1)
-+	std	r4,  0(r12)
-+	std	r5,  8(r12)
-+	std	r6, 16(r12)
-+	std	r7, 24(r12)
-+	std	r8, 32(r12)
-+	std	r9, 40(r12)
-+	std	r10,48(r12)
-+	std	r11,56(r12)
-+	std	r0, 64(r12)
-+
-+	lwz	r0,8(r1)
-+	mtcrf	0xff,r0
-+
-+	blr				/* return r3 = status */
---- a/arch/powerpc/platforms/pseries/plpar_wrappers.h
-+++ b/arch/powerpc/platforms/pseries/plpar_wrappers.h
-@@ -169,6 +169,24 @@ static inline long plpar_pte_read_raw(un
- 	return rc;
- }
- 
-+/*
-+ * plpar_pte_read_4_raw can be called in real mode.
-+ * ptes must be 8*sizeof(unsigned long)
-+ */
-+static inline long plpar_pte_read_4_raw(unsigned long flags, unsigned long ptex,
-+					unsigned long *ptes)
-+
-+{
-+	long rc;
-+	unsigned long retbuf[PLPAR_HCALL9_BUFSIZE];
-+
-+	rc = plpar_hcall9_raw(H_READ, retbuf, flags | H_READ_4, ptex);
-+
-+	memcpy(ptes, retbuf, 8*sizeof(unsigned long));
-+
-+	return rc;
-+}
-+
- static inline long plpar_pte_protect(unsigned long flags, unsigned long ptex,
- 		unsigned long avpn)
- {
+ 	/*
 
 
