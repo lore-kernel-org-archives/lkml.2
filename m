@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab1CKUn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:43:26 -0500
-Received: from kroah.org ([198.145.64.141]:46601 "EHLO coco.kroah.org"
+	id S1755210Ab1CKUnZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:43:25 -0500
+Received: from kroah.org ([198.145.64.141]:46627 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870Ab1CKUnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:43:12 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:10 2011
-Message-Id: <20110311204110.637939818@clark.kroah.org>
+	id S1754943Ab1CKUnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:43:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar 11 12:41:11 2011
+Message-Id: <20110311204111.052816290@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 11 Mar 2011 12:40:14 -0800
+Date: Fri, 11 Mar 2011 12:40:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-Subject: [13/17] netfilter: nf_log: avoid oops in (un)bind with invalid nfproto values
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>
+Subject: [17/17] net: dont allow CAP_NET_ADMIN to load non-netdev kernel modules
 In-Reply-To: <20110311204126.GA7223@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +28,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Engelhardt <jengelh@medozas.de>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit 9ef0298a8e5730d9a46d640014c727f3b4152870 upstream.
+commit 8909c9ad8ff03611c9c96c9a92656213e4bb495b upstream.
 
-Like many other places, we have to check that the array index is
-within allowed limits, or otherwise, a kernel oops and other nastiness
-can ensue when we access memory beyond the end of the array.
+Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
+CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
+that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are
+limited to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't
+allow anybody load any module not related to networking.
 
-[ 5954.115381] BUG: unable to handle kernel paging request at 0000004000000000
-[ 5954.120014] IP:  __find_logger+0x6f/0xa0
-[ 5954.123979]  nf_log_bind_pf+0x2b/0x70
-[ 5954.123979]  nfulnl_recv_config+0xc0/0x4a0 [nfnetlink_log]
-[ 5954.123979]  nfnetlink_rcv_msg+0x12c/0x1b0 [nfnetlink]
-...
+This patch restricts an ability of autoloading modules to netdev modules
+with explicit aliases.  This fixes CVE-2011-1019.
 
-The problem goes back to v2.6.30-rc1~1372~1342~31 where nf_log_bind
-was decoupled from nf_log_register.
+Arnd Bergmann suggested to leave untouched the old pre-v2.6.32 behavior
+of loading netdev modules by name (without any prefix) for processes
+with CAP_SYS_MODULE to maintain the compatibility with network scripts
+that use autoloading netdev modules by aliases like "eth0", "wlan0".
 
-Reported-by: Miguel Di Ciurcio Filho <miguel.filho@gmail.com>,
-  via irc.freenode.net/#netfilter
-Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Currently there are only three users of the feature in the upstream
+kernel: ipip, ip_gre and sit.
+
+    root@albatros:~# capsh --drop=$(seq -s, 0 11),$(seq -s, 13 34) --
+    root@albatros:~# grep Cap /proc/$$/status
+    CapInh:	0000000000000000
+    CapPrm:	fffffff800001000
+    CapEff:	fffffff800001000
+    CapBnd:	fffffff800001000
+    root@albatros:~# modprobe xfs
+    FATAL: Error inserting xfs
+    (/lib/modules/2.6.38-rc6-00001-g2bf4ca3/kernel/fs/xfs/xfs.ko): Operation not permitted
+    root@albatros:~# lsmod | grep xfs
+    root@albatros:~# ifconfig xfs
+    xfs: error fetching interface information: Device not found
+    root@albatros:~# lsmod | grep xfs
+    root@albatros:~# lsmod | grep sit
+    root@albatros:~# ifconfig sit
+    sit: error fetching interface information: Device not found
+    root@albatros:~# lsmod | grep sit
+    root@albatros:~# ifconfig sit0
+    sit0      Link encap:IPv6-in-IPv4
+	      NOARP  MTU:1480  Metric:1
+
+    root@albatros:~# lsmod | grep sit
+    sit                    10457  0
+    tunnel4                 2957  1 sit
+
+For CAP_SYS_MODULE module loading is still relaxed:
+
+    root@albatros:~# grep Cap /proc/$$/status
+    CapInh:	0000000000000000
+    CapPrm:	ffffffffffffffff
+    CapEff:	ffffffffffffffff
+    CapBnd:	ffffffffffffffff
+    root@albatros:~# ifconfig xfs
+    xfs: error fetching interface information: Device not found
+    root@albatros:~# lsmod | grep xfs
+    xfs                   745319  0
+
+Reference: https://lkml.org/lkml/2011/2/24/203
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Kees Cook <kees.cook@canonical.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/nf_log.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/netdevice.h |    4 ++++
+ net/core/dev.c            |   12 ++++++++++--
+ net/ipv4/ip_gre.c         |    1 +
+ net/ipv4/ipip.c           |    1 +
+ net/ipv6/sit.c            |    2 +-
+ 5 files changed, 17 insertions(+), 3 deletions(-)
 
---- a/net/netfilter/nf_log.c
-+++ b/net/netfilter/nf_log.c
-@@ -83,6 +83,8 @@ EXPORT_SYMBOL(nf_log_unregister);
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2015,6 +2015,10 @@ static inline u32 dev_ethtool_get_flags(
+ 		return 0;
+ 	return dev->ethtool_ops->get_flags(dev);
+ }
++
++#define MODULE_ALIAS_NETDEV(device) \
++	MODULE_ALIAS("netdev-" device)
++
+ #endif /* __KERNEL__ */
  
- int nf_log_bind_pf(u_int8_t pf, const struct nf_logger *logger)
+ #endif	/* _LINUX_NETDEVICE_H */
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1037,13 +1037,21 @@ EXPORT_SYMBOL(netdev_bonding_change);
+ void dev_load(struct net *net, const char *name)
  {
-+	if (pf >= ARRAY_SIZE(nf_loggers))
-+		return -EINVAL;
- 	mutex_lock(&nf_log_mutex);
- 	if (__find_logger(pf, logger->name) == NULL) {
- 		mutex_unlock(&nf_log_mutex);
-@@ -96,6 +98,8 @@ EXPORT_SYMBOL(nf_log_bind_pf);
+ 	struct net_device *dev;
++	int no_module;
  
- void nf_log_unbind_pf(u_int8_t pf)
- {
-+	if (pf >= ARRAY_SIZE(nf_loggers))
-+		return;
- 	mutex_lock(&nf_log_mutex);
- 	rcu_assign_pointer(nf_loggers[pf], NULL);
- 	mutex_unlock(&nf_log_mutex);
+ 	read_lock(&dev_base_lock);
+ 	dev = __dev_get_by_name(net, name);
+ 	read_unlock(&dev_base_lock);
+ 
+-	if (!dev && capable(CAP_NET_ADMIN))
+-		request_module("%s", name);
++	no_module = !dev;
++	if (no_module && capable(CAP_NET_ADMIN))
++		no_module = request_module("netdev-%s", name);
++	if (no_module && capable(CAP_SYS_MODULE)) {
++		if (!request_module("%s", name))
++			pr_err("Loading kernel module for a network device "
++"with CAP_SYS_MODULE (deprecated).  Use CAP_NET_ADMIN and alias netdev-%s "
++"instead\n", name);
++	}
+ }
+ EXPORT_SYMBOL(dev_load);
+ 
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -1708,3 +1708,4 @@ module_exit(ipgre_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS_RTNL_LINK("gre");
+ MODULE_ALIAS_RTNL_LINK("gretap");
++MODULE_ALIAS_NETDEV("gre0");
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -853,3 +853,4 @@ static void __exit ipip_fini(void)
+ module_init(ipip_init);
+ module_exit(ipip_fini);
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS_NETDEV("tunl0");
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1101,4 +1101,4 @@ static int __init sit_init(void)
+ module_init(sit_init);
+ module_exit(sit_cleanup);
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("sit0");
++MODULE_ALIAS_NETDEV("sit0");
 
 
