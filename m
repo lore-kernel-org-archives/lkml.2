@@ -1,211 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab1CKBXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 20:23:15 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:40765 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab1CKBXN (ORCPT
+	id S1754960Ab1CKB0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 20:26:46 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55827 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab1CKB0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 20:23:13 -0500
-Message-ID: <334e13a8513c5863dc9a5d278831777f.squirrel@webmail.greenhost.nl>
-In-Reply-To: <s5hr5afm8mj.wl%tiwai@suse.de>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-    <20110216192658.GA7225@blimp.localdomain>
-    <20110217221329.GA3332@x61.home>
-    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
-    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-    <20110222130440.21a27714@jbarnes-desktop>
-    <20110222223120.GA3567@x61.home>
-    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
-    <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
-    <AANLkTimyQ30ELw9Sm57NXgetiXnzJMHby2BE3GsynJLs@mail.gmail.com>
-    <1a06e2711df021a802d609ad1a75db17.squirrel@webmail.greenhost.nl>
-    <s5h4o7btnxq.wl%tiwai@suse.de> <s5hy64ns7pq.wl%tiwai@suse.de>
-    <a04bdafb8c7a97d92593e980b01b37fd.squirrel@webmail.greenhost.nl>
-    <s5hr5afm8mj.wl%tiwai@suse.de>
-Date: Fri, 11 Mar 2011 02:23:08 +0100 (CET)
-Subject: Re: [PATCH] drm/i915: Revive combination mode for backlight control
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Takashi Iwai" <tiwai@suse.de>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Alex Riesen" <raa.lkml@gmail.com>,
-        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 72be745e4a817e3b6c39dafddcade14f
+	Thu, 10 Mar 2011 20:26:44 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 11 Mar 2011 10:20:12 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Andreas Dilger <adilger@dilger.ca>,
+        Justin TerAvest <teravest@google.com>, m-ikeda <m-ikeda@ds.jp.nec.com>,
+        jaxboe <jaxboe@fusionio.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ryov <ryov@valinux.co.jp>,
+        taka <taka@valinux.co.jp>, "righi.andrea" <righi.andrea@gmail.com>,
+        guijianfeng <guijianfeng@cn.fujitsu.com>,
+        balbir <balbir@linux.vnet.ibm.com>, ctalbott <ctalbott@google.com>,
+        nauman <nauman@google.com>, mrubin <mrubin@google.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC] Storing cgroup id in page->private (Was: Re: [RFC] [PATCH
+ 0/6] Provide cgroup isolation for buffered writes.)
+Message-Id: <20110311102012.0901e551.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1299793340-sup-9066@think>
+References: <1299619256-12661-1-git-send-email-teravest@google.com>
+	<20110309142237.6ab82523.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTimRRAEp75CfyJFxU-5wOYfety6gjq=msZf0Wp8P@mail.gmail.com>
+	<20110310181529.GF29464@redhat.com>
+	<AANLkTi=LL6JEwOcZfSsapYn-isA3RBrV8kPq8EK6va8=@mail.gmail.com>
+	<20110310191115.GG29464@redhat.com>
+	<20110310194106.GH29464@redhat.com>
+	<1299791640-sup-1874@think>
+	<3EC7D30A-B8F7-416B-8B1D-A19350C57D82@dilger.ca>
+	<20110310213832.GK29464@redhat.com>
+	<1299793340-sup-9066@think>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 10 Mar 2011 16:43:31 -0500
+Chris Mason <chris.mason@oracle.com> wrote:
 
-Some nitpicks below. I know you're just restoring the original code,
-but if we improve it we can as well do it now.
+> Excerpts from Vivek Goyal's message of 2011-03-10 16:38:32 -0500:
+> > On Thu, Mar 10, 2011 at 02:24:07PM -0700, Andreas Dilger wrote:
+> > > On 2011-03-10, at 2:15 PM, Chris Mason wrote:
+> > > > Excerpts from Vivek Goyal's message of 2011-03-10 14:41:06 -0500:
+> > > >> On Thu, Mar 10, 2011 at 02:11:15PM -0500, Vivek Goyal wrote:
+> > > >>>>> I think the person who dirtied the page can store the information in
+> > > >>>>> page->private (assuming buffer heads were not generated) and if flusher
+> > > >>>>> thread later ends up generating buffer heads and ends up modifying
+> > > >>>>> page->private, this can be copied in buffer heads?
+> > > >>>> 
+> > > >>>> This scares me a bit.
+> > > >>>> 
+> > > >>>> As I understand it, fs/ code expects total ownership of page->private.
+> > > >>>> This adds a responsibility for every user to copy the data through and
+> > > >>>> store it in the buffer head (or anything else). btrfs seems to do
+> > > >>>> something entirely different in some cases and store a different kind
+> > > >>>> of value.
+> > > >>> 
+> > > >>> If filesystems are using page->private for some other purpose also, then
+> > > >>> I guess we have issues. 
+> > > >>> 
+> > > >>> I am ccing linux-fsdevel to have some feedback on the idea of trying
+> > > >>> to store cgroup id of page dirtying thread in page->private and/or buffer
+> > > >>> head for tracking which group originally dirtied the page in IO controller
+> > > >>> during writeback.
+> > > >> 
+> > > >> A quick "grep" showed that btrfs, ceph and logfs are using page->private
+> > > >> for other purposes also.
+> > > >> 
+> > > >> I was under the impression that either page->private is null or it 
+> > > >> points to buffer heads for the writeback case. So storing the info
+> > > >> directly in either buffer head directly or first in page->private and
+> > > >> then transferring it to buffer heads would have helped. 
+> > > > 
+> > > > Right, btrfs has its own uses for page->private, and we expect to own
+> > > > it.  With a proper callback, the FS could store the extra information you
+> > > > need in out own structs.
+> > > 
+> > > There is no requirement that page->private ever points to a buffer_head, and Lustre clients use it for its own tracking structure (never touching buffer_heads at all).  Any assumption about what a filesystem is storing in page->private in other parts of the code is just broken.
+> > 
+> > Andreas,
+> > 
+> > As Chris mentioned, will providing callbacks so that filesystem can
+> > save/restore page->private be reasonable?
+> 
+> Just to clarify, I think saving/restoring page->private is going to be
+> hard.  I'd rather just have a call back that says here's a page, storage
+> this for the block io controller please, and another one that returns
+> any previously stored info.
+> 
 
-On Thu, March 10, 2011 14:02, Takashi Iwai wrote:
-> This reverts commit 951f3512dba5bd44cda3e5ee22b4b522e4bb09fb
->
->     drm/i915: Do not handle backlight combination mode specially
->
-> since this commit introduced other regressions due to untouched LBPC
-> register, e.g. the backlight dimmed after resume.
+Hmm, Vivek,
+for dynamic allocation of io-record, how about this kind of tagging ?
+(just an idea. not compiled at all.)
 
-The regression was that, if ALSE was used, the maximum brightness
-would be the brightness at boot, because LBPC isn't touched and
-the BIOS restores it at boot. So the sympom would be less brightness
-levels or lower maximum brightness.
+Pros.
+- much better than consuming 2bytes for all pages including pages other 
+  than file caches. 
+- this will allow lockless lookup of iotag.
+- setting iotag can be done at the same time PAGECACHE_TAG_DIRTY...
+  no extra lock will be required.
+- At clearing, we can expect lock for radix-tree is already held.
+Cons.
+- makes radix-tree struct larger and not good for cacheline.
+- some special care? will be required at page-migration.
 
-Systems with no ASLE support work fine because there the code is only
-used to save and restore the PWM register. LBPC is saved and restored
-by the BIOS.
 
-The backlight dimming after resume/blanking was the original bug
-caused by the bogus val <<=1 shift.
+==
+@@ -51,6 +51,9 @@ struct radix_tree_node {
+        struct rcu_head rcu_head;
+        void __rcu      *slots[RADIX_TREE_MAP_SIZE];
+        unsigned long   tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
++#ifdef CONFIG_BLK_CGROUP
++       unsigned short  iotag[RADIX_TREE_MAP_SIZE];
++#endif
+ };
 
-> In addition to the revert, this patch includes a fix for the original
-> issue (weird backlight levels) by removing the wrong bit shift for
-> computing the current backlight level.
-> Also, including typo fixes (lpbc -> lbpc).
->
-> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=34524
-> Acked-by: Indan Zupancic <indan@nul.nu>
-> Cc: <stable@kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/gpu/drm/i915/i915_reg.h    |   10 ++++++++++
->  drivers/gpu/drm/i915/intel_panel.c |   36 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 46 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-> index 3e6f486..2abe240 100644
-> --- a/drivers/gpu/drm/i915/i915_reg.h
-> +++ b/drivers/gpu/drm/i915/i915_reg.h
-> @@ -1553,7 +1553,17 @@
->
->  /* Backlight control */
->  #define BLC_PWM_CTL		0x61254
-> +#define   BACKLIGHT_MODULATION_FREQ_SHIFT		(17)
+ struct radix_tree_path {
+@@ -487,6 +490,36 @@ void *radix_tree_tag_set(struct radix_tr
+ }
+ EXPORT_SYMBOL(radix_tree_tag_set);
 
-This one isn't used anywhere.
-
->  #define BLC_PWM_CTL2		0x61250 /* 965+ only */
-> +#define   BLM_COMBINATION_MODE (1 << 30)
-> +/*
-> + * This is the most significant 15 bits of the number of backlight cycles in a
-> + * complete cycle of the modulated backlight control.
-> + *
-> + * The actual value is this field multiplied by two.
-> + */
-> +#define   BACKLIGHT_MODULATION_FREQ_MASK		(0x7fff << 17)
-
-This one isn't used and the comment is misleading, I think.
-
-> +#define   BLM_LEGACY_MODE				(1 << 16)
->  /*
->   * This is the number of cycles out of the backlight modulation cycle for which
->   * the backlight is on.
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index d860abe..f8f86e5 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -30,6 +30,8 @@
->
->  #include "intel_drv.h"
->
-> +#define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
-> +
-
-I'd either put all the defines in i915_reg.h, or have all combination
-mode specific defines here. Though I guess LBPC is an odd one.
-
->  void
->  intel_fixed_panel_mode(struct drm_display_mode *fixed_mode,
->  		       struct drm_display_mode *adjusted_mode)
-> @@ -110,6 +112,19 @@ done:
->  	dev_priv->pch_pf_size = (width << 16) | height;
->  }
->
-> +static int is_backlight_combination_mode(struct drm_device *dev)
-> +{
-> +	struct drm_i915_private *dev_priv = dev->dev_private;
-> +
-> +	if (INTEL_INFO(dev)->gen >= 4)
-> +		return I915_READ(BLC_PWM_CTL2) & BLM_COMBINATION_MODE;
-> +
-> +	if (IS_GEN2(dev))
-> +		return I915_READ(BLC_PWM_CTL) & BLM_LEGACY_MODE;
-> +
-> +	return 0;
-> +}
-> +
->  static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
->  {
->  	u32 val;
-> @@ -166,6 +181,9 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
->  			if (INTEL_INFO(dev)->gen < 4)
->  				max &= ~1;
-
-I'd add a comment that this is to clear the BLM_LEGACY_MODE bit.
-
->  		}
-> +
-> +		if (is_backlight_combination_mode(dev))
-> +			max *= 0xff;
->  	}
->
->  	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
-> @@ -183,6 +201,14 @@ u32 intel_panel_get_backlight(struct drm_device *dev)
->  		val = I915_READ(BLC_PWM_CTL) & BACKLIGHT_DUTY_CYCLE_MASK;
->  		if (IS_PINEVIEW(dev))
->  			val >>= 1;
-> +
-> +		if (is_backlight_combination_mode(dev)){
-> +			u8 lbpc;
-> +
-> +			val &= ~1;
-> +			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
-> +			val *= lbpc;
-> +		}
->  	}
->
->  	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
-> @@ -205,6 +231,16 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
->
->  	if (HAS_PCH_SPLIT(dev))
->  		return intel_pch_panel_set_backlight(dev, level);
-> +
-> +	if (is_backlight_combination_mode(dev)){
-> +		u32 max = intel_panel_get_max_backlight(dev);
-> +		u8 lbpc;
-> +
-> +		lbpc = level * 0xfe / max + 1;
-> +		level /= lbpc;
-> +		pci_write_config_byte(dev->pdev, PCI_LBPC, lbpc);
-> +	}
-> +
->  	tmp = I915_READ(BLC_PWM_CTL);
->  	if (IS_PINEVIEW(dev)) {
->  		tmp &= ~(BACKLIGHT_DUTY_CYCLE_MASK - 1);
-
-After this patch, combined with my new patch
-
-"drm/i915: Fix DPMS and suspend interaction for intel_panel.c"
-
-all known backlight problems should be fixed.
-
-Greetings,
-
-Indan
-
++#ifdef CONFIG_BLK_CGROUP
++void *radix_tree_iotag_set(struct radix_tree_root *root,
++                       unsigned long index, unsigned short tag)
++{
++       unsigned int height, shift;
++       struct radix_tree_node *node;
++
++       height = root->height;
++       BUG_ON(index > radix_tree_maxindex(height));
++
++       node = indirect_to_ptr(root->rnode);
++       shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
++
++       while (height > 0) {
++               int offset;
++
++               offset = (index >> shift) & RADIX_TREE_MAP_MASK;
++               node = node->slots[offset];
++               BUG(!node);
++               shift -= RADIX_TREE_MAP_SHIFT;
++               height--;
++       }
++       node->iotag[offset] = tag;
++
++       return;
++}
++EXPORT_SYMBOL(radix_tree_iotag_set);
++
 
