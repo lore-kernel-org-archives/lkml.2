@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab1CKQsy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:48:54 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40019 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751816Ab1CKQsw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:48:52 -0500
-Date: Fri, 11 Mar 2011 16:48:50 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <greg@kroah.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110311164850.GT1760@opensource.wolfsonmicro.com>
-References: <4D79F068.2080009@linaro.org>
- <201103111331.13932.arnd@arndb.de>
- <20110311152938.GB29920@sirena.org.uk>
- <201103111654.04089.arnd@arndb.de>
- <20110311160308.GQ1760@opensource.wolfsonmicro.com>
- <20110311161421.GA7843@kroah.com>
- <20110311162759.GS1760@opensource.wolfsonmicro.com>
- <20110311163522.GA9291@kroah.com>
+	id S1754891Ab1CKQtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:49:32 -0500
+Received: from www.tglx.de ([62.245.132.106]:40746 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751816Ab1CKQtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 11:49:31 -0500
+Date: Fri, 11 Mar 2011 17:49:24 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+cc: linux-kernel@vger.kernel.org, x86@kernel.org, sodaville@linutronix.de
+Subject: Re: [PATCH] x86/ce4100: set pci ops via callback instead of module
+ init
+In-Reply-To: <20110311152247.GA14273@www.tglx.de>
+Message-ID: <alpine.LFD.2.00.1103111747460.2787@localhost6.localdomain6>
+References: <20110311152247.GA14273@www.tglx.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110311163522.GA9291@kroah.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 08:35:22AM -0800, Greg KH wrote:
-> On Fri, Mar 11, 2011 at 04:27:59PM +0000, Mark Brown wrote:
+On Fri, 11 Mar 2011, Sebastian Andrzej Siewior wrote:
+>  
+>  struct sim_reg {
+> @@ -306,10 +307,8 @@ struct pci_raw_ops ce4100_pci_conf = {
+>  	.write = ce4100_conf_write,
+>  };
+>  
+> -static int __init ce4100_pci_init(void)
 
-> > I'm actually not that fussed about the MAC address use case itself and
-> > do tend to agree with you that that's handlable in userspace but for the
-> > other things that might need to be configured there's a lot of things
-> > that for non-discoverable buses we're currently passing through platform
-> > data so switching to bouncing things through userspace would itself be a
-> > substantial change from other systems.
+Why don't you keep the function name and make it non static, add the
+call to pci_legacy_init() and just set the init.pci pointer to this?
 
-> But USB _is_ discoverable, that's my point.
+So all pci is stuff is where it belongs
 
-USB itself is discoverable but the when the USB bus you're looking at is
-one that's soldered down onto a board in a specific design all bets are
-off regarding how complete the information you get will be.  On a basic
-level the designers may have done things like omit the configuration
-EEPROMs that would set the device IDs that the driver should be relying
-on to identify the hardware configuration.  There may be other, nastier,
-things going on.
+Thanks,
 
-> > You can't in general rely on the system being neatly abstracted and
-> > while discoverable buses do avoid many problems in this sort of area
-> > there are still things which can only be discovered through reference to
-> > the schematics or similar, especially if you care about the microamps.
+	tglx
 
-> Again, that's not USB, so it isn't relevant here.
-
-You really can't make this assumption about discoverable buses on
-embedded devices.  The discoverability will get you most of the way
-there but not always all of the way there.
+> +void __init ce4100_init_pci_ops(void)
+>  {
+>  	init_sim_regs();
+>  	raw_pci_ops = &ce4100_pci_conf;
+> -	return 0;
+>  }
+> -subsys_initcall(ce4100_pci_init);
+> diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+> index 68c0dbc..93b4e3c 100644
+> --- a/arch/x86/platform/ce4100/ce4100.c
+> +++ b/arch/x86/platform/ce4100/ce4100.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/serial_reg.h>
+>  #include <linux/serial_8250.h>
+>  
+> +#include <asm/ce4100.h>
+>  #include <asm/prom.h>
+>  #include <asm/setup.h>
+>  #include <asm/i8259.h>
+> @@ -125,6 +126,13 @@ static void __cpuinit sdv_pci_init(void)
+>  }
+>  #endif
+>  
+> +static int __cpuinit ce4100_pci_init(void)
+> +{
+> +	ce4100_init_pci_ops();
+> +	pci_legacy_init();
+> +	return 0;
+> +}
+> +
+>  /*
+>   * CE4100 specific x86_init function overrides and early setup
+>   * calls.
+> @@ -136,6 +144,7 @@ void __init x86_ce4100_early_setup(void)
+>  	x86_init.resources.probe_roms = x86_init_noop;
+>  	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+>  	x86_init.mpparse.find_smp_config = x86_init_noop;
+> +	x86_init.pci.init = ce4100_pci_init;
+>  
+>  #ifdef CONFIG_X86_IO_APIC
+>  	x86_init.pci.init_irq = sdv_pci_init;
+> -- 
+> 1.7.4
+> 
