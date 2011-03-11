@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab1CKWlP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 17:41:15 -0500
-Received: from n3.ceplan.udesc.br ([200.19.99.3]:54716 "EHLO mail.sbs.udesc.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab1CKWlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 17:41:13 -0500
-Message-ID: <2443.82.128.14.83.1299830254.squirrel@webmail2.sbs.udesc.br>
-Date: Fri, 11 Mar 2011 04:57:34 -0300 (BRT)
-Subject: Warning!!!!
-From: "System Administrator Team" <estagio@sbs.udesc.br>
-User-Agent: SquirrelMail/1.4.4
+	id S1753697Ab1CKWpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 17:45:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43646 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab1CKWpW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 17:45:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+In-Reply-To: <4D79F068.2080009@linaro.org>
+References: <4D79F068.2080009@linaro.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 11 Mar 2011 15:45:01 -0700
+X-Google-Sender-Auth: VY1PcF8orOXYSVBx5vyvEeKPg3c
+Message-ID: <AANLkTi=+6cp=F1ZDiH1vFwqvseU-Punwpq99P1j-U4Q1@mail.gmail.com>
+Subject: Re: RFC: Platform data for onboard USB assets
+To: andy.green@linaro.org
+Cc: Andy Green <andy@warmcat.com>, Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 11, 2011 at 2:50 AM, Andy Green <andy@warmcat.com> wrote:
+> Hi -
+>
+> platform_data is a well established way in Linux to pass configuration data
+> up to on-board assets from a machine file like mach-xyz.c.  It's also
+> supported to pass platform_data up to devices that are probed asynchronously
+> from busses like i2c as well, which is very handy.
+>
+> However AFAIK it's not possible to bind platform_data to probed USB devices
+> as it stands.
 
+Oh, please no.
 
+platform_data is an ugly non-type-checked anonymous pointer.  If you
+need to pass data to a driver, use something better designed.  A
+device tree fragment would work, or provide some kind of query api.
+platform_data is definitely the wrong approach.
 
-Your mailbox has exceeded the storage limit which is 20GB as set by your
-administrator,you are currently running on 20.9GB,you may not be able to
-send or receive new mail until you re-validate your mailbox. To
-re-validate your mailbox, please click the link below:
-http://doiop.com/actives
-If the link above don't work, please copy and paste the link below to your
-browser window.
-http://doiop.com/actives
-Thanks
-System Administrator Team.
-
-
+g.
