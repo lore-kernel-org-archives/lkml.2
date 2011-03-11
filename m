@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab1CKQe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:34:59 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36930 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab1CKQey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:34:54 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
-In-reply-to: <20110310235722.GA1110@tux1.beaverton.ibm.com>
-References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110310235722.GA1110@tux1.beaverton.ibm.com>
-Date: Fri, 11 Mar 2011 11:34:05 -0500
-Message-Id: <1299860233-sup-4443@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D7A4F1D.0163,ss=1,fgs=0
+	id S1755121Ab1CKQgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:36:50 -0500
+Received: from kroah.org ([198.145.64.141]:46810 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754736Ab1CKQgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 11:36:48 -0500
+Date: Fri, 11 Mar 2011 08:35:22 -0800
+From: Greg KH <greg@kroah.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+Message-ID: <20110311163522.GA9291@kroah.com>
+References: <4D79F068.2080009@linaro.org>
+ <201103111331.13932.arnd@arndb.de>
+ <20110311152938.GB29920@sirena.org.uk>
+ <201103111654.04089.arnd@arndb.de>
+ <20110311160308.GQ1760@opensource.wolfsonmicro.com>
+ <20110311161421.GA7843@kroah.com>
+ <20110311162759.GS1760@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311162759.GS1760@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Darrick J. Wong's message of 2011-03-10 18:57:22 -0500:
-> On Tue, Mar 08, 2011 at 03:56:26PM +1100, Dave Chinner wrote:
+On Fri, Mar 11, 2011 at 04:27:59PM +0000, Mark Brown wrote:
+> On Fri, Mar 11, 2011 at 08:14:21AM -0800, Greg KH wrote:
+> > On Fri, Mar 11, 2011 at 04:03:09PM +0000, Mark Brown wrote:
 > 
-> > On Fri, Mar 04, 2011 at 01:07:24PM -0800, Darrick J. Wong wrote:
-> > > On Mon, Feb 28, 2011 at 07:54:05AM -0500, Chris Mason wrote:
-> > > > Excerpts from Darrick J. Wong's message of 2011-02-24 13:27:32 -0500:
-> > > > > On Thu, Feb 24, 2011 at 12:37:53PM -0500, Chris Mason wrote:
-> > > > > > Excerpts from Jan Kara's message of 2011-02-24 11:47:58 -0500:
-> > > > > > > On Wed 23-02-11 15:35:11, Chris Mason wrote:
-> > > > > > > > Excerpts from Joel Becker's message of 2011-02-23 15:24:47 -0500:
-> > > > > > > > > On Tue, Feb 22, 2011 at 11:45:44AM -0500, Martin K. Petersen wrote:
-> > > > > > > > > > Also, DIX is only the tip of the iceberg. Many other impending
-> > > > > > > > > > technologies feature checksums and require pages to be stable during I/O
-> > > > > > > > > > due to checksumming, encryption and so on.
-> > > > > > > > > > 
-> > > > > > > > > > The VM is already trying to do the right thing. We just need the
-> > > > > > > > > > relevant filesystems to catch up.
-> > > > > > > > > 
-> > > > > > > > >     ocfs2 handles stable metadata for its checksums when feeding
-> > > > > > > > > things to the journal.  If we're doing pagecache-based I/O, is the
-> > > > > > > > > pagecache going to help here for data?
-> > > > > > > > 
-> > > > > > > > Data is much easier than metadata.  All you really need is to wait on
-> > > > > > > > writeback in file_write, wait on writeback in page_mkwrite, and make
+> > > Like I say, it's not just MAC addresses that can need configuring this
+> > > way - it can be other random "you're wired up this way" type
+> > > information that would normally be figured out from the USB IDs.
 > 
-> Hrm... I've been looking for a file_write in ext4; was the aio_write function
-> pointer what you had in mind here?
+> > And all of that should be done in userspace, like all other device
+> > names, I still fail to see what is so different here from any other type
+> > of system.
+> 
+> I'm actually not that fussed about the MAC address use case itself and
+> do tend to agree with you that that's handlable in userspace but for the
+> other things that might need to be configured there's a lot of things
+> that for non-discoverable buses we're currently passing through platform
+> data so switching to bouncing things through userspace would itself be a
+> substantial change from other systems.
 
-Your change to grab_cache_page_write_begin looks good to me, at least
-for ext4.  For ext3 you have to actually go in and wait for each of the
-buffer heads in the page, since ext3 (and reiserfs) will write the buffer heads
-directly without using writepage.
+But USB _is_ discoverable, that's my point.
 
-Have you confirmed by looking at the block mapping that your crc errors
-are from data blocks?
+> You can't in general rely on the system being neatly abstracted and
+> while discoverable buses do avoid many problems in this sort of area
+> there are still things which can only be discovered through reference to
+> the schematics or similar, especially if you care about the microamps.
 
--chris
+Again, that's not USB, so it isn't relevant here.
+
+thanks,
+
+greg k-h
