@@ -1,119 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab1CKENP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 23:13:15 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61642 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab1CKENL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 23:13:11 -0500
-Message-ID: <4D79A183.8090306@cn.fujitsu.com>
-Date: Fri, 11 Mar 2011 12:13:55 +0800
-From: Mi Jinlong <mijinlong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
+	id S1752992Ab1CKEnY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 23:43:24 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41072 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab1CKEnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 23:43:23 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6281"; a="79132101"
+Message-ID: <4D79A85D.8000301@codeaurora.org>
+Date: Thu, 10 Mar 2011 20:43:09 -0800
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: wrong index used in inner loop
-References: <4D76A06A.4090405@gmail.com> <20110309004955.GD15814@fieldses.org>
-In-Reply-To: <20110309004955.GD15814@fieldses.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-11 12:11:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-11 12:11:52,
-	Serialize complete at 2011-03-11 12:11:52
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: davidb@codeaurora.org, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Collins <collinsd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linux.walleij@sterricsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Qualcomm PM8921 MFD v2 2/6] mfd: pm8xxx: Add irq support
+References: <1299564590-30116-1-git-send-email-adharmap@codeaurora.org> <1299564590-30116-3-git-send-email-adharmap@codeaurora.org> <alpine.LFD.2.00.1103081201520.2787@localhost6.localdomain6> <4D770E47.6050402@codeaurora.org> <alpine.LFD.2.00.1103101126100.2787@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103101126100.2787@localhost6.localdomain6>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-J. Bruce Fields:
-> On Tue, Mar 08, 2011 at 10:32:26PM +0100, roel wrote:
->> Index i was already used in the outer loop
+Thomas Gleixner wrote:
+> On Tue, 8 Mar 2011, Abhijeet Dharmapurikar wrote:
+>> Thomas Gleixner wrote:
+>>> On Mon, 7 Mar 2011, adharmap@codeaurora.org wrote:
+>>>> +	if (pdata->irq_pdata) {
+>>> So if pdata->irq_pdata == NULL you return success. Is that correct ?
+>> Yes. The board configuration may choose not to use pmic interrupts.
+> 
+> Ok.
+>  
+>>> Also please return early on (!pdata->irq_pdata) and avoid that extra
+>>> indent level for the real code path.
+>> I did not do that because there are other subdevices that I will be adding in
+>> the later patches. I cannot return early. well I will change it for this
+>> patch.
+> 
+> Maybe splitting out the various init subsections into different
+> functions which are called from here might be a good thing.
+>  
+>>>> +static void pm8xxx_irq_ack(struct irq_data *d)
+>>>> +{
+>>>> +	const struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
+>>>> +	unsigned int pmirq = d->irq - chip->irq_base;
+>>>> +	u8	block, config;
+>>>> +
+>>>> +	block = pmirq / 8;
+>>>> +
+>>>> +	config = PM_IRQF_WRITE | chip->config[pmirq] | PM_IRQF_CLR;
+>>>> +	/* Keep the mask */
+>>>> +	if (!(chip->irqs_allowed[block] & (1 << (pmirq % 8))))
+>>>> +		config |= PM_IRQF_MASK_FE | PM_IRQF_MASK_RE;
+>>> What's the point of this exercise? ack is called before mask and it
+>> The register design is such that we cannot only clear the interrupt. One has
+>> to write to the trigger bits while clearing it. Now trigger bits define
+>> whether the interrupt is masked or unmasked. If unmasked they define whether
+>> the interrupt rising/falling/level high/level low triggered.
+>> So the code remembers which interrupts are masked and for them it clears and
+>> rewrite the masked status in trigger bits. For unmasked ones it clears and
+>> writes to the trigger bits essentially configuring them same way as it was
+>> before. That is why the if satement to check interrupt was masked earlier,
+>> chip->irqs_allowed[] maintains which interrupt are unmasked.
 >>
->> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
->> ---
->>  fs/nfsd/nfs4xdr.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> Not 100% sure this one is needed but it looks suspicious.
+>>> ack is called before mask and it
+>>> should never be called when the interrupt is masked.
+>> I didnt quite understand this comment. handle_level_irq calls mask_ack which
+>> masks the interrupt and then acks it. In this case the ack is called after the
 > 
-> Looks bad to me, thanks.
+> Indeed, sorry. So the right way to deal with that is to provide a
+> mask_ack() callback which does it in the correct order for your
+> HW. That way you avoid all the local state storage.
+
+
+Yes however while updating the code I noticed that I would need to keep 
+account of all the interrupts enabled and all the interrupts marked 
+wakeup. This aids in switching to the wakeup set in the suspend callback 
+and the enabled set in the resume callback. I will update the resume 
+callback to enable the interrupts in irqs_allowed(the local state 
+storage) in the next patch (my current patch does not do that).
+
+IOW I need to keep the local state storage.
+
+
 > 
-> nfsd4_decode_create_session should probably really be broken up a little
-> bit; if it wasn't so long this would have been more obvious.
+> Thanks,
 > 
-> I'll see if I can slip this into 2.6.38 with a couple other last-minute
-> patches....  Otherwise, it'll be in 2.6.39.
-> 
-> --b.
-> 
->> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
->> index 1275b86..615f0a9 100644
->> --- a/fs/nfsd/nfs4xdr.c
->> +++ b/fs/nfsd/nfs4xdr.c
->> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>  
->>  	u32 dummy;
->>  	char *machine_name;
->> -	int i;
->> +	int i, j;
->>  	int nr_secflavs;
->>  
->>  	READ_BUF(16);
->> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>  			READ_BUF(4);
->>  			READ32(dummy);
->>  			READ_BUF(dummy * 4);
->> -			for (i = 0; i < dummy; ++i)
->> +			for (j = 0; j < dummy; ++j)
->>  				READ32(dummy);
+> 	tglx
 
-  We must not use dummy for index here.
-  After the first index, READ32(dummy) will change dummy!!!!
 
-  The following patch fix this problem.
-
---
-thanks,
-Mi Jinlong
-============================================================
-
-We must not use dummy for index.
-After the first index, READ32(dummy) will change dummy!!!!
-
-Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
----
- fs/nfsd/nfs4xdr.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 615f0a9..8dd70d0 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1140,7 +1140,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
- {
- 	DECODE_HEAD;
- 
--	u32 dummy;
-+	u32 dummy, tmp;
- 	char *machine_name;
- 	int i, j;
- 	int nr_secflavs;
-@@ -1216,7 +1216,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
- 			READ32(dummy);
- 			READ_BUF(dummy * 4);
- 			for (j = 0; j < dummy; ++j)
--				READ32(dummy);
-+				READ32(tmp);
- 			break;
- 		case RPC_AUTH_GSS:
- 			dprintk("RPC_AUTH_GSS callback secflavor "
 -- 
-1.7.4.1
-
-
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
+Innovation Center, Inc. is a member of the Code Aurora Forum.
