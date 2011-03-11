@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1CKTyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 14:54:40 -0500
-Received: from www.tglx.de ([62.245.132.106]:53298 "EHLO www.tglx.de"
+	id S1753488Ab1CKTys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 14:54:48 -0500
+Received: from kroah.org ([198.145.64.141]:33463 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab1CKTyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 14:54:37 -0500
-Date: Fri, 11 Mar 2011 20:54:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, namhyung@gmail.com, ssp@redhat.com
-cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/cleanups] x86, dumpstack: Correct stack dump info when
- frame pointer is available
-In-Reply-To: <tip-074206a787e4dfdc4c290789ab6604c7f9e691ca@git.kernel.org>
-Message-ID: <alpine.LFD.2.00.1103112052070.2787@localhost6.localdomain6>
-References: <1299584662-24421-1-git-send-email-namhyung@gmail.com> <tip-074206a787e4dfdc4c290789ab6604c7f9e691ca@git.kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753406Ab1CKTyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 14:54:45 -0500
+Date: Fri, 11 Mar 2011 11:54:37 -0800
+From: Greg KH <greg@kroah.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@gmail.com>, David Miller <davem@davemloft.net>,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20110311195437.GA14871@kroah.com>
+References: <20110310.153444.115930379.davem@davemloft.net>
+ <AANLkTimnHtVS=SFopgyjAAQDW8bXDKDXf+YvEtPdpPsA@mail.gmail.com>
+ <20110310.155556.48513201.davem@davemloft.net>
+ <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com>
+ <AANLkTiktUsR1vXo84H2m_tLZRgDGee+JdvxGZjX7hYMq@mail.gmail.com>
+ <AANLkTikiy+hNgG=BRWKkHEHCdvJnffWP6nhp1XxsEEO+@mail.gmail.com>
+ <AANLkTi=F=za4OaNbiT71oTj+HKZG1sJE=YrrjpUb4AS7@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1430451757-1299873257=:2787"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=F=za4OaNbiT71oTj+HKZG1sJE=YrrjpUb4AS7@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, Mar 10, 2011 at 04:57:04PM -0800, Linus Torvalds wrote:
+> But now that I've done it once, maybe I'm hooked. It's like coke to
+> Charlie Sheen.
 
----1463795968-1430451757-1299873257=:2787
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Did you ever push this networking pull out?  I don't seem to be seeing
+it in your tree, but the --no-ff might have caused me to miss it.
 
-On Thu, 10 Mar 2011, tip-bot for Namhyung Kim wrote:
+thanks,
 
-> Commit-ID:  074206a787e4dfdc4c290789ab6604c7f9e691ca
-> Gitweb:     http://git.kernel.org/tip/074206a787e4dfdc4c290789ab6604c7f9e691ca
-> Author:     Namhyung Kim <namhyung@gmail.com>
-> AuthorDate: Tue, 8 Mar 2011 20:44:19 +0900
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Thu, 10 Mar 2011 23:20:30 +0100
-> 
-> x86, dumpstack: Correct stack dump info when frame pointer is available
-
-Dropped it due to:
-
-arch/x86/oprofile/backtrace.c:130:8: error: too few arguments to function ‘dump_trace’
-
-Thanks,
-
-	tglx
----1463795968-1430451757-1299873257=:2787--
+greg k-h
