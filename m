@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab1CKDvb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 22:51:31 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50630 "EHLO song.cn.fujitsu.com"
+	id S1752660Ab1CKENP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 23:13:15 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61642 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249Ab1CKDv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 22:51:28 -0500
-Message-ID: <4D799C6E.1050101@cn.fujitsu.com>
-Date: Fri, 11 Mar 2011 11:52:14 +0800
+	id S1751251Ab1CKENL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 23:13:11 -0500
+Message-ID: <4D79A183.8090306@cn.fujitsu.com>
+Date: Fri, 11 Mar 2011 12:13:55 +0800
 From: Mi Jinlong <mijinlong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
 MIME-Version: 1.0
 To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, roel <roel.kluin@gmail.com>,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
+CC: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] nfsd: wrong index used in inner loop
-References: <4D76A06A.4090405@gmail.com> <20110309154230.66bc2c36.akpm@linux-foundation.org> <20110310180800.GA31984@fieldses.org>
-In-Reply-To: <20110310180800.GA31984@fieldses.org>
+References: <4D76A06A.4090405@gmail.com> <20110309004955.GD15814@fieldses.org>
+In-Reply-To: <20110309004955.GD15814@fieldses.org>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-11 11:50:09,
+ 2011-03-11 12:11:50,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-11 11:50:11,
-	Serialize complete at 2011-03-11 11:50:11
+ 2011-03-11 12:11:52,
+	Serialize complete at 2011-03-11 12:11:52
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,97 +32,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 J. Bruce Fields:
-> On Wed, Mar 09, 2011 at 03:42:30PM -0800, Andrew Morton wrote:
->> On Tue, 08 Mar 2011 22:32:26 +0100
->> roel <roel.kluin@gmail.com> wrote:
+> On Tue, Mar 08, 2011 at 10:32:26PM +0100, roel wrote:
+>> Index i was already used in the outer loop
 >>
->>> Index i was already used in the outer loop
->>>
->>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
->>> ---
->>>  fs/nfsd/nfs4xdr.c |    4 ++--
->>>  1 files changed, 2 insertions(+), 2 deletions(-)
->>>
->>> Not 100% sure this one is needed but it looks suspicious.
->>>
->>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
->>> index 1275b86..615f0a9 100644
->>> --- a/fs/nfsd/nfs4xdr.c
->>> +++ b/fs/nfsd/nfs4xdr.c
->>> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>>  
->>>  	u32 dummy;
->>>  	char *machine_name;
->>> -	int i;
->>> +	int i, j;
->>>  	int nr_secflavs;
->>>  
->>>  	READ_BUF(16);
->>> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>>  			READ_BUF(4);
->>>  			READ32(dummy);
->>>  			READ_BUF(dummy * 4);
->>> -			for (i = 0; i < dummy; ++i)
->>> +			for (j = 0; j < dummy; ++j)
->>>  				READ32(dummy);
->>>  			break;
->>>  		case RPC_AUTH_GSS:
->> ooh, big bug.
+>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+>> ---
+>>  fs/nfsd/nfs4xdr.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
 >>
->> I wonder why it was not previously detected at runtime.  Perhaps
->> nr_secflavs is always 1.
+>> Not 100% sure this one is needed but it looks suspicious.
 > 
-> Yeah, no client uses this calback security information yet.
+> Looks bad to me, thanks.
 > 
-> Mi Jinlong, do you think this is something we could have caught with
-> another pynfs test?
+> nfsd4_decode_create_session should probably really be broken up a little
+> bit; if it wasn't so long this would have been more obvious.
+> 
+> I'll see if I can slip this into 2.6.38 with a couple other last-minute
+> patches....  Otherwise, it'll be in 2.6.39.
+> 
+> --b.
+> 
+>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+>> index 1275b86..615f0a9 100644
+>> --- a/fs/nfsd/nfs4xdr.c
+>> +++ b/fs/nfsd/nfs4xdr.c
+>> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>  
+>>  	u32 dummy;
+>>  	char *machine_name;
+>> -	int i;
+>> +	int i, j;
+>>  	int nr_secflavs;
+>>  
+>>  	READ_BUF(16);
+>> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>  			READ_BUF(4);
+>>  			READ32(dummy);
+>>  			READ_BUF(dummy * 4);
+>> -			for (i = 0; i < dummy; ++i)
+>> +			for (j = 0; j < dummy; ++j)
+>>  				READ32(dummy);
 
-  Yes, we must test it.
+  We must not use dummy for index here.
+  After the first index, READ32(dummy) will change dummy!!!!
 
-  After testing, the following test case is OK.
+  The following patch fix this problem.
 
 --
 thanks,
 Mi Jinlong
+============================================================
 
-
->From 1afac3444b37bac66970f19c409660a304a53fb4 Mon Sep 17 00:00:00 2001
-From: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Date: Sun, 11 Mar 2011 09:05:22 +0800
-Subject: [PATCH] CLNT: test a decode problem which use wrong index
+We must not use dummy for index.
+After the first index, READ32(dummy) will change dummy!!!!
 
 Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
 ---
- nfs4.1/server41tests/st_create_session.py |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+ fs/nfsd/nfs4xdr.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/nfs4.1/server41tests/st_create_session.py b/nfs4.1/server41tests/st_create_session.py
-index ff55d10..e3a8421 100644
---- a/nfs4.1/server41tests/st_create_session.py
-+++ b/nfs4.1/server41tests/st_create_session.py
-@@ -252,6 +252,22 @@ def testCbSecParms(t, env):
-     c1 = env.c1.new_client(env.testname(t))
-     sess1 = c1.create_session(sec=sec)
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 615f0a9..8dd70d0 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1140,7 +1140,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ {
+ 	DECODE_HEAD;
  
-+def testCbSecParmsDec(t, env):
-+    """A decode problem was found at NFS server that 
-+       wrong index used in inner loop, 
-+       http://marc.info/?l=linux-kernel&m=129961996327640&w=2
-+
-+    FLAGS: create_session all
-+    CODE: CSESS16a
-+    """
-+    sec = [callback_sec_parms4(AUTH_NONE),
-+           callback_sec_parms4(RPCSEC_GSS, cbsp_gss_handles=gss_cb_handles4(RPC_GSS_SVC_PRIVACY, "Handle from server", "Client handle")),
-+           callback_sec_parms4(AUTH_SYS, cbsp_sys_cred=authsys_parms(5, "Random machine name", 7, 11, [])),
-+           ]
-+                               
-+    c1 = env.c1.new_client(env.testname(t))
-+    sess1 = c1.create_session(sec=sec)
-+
- def testRdmaArray0(t, env):
-     """Test 0 length rdma arrays
- 
+-	u32 dummy;
++	u32 dummy, tmp;
+ 	char *machine_name;
+ 	int i, j;
+ 	int nr_secflavs;
+@@ -1216,7 +1216,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+ 			for (j = 0; j < dummy; ++j)
+-				READ32(dummy);
++				READ32(tmp);
+ 			break;
+ 		case RPC_AUTH_GSS:
+ 			dprintk("RPC_AUTH_GSS callback secflavor "
 -- 
 1.7.4.1
 
