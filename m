@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab1CKTqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 14:46:47 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:17239 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab1CKTqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 14:46:46 -0500
-Date: Fri, 11 Mar 2011 13:46:44 -0600
-From: scameron@beardog.cce.hp.com
-To: Jens Axboe <axboe@kernel.dk>
-Cc: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] cciss: Add missing allocation in scsi_cmd_stack_setup and  corresponding deallocation
-Message-ID: <20110311194644.GE12760@beardog.cce.hp.com>
-References: <20110310202238.30533.92210.stgit@beardog.cce.hp.com> <4D7A7373.8090800@kernel.dk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7A7373.8090800@kernel.dk>
-User-Agent: Mutt/1.4.2.2i
+	id S1753184Ab1CKTrR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 14:47:17 -0500
+Received: from www.tglx.de ([62.245.132.106]:57341 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab1CKTrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 14:47:16 -0500
+Date: Fri, 11 Mar 2011 20:46:57 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Cochran <richardcochran@gmail.com>
+cc: Torben Hohn <torbenh@gmx.de>, linux-kernel@vger.kernel.org,
+        richard.cochran@omicron.at, johnstul@us.ibm.com
+Subject: Re: [PATCH 3/3] Check for write permission on FD based
+ posix-clocks
+In-Reply-To: <20110304072239.GA8957@riccoc20.at.omicron.at>
+Message-ID: <alpine.LFD.2.00.1103112044410.2787@localhost6.localdomain6>
+References: <1299173174-348-1-git-send-email-torbenh@gmx.de> <1299173174-348-4-git-send-email-torbenh@gmx.de> <20110304072239.GA8957@riccoc20.at.omicron.at>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 08:09:39PM +0100, Jens Axboe wrote:
-> On 2011-03-10 21:22, Stephen M. Cameron wrote:
-> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Fri, 4 Mar 2011, Richard Cochran wrote:
+
+> On Thu, Mar 03, 2011 at 06:26:14PM +0100, Torben Hohn wrote:
+> > pc_clock_settime() and pc_clock_adjtime() did not check
+> > whether the fd was opened in write mode.
 > > 
-> > This bit got lost somewhere along the way.  Without this, panic.
+> > It was possible to set a clock, when we only had read
+> > permissions.
+> > 
+> > for completeness, we would also need to check for Read permissions
+> > on the read operations. but that would be a bit paranoid, probably.
 > 
-> This doesn't apply cleanly, neither hunk. I hand applied it. Please let
-> me know what a patch is against in the future, if it doesn't apply
-> "anywhere".
+> I have no objection to this form of clock access control, but I would
+> like to get agreement about it from the list.
 
-Oh... I see what happened.
-
-That patch was fixing something which was accidentally 
-left out of this patch:
-
-http://marc.info/?l=linux-kernel&m=129840572232151&w=2
-
-which I mistakenly thought was present in 2.6.38-rc7,
-but it's not present (quite likely because without the
-missing bit, it causes a panic), It's sitting in my stack of
-patches still.
-
-[scameron@localhost linux-2.6.38-rc7]$ stg series | grep cciss
-+ cciss-hoist-tag-masking-out-of-loop
-+ cciss-inform-controller-we-are-using-32-bit-tags
-+ cciss-mask-off-error-bits-before-calling-pci-free-consistent
-+ cciss-remove-unnecessary-casts
-+ cciss-fix-missed-command-status-value-CMD_UNABORTABLE
-+ cciss-add-cciss_tape_cmds-module-parameter
-+ cciss-fix-missing-initialization-in-scsi-cmd-stack-setup
-+ cciss-export-resettable-host-attribute
-+ cciss-fix-sense-data-copying-code
-
-What needs to happen is I combine cciss-add-cciss_tape_cmds-module-parameter
-and cciss-fix-missing-initialization-in-scsi-cmd-stack-setup into one 
-working patch.
-
-Sorry about that.  I need to slow down.  I'm making too many mistakes.
-
--- steve
-
-
-
+Acked-by-me
+ 
+> > diff --git a/kernel/time/posix-clock.c b/kernel/time/posix-clock.c
+> > index 04498cb..25028dd 100644
+> > --- a/kernel/time/posix-clock.c
+> > +++ b/kernel/time/posix-clock.c
+> > @@ -287,11 +287,16 @@ static int pc_clock_adjtime(clockid_t id, struct timex *tx)
+> >  	if (err)
+> >  		return err;
+> >  
+> > +	if ((cd.fp->f_mode & FMODE_WRITE) == 0) {
+> > +		err = -EACCES;
 > 
-> I marked this one as stable backport, too.
-> 
-> -- 
-> Jens Axboe
+> Looks like clock_settime and adjtimex are supposed to return EPERM in
+> this case.
+
+As Arnd already said -EACCES is sensible for file permission checks
+while -EPERM means that you have no permission at all.
+
+Thanks,
+
+	tglx
