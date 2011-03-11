@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab1CKPCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:02:43 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:36406 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751553Ab1CKPCi (ORCPT
+	id S1754559Ab1CKPHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:07:45 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:28483 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab1CKPHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:02:38 -0500
-X-Authenticated: #1587495
-X-Provags-ID: V01U2FsdGVkX1+LWhsqkGSLygRpFO6cwiv4bTVy4+ns+k08mnZRIo
-	0HAWcQtYMWE9TO
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [patch 00/29] 2.6.37.4-stable review
-Date: Fri, 11 Mar 2011 16:02:02 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8-aptosid-686; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-References: <20110310235548.GA10103@kroah.com>
-In-Reply-To: <20110310235548.GA10103@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103111602.26977.s.L-H@gmx.de>
-X-Y-GMX-Trusted: 0
+	Fri, 11 Mar 2011 10:07:43 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+Subject: Re: [01/22] sched: Provide scheduler_ipi() callback in response to
+ smp_send_reschedule()
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-Id: <sched-ipi-callback-comment@mdm.bga.com>
+In-Reply-To: <20110302174120.313761743@chello.nl>
+References: <20110302174120.313761743@chello.nl>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Date: Fri, 11 Mar 2011 09:07:13 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, 02 Mar 2011 17:38:32 -0000, To: Peter Zijlstra wrote:
 
-On Friday 11 March 2011, Greg KH wrote:
-> This is the start of the stable review cycle for the 2.6.37.r release.
-> There are 29 patches in this series, all will be posted as a response to
-> this one.  If anyone has any issues with these being applied, please let
-> us know.  If anyone is a maintainer of the proper subsystem, and wants
-> to add a Signed-off-by: line to the patch, please respond with it.
+> For future rework of try_to_wake_up() we'd like to push part of that
+> onto the CPU the task is actually going to run on, in order to do so we
+> need a generic callback from the existing scheduler IPI.
 > 
-> Responses should be made by Saturday, March 12, 24:00:00 UTC.
-> Anything received after that time might be too late.
+> This patch introduces such a generic callback: scheduler_ipi() and
+> implements it as a NOP.
 > 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.37.4-rc1.gz
+> BenH notes: PowerPC might use this IPI on offline CPUs under rare
+> conditions!!
+..
+> Index: linux-2.6/arch/powerpc/kernel/smp.c
+> ===================================================================
+> --- linux-2.6.orig/arch/powerpc/kernel/smp.c
+> +++ linux-2.6/arch/powerpc/kernel/smp.c
+> @@ -98,6 +98,7 @@ void smp_message_recv(int msg)
+>  		break;
+>  	case PPC_MSG_RESCHEDULE:
+>  		/* we notice need_resched on exit */
 
-This seems to be still missing on kernel.org, is there an issue with 
-the mirroring?
+This comment should also be removed, as it was documenting the empty action.
 
-$ LANG= wget kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.37.4-rc1.gz
---2011-03-11 16:01:24--  http://kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.37.4-rc1.gz
-Resolving kernel.org... 130.239.17.4, 149.20.20.133, 199.6.1.164, ...
-Connecting to kernel.org|130.239.17.4|:80... connected.
-HTTP request sent, awaiting response... 404 Not Found
-2011-03-11 16:01:24 ERROR 404: Not Found.
+> +		scheduler_ipi();
+>  		break;
+>  	case PPC_MSG_CALL_FUNC_SINGLE:
+>  		generic_smp_call_function_single_interrupt();
+> @@ -127,7 +128,7 @@ static irqreturn_t call_function_action(
+>  
+>  static irqreturn_t reschedule_action(int irq, void *data)
+>  {
+> -	/* we just need the return path side effect of checking need_resched */
+> +	scheduler_ipi();
+>  	return IRQ_HANDLED;
+>  }
+>  
 
-Regards
-	Stefan Lippers-Hollmann
+Thanks,
+milton
