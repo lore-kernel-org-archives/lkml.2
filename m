@@ -1,117 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab1CKOb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:31:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25472 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488Ab1CKOb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:31:27 -0500
-Date: Fri, 11 Mar 2011 15:31:15 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: Re: [PATCH v2] block: fix mis-synchronisation in
- blkdev_issue_zeroout()
-In-Reply-To: <x49bp1hhh2g.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <alpine.LFD.2.00.1103111530120.3686@dhcp-27-109.brq.redhat.com>
-References: <1299830784-6622-1-git-send-email-lczerner@redhat.com> <x49bp1hhh2g.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755499Ab1CKOcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:32:08 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:44643 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab1CKOcC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:32:02 -0500
+X-IronPort-AV: E=Sophos;i="4.62,303,1297036800"; 
+   d="scan'208";a="4746408"
+Subject: Re: [Xen-devel] Re: [GIT PATCH v2 0/14] xen: events: cleanups +
+ ween off nr_irqs
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+In-Reply-To: <1299853490.17339.2044.camel@zakaz.uk.xensource.com>
+References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+	 <20110310225726.GA2983@dumpdata.com>
+	 <1299834774.17339.1799.camel@zakaz.uk.xensource.com>
+	 <1299842689.17339.1986.camel@zakaz.uk.xensource.com>
+	 <1299850128.17339.2007.camel@zakaz.uk.xensource.com>
+	 <1299853490.17339.2044.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Fri, 11 Mar 2011 14:32:00 +0000
+Message-ID: <1299853920.17339.2047.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Jeff Moyer wrote:
+On Fri, 2011-03-11 at 14:24 +0000, Ian Campbell wrote:
+> On Fri, 2011-03-11 at 13:28 +0000, Ian Campbell wrote:
+> > On Fri, 2011-03-11 at 11:24 +0000, Ian Campbell wrote:
+> > > On Fri, 2011-03-11 at 09:12 +0000, Ian Campbell wrote:
+> > > > On Thu, 2011-03-10 at 22:57 +0000, Konrad Rzeszutek Wilk wrote:
+> > > > > On Thu, Mar 10, 2011 at 04:07:59PM +0000, Ian Campbell wrote:
+> > > > > > Changes since last time:
+> > > > > >       * correct return value of xen_irq_from_pirq
+> > > > > >       * WARN if a pirq cannot be allocated for a legacy IRQ
+> > > > > >       * Updated checking comment of "xen: events: do not workaround
+> > > > > >         too-small nr_irqs"
+> > > > > > 
+> > > > > > The following series makes a few cleanups to the Xen IRQ infrastructure.
+> > > > > > The most important thing is that it removes the need to know about
+> > > > > > nr_irqs and in particular the reliance on nr_irqs being static.
+> > > > > > 
+> > > > > > Apart from being generally a good thing this is needed because in 2.6.39
+> > > > > > nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
+> > > > > > "genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
+> > > > > > at 2.6.39.
+> > > > > > 
+> > > > > > Dynamically growing nr_irqs also allows us to remove the workaround
+> > > > > > which eats into GSI space if a dynamic IRQ cannot be allocated.
+> > > > > > 
+> > > > > > There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
+> > > > > > have gone in before, but the penultimate patch really needed to be
+> > > > > > simultaneous) so I haven't bothered to try and pull anything from tip
+> > > > > > into this branch -- it should all be resolved during the merge window
+> > > > > > and bisection won't be too broken since the "eat into GSI space"
+> > > > > > workaround only appears to be needed on a small number of older
+> > > > > > platforms (qemu being the main exception).
+> > > > > 
+> > > > > <nods>
+> > > > > > 
+> > > > > > I have tested:
+> > > > > >       * Domain 0 on real h/w and under qemu
+> > > > > >       * PV guest, including migration and passthrough of both VF and PF.
+> > > > > >       * PVHVM guest, including migration and passthrough of both VF and
+> > > > > >         PF.
+> > > > > 
+> > > > > I am having difficulties with passthrough of an USB device. Somehow the
+> > > > > irq count is not going up at all (both in dom0 and domU) and it looks to
+> > > > > be doing just simple polling. I've rebased the xen-pciback to be on top
+> > > > > of your changes and apply cleanly. The whole lot is now in #master
+> > > > > 
+> > > > > MSI and MSI-X devices work just fine in both Dom0 and DomU case so
+> > > > > it is something special with the legacy IRQs. Probably forgot something
+> > > > > simple...
+> > > > 
+> > > > Thanks, I'll take a look. Did you mean "legacy IRQ" as in <16 or as in
+> > > > not-MSI(-X)?
+> > > 
+> > > Works for me in a PV guest, at least under the second interpretation (I
+> > > don't have any useful devices IRQ < 16). This is with your pciback 0.5.
+> > > 
+> > > I see something like what you describe under HVM, although pciback is
+> > > not used in that case. xc_physdev_map_pirq is used but not with
+> > > the /sys/.../bdf node AFAICT.
+> > > 
+> > > More digging required I guess...
+> > 
+> > If I just pass through the EHCI device it doesn't work. However if I
+> > also pass-through the associated UHCI controller then I do see the
+> > usb-storage device, interrupts and all. The EHCI controller still
+> > doesn't work though. Note that with a PV guest passing-through the EHCI
+> > controller by itself does work.
+> > 
+> > The issue I'm seeing seems to have more to do with accessing the memory
+> > mapped BAR than IRQs though:
+> 
+> I seem to see this with 2.6.32 dom0 as well. This IRQ series of patches
+> doesn't appear to make a difference when running 2.6.38-rcX+.
+> 
+> Unfortunately I think the error must be elsewhere :-(
 
-> Lukas Czerner <lczerner@redhat.com> writes:
-> 
-> > BZ29402
-> > https://bugzilla.kernel.org/show_bug.cgi?id=29402
-> >
-> > We can hit serious mis-synchronization in bio completion path of
-> > blkdev_issue_zeroout() leading to a panic.
-> >
-> > The problem is that when we are going to wait_for_completion() in
-> > blkdev_issue_zeroout() we check if the bb.done equals issued (number of
-> > submitted bios). If it does, we can skip the wait_for_completition()
-> > and just out of the function since there is nothing to wait for.
-> > However, there is a ordering problem because bio_batch_end_io() is
-> > calling atomic_inc(&bb->done) before complete(), hence it might seem to
-> > blkdev_issue_zeroout() that all bios has been completed and exit. At
-> > this point when bio_batch_end_io() is going to call complete(bb->wait),
-> > bb and wait does not longer exist since it was allocated on stack in
-> > blkdev_issue_zeroout() ==> panic!
-> >
-> > (thread 1)                      (thread 2)
-> > bio_batch_end_io()              blkdev_issue_zeroout()
-> >   if(bb) {                      ...
-> >     if (bb->end_io)             ...
-> >       bb->end_io(bio, err);     ...
-> >     atomic_inc(&bb->done);      ...
-> >     ...                         while (issued != atomic_read(&bb.done))
-> >     ...                         (let issued == bb.done)
-> >     ...                         (do the rest of the function)
-> >     ...                         return ret;
-> >     complete(bb->wait);
-> >     ^^^^^^^^
-> >     panic
-> >
-> > We can fix this easily by simplifying bio_batch and completion counting.
-> >
-> > Also remove bio_end_io_t *end_io since it is not used.
-> >
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> > Reported-by: Eric Whitney <eric.whitney@hp.com>
-> > Tested-by: Eric Whitney <eric.whitney@hp.com>
-> > CC: Jens Axboe <axboe@kernel.dk>
-> > CC: Dmitry Monakhov <dmonakhov@openvz.org>
-> > CC: Jeff Moyer <jmoyer@redhat.com>
-> > ---
-> >  block/blk-lib.c |   19 +++++++------------
-> >  1 files changed, 7 insertions(+), 12 deletions(-)
-> >
-> > diff --git a/block/blk-lib.c b/block/blk-lib.c
-> > index eec78be..bd3e8df 100644
-> > --- a/block/blk-lib.c
-> > +++ b/block/blk-lib.c
-> > @@ -109,7 +109,6 @@ struct bio_batch
-> >  	atomic_t 		done;
-> >  	unsigned long 		flags;
-> >  	struct completion 	*wait;
-> > -	bio_end_io_t		*end_io;
-> >  };
-> >  
-> >  static void bio_batch_end_io(struct bio *bio, int err)
-> > @@ -122,12 +121,9 @@ static void bio_batch_end_io(struct bio *bio, int err)
-> >  		else
-> >  			clear_bit(BIO_UPTODATE, &bb->flags);
-> >  	}
-> > -	if (bb) {
-> > -		if (bb->end_io)
-> > -			bb->end_io(bio, err);
-> > -		atomic_inc(&bb->done);
-> > -		complete(bb->wait);
-> > -	}
-> > +	if (bb)
-> > +		if (atomic_dec_and_test(&bb->done))
-> > +			complete(bb->wait);
-> 
-> I think bb will always be set here, no real need to check.
-> 
-> Anyway, I though I already added my:
-> 
-> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-> 
-> to this.  No?
-> 
-> Cheers,
-> Jeff
+BTW, this is with:
 
-Yes, you did and I forgot to add it into the patch. Sorry about that.
+$ git log --pretty=oneline v2.6.38-rc8..HEAD --committer=Ian.Campbell |
+grep Merge
+00fbbdc4df0cf3419bde8bb0f88d8c8dd26945cb Merge branch 'devel/xen-blkback-v2' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
+41e9c499ac8a4582037d250d5c524265426b5077 Merge branch 'devel/xen-pciback-0.5' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
+aca829e02d62e56498c12410acdd04fd7604eaab Merge branch 'for-2.6.39/irq.phase.two' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
+2365df51ebb8092b4ce07dba55fe1f2bbb3fbdc5 Merge branch 'upstream/dom0/backend/netback' of git://xenbits.xen.org/people/ianc/linux-2.6
+3d3e02a231154e7e564a0620dcfd88ceedf8c64a Merge branch '2.6.38-rc6-pvhvm' of git://xenbits.xen.org/people/sstabellini/linux-pvhvm
+c6d63750ec3d00da603ea42c9dd1e3454ec12d17 Merge branches 'for-2.6.39/e820', 'for-2.6.39/irq', 'for-2.6.39/cleanup' and 'for-2.6.39/drivers' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
 
-Thanks!
--Lukas
+I also tested a variant where I replaced the devel/xen-pciback-0.5 and
+for-2.6.39/irq.phase.two merges with xen-pciback-0.4.driver (rebased
+onto 71eef7d1e3d9d instead of c5ae07bb307b658) and dropped blkback. No
+difference.
+
+Ian.
+
