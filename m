@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab1CKOaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:30:24 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56144 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab1CKOaV (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 11 Mar 2011 09:30:21 -0500
-Date: Fri, 11 Mar 2011 09:29:54 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] Re: [GIT PATCH v2 0/14] xen: events: cleanups +
- ween off nr_irqs
-Message-ID: <20110311142954.GC4880@dumpdata.com>
-References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
- <20110310225726.GA2983@dumpdata.com>
- <1299834774.17339.1799.camel@zakaz.uk.xensource.com>
- <1299842689.17339.1986.camel@zakaz.uk.xensource.com>
- <1299850128.17339.2007.camel@zakaz.uk.xensource.com>
+	id S1755465Ab1CKOb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:31:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25472 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488Ab1CKOb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:31:27 -0500
+Date: Fri, 11 Mar 2011 15:31:15 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Jeff Moyer <jmoyer@redhat.com>
+cc: Lukas Czerner <lczerner@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: Re: [PATCH v2] block: fix mis-synchronisation in
+ blkdev_issue_zeroout()
+In-Reply-To: <x49bp1hhh2g.fsf@segfault.boston.devel.redhat.com>
+Message-ID: <alpine.LFD.2.00.1103111530120.3686@dhcp-27-109.brq.redhat.com>
+References: <1299830784-6622-1-git-send-email-lczerner@redhat.com> <x49bp1hhh2g.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299850128.17339.2007.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D7A31F5.0104,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > I am having difficulties with passthrough of an USB device. Somehow the
-> > > > irq count is not going up at all (both in dom0 and domU) and it looks to
-> > > > be doing just simple polling. I've rebased the xen-pciback to be on top
-> > > > of your changes and apply cleanly. The whole lot is now in #master
-> > > > 
-> > > > MSI and MSI-X devices work just fine in both Dom0 and DomU case so
-> > > > it is something special with the legacy IRQs. Probably forgot something
-> > > > simple...
-> > > 
-> > > Thanks, I'll take a look. Did you mean "legacy IRQ" as in <16 or as in
-> > > not-MSI(-X)?
+On Fri, 11 Mar 2011, Jeff Moyer wrote:
 
-not-MSI(-X) ones. I've this fancy LSI 1030 controller that sits at GSI 46 on this
-SuperMicro board and it is quite confused.
-> > 
-> > Works for me in a PV guest, at least under the second interpretation (I
-> > don't have any useful devices IRQ < 16). This is with your pciback 0.5.
+> Lukas Czerner <lczerner@redhat.com> writes:
+> 
+> > BZ29402
+> > https://bugzilla.kernel.org/show_bug.cgi?id=29402
+> >
+> > We can hit serious mis-synchronization in bio completion path of
+> > blkdev_issue_zeroout() leading to a panic.
+> >
+> > The problem is that when we are going to wait_for_completion() in
+> > blkdev_issue_zeroout() we check if the bb.done equals issued (number of
+> > submitted bios). If it does, we can skip the wait_for_completition()
+> > and just out of the function since there is nothing to wait for.
+> > However, there is a ordering problem because bio_batch_end_io() is
+> > calling atomic_inc(&bb->done) before complete(), hence it might seem to
+> > blkdev_issue_zeroout() that all bios has been completed and exit. At
+> > this point when bio_batch_end_io() is going to call complete(bb->wait),
+> > bb and wait does not longer exist since it was allocated on stack in
+> > blkdev_issue_zeroout() ==> panic!
+> >
+> > (thread 1)                      (thread 2)
+> > bio_batch_end_io()              blkdev_issue_zeroout()
+> >   if(bb) {                      ...
+> >     if (bb->end_io)             ...
+> >       bb->end_io(bio, err);     ...
+> >     atomic_inc(&bb->done);      ...
+> >     ...                         while (issued != atomic_read(&bb.done))
+> >     ...                         (let issued == bb.done)
+> >     ...                         (do the rest of the function)
+> >     ...                         return ret;
+> >     complete(bb->wait);
+> >     ^^^^^^^^
+> >     panic
+> >
+> > We can fix this easily by simplifying bio_batch and completion counting.
+> >
+> > Also remove bio_end_io_t *end_io since it is not used.
+> >
+> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> > Reported-by: Eric Whitney <eric.whitney@hp.com>
+> > Tested-by: Eric Whitney <eric.whitney@hp.com>
+> > CC: Jens Axboe <axboe@kernel.dk>
+> > CC: Dmitry Monakhov <dmonakhov@openvz.org>
+> > CC: Jeff Moyer <jmoyer@redhat.com>
+> > ---
+> >  block/blk-lib.c |   19 +++++++------------
+> >  1 files changed, 7 insertions(+), 12 deletions(-)
+> >
+> > diff --git a/block/blk-lib.c b/block/blk-lib.c
+> > index eec78be..bd3e8df 100644
+> > --- a/block/blk-lib.c
+> > +++ b/block/blk-lib.c
+> > @@ -109,7 +109,6 @@ struct bio_batch
+> >  	atomic_t 		done;
+> >  	unsigned long 		flags;
+> >  	struct completion 	*wait;
+> > -	bio_end_io_t		*end_io;
+> >  };
+> >  
+> >  static void bio_batch_end_io(struct bio *bio, int err)
+> > @@ -122,12 +121,9 @@ static void bio_batch_end_io(struct bio *bio, int err)
+> >  		else
+> >  			clear_bit(BIO_UPTODATE, &bb->flags);
+> >  	}
+> > -	if (bb) {
+> > -		if (bb->end_io)
+> > -			bb->end_io(bio, err);
+> > -		atomic_inc(&bb->done);
+> > -		complete(bb->wait);
+> > -	}
+> > +	if (bb)
+> > +		if (atomic_dec_and_test(&bb->done))
+> > +			complete(bb->wait);
+> 
+> I think bb will always be set here, no real need to check.
+> 
+> Anyway, I though I already added my:
+> 
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+> 
+> to this.  No?
+> 
+> Cheers,
+> Jeff
 
-OK. Let me boot up that machine and see what /proc/interrupts look like. Maybe
-the xen-pciback.hide=() throws a lot of things out of whack.
-> > 
-> > I see something like what you describe under HVM, although pciback is
-> > not used in that case. xc_physdev_map_pirq is used but not with
-> > the /sys/.../bdf node AFAICT.
-> > 
-> > More digging required I guess...
-> 
-> If I just pass through the EHCI device it doesn't work. However if I
-> also pass-through the associated UHCI controller then I do see the
-> usb-storage device, interrupts and all. The EHCI controller still
-> doesn't work though. Note that with a PV guest passing-through the EHCI
-> controller by itself does work.
-> 
-> The issue I'm seeing seems to have more to do with accessing the memory
-> mapped BAR than IRQs though:
+Yes, you did and I forgot to add it into the patch. Sorry about that.
 
-> 
->         ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
->         PHYSDEVOP_map_pirq mapped gsi 46 to pirq 18
->         xen_allocate_pirq_gsi for gsi 46, pirq 18 "ioapic-level"
->         xen: --> irq=46, pirq=18
->         ehci_hcd 0000:00:07.0: PCI INT C -> GSI 46 (level, low) -> IRQ 46
->         ehci: remapped rsrc 0xf3021000 to c8064000
-
-<scratch> If you hit the 'i' in the debug console is this 
-BAR visible there? That is f3021?
->         ehci_hcd 0000:00:07.0: setting latency timer to 64
->         ehci_hcd 0000:00:07.0: EHCI Host Controller
->         ehci_hcd 0000:00:07.0: new USB bus registered, assigned bus number 1
->         ehci_reset: handshake failed with -19. regs c80640ff
->         ehci_hcd 0000:00:07.0: Enabling legacy PCI PM
->         __startup_pirq: irq46 bound to evtchn 19
->         ehci_hcd 0000:00:07.0: irq 46, io mem 0xf3021000
->         ehci_reset: handshake failed with -19. regs c80640ff
->         ehci_run: ehci_reset failed with -19
->         ehci_hcd 0000:00:07.0: startup error -19
->         ehci_hcd 0000:00:07.0: USB bus 1 deregistered
->         ehci_hcd 0000:00:07.0: PCI INT C disabled
->         ehci_hcd 0000:00:07.0: init 0000:00:07.0 fail, -19
-> 
-> The -19 is -ENODEV from driver/usb/host/ehci-hcd.c:handshake() which is
-> a readl with nothing to do with IRQs.
-
-<nods>
-> 
-> Ian.
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+Thanks!
+-Lukas
