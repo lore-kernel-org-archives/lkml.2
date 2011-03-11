@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab1CKVY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 16:24:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18733 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754244Ab1CKVYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 16:24:25 -0500
-Date: Fri, 11 Mar 2011 16:24:19 -0500
-From: Dave Jones <davej@redhat.com>
-To: x86@kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: RFC: Bogus setting of CONSTANT TSC ?
-Message-ID: <20110311212418.GA14784@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, x86@kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1755420Ab1CKV1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 16:27:20 -0500
+Received: from peace.netnation.com ([204.174.223.2]:41640 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab1CKV1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 16:27:19 -0500
+X-Greylist: delayed 1059 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Mar 2011 16:27:19 EST
+Date: Fri, 11 Mar 2011 13:09:38 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Mark Moseley <moseleymark@gmail.com>, linux-nfs@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] more vfs fixes for final
+Message-ID: <20110311210938.GB8211@hostway.ca>
+References: <20110310110931.GF22723@ZenIV.linux.org.uk> <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com> <20110310115856.GG22723@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110310115856.GG22723@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[RFC because I'm not sure about this. Can any of the Intel people
-confirm/deny that there are recent CPUs without constant TSC ?
-I was under the belief that all current ones had this, but either
-this isn't the case, or cpuid is lying to me.
+On Thu, Mar 10, 2011 at 11:58:56AM +0000, Al Viro wrote:
 
-also: That hardcoded model check looks suspect to me. Shouldn't
-that be checking for extended models ? ]
+> commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
+> Author: J. Bruce Fields <bfields@fieldses.org>
+> Date:   Tue Jan 18 15:45:09 2011 -0500
+> 
+>     fs/dcache: allow d_obtain_alias() to return unhashed dentries
 
+Hmm, I was hoping this or something recently would fix nfs_inode_cache
+growing forever and flush processes taking lots of system time since
+2.6.36. For example:
 
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+3457486 3454365  99%    0.95K 105601       33   3379232K nfs_inode_cache
+469638 248761  52%    0.10K  12042       39     48168K buffer_head
+243712 216348  88%    0.02K    952      256      3808K kmalloc-16
+232785 202185  86%    0.19K  11085       21     44340K dentry
+149696  54633  36%    0.06K   2339       64      9356K kmalloc-64
+115976 106806  92%    0.55K   4142       28     66272K radix_tree_node
+ 76064  45680  60%    0.12K   2377       32      9508K kmalloc-128
+ 62336  53427  85%    0.03K    487      128      1948K kmalloc-32
+ 41958  41250  98%    0.75K   1998       21     31968K ext3_inode_cache
 
-I've got a core2 laptop that I noticed reports all zeros as a result of
-cpuid(0x80000007), indicating no constant TSC.  The flags field
-of /proc/cpuinfo seems to think otherwise however.  This looks to
-be because of this code in early_init_intel()
+This clears them all, similar to what you posted:
 
-          if ((c->x86 == 0xf && c->x86_model >= 0x03) ||
-                  (c->x86 == 0x6 && c->x86_model >= 0x0e))
-                  set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+echo 2 > /proc/sys/vm/drop_caches
+sync
+echo 2 > /proc/sys/vm/drop_caches
 
+...but 2.6.38-rc8 still doesn't seem to fix it.
 
-We explicitly set X86_FEATURE_CONSTANT_TSC on certain steppings
-when we enter early_init_intel, and then later we check if cpuid
-reports this feature, and set it on any other CPUs that were missed.
+http://0x.ca/sim/ref/2.6.37/cpu3_nfs.png
+http://www.spinics.net/lists/linux-nfs/msg18212.html
 
-I think there are two problems here:
-1. The code doesn't validate that x86_power was set to something sane before
-   we trust it (it's only valid if cpuid_level is >= 0x80000007)
-   On cpu's that don't support this level, it /should/ return zeros, but
-   I'm not sure that's defined behaviour.
-2. If x86_power was valid, but the CONSTANT_TSC bit was 0, we don't clear it
-   if it was mistakenly set by the hard-coded stepping check.
+Any ideas?  This started with 2.6.36.
 
-We need to add the first check, otherwise the fix for the second part would
-always clear it on the CPUs that were hardcoded that don't support cpuid 0x80000007
-
-As a follow-up, perhaps we should move the hardcoding code to an } else arm here
-where we don't support that cpuid feature to keep all the relevant code that frobs
-this stuff in one place.
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index d16c2c5..02c5357 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -88,11 +88,15 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- 	 * It is also reliable across cores and sockets. (but not across
- 	 * cabinets - we turn it off in that case explicitly.)
- 	 */
--	if (c->x86_power & (1 << 8)) {
--		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
--		set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
--		if (!check_tsc_unstable())
--			sched_clock_stable = 1;
-+	if (c->extended_cpuid_level >= 0x80000007) {
-+		if (c->x86_power & (1 << 8)) {
-+			set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
-+			set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC);
-+			if (!check_tsc_unstable())
-+				sched_clock_stable = 1;
-+		} else {
-+			clear_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
-+		}
- 	}
- 
- 	/*
+Simon-
