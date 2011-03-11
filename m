@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab1CKLN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 06:13:26 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:48043 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752069Ab1CKLNZ (ORCPT
+	id S1754562Ab1CKLYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 06:24:54 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:23014 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab1CKLYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 06:13:25 -0500
-X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX18e6wolDtAeZ51YadMhsP5kpWce2I/c+rqEL0bx4Z
-	sxzHzGBbADeBeG
-Date: Fri, 11 Mar 2011 12:13:21 +0100
-From: torbenh <torbenh@gmx.de>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
-        richard.cochran@omicron.at, tglx@linutronix.de
-Subject: Re: [PATCH 2/3] ptp: add a software clock based on
- clock_monotonic_raw
-Message-ID: <20110311111321.GA5553@siel.b>
-Mail-Followup-To: Richard Cochran <richardcochran@gmail.com>,
-	john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
-	richard.cochran@omicron.at, tglx@linutronix.de
-References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
- <1299173174-348-3-git-send-email-torbenh@gmx.de>
- <1299180844.28285.111.camel@work-vm>
- <20110304064639.GD3824@riccoc20.at.omicron.at>
- <1299355687.28285.130.camel@work-vm>
- <20110306132834.GA11790@riccoc20.at.omicron.at>
+	Fri, 11 Mar 2011 06:24:51 -0500
+X-IronPort-AV: E=Sophos;i="4.62,302,1297036800"; 
+   d="scan'208";a="4741700"
+Subject: Re: [Xen-devel] Re: [GIT PATCH v2 0/14] xen: events: cleanups +
+ ween off nr_irqs
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+In-Reply-To: <1299834774.17339.1799.camel@zakaz.uk.xensource.com>
+References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
+	 <20110310225726.GA2983@dumpdata.com>
+	 <1299834774.17339.1799.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Fri, 11 Mar 2011 11:24:49 +0000
+Message-ID: <1299842689.17339.1986.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110306132834.GA11790@riccoc20.at.omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 06, 2011 at 02:28:36PM +0100, Richard Cochran wrote:
-> On Sat, Mar 05, 2011 at 12:08:07PM -0800, john stultz wrote:
-> > On Fri, 2011-03-04 at 07:46 +0100, Richard Cochran wrote:
-> > > I do think a software only PHC will make it easier for people to get
-> > > started with the new interface. I have been carrying along such a
-> > > patch privately for my own testing.
+On Fri, 2011-03-11 at 09:12 +0000, Ian Campbell wrote:
+> On Thu, 2011-03-10 at 22:57 +0000, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Mar 10, 2011 at 04:07:59PM +0000, Ian Campbell wrote:
+> > > Changes since last time:
+> > >       * correct return value of xen_irq_from_pirq
+> > >       * WARN if a pirq cannot be allocated for a legacy IRQ
+> > >       * Updated checking comment of "xen: events: do not workaround
+> > >         too-small nr_irqs"
+> > > 
+> > > The following series makes a few cleanups to the Xen IRQ infrastructure.
+> > > The most important thing is that it removes the need to know about
+> > > nr_irqs and in particular the reliance on nr_irqs being static.
+> > > 
+> > > Apart from being generally a good thing this is needed because in 2.6.39
+> > > nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
+> > > "genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
+> > > at 2.6.39.
+> > > 
+> > > Dynamically growing nr_irqs also allows us to remove the workaround
+> > > which eats into GSI space if a dynamic IRQ cannot be allocated.
+> > > 
+> > > There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
+> > > have gone in before, but the penultimate patch really needed to be
+> > > simultaneous) so I haven't bothered to try and pull anything from tip
+> > > into this branch -- it should all be resolved during the merge window
+> > > and bisection won't be too broken since the "eat into GSI space"
+> > > workaround only appears to be needed on a small number of older
+> > > platforms (qemu being the main exception).
 > > 
-> > Consistency is but a hobgoblin... :)
+> > <nods>
+> > > 
+> > > I have tested:
+> > >       * Domain 0 on real h/w and under qemu
+> > >       * PV guest, including migration and passthrough of both VF and PF.
+> > >       * PVHVM guest, including migration and passthrough of both VF and
+> > >         PF.
 > > 
-> > But seriously, do forgive me if I misunderstood your earlier patches
-> > with this respect. I thought it was just exporting CLOCK_REALTIME
-> > directly through a new interface/clockid (which would be duplicative).
+> > I am having difficulties with passthrough of an USB device. Somehow the
+> > irq count is not going up at all (both in dom0 and domU) and it looks to
+> > be doing just simple polling. I've rebased the xen-pciback to be on top
+> > of your changes and apply cleanly. The whole lot is now in #master
+> > 
+> > MSI and MSI-X devices work just fine in both Dom0 and DomU case so
+> > it is something special with the legacy IRQs. Probably forgot something
+> > simple...
 > 
-> You are right, I was doing that, but the purpose was for testing.
-> 
-> I am not sure where Torben is going with his idea. In order to figure
-> out meaningful clock adjustments, you need the clock's timestamps on
-> the PTP packet tx/rx events. Implementing an internal clock correction
-> with no connection to the network stack might still be interesting,
-> but I think having the timestamps is much more useful.
+> Thanks, I'll take a look. Did you mean "legacy IRQ" as in <16 or as in
+> not-MSI(-X)?
 
-I am planning to enable the networking stack to timestamp using
-arbitrary clock id. 
-But that means adding an ioctl. So there is going to be a lot of
-critical review, and questions asked. 
+Works for me in a PV guest, at least under the second interpretation (I
+don't have any useful devices IRQ < 16). This is with your pciback 0.5.
 
-On the audio lists, we have a guy now claiming that software ptp would
-confuse the whole h/w ptp infrastructure. His main agenda seems to be to
-prevent a software only ptp/avb implementatation.
-I cant imagine how a slave clock can confuse a master clock.
-And emission of audio stream packets does not need to be accurate to the
-nanosecond.
+I see something like what you describe under HVM, although pciback is
+not used in that case. xc_physdev_map_pirq is used but not with
+the /sys/.../bdf node AFAICT.
 
-I am a bit confused now, because i initially thought, i could quote that
-guy to prove that an avb master clock might not necessarily be suitable
-to become CLOCK_REALTIME. 
+More digging required I guess...
 
-I am still assuming this. But i dont really have proof.
-This might block this.
+Ian.
 
-> 
-> Let's wait and see what Torben says once he come back from travel.
-> 
-> Thanks,
-> 
-> Richard
-
--- 
-torben Hohn
