@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab1CKRjB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 12:39:01 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37485 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab1CKRi6 (ORCPT
+	id S1752131Ab1CKRlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 12:41:53 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:32812 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab1CKRlu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 12:38:58 -0500
+	Fri, 11 Mar 2011 12:41:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=GJmqgZC6VAr2skzXfLCSqomrqcsucpasAgnSB/08orYzN6cBp/PvB6wnPSNB6cTja9
-         6M768r9CSvMVR8QsGFyilGdhn8JOefZ+00mx0qI8lmobEZcUlkevX4jCbwlYN+juXj72
-         2cFTigpg+OCHkc7MLuMNUYUfLXFsQG2HUFvYs=
+        h=mime-version:reply-to:from:date:message-id:subject:to:cc
+         :content-type:content-transfer-encoding;
+        b=C6RQfg5uXZXTwUP95J342Mi1ZdsAtwWeklxfZPcXEm4vsgMi01lIKMcEHFsUK6IX/C
+         JUDwHhSc90gYEeWxN/2g6uJ4phKinj6BGvhNmtUeZGDzsO3/EAJVwlv+IdlJZ+O74P6x
+         ZifS9UAWY5Xgli9Bvz0g3imBn9ciTv3dPfQ7g=
 MIME-Version: 1.0
-In-Reply-To: <1299864633-27542-1-git-send-email-felipe.contreras@nokia.com>
-References: <1299864633-27542-1-git-send-email-felipe.contreras@nokia.com>
-Date: Fri, 11 Mar 2011 19:38:57 +0200
-Message-ID: <AANLkTi=Hy18s5fOziHSNdG6QUZE85bg0Bb9cAqE42mVQ@mail.gmail.com>
-Subject: Re: [RESEND PATCH] staging: tidspbridge: protect dmm_map properly
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>, Greg KH <greg@kroah.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Tuomas Kulve <tuomas@kulve.fi>
+Reply-To: linasvepstas@gmail.com
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Fri, 11 Mar 2011 11:40:50 -0600
+Message-ID: <AANLkTim6CApZ3y0ZXKR-bWa3ZEAaVOXUj14igruC06in@mail.gmail.com>
+Subject: PATCH: generic/fcntl.h [was Re: asm-generic/unistd.h and glibc use of NR_ipc]
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, GLIBC Devel <libc-alpha@sourceware.org>,
+        linux-kernel@vger.kernel.org, libc-ports@sourceware.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 7:30 PM, Felipe Contreras
-<felipe.contreras@nokia.com> wrote:
-> We need to protect not only the dmm_map list, but the individual
-> map_obj's, otherwise, we might be building the scatter-gather list with
-> garbage. So, use the existing proc_lock for that.
+Chris,
+
+Another patch, to generic/fcntl.h, at bottom.
+
+On 28 September 2010 08:05, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>  (Adding libc-ports to the cc list.)
 >
-> I observed race conditions which caused kernel panics while running
-> stress tests, also, Tuomas Kulve found it happening quite often in
-> Gumstix Over. This patch fixes those.
+> On 9/28/2010 4:40 AM, Arnd Bergmann wrote:
+>> Chris Metcalf is using the generic unistd.h file on the tile architecture
+>> and has a glibc port that should be easily portable to all future
+>> architectures. There are a few of them getting ready to be merged
+>> now (c6x, lm32, nios2, and some people have contacted me privately
+>> for architectures I cannot name).
+>>
+>> I expect that all of them will just use the same syscall ABI and glibc
+>> port.
 >
-> Cc: Tuomas Kulve <tuomas@kulve.fi>
-> Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
+> I'm happy to provide some previews of the work I'm doing to interested parties.
 
-Omar, 2.6.38 is imminent, if this patch has any chance of getting in,
-I think you would need to push it soon.
+[...]
 
-Cheers.
+> Thanks in advance for any feedback.  Please keep me cc'ed on any
+> discussions of the generic Linux syscall ABI.  Thanks!
+>
+> sysdeps/unix/sysv/linux/generic/access.c
+> sysdeps/unix/sysv/linux/generic/bits/fcntl.h
 
--- 
-Felipe Contreras
+glibc-2.13 breaks without F_GETPIPE_SZ
+
+Closer inspection shows that F_DUPFD_CLOEXEC is usually
+protected by __USE_XOPEN2K8 and not __USE_GNU so
+I tweaked that; revert if you disagree ...
+
+In lieu of the usual changelog entry ---
+Signed-off-by: Linas Vepstas <linasvepsts@gmail.com>
+
+---
+ sysdeps/unix/sysv/linux/generic/bits/fcntl.h |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+Index: glibc-2.13/sysdeps/unix/sysv/linux/generic/bits/fcntl.h
+===================================================================
+--- glibc-2.13.orig/sysdeps/unix/sysv/linux/generic/bits/fcntl.h
+ 2011-03-11 11:11:12.000000000 -0600
++++ glibc-2.13/sysdeps/unix/sysv/linux/generic/bits/fcntl.h
+2011-03-11 11:12:26.000000000 -0600
+@@ -114,6 +114,10 @@
+ # define F_SETLEASE    1024    /* Set a lease.  */
+ # define F_GETLEASE    1025    /* Enquire what lease is active.  */
+ # define F_NOTIFY      1026    /* Request notfications on a directory.  */
++# define F_SETPIPE_SZ   1031  /* Set pipe page size array.  */
++# define F_GETPIPE_SZ   1032  /* Set pipe page size array.  */
++#endif
++#ifdef __USE_XOPEN2K8
+ # define F_DUPFD_CLOEXEC 1030  /* Duplicate file descriptor with
+                                   close-on-exit set.  */
+ #endif
