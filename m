@@ -1,148 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1CKHmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 02:42:32 -0500
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.184]:11978
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752865Ab1CKHma convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 02:42:30 -0500
-X-SpamScore: -14
-X-BigFish: VPS-14(zz1432N98dN4015Lzz1202hzz8275eh8275bh8275dha1495iz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LHVUQ1-02-0TF-02
-X-M-MSG: 
-Date: Fri, 11 Mar 2011 08:41:56 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Wang Lei <f3d27b@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
-Message-ID: <20110311074156.GD13156@alberich.amd.com>
-References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
- <201103092125.43950.rjw@sisk.pl>
- <4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
- <201103100106.36678.rjw@sisk.pl>
- <4d796b47.20f98e0a.2695.fffff615@mx.google.com>
+	id S1754132Ab1CKHmz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 02:42:55 -0500
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:46134 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632Ab1CKHmy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 02:42:54 -0500
+Date: Fri, 11 Mar 2011 08:42:51 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: chenliu@asset.uwaterloo.ca
+Cc: schwidefsky@de.ibm.com, linux390@de.ibm.com, cotte@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]early: Fix possible overlapping data buffer
+Message-ID: <20110311074251.GA2569@osiris.boeblingen.de.ibm.com>
+References: <20110310173337.GA10906@asset.uwaterloo.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4d796b47.20f98e0a.2695.fffff615@mx.google.com>
+In-Reply-To: <20110310173337.GA10906@asset.uwaterloo.ca>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lei,
+On Thu, Mar 10, 2011 at 12:33:37PM -0500, chenliu@asset.uwaterloo.ca wrote:
+> This patch fixes bugzilla #12965:
+> https://bugzilla.kernel.org/show_bug.cgi?id=12965
 
-can you please provide information, which system you are using.  dmesg
-(please use apic=debug kernel parameter), output of lspci -nnxxxx (as
-root),
+Not sure it's worth all the hazzle. After all it's just a theoratical bug,
+but...
 
-This reminds me on some HP laptop issues, see
-https://bugzilla.kernel.org/show_bug.cgi?id=11715
-https://bugzilla.kernel.org/show_bug.cgi?id=11516
-The BIOSes on HP laptops somehow checked IO-APIC configuration
-and set trip_points differently (for unknown reason).
-
-But I need above debug info to sort this out.
-
-
-Thanks,
-
-Andreas
-
-
-On Thu, Mar 10, 2011 at 07:04:51PM -0500, Wang Lei wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> The original code contains dangerous uses of sprintf functions like
+> sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13", defsys_cmd, min_size),
+> where defsys_cmd is used both as input string as well as output string. It
+> should remember the written bytes of the previous sprintf and use that as the
+> offset when adding something. Also use snprintf makes the code safer.
 > 
-> > On Thursday, March 10, 2011, Wang Lei wrote:
-> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> >> 
-> >> > On Wednesday, March 09, 2011, Wang Lei wrote:
-> >> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> >> >> 
-> >> >> >
-> >> >> > There was only one commit in that area since 2.6.38-rc6, but it shouldn't
-> >> >> > affect the functionality this way.
-> >> >> >
-> >> >> > Is yout thermal management controlled by ACPI?
-> >> >> >
-> >> >> > Rafael
-> >> >> 
-> >> >> Thanks for your reply!
-> >> >> 
-> >> >> How could I know that?
-> >> >
-> >> > What does "ls -l /sys/class/thermal/cooling_device0/device" say?
-> >> >
-> >> > Rafael
-> >> 
-> >> [~]$ ls -l /sys/class/thermal/cooling_device0/device
-> >> lrwxrwxrwx 1 root root 0 Mar 10 07:13 /sys/class/thermal/cooling_device0/device -> ../../../LNXSYSTM:00/device:47/PNP0C0B:00
-> >> [~]$
-> >
-> > That's ACPI.
-> >
-> > I don't know, however, which change might cause the problem to happen.
-> >
-> > Can you bisect the commits between 2.6.38-rc6 and -rc7 to find the one that
-> > introduced the issue?
-> >
-> > Rafael
-> 
-> Thanks, Rafael.
-> Bisect stopped at commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
-> 
-> --------------------
-> [~/repository/kernel]$ git bisect good
-> 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12 is the first bad commit
-> commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
-> Author: Andreas Herrmann <andreas.herrmann3@amd.com>
-> Date:   Thu Feb 24 15:53:46 2011 +0100
-> 
->     x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems
->     
->     On some SB800 systems polarity for IOAPIC pin2 is wrongly
->     specified as low active by BIOS. This caused system hangs after
->     resume from S3 when HPET was used in one-shot mode on such
->     systems because a timer interrupt was missed (HPET signal is
->     high active).
->     
->     For more details see:
->     
->       http://marc.info/?l=linux-kernel&m=129623757413868
->     
->     Tested-by: Manoj Iyer <manoj.iyer@canonical.com>
->     Tested-by: Andre Przywara <andre.przywara@amd.com>
->     Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
->     Cc: Borislav Petkov <borislav.petkov@amd.com>
->     Cc: stable@kernel.org # 37.x, 32.x
->     LKML-Reference: <20110224145346.GD3658@alberich.amd.com>
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> 
-> :040000 040000 918adb3e08ef8cd258016dc46afab842e1be65fc 77d76d6f2451b16f963ce1ffe183aacfed9d994d M	arch
-> [~/repository/kernel]$ 
-> --------------------
-> 
-> So, I Cc to Andreas Herrmann, hope you will notice and help fix this.
-> 
-> Thanks, all you hackers!
-> 
-> -- 
-> Regards,
-> Lei
-> 
+> Signed-off-by: Chen Liu<chenliunju@gmail.com>
 
--- 
-Operating | Advanced Micro Devices GmbH
-  System  | Einsteinring 24, 85609 Dornach b. München, Germany
- Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
-  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
-  (OSRC)  | Registergericht München, HRB Nr. 43632
+Please make sure your From: and Sign-off email addresses match.
+Also it would be nice if you could add some line breaks in your patch
+description ;)
+
+Also it would be good to know if you tested the patch. Does saving
+an NSS still work with your patch applied?
+
+> ---
+>  arch/s390/kernel/early.c |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
+> --- a/arch/s390/kernel/early.c
+> +++ b/arch/s390/kernel/early.c
+> @@ -94,6 +94,7 @@ static noinline __init void create_kerne
+>  	unsigned int sinitrd_pfn, einitrd_pfn;
+>  #endif
+>  	int response;
+> +	int hlen;
+>  	size_t len;
+>  	char *savesys_ptr;
+>  	char defsys_cmd[DEFSYS_CMD_SIZE];
+> @@ -124,7 +125,7 @@ static noinline __init void create_kerne
+>  	end_pfn = PFN_UP(__pa(&_end));
+>  	min_size = end_pfn << 2;
+> 
+> -	sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
+> +	hlen = sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
+>  		kernel_nss_name, stext_pfn - 1, stext_pfn, eshared_pfn - 1,
+>  		eshared_pfn, end_pfn);
+
+Your patch introduced a new line with more than 80 characters long. You also
+broke indentation since we have a multiline function call with parameters here.
+In addition you add snprintf calls later. Why not here?
+The checkpatch tool might give you some hints.
 
 
+> @@ -133,13 +134,13 @@ static noinline __init void create_kerne
+>  		sinitrd_pfn = PFN_DOWN(__pa(INITRD_START));
+>  		einitrd_pfn = PFN_UP(__pa(INITRD_START + INITRD_SIZE));
+>  		min_size = einitrd_pfn << 2;
+> -		sprintf(defsys_cmd, "%s EW %.5X-%.5X", defsys_cmd,
+> +		hlen += snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen, " EW %.5X-%.5X",
+>  		sinitrd_pfn, einitrd_pfn);
+
+Line too long. Plus indentation broken (well, it was already broken).
+If you add an snprintf() call, then you should also make sure that the
+resulting string is '\0' terminated.
+
+>  	}
+>  #endif
+> 
+> -	sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13",
+> -		defsys_cmd, min_size);
+> +	hlen += snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen, " EW MINSIZE=%.7iK PARMREGS=0-13",
+> +		min_size);
+
+Line too long and indentation broken. Also again you need to make sure that
+the string is '\0' terminated.
+In addition hlen is unused afterwards. So no need to update it here.
