@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab1CKQEB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:04:01 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33608 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab1CKQEA (ORCPT
+	id S1755904Ab1CKQEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:04:49 -0500
+Received: from asset.uwaterloo.ca ([129.97.92.29]:35566 "EHLO
+	asset.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753617Ab1CKQEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:04:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TNzRAouIm0/5vwKF/HlKIIt1Bl2+YBXTPV8Adfz4scBAFmoSe4ciVnHY366baO1U8M
-         tPeVgqRWD+8MerDiSExgtrXnbMS7drMV0h7ecU6ZYvxbQ0afFWbil6LGGexPgg5RjOGD
-         qSXTBCEAfT8xAoHKP/St1mLMb8gxs4jxbP2Mo=
-Date: Fri, 11 Mar 2011 17:03:55 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+	Fri, 11 Mar 2011 11:04:47 -0500
+Date: Fri, 11 Mar 2011 11:04:42 -0500
+From: chenliu@asset.uwaterloo.ca
+To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        cotte@de.ibm.com, linux-s390@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm] x86-64, NUMA: Don't call numa_set_distanc() for
- all possible node combinations during emulation
-Message-ID: <20110311160355.GI13038@htj.dyndns.org>
-References: <4D6E9541.2040201@kernel.org>
- <20110302191338.GE28266@mtj.dyndns.org>
- <4D6EA975.8070200@kernel.org>
- <20110302205704.GF28266@mtj.dyndns.org>
- <4D6EB335.8000306@kernel.org>
- <20110303061711.GG28266@mtj.dyndns.org>
- <4D791C9F.1010500@kernel.org>
- <20110311082938.GC13038@htj.dyndns.org>
- <20110311093124.GE13038@htj.dyndns.org>
- <4D7A42E2.6070400@kernel.org>
+Subject: [PATCH]early: Fix possible overlapping data buffer
+Message-ID: <20110311160442.GA13495@asset.uwaterloo.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D7A42E2.6070400@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Yinghai.
+Thanks Heiko. I've followed your advice to give a new patch here.
+---------------------------------
 
-On Fri, Mar 11, 2011 at 07:42:26AM -0800, Yinghai Lu wrote:
-> > @@ -393,14 +398,10 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
-> >  		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
-> >  			emu_nid_to_phys[i] = dfl_phys_nid;
-> >  
-> > -	/*
-> > -	 * Transform distance table.  numa_set_distance() ignores all
-> > -	 * out-of-bound distances.  Just call it for every possible node
-> > -	 * combination.
-> > -	 */
-> > +	/* transform distance table */
-> >  	numa_reset_distance();
-> > -	for (i = 0; i < MAX_NUMNODES; i++) {
-> > -		for (j = 0; j < MAX_NUMNODES; j++) {
-> > +	for (i = 0; i < max_emu_nid + 1; i++) {
-> > +		for (j = 0; j < max_emu_nid + 1; j++) {
-> 
-> using num_emu_nids would be better?
+This patch fixed bugzilla #12965:
+https://bugzilla.kernel.org/show_bug.cgi?id=12965
 
-Well, this is mostly frivolous but I think max is better here.  We
-don't really care about the number of emulated nodes.  The number
-we're looking for is the number which allows the code to cover all
-enabled configurations.  So, I think max reflects the logic better.
+The original code contains some inproper use of sprintf
+function where a buffer is used both as input string
+as well as output string. It should remember the written
+bytes in the previous and use that as the offset for
+later writing. Also replace sprintf with snprintf.
 
-Thanks.
+Signed-off-by: Chen Liu <chenliunju@gmail.com>
+---
+ arch/s390/kernel/early.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
--- 
-tejun
+diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
+--- a/arch/s390/kernel/early.c
++++ b/arch/s390/kernel/early.c
+@@ -94,6 +94,7 @@ static noinline __init void create_kerne
+ 	unsigned int sinitrd_pfn, einitrd_pfn;
+ #endif
+ 	int response;
++	int hlen;
+ 	size_t len;
+ 	char *savesys_ptr;
+ 	char defsys_cmd[DEFSYS_CMD_SIZE];
+@@ -124,22 +125,27 @@ static noinline __init void create_kerne
+ 	end_pfn = PFN_UP(__pa(&_end));
+ 	min_size = end_pfn << 2;
+ 
+-	sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
++	snprintf(defsys_cmd, sizeof(defsys_cmd),
++		"DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
+ 		kernel_nss_name, stext_pfn - 1, stext_pfn, eshared_pfn - 1,
+ 		eshared_pfn, end_pfn);
++	defsys_cmd[DEFSYS_CMD_SIZE - 1] = '\0';
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	if (INITRD_START && INITRD_SIZE) {
+ 		sinitrd_pfn = PFN_DOWN(__pa(INITRD_START));
+ 		einitrd_pfn = PFN_UP(__pa(INITRD_START + INITRD_SIZE));
+ 		min_size = einitrd_pfn << 2;
+-		sprintf(defsys_cmd, "%s EW %.5X-%.5X", defsys_cmd,
+-		sinitrd_pfn, einitrd_pfn);
++		hlen += snprintf(defsys_cmd, DEFSYS_CMD_SIZE - hlen,
++			" EW %.5X-%.5X", defsys_cmd,
++			sinitrd_pfn, einitrd_pfn);
++		defsys_cmd[DEFSYS_CMD_SIZE - 1] = '\0';
+ 	}
+ #endif
+ 
+-	sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13",
+-		defsys_cmd, min_size);
++	snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen,
++		" EW MINSIZE=%.7iK PARMREGS=0-13", min_size);
++	defsys_cmd[DEFSYS_CMD_SIZE - 1] = '\0';
+ 	sprintf(savesys_cmd, "SAVESYS %s \n IPL %s",
+ 		kernel_nss_name, kernel_nss_name);
+ 
+
