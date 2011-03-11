@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab1CKQEt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:04:49 -0500
-Received: from asset.uwaterloo.ca ([129.97.92.29]:35566 "EHLO
-	asset.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab1CKQEr (ORCPT
+	id S1755678Ab1CKQHn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:07:43 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:3234 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1CKQHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:04:47 -0500
-Date: Fri, 11 Mar 2011 11:04:42 -0500
-From: chenliu@asset.uwaterloo.ca
-To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        cotte@de.ibm.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH]early: Fix possible overlapping data buffer
-Message-ID: <20110311160442.GA13495@asset.uwaterloo.ca>
+	Fri, 11 Mar 2011 11:07:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=IvKdGS46qGqbqEZuYeKOg+VaWaxhp9Ld24c2S6FFvpMg1f5WEA2TXWsI9/uSk1udij
+         RrMq9F3rpx3F3wsl2kvg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20110311024732.GB11710@redhat.com>
+References: <1299619256-12661-1-git-send-email-teravest@google.com>
+ <20110308224325.GK27455@redhat.com> <20110308225059.GL27455@redhat.com>
+ <AANLkTinpLiFM2yoMONQYekSd4L1BgzHSUa6F+QGbW8Gr@mail.gmail.com> <20110311024732.GB11710@redhat.com>
+From: Justin TerAvest <teravest@google.com>
+Date: Fri, 11 Mar 2011 08:07:17 -0800
+Message-ID: <AANLkTimP38a7i2vvUGj6bf+vkw9904SA=buZAm+85-7=@mail.gmail.com>
+Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        ryov@valinux.co.jp, taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
+        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
+        mrubin@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Heiko. I've followed your advice to give a new patch here.
----------------------------------
+On Thu, Mar 10, 2011 at 6:47 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Mar 09, 2011 at 10:04:11AM -0800, Justin TerAvest wrote:
+>> On Tue, Mar 8, 2011 at 2:50 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Tue, Mar 08, 2011 at 05:43:25PM -0500, Vivek Goyal wrote:
+>> >> On Tue, Mar 08, 2011 at 01:20:50PM -0800, Justin TerAvest wrote:
+>> >> > This patchset adds tracking to the page_cgroup structure for which cgroup has
+>> >> > dirtied a page, and uses that information to provide isolation between
+>> >> > cgroups performing writeback.
+>> >> >
+>> >>
+>> >> Justin,
+>> >>
+>> >> So if somebody is trying to isolate a workload which does bunch of READS
+>> >> and lots of buffered WRITES, this patchset should help in the sense that
+>> >> all the heavy WRITES can be put into a separate cgroup of low weight?
+>> >>
+>> >> Other application which are primarily doing READS, direct WRITES or little
+>> >> bit of buffered WRITES should still get good latencies if heavy writer
+>> >> is isolated in a separate group?
+>> >>
+>> >> If yes, then this piece standalone can make sense. And once the other
+>> >> piece/patches of memory cgroup dirty ratio and cgroup aware buffered
+>> >> writeout come in, then one will be able to differentiate buffered writes
+>> >> of different groups.
+>> >
+>> > Thinking more about it, currently anyway SYNC preempts the ASYNC. So the
+>> > question would be will it help me enable get better isolation latencies
+>> > of READS agains buffered WRITES?
+>>
+>> Ah! Sorry, I left out a patch that disables cross-group preemption.
+>> I'll add that to the patchset and email out v2 soon.
+>
+> Well, what I was referring to that even in current code sync preempts
+> all async in CFQ. So it looks like this patchset will not help get
+> better latencies in presence of WRITES?
 
-This patch fixed bugzilla #12965:
-https://bugzilla.kernel.org/show_bug.cgi?id=12965
+Hi Vivek,
 
-The original code contains some inproper use of sprintf
-function where a buffer is used both as input string
-as well as output string. It should remember the written
-bytes in the previous and use that as the offset for
-later writing. Also replace sprintf with snprintf.
+I should have been more clear. I forgot to include a patch that
+changes the behavior of that preemption. I haven't mailed out v2 yet
+because I was also writing a change to put the css_id in pc->flags
+instead of its own field.
 
-Signed-off-by: Chen Liu <chenliunju@gmail.com>
----
- arch/s390/kernel/early.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+The preemption change would look like:
 
-diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
---- a/arch/s390/kernel/early.c
-+++ b/arch/s390/kernel/early.c
-@@ -94,6 +94,7 @@ static noinline __init void create_kerne
- 	unsigned int sinitrd_pfn, einitrd_pfn;
- #endif
- 	int response;
-+	int hlen;
- 	size_t len;
- 	char *savesys_ptr;
- 	char defsys_cmd[DEFSYS_CMD_SIZE];
-@@ -124,22 +125,27 @@ static noinline __init void create_kerne
- 	end_pfn = PFN_UP(__pa(&_end));
- 	min_size = end_pfn << 2;
- 
--	sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
-+	snprintf(defsys_cmd, sizeof(defsys_cmd),
-+		"DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
- 		kernel_nss_name, stext_pfn - 1, stext_pfn, eshared_pfn - 1,
- 		eshared_pfn, end_pfn);
-+	defsys_cmd[DEFSYS_CMD_SIZE - 1] = '\0';
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 	if (INITRD_START && INITRD_SIZE) {
- 		sinitrd_pfn = PFN_DOWN(__pa(INITRD_START));
- 		einitrd_pfn = PFN_UP(__pa(INITRD_START + INITRD_SIZE));
- 		min_size = einitrd_pfn << 2;
--		sprintf(defsys_cmd, "%s EW %.5X-%.5X", defsys_cmd,
--		sinitrd_pfn, einitrd_pfn);
-+		hlen += snprintf(defsys_cmd, DEFSYS_CMD_SIZE - hlen,
-+			" EW %.5X-%.5X", defsys_cmd,
-+			sinitrd_pfn, einitrd_pfn);
-+		defsys_cmd[DEFSYS_CMD_SIZE - 1] = '\0';
- 	}
- #endif
- 
--	sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13",
--		defsys_cmd, min_size);
-+	snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen,
-+		" EW MINSIZE=%.7iK PARMREGS=0-13", min_size);
-+	defsys_cmd[DEFSYS_CMD_SIZE - 1] = '\0';
- 	sprintf(savesys_cmd, "SAVESYS %s \n IPL %s",
- 		kernel_nss_name, kernel_nss_name);
- 
+    Previously, a sync queue in can preempt an async queue in another
+    cgroup. This changes that behavior to disallow such preemption.
 
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index ab7a216..0494c0c 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3390,6 +3390,9 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue
+        if (!cfqq)
+                return false;
+
++       if (new_cfqq->cfqg != cfqq->cfqg)
++               return false;
++
+        if (cfq_class_idle(new_cfqq))
+                return false;
+
+@@ -3409,9 +3412,6 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue
+        if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
+                return true;
+
+-       if (new_cfqq->cfqg != cfqq->cfqg)
+-               return false;
+
+I will include the test results that show that isolation is also
+improved between a reader and a buffered writer.
+
+Thanks,
+Justin
+
+
+>
+> The only place it can help is that one is looking for service differentation
+> between two or more buffered write streams. For that we need to fix
+> upper layers first.
+>
+> Vivek
+>
