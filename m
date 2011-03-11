@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab1CKCrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 21:47:42 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:20256 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab1CKCrl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 21:47:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mvOeQJlLb5682lS7GFYYIDHtdXCE2CSOCCRu3v7JbMqVF2SHu3VTzwVA/QogP6vBCB
-         6Uc38tN3x1HCYqMyRR+g==
-Date: Thu, 10 Mar 2011 18:47:31 -0800
-From: Michel Lespinasse <walken@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Darren Hart <darren@dvhart.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] futex: do not pagefault_disable in
- futex_atomic_cmpxchg_inatomic()
-Message-ID: <20110311024731.GB26122@google.com>
-References: <20110307021127.GB31188@google.com>
- <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
- <20110309112550.GA3050@google.com>
- <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
- <20110311021654.GA26122@google.com>
+	id S1755270Ab1CKCsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 21:48:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581Ab1CKCsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 21:48:16 -0500
+Date: Thu, 10 Mar 2011 21:47:32 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Justin TerAvest <teravest@google.com>
+Cc: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        ryov@valinux.co.jp, taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
+        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
+        mrubin@google.com
+Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
+Message-ID: <20110311024732.GB11710@redhat.com>
+References: <1299619256-12661-1-git-send-email-teravest@google.com>
+ <20110308224325.GK27455@redhat.com>
+ <20110308225059.GL27455@redhat.com>
+ <AANLkTinpLiFM2yoMONQYekSd4L1BgzHSUa6F+QGbW8Gr@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110311021654.GA26122@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+In-Reply-To: <AANLkTinpLiFM2yoMONQYekSd4L1BgzHSUa6F+QGbW8Gr@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel/futex.c disables page faults before calling
-futex_atomic_cmpxchg_inatomic(), so there is no need to do it again
-within that function.
-    
-Signed-off-by: Michel Lespinasse <walken@google.com>
+On Wed, Mar 09, 2011 at 10:04:11AM -0800, Justin TerAvest wrote:
+> On Tue, Mar 8, 2011 at 2:50 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Tue, Mar 08, 2011 at 05:43:25PM -0500, Vivek Goyal wrote:
+> >> On Tue, Mar 08, 2011 at 01:20:50PM -0800, Justin TerAvest wrote:
+> >> > This patchset adds tracking to the page_cgroup structure for which cgroup has
+> >> > dirtied a page, and uses that information to provide isolation between
+> >> > cgroups performing writeback.
+> >> >
+> >>
+> >> Justin,
+> >>
+> >> So if somebody is trying to isolate a workload which does bunch of READS
+> >> and lots of buffered WRITES, this patchset should help in the sense that
+> >> all the heavy WRITES can be put into a separate cgroup of low weight?
+> >>
+> >> Other application which are primarily doing READS, direct WRITES or little
+> >> bit of buffered WRITES should still get good latencies if heavy writer
+> >> is isolated in a separate group?
+> >>
+> >> If yes, then this piece standalone can make sense. And once the other
+> >> piece/patches of memory cgroup dirty ratio and cgroup aware buffered
+> >> writeout come in, then one will be able to differentiate buffered writes
+> >> of different groups.
+> >
+> > Thinking more about it, currently anyway SYNC preempts the ASYNC. So the
+> > question would be will it help me enable get better isolation latencies
+> > of READS agains buffered WRITES?
+> 
+> Ah! Sorry, I left out a patch that disables cross-group preemption.
+> I'll add that to the patchset and email out v2 soon.
 
-diff --git a/arch/arm/include/asm/futex.h b/arch/arm/include/asm/futex.h
-index b33fe70..7133a86 100644
---- a/arch/arm/include/asm/futex.h
-+++ b/arch/arm/include/asm/futex.h
-@@ -95,7 +95,8 @@ futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
- 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
- 		return -EFAULT;
- 
--	pagefault_disable();	/* implies preempt_disable() */
-+	/* Note that preemption is disabled by futex_atomic_cmpxchg_inatomic
-+	 * call sites. */
- 
- 	__asm__ __volatile__("@futex_atomic_cmpxchg_inatomic\n"
- 	"1:	" T(ldr) "	%0, [%3]\n"
-@@ -115,8 +116,6 @@ futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
- 	: "r" (oldval), "r" (newval), "r" (uaddr), "Ir" (-EFAULT)
- 	: "cc", "memory");
- 
--	pagefault_enable();	/* subsumes preempt_enable() */
--
- 	return val;
- }
- 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Well, what I was referring to that even in current code sync preempts
+all async in CFQ. So it looks like this patchset will not help get
+better latencies in presence of WRITES?
+
+The only place it can help is that one is looking for service differentation
+between two or more buffered write streams. For that we need to fix
+upper layers first.
+
+Vivek
