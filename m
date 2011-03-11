@@ -1,130 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab1CKOcI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:32:08 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:44643 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab1CKOcC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:32:02 -0500
-X-IronPort-AV: E=Sophos;i="4.62,303,1297036800"; 
-   d="scan'208";a="4746408"
-Subject: Re: [Xen-devel] Re: [GIT PATCH v2 0/14] xen: events: cleanups +
- ween off nr_irqs
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-In-Reply-To: <1299853490.17339.2044.camel@zakaz.uk.xensource.com>
-References: <1299773279.17339.813.camel@zakaz.uk.xensource.com>
-	 <20110310225726.GA2983@dumpdata.com>
-	 <1299834774.17339.1799.camel@zakaz.uk.xensource.com>
-	 <1299842689.17339.1986.camel@zakaz.uk.xensource.com>
-	 <1299850128.17339.2007.camel@zakaz.uk.xensource.com>
-	 <1299853490.17339.2044.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Fri, 11 Mar 2011 14:32:00 +0000
-Message-ID: <1299853920.17339.2047.camel@zakaz.uk.xensource.com>
+	id S1754374Ab1CKOgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:36:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab1CKOgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:36:06 -0500
+Date: Fri, 11 Mar 2011 09:35:57 -0500
+From: Andy Gospodarek <andy@greyhouse.net>
+To: Cong Wang <amwang@redhat.com>
+Cc: Andy Gospodarek <andy@greyhouse.net>, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        netdev@vger.kernel.org
+Subject: Re: [Patch V2] bonding: fix netpoll in active-backup mode
+Message-ID: <20110311143557.GY11864@gospo.rdu.redhat.com>
+References: <1299578336-5888-1-git-send-email-amwang@redhat.com> <20110308212405.GX11864@gospo.rdu.redhat.com> <4D7773E3.5050708@redhat.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D7773E3.5050708@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-11 at 14:24 +0000, Ian Campbell wrote:
-> On Fri, 2011-03-11 at 13:28 +0000, Ian Campbell wrote:
-> > On Fri, 2011-03-11 at 11:24 +0000, Ian Campbell wrote:
-> > > On Fri, 2011-03-11 at 09:12 +0000, Ian Campbell wrote:
-> > > > On Thu, 2011-03-10 at 22:57 +0000, Konrad Rzeszutek Wilk wrote:
-> > > > > On Thu, Mar 10, 2011 at 04:07:59PM +0000, Ian Campbell wrote:
-> > > > > > Changes since last time:
-> > > > > >       * correct return value of xen_irq_from_pirq
-> > > > > >       * WARN if a pirq cannot be allocated for a legacy IRQ
-> > > > > >       * Updated checking comment of "xen: events: do not workaround
-> > > > > >         too-small nr_irqs"
-> > > > > > 
-> > > > > > The following series makes a few cleanups to the Xen IRQ infrastructure.
-> > > > > > The most important thing is that it removes the need to know about
-> > > > > > nr_irqs and in particular the reliance on nr_irqs being static.
-> > > > > > 
-> > > > > > Apart from being generally a good thing this is needed because in 2.6.39
-> > > > > > nr_irqs will be able to grow dynamically, specifically e7bcecb7b1d2
-> > > > > > "genirq: Make nr_irqs runtime expandable" from tip/core/irq is targeted
-> > > > > > at 2.6.39.
-> > > > > > 
-> > > > > > Dynamically growing nr_irqs also allows us to remove the workaround
-> > > > > > which eats into GSI space if a dynamic IRQ cannot be allocated.
-> > > > > > 
-> > > > > > There is no ideal sequencing of this series vs e7bcecb7b1d2 (most should
-> > > > > > have gone in before, but the penultimate patch really needed to be
-> > > > > > simultaneous) so I haven't bothered to try and pull anything from tip
-> > > > > > into this branch -- it should all be resolved during the merge window
-> > > > > > and bisection won't be too broken since the "eat into GSI space"
-> > > > > > workaround only appears to be needed on a small number of older
-> > > > > > platforms (qemu being the main exception).
-> > > > > 
-> > > > > <nods>
-> > > > > > 
-> > > > > > I have tested:
-> > > > > >       * Domain 0 on real h/w and under qemu
-> > > > > >       * PV guest, including migration and passthrough of both VF and PF.
-> > > > > >       * PVHVM guest, including migration and passthrough of both VF and
-> > > > > >         PF.
-> > > > > 
-> > > > > I am having difficulties with passthrough of an USB device. Somehow the
-> > > > > irq count is not going up at all (both in dom0 and domU) and it looks to
-> > > > > be doing just simple polling. I've rebased the xen-pciback to be on top
-> > > > > of your changes and apply cleanly. The whole lot is now in #master
-> > > > > 
-> > > > > MSI and MSI-X devices work just fine in both Dom0 and DomU case so
-> > > > > it is something special with the legacy IRQs. Probably forgot something
-> > > > > simple...
-> > > > 
-> > > > Thanks, I'll take a look. Did you mean "legacy IRQ" as in <16 or as in
-> > > > not-MSI(-X)?
-> > > 
-> > > Works for me in a PV guest, at least under the second interpretation (I
-> > > don't have any useful devices IRQ < 16). This is with your pciback 0.5.
-> > > 
-> > > I see something like what you describe under HVM, although pciback is
-> > > not used in that case. xc_physdev_map_pirq is used but not with
-> > > the /sys/.../bdf node AFAICT.
-> > > 
-> > > More digging required I guess...
-> > 
-> > If I just pass through the EHCI device it doesn't work. However if I
-> > also pass-through the associated UHCI controller then I do see the
-> > usb-storage device, interrupts and all. The EHCI controller still
-> > doesn't work though. Note that with a PV guest passing-through the EHCI
-> > controller by itself does work.
-> > 
-> > The issue I'm seeing seems to have more to do with accessing the memory
-> > mapped BAR than IRQs though:
-> 
-> I seem to see this with 2.6.32 dom0 as well. This IRQ series of patches
-> doesn't appear to make a difference when running 2.6.38-rcX+.
-> 
-> Unfortunately I think the error must be elsewhere :-(
+On Wed, Mar 09, 2011 at 08:34:43PM +0800, Cong Wang wrote:
+> 于 2011年03月09日 05:24, Andy Gospodarek 写道:
+>> On Tue, Mar 08, 2011 at 05:58:56PM +0800, Amerigo Wang wrote:
+>>> V2: avoid calling slave_diable_netpoll() with write_lock_bh() held.
+>>>
+>>> netconsole doesn't work in active-backup mode, because we don't do anything
+>>> for nic failover in active-backup mode. We should disable netpoll on the
+>>> failing slave when it is detected down and enable netpoll when it becomes
+>>> the active slave.
+>>>
+>>> Tested by ifdown the current active slave and ifup it again for several times,
+>>> netconsole works well.
+>>>
+>>> Signed-off-by: WANG Cong<amwang@redhat.com>
+>>> Cc: Neil Horman<nhorman@tuxdriver.com>
+>>>
+>>
+>> It seems like you are going to a lot of trouble to fix a bug where
+>> netpoll will not be setup on any interface that is down when enslaved.
+>> That seems to be the only path that would not have slave->np setup
+>> properly at enslavement.
+>>
+>> Did you ever try just this?
+>
+> That was my first thought, but I was over-worried about the failing slave.
+> This way should work too. Mind to send it as a normal patch? :)
+>
 
-BTW, this is with:
+I'm happy to submit the patch if it works in your environment.
 
-$ git log --pretty=oneline v2.6.38-rc8..HEAD --committer=Ian.Campbell |
-grep Merge
-00fbbdc4df0cf3419bde8bb0f88d8c8dd26945cb Merge branch 'devel/xen-blkback-v2' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
-41e9c499ac8a4582037d250d5c524265426b5077 Merge branch 'devel/xen-pciback-0.5' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
-aca829e02d62e56498c12410acdd04fd7604eaab Merge branch 'for-2.6.39/irq.phase.two' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
-2365df51ebb8092b4ce07dba55fe1f2bbb3fbdc5 Merge branch 'upstream/dom0/backend/netback' of git://xenbits.xen.org/people/ianc/linux-2.6
-3d3e02a231154e7e564a0620dcfd88ceedf8c64a Merge branch '2.6.38-rc6-pvhvm' of git://xenbits.xen.org/people/sstabellini/linux-pvhvm
-c6d63750ec3d00da603ea42c9dd1e3454ec12d17 Merge branches 'for-2.6.39/e820', 'for-2.6.39/irq', 'for-2.6.39/cleanup' and 'for-2.6.39/drivers' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
-
-I also tested a variant where I replaced the devel/xen-pciback-0.5 and
-for-2.6.39/irq.phase.two merges with xen-pciback-0.4.driver (rebased
-onto 71eef7d1e3d9d instead of c5ae07bb307b658) and dropped blkback. No
-difference.
-
-Ian.
+I do not think anyone likes un-tested patches.
 
