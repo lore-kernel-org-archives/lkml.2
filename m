@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab1CKPz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:55:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50296 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab1CKPzz (ORCPT
+	id S932076Ab1CKP4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 10:56:08 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:37776 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755838Ab1CKP4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:55:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roger Quadros <roger.quadros@nokia.com>
-Subject: Re: RFC: Platform data for onboard USB assets
-Date: Fri, 11 Mar 2011 16:55:45 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: andy.green@linaro.org, ext Andy Green <andy@warmcat.com>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <4D79F068.2080009@linaro.org> <201103111622.10722.arnd@arndb.de> <4D7A44E0.5080605@nokia.com>
-In-Reply-To: <4D7A44E0.5080605@nokia.com>
+	Fri, 11 Mar 2011 10:56:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Nx07/2n+EXdVSdFT5amfxe/LxTnVMx7L8yW3KDg9LkZalrb3r3OCC2DU3QcGJwF1+N
+         /CVJCuTsPoM1D2riVJPZK03NDzoswyN1T3VcOxOXBUAyy2zx+gvLbwIJpczt/AkW7nQn
+         neyOWnKK809dqRPzSlBe7QHUgTtMqthuu/kdg=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103111655.45832.arnd@arndb.de>
-X-Provags-ID: V02:K0:NsZR3B3m1SeRr1ZZ3Jkag9YRoazWlhDwVKqWOgwMDka
- ILBZt9xFAcGa2yPDduRRsBYn87Y5KWSXRAcNTvSlG9+OP3eRz5
- G1UgK3kBq0PDdsyTVKIjb4FDS8iF6uDCjVEHcF3hXcj4lji1n/
- y4cDARL9XgyHpJ2gHC+ABg29YxCzMPFju7WmUzxp95LwYRjBB+
- 2AtBBLO6DgJIH8eCPgsWA==
+In-Reply-To: <201103111247.00212.trenn@suse.de>
+References: <201103111247.00212.trenn@suse.de>
+Date: Fri, 11 Mar 2011 15:56:01 +0000
+Message-ID: <AANLkTimFg+uYGbSi=Ci-+_e89TgLkyMB7PAJcnt7mzTc@mail.gmail.com>
+Subject: Re: [ANNOUNCE] cpupowerutils - cpufrequtils extended with quite some features
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, discuss@lesswatts.org,
+        power@bughost.org, cpufreq@vger.kernel.org, linux@dominikbrodowski.net,
+        Mattia Dongili <malattia@linux.it>, Len Brown <lenb@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, herrmann.der.user@googlemail.com,
+        linux-omap@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 March 2011, Roger Quadros wrote:
-> > A udev rule would solve the problem at hand, but I'd consider that
-> > an ugly workaround as well. The naming in the kernel is really
-> > bogus -- any USB device that has a fixed address gets treated
-> > as eth0, while others become usb0, with the same driver,
-> > see the code fragment below.
-> 
-> but isn't that sensible? a real ethernet hardware will have a MAC
-> address. no?
+On Fri, Mar 11, 2011 at 11:46 AM, Thomas Renninger <trenn@suse.de> wrote:
+> Why is there need for another tool?
+> -----------------------------------
+>
+> CPU power consumption vs performance tuning is not about
+> CPU frequency switching anymore for quite some time.
+> Deep sleep states, traditional dynamic frequency scaling and
+> hidden turbo/boost frequencies are tight close together and
+> depend on each other. The first two exist on different architectures
+> like PPC, Itanium and ARM the latter only on X86.
+> On X86 the APU (CPU+GPU) will only run most efficiently if CPU
+> and GPU has proper power management in place.
+>
+> Users and Developers want to have *one* tool to get an overview what their
+> system supports and to monitor and debug CPU power management in detail.
+>
+> The tool should compile and work on as much architectures as
+> possible.
+>
 
-I have just verified with my Pandaboard that the pins on the SMSC9514
-usb ethernet that are meant to be connected to a serial EEPROM are
-indeed not connected anywhere.
+Hi Thomas,
+Do you think handling really vendor specific "boosts" like EeePC's SHE
+is in cpupower scope ?
+Still, it would not solve the issue of setting SHE mode in a standard
+way, or associating it with a governor.
+Thanks,
 
-	Arnd
+-- 
+Corentin Chary
+http://xf.iksaif.net
