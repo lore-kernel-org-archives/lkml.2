@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab1CKGJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 01:09:24 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:56009 "EHLO smtps.tip.net.au"
+	id S1752736Ab1CKGhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 01:37:06 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40719 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785Ab1CKGJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 01:09:23 -0500
-Date: Fri, 11 Mar 2011 17:09:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lars-Peter Clausen" <lars@metafoo.de>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: linux-next: manual merge of the usb tree with the s5p tree
-Message-Id: <20110311170912.0fb48cf4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__11_Mar_2011_17_09_12_+1100_=1pb6Y+zVt1UU24n"
+	id S1750905Ab1CKGhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 01:37:04 -0500
+Date: Fri, 11 Mar 2011 07:36:49 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20110311063649.GA13293@elte.hu>
+References: <AANLkTimnHtVS=SFopgyjAAQDW8bXDKDXf+YvEtPdpPsA@mail.gmail.com>
+ <20110310.155556.48513201.davem@davemloft.net>
+ <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com>
+ <20110310.163434.260095615.davem@davemloft.net>
+ <AANLkTimAPqTYT_j6t3cT32WfD6cQPySG0tnQVhC8Z=NO@mail.gmail.com>
+ <20110311033406.GA11004@home.goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311033406.GA11004@home.goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__11_Mar_2011_17_09_12_+1100_=1pb6Y+zVt1UU24n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Today's linux-next merge of the usb tree got a conflict in
-arch/arm/mach-s3c2440/mach-gta02.c between commit 326d05c15f7f ("ARM:
-S3C2440: Request usb pullup pin before using it on GTA02") from the s5p
-tree and commit e27c3c5c7e0f ("ARM: s3c24xx: Switch to common GPIO
-controlled UDC pullup implementation") from the usb tree.
+> On Thu, Mar 10, 2011 at 04:51:34PM -0800, Linus Torvalds wrote:
+> > 
+> > The reasons can be any of:
+> > 
+> >  - "I don't want to get too far away from upstream". This is very
+> > understandable, but I have asked people to please _not_ merge "random
+> > trees of the day". Please use major releases for this (or, if worst
+> > comes to worst, -rc releases) rather than just do something else.
+> 
+> What are you throughts on starting work from a tree. Most of my work is usually 
+> based off of some branch in tip, but sometimes when I'm pulling in patches that 
+> are not really related to anything, I just simply grab whatever the latest Linus 
+> branch is and start from there.
+> 
+> Is it preferable to instead start from one of the official releases?
 
-The latter commit removes the function gta02_udc_command() which is
-modified by the former.  I removed the function.
+Yes, for clarity of merge history i'm generally asking all people who send pull 
+requests to -tip to use official -rc's as bases (or -tip branches), *not* some 
+random daily -git snapshot. If a -git snapshot has to be merged for a good reason 
+then please amend the merge commit with the Merge-Reason tag describing the good 
+reason you had.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks,
 
---Signature=_Fri__11_Mar_2011_17_09_12_+1100_=1pb6Y+zVt1UU24n
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNebyIAAoJEDMEi1NhKgbsqkUH/3Ot+cg/7Qc4ANbeLdrVtPUV
-+Zc/M8irj0UThpNtsLSNX4S2WYpY+67q+bA5O8mFSd6eqTfakLJ/G95+1VYt84U3
-FdUmpXM+cC+sjecjKwR6iDq5Gemehk7dNirbYBQpJXNwAy8dX/X+jYT+z52ySfLu
-0h/05WiyI1DUjXrmrSNqzhsMUKtCD5sK2Q6geJLDGpn9RbNhuPMV/oU6c3wjrkRR
-al4uJMrXkSPnR9+iowoeBwTvc1EZBZexEs+KzB8zUgUIqpVYB1ptrTrdAzLFLw7C
-NA7wsREJmh3RnBiKrW6pwajmKFTolQ+C6ndrXvaGiMPbGqXalwRxlMizGE0apPE=
-=b904
------END PGP SIGNATURE-----
-
---Signature=_Fri__11_Mar_2011_17_09_12_+1100_=1pb6Y+zVt1UU24n--
+	Ingo
