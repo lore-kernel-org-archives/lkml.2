@@ -1,121 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1CKUVu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 15:21:50 -0500
-Received: from kroah.org ([198.145.64.141]:36037 "EHLO coco.kroah.org"
+	id S1753916Ab1CKU31 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 15:29:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52217 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab1CKUVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 15:21:48 -0500
-Date: Fri, 11 Mar 2011 12:21:35 -0800
-From: Greg KH <greg@kroah.com>
-To: andy.green@linaro.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110311202135.GA10795@kroah.com>
-References: <Pine.LNX.4.44L0.1103111406270.1975-100000@iolanthe.rowland.org>
- <4D7A80A4.6040008@linaro.org>
+	id S1751405Ab1CKU3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 15:29:25 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [RFC][PATCH 2/2] Convert several sysdev users to using struct syscore_ops
+Date: Fri, 11 Mar 2011 21:29:24 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de
+References: <201103100131.58206.rjw@sisk.pl> <201103100134.02675.rjw@sisk.pl> <20110311171231.GB10437@suse.de>
+In-Reply-To: <20110311171231.GB10437@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7A80A4.6040008@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103112129.24876.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 08:05:56PM +0000, Andy Green wrote:
-> On 03/11/2011 07:12 PM, Somebody in the thread at some point said:
+On Friday, March 11, 2011, Greg KH wrote:
+> On Thu, Mar 10, 2011 at 01:34:02AM +0100, Rafael J. Wysocki wrote:
+> > Some subsystems need to carry out suspend/resume and shutdown
+> > operations with one CPU on-line and interrupts disabled and they
+> > define sysdev classes and sysdevs specifically for this purpose.
+> > This leads to unnecessarily complicated code and excessive memory
+> > usage, so switch them to using struct syscore_ops objects for this
+> > purpose instead.
 > 
-> Hi -
+> Heavily-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> >>I don't believe I referred to class devices anywhere.  It does not
-> >>matter if the main chip function is class device or not.
-> >
-> >It matters because the class specification for a USB device is never
-> >going to mention information sources that are outside the USB protocol,
-> >such as board definitions.  Consequently a class driver will never need
-> >to use such a thing.
-> 
-> Is a gadget driver a class driver?
+> :)
 
-Some are, but you are now on the "other side" of the USB bus.
+Heh, thanks!
 
-> Because I can set the MAC address for my g_ether from the kernel
-> commandline which is most definitely an "information source outside
-> the USB protocol".  That is exactly the kind of thing I am talking
-> about enabling also to be taken from usb_device->dev.platform_data.
+> Do you want to resend this with a signed-off-by and your first one so I
+> can apply it to my tree, or do you want to take it through yours?
 
-You don't have a usb_device for a gadget device.  USB Gadgets are a
-totally different world here, don't confuse them please.
+Well, I'm going to resend with sign-offs anyway.  Besides, I'm not sure if
+I should split [2/2] into a few smaller patches.  At least the stuff outside
+of arch/x86 should be done in separate patches IMHO.
 
-> >>>Also, do you have a real example of a USB driver today that needs this?
-> >>
-> >>I think you find without devpath ->  platform_data mapping, the kind of
-> >>layout given above is made quite difficult to support in Linux.
-> >
-> >What would be needed to support such a mapping?  It seems to me that we
-> >probably have all the necessary ingredients in place already.
-> 
-> What I was imagining is getting the platform data structs from a
-> header in include/linux/
-> 
-> #include <linux/onboard_device_1.h>
-> #include <linux/onboard_device_2.h>
-> 
-> Using a .name defined to be the first member to match to specific
-> bus member devpath prepended with bus class:
+Apart from this, there are other architectures using sysdevs for defining
+"very late" and "very early" PM callbacks, ARM in particular (that one is going
+to be fun to untangle).
 
-You can't rely on USB bus numbers to be the same EVER.  These are
-assigned by the host computer.
+I thought about two different possible ways forward:
 
-> struct onboard_device_1_platform_data device_1_platform_data {
-> 	.name = "usb\1-0",
-> 	.some_feature = 1,
-> };
-> 
-> struct onboard_device_2_platform_data device_2_platform_data {
-> 	.name = "usb\1-1",
-> 	.some_feature = 2,
-> };
-> 
-> Aggregating them into an array
-> 
-> void *devpath_to_platform_data_mapping[] = {
-> 	device_1_platform_data,
-> 	device_2_platform_data,
-> };
-> 
-> Registering the array in the machine file
-> 
-> register_platform_data_by_devpath(devpath_to_platform_data_mapping,
-> 	ARRAY_SIZE(devpath_to_platform_data_mapping));
-> 
-> It needs to set two globals for pointer and member count
-> 
-> void
-> register_platform_data_by_devpath(void *map, int count)
-> {
-> 	platform_data_mapping = map;
-> 	platform_data_mapping_count = count;
-> }
-> 
-> Later, when a USB device is instantiated, if platform_data_mapping
-> is not NULL, it checks to see if the devname it just synthesized
-> matches any in the table that have static usb/ prefix, and if so,
-> sets usb_device->dev.platform_data to the table entry.
-> 
-> Well, it's an RFC so if you have a better plan I am all ears.
+(1) Push [1/2] and the patches converting things that x86 depends on first,
+    followed perhaps by a patch introducing something like
+    CONFIG_ARCH_NO_SYSDEV_OPS that would simply disable
+    sysdev_{suspend|resume|shutdown}() (x86 would set it).  The other arches
+    might then be converted over time.
 
-I am totally confused, and as you are messing with bus id numbers, and
-confusing usb gadgets and drivers, I think you are as well.
+(2) Prepare patches converting everything that can be converted in the tree
+    and push them all in one shot.
 
-So, are you talking about USB gadgets, or USB drivers here?  They are
-different and have different requirements and responsibilities.
+The advantage of (1) is that we can start making changes RSN and the
+advantage of (2) seems to be that we may avoid some potential suspend/resume
+ordering issues on non-x86 architectures that may arise in principle if some
+subsystems are converted to using struct syscore_ops while the others are
+not (syscore_suspend() is executed after sysdev_suspend(), so if we move
+something from the latter to the former, it may end up being executed after
+things that it was executed before previously).
 
-confused,
+Please let me know what your opinion is.
 
-greg k-h
+> thanks again for doing this.
+
+No big deal really. :-)
+
+Thanks,
+Rafael
