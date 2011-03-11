@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab1CKOjB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:39:01 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:53392 "EHLO mx2.fusionio.com"
+	id S1755362Ab1CKOnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:43:31 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:61790 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab1CKOjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:39:00 -0500
-X-ASG-Debug-ID: 1299854338-01de284cf848430001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D7A33FF.80509@fusionio.com>
-Date: Fri, 11 Mar 2011 15:38:55 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751590Ab1CKOn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:43:28 -0500
+Message-ID: <4D7A34F1.7070601@nokia.com>
+Date: Fri, 11 Mar 2011 16:42:57 +0200
+From: Roger Quadros <roger.quadros@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [GIT PULL] Single important block patch for 2.6.38
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Single important block patch for 2.6.38
+To: <andy.green@linaro.org>
+CC: ext Andy Green <andy@warmcat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <4D79F068.2080009@linaro.org> <201103111331.13932.arnd@arndb.de> <4D7A191B.7040100@linaro.org>
+In-Reply-To: <4D7A191B.7040100@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299854338
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57643
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+X-Originating-IP: [131.228.1.90]
+X-OriginalArrivalTime: 11 Mar 2011 14:42:59.0121 (UTC) FILETIME=[9DB9D210:01CBDFFA]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-This fixes a regression introduced early in the 2.6.38 series, where
-blkdev_issue_zeroout() has a nasty race that causes a panic. Thanks to
-Lukas Czerner for finding and fixing this one. Please pull!
+On 03/11/2011 02:44 PM, ext Andy Green wrote:
 
-  git://git.kernel.dk/linux-2.6-block.git for-linus
+>
+> I suggested this myself on #15 of the bug you linked to. However, it
+> seems to me there is a generic issue here and it is not to do with
+> whether stuff can be discovered on the bus or not; bugging the usbnet
+> guys to accept devname-based commandline params and solving it for
+> usbnet only would be covering up the actual issue.
 
-Lukas Czerner (1):
-      block: fix mis-synchronisation in blkdev_issue_zeroout()
+I fail to see the problem. USB is a dynamically probed bus.
+Whether the USB peripheral is hard-wired to the board or not, it is 
+still dynamically probed. The board files are not expected to know 
+anything about USB peripherals prior to enumeration, so platform data 
+does not make sense for USB.
 
- block/blk-lib.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+>
+> The I2C implementation does not limit itself to providing I2C addresses
+> and binding to driver names so it can be probed, it also provides for
+> sending platform_data into the device when it is instantiated. That is
+> very useful and I don't think the I2C guys will be accepting patches to
+> remove that capability.
 
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index eec78be..bd3e8df 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -109,7 +109,6 @@ struct bio_batch
- 	atomic_t 		done;
- 	unsigned long 		flags;
- 	struct completion 	*wait;
--	bio_end_io_t		*end_io;
- };
- 
- static void bio_batch_end_io(struct bio *bio, int err)
-@@ -122,12 +121,9 @@ static void bio_batch_end_io(struct bio *bio, int err)
- 		else
- 			clear_bit(BIO_UPTODATE, &bb->flags);
- 	}
--	if (bb) {
--		if (bb->end_io)
--			bb->end_io(bio, err);
--		atomic_inc(&bb->done);
--		complete(bb->wait);
--	}
-+	if (bb)
-+		if (atomic_dec_and_test(&bb->done))
-+			complete(bb->wait);
- 	bio_put(bio);
- }
- 
-@@ -150,13 +146,12 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 	int ret;
- 	struct bio *bio;
- 	struct bio_batch bb;
--	unsigned int sz, issued = 0;
-+	unsigned int sz;
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 
--	atomic_set(&bb.done, 0);
-+	atomic_set(&bb.done, 1);
- 	bb.flags = 1 << BIO_UPTODATE;
- 	bb.wait = &wait;
--	bb.end_io = NULL;
- 
- submit:
- 	ret = 0;
-@@ -185,12 +180,12 @@ submit:
- 				break;
- 		}
- 		ret = 0;
--		issued++;
-+		atomic_inc(&bb.done);
- 		submit_bio(WRITE, bio);
- 	}
- 
- 	/* Wait for bios in-flight */
--	while (issued != atomic_read(&bb.done))
-+	if (!atomic_dec_and_test(&bb.done))
- 		wait_for_completion(&wait);
- 
- 	if (!test_bit(BIO_UPTODATE, &bb.flags))
+Platform data makes perfect sense for I2C because it is not a 
+dynamically probed bus and board writers need to define which I2C chips 
+are present on the board.
+
+>
+> There is no reason I can see that onboard USB assets should continue to
+> be treated differently to miss out on the same capability because they
+> are USB and not I2C, particularly as a permanently NULL platform_data
+> pointer is already sitting there in the usb_device's .dev already
+> exactly for this use.
+
+What do you want to set in platform data? the ethernet device name? 
+Isn't that better done in user space using udev rules?
 
 -- 
-Jens Axboe
-
+regards,
+-roger
