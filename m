@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1CKQl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 11:41:27 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50462 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab1CKQl0 (ORCPT
+	id S1753567Ab1CKQpW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:45:22 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:38708 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751800Ab1CKQpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 11:41:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=OgUC6yOpxetu5wMrtjP+1TUXKIGRzJkrVWq9K2p0yMXdZZ7EagLydU4f1XUH/dq443
-         gmUm07YUsm8VplZwNl3t+S4sa7vuGMhH9z1n+hbqWYxsMOLHJgQRn4R1Yn3euvk9ZfJ1
-         4uKrVWCqQD569SNKnhvM3NseJk2SVa3hd7YPs=
-Message-ID: <4D7A50B2.9030603@linaro.org>
-Date: Fri, 11 Mar 2011 16:41:22 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Linux USB list <linux-usb@vger.kernel.org>,
+	Fri, 11 Mar 2011 11:45:21 -0500
+Date: Fri, 11 Mar 2011 11:45:20 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: andy.green@linaro.org
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux USB list <linux-usb@vger.kernel.org>,
         lkml <linux-kernel@vger.kernel.org>
 Subject: Re: RFC: Platform data for onboard USB assets
-References: <4D79F068.2080009@linaro.org> <20110311160815.GA7426@kroah.com> <4D7A4BDE.7050206@linaro.org> <20110311163628.GB9291@kroah.com>
-In-Reply-To: <20110311163628.GB9291@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D7A4D52.6010501@linaro.org>
+Message-ID: <Pine.LNX.4.44L0.1103111141270.1975-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 04:36 PM, Somebody in the thread at some point said:
+On Fri, 11 Mar 2011, Andy Green wrote:
 
->> Is it true that for on-board devices, it can sometimes be legitimate
->> and useful to be able to deliver platform_data from the board file
->> through to stuff on a USB bus, same as you would for memory mapped,
->> I2C, other busses?
->>
->> Or is that it since it is USB, it can never be useful or legitimate,
->> no matter what different kind of wired-up on-board USB device it is,
->> to have the board definition file configure the driver for that
->> instantiation?
->
-> Since it is USB, it is always discoverable, so it doesn't make any sense
-> to have this type of thing.
->
-> And since your only example was a network device, I think you proved
-> your point :)
+> > Like I say, it's not just MAC addresses that can need configuring this
+> > way - it can be other random "you're wired up this way" type
+> > information that would normally be figured out from the USB IDs.
+> 
+> Yes that's exactly why I was thinking it's a class of requirement that 
+> could reasonably be a little API and extending platform_data to it.  So 
+> anyone with onboard USB device can take advantage if they need to, 
+> because I guess we see gradually more boards like that.
+> 
+> The driver knows well all about the actual device, but there is a class 
+> of configuration information that is defined by the physical board 
+> itself - as you say "how it is wired" - and needs to be passed into the 
+> driver to inform it of its "functional configuration".  When that 
+> functional configuration information is a feature of the board alone, 
+> actually the board definition file is the right place for it.
 
-Well, thanks for the clear answer ^^
+I don't see the point of doing this for USB devices, or hot-pluggable 
+devices in general.
 
-Have a nice weekend.
+Suppose you bought another USB device that was just like the on-board
+one, and plugged it into the system.  Why should the driver need to
+treat the on-board device any different from the hot-plugged device?
 
--Andy
+Or to put it another way...  With external, hot-plugged USB devices,
+there is no need to know "how it is wired".  The fact that it is on a 
+USB bus is the only information necessary.  Why does anyone need to
+know more than this for on-board USB devices?
+
+Alan Stern
+
