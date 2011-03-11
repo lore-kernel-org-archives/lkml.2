@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1CKWrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 17:47:22 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56519 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab1CKWrU (ORCPT
+	id S1753815Ab1CKWwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 17:52:51 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50607 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab1CKWwu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 17:47:20 -0500
+	Fri, 11 Mar 2011 17:52:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=AKwOz+iv7wKJMIO7WSaGVaLHIodd707R/B+3IEBGxK0DmkClLQNLEVx5HFD19G3skJ
-         r7EfRwLtww/jBMF4jmidXFiSKhsNipkR782bS2nQI1htjjAmerB1K6/epB21i39+ZnPI
-         DtGnglqDEEiS+Qi1x/c8GrbEkBbYl/s0DEFMA=
-Message-ID: <4D7AA674.2050705@linaro.org>
-Date: Fri, 11 Mar 2011 22:47:16 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
+        b=acBYQ35ks1xlSNn4XbXD25QE12T30/GepSMh3U7egDaocWy/Ds9H0mZ4HvVvMVe0gZ
+         xxIhBVJPZSdVhxFQ536eHn3stGhjEM8/dJImD3Mws4xUEGJLRHenUKI6iVeUXk79Vyxk
+         pS6jElKYcfybmVf5TcbMcoxXMuwJi6ZYRkznE=
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Andy Green <andy@warmcat.com>, Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: RFC: Platform data for onboard USB assets
-References: <4D79F068.2080009@linaro.org> <AANLkTi=+6cp=F1ZDiH1vFwqvseU-Punwpq99P1j-U4Q1@mail.gmail.com>
-In-Reply-To: <AANLkTi=+6cp=F1ZDiH1vFwqvseU-Punwpq99P1j-U4Q1@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1299112955.6974.155.camel@vkoul-udesk3>
+References: <1298975579-1594-1-git-send-email-per.forlin@stericsson.com>
+	<1299112955.6974.155.camel@vkoul-udesk3>
+Date: Fri, 11 Mar 2011 14:52:49 -0800
+X-Google-Sender-Auth: p_TmZktVDAn-dEPSdrQh3eO5sfY
+Message-ID: <AANLkTinPHzHBGNtOmV_Ze9whbN8zNN0+Z0oge-DwFCbu@mail.gmail.com>
+Subject: Re: [PATCH] ste_dma40: assign device_prep_dma_sg for dma_memcpy
+From: Dan Williams <dan.j.williams@intel.com>
+To: Per Forlin <per.forlin@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: Per Forlin <per.forlin@stericsson.com>, linux-kernel@vger.kernel.org,
+        "Koul, Vinod" <vinod.koul@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 10:45 PM, Somebody in the thread at some point said:
-> On Fri, Mar 11, 2011 at 2:50 AM, Andy Green<andy@warmcat.com>  wrote:
->> Hi -
+On Wed, Mar 2, 2011 at 4:42 PM, Koul, Vinod <vinod.koul@intel.com> wrote:
+> On Tue, 2011-03-01 at 11:32 +0100, Per Forlin wrote:
+>> From: Per Forlin <per.forlin@linaro.org>
 >>
->> platform_data is a well established way in Linux to pass configuration data
->> up to on-board assets from a machine file like mach-xyz.c.  It's also
->> supported to pass platform_data up to devices that are probed asynchronously
->> from busses like i2c as well, which is very handy.
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> ---
+>>  drivers/dma/ste_dma40.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
 >>
->> However AFAIK it's not possible to bind platform_data to probed USB devices
->> as it stands.
+>> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+>> index 6e1d46a..1dd8ea3 100644
+>> --- a/drivers/dma/ste_dma40.c
+>> +++ b/drivers/dma/ste_dma40.c
+>> @@ -2496,7 +2496,7 @@ static int __init d40_dmaengine_init(struct d40_base *base,
+>>       base->dma_memcpy.device_alloc_chan_resources = d40_alloc_chan_resources;
+>>       base->dma_memcpy.device_free_chan_resources = d40_free_chan_resources;
+>>       base->dma_memcpy.device_prep_dma_memcpy = d40_prep_memcpy;
+>> -     base->dma_slave.device_prep_dma_sg = d40_prep_sg;
+>> +     base->dma_memcpy.device_prep_dma_sg = d40_prep_sg;
+>>       base->dma_memcpy.device_prep_slave_sg = d40_prep_slave_sg;
+>>       base->dma_memcpy.device_tx_status = d40_tx_status;
+>>       base->dma_memcpy.device_issue_pending = d40_issue_pending;
 >
-> Oh, please no.
+> Please copy the MAINTAINERS, or your patches can get missed...
 >
-> platform_data is an ugly non-type-checked anonymous pointer.  If you
-> need to pass data to a driver, use something better designed.  A
-> device tree fragment would work, or provide some kind of query api.
-> platform_data is definitely the wrong approach.
+> Applied, Thanks
+>
 
-$ grep platform_data drivers/* -R | wc -l
-2110
+While preparing the 2.6.39 tree this patch no longer applies, it looks
+like it is not needed after the pending conversion patches from Rabin.
+ Ok to drop, or was this urgent for 2.6.38-final?  If the latter the
+changelog did not indicate.
 
--Andy
+--
+Dan
