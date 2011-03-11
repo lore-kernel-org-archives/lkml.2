@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab1CKHMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 02:12:42 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47671 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab1CKHMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 02:12:39 -0500
-Message-ID: <4D79CB66.2020302@kernel.dk>
-Date: Fri, 11 Mar 2011 08:12:38 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Philipp Reisner <philipp.reisner@linbit.com>
-Subject: Re: linux-next: build failure after merge of the final tree (block
- tree  related)
-References: <20110311175830.29a387b2.sfr@canb.auug.org.au>
-In-Reply-To: <20110311175830.29a387b2.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753398Ab1CKHTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 02:19:22 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:48437 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab1CKHTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 02:19:21 -0500
+Date: Fri, 11 Mar 2011 16:19:09 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: linux-next: manual merge of the usb tree with the s5p tree
+In-reply-to: <4D79C3AC.7090900@metafoo.de>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>
+Cc: "'Greg KH'" <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-id: <010b01cbdfbc$a3052460$e90f6d20$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcvftvPyRy8F0K6SQkKHP7iup5TZOwABWDug
+References: <20110311170912.0fb48cf4.sfr@canb.auug.org.au>
+ <4D79C3AC.7090900@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-11 07:58, Stephen Rothwell wrote:
-> Hi all,
+Lars-Peter Clausen wrote:
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+> On 03/11/2011 07:09 AM, Stephen Rothwell wrote:
+> > Hi Greg,
+> >
+> > Today's linux-next merge of the usb tree got a conflict in
+> > arch/arm/mach-s3c2440/mach-gta02.c between commit 326d05c15f7f ("ARM:
+> > S3C2440: Request usb pullup pin before using it on GTA02") from the s5p
+> > tree and commit e27c3c5c7e0f ("ARM: s3c24xx: Switch to common GPIO
+> > controlled UDC pullup implementation") from the usb tree.
+> >
+> > The latter commit removes the function gta02_udc_command() which is
+> > modified by the former.  I removed the function.
+> >
 > 
-> drivers/char/tpm/tpm_tis.c:96: warning: 'is_itpm' defined but not used
-> drivers/block/drbd/drbd_bitmap.c: In function '__bm_change_bits_to':
-> drivers/block/drbd/drbd_bitmap.c:1287: error: implicit declaration of function 'generic___test_and_set_le_bit'
-> drivers/block/drbd/drbd_bitmap.c:1289: error: implicit declaration of function 'generic___test_and_clear_le_bit'
-> drivers/block/drbd/drbd_bitmap.c: In function 'drbd_bm_test_bit':
-> drivers/block/drbd/drbd_bitmap.c:1438: error: implicit declaration of function 'generic_test_le_bit'
+> Hi
 > 
-> Caused by commit 4b0715f09655 ("drbd: allow petabyte storage on 64bit
-> arch").
+> Kukjin could you drop 326d05c15f7f ("ARM: S3C2440: Request usb pullup pin
+> before using it on GTA02") from your tree? It has been superseded by the
+> other
+> commit in Gregs tree.
 > 
-> I have applied this patch for today (surely there is a better way):
+Hi,
 
-Thanks for not dropping it, I'll let the drbd guys send in a proper fix
-and get it committed.
+Ok, I did it.
 
--- 
-Jens Axboe
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
