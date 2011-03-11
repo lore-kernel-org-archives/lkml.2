@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab1CKP4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 10:56:08 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37776 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab1CKP4D (ORCPT
+	id S1755875Ab1CKQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 11:00:29 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:58049 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1CKQA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 10:56:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Nx07/2n+EXdVSdFT5amfxe/LxTnVMx7L8yW3KDg9LkZalrb3r3OCC2DU3QcGJwF1+N
-         /CVJCuTsPoM1D2riVJPZK03NDzoswyN1T3VcOxOXBUAyy2zx+gvLbwIJpczt/AkW7nQn
-         neyOWnKK809dqRPzSlBe7QHUgTtMqthuu/kdg=
+	Fri, 11 Mar 2011 11:00:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU) driver
+Date: Fri, 11 Mar 2011 17:00:17 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        " =?euc-kr?q?=27=B4=EB=C0=CE=B1=E2=27?=" <inki.dae@samsung.com>,
+        " =?euc-kr?q?=27=B0=AD=B9=CE=B1=D4=27?=" <mk7.kang@samsung.com>,
+        "'KyongHo Cho'" <pullip.cho@samsung.com>, linux-kernel@vger.kernel.org
+References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111615.01829.arnd@arndb.de> <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com>
+In-Reply-To: <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <201103111247.00212.trenn@suse.de>
-References: <201103111247.00212.trenn@suse.de>
-Date: Fri, 11 Mar 2011 15:56:01 +0000
-Message-ID: <AANLkTimFg+uYGbSi=Ci-+_e89TgLkyMB7PAJcnt7mzTc@mail.gmail.com>
-Subject: Re: [ANNOUNCE] cpupowerutils - cpufrequtils extended with quite some features
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, discuss@lesswatts.org,
-        power@bughost.org, cpufreq@vger.kernel.org, linux@dominikbrodowski.net,
-        Mattia Dongili <malattia@linux.it>, Len Brown <lenb@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, herrmann.der.user@googlemail.com,
-        linux-omap@vger.kernel.org, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="euc-kr"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103111700.17373.arnd@arndb.de>
+X-Provags-ID: V02:K0:qZAAHjP+wNfU+JESn/worXLAnj0QkJj0M63eHkpDzp+
+ o7ioLrwatZQztTZ5PHNOgNbkkxgYJqXtZvIjUwtDnwXDC//sUp
+ w9MkKPzc/DGDlKdiFgP27tlqMQ9BHLqpGOO9J79kgRiIqX8B4k
+ 3hI3m3bdm32/Sb+Dg58S2rcwkP2dmUercKggicYNc/zqyQXHhN
+ qtDAhLNjvjSHneID6RoAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 11:46 AM, Thomas Renninger <trenn@suse.de> wrote:
-> Why is there need for another tool?
-> -----------------------------------
->
-> CPU power consumption vs performance tuning is not about
-> CPU frequency switching anymore for quite some time.
-> Deep sleep states, traditional dynamic frequency scaling and
-> hidden turbo/boost frequencies are tight close together and
-> depend on each other. The first two exist on different architectures
-> like PPC, Itanium and ARM the latter only on X86.
-> On X86 the APU (CPU+GPU) will only run most efficiently if CPU
-> and GPU has proper power management in place.
->
-> Users and Developers want to have *one* tool to get an overview what their
-> system supports and to monitor and debug CPU power management in detail.
->
-> The tool should compile and work on as much architectures as
-> possible.
->
+On Friday 11 March 2011, Marek Szyprowski wrote:
+> > > > does not support IOMMUs, but that could be changed by wrapping it
+> > > > using the include/asm-generic/dma-mapping-common.h infrastructure.
+> > >
+> > > ARM dma-mapping framework also requires some additional research for better DMA
+> > > support (there are still issues with multiple mappings to be resolved).
+> > 
+> > You mean mapping the same memory into multiple devices, or a different problem?
+> 
+> Mapping the same memory area multiple times with different cache settings is not
+> legal on ARMv7+ systems. Currently the problems might caused by the low-memory
+> kernel linear mapping and second mapping created for example by dma_alloc_coherent()
+> function.
 
-Hi Thomas,
-Do you think handling really vendor specific "boosts" like EeePC's SHE
-is in cpupower scope ?
-Still, it would not solve the issue of setting SHE mode in a standard
-way, or associating it with a governor.
-Thanks,
+Yes, I know this problem, but I don't think the case you describe is a serious
+limitation (there are more interesting cases, though): dma_map_single() etc
+will create additional *bus* addresses for a physical address, not additional
+virtual addresses.
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+dma_alloc_coherent should allocate memory that is not also mapped cached,
+which is what I thought we do correctly.
+
+	Arnd
