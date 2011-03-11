@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab1CKSqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 13:46:11 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:30267 "EHLO
+	id S1753522Ab1CKSqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 13:46:25 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:60835 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab1CKSqF (ORCPT
+	with ESMTP id S1752519Ab1CKSqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 13:46:05 -0500
+	Fri, 11 Mar 2011 13:46:21 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=TXn++4skOS4wGFE97adOMzvXI2jpP8wrLlyGjXlwkLmWjbsH4yaX8rfGIfL/Ny9CN
-	HcDPo8l0U50HnKHk/Slyg==
+	b=Ewbvk/qxZTfjBEGwB6sKeNMTqhp3qLhBMoI1s69wdSg5iEx9H83zRnY6JLqQCti8V
+	RcshA/6JdABak0WIyt9gw==
 From: Greg Thelen <gthelen@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -27,9 +27,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Chad Talbott <ctalbott@google.com>,
         Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>,
         Greg Thelen <gthelen@google.com>
-Subject: [PATCH v6 2/9] memcg: add page_cgroup flags for dirty page tracking
-Date: Fri, 11 Mar 2011 10:43:24 -0800
-Message-Id: <1299869011-26152-3-git-send-email-gthelen@google.com>
+Subject: [PATCH v6 4/9] memcg: add kernel calls for memcg dirty page stats
+Date: Fri, 11 Mar 2011 10:43:26 -0800
+Message-Id: <1299869011-26152-5-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1299869011-26152-1-git-send-email-gthelen@google.com>
 References: <1299869011-26152-1-git-send-email-gthelen@google.com>
@@ -37,66 +37,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add additional flags to page_cgroup to track dirty pages
-within a mem_cgroup.
+Add calls into memcg dirty page accounting.  Notify memcg when pages
+transition between clean, file dirty, writeback, and unstable nfs.
+This allows the memory controller to maintain an accurate view of
+the amount of its memory that is dirty.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrea Righi <arighi@develer.com>
 Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrea Righi <arighi@develer.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 ---
- include/linux/page_cgroup.h |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+Changelog since v5:
+- moved accounting site in test_clear_page_writeback() and
+  test_set_page_writeback().
 
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index f5de21d..a002ba8 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -10,6 +10,9 @@ enum {
- 	/* flags for mem_cgroup and file and I/O status */
- 	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
- 	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
-+	PCG_FILE_DIRTY, /* page is dirty */
-+	PCG_FILE_WRITEBACK, /* page is under writeback */
-+	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
- 	/* No lock in page_cgroup */
- 	PCG_ACCT_LRU, /* page has been accounted for (under lru_lock) */
- 	__NR_PCG_FLAGS,
-@@ -67,6 +70,10 @@ static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
- static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
- 	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+ fs/nfs/write.c      |    4 ++++
+ mm/filemap.c        |    1 +
+ mm/page-writeback.c |   10 ++++++++--
+ mm/truncate.c       |    1 +
+ 4 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 42b92d7..7863777 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -451,6 +451,7 @@ nfs_mark_request_commit(struct nfs_page *req)
+ 			NFS_PAGE_TAG_COMMIT);
+ 	nfsi->ncommit++;
+ 	spin_unlock(&inode->i_lock);
++	mem_cgroup_inc_page_stat(req->wb_page, MEMCG_NR_FILE_UNSTABLE_NFS);
+ 	inc_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
+ 	inc_bdi_stat(req->wb_page->mapping->backing_dev_info, BDI_RECLAIMABLE);
+ 	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
+@@ -462,6 +463,7 @@ nfs_clear_request_commit(struct nfs_page *req)
+ 	struct page *page = req->wb_page;
  
-+#define TESTSETPCGFLAG(uname, lname)			\
-+static inline int TestSetPageCgroup##uname(struct page_cgroup *pc)	\
-+	{ return test_and_set_bit(PCG_##lname, &pc->flags);  }
-+
- /* Cache flag is set only once (at allocation) */
- TESTPCGFLAG(Cache, CACHE)
- CLEARPCGFLAG(Cache, CACHE)
-@@ -86,6 +93,22 @@ SETPCGFLAG(FileMapped, FILE_MAPPED)
- CLEARPCGFLAG(FileMapped, FILE_MAPPED)
- TESTPCGFLAG(FileMapped, FILE_MAPPED)
+ 	if (test_and_clear_bit(PG_CLEAN, &(req)->wb_flags)) {
++		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_UNSTABLE_NFS);
+ 		dec_zone_page_state(page, NR_UNSTABLE_NFS);
+ 		dec_bdi_stat(page->mapping->backing_dev_info, BDI_RECLAIMABLE);
+ 		return 1;
+@@ -1319,6 +1321,8 @@ nfs_commit_list(struct inode *inode, struct list_head *head, int how)
+ 		req = nfs_list_entry(head->next);
+ 		nfs_list_remove_request(req);
+ 		nfs_mark_request_commit(req);
++		mem_cgroup_dec_page_stat(req->wb_page,
++					 MEMCG_NR_FILE_UNSTABLE_NFS);
+ 		dec_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
+ 		dec_bdi_stat(req->wb_page->mapping->backing_dev_info,
+ 				BDI_RECLAIMABLE);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index a6cfecf..7e751fe 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -143,6 +143,7 @@ void __delete_from_page_cache(struct page *page)
+ 	 * having removed the page entirely.
+ 	 */
+ 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
++		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_DIRTY);
+ 		dec_zone_page_state(page, NR_FILE_DIRTY);
+ 		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+ 	}
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 632b464..d8005b0 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1118,6 +1118,7 @@ int __set_page_dirty_no_writeback(struct page *page)
+ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ {
+ 	if (mapping_cap_account_dirty(mapping)) {
++		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_DIRTY);
+ 		__inc_zone_page_state(page, NR_FILE_DIRTY);
+ 		__inc_zone_page_state(page, NR_DIRTIED);
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+@@ -1317,6 +1318,7 @@ int clear_page_dirty_for_io(struct page *page)
+ 		 * for more comments.
+ 		 */
+ 		if (TestClearPageDirty(page)) {
++			mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_DIRTY);
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
+ 			dec_bdi_stat(mapping->backing_dev_info,
+ 					BDI_RECLAIMABLE);
+@@ -1352,8 +1354,10 @@ int test_clear_page_writeback(struct page *page)
+ 	} else {
+ 		ret = TestClearPageWriteback(page);
+ 	}
+-	if (ret)
++	if (ret) {
++		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_WRITEBACK);
+ 		dec_zone_page_state(page, NR_WRITEBACK);
++	}
+ 	return ret;
+ }
  
-+SETPCGFLAG(FileDirty, FILE_DIRTY)
-+CLEARPCGFLAG(FileDirty, FILE_DIRTY)
-+TESTPCGFLAG(FileDirty, FILE_DIRTY)
-+TESTCLEARPCGFLAG(FileDirty, FILE_DIRTY)
-+TESTSETPCGFLAG(FileDirty, FILE_DIRTY)
-+
-+SETPCGFLAG(FileWriteback, FILE_WRITEBACK)
-+CLEARPCGFLAG(FileWriteback, FILE_WRITEBACK)
-+TESTPCGFLAG(FileWriteback, FILE_WRITEBACK)
-+
-+SETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-+CLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-+TESTPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-+TESTCLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-+TESTSETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-+
- SETPCGFLAG(Migration, MIGRATION)
- CLEARPCGFLAG(Migration, MIGRATION)
- TESTPCGFLAG(Migration, MIGRATION)
+@@ -1386,8 +1390,10 @@ int test_set_page_writeback(struct page *page)
+ 	} else {
+ 		ret = TestSetPageWriteback(page);
+ 	}
+-	if (!ret)
++	if (!ret) {
++		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_WRITEBACK);
+ 		account_page_writeback(page);
++	}
+ 	return ret;
+ 
+ }
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 5e5a43a..18d0304 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -76,6 +76,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
+ 	if (TestClearPageDirty(page)) {
+ 		struct address_space *mapping = page->mapping;
+ 		if (mapping && mapping_cap_account_dirty(mapping)) {
++			mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_DIRTY);
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
+ 			dec_bdi_stat(mapping->backing_dev_info,
+ 					BDI_RECLAIMABLE);
 -- 
 1.7.3.1
 
