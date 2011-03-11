@@ -1,130 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab1CKO10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 09:27:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40274 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488Ab1CKO1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 09:27:25 -0500
-Message-ID: <4D7A314A.7000901@suse.cz>
-Date: Fri, 11 Mar 2011 15:27:22 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1755426Ab1CKO3E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 09:29:04 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60718 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab1CKO3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 09:29:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xK+Uub5uhV/6lMndlPUSeaLpR90CSvslpudpBs1VkMxrlz6dwfPB1KLguE0HHu+uCO
+         p4bTrwFKWgyiNTufx/6rNMa2itsvr55N7pM/Vp4iLqrtnn55NTzylwMeLMX8lgnz8S09
+         gKX3bUsN8WQe0VmU8HOnRktXyhVBliaPSKg5M=
+Date: Fri, 11 Mar 2011 15:28:54 +0100
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Wang Lei <f3d27b@gmail.com>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: [BUG] Fans keep running, first found since v2.6.38-rc7
+Message-ID: <20110311142854.GB4717@alberich.amd.com>
+References: <4d774c85.20f98e0a.2695.73ed@mx.google.com>
+ <201103092125.43950.rjw@sisk.pl>
+ <4d780a2f.231a8f0a.3b01.ffffa228@mx.google.com>
+ <201103100106.36678.rjw@sisk.pl>
+ <4d796b47.20f98e0a.2695.fffff615@mx.google.com>
+ <20110311074156.GD13156@alberich.amd.com>
+ <4d79fdbd.43392b0a.0aae.0712@mx.google.com>
+ <20110311113839.GA4717@alberich.amd.com>
+ <4d7a19c2.29788e0a.231c.1837@mx.google.com>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.38-rc8
-References: <AANLkTimG-1nSZw3P5q7LQbGmQch3ibsMPQ_duhAjhtQH@mail.gmail.com> <20110311092811.GA2079@polaris.bitmath.org>
-In-Reply-To: <20110311092811.GA2079@polaris.bitmath.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4d7a19c2.29788e0a.231c.1837@mx.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.3.2011 10:28, Henrik Rydberg wrote:
-> On Mon, Mar 07, 2011 at 09:40:04PM -0800, Linus Torvalds wrote:
->> I would have been ok with releasing this as the final 38, but I'm
->> going to be partially unreachable for several days next week, so I
->> felt there was no point in opening the merge window yet.
->>
->> Also, we do have regressions. Some of them hopefully fixed here, but
->> it won't hurt to give it another week.
->>
->> Not everything here is strictly a regression: the i_nlink fixes are
->> long-standing races (very unlikely ones, admittedly), and the alpha
->> updates just convert the irq chip descriptions so that we can enable
->> GENERIC_HARDIRQS_NO_DEPRECATED on alpha too. But most everything is
->> pretty simple, and the diffstat is fairly flat with nothing huge that
->> stands out.
->>
->> 40% drivers, 35% arch updates (alpha and arm), with the rest being fs,
->> net and some block layer updates.
->>
->> So please keep testing,
+On Fri, Mar 11, 2011 at 08:47:01PM +0800, Wang Lei wrote:
 > 
-> Hi Linus,
-> 
-> I stumbled upon this problem when a dkms package install claimed to
-> already have the latest version of a module, only it clearly did not.
-> 
-> It turns out the module srcversion is not unique. Doing a
-> 
-> cat /sys/module/*/srcversion | sort | uniq -c
-> 
-> shows something like this:
-> 
-> mainline>cat /sys/module/*/srcversion | sort | uniq -c
->       1 3EF20C25CC62BD750F4C3F3
->       1 41024DA8E830C7DAE171017
->       1 47AD35AE180473EB06EED32
->      19 533BB7E5866E52F63B9ACCB
->       1 598C709DDDAB55EB331379A
->       1 5AC5CB9DA8C242CBC76EEC0
->       1 AAD974CC23F320629986F38
->       2 AEBBDFD273E0316FD4E5D04
->       [...]
-> 
-> Bisecting leads to this commit
-> 
-> commit b7bd182176960fdd139486cadb9962b39f8a2b50
-> Author: Michal Marek <mmarek@suse.cz>
-> 
->     fixdep: Do not record dependency on the source file itself
-> 
-> which seems to be a change to the build system. Reverting followed by
-> "make clean" cures the symptoms, and all module srcversions are again
-> unique. Just doing make after the revert does not work, which seems
-> reasonable. However, I can't even begin to imagine what the real
-> reason is.
-> 
-> The patch below is what fixes it for me.
-> 
-> Thanks,
-> Henrik
-> 
-> ---
-> 
-> From 0004c5bdc44c22646269756b0e0bbff1a7a30ac3 Mon Sep 17 00:00:00 2001
-> From: Henrik Rydberg <rydberg@euromail.se>
-> Date: Fri, 11 Mar 2011 09:54:33 +0100
-> Subject: [PATCH] Revert "fixdep: Do not record dependency on the source file itself"
-> 
-> In 2.6.38-rc8, the module srcversion is not unique. Doing a
-> 
-> cat /sys/module/*/srcversion | sort | uniq -c
-> 
-> shows something like this:
-> 
-> mainline>cat /sys/module/*/srcversion | sort | uniq -c
->       1 3EF20C25CC62BD750F4C3F3
->       1 41024DA8E830C7DAE171017
->       1 47AD35AE180473EB06EED32
->      19 533BB7E5866E52F63B9ACCB
->       1 598C709DDDAB55EB331379A
->       1 5AC5CB9DA8C242CBC76EEC0
->       1 AAD974CC23F320629986F38
->       2 AEBBDFD273E0316FD4E5D04
->       [...]
-> 
-> Bisecting leads to this commit
-> 
-> commit b7bd182176960fdd139486cadb9962b39f8a2b50
-> Author: Michal Marek <mmarek@suse.cz>
-> 
->     fixdep: Do not record dependency on the source file itself
-> 
-> which is a change to the build system. Reverting followed by "make
-> clean" cures the symptoms and all module srcversions are unique. Just
-> doing make after the revert does not work.
-> 
-> I can't even begin to imagine what the real reason is.
+> On 2011-03-11 19:38:39 +0800, Andreas wrote:
+> >
+> > Can you please try to boot -rc7 with kernel parameter acpi_skip_timer_override
+> > and send the same output (dmesg again also with apic=debug and lspci -nnxxxx)
+> >
+> >
+> > Thanks,
+> >
+> > Andreas
+> >
+> > PS: My assumption is that the patch in -rc7 leads to usage of IO-APIC
+> >     pin2 for timer interrupt (potentially I have broken chipset
+> >     revision determination for some SB600.)
 
-The problem is that the code to calculate the checksums
-(scripts/mod/sumversions.c) is parsing the *.cmd files to find out what
-sources were used to build a given object file. One option is to let
-fixdep record the *.[cS] separately, so that it does not confuse make,
-but it available for modpost. I'll think about it a bit more.
+> Hi Andreas,
+> 
+> I did what you said, appended acpi_skip_timer_override when boot -rc7.
+> Now the fans work OK. I don't know why and I don't think this is the
+> final solution. If not, I'll wait.
 
-Michal
+Ok, the problem is that all SB[6-8]00 chipsets use the same PCI device ID.
+To differntiate the versions I need to check the revision ID.
+
+With my patch I removed some special treatment for SB600.
+(See http://support.amd.com/us/Embedded_TechDocs/46155_sb600_rrg_pub_3.03.pdf)
+
+           Revision ID/Class Code- R - 32 bits - [PCI_Reg: 08h]
+Field Name   Bits      Default                             Description
+RevisionID    7:0     11h /      This field reflects the ASIC revision.
+                      12h /      11h : For ASIC revision A11
+                      13h        12h : For ASIC revision A12
+                                 13h : For ASIC revision A13
+                                 For ASIC revisions after A13, by default this field will read 13h
+                                 still. However, if SMBUS PCI config 70h bit 8 is set to 1, a
+                                 hidden revision ID can be read from this field.
+
+The old code temporarily cleared bit 8 in PCI config 70h and received
+13h as revision for device 14.0 on your system (the "hidden revision
+ID" shown in your lspci output is 0x14 and that is what the new code
+is using). For SB700/SB800 PCI config 70h is reserved ("software
+should not write to it") and that is why I wanted to avoid accesses to
+that register. (See SB700 documentation
+http://support.amd.com/us/Embedded_TechDocs/43009_sb7xx_rrg_pub_1.00.pdf)
+
+So the right thing to do is to correct the check for SB600 to cover
+all SB600 revisions w/o depending on the setting of bit 8 in PCI
+config 70h.
+
+Attached patch should achieve this.
+Can you please test this patch on top of -rc7?
+
+
+Thanks a lot,
+
+Andreas
+---
+>From 8453f3aef2e2b89ba30877998dcbfc06f475e253 Mon Sep 17 00:00:00 2001
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+Date: Fri, 11 Mar 2011 15:16:47 +0100
+Subject: [PATCH] x86, quirk: Fix SB600 revision check
+
+Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
+(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems)
+introduced a regression. It removed some SB600 specific code
+to determine the revision ID without adapting a corresponding
+revision ID check for SB600.
+
+See this mail thread
+http://marc.info/?l=linux-kernel&m=129980296006380&w=2
+
+This patch adapts the corresponding check to cover all SB600
+revisions.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/early-quirks.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 9efbdcc..3755ef4 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -159,7 +159,12 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ 	if (rev >= 0x40)
+ 		acpi_fix_pin2_polarity = 1;
+ 
+-	if (rev > 0x13)
++	/*
++	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
++	 * SB700: revisions 0x39, 0x3a, ...
++	 * SB800: revisions 0x40, 0x41, ...
++	 */
++	if (rev >= 0x39)
+ 		return;
+ 
+ 	if (acpi_use_timer_override)
+-- 
+1.7.4.1
+
