@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1CKWSK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 17:18:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52505 "EHLO ogre.sisk.pl"
+	id S1753116Ab1CKWWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 17:22:20 -0500
+Received: from mail.tpi.com ([70.99.223.143]:2182 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092Ab1CKWSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 17:18:08 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 1/4] X86: Revamp reboot behaviour to match Windows more closely
-Date: Fri, 11 Mar 2011 23:18:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org
-References: <1299877940-6870-1-git-send-email-mjg@redhat.com> <201103112308.18221.rjw@sisk.pl> <20110311221517.GA24173@srcf.ucam.org>
-In-Reply-To: <20110311221517.GA24173@srcf.ucam.org>
+	id S1752481Ab1CKWWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 17:22:15 -0500
+Message-ID: <4D7AA086.3030500@canonical.com>
+Date: Fri, 11 Mar 2011 22:21:58 +0000
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Greg KH <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
+        Roel Kluin <roel.kluin@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [14/17] nfsd: wrong index used in inner loop
+References: <20110311204110.753145113@clark.kroah.org>
+In-Reply-To: <20110311204110.753145113@clark.kroah.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103112318.19678.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 11, 2011, Matthew Garrett wrote:
-> On Fri, Mar 11, 2011 at 11:08:18PM +0100, Rafael J. Wysocki wrote:
-> > On Friday, March 11, 2011, Matthew Garrett wrote:
-> > > Windows reboots by hitting the ACPI reboot vector (if available), trying
-> > > the keyboard controller, hitting the ACPI reboot vector again and then
-> > > giving the keyboard controller one last go. Rework our reboot process a
-> > > little to default to matching this behaviour, although we'll fall through
-> > > to attempting a triple fault if nothing else works.
-> > 
-> > Does this fix a particular problem observed in practice?
-> 
-> Yup. We're seeing an increasing number of machines that don't implement 
-> the legacy keyboard controller at all and fail to reboot if you poke it. 
-> The expectation appears to be that you use the ACPI reboot vector on 
-> these machines.
+On 03/11/2011 08:40 PM, Greg KH wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+>
+> ------------------
+>
+> From: roel<roel.kluin@gmail.com>
+>
+> commit 3ec07aa9522e3d5e9d5ede7bef946756e623a0a0 upstream.
+>
+> Index i was already used in the outer loop
+>
+> Signed-off-by: Roel Kluin<roel.kluin@gmail.com>
+> Signed-off-by: J. Bruce Fields<bfields@redhat.com>
+> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
+>
+> ---
+>   fs/nfsd/nfs4xdr.c |    4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> --- a/fs/nfsd/nfs4xdr.c
+> +++ b/fs/nfsd/nfs4xdr.c
+> @@ -1114,7 +1114,7 @@ nfsd4_decode_create_session(struct nfsd4
+>
+>   	u32 dummy;
+>   	char *machine_name;
+> -	int i;
+> +	int i, j;
+>   	int nr_secflavs;
+>
+>   	READ_BUF(16);
+> @@ -1187,7 +1187,7 @@ nfsd4_decode_create_session(struct nfsd4
+>   			READ_BUF(4);
+>   			READ32(dummy);
+>   			READ_BUF(dummy * 4);
+> -			for (i = 0; i<  dummy; ++i)
+> +			for (j = 0; j<  dummy; ++j)
+>   				READ32(dummy);
+>   			break;
+>   		case RPC_AUTH_GSS:
+>
+>
+> --
 
-So perhaps you can put a pointer or two into the changelog?  That would
-show precisely that it's not just for pure Windows compatibility.
+I agree that fixing the index in this loop is a good thing, but its 
+caused me to look at the result:
 
-Thanks,
-Rafael
+for (j = 0; j<  dummy; ++j)
+	READ32(dummy);
+
+It seems to me that this loop might never terminate if the original 
+buffer is maliciously constructed, e.g., 0, 1, 2, 3, ... Is the data in 
+this buffer really that well vetted?
+
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
