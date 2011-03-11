@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab1CKDUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Mar 2011 22:20:16 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44813 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab1CKDUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Mar 2011 22:20:14 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 11 Mar 2011 12:13:43 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
-        Andreas Dilger <adilger@dilger.ca>,
-        Justin TerAvest <teravest@google.com>, m-ikeda <m-ikeda@ds.jp.nec.com>,
-        jaxboe <jaxboe@fusionio.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, ryov <ryov@valinux.co.jp>,
-        taka <taka@valinux.co.jp>, "righi.andrea" <righi.andrea@gmail.com>,
-        guijianfeng <guijianfeng@cn.fujitsu.com>,
-        balbir <balbir@linux.vnet.ibm.com>, ctalbott <ctalbott@google.com>,
-        nauman <nauman@google.com>, mrubin <mrubin@google.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC] Storing cgroup id in page->private (Was: Re: [RFC] [PATCH
- 0/6] Provide cgroup isolation for buffered writes.)
-Message-Id: <20110311121343.23c61461.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110311031503.GC11710@redhat.com>
-References: <AANLkTi=LL6JEwOcZfSsapYn-isA3RBrV8kPq8EK6va8=@mail.gmail.com>
-	<20110310191115.GG29464@redhat.com>
-	<20110310194106.GH29464@redhat.com>
-	<1299791640-sup-1874@think>
-	<3EC7D30A-B8F7-416B-8B1D-A19350C57D82@dilger.ca>
-	<20110310213832.GK29464@redhat.com>
-	<1299793340-sup-9066@think>
-	<20110311014618.GC15097@dastard>
-	<20110311021531.GA11710@redhat.com>
-	<20110311115235.3663792c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110311031503.GC11710@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1752369Ab1CKDct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Mar 2011 22:32:49 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:43702 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374Ab1CKDcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Mar 2011 22:32:48 -0500
+Date: Fri, 11 Mar 2011 14:32:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Jones <davej@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: linux-next: manual merge of the cpufreq tree with the s5p tree
+Message-Id: <20110311143230.c5d65b3c.sfr@canb.auug.org.au>
+In-Reply-To: <20110311133542.8ffb094e.sfr@au1.ibm.com>
+References: <20110311133542.8ffb094e.sfr@au1.ibm.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__11_Mar_2011_14_32_30_+1100_p4z/H6wFIVQP+ok4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011 22:15:04 -0500
-Vivek Goyal <vgoyal@redhat.com> wrote:
+--Signature=_Fri__11_Mar_2011_14_32_30_+1100_p4z/H6wFIVQP+ok4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Fri, Mar 11, 2011 at 11:52:35AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 10 Mar 2011 21:15:31 -0500
-> > Vivek Goyal <vgoyal@redhat.com> wrote:
-> >  
-> > > > IMO, if you really need some per-page information, then just put it
-> > > > in the struct page - you can't hide the memory overhead just by
-> > > > having the filesystem to store it for you. That just adds
-> > > > unnecessary complexity...
-> > > 
-> > > Ok. I guess adding anything to struct page is going to be hard and 
-> > > we might have to fall back to looking into using page_cgroup for
-> > > tracking page state. I was trying to explore the ways so that we don't
-> > > have to instantiate whole page_cgroup structure just for trying
-> > > to figure out who dirtied the page.
-> > > 
-> > 
-> > Is this bad ?
-> > ==
-> 
-> Sounds like an interesting idea. I am primarily concered about the radix
-> tree node size increase. Not sure how big a concern this is.
-> 
-> Also tracking is useful for two things.
-> 
-> - Proportinal IO
-> - IO throttling
-> 
-> For proportional IO, anyway we have to use it with memory controller to
-> control per cgroup dirty ratio so storing info in page_cgroup should
-> not hurt. 
-> 
+Hi all,
 
-dirty-ratio for memcg will be implemented. It's definitely necessary.
+On Fri, 11 Mar 2011 13:35:42 +1100 Stephen Rothwell <sfr@au1.ibm.com> wrote:
+>
 
-> The only other case where dependence on page_cgroup hurts is IO throttling
-> where IO controller does not really need memory cgroup controller (I hope
-> so). But we are still not sure if throttling IO at device level is a
-> good idea and how to resolve issues related to priority inversion.
-> 
-Yes, that's priority inversion is my concern.
+Please do not reply to the sender address on the preceding email (the
+ibm.com one), please reply to this one instead.  Sorry for the
+inconvenience.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks,
--Kame
+--Signature=_Fri__11_Mar_2011_14_32_30_+1100_p4z/H6wFIVQP+ok4
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNeZfOAAoJEDMEi1NhKgbsaXUH/RrHjjBMBx33g6EBoAgiMXqE
+UGiRafcVXJa/g1pnCD9WzSQCmgAtJ10c4ClKSk3Q5oyr4hdi6TTZ6FrTaU2isEuv
+ppGq+zmycGnlVfSzSZ2QJc1/lhwHxR2dy+ks0N79Z/fY0hfatcLPH+TXf4ryzubM
+7Wl297k7Xxzn8XCOiHp0+Jst/2IXgZuHmrnD4rpm6EoeOhzN+917o0/diZb66CGA
+uPj5HDrID/wOvR4nheP+OMn/jXpFNrBzZBSHXpReU1gPF2BFpjFUBWoxYPOUbAJM
+Sd9mMHoaEwh0MOALLtqsYTuZPedGkJSbjO3SNTTzHLBQ4cd2gw2kTeHG+di7E2c=
+=F5W4
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__11_Mar_2011_14_32_30_+1100_p4z/H6wFIVQP+ok4--
