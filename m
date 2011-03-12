@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab1CLPdc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 10:33:32 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63432 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab1CLPd3 (ORCPT
+	id S1754232Ab1CLPeP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 10:34:15 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:42907 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752147Ab1CLPeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 10:33:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=CYmqZveojz5IJfWlacH0CQCYsWD7tjOZXGw0GsF5GMoQGFX8MzI1oZ2ajQ58BXRJzv
-         2qU8r2VxmRxQb2MN35s7Ilb6o3xG/3LIEdUCbEFm+gm7t4feRwPLcTAeAfyR4efGSgTo
-         W/PpE9uNdQq1d4/w5yS5DeMkDQHeWL+j2EFKk=
-From: Robin Becker <replabrobin@gmail.com>
-To: Lennert Buytenhek <kernel@wantstofly.org>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Robin Becker <replabrobin@gmail.com>, Robin Becker <robin@reportlab.com>
-Subject: [PATCH] arm: mach-kirkwood: add led in sheevaplug-setup.c
-Date: Sat, 12 Mar 2011 15:32:45 +0000
-Message-Id: <1299943965-8626-1-git-send-email-robin@reportlab.com>
-X-Mailer: git-send-email 1.7.4.1
+	Sat, 12 Mar 2011 10:34:11 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18alBwKxK0aMIBOt6H3s4brX7QJAKwRV+0BGfV8pC
+	vEqYogDuV7VNHU
+Message-ID: <4D7B926F.60400@gmx.de>
+Date: Sat, 12 Mar 2011 16:34:07 +0100
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video via: fix iomem access
+References: <20110303095901.2a283be0@nehalam>
+In-Reply-To: <20110303095901.2a283be0@nehalam>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Becker <replabrobin@gmail.com>
+Stephen Hemminger schrieb:
+> This driver is not respecting the iomem memory space restrictions
+> and does direct access. This works on x86 but is non-portable and
+> should not be done.  Converted memcpy() of 2 to readw.
+> Last post increment of romptr was unnecessary since pointer never
+> used after that.
+> 
+> Found by sparse, compile tested only.
+> 
+> Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 
-This patch adds a second, red, led for the standard sheevaplug.
-The sheeva_esata mpp config is left unchanged.
+Applied (although it does not make a difference as viafb is x86 only). Thanks,
 
-Tested on a standard sheevaplug
 
-Signed-off-by: Robin Becker <robin@reportlab.com>
----
- arch/arm/mach-kirkwood/sheevaplug-setup.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Florian Tobias Schandinat
 
-diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-index d2eec35..247aa92 100644
---- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
-+++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-@@ -58,6 +58,12 @@ static struct mvsdio_platform_data sheeva_esata_mvsdio_data = {
- 
- static struct gpio_led sheevaplug_led_pins[] = {
- 	{
-+		.name			= "plug:red:misc",
-+		.default_trigger	= "none",
-+		.gpio			= 46,
-+		.active_low		= 1,
-+	},
-+	{
- 		.name			= "plug:green:health",
- 		.default_trigger	= "default-on",
- 		.gpio			= 49,
-@@ -80,6 +86,7 @@ static struct platform_device sheevaplug_leds = {
- 
- static unsigned int sheevaplug_mpp_config[] __initdata = {
- 	MPP29_GPIO,	/* USB Power Enable */
-+	MPP46_GPIO,	/* LED Red */
- 	MPP49_GPIO,	/* LED */
- 	0
- };
--- 
-1.7.4.1
+> 
+> ---
+>  drivers/video/via/lcd.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- a/drivers/video/via/lcd.c	2011-03-03 09:09:10.552604209 -0800
+> +++ b/drivers/video/via/lcd.c	2011-03-03 09:56:12.144398571 -0800
+> @@ -1064,34 +1064,33 @@ static struct display_timing lcd_centeri
+>  
+>  bool viafb_lcd_get_mobile_state(bool *mobile)
+>  {
+> -	unsigned char *romptr, *tableptr;
+> +	unsigned char __iomem *romptr, *tableptr, *biosptr;
+>  	u8 core_base;
+> -	unsigned char *biosptr;
+>  	/* Rom address */
+> -	u32 romaddr = 0x000C0000;
+> -	u16 start_pattern = 0;
+> +	const u32 romaddr = 0x000C0000;
+> +	u16 start_pattern;
+>  
+>  	biosptr = ioremap(romaddr, 0x10000);
+> +	start_pattern = readw(biosptr);
+>  
+> -	memcpy(&start_pattern, biosptr, 2);
+>  	/* Compare pattern */
+>  	if (start_pattern == 0xAA55) {
+>  		/* Get the start of Table */
+>  		/* 0x1B means BIOS offset position */
+>  		romptr = biosptr + 0x1B;
+> -		tableptr = biosptr + *((u16 *) romptr);
+> +		tableptr = biosptr + readw(romptr);
+>  
+>  		/* Get the start of biosver structure */
+>  		/* 18 means BIOS version position. */
+>  		romptr = tableptr + 18;
+> -		romptr = biosptr + *((u16 *) romptr);
+> +		romptr = biosptr + readw(romptr);
+>  
+>  		/* The offset should be 44, but the
+>  		   actual image is less three char. */
+>  		/* pRom += 44; */
+>  		romptr += 41;
+>  
+> -		core_base = *romptr++;
+> +		core_base = readb(romptr);
+>  
+>  		if (core_base & 0x8)
+>  			*mobile = false;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
