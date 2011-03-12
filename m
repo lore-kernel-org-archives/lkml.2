@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab1CLVWh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 16:22:37 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:53702 "EHLO ogre.sisk.pl"
+	id S1756098Ab1CLVWn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 16:22:43 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:53696 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756039Ab1CLVWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 16:22:34 -0500
+	id S1756037Ab1CLVWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 16:22:33 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/8] PCI / Intel IOMMU: Use syscore_ops instead of sysdev class and sysdev
-Date: Sat, 12 Mar 2011 22:18:14 +0100
+Subject: [PATCH 6/8] KVM: Use syscore_ops instead of sysdev class and sysdev
+Date: Sat, 12 Mar 2011 22:18:51 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
 Cc: Len Brown <lenb@kernel.org>, Greg KH <gregkh@suse.de>,
         Kay Sievers <kay.sievers@suse.de>,
@@ -24,118 +24,127 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103122218.14832.rjw@sisk.pl>
+Message-Id: <201103122218.52327.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The Intel IOMMU subsystem uses a sysdev class and a sysdev for
-executing iommu_suspend() after interrupts have been turned off
-on the boot CPU (during system suspend) and for executing
-iommu_resume() before turning on interrupts on the boot CPU
-(during system resume).  However, since both of these functions
-ignore their arguments, the entire mechanism may be replaced with a
-struct syscore_ops object which is simpler.
+KVM uses a sysdev class and a sysdev for executing kvm_suspend()
+after interrupts have been turned off on the boot CPU (during system
+suspend) and for executing kvm_resume() before turning on interrupts
+on the boot CPU (during system resume).  However, since both of these
+functions ignore their arguments, the entire mechanism may be
+replaced with a struct syscore_ops object which is simpler.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/pci/intel-iommu.c |   38 +++++++++-----------------------------
- 1 file changed, 9 insertions(+), 29 deletions(-)
+ virt/kvm/kvm_main.c |   34 ++++++++--------------------------
+ 1 file changed, 8 insertions(+), 26 deletions(-)
 
-Index: linux-2.6/drivers/pci/intel-iommu.c
+Index: linux-2.6/virt/kvm/kvm_main.c
 ===================================================================
---- linux-2.6.orig/drivers/pci/intel-iommu.c
-+++ linux-2.6/drivers/pci/intel-iommu.c
-@@ -36,7 +36,7 @@
- #include <linux/iova.h>
- #include <linux/iommu.h>
- #include <linux/intel-iommu.h>
+--- linux-2.6.orig/virt/kvm/kvm_main.c
++++ linux-2.6/virt/kvm/kvm_main.c
+@@ -30,7 +30,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/highmem.h>
+ #include <linux/file.h>
 -#include <linux/sysdev.h>
 +#include <linux/syscore_ops.h>
- #include <linux/tboot.h>
- #include <linux/dmi.h>
- #include <asm/cacheflush.h>
-@@ -3135,7 +3135,7 @@ static void iommu_flush_all(void)
- 	}
+ #include <linux/cpu.h>
+ #include <linux/sched.h>
+ #include <linux/cpumask.h>
+@@ -2392,33 +2392,26 @@ static void kvm_exit_debug(void)
+ 	debugfs_remove(kvm_debugfs_dir);
  }
  
--static int iommu_suspend(struct sys_device *dev, pm_message_t state)
-+static int iommu_suspend(void)
+-static int kvm_suspend(struct sys_device *dev, pm_message_t state)
++static int kvm_suspend(void)
  {
- 	struct dmar_drhd_unit *drhd;
- 	struct intel_iommu *iommu = NULL;
-@@ -3175,7 +3175,7 @@ nomem:
- 	return -ENOMEM;
+ 	if (kvm_usage_count)
+ 		hardware_disable_nolock(NULL);
+ 	return 0;
  }
  
--static int iommu_resume(struct sys_device *dev)
-+static void iommu_resume(void)
+-static int kvm_resume(struct sys_device *dev)
++static void kvm_resume(void)
  {
- 	struct dmar_drhd_unit *drhd;
- 	struct intel_iommu *iommu = NULL;
-@@ -3183,7 +3183,7 @@ static int iommu_resume(struct sys_devic
- 
- 	if (init_iommu_hw()) {
- 		WARN(1, "IOMMU setup failed, DMAR can not resume!\n");
--		return -EIO;
-+		return;
+ 	if (kvm_usage_count) {
+ 		WARN_ON(spin_is_locked(&kvm_lock));
+ 		hardware_enable_nolock(NULL);
  	}
- 
- 	for_each_active_iommu(iommu, drhd) {
-@@ -3204,40 +3204,20 @@ static int iommu_resume(struct sys_devic
- 
- 	for_each_active_iommu(iommu, drhd)
- 		kfree(iommu->iommu_state);
--
 -	return 0;
  }
  
--static struct sysdev_class iommu_sysclass = {
--	.name		= "iommu",
-+static struct syscore_ops iommu_syscore_ops = {
- 	.resume		= iommu_resume,
- 	.suspend	= iommu_suspend,
+-static struct sysdev_class kvm_sysdev_class = {
+-	.name = "kvm",
++static struct syscore_ops kvm_syscore_ops = {
+ 	.suspend = kvm_suspend,
+ 	.resume = kvm_resume,
  };
  
--static struct sys_device device_iommu = {
--	.cls	= &iommu_sysclass,
+-static struct sys_device kvm_sysdev = {
+-	.id = 0,
+-	.cls = &kvm_sysdev_class,
 -};
 -
--static int __init init_iommu_sysfs(void)
-+static void __init init_iommu_pm_ops(void)
- {
--	int error;
+ struct page *bad_page;
+ pfn_t bad_pfn;
+ 
+@@ -2502,14 +2495,6 @@ int kvm_init(void *opaque, unsigned vcpu
+ 		goto out_free_2;
+ 	register_reboot_notifier(&kvm_reboot_notifier);
+ 
+-	r = sysdev_class_register(&kvm_sysdev_class);
+-	if (r)
+-		goto out_free_3;
 -
--	error = sysdev_class_register(&iommu_sysclass);
--	if (error)
--		return error;
+-	r = sysdev_register(&kvm_sysdev);
+-	if (r)
+-		goto out_free_4;
 -
--	error = sysdev_register(&device_iommu);
--	if (error)
--		sysdev_class_unregister(&iommu_sysclass);
--
--	return error;
-+	register_syscore_ops(&iommu_syscore_ops);
- }
+ 	/* A kmem cache lets us meet the alignment requirements of fx_save. */
+ 	if (!vcpu_align)
+ 		vcpu_align = __alignof__(struct kvm_vcpu);
+@@ -2517,7 +2502,7 @@ int kvm_init(void *opaque, unsigned vcpu
+ 					   0, NULL);
+ 	if (!kvm_vcpu_cache) {
+ 		r = -ENOMEM;
+-		goto out_free_5;
++		goto out_free_3;
+ 	}
  
- #else
--static int __init init_iommu_sysfs(void)
--{
--	return 0;
--}
-+static inline int init_iommu_pm_ops(void) { }
- #endif	/* CONFIG_PM */
+ 	r = kvm_async_pf_init();
+@@ -2534,6 +2519,8 @@ int kvm_init(void *opaque, unsigned vcpu
+ 		goto out_unreg;
+ 	}
  
- /*
-@@ -3320,7 +3300,7 @@ int __init intel_iommu_init(void)
- #endif
- 	dma_ops = &intel_dma_ops;
++	register_syscore_ops(&kvm_syscore_ops);
++
+ 	kvm_preempt_ops.sched_in = kvm_sched_in;
+ 	kvm_preempt_ops.sched_out = kvm_sched_out;
  
--	init_iommu_sysfs();
-+	init_iommu_pm_ops();
- 
- 	register_iommu(&intel_iommu_ops);
- 
+@@ -2545,10 +2532,6 @@ out_unreg:
+ 	kvm_async_pf_deinit();
+ out_free:
+ 	kmem_cache_destroy(kvm_vcpu_cache);
+-out_free_5:
+-	sysdev_unregister(&kvm_sysdev);
+-out_free_4:
+-	sysdev_class_unregister(&kvm_sysdev_class);
+ out_free_3:
+ 	unregister_reboot_notifier(&kvm_reboot_notifier);
+ 	unregister_cpu_notifier(&kvm_cpu_notifier);
+@@ -2576,8 +2559,7 @@ void kvm_exit(void)
+ 	misc_deregister(&kvm_dev);
+ 	kmem_cache_destroy(kvm_vcpu_cache);
+ 	kvm_async_pf_deinit();
+-	sysdev_unregister(&kvm_sysdev);
+-	sysdev_class_unregister(&kvm_sysdev_class);
++	unregister_syscore_ops(&kvm_syscore_ops);
+ 	unregister_reboot_notifier(&kvm_reboot_notifier);
+ 	unregister_cpu_notifier(&kvm_cpu_notifier);
+ 	on_each_cpu(hardware_disable_nolock, NULL, 1);
 
