@@ -1,142 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab1CLDTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 22:19:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59458 "EHLO
+	id S1755781Ab1CLDTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 22:19:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39758 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab1CLDTW (ORCPT
+	with ESMTP id S1752905Ab1CLDTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Mar 2011 22:19:22 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=YyQfyex7IYMA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=omOdbC7AAAAA:8 a=QyXUC8HyAAAA:8 a=meVymXHHAAAA:8 a=U07H2Egmfcm3NIXDJVoA:9 a=jwQ_QClbMe7bWboJE_kA:7 a=JsoqyYm3PNDWi_Rhp-aRV_R-1aQA:4 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=-sn-gDyZLBkA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=2IQp4EzNG9HAonpgjewA:9 a=hQNTzPYjo5BvJKRTN14A:7 a=Afu_8AQicsoKkaE6c1LqeFdonQoA:4 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110312031919.227627970@goodmis.org>
+Message-Id: <20110312031919.797900329@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 11 Mar 2011 22:14:36 -0500
+Date: Fri, 11 Mar 2011 22:14:38 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 1/4] futex,plist: Pass the real head of the priority list to plist_del()
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 3/4] plist: Shrink struct plist_head
 References: <20110312031435.890203189@goodmis.org>
-Content-Disposition: inline; filename=0001-futex-plist-Pass-the-real-head-of-the-priority-list-.patch
+Content-Disposition: inline; filename=0003-plist-Shrink-struct-plist_head.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Some plist_del()s in kernel/futex.c are passed a faked head of the
-priority list.
+struct plist_head is used in struct task_struct as well as struct
+rtmutex. If we can make it smaller, it will also make these structures
+smaller as well.
 
-It does not fail because the current code does not require the real head
-in plist_del(). The current code of plist_del() just uses the head for checking,
-so it will not cause a bad result even when we use a faked head.
+The field prio_list in struct plist_head is seldom used and we can get
+its information from the plist_nodes. Removing this field will decrease
+the size of plist_head by half.
 
-But it is undocumented usage:
-
-/**
- * plist_del - Remove a @node from plist.
- *
- * @node:	&struct plist_node pointer - entry to be removed
- * @head:	&struct plist_head pointer - list head
- */
-
-The document says that the @head is the "list head" head of the priority list.
-
-In futex code, several places use "plist_del(&q->list, &q->list.plist);",
-they pass a fake head. We need to fix them all.
-
-Thanks to Darren Hart for many suggestions.
-
-Acked-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by:  Lai Jiangshan <laijs@cn.fujitsu.com>
-LKML-Reference: <4D11984A.5030203@cn.fujitsu.com>
+LKML-Reference: <4D107982.9090700@cn.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/futex.c |   31 +++++++++++++++++++++++--------
- 1 files changed, 23 insertions(+), 8 deletions(-)
+ include/linux/plist.h |   47 +++++++++++++++++++++--------------------
+ lib/plist.c           |   54 +++++++++++++++++++++++++++++++-----------------
+ 2 files changed, 59 insertions(+), 42 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index b766d28..6feeea4 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -775,6 +775,24 @@ retry:
- 	return ret;
+diff --git a/include/linux/plist.h b/include/linux/plist.h
+index 7254eda..c9b9f32 100644
+--- a/include/linux/plist.h
++++ b/include/linux/plist.h
+@@ -31,15 +31,17 @@
+  *
+  * Simple ASCII art explanation:
+  *
+- * |HEAD          |
+- * |              |
+- * |prio_list.prev|<------------------------------------|
+- * |prio_list.next|<->|pl|<->|pl|<--------------->|pl|<-|
+- * |10            |   |10|   |21|   |21|   |21|   |40|   (prio)
+- * |              |   |  |   |  |   |  |   |  |   |  |
+- * |              |   |  |   |  |   |  |   |  |   |  |
+- * |node_list.next|<->|nl|<->|nl|<->|nl|<->|nl|<->|nl|<-|
+- * |node_list.prev|<------------------------------------|
++ * pl:prio_list (only for plist_node)
++ * nl:node_list
++ *   HEAD|             NODE(S)
++ *       |
++ *       ||------------------------------------|
++ *       ||->|pl|<->|pl|<--------------->|pl|<-|
++ *       |   |10|   |21|   |21|   |21|   |40|   (prio)
++ *       |   |  |   |  |   |  |   |  |   |  |
++ *       |   |  |   |  |   |  |   |  |   |  |
++ * |->|nl|<->|nl|<->|nl|<->|nl|<->|nl|<->|nl|<-|
++ * |-------------------------------------------|
+  *
+  * The nodes on the prio_list list are sorted by priority to simplify
+  * the insertion of new nodes. There are no nodes with duplicate
+@@ -78,7 +80,6 @@
+ #include <linux/spinlock_types.h>
+ 
+ struct plist_head {
+-	struct list_head prio_list;
+ 	struct list_head node_list;
+ #ifdef CONFIG_DEBUG_PI_LIST
+ 	raw_spinlock_t *rawlock;
+@@ -88,7 +89,8 @@ struct plist_head {
+ 
+ struct plist_node {
+ 	int			prio;
+-	struct plist_head	plist;
++	struct list_head	prio_list;
++	struct list_head	node_list;
+ };
+ 
+ #ifdef CONFIG_DEBUG_PI_LIST
+@@ -100,7 +102,6 @@ struct plist_node {
+ #endif
+ 
+ #define _PLIST_HEAD_INIT(head)				\
+-	.prio_list = LIST_HEAD_INIT((head).prio_list),	\
+ 	.node_list = LIST_HEAD_INIT((head).node_list)
+ 
+ /**
+@@ -133,7 +134,8 @@ struct plist_node {
+ #define PLIST_NODE_INIT(node, __prio)			\
+ {							\
+ 	.prio  = (__prio),				\
+-	.plist = { _PLIST_HEAD_INIT((node).plist) },	\
++	.prio_list = LIST_HEAD_INIT((node).prio_list),	\
++	.node_list = LIST_HEAD_INIT((node).node_list),	\
  }
  
-+/**
-+ * __unqueue_futex() - Remove the futex_q from its futex_hash_bucket
-+ * @q:	The futex_q to unqueue
-+ *
-+ * The q->lock_ptr must not be NULL and must be held by the caller.
-+ */
-+static void __unqueue_futex(struct futex_q *q)
-+{
-+	struct futex_hash_bucket *hb;
-+
-+	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
-+			|| plist_node_empty(&q->list)))
-+		return;
-+
-+	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
-+	plist_del(&q->list, &hb->chain);
-+}
-+
- /*
-  * The hash bucket lock must be held when this is called.
-  * Afterwards, the futex_q must not be accessed.
-@@ -792,7 +810,7 @@ static void wake_futex(struct futex_q *q)
- 	 */
- 	get_task_struct(p);
- 
--	plist_del(&q->list, &q->list.plist);
-+	__unqueue_futex(q);
- 	/*
- 	 * The waiting task can free the futex_q as soon as
- 	 * q->lock_ptr = NULL is written, without taking any locks. A
-@@ -1100,8 +1118,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
- 	get_futex_key_refs(key);
- 	q->key = *key;
- 
--	WARN_ON(plist_node_empty(&q->list));
--	plist_del(&q->list, &q->list.plist);
-+	__unqueue_futex(q);
- 
- 	WARN_ON(!q->rt_waiter);
- 	q->rt_waiter = NULL;
-@@ -1504,8 +1521,7 @@ retry:
- 			spin_unlock(lock_ptr);
- 			goto retry;
- 		}
--		WARN_ON(plist_node_empty(&q->list));
--		plist_del(&q->list, &q->list.plist);
-+		__unqueue_futex(q);
- 
- 		BUG_ON(q->pi_state);
- 
-@@ -1525,8 +1541,7 @@ retry:
- static void unqueue_me_pi(struct futex_q *q)
- 	__releases(q->lock_ptr)
+ /**
+@@ -144,7 +146,6 @@ struct plist_node {
+ static inline void
+ plist_head_init(struct plist_head *head, spinlock_t *lock)
  {
--	WARN_ON(plist_node_empty(&q->list));
--	plist_del(&q->list, &q->list.plist);
-+	__unqueue_futex(q);
+-	INIT_LIST_HEAD(&head->prio_list);
+ 	INIT_LIST_HEAD(&head->node_list);
+ #ifdef CONFIG_DEBUG_PI_LIST
+ 	head->spinlock = lock;
+@@ -160,7 +161,6 @@ plist_head_init(struct plist_head *head, spinlock_t *lock)
+ static inline void
+ plist_head_init_raw(struct plist_head *head, raw_spinlock_t *lock)
+ {
+-	INIT_LIST_HEAD(&head->prio_list);
+ 	INIT_LIST_HEAD(&head->node_list);
+ #ifdef CONFIG_DEBUG_PI_LIST
+ 	head->rawlock = lock;
+@@ -176,7 +176,8 @@ plist_head_init_raw(struct plist_head *head, raw_spinlock_t *lock)
+ static inline void plist_node_init(struct plist_node *node, int prio)
+ {
+ 	node->prio = prio;
+-	plist_head_init(&node->plist, NULL);
++	INIT_LIST_HEAD(&node->prio_list);
++	INIT_LIST_HEAD(&node->node_list);
+ }
  
- 	BUG_ON(!q->pi_state);
- 	free_pi_state(q->pi_state);
-@@ -2167,7 +2182,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
- 		 * We were woken prior to requeue by a timeout or a signal.
- 		 * Unqueue the futex_q and determine which it was.
- 		 */
--		plist_del(&q->list, &q->list.plist);
-+		plist_del(&q->list, &hb->chain);
+ extern void plist_add(struct plist_node *node, struct plist_head *head);
+@@ -188,7 +189,7 @@ extern void plist_del(struct plist_node *node, struct plist_head *head);
+  * @head:	the head for your list
+  */
+ #define plist_for_each(pos, head)	\
+-	 list_for_each_entry(pos, &(head)->node_list, plist.node_list)
++	 list_for_each_entry(pos, &(head)->node_list, node_list)
  
- 		/* Handle spurious wakeups gracefully */
- 		ret = -EWOULDBLOCK;
+ /**
+  * plist_for_each_safe - iterate safely over a plist of given type
+@@ -199,7 +200,7 @@ extern void plist_del(struct plist_node *node, struct plist_head *head);
+  * Iterate over a plist of given type, safe against removal of list entry.
+  */
+ #define plist_for_each_safe(pos, n, head)	\
+-	 list_for_each_entry_safe(pos, n, &(head)->node_list, plist.node_list)
++	 list_for_each_entry_safe(pos, n, &(head)->node_list, node_list)
+ 
+ /**
+  * plist_for_each_entry	- iterate over list of given type
+@@ -208,7 +209,7 @@ extern void plist_del(struct plist_node *node, struct plist_head *head);
+  * @mem:	the name of the list_struct within the struct
+  */
+ #define plist_for_each_entry(pos, head, mem)	\
+-	 list_for_each_entry(pos, &(head)->node_list, mem.plist.node_list)
++	 list_for_each_entry(pos, &(head)->node_list, mem.node_list)
+ 
+ /**
+  * plist_for_each_entry_safe - iterate safely over list of given type
+@@ -220,7 +221,7 @@ extern void plist_del(struct plist_node *node, struct plist_head *head);
+  * Iterate over list of given type, safe against removal of list entry.
+  */
+ #define plist_for_each_entry_safe(pos, n, head, m)	\
+-	list_for_each_entry_safe(pos, n, &(head)->node_list, m.plist.node_list)
++	list_for_each_entry_safe(pos, n, &(head)->node_list, m.node_list)
+ 
+ /**
+  * plist_head_empty - return !0 if a plist_head is empty
+@@ -237,7 +238,7 @@ static inline int plist_head_empty(const struct plist_head *head)
+  */
+ static inline int plist_node_empty(const struct plist_node *node)
+ {
+-	return plist_head_empty(&node->plist);
++	return list_empty(&node->node_list);
+ }
+ 
+ /* All functions below assume the plist_head is not empty. */
+@@ -285,7 +286,7 @@ static inline int plist_node_empty(const struct plist_node *node)
+ static inline struct plist_node *plist_first(const struct plist_head *head)
+ {
+ 	return list_entry(head->node_list.next,
+-			  struct plist_node, plist.node_list);
++			  struct plist_node, node_list);
+ }
+ 
+ /**
+@@ -297,7 +298,7 @@ static inline struct plist_node *plist_first(const struct plist_head *head)
+ static inline struct plist_node *plist_last(const struct plist_head *head)
+ {
+ 	return list_entry(head->node_list.prev,
+-			  struct plist_node, plist.node_list);
++			  struct plist_node, node_list);
+ }
+ 
+ #endif
+diff --git a/lib/plist.c b/lib/plist.c
+index 1471988..8c614d0 100644
+--- a/lib/plist.c
++++ b/lib/plist.c
+@@ -59,7 +59,8 @@ static void plist_check_head(struct plist_head *head)
+ 		WARN_ON_SMP(!raw_spin_is_locked(head->rawlock));
+ 	if (head->spinlock)
+ 		WARN_ON_SMP(!spin_is_locked(head->spinlock));
+-	plist_check_list(&head->prio_list);
++	if (!plist_head_empty(head))
++		plist_check_list(&plist_first(head)->prio_list);
+ 	plist_check_list(&head->node_list);
+ }
+ 
+@@ -75,25 +76,33 @@ static void plist_check_head(struct plist_head *head)
+  */
+ void plist_add(struct plist_node *node, struct plist_head *head)
+ {
+-	struct plist_node *iter;
++	struct plist_node *first, *iter, *prev = NULL;
++	struct list_head *node_next = &head->node_list;
+ 
+ 	plist_check_head(head);
+ 	WARN_ON(!plist_node_empty(node));
++	WARN_ON(!list_empty(&node->prio_list));
+ 
+-	list_for_each_entry(iter, &head->prio_list, plist.prio_list) {
+-		if (node->prio < iter->prio)
+-			goto lt_prio;
+-		else if (node->prio == iter->prio) {
+-			iter = list_entry(iter->plist.prio_list.next,
+-					struct plist_node, plist.prio_list);
+-			goto eq_prio;
++	if (plist_head_empty(head))
++		goto ins_node;
++
++	first = iter = plist_first(head);
++
++	do {
++		if (node->prio < iter->prio) {
++			node_next = &iter->node_list;
++			break;
+ 		}
+-	}
+ 
+-lt_prio:
+-	list_add_tail(&node->plist.prio_list, &iter->plist.prio_list);
+-eq_prio:
+-	list_add_tail(&node->plist.node_list, &iter->plist.node_list);
++		prev = iter;
++		iter = list_entry(iter->prio_list.next,
++				struct plist_node, prio_list);
++	} while (iter != first);
++
++	if (!prev || prev->prio != node->prio)
++		list_add_tail(&node->prio_list, &iter->prio_list);
++ins_node:
++	list_add_tail(&node->node_list, node_next);
+ 
+ 	plist_check_head(head);
+ }
+@@ -108,14 +117,21 @@ void plist_del(struct plist_node *node, struct plist_head *head)
+ {
+ 	plist_check_head(head);
+ 
+-	if (!list_empty(&node->plist.prio_list)) {
+-		struct plist_node *next = plist_first(&node->plist);
++	if (!list_empty(&node->prio_list)) {
++		if (node->node_list.next != &head->node_list) {
++			struct plist_node *next;
++
++			next = list_entry(node->node_list.next,
++					struct plist_node, node_list);
+ 
+-		list_move_tail(&next->plist.prio_list, &node->plist.prio_list);
+-		list_del_init(&node->plist.prio_list);
++			/* add the next plist_node into prio_list */
++			if (list_empty(&next->prio_list))
++				list_add(&next->prio_list, &node->prio_list);
++		}
++		list_del_init(&node->prio_list);
+ 	}
+ 
+-	list_del_init(&node->plist.node_list);
++	list_del_init(&node->node_list);
+ 
+ 	plist_check_head(head);
+ }
 -- 
 1.7.2.3
 
