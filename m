@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab1CLJN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 04:13:27 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51585 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab1CLJNX (ORCPT
+	id S1753078Ab1CLJOn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 04:14:43 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62969 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab1CLJOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 04:13:23 -0500
-Date: Sat, 12 Mar 2011 02:13:20 -0700
+	Sat, 12 Mar 2011 04:14:39 -0500
+Date: Sat, 12 Mar 2011 02:14:37 -0700
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+Cc: linux-kernel@vger.kernel.org, Miguel Gaio <miguel.gaio@efixo.com>,
+        Mocean Laboratories <info@mocean-labs.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] gpio: add MODULE_DEVICE_TABLE
-Message-ID: <20110312091320.GH9347@angua.secretlab.ca>
-References: <1299746914.18619.3.camel@mola>
+Subject: Re: [PATCH] gpio: Use  __devexit at necessary places
+Message-ID: <20110312091437.GI9347@angua.secretlab.ca>
+References: <1299748245.18619.5.camel@mola>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299746914.18619.3.camel@mola>
+In-Reply-To: <1299748245.18619.5.camel@mola>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 04:48:34PM +0800, Axel Lin wrote:
-> The device table is required to load modules based on modaliases.
-> After adding MODULE_DEVICE_TABLE, below entries will be added to modules.pcimap:
-> 
-> pch_gpio             0x00008086 0x00008803 0xffffffff 0xffffffff 0x00000000 0x00000000 0x0
-> ml_ioh_gpio          0x000010db 0x0000802e 0xffffffff 0xffffffff 0x00000000 0x00000000 0x0
+On Thu, Mar 10, 2011 at 05:10:45PM +0800, Axel Lin wrote:
+> The function gen_74x164_remove and mc33880_remove are used only wrapped
+> by __devexit_p so define it using __devexit.
 > 
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> Cc: Miguel Gaio <miguel.gaio@efixo.com>
+> Cc: Mocean Laboratories <info@mocean-labs.com>
 
 Applied, thanks.
 
 g.
 
 > ---
->  drivers/gpio/ml_ioh_gpio.c |    1 +
->  drivers/gpio/pch_gpio.c    |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
+>  drivers/gpio/74x164.c  |    2 +-
+>  drivers/gpio/mc33880.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/gpio/ml_ioh_gpio.c b/drivers/gpio/ml_ioh_gpio.c
-> index cead8e6..7f6f01a 100644
-> --- a/drivers/gpio/ml_ioh_gpio.c
-> +++ b/drivers/gpio/ml_ioh_gpio.c
-> @@ -326,6 +326,7 @@ static DEFINE_PCI_DEVICE_TABLE(ioh_gpio_pcidev_id) = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x802E) },
->  	{ 0, }
->  };
-> +MODULE_DEVICE_TABLE(pci, ioh_gpio_pcidev_id);
+> diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
+> index d91ff4c..84e0702 100644
+> --- a/drivers/gpio/74x164.c
+> +++ b/drivers/gpio/74x164.c
+> @@ -133,7 +133,7 @@ exit_destroy:
+>  	return ret;
+>  }
 >  
->  static struct pci_driver ioh_gpio_driver = {
->  	.name = "ml_ioh_gpio",
-> diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
-> index 0eba0a7..2c6af87 100644
-> --- a/drivers/gpio/pch_gpio.c
-> +++ b/drivers/gpio/pch_gpio.c
-> @@ -286,6 +286,7 @@ static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
->  	{ 0, }
->  };
-> +MODULE_DEVICE_TABLE(pci, pch_gpio_pcidev_id);
+> -static int gen_74x164_remove(struct spi_device *spi)
+> +static int __devexit gen_74x164_remove(struct spi_device *spi)
+>  {
+>  	struct gen_74x164_chip *chip;
+>  	int ret;
+> diff --git a/drivers/gpio/mc33880.c b/drivers/gpio/mc33880.c
+> index 935479d..00f6d24 100644
+> --- a/drivers/gpio/mc33880.c
+> +++ b/drivers/gpio/mc33880.c
+> @@ -146,7 +146,7 @@ exit_destroy:
+>  	return ret;
+>  }
 >  
->  static struct pci_driver pch_gpio_driver = {
->  	.name = "pch_gpio",
+> -static int mc33880_remove(struct spi_device *spi)
+> +static int __devexit mc33880_remove(struct spi_device *spi)
+>  {
+>  	struct mc33880 *mc;
+>  	int ret;
 > -- 
 > 1.7.2
 > 
