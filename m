@@ -1,123 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1CLCwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 21:52:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65102 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab1CLCwS (ORCPT
+	id S1755536Ab1CLCxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 21:53:10 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:58184 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab1CLCxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 21:52:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Hg99EIl+tzLYAZ5yEuuIptnDgts2gXcCXG/jZqt1DhdGFodyHNmmtUTH+WxqvOX8/P
-         HOX+dS5mCiSGOqors4a9kfmapHJWs7Ib5vYHxwaSFusa3WkJCRz2rHWI/H5vMjDiVwKA
-         fYn+DvyNXOMW0jBMEAOjI8lCNlFdVqgSNZRvw=
-Message-ID: <4D7ADFDD.9080108@gmail.com>
-Date: Fri, 11 Mar 2011 21:52:13 -0500
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Indan Zupancic <indan@nul.nu>
-CC: Arnd Bergmann <arnd@arndb.de>, Sage Weil <sage@newdream.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>    <201103111255.44979.arnd@arndb.de>    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>    <4D7AC0FE.8070806@gmail.com> <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 11 Mar 2011 21:53:07 -0500
+Subject: Re: [PATCH] netconsole: Fix strange kconfig dependency on configfs
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1299811491.15854.891.camel@gandalf.stny.rr.com>
+References: <1299811491.15854.891.camel@gandalf.stny.rr.com>
+Content-Type: text/plain
+Date: Fri, 11 Mar 2011 18:46:20 -0800
+Message-Id: <1299897980.20043.36.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 08:33 PM, Indan Zupancic wrote:
-> On Sat, March 12, 2011 01:40, Ric Wheeler wrote:
->> On 03/11/2011 06:45 PM, Indan Zupancic wrote:
->>> On Fri, March 11, 2011 12:55, Arnd Bergmann wrote:
->>>> On Friday 11 March 2011, Indan Zupancic wrote:
->>>>>>         http://marc.info/?l=linux-fsdevel&amp;m=127970513829285&amp;w=2
->>>>> The patch there seems much more reasonable than introducing a whole
->>>>> new systemcall just for 20 lines of kernel code. New system calls are
->>>>> added too easily nowadays.
->>>> The only problem with adding new system calls is that we are stuck
->>>> with the interface until the end of time, so we must be sure not
->>>> to get it wrong. The same thing is true for any other interface
->>>> such as ioctl or extensions to existing system calls. People usually
->>>> get away with adding new ioctls more easily because it is less
->>>> obvious when they are added.
->>> Agreed.
->>>
->>> I'm not sure this feature is important enough to add. I can't really
->>> think of a regular use case where this would be useful, generally
->>> it's transparent on which mount files are. Add symlinks, and you
->>> give users a lot of rope. Any user has to make sure that all the
->>> files they want to sync are on the same file system.
->>>
->>> About the arguments against sync(2):
->>>
->>>>    - On machines with many mounts, it is not at all uncommon for some of
->>>>      them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
->>>>      those and may never get to the one you do care about (e.g., /).
->>> It would be better to fix NFS, or mount it with the fsc option (assuming
->>> a sync will write to the local cache instead of hanging forever then).
->>>
->>>>    - Some applications write lots of data to the file system and then
->>>>      want to make sure it is flushed to disk.  Calling fsync(2) on each
->>>>      file introduces unnecessary ordering constraints that result in a large
->>>>      amount of sub-optimal writeback/flush/commit behavior by the file
->>>>      system.
->>> You can use sync_file_range() on those files to schedule the writes
->>> and then do the fsync(2) as usual (both on files and dirs).
->>>
->>> If there still is a good reason to implement this, please don't add it
->>> as a new system call, but add it to sync_file_range(), as that seems
->>> the best place for odd file synchronisation operations.
->>>
->>> Greetings,
->>>
->>> Indan
->>>
->>>
->>> --
->> Hi Indan,
->>
->> I think that you missed the point of the extension.
->>
->> Ric
-> The point is clear, it's to synchronize a specific file system instead
-> of all of them.
->
-> But actually doing that from a program is harder than it looks, because
-> programs work with files, not file systems. To make this feature useful
-> the program needs meta information it can't easily get. That was my first
-> point.
->
-> The rest was just replying to the motivations given to add the feature.
-> If those motivations miss the point of the extension, don't blame me.
->
-> If you want to add a new one, "I'd like sync /mounpoint to work", then
-> do so, but please tell what practical use that has, if you're not going
-> to unmount the thing soon after anyway.
->
-> Other than this questionable use case, is there any other one that would
-> justify adding this extension?
->
-> Greetings,
->
-> Indan
->
+On Thu, 2011-03-10 at 21:44 -0500, Steven Rostedt wrote:
+> Doing ktest rand config tests, I hit the following build bug:
+> 
+>   LD      .tmp_vmlinux1
+> drivers/built-in.o: In function `netconsole_target_get':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
+> drivers/built-in.o: In function `netconsole_target_put':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
+> drivers/built-in.o: In function `netconsole_target_get':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
+> drivers/built-in.o: In function `netconsole_target_put':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
+> drivers/built-in.o: In function `drop_netconsole_target':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:634: undefined reference to `config_item_put'
+> drivers/built-in.o: In function `make_netconsole_target':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:607: undefined reference to `config_item_init_type_name'
+> drivers/built-in.o: In function `dynamic_netconsole_init':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:109: undefined reference to `config_group_init'
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:111: undefined reference to `configfs_register_subsystem'
+> drivers/built-in.o: In function `dynamic_netconsole_exit':
+> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:116: undefined reference to `configfs_unregister_subsystem'
+> make[1]: *** [.tmp_vmlinux1] Error 1
+> 
+> The .config had the following settings:
+> 
+> CONFIG_CONFIGFS_FS=m
+> CONFIG_NETCONSOLE=y
+> CONFIG_NETCONSOLE_DYNAMIC=y
+> 
+> NETCONSOLE_DYNAMIC depends on NETCONSOLE and CONFIGFS_FS, but
+> NETCONSOLE_DYNAMIC is just a boolean and not a tristate, where both
+> NETCONSOLE and CONFIGFS_FS are tristates and can be built as modules.
+> 
+> As we can see from the resulting config, NETCONSOLE_DYNAMIC can be set
+> to be builtin when CONFIGFS_FS which it depends on is built as a module.
+> 
+> The simplest solution is not to allow NETCONSOLE_DYNAMIC be enabled if
+> CONFIGFS_FS is a module but NETCONSOLE is built in, as
+> NETCONSOLE_DYNAMIC depends on code that is only compiled in when
+> CONFIGFS_FS is set.
+> 
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> Cc: Joel Becker <jlbec@evilplan.org>
+> Cc: Randy Dunlap <randy.dunlap@oracle.com>
+> CC: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: James Bottomley <James.Bottomley@suse.de>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
 
-Sage was pretty clear in stating the motivation which is the use case you think 
-is questionable. Probably not interesting for consumer devices, but definitely 
-extremely interesting in large servers with multiple file systems.
+Hi Steven,
 
-In fact, we do it today as mentioned earlier in the thread - this simply exports 
-that useful capability in a clean way.
+This particular case was reported by Ingo and fixed back in January by
+converting this to properly use 'select CONFIGFS', but it appears that
+this series did not get picked up.
 
-Ric
+[PATCH RESEND 0/4] Fix kconfig breakage wrt to CONFIGFS_FS
+http://marc.info/?l=linux-netdev&m=129615549321425&w=2
+
+Would someone be so kind as to carry these..?
+
+Thanks,
+
+--nab
+
+> ---
+>  drivers/net/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> Index: linux-test.git/drivers/net/Kconfig
+> ===================================================================
+> --- linux-test.git.orig/drivers/net/Kconfig	2011-03-10 18:19:54.644008709 -0500
+> +++ linux-test.git/drivers/net/Kconfig	2011-03-10 18:21:21.320194133 -0500
+> @@ -3390,6 +3390,7 @@ config NETCONSOLE
+>  config NETCONSOLE_DYNAMIC
+>  	bool "Dynamic reconfiguration of logging targets"
+>  	depends on NETCONSOLE && SYSFS && CONFIGFS_FS
+> +	depends on !(NETCONSOLE=y && CONFIGFS_FS=m)
+>  	help
+>  	  This option enables the ability to dynamically reconfigure target
+>  	  parameters (interface, IP addresses, port numbers, MAC addresses)
+> 
+> 
 
