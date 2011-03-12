@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab1CLN1m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 08:27:42 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59302 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab1CLN1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 08:27:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=WzczU4ZtP4G8wdy8qbZyubb22m74xqAmEHBqTX5YJgKYnfrCqCtPc4OFHw3pcRltkz
-         jNq/QTBzuBA9w5VGYWT3I5o8kN4Y1N/6XlT7XcJFs2wxnmPDQFTPJuVpw5+BhNtL0JRc
-         7qSneovbHPphyioHmRtAcnUo6tWvMx79vgfHs=
-Message-ID: <4D7B74C7.7060506@gmail.com>
-Date: Sat, 12 Mar 2011 14:27:35 +0100
-From: roel <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1754009Ab1CLOGb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 09:06:31 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54509 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752140Ab1CLOGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 09:06:30 -0500
+Date: Sat, 12 Mar 2011 15:06:18 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
+Subject: Re: [GIT PULL tip:x86/mm] x86-64 NUMA emulation update
+Message-ID: <20110312140618.GA26865@elte.hu>
+References: <20110312104727.GA2005@htj.dyndns.org>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] SUNRPC: svc_register error overwritten in next iteration
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110312104727.GA2005@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The break is in the inner loop, the svc_register() error is overwritten
-in the next iteration. Only the error in the last iteration is returned.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
- net/sunrpc/svc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+* Tejun Heo <tj@kernel.org> wrote:
 
-Is this needed?
+> Hello, Ingo.
+> 
+> Please pull from the following branch to receive a commit which avoids
+> unnecessary MAX_NUMNODES^2 looping.  HEAD is 56396e682.
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+> 
+> As usual, if HEAD doesn't appear, please pull from master.
+> 
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+> 
+> Thanks.
+> 
+> Tejun Heo (1):
+>       x86-64, NUMA: Don't call numa_set_distanc() for all possible node combinations during emulation
+> 
+>  arch/x86/mm/numa_emulation.c |   23 ++++++++++++-----------
+>  1 files changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 08e05a8..5fd08c0 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -889,6 +889,8 @@ int svc_register(const struct svc_serv *serv, const int family,
- 			if (error < 0)
- 				break;
- 		}
-+		if (error < 0)
-+			break;
- 	}
- 
- 	return error;
+Pulled, thanks guys!
+
+	Ingo
