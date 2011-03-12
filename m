@@ -1,153 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab1CLCDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 21:03:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:38149 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab1CLCDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 21:03:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,306,1297065600"; 
-   d="scan'208";a="612068600"
-Subject: Re: [PATCH] [SCSI] bnx2fc: fix build error when !CONFIG_MODULES
-From: Robert Love <robert.w.love@intel.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Bhanu Gollapudi <bprakash@broadcom.com>,
-        Mariusz Kozlowski <mk@lab.zgora.pl>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-In-Reply-To: <1299771177.10246.41.camel@mulgrave.site>
-References: <20110302182740.e4dfd79f.sfr@canb.auug.org.au>
-	 <1299103803-32594-1-git-send-email-mk@lab.zgora.pl>
-	 <20110307201610.GA9032@mako-laptop>
-	 <1299542075.5232.5.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
-	 <1299543497.15955.108.camel@mulgrave.site> <1299546546.1689.40.camel@fritz>
-	 <1299771177.10246.41.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Mar 2011 18:03:19 -0800
-Message-ID: <1299895399.19083.241.camel@fritz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754046Ab1CLCKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 21:10:11 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:57871 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab1CLCKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 21:10:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ld3GjQv5WWigg9fTkeseFjBoUUYTMPsmg7LLKMsIScPHDM6VBiygfiKUF2dpEToIR5
+         /ZLWqRTRky91Wb73u30BM5EVMAqzjOXiXdYtY7rkK6nGYCKO/Ozy1T1RQd3JNoZekxCS
+         oolUdArogfdyFIvYZz4ltYVmdPCCy4lkmlpQE=
+Date: Fri, 11 Mar 2011 20:10:01 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Arnd Bergmann <arnd@arndb.de>, Sage Weil <sage@newdream.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org,
+        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
+        l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+Message-ID: <20110312021001.GA16833@elie>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+ <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+ <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+ <201103111255.44979.arnd@arndb.de>
+ <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+ <20110311235607.GB15853@elie>
+ <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 07:32 -0800, James Bottomley wrote:
-> On Mon, 2011-03-07 at 17:09 -0800, Robert Love wrote:
-> > On Mon, 2011-03-07 at 16:18 -0800, James Bottomley wrote:
-> > > On Mon, 2011-03-07 at 15:54 -0800, Bhanu Gollapudi wrote:
-> > > > On Mon, 2011-03-07 at 12:16 -0800, Mariusz Kozlowski wrote: 
-> > > > > On Wed, Mar 02, 2011 at 11:10:03PM +0100, Mariusz Kozlowski wrote:
-> > > > > > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: dereferencing pointer to incomplete type
-> > > > > > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
-> > > > > 
-> > > > > Hm. Still there in next-20110307. Is this patch wrong or..?
-> > > > > 
-> > > > 
-> > > > James,
-> > > > 
-> > > > Here is my ack for this patch.
-> > > 
-> > > OK, so the patch is actually wrong because adding #ifdefs on modules in
-> > > files really impedes readability.  The bug is using a direct deref on
-> > > module state instead of one of the APIs which work in the non-modular
-> > > case, namely try_module_get(). That means the other two need to come out
-> > > and be reworked (plus all the others in fcoe).
-> > > 
-> > > Reworked looks like it might be a bigger item than bnx2fc.  If any of
-> > > those tests is ever relevant, it means we have a race in the
-> > > fcoe_transport because it shouldn't be calling function pointers on a
-> > > dying module (unless it wants to trigger an oops).
-> > > 
-> > > So, why are you trying to do this in the first place?
-> > > 
-> > First, fcoe.c started with these checks. Here is a comment in fcoe.c at
-> > the point of one of the checks.
-> > 
-> > /*
-> >  * Make sure the module has been initialized, and is not about to be
-> >  * removed.  Module paramter sysfs files are writable before the
-> >  * module_init function is called and after module_exit.
-> >  */
-> > 
-> > I don't know the correct way to fix that race is, but we may be past the
-> > need to fix it in the LLDs.
-> 
-> Well, what you've done isn't even fixing the race ... it's just
-> narrowing the window.  count checks on refcounted objects are almost
-> always wrong.  To see this just think what happens if the module goes
-> dead the instruction cycle after you do the check.
-> 
-> I don't understand the problem with the comments above.  The way we
-> solve the sysfs race in most systems (including modules) is to make sure
-> they're initialised with the module and torn down as part of its exit
-> process ... modules.c follows this pattern.  The parameters are supposed
-> to be initialised before the module has any state (because the init code
-> may rely on them).
-> 
-> I think the problem is you have what are essentially functional sysfs
-> files done as module parameters in fcoe_transport.c ... this looks to be
-> wrong.  What you should have is these added as group attributes once the
-> module is capable of processing them; that way you control the
-> lifetimes.
+Indan Zupancic wrote:
 
-You're right, this is our problem. Unfortunately, we're in a bit of a
-"chicken and egg" situation.
+> I'm not pushing for any official convention, just what seems good taste.
 
-For SW FCoE, we don't know which netdevice the user wants to run FCoE
-traffic on so we don't create any devices or other sysfs entries until
-the user tells us to 'create'. The user passes the netdevice name to our
-sysfs file and then we create the scsi_host/fc_host.
+In cases like this, conventions (consistency and best practices) are
+very important.
 
-I am not sure what I would attach a group of attributes (create,
-destroy, etc...) to. If I had per-instance devices I could add
-attributes to them, but I need the 'create' interface before I can
-create any per-instance devices.
+> Less code added, less bloat. Architecture independent, no need to update
+> all system call tables everywhere (all archs, libc versions and strace).
+> Two files changed, instead of 7 (which only hooks up x86).
 
-One option would be to go back to what we used to do (pre-mainline
-acceptance) which is the following:
+Thanks for explaining.  Those do seem like good reasons to use a ioctl
+instead of a new syscall.
 
-static const struct kobj_attribute fcoe_destroyattr = \
-	__ATTR(destroy, S_IWUSR, NULL, fcoe_destroy);
-static const struct kobj_attribute fcoe_createattr = \
-	__ATTR(create, S_IWUSR, NULL, fcoe_create);
+> In this case it's just a performance improvement over sync(2). It doesn't
+> add a new feature. Main argument given for the performance problem seems
+> to be "NFS can be slow". Anything else?
 
-static int __init fcoe_init(void)
-{
-...
-rc = sysfs_create_file(&THIS_MODULE->mkobj.kobj,
-		       &fcoe_destroyattr.attr);
-if (!rc)
-	rc = sysfs_create_file(&THIS_MODULE->mkobj.kobj,
-			       &fcoe_createattr.attr)
-...
-}
+Huh?  It is not just the speed of the sync --- unnecessary writeback
+will cause wear on your thumbdrive, eat up your laptop battery, and
+kill I/O performance in other tasks running at the same time.
 
-I think this is bad because we're manipulating kobjects too directly,
-right?
+I'm afraid I don't understand what you're saying here at all.  Would
+you say that fsync is superfluous, too?
 
-A second option would be to keep everything the same but use an atomic
-bit to signify when the module has completed initialization. We'd still
-need a check in each of the sysfs entries store routines, but we
-wouldn't be checking against the module state.
-
-A third option is to do something like bonding does, where it creates
-a /sys/class/net/bonding_masters entry. My guess is that this would be
-controversial; adding fcoe interfaces class/net could be considered
-polluting the networking space with storage information.
-
-A fourth option would be to drop sysfs all together and use netlink,
-like iSCSI. Currently we don't need an extensive kernel/user interface,
-so I look at this as overkill.
-
-I suppose the second option would solve the current race. I realize it
-doesn't necessarily fix the fact that we're adding usable sysfs files
-prematurely, but I'm not sure where I'd attach the attributes if I were
-do do it at the end of libfcoe's module_init routine. I'll mail my patch
-for comments.
-
-Thanks, //Rob
-
+Jonathan
