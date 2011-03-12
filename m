@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab1CLWj4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 17:39:56 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49015 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab1CLWjy (ORCPT
+	id S1756105Ab1CLWkE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 17:40:04 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36427 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754648Ab1CLWkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 17:39:54 -0500
+	Sat, 12 Mar 2011 17:40:00 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
-        h=sender:from:subject:to:cc:date:message-id:user-agent:mime-version
-         :content-type:content-transfer-encoding;
-        b=J3wvH/cG7thQ+0T/n3WsGvvfxV2khjPQagMMn8mSP2qqM7lm0mVtJEmvzkscfZImOF
-         L6mvEg3hhoTsDWqSbPhkpLEJ0WAFb8TmA3TvJ098Ki7nDVcaETk8KtQUda2xLYfyEth5
-         U+eHj0UYWSu1a+1hD3ml8eZQ0aK6r3aUvOk2Y=
+        h=sender:from:subject:to:cc:date:message-id:in-reply-to:references
+         :user-agent:mime-version:content-type:content-transfer-encoding;
+        b=Fk0rN/R6qDTChycVBfsw++RDqsFWuUHaMrO6HKrW9FY0uKVcMmn1dEv7uNCj8l/fHz
+         YFY7NmvGiqE2PilW62mwsr4Jczo6DTMOEZziATkZCAjSthoz1wsnttWtd574e6lCW6T9
+         IUEeZt6k5AEfMvq15aQ3glnfz2n1gIV+NF6y4=
 From: Andy Green <andy@warmcat.com>
-Subject: [RFC PATCH 0/3] USB: async platform_data support for usb and usbnet
+Subject: [RFC PATCH 1/3] USB HOST CORE:probed devices collect any
+ platform_data waiting for them
 To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Cc: patches@linaro.org
-Date: Sat, 12 Mar 2011 22:39:49 +0000
-Message-ID: <20110312223643.27344.72406.stgit@otae.warmcat.com>
+Cc: patches@linaro.org, Andy Green <andy.green@linaro.org>
+Date: Sat, 12 Mar 2011 22:39:56 +0000
+Message-ID: <20110312223956.27344.88916.stgit@otae.warmcat.com>
+In-Reply-To: <20110312223643.27344.72406.stgit@otae.warmcat.com>
+References: <20110312223643.27344.72406.stgit@otae.warmcat.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -28,30 +31,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series allows usb probe to benefit from the proposed
-async platform_data API described here
+This causes all usb devices created during USB probe to
+check with the aysnc platform_data api to see if they should
+get tagged with waiting platform data based on their device
+path.
 
-http://marc.info/?l=linux-kernel&m=129996915023642&w=2
-
-It causes the usb host core system to bind to any registered async
-platform data that matches the device path of the device automatically,
-and in addition adds platform data to usbnet and causes it to take
-notice of the plaform data settings during init, allowing override of
-usb%d vs eth%d naming convention and actual MAC address from the
-board definition file.
-
+Signed-off-by: Andy Green <andy.green@linaro.org>
 ---
 
-Andy Green (3):
-      USBNET: Use usbnet platform data if it is present
-      USBNET: Introduce usbnet platform data
-      USB HOST CORE:probed devices collect any platform_data waiting for them
+ drivers/usb/core/usb.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
+index 079cb57..03d9049 100644
+--- a/drivers/usb/core/usb.c
++++ b/drivers/usb/core/usb.c
+@@ -36,6 +36,7 @@
+ #include <linux/mutex.h>
+ #include <linux/workqueue.h>
+ #include <linux/debugfs.h>
++#include <linux/platform_device.h>
+ 
+ #include <asm/io.h>
+ #include <linux/scatterlist.h>
+@@ -444,6 +445,8 @@ struct usb_device *usb_alloc_dev(struct usb_device *parent,
+ 	dev->parent = parent;
+ 	INIT_LIST_HEAD(&dev->filelist);
+ 
++	platform_async_platform_data_attach(&dev->dev);
++
+ #ifdef	CONFIG_PM
+ 	pm_runtime_set_autosuspend_delay(&dev->dev,
+ 			usb_autosuspend_delay * 1000);
 
- drivers/net/usb/usbnet.c   |   23 +++++++++++++++++------
- drivers/usb/core/usb.c     |    3 +++
- include/linux/usb/usbnet.h |    8 ++++++++
- 3 files changed, 28 insertions(+), 6 deletions(-)
-
--- 
-Signature
