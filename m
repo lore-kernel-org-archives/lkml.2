@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1CLCxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 21:53:10 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:58184 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab1CLCxH (ORCPT
+	id S1753895Ab1CLDTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 22:19:24 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39758 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab1CLDTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 21:53:07 -0500
-Subject: Re: [PATCH] netconsole: Fix strange kconfig dependency on configfs
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1299811491.15854.891.camel@gandalf.stny.rr.com>
-References: <1299811491.15854.891.camel@gandalf.stny.rr.com>
-Content-Type: text/plain
-Date: Fri, 11 Mar 2011 18:46:20 -0800
-Message-Id: <1299897980.20043.36.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Mar 2011 22:19:21 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=PCBOxHqunuYA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=jI3BtlD2OduDyyqymZ4A:9 a=_19wnQ7AVOMvU85J0HgA:7 a=SJumPSI6VrAsVx2DVhUnoqEsImwA:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110312031435.890203189@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 11 Mar 2011 22:14:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 0/4] futex,plist: updates
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-10 at 21:44 -0500, Steven Rostedt wrote:
-> Doing ktest rand config tests, I hit the following build bug:
-> 
->   LD      .tmp_vmlinux1
-> drivers/built-in.o: In function `netconsole_target_get':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
-> drivers/built-in.o: In function `netconsole_target_put':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
-> drivers/built-in.o: In function `netconsole_target_get':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
-> drivers/built-in.o: In function `netconsole_target_put':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
-> drivers/built-in.o: In function `drop_netconsole_target':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:634: undefined reference to `config_item_put'
-> drivers/built-in.o: In function `make_netconsole_target':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:607: undefined reference to `config_item_init_type_name'
-> drivers/built-in.o: In function `dynamic_netconsole_init':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:109: undefined reference to `config_group_init'
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:111: undefined reference to `configfs_register_subsystem'
-> drivers/built-in.o: In function `dynamic_netconsole_exit':
-> /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/net/netconsole.c:116: undefined reference to `configfs_unregister_subsystem'
-> make[1]: *** [.tmp_vmlinux1] Error 1
-> 
-> The .config had the following settings:
-> 
-> CONFIG_CONFIGFS_FS=m
-> CONFIG_NETCONSOLE=y
-> CONFIG_NETCONSOLE_DYNAMIC=y
-> 
-> NETCONSOLE_DYNAMIC depends on NETCONSOLE and CONFIGFS_FS, but
-> NETCONSOLE_DYNAMIC is just a boolean and not a tristate, where both
-> NETCONSOLE and CONFIGFS_FS are tristates and can be built as modules.
-> 
-> As we can see from the resulting config, NETCONSOLE_DYNAMIC can be set
-> to be builtin when CONFIGFS_FS which it depends on is built as a module.
-> 
-> The simplest solution is not to allow NETCONSOLE_DYNAMIC be enabled if
-> CONFIGFS_FS is a module but NETCONSOLE is built in, as
-> NETCONSOLE_DYNAMIC depends on code that is only compiled in when
-> CONFIGFS_FS is set.
-> 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Cc: Randy Dunlap <randy.dunlap@oracle.com>
-> CC: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: James Bottomley <James.Bottomley@suse.de>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
+Last December Lai sent out a series of 4 patches. But as it was close
+to the holiday season and we were all trying to finish up our own
+agendas for year end, they were dropped.
 
-Hi Steven,
+As I'm expunging my inbox, I rediscovered them. I applied and ran
+various tests, and spent some time reviewing them as well.
+I don't see anything wrong with them, but perhaps others might.
 
-This particular case was reported by Ingo and fixed back in January by
-converting this to properly use 'select CONFIGFS', but it appears that
-this series did not get picked up.
+Please take a moment to look at them and feel free to pull them
+in if you think they are fine. I based this branch off of
+v2.6.38-rc8.
 
-[PATCH RESEND 0/4] Fix kconfig breakage wrt to CONFIGFS_FS
-http://marc.info/?l=linux-netdev&m=129615549321425&w=2
+Darren Hart did Ack the first two.
 
-Would someone be so kind as to carry these..?
+-- Steve
 
-Thanks,
 
---nab
+The following patches are in:
 
-> ---
->  drivers/net/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> Index: linux-test.git/drivers/net/Kconfig
-> ===================================================================
-> --- linux-test.git.orig/drivers/net/Kconfig	2011-03-10 18:19:54.644008709 -0500
-> +++ linux-test.git/drivers/net/Kconfig	2011-03-10 18:21:21.320194133 -0500
-> @@ -3390,6 +3390,7 @@ config NETCONSOLE
->  config NETCONSOLE_DYNAMIC
->  	bool "Dynamic reconfiguration of logging targets"
->  	depends on NETCONSOLE && SYSFS && CONFIGFS_FS
-> +	depends on !(NETCONSOLE=y && CONFIGFS_FS=m)
->  	help
->  	  This option enables the ability to dynamically reconfigure target
->  	  parameters (interface, IP addresses, port numbers, MAC addresses)
-> 
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-rt.git
 
+    branch: rt/tip/futex/devel
+
+
+Lai Jiangshan (4):
+      futex,plist: Pass the real head of the priority list to plist_del()
+      futex,plist: Remove debug lock assignment from plist_node
+      plist: Shrink struct plist_head
+      plist: Add priority list test
+
+----
+ include/linux/plist.h |   47 +++++++++--------
+ kernel/futex.c        |   40 ++++++++------
+ lib/plist.c           |  135 +++++++++++++++++++++++++++++++++++++++++-------
+ 3 files changed, 162 insertions(+), 60 deletions(-)
