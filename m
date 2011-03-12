@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab1CLRfp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 12:35:45 -0500
-Received: from www.tglx.de ([62.245.132.106]:57805 "EHLO www.tglx.de"
+	id S1754977Ab1CLRl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 12:41:29 -0500
+Received: from kroah.org ([198.145.64.141]:40368 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754304Ab1CLRfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 12:35:42 -0500
-Date: Sat, 12 Mar 2011 18:35:34 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: Torben Hohn <torbenh@gmx.de>, linux-kernel@vger.kernel.org,
-        richard.cochran@omicron.at, johnstul@us.ibm.com
-Subject: Re: [PATCH 3/3] Check for write permission on FD based
- posix-clocks
-In-Reply-To: <20110312172349.GB3048@riccoc20.at.omicron.at>
-Message-ID: <alpine.LFD.2.00.1103121834400.2787@localhost6.localdomain6>
-References: <1299173174-348-1-git-send-email-torbenh@gmx.de> <1299173174-348-4-git-send-email-torbenh@gmx.de> <20110304072239.GA8957@riccoc20.at.omicron.at> <alpine.LFD.2.00.1103112044410.2787@localhost6.localdomain6>
- <20110312172349.GB3048@riccoc20.at.omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754506Ab1CLRl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 12:41:26 -0500
+Date: Sat, 12 Mar 2011 09:32:17 -0800
+From: Greg KH <greg@kroah.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Indan Zupancic <indan@nul.nu>, Arnd Bergmann <arnd@arndb.de>,
+        Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org,
+        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
+        l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+Message-ID: <20110312173217.GA24981@kroah.com>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+ <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+ <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+ <201103111255.44979.arnd@arndb.de>
+ <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+ <20110311235607.GB15853@elie>
+ <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+ <20110312021001.GA16833@elie>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110312021001.GA16833@elie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Mar 2011, Richard Cochran wrote:
-
-> On Fri, Mar 11, 2011 at 08:46:57PM +0100, Thomas Gleixner wrote:
-> > As Arnd already said -EACCES is sensible for file permission checks
-> > while -EPERM means that you have no permission at all.
+On Fri, Mar 11, 2011 at 08:10:01PM -0600, Jonathan Nieder wrote:
+> Indan Zupancic wrote:
 > 
-> Okay, so you will accept Torben's patch as is, into timers/core?
+> > I'm not pushing for any official convention, just what seems good taste.
+> 
+> In cases like this, conventions (consistency and best practices) are
+> very important.
+> 
+> > Less code added, less bloat. Architecture independent, no need to update
+> > all system call tables everywhere (all archs, libc versions and strace).
+> > Two files changed, instead of 7 (which only hooks up x86).
+> 
+> Thanks for explaining.  Those do seem like good reasons to use a ioctl
+> instead of a new syscall.
 
-If there are no further objections, I'll pick it up.
+No, make it a syscall, it's more obvious and will be documented much
+better.
 
-Thanks,
+thanks,
 
-	tglx
+greg k-h
