@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab1CLBnN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 20:43:13 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:59282 "EHLO
+	id S1754904Ab1CLBnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 20:43:20 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:59308 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab1CLBnL (ORCPT
+	with ESMTP id S1754543Ab1CLBnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 20:43:11 -0500
+	Fri, 11 Mar 2011 20:43:15 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=HzzrZQhtZA1YnAMH/v365N8rb3XUWsHDfvDozZE/6kpy+IWOsnq4bnKiv0+XhXSCK
-	HM09E9caNGliepQIuajNg==
-Subject: [PATCH v2 00/12] google firmware support
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=N/Ym3qM+YAqziCb7v+tusjNd1f0tT2aZYhp1Lm/RsLXhmnWZz84xyFRuFauscGjS0
+	Yhwa4KnbIeIcRhQ5Tzqdw==
+Subject: [PATCH v2 01/12] efivars: move efivars globals into struct efivars
 To: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>
 From: Mike Waychison <mikew@google.com>
 Cc: Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Date: Fri, 11 Mar 2011 17:42:55 -0800
-Message-ID: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
+Date: Fri, 11 Mar 2011 17:43:00 -0800
+Message-ID: <20110312014300.6133.88135.stgit@mike.mtv.corp.google.com>
+In-Reply-To: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
+References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -30,90 +33,257 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset applies to v2.6.38-rc8.
+In preparation for abstracting out efivars to be usable by other similar
+variable services, move the global lock, list and kset into a structure.
+Later patches will change the scope of 'efivars' and have it be passed
+by function argument.
 
-The following series implements some support for interfaces exposed by
-google's servers' firmware.  Unlike the previous send-out, it only
-includes two of the three drivers as I'm not yet finished fixing the
-"bootlog" driver from the last send-out (and I've discovered more
-"undocumented" firmware functionality that I'd rather unravel before
-sending out again).
+Signed-off-by: Mike Waychison <mikew@google.com>
+---
+ drivers/firmware/efivars.c |   86 ++++++++++++++++++++++++--------------------
+ 1 files changed, 46 insertions(+), 40 deletions(-)
 
-In order to address various concerns had with the previous patchset,
-I've changed the user ABI significantly:
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 2a62ec6..f10ecb6 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -89,16 +89,21 @@ MODULE_DESCRIPTION("sysfs interface to EFI Variables");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(EFIVARS_VERSION);
+ 
+-/*
+- * efivars_lock protects two things:
+- * 1) efivar_list - adds, removals, reads, writes
+- * 2) efi.[gs]et_variable() calls.
+- * It must not be held when creating sysfs entries or calling kmalloc.
+- * efi.get_next_variable() is only called from efivars_init(),
+- * which is protected by the BKL, so that path is safe.
+- */
+-static DEFINE_SPINLOCK(efivars_lock);
+-static LIST_HEAD(efivar_list);
++struct efivars {
++	/*
++	 * ->lock protects two things:
++	 * 1) ->list - adds, removals, reads, writes
++	 * 2) efi.[gs]et_variable() calls.
++	 * It must not be held when creating sysfs entries or calling kmalloc.
++	 * efi.get_next_variable() is only called from efivars_init(),
++	 * which is protected by the BKL, so that path is safe.
++	 */
++	spinlock_t lock;
++	struct list_head list;
++	struct kset *kset;
++};
++static struct efivars __efivars;
++static struct efivars *efivars = &__efivars;
+ 
+ /*
+  * The maximum size of VariableName + Data = 1024
+@@ -174,14 +179,14 @@ get_var_data(struct efi_variable *var)
+ {
+ 	efi_status_t status;
+ 
+-	spin_lock(&efivars_lock);
++	spin_lock(&efivars->lock);
+ 	var->DataSize = 1024;
+ 	status = efi.get_variable(var->VariableName,
+ 				&var->VendorGuid,
+ 				&var->Attributes,
+ 				&var->DataSize,
+ 				var->Data);
+-	spin_unlock(&efivars_lock);
++	spin_unlock(&efivars->lock);
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
+ 			status);
+@@ -291,14 +296,14 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
+ 		return -EINVAL;
+ 	}
+ 
+-	spin_lock(&efivars_lock);
++	spin_lock(&efivars->lock);
+ 	status = efi.set_variable(new_var->VariableName,
+ 					&new_var->VendorGuid,
+ 					new_var->Attributes,
+ 					new_var->DataSize,
+ 					new_var->Data);
+ 
+-	spin_unlock(&efivars_lock);
++	spin_unlock(&efivars->lock);
+ 
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+@@ -415,12 +420,12 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+ 
+-	spin_lock(&efivars_lock);
++	spin_lock(&efivars->lock);
+ 
+ 	/*
+ 	 * Does this variable already exist?
+ 	 */
+-	list_for_each_entry_safe(search_efivar, n, &efivar_list, list) {
++	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
+ 		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
+ 		strsize2 = utf8_strsize(new_var->VariableName, 1024);
+ 		if (strsize1 == strsize2 &&
+@@ -433,7 +438,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 		}
+ 	}
+ 	if (found) {
+-		spin_unlock(&efivars_lock);
++		spin_unlock(&efivars->lock);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -447,10 +452,10 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+ 			status);
+-		spin_unlock(&efivars_lock);
++		spin_unlock(&efivars->lock);
+ 		return -EIO;
+ 	}
+-	spin_unlock(&efivars_lock);
++	spin_unlock(&efivars->lock);
+ 
+ 	/* Create the entry in sysfs.  Locking is not required here */
+ 	status = efivar_create_sysfs_entry(utf8_strsize(new_var->VariableName,
+@@ -474,12 +479,12 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+ 
+-	spin_lock(&efivars_lock);
++	spin_lock(&efivars->lock);
+ 
+ 	/*
+ 	 * Does this variable already exist?
+ 	 */
+-	list_for_each_entry_safe(search_efivar, n, &efivar_list, list) {
++	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
+ 		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
+ 		strsize2 = utf8_strsize(del_var->VariableName, 1024);
+ 		if (strsize1 == strsize2 &&
+@@ -492,7 +497,7 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
+ 		}
+ 	}
+ 	if (!found) {
+-		spin_unlock(&efivars_lock);
++		spin_unlock(&efivars->lock);
+ 		return -EINVAL;
+ 	}
+ 	/* force the Attributes/DataSize to 0 to ensure deletion */
+@@ -508,12 +513,12 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+ 			status);
+-		spin_unlock(&efivars_lock);
++		spin_unlock(&efivars->lock);
+ 		return -EIO;
+ 	}
+ 	list_del(&search_efivar->list);
+ 	/* We need to release this lock before unregistering. */
+-	spin_unlock(&efivars_lock);
++	spin_unlock(&efivars->lock);
+ 	efivar_unregister(search_efivar);
+ 
+ 	/* It's dead Jim.... */
+@@ -572,8 +577,6 @@ static struct attribute_group efi_subsys_attr_group = {
+ 	.attrs = efi_subsys_attrs,
+ };
+ 
+-
+-static struct kset *vars_kset;
+ static struct kobject *efi_kobj;
+ 
+ /*
+@@ -582,7 +585,7 @@ static struct kobject *efi_kobj;
+  *    variable_name_size = number of bytes required to hold
+  *                         variable_name (not counting the NULL
+  *                         character at the end.
+- *    efivars_lock is not held on entry or exit.
++ *    efivars->lock is not held on entry or exit.
+  * Returns 1 on failure, 0 on success
+  */
+ static int
+@@ -618,7 +621,7 @@ efivar_create_sysfs_entry(unsigned long variable_name_size,
+ 	*(short_name + strlen(short_name)) = '-';
+ 	efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
+ 
+-	new_efivar->kobj.kset = vars_kset;
++	new_efivar->kobj.kset = efivars->kset;
+ 	i = kobject_init_and_add(&new_efivar->kobj, &efivar_ktype, NULL,
+ 				 "%s", short_name);
+ 	if (i) {
+@@ -631,9 +634,9 @@ efivar_create_sysfs_entry(unsigned long variable_name_size,
+ 	kfree(short_name);
+ 	short_name = NULL;
+ 
+-	spin_lock(&efivars_lock);
+-	list_add(&new_efivar->list, &efivar_list);
+-	spin_unlock(&efivars_lock);
++	spin_lock(&efivars->lock);
++	list_add(&new_efivar->list, &efivars->list);
++	spin_unlock(&efivars->lock);
+ 
+ 	return 0;
+ }
+@@ -674,8 +677,11 @@ efivars_init(void)
+ 		goto out_free;
+ 	}
+ 
+-	vars_kset = kset_create_and_add("vars", NULL, efi_kobj);
+-	if (!vars_kset) {
++	spin_lock_init(&efivars->lock);
++	INIT_LIST_HEAD(&efivars->list);
++
++	efivars->kset = kset_create_and_add("vars", NULL, efi_kobj);
++	if (!efivars->kset) {
+ 		printk(KERN_ERR "efivars: Subsystem registration failed.\n");
+ 		error = -ENOMEM;
+ 		goto out_firmware_unregister;
+@@ -712,12 +718,12 @@ efivars_init(void)
+ 	 * Now add attributes to allow creation of new vars
+ 	 * and deletion of existing ones...
+ 	 */
+-	error = sysfs_create_bin_file(&vars_kset->kobj,
++	error = sysfs_create_bin_file(&efivars->kset->kobj,
+ 				      &var_subsys_attr_new_var);
+ 	if (error)
+ 		printk(KERN_ERR "efivars: unable to create new_var sysfs file"
+ 			" due to error %d\n", error);
+-	error = sysfs_create_bin_file(&vars_kset->kobj,
++	error = sysfs_create_bin_file(&efivars->kset->kobj,
+ 				      &var_subsys_attr_del_var);
+ 	if (error)
+ 		printk(KERN_ERR "efivars: unable to create del_var sysfs file"
+@@ -730,7 +736,7 @@ efivars_init(void)
+ 	else
+ 		goto out_free;
+ 
+-	kset_unregister(vars_kset);
++	kset_unregister(efivars->kset);
+ 
+ out_firmware_unregister:
+ 	kobject_put(efi_kobj);
+@@ -746,14 +752,14 @@ efivars_exit(void)
+ {
+ 	struct efivar_entry *entry, *n;
+ 
+-	list_for_each_entry_safe(entry, n, &efivar_list, list) {
+-		spin_lock(&efivars_lock);
++	list_for_each_entry_safe(entry, n, &efivars->list, list) {
++		spin_lock(&efivars->lock);
+ 		list_del(&entry->list);
+-		spin_unlock(&efivars_lock);
++		spin_unlock(&efivars->lock);
+ 		efivar_unregister(entry);
+ 	}
+ 
+-	kset_unregister(vars_kset);
++	kset_unregister(efivars->kset);
+ 	kobject_put(efi_kobj);
+ }
+ 
 
-Instead of messing with the dmesg log_buf ring-buffer, we now expose
-firmware logs via /sys/firmware/log.
-
-As well, instead of using a ioctl interface the gsmi driver, I've
-changed it completely to use sysfs instead (rooted at
-/sys/firmware/gsmi).  gsmi provides access to EFI variables through a
-means other than through the EFI runtime services page, so I've reused
-the bulk of the code exposed by the efivars driver.  To make this work,
-I had to refactor a bit of the efivars driver.  The only user-visible
-change here is that the module will successfully load now even if you
-aren't on an EFI system (which is much more consistent with other
-drivers anyway).
-
-I'd like to have these small drivers included as they are required for
-proper use of the kernel in our infrastructure.  They may not seem like
-much, but a lot of our health automation as well as our human debugging
-efforts are dependent on the functionality herein.  Getting these in the
-public Linux tree would bring us closer to being able to easily test
-kernels as they are released.
-
-Thanks,
-
-Patchset summary
-================
-
-Patches [1 through 6] refactor the 'efivars' module to let the "gsmi"
-driver in patch [11] re-use the variable functionality.
-
-Patch [7] documents existing 'efivars' functionality that has been
-present in the tree since 2004.
-
-Patches [8] and [9] add sanity checking for accessing the EBDA.
-
-Patch [10] introduces CONFIG_GOOGLE_FIRMWARE that is disabled by
-default and which gates Google-specific drivers.
-
-Patch [11] adds the "gsmi" driver that we use to make calls into our
-firmware.
-
-Patch [12] adds the "memconsole" driver that finds the firmware's logs
-and exposes them on /sys/firmware/log.
-
-Diffstat
-========
- Documentation/ABI/stable/sysfs-firmware-efi-vars |   75 +
- Documentation/ABI/testing/sysfs-firmware-gsmi    |   58 +
- Documentation/ABI/testing/sysfs-firmware-log     |    7 
- arch/x86/include/asm/bios_ebda.h                 |   28 
- drivers/firmware/Kconfig                         |    2 
- drivers/firmware/Makefile                        |    2 
- drivers/firmware/efivars.c                       |  343 +++++---
- drivers/firmware/google/Kconfig                  |   33 
- drivers/firmware/google/Makefile                 |    3 
- drivers/firmware/google/gsmi.c                   |  927 +++++++++++++++++++++++
- drivers/firmware/google/memconsole.c             |  151 +++
- include/linux/efi.h                              |   37 
- 12 files changed, 1526 insertions(+), 140 deletions(-)
-
-ChangeLog:
-==========
-- v2
-   - Efivars can now be used by other drivers.
-   - Documentation added for /sys/firmware/efi/vars
-   - Memory console no longer touches log_buf ring buffer.
-   - The firmware log is exported to userland as /sys/firmware/log
-   - Ioctls for accessing nvram variables in gsmi driver replaced with
-     efivars at /sys/firmware/gsmi/vars.
-   - die_notifier is used instead of adding new notifer_lists.
-   - EBDA scrubbing for memconsole now checks that we aren't walking
-     into 0xA0000.
-   - Documentation added for /sys/firmware/log
-   - Documentation added for /sys/firmware/gsmi
-   - Use kernel fixed width types instead of C99 types.
-- v1
-   - Initial public send-out.
