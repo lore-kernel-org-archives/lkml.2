@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab1CLDy7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 22:54:59 -0500
-Received: from ausc60ps301.us.dell.com ([143.166.148.206]:2093 "EHLO
-	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab1CLDy6 (ORCPT
+	id S1753186Ab1CLEJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 23:09:48 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:57122 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1CLEJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 22:54:58 -0500
-X-Loopcount0: from 143.166.82.43
-Date: Fri, 11 Mar 2011 21:54:56 -0600
-From: Matt Domsch <Matt_Domsch@dell.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Subject: Re: [PATCH v2 00/12] google firmware support
-Message-ID: <20110312035456.GA508@auslistsprd01.us.dell.com>
-References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
-Mime-Version: 1.0
+	Fri, 11 Mar 2011 23:09:46 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=iLlV7a5dDzqwLNsUqrsA:9 a=JRG15W0rwDucrXe4RSxMB0Mog-sA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Fri, 11 Mar 2011 23:09:41 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20110312040941.GA15526@home.goodmis.org>
+References: <20110310.155556.48513201.davem@davemloft.net>
+ <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com>
+ <20110311204823.GB7906@fieldses.org>
+ <20110311.130128.71121155.davem@davemloft.net>
+ <1299878274.2814.8.camel@bwh-desktop>
+ <20110311214209.GB9404@fieldses.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
-User-Agent: Mutt/1.5.11
+In-Reply-To: <20110311214209.GB9404@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 05:42:55PM -0800, Mike Waychison wrote:
-> Patchset summary
-> ================
+On Fri, Mar 11, 2011 at 04:42:09PM -0500, J. Bruce Fields wrote:
 > 
-> Patches [1 through 6] refactor the 'efivars' module to let the "gsmi"
-> driver in patch [11] re-use the variable functionality.
->
-> Patch [7] documents existing 'efivars' functionality that has been
-> present in the tree since 2004.
+> But assume you only did this in cases where the merge was trivial.
+> Would it be worth it, or would people be annoyed by the additional
+> branching?
+> 
 
-Very nice work Mike.  I can't test the efivars changes for another
-week or more, but reading it all, looks like a nice cleanup while
-allowing you to reuse the underlying code.
+I would be annoyed by it ;)
 
+It really is meaningless to do so, as all you are doing is documenting
+what commit caused this bug, and producing more problems by branching
+off of the broken commit. It wont matter till it is merged, but then if
+there are a lot of simple bug fixes, then you will have a lot of single
+merges of branches that fix those bugs.
 
-Thanks,
-Matt
+It's just better to say in the change log of the fix:
 
--- 
-Matt Domsch
-Technology Strategist
-Dell | Office of the CTO
+ "commit abcdef1234 foo: add bar"
+
+Broke this, and this fixes it.
+
+Having the broken commit SHA1 and description in the change log is just
+as helpful as having the bug commit being its parent.
+
+-- Steve
+
