@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab1CLCOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 21:14:22 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:35542 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753675Ab1CLCOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 21:14:21 -0500
-Date: Sat, 12 Mar 2011 04:10:22 +0200
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Andrew Morton <akpm@linux-foundation.org>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Subject: Re: [PATCH 3/4] calibrate: retry with wider bounds when converge
-	seems to fail
-Message-ID: <20110312021022.GC3823@esdhcp04044.research.nokia.com>
-References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com> <1299768487-13200-2-git-send-email-ext-phil.2.carmody@nokia.com> <1299768487-13200-3-git-send-email-ext-phil.2.carmody@nokia.com> <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com> <20110311152744.ad5ef129.akpm@linux-foundation.org>
+	id S1753691Ab1CLCaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 21:30:24 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37453 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753501Ab1CLCaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 21:30:21 -0500
+X-Sasl-enc: uBjIo6t1j9nmorAtnWpwbgmIGN5uvaHMHC+CFUMvZprx 1299897012
+Date: Fri, 11 Mar 2011 23:30:02 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Burt Triplett <burt@pbjtriplett.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: BITS handling of CPU microcode updates
+Message-ID: <20110312023001.GB27550@khazad-dum.debian.net>
+References: <4D65EE74.1050709@pbjtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110311152744.ad5ef129.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Nokia-AV: Clean
+In-Reply-To: <4D65EE74.1050709@pbjtriplett.org>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/11 15:27 -0800, ext Andrew Morton wrote:
-> This is more informative, no?
->
-> --- a/init/calibrate.c~calibrate-retry-with-wider-bounds-when-converge-seems-to-fail-fix
-> +++ a/init/calibrate.c
-> @@ -172,7 +172,7 @@ recalibrate:
->  	/*
->  	 * If we incremented every single time possible, presume we've
->  	 * massively underestimated initially, and retry with a higher
-> -	 * start, and larger range. (Only seen on x86_64.)
-> +	 * start, and larger range. (Only seen on x86_64, due to SMIs)
->  	 */
->  	if (lpj + loopadd * 2 == lpj_base + loopadd_base * 2) {
->  		lpj_base = lpj;
-> _
+Burt,
 
-Works for me. Thanks.
+The BITS handling of Intel CPU microcode updates does not match either the
+official documentation I cold find, or the Linux kernel code.
 
-Phil
+The documentation clearly states that microcode revision levels are a
+*signed* 32-bit number, and that implies it should be subject to signed
+comparisons.
 
+The Linux kernel code considers it an unsigned 32-bit number, and does an
+unsigned comparison (this is likely a bug).
+
+And the BITS code mentions something called a "BWG", and will always install
+a microcode with a revision < 0, it will never install a microcode with a
+revision of zero, and does a normal version comparison if the revision is
+greater than zero.
+
+AFAIK, just like extended signatures (which are yet to be seen in the wild),
+microcoes with negative or zero revision levels have never been published to
+operating system vendors, so those discrepancies have had, so far, no impact
+in the field.  But they could well be latent bugs.
+
+Can you please clarify what is the correct behaviour ?
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
