@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab1CLQAM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 11:00:12 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:41715 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753892Ab1CLQAK (ORCPT
+	id S1755144Ab1CLQXh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 11:23:37 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61081 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042Ab1CLQXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 11:00:10 -0500
-Date: Sat, 12 Mar 2011 11:00:08 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: andy.green@linaro.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-In-Reply-To: <20110311214406.GA29582@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1103121052430.25742-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 12 Mar 2011 11:23:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tr1loEXAg/+CchCDuxdXs5xUXVWxQkb6Cvq6VpbndO5lZSoa4ACQGcenqoD4b+JRot
+         YqzJP8OzbJY1Xu/zHNnRZuZ/hGYoSrUn5C87xfXT+IS4Ub93zXuShkwmWvle/kvk632S
+         BqpcL/u8Hp2bp6h3SQoytzDpUulxAaV9nsx0Q=
+Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, oakad@yahoo.com
+In-Reply-To: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
+References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 12 Mar 2011 18:23:33 +0200
+Message-ID: <1299947013.17988.0.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Greg KH wrote:
-
-> > Alright: is there a better invariant nomenclature to talk about "the
-> > gadget / host that is running on a particular pair of pins"?  That's
-> > the ultimate definition of what's wired to what.
+On Fri, 2011-03-04 at 06:16 +0200, Maxim Levitsky wrote:
+> Hi,
 > 
-> For USB, there is no such thing, sorry.  You can see the "device
-> connected to the 3rd port of the second hub" but that's a mess and those
-> numbers can (and do) change randomly at boot time.
+> This is a repost of my patches for 2.6.39 inclusion, which I hope not to
+> miss this time.
+> 
+> I addressed the comments on the scatterlist issues.
+> 
+> Andrew, please note that my richoh memstick driver is standalone, unchanged from previos versions
+> has many users which use the version I posted at ubuntu's Launchpad and happy with it.
+> Please include it regardless of other patches.
+> 
+> The other half of my work is support for legacy memorysticks which consists of 2 patches,
+> first that adds few functions to scatterlist.c, and the other patch that adds the driver.
+> Driver is also stable and tested.
+> 
+> Best regards,
+> 	Maxim Levitsky
 
-The situation isn't quite that bad.
 
-For gadgets this issue doesn't really arise.  Until very recently it 
-wasn't possible to have more that one gadget driver loaded at any time 
-(in fact, it still may not be possible -- I don't recall whether the 
-changes have been merged yet).  In any case, gadget drivers are usually 
-build as modules, so any necessary information could be passed as a 
-module parameter.
+Any update?
 
-For USB devices, the topology path below the root hub _is_ fixed.  If
-you know that a particular device is hardwired to port 2 of a
-particular root hub, that's not going to change.  The problem is how to
-identify the root hub.
-
-This depends on the platform.  On PCs, USB host controllers are usually 
-PCI devices.  The only way to identify them is by the PCI device name.  
-Although these names don't change often, they _can_ change.  On an 
-embedded system there usually are only a couple of host controllers and 
-they have more or less fixed names.
-
-Alan Stern
+Best regards,
+	Maxim Levitsky
 
