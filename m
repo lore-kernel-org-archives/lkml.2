@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1CLBxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 20:53:07 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35823 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab1CLBxE (ORCPT
+	id S1754819Ab1CLBxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 20:53:40 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:45836 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab1CLBxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 20:53:04 -0500
-Subject: Re: [PATCH-FOR-38] target: Fix READ_CAPACITY_16 regression
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Ben Jarvis <bjarvismn@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1299885455.6938.6.camel@mulgrave.site>
-References: <1299109971-27268-1-git-send-email-nab@linux-iscsi.org>
-	 <1299885455.6938.6.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Fri, 11 Mar 2011 17:46:11 -0800
-Message-Id: <1299894371.31170.4.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Mar 2011 20:53:37 -0500
+Message-ID: <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20110311235607.GB15853@elie>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+    <201103111255.44979.arnd@arndb.de>
+    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+    <20110311235607.GB15853@elie>
+Date: Sat, 12 Mar 2011 02:53:35 +0100 (CET)
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Jonathan Nieder" <jrnieder@gmail.com>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, "Sage Weil" <sage@newdream.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org,
+        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
+        l@jasper.es
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 1f72ff50073f138f9668c095d6f579a1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-11 at 17:17 -0600, James Bottomley wrote:
-> On Wed, 2011-03-02 at 15:52 -0800, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Hi James,
-> > 
-> > This patch fixes a regression for READ_CAPACITY to trigger SAI READ_CAPACITY_16 for
-> > >= 0xffffffff virtual backends.  This occured during v4.0.0-rc6 when the backend
-> > read_capacity* handlers where moved into generic target_core_cdb.c code, and the
-> > 'unsigned long long blocks_long' piece was dropped from target_emulate_readcapacity().
-> > 
-> > This fix has been tested with TCM_Loop on .38-rc7 with lio-4.1 and is working as expected
-> > with large block virtual backends:
-> > 
-> > [67826.897061] TARGET_CORE[loopback]->TPG[1]_LUN[0] - Adding READ-WRITE access for LUN in Demo Mode
-> > [67826.897061] scsi 7:0:1:0: Direct-Access     LIO-ORG  FILEIO           4.0  PQ: 0 ANSI: 5
-> > [67826.900933] sd 7:0:1:0: [sdd] 2621440000001 512-byte logical blocks: (1.34 PB/1.19 PiB)
-> > [67826.901510] sd 7:0:1:0: [sdd] Write Protect is off
-> > [67826.901684] sd 7:0:1:0: [sdd] Mode Sense: 2f 00 00 00
-> > 
-> > Please include into scsi-rc-fixes going to Linus for-38 mainline target code.
-> 
-> So the piece you didn't say is that this only affects volumes >2TB
-> volume which misreport the capacity (which is actually what the bug
-> description should have been).
-> 
-> That's hardly an oopsworthy fix at this stage ... I'll put it into misc
-> with a cc stable.
-> 
+On Sat, March 12, 2011 00:56, Jonathan Nieder wrote:
+> Indan Zupancic wrote:
+>
+>> If there still is a good reason to implement this, please don't add it
+>> as a new system call, but add it to sync_file_range(), as that seems
+>> the best place for odd file synchronisation operations.
+>
+> I have no strong preference about how this is added (and in fact I'm
+> quite ignorant about the usual conventions), but:
 
-This has already been picked up by AKPM last week, and (I assume) will
-be queued to Linus for .38-FINAL via -mm.
+I'm not pushing for any official convention, just what seems good taste.
 
-Considering that is a critical fix that is not trigger by some obsecure
-corner case, I am not sure why this would be deferred for for a
-v2.6.38.x release when we already have a proper fix in place..?
+>  - as a sysadmin, it really _would_ be nice to be able to say
+>    "sync /usr" to sync /usr;
 
---nab
+This is independent of the implementation.
+
+>  - the existing functionality of sync_file_range is about controlling
+>    writeback behavior for files, not mounts.
+
+True, but what happens when you sync a mount? In the end it's about odd,
+non-standard syncing behaviour, so I think it fits sync_file_range well.
+Like sync_file_range, it's trickier to use than it seems at first, so it
+fits well with the other "keep this in mind before using it" requirements.
+
+> So unless there is a shortage of syscall numbers or something, I find
+> the request to omit this or tack it onto sync_file_range odd.  Could
+> you explain the benefit?
+
+Less code added, less bloat. Architecture independent, no need to update
+all system call tables everywhere (all archs, libc versions and strace).
+Two files changed, instead of 7 (which only hooks up x86). The code ends
+up near the code it calls, so it makes contextual sense.
+
+As for the reason not to add it at all, well, if everything that seemed
+a good idea at the time was added as a system call it would be an even
+bigger mess than it already is. So it doesn't have to be a bad idea to
+not make it, not being useful enough is sufficient.
+
+In this case it's just a performance improvement over sync(2). It doesn't
+add a new feature. Main argument given for the performance problem seems
+to be "NFS can be slow". Anything else?
+
+Greetings,
+
+Indan
+
 
