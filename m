@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab1CLWLP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 17:11:15 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35781 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab1CLWLO (ORCPT
+	id S1755975Ab1CLWcK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 17:32:10 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54903 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab1CLWcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 17:11:14 -0500
+	Sat, 12 Mar 2011 17:32:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=AVqaGRFmNyVPi7RSdk4UNApPJD8kxfTk1ilLdiEhMXlWkoTEvACtR5HsGlk5nMjjZf
-         tX/2Gq8HTRUOm8hmNVxbNdt9S+a/I1UsIgNuLVCbreFmNDi6dkrhGxRPy2s4v1TgUGRi
-         1XX02dXDkXb/lgmKXO6pFdGykawfB2t94P1Ns=
+        h=sender:from:subject:to:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=KDnrAob279DUHzPleDHBEI0S8nE48EfD4FmiyTptPZQgxRqm6PhLRZ+7BRwrXMRmOD
+         j89HTD3gKA/r5QKWPrreb5/SF9XcUfHGw+p2Ye9YWB0hfCrWSZ/opgQKU+ConGKEETPd
+         BpSfwQOeUUrTNjIm+SdCMjFN/Skbo3mucUBbA=
+From: Andy Green <andy@warmcat.com>
+Subject: [RFC PATCH 0/4] PLATFORM: Support for async platform_data
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: patches@linaro.org
+Date: Sat, 12 Mar 2011 22:32:03 +0000
+Message-ID: <20110312222633.27020.19543.stgit@otae.warmcat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sat, 12 Mar 2011 23:11:11 +0100
-Message-ID: <AANLkTimw5O38=7pWASMi508DJMeUdC8+Bp3kW0yKw5CR@mail.gmail.com>
-Subject: Re: Linux 2.6.38-rc8
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: =?UTF-8?B?VMO2csO2ayBFZHdpbg==?= <edwintorok@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[QUOTE]
-On 2011-03-08 07:40, Linus Torvalds wrote:
-> So please keep testing,
+The following series adds two apis which allow board definition
+files to register bindings between device paths (like usb1/1-1/1-1.1)
+and platform data.  It's for use in the case that there are hardwired
+chips on a board that need to be configured from the board definition
+file, but the creation of the device is asynchronous to the boot
+action.  Beagle XM and Panda are both real-world examples where there
+are hardwired chips on the PCB with fixed interconnect using USB
+protocol that can benefit from platform_data for the usual reasons.
 
-Doesn't build:
-arch/x86/kernel/entry_64.S: Assembler messages:
-arch/x86/kernel/entry_64.S:1531: Error: .size expression does not
-evaluate to a constant
-make[2]: *** [arch/x86/kernel/entry_64.o] Error 1
-make[1]: *** [arch/x86/kernel] Error 2
-make: *** [arch/x86] Error 2
+This patcheset is the platform part of a three part set which when
+taken as a whole, allows the board definition file to configure
+USB-wired onboard network interface assets.
 
-Must be due to recent binutils upgrade, because 2.6.37 doesn't build
-anymore either.
+---
 
-Looks like these patches are needed:
-http://git.kernel.org/?p=linux/kernel/git/hjl/linux-2.6.37.y.git;a=commitdiff;h=2c5ce9c1b8eb927c131a31d4466e24e00647e9cb
-https://patchwork.kernel.org/patch/606241/
+Andy Green (4):
+      PLATFORM: Add some documentation to platform docs about async platform_data
+      PLATFORM: Introduce async platform_data attach api
+      PLATFORM: Introduce registration function for async platform data maps
+      PLATFORM: introduce structure to bind async platform data to a dev path name
 
-Best regards,
---Edwin
-[/QUOTE]
 
-There was a long discussion caused by a breakage in linux-next with a
-2.21-snapshot release of binutils in Debian/sid:
-"Re: linux-next: Tree for March 8 (BROKEN: arch/x86/kernel/entry_32.S?
-Debian's binutils/as?)"
+ Documentation/driver-model/platform.txt |   25 +++++++++
+ drivers/base/platform.c                 |   91 +++++++++++++++++++++++++++++++
+ include/linux/platform_device.h         |   22 +++++++
+ 3 files changed, 138 insertions(+), 0 deletions(-)
 
-The result were two patches [1] and [2] which helped to build a
-linux-next kernel with new binutils.
-[1] affects also 2.6.38, [2] is for linux-next (upcoming 2.6.39).
-Ingo combined both fixes as one [3] and accepted it to
-tip:x86/trampoline (see [4]).
-This single fix found already its way to linux-next tree (where I am on).
-
-- Sedat -
-
-[1] https://patchwork.kernel.org/patch/619081/
-[2] https://patchwork.kernel.org/patch/619611/
-[3] https://patchwork.kernel.org/patch/621001/
-[4] http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=commit;h=2ae9d293b14d17f35eff624272cfecac7979a2ee
+-- 
+Signature
