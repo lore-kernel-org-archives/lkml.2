@@ -1,218 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab1CLA3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 19:29:47 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57160 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754339Ab1CLA3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 19:29:45 -0500
-Date: Fri, 11 Mar 2011 16:29:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Clark Williams <williams@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH V2] page-types.c: auto debugfs mount for hwpoison
- operation
-Message-Id: <20110311162916.34b450d0.akpm@linux-foundation.org>
-In-Reply-To: <4D75B815.2080603@linux.intel.com>
-References: <1299487900-7792-1-git-send-email-gong.chen@linux.intel.com>
-	<20110307184133.8A19.A69D9226@jp.fujitsu.com>
-	<20110307113937.GB5080@localhost>
-	<4D75B815.2080603@linux.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754524Ab1CLAcz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 19:32:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42650 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572Ab1CLAcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 19:32:54 -0500
+Subject: [GIT PATCH] SCSI bug fixes for 2.6.38-rc8
+From: James Bottomley <James.Bottomley@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Mar 2011 18:32:48 -0600
+Message-ID: <1299889968.6938.25.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Mar 2011 13:01:09 +0800
-Chen Gong <gong.chen@linux.intel.com> wrote:
+This is basically a single update for another couple of oopses in the
+target code.
 
-> page-types.c doesn't supply a way to specify the debugfs path and
-> the original debugfs path is not usual on most machines. This patch
-> supplies a way to auto mount debugfs if needed.
-> 
-> This patch is heavily inspired by tools/perf/utils/debugfs.c
-> 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> ---
->   Documentation/vm/page-types.c |  105 
-> +++++++++++++++++++++++++++++++++++++++--
->   1 files changed, 101 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/vm/page-types.c b/Documentation/vm/page-types.c
-> index cc96ee2..303b4ed 100644
-> --- a/Documentation/vm/page-types.c
-> +++ b/Documentation/vm/page-types.c
-> @@ -32,8 +32,20 @@
->   #include <sys/types.h>
->   #include <sys/errno.h>
->   #include <sys/fcntl.h>
-> +#include <sys/mount.h>
-> +#include <sys/statfs.h>
-> +#include "../../include/linux/magic.h"
+The patch is available here:
 
-Your email client is space-stuffing the patches.
+master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
 
-> 
-> +#ifndef MAX_PATH
-> +# define MAX_PATH 256
-> +#endif
-> +
-> +#ifndef STR
-> +# define _STR(x) #x
-> +# define STR(x) _STR(x)
-> +#endif
-> +
->   /*
->    * pagemap kernel ABI bits
->    */
-> @@ -152,6 +164,12 @@ static const char *page_flag_names[] = {
->   };
-> 
-> 
-> +static const char *debugfs_known_mountpoints[] = {
-> +	"/sys/kernel/debug",
-> +	"/debug",
-> +	0,
-> +};
-> +
->   /*
->    * data structures
->    */
-> @@ -184,7 +202,7 @@ static int		kpageflags_fd;
->   static int		opt_hwpoison;
->   static int		opt_unpoison;
-> 
-> -static const char	hwpoison_debug_fs[] = "/debug/hwpoison";
-> +static char		hwpoison_debug_fs[MAX_PATH+1];
->   static int		hwpoison_inject_fd;
->   static int		hwpoison_forget_fd;
-> 
-> @@ -464,21 +482,100 @@ static uint64_t kpageflags_flags(uint64_t flags)
->   	return flags;
->   }
-> 
-> +/* verify that a mountpoint is actually a debugfs instance */
-> +int debugfs_valid_mountpoint(const char *debugfs)
+The short changelog is:
 
-page-types.c carefully makes its symbols static.  Let's continue to do
-that.
+target: Fix t_transport_aborted handling in LUN_RESET + active I/O shutdown
 
---- a/Documentation/vm/page-types.c~documentation-vm-page-typesc-auto-debugfs-mount-for-hwpoison-operation-fix
-+++ a/Documentation/vm/page-types.c
-@@ -483,7 +483,7 @@ static uint64_t kpageflags_flags(uint64_
- }
+The diffstat is:
+
+ drivers/target/target_core_tmr.c       |    5 +++++
+ drivers/target/target_core_transport.c |    8 ++++++--
+ include/target/target_core_transport.h |    2 ++
+ 3 files changed, 13 insertions(+), 2 deletions(-)
+
+And the patch is below.
+
+James
+
+---
+
+diff --git a/drivers/target/target_core_tmr.c b/drivers/target/target_core_tmr.c
+index 158cecb..4a10983 100644
+--- a/drivers/target/target_core_tmr.c
++++ b/drivers/target/target_core_tmr.c
+@@ -282,6 +282,9 @@ int core_tmr_lun_reset(
  
- /* verify that a mountpoint is actually a debugfs instance */
--int debugfs_valid_mountpoint(const char *debugfs)
-+static int debugfs_valid_mountpoint(const char *debugfs)
+ 			atomic_set(&task->task_active, 0);
+ 			atomic_set(&task->task_stop, 0);
++		} else {
++			if (atomic_read(&task->task_execute_queue) != 0)
++				transport_remove_task_from_execute_queue(task, dev);
+ 		}
+ 		__transport_stop_task_timer(task, &flags);
+ 
+@@ -301,6 +304,7 @@ int core_tmr_lun_reset(
+ 			DEBUG_LR("LUN_RESET: got t_transport_active = 1 for"
+ 				" task: %p, t_fe_count: %d dev: %p\n", task,
+ 				fe_count, dev);
++			atomic_set(&T_TASK(cmd)->t_transport_aborted, 1);
+ 			spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock,
+ 						flags);
+ 			core_tmr_handle_tas_abort(tmr_nacl, cmd, tas, fe_count);
+@@ -310,6 +314,7 @@ int core_tmr_lun_reset(
+ 		}
+ 		DEBUG_LR("LUN_RESET: Got t_transport_active = 0 for task: %p,"
+ 			" t_fe_count: %d dev: %p\n", task, fe_count, dev);
++		atomic_set(&T_TASK(cmd)->t_transport_aborted, 1);
+ 		spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
+ 		core_tmr_handle_tas_abort(tmr_nacl, cmd, tas, fe_count);
+ 
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 236e22d..4bbf6c1 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1207,7 +1207,7 @@ transport_get_task_from_execute_queue(struct se_device *dev)
+  *
+  *
+  */
+-static void transport_remove_task_from_execute_queue(
++void transport_remove_task_from_execute_queue(
+ 	struct se_task *task,
+ 	struct se_device *dev)
  {
- 	struct statfs st_fs;
+@@ -5549,7 +5549,8 @@ static void transport_generic_wait_for_tasks(
  
-@@ -496,7 +496,7 @@ int debugfs_valid_mountpoint(const char 
- }
+ 		atomic_set(&T_TASK(cmd)->transport_lun_stop, 0);
+ 	}
+-	if (!atomic_read(&T_TASK(cmd)->t_transport_active))
++	if (!atomic_read(&T_TASK(cmd)->t_transport_active) ||
++	     atomic_read(&T_TASK(cmd)->t_transport_aborted))
+ 		goto remove;
  
- /* find the path to the mounted debugfs */
--const char *debugfs_find_mountpoint(void)
-+static const char *debugfs_find_mountpoint(void)
- {
- 	const char **ptr;
- 	char type[100];
-@@ -533,7 +533,7 @@ const char *debugfs_find_mountpoint(void
+ 	atomic_set(&T_TASK(cmd)->t_transport_stop, 1);
+@@ -5956,6 +5957,9 @@ static void transport_processing_shutdown(struct se_device *dev)
  
- /* mount the debugfs somewhere if it's not mounted */
+ 			atomic_set(&task->task_active, 0);
+ 			atomic_set(&task->task_stop, 0);
++		} else {
++			if (atomic_read(&task->task_execute_queue) != 0)
++				transport_remove_task_from_execute_queue(task, dev);
+ 		}
+ 		__transport_stop_task_timer(task, &flags);
  
--void debugfs_mount()
-+static void debugfs_mount()
- {
- 	const char **ptr;
- 
-_
-
-> +{
-> +	struct statfs st_fs;
-> +
-> +	if (statfs(debugfs, &st_fs) < 0)
-> +		return -ENOENT;
-> +	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-> +		return -ENOENT;
-> +
-> +	return 0;
-> +}
-> +
-> +/* find the path to the mounted debugfs */
-> +const char *debugfs_find_mountpoint(void)
-> +{
-> +	const char **ptr;
-> +	char type[100];
-> +	FILE *fp;
-> +
-> +	ptr = debugfs_known_mountpoints;
-> +	while (*ptr) {
-> +		if (debugfs_valid_mountpoint(*ptr) == 0) {
-> +			strcpy(hwpoison_debug_fs, *ptr);
-> +			return hwpoison_debug_fs;
-> +		}
-> +		ptr++;
-> +	}
-> +
-> +	/* give up and parse /proc/mounts */
-> +	fp = fopen("/proc/mounts", "r");
-> +	if (fp == NULL)
-> +		perror("Can't open /proc/mounts for read");
-> +
-> +	while (fscanf(fp, "%*s %"
-> +		      STR(MAX_PATH)
-> +		      "s %99s %*s %*d %*d\n",
-> +		      hwpoison_debug_fs, type) == 2) {
-> +		if (strcmp(type, "debugfs") == 0)
-> +			break;
-> +	}
-> +	fclose(fp);
-> +
-> +	if (strcmp(type, "debugfs") != 0)
-> +		return NULL;
-> +
-> +	return hwpoison_debug_fs;
-> +}
-> +
-> +/* mount the debugfs somewhere if it's not mounted */
-> +
-> +void debugfs_mount()
-> +{
-> +	const char **ptr;
-> +
-> +	/* see if it's already mounted */
-> +	if (debugfs_find_mountpoint())
-> +		return;
-> +
-> +	ptr = debugfs_known_mountpoints;
-> +	while (*ptr) {
-> +		if (mount(NULL, *ptr, "debugfs", 0, NULL) == 0) {
-> +			/* save the mountpoint */
-> +			strcpy(hwpoison_debug_fs, *ptr);
-> +			break;
-> +		}
-> +		ptr++;
-> +	}
-> +
-> +	if (*ptr == NULL) {
-> +		perror("mount debugfs");
-> +		exit(EXIT_FAILURE);
-> +	}
-> +}
-
-The application now silently mounts debugfs.  Perhaps it should inform
-the operator when it did this?
+diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
+index 2469405..2e8ec51 100644
+--- a/include/target/target_core_transport.h
++++ b/include/target/target_core_transport.h
+@@ -135,6 +135,8 @@ extern void transport_complete_task(struct se_task *, int);
+ extern void transport_add_task_to_execute_queue(struct se_task *,
+ 						struct se_task *,
+ 						struct se_device *);
++extern void transport_remove_task_from_execute_queue(struct se_task *,
++						struct se_device *);
+ unsigned char *transport_dump_cmd_direction(struct se_cmd *);
+ extern void transport_dump_dev_state(struct se_device *, char *, int *);
+ extern void transport_dump_dev_info(struct se_device *, struct se_lun *,
 
 
