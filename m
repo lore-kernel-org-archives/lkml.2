@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab1CLW76 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 17:59:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15477 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381Ab1CLW7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 17:59:53 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/2] tracing - trace lost events properly
-Date: Sat, 12 Mar 2011 23:59:45 +0100
-Message-Id: <1299970786-8075-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1299970786-8075-1-git-send-email-jolsa@redhat.com>
-References: <1299970786-8075-1-git-send-email-jolsa@redhat.com>
+	id S1756146Ab1CLXCj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 18:02:39 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36512 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab1CLXCg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 18:02:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=ZQbGFZRABkqWOfe8vW7C30snuZGjT6WyeKIGeV+r8lk5c5Z1RlvLAYtTQrwvjgvG8l
+         qzHK2F8CTnfltmzFhPS0bDhMDqSWHqhKnzHm/G6TwEFj5W3BfrMbTY6uu6vRj/Xt2d9L
+         6y8N+nTblHQ6C1nguS0zGBnDZQfUEE3rJwbmk=
+Message-ID: <4D7BFB88.8000207@linaro.org>
+Date: Sat, 12 Mar 2011 23:02:32 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <Pine.LNX.4.44L0.1103121052430.25742-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1103121052430.25742-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add proper handling of lost event trace, allowing callers
-to get correct trace buffer info.
+On 03/12/2011 04:00 PM, Somebody in the thread at some point said:
 
- - returning TRACE_TYPE_PARTIAL_LINE, in case we dont fit into
-   the trace_seq buffer
- - added WARN_ON to make sure we don't miss incorrect trace_seq
-   handling
+Hi -
 
-wbr,
-jirka
+> This depends on the platform.  On PCs, USB host controllers are usually
+> PCI devices.  The only way to identify them is by the PCI device name.
+> Although these names don't change often, they _can_ change.  On an
+> embedded system there usually are only a couple of host controllers and
+> they have more or less fixed names.
 
+Right, on embedded boards typically the board definition file is 
+responsible for calling platform_add_device() to instantiate the usb 
+host / gadget / otg controllers.  That is done deterministically each 
+boot.  This async platform_data support is just targeted at stuff that 
+is fixed on to the board, so as you note it's reasonable to expect to be 
+able to bind to it if the bus itself is instantiated by the same file 
+synchronously.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/trace/trace.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
+I have sent a working RFC patchset to the lists now which implements 
+platform support for generic async platform_data; usb core and usbnet 
+specific platform_data; and finally board definition support for Panda 
+onboard usbnet device by leveraging the introduced generic support. 
+Beagle XM also has the same issues that can be solved by async 
+platform_data from the board definition file.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9541c27..20d84f8 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2013,9 +2013,10 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
- {
- 	enum print_line_t ret;
- 
--	if (iter->lost_events)
--		trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
--				 iter->cpu, iter->lost_events);
-+	if (iter->lost_events &&
-+	    !trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
-+				 iter->cpu, iter->lost_events))
-+		return TRACE_TYPE_PARTIAL_LINE;
- 
- 	if (iter->trace && iter->trace->print_line) {
- 		ret = iter->trace->print_line(iter);
-@@ -3229,6 +3230,13 @@ waitagain:
- 
- 		if (iter->seq.len >= cnt)
- 			break;
-+
-+		/*
-+		 * Setting the full flag means we reached the trace_seq buffer
-+		 * size and we should leave by partial output condition above.
-+		 * One of the trace_seq_* functions is not used properly.
-+		 */
-+		WARN_ON(iter->seq.full);
- 	}
- 	trace_access_unlock(iter->cpu_file);
- 	trace_event_read_unlock();
--- 
-1.7.1
-
+-Andy
