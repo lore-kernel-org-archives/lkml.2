@@ -1,117 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab1CLBdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 20:33:46 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:57912 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab1CLBdo (ORCPT
+	id S1753565Ab1CLBnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 20:43:13 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:59282 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab1CLBnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 20:33:44 -0500
-Message-ID: <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
-In-Reply-To: <4D7AC0FE.8070806@gmail.com>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
-    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
-    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
-    <201103111255.44979.arnd@arndb.de>
-    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
-    <4D7AC0FE.8070806@gmail.com>
-Date: Sat, 12 Mar 2011 02:33:37 +0100 (CET)
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Ric Wheeler" <ricwheeler@gmail.com>
-Cc: "Arnd Bergmann" <arnd@arndb.de>, "Sage Weil" <sage@newdream.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
-User-Agent: SquirrelMail/1.4.17
+	Fri, 11 Mar 2011 20:43:11 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=HzzrZQhtZA1YnAMH/v365N8rb3XUWsHDfvDozZE/6kpy+IWOsnq4bnKiv0+XhXSCK
+	HM09E9caNGliepQIuajNg==
+Subject: [PATCH v2 00/12] google firmware support
+To: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+From: Mike Waychison <mikew@google.com>
+Cc: Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
+Date: Fri, 11 Mar 2011 17:42:55 -0800
+Message-ID: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: bbdeaaa4d227adae8d620e69c05793d6
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, March 12, 2011 01:40, Ric Wheeler wrote:
-> On 03/11/2011 06:45 PM, Indan Zupancic wrote:
->> On Fri, March 11, 2011 12:55, Arnd Bergmann wrote:
->>> On Friday 11 March 2011, Indan Zupancic wrote:
->>>>>        http://marc.info/?l=linux-fsdevel&amp;m=127970513829285&amp;w=2
->>>> The patch there seems much more reasonable than introducing a whole
->>>> new systemcall just for 20 lines of kernel code. New system calls are
->>>> added too easily nowadays.
->>> The only problem with adding new system calls is that we are stuck
->>> with the interface until the end of time, so we must be sure not
->>> to get it wrong. The same thing is true for any other interface
->>> such as ioctl or extensions to existing system calls. People usually
->>> get away with adding new ioctls more easily because it is less
->>> obvious when they are added.
->> Agreed.
->>
->> I'm not sure this feature is important enough to add. I can't really
->> think of a regular use case where this would be useful, generally
->> it's transparent on which mount files are. Add symlinks, and you
->> give users a lot of rope. Any user has to make sure that all the
->> files they want to sync are on the same file system.
->>
->> About the arguments against sync(2):
->>
->>>   - On machines with many mounts, it is not at all uncommon for some of
->>>     them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
->>>     those and may never get to the one you do care about (e.g., /).
->> It would be better to fix NFS, or mount it with the fsc option (assuming
->> a sync will write to the local cache instead of hanging forever then).
->>
->>>   - Some applications write lots of data to the file system and then
->>>     want to make sure it is flushed to disk.  Calling fsync(2) on each
->>>     file introduces unnecessary ordering constraints that result in a large
->>>     amount of sub-optimal writeback/flush/commit behavior by the file
->>>     system.
->> You can use sync_file_range() on those files to schedule the writes
->> and then do the fsync(2) as usual (both on files and dirs).
->>
->> If there still is a good reason to implement this, please don't add it
->> as a new system call, but add it to sync_file_range(), as that seems
->> the best place for odd file synchronisation operations.
->>
->> Greetings,
->>
->> Indan
->>
->>
->> --
->
-> Hi Indan,
->
-> I think that you missed the point of the extension.
->
-> Ric
+This patchset applies to v2.6.38-rc8.
 
-The point is clear, it's to synchronize a specific file system instead
-of all of them.
+The following series implements some support for interfaces exposed by
+google's servers' firmware.  Unlike the previous send-out, it only
+includes two of the three drivers as I'm not yet finished fixing the
+"bootlog" driver from the last send-out (and I've discovered more
+"undocumented" firmware functionality that I'd rather unravel before
+sending out again).
 
-But actually doing that from a program is harder than it looks, because
-programs work with files, not file systems. To make this feature useful
-the program needs meta information it can't easily get. That was my first
-point.
+In order to address various concerns had with the previous patchset,
+I've changed the user ABI significantly:
 
-The rest was just replying to the motivations given to add the feature.
-If those motivations miss the point of the extension, don't blame me.
+Instead of messing with the dmesg log_buf ring-buffer, we now expose
+firmware logs via /sys/firmware/log.
 
-If you want to add a new one, "I'd like sync /mounpoint to work", then
-do so, but please tell what practical use that has, if you're not going
-to unmount the thing soon after anyway.
+As well, instead of using a ioctl interface the gsmi driver, I've
+changed it completely to use sysfs instead (rooted at
+/sys/firmware/gsmi).  gsmi provides access to EFI variables through a
+means other than through the EFI runtime services page, so I've reused
+the bulk of the code exposed by the efivars driver.  To make this work,
+I had to refactor a bit of the efivars driver.  The only user-visible
+change here is that the module will successfully load now even if you
+aren't on an EFI system (which is much more consistent with other
+drivers anyway).
 
-Other than this questionable use case, is there any other one that would
-justify adding this extension?
+I'd like to have these small drivers included as they are required for
+proper use of the kernel in our infrastructure.  They may not seem like
+much, but a lot of our health automation as well as our human debugging
+efforts are dependent on the functionality herein.  Getting these in the
+public Linux tree would bring us closer to being able to easily test
+kernels as they are released.
 
-Greetings,
+Thanks,
 
-Indan
+Patchset summary
+================
 
+Patches [1 through 6] refactor the 'efivars' module to let the "gsmi"
+driver in patch [11] re-use the variable functionality.
 
+Patch [7] documents existing 'efivars' functionality that has been
+present in the tree since 2004.
+
+Patches [8] and [9] add sanity checking for accessing the EBDA.
+
+Patch [10] introduces CONFIG_GOOGLE_FIRMWARE that is disabled by
+default and which gates Google-specific drivers.
+
+Patch [11] adds the "gsmi" driver that we use to make calls into our
+firmware.
+
+Patch [12] adds the "memconsole" driver that finds the firmware's logs
+and exposes them on /sys/firmware/log.
+
+Diffstat
+========
+ Documentation/ABI/stable/sysfs-firmware-efi-vars |   75 +
+ Documentation/ABI/testing/sysfs-firmware-gsmi    |   58 +
+ Documentation/ABI/testing/sysfs-firmware-log     |    7 
+ arch/x86/include/asm/bios_ebda.h                 |   28 
+ drivers/firmware/Kconfig                         |    2 
+ drivers/firmware/Makefile                        |    2 
+ drivers/firmware/efivars.c                       |  343 +++++---
+ drivers/firmware/google/Kconfig                  |   33 
+ drivers/firmware/google/Makefile                 |    3 
+ drivers/firmware/google/gsmi.c                   |  927 +++++++++++++++++++++++
+ drivers/firmware/google/memconsole.c             |  151 +++
+ include/linux/efi.h                              |   37 
+ 12 files changed, 1526 insertions(+), 140 deletions(-)
+
+ChangeLog:
+==========
+- v2
+   - Efivars can now be used by other drivers.
+   - Documentation added for /sys/firmware/efi/vars
+   - Memory console no longer touches log_buf ring buffer.
+   - The firmware log is exported to userland as /sys/firmware/log
+   - Ioctls for accessing nvram variables in gsmi driver replaced with
+     efivars at /sys/firmware/gsmi/vars.
+   - die_notifier is used instead of adding new notifer_lists.
+   - EBDA scrubbing for memconsole now checks that we aren't walking
+     into 0xA0000.
+   - Documentation added for /sys/firmware/log
+   - Documentation added for /sys/firmware/gsmi
+   - Use kernel fixed width types instead of C99 types.
+- v1
+   - Initial public send-out.
