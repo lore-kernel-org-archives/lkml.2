@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab1CLVbc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 16:31:32 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:52875 "HELO
+	id S1756088Ab1CLVbj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 16:31:39 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:52977 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753659Ab1CLVbK (ORCPT
+	with SMTP id S1755913Ab1CLVbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 16:31:10 -0500
+	Sat, 12 Mar 2011 16:31:12 -0500
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19GSFc4q2lGyK69niTEsVYrLD2W3N9z9912zrpEeu
-	Jfn9gJm8c/6yJL
+X-Provags-ID: V01U2FsdGVkX19BXSxxFeNByUfQnZxDAZlIGU8sQBY282kNkXp+EZ
+	gmI3cmVw1v7JPh
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 1/4] viafb: remove duplicated clock information
-Date: Sat, 12 Mar 2011 21:46:23 +0000
-Message-Id: <1299966386-3439-2-git-send-email-FlorianSchandinat@gmx.de>
+Subject: [PATCH 4/4] viafb: split pll configs up
+Date: Sat, 12 Mar 2011 21:46:26 +0000
+Message-Id: <1299966386-3439-5-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
 In-Reply-To: <1299966386-3439-1-git-send-email-FlorianSchandinat@gmx.de>
 References: <1299966386-3439-1-git-send-email-FlorianSchandinat@gmx.de>
@@ -25,281 +25,704 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the direct lookup table for resolution+refresh and
-pixclock by calculating this information from the mode table. Removes a
-lot of dupllication and error potential by just doing a little more
-calculations on each mode change.
+This patch splits the pll configs up on pll versions. This allows
+easy adding of other known good pll values. Additionally it made it
+possible to remove invalid configurations resulting in better
+behaviour for such cases. The resulting clocks are no longer stored
+resulting in some computing overhead on each mode change.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/hw.c      |   50 ++++++++++++++++++-------------
- drivers/video/via/share.h   |   69 -------------------------------------------
- drivers/video/via/viamode.c |   67 -----------------------------------------
- drivers/video/via/viamode.h |    9 -----
- 4 files changed, 29 insertions(+), 166 deletions(-)
+ drivers/video/via/hw.c |  648 ++++++++++++++++++++++--------------------------
+ 1 files changed, 301 insertions(+), 347 deletions(-)
 
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index 9ecf486..8c1393e 100644
+index 071e3a9..b418acf 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -2608,35 +2608,43 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
- int viafb_get_pixclock(int hres, int vres, int vmode_refresh)
- {
- 	int i;
-+	struct crt_mode_table *best;
-+	struct VideoModeTable *vmode = viafb_get_mode(hres, vres);
- 
--	for (i = 0; i < NUM_TOTAL_RES_MAP_REFRESH; i++) {
--		if ((hres == res_map_refresh_tbl[i].hres)
--		    && (vres == res_map_refresh_tbl[i].vres)
--		    && (vmode_refresh == res_map_refresh_tbl[i].vmode_refresh))
--			return res_map_refresh_tbl[i].pixclock;
-+	if (!vmode)
-+		return RES_640X480_60HZ_PIXCLOCK;
-+
-+	best = &vmode->crtc[0];
-+	for (i = 1; i < vmode->mode_array; i++) {
-+		if (abs(vmode->crtc[i].refresh_rate - vmode_refresh)
-+			< abs(best->refresh_rate - vmode_refresh))
-+			best = &vmode->crtc[i];
- 	}
--	return RES_640X480_60HZ_PIXCLOCK;
- 
-+	return 1000000000 / (best->crtc.hor_total * best->crtc.ver_total)
-+		* 1000 / best->refresh_rate;
- }
- 
- int viafb_get_refresh(int hres, int vres, u32 long_refresh)
- {
--#define REFRESH_TOLERANCE 3
--	int i, nearest = -1, diff = REFRESH_TOLERANCE;
--	for (i = 0; i < NUM_TOTAL_RES_MAP_REFRESH; i++) {
--		if ((hres == res_map_refresh_tbl[i].hres)
--		    && (vres == res_map_refresh_tbl[i].vres)
--		    && (diff > (abs(long_refresh -
--		    res_map_refresh_tbl[i].vmode_refresh)))) {
--			diff = abs(long_refresh - res_map_refresh_tbl[i].
--				vmode_refresh);
--			nearest = i;
--		}
-+	int i;
-+	struct crt_mode_table *best;
-+	struct VideoModeTable *vmode = viafb_get_mode(hres, vres);
-+
-+	if (!vmode)
-+		return 60;
-+
-+	best = &vmode->crtc[0];
-+	for (i = 1; i < vmode->mode_array; i++) {
-+		if (abs(vmode->crtc[i].refresh_rate - long_refresh)
-+			< abs(best->refresh_rate - long_refresh))
-+			best = &vmode->crtc[i];
- 	}
--#undef REFRESH_TOLERANCE
--	if (nearest > 0)
--		return res_map_refresh_tbl[nearest].vmode_refresh;
--	return 60;
-+
-+	if (abs(best->refresh_rate - long_refresh) > 3)
-+		return 60;
-+
-+	return best->refresh_rate;
- }
- 
- static void device_off(void)
-diff --git a/drivers/video/via/share.h b/drivers/video/via/share.h
-index 2cbe103..b04c047 100644
---- a/drivers/video/via/share.h
-+++ b/drivers/video/via/share.h
-@@ -722,76 +722,7 @@
- 
- /* Definition Video Mode Pixel Clock (picoseconds)
- */
--#define RES_480X640_60HZ_PIXCLOCK    39722
- #define RES_640X480_60HZ_PIXCLOCK    39722
--#define RES_640X480_75HZ_PIXCLOCK    31747
--#define RES_640X480_85HZ_PIXCLOCK    27777
--#define RES_640X480_100HZ_PIXCLOCK   23168
--#define RES_640X480_120HZ_PIXCLOCK   19081
--#define RES_720X480_60HZ_PIXCLOCK    37020
--#define RES_720X576_60HZ_PIXCLOCK    30611
--#define RES_800X600_60HZ_PIXCLOCK    25000
--#define RES_800X600_75HZ_PIXCLOCK    20203
--#define RES_800X600_85HZ_PIXCLOCK    17777
--#define RES_800X600_100HZ_PIXCLOCK   14667
--#define RES_800X600_120HZ_PIXCLOCK   11912
--#define RES_800X480_60HZ_PIXCLOCK    33805
--#define RES_848X480_60HZ_PIXCLOCK    31756
--#define RES_856X480_60HZ_PIXCLOCK    31518
--#define RES_1024X512_60HZ_PIXCLOCK   24218
--#define RES_1024X600_60HZ_PIXCLOCK   20460
--#define RES_1024X768_60HZ_PIXCLOCK   15385
--#define RES_1024X768_75HZ_PIXCLOCK   12699
--#define RES_1024X768_85HZ_PIXCLOCK   10582
--#define RES_1024X768_100HZ_PIXCLOCK  8825
--#define RES_1152X864_75HZ_PIXCLOCK   9259
--#define RES_1280X768_60HZ_PIXCLOCK   12480
--#define RES_1280X800_60HZ_PIXCLOCK   11994
--#define RES_1280X960_60HZ_PIXCLOCK   9259
--#define RES_1280X1024_60HZ_PIXCLOCK  9260
--#define RES_1280X1024_75HZ_PIXCLOCK  7408
--#define RES_1280X768_85HZ_PIXCLOCK   6349
--#define RES_1440X1050_60HZ_PIXCLOCK  7993
--#define RES_1600X1200_60HZ_PIXCLOCK  6172
--#define RES_1600X1200_75HZ_PIXCLOCK  4938
--#define RES_1280X720_60HZ_PIXCLOCK   13426
--#define RES_1200X900_60HZ_PIXCLOCK   17459
--#define RES_1920X1080_60HZ_PIXCLOCK  5787
--#define RES_1400X1050_60HZ_PIXCLOCK  8214
--#define RES_1400X1050_75HZ_PIXCLOCK  6410
--#define RES_1368X768_60HZ_PIXCLOCK   11647
--#define RES_960X600_60HZ_PIXCLOCK      22099
--#define RES_1000X600_60HZ_PIXCLOCK    20834
--#define RES_1024X576_60HZ_PIXCLOCK    21278
--#define RES_1088X612_60HZ_PIXCLOCK    18877
--#define RES_1152X720_60HZ_PIXCLOCK    14981
--#define RES_1200X720_60HZ_PIXCLOCK    14253
--#define RES_1280X600_60HZ_PIXCLOCK    16260
--#define RES_1280X720_50HZ_PIXCLOCK    16538
--#define RES_1280X768_50HZ_PIXCLOCK    15342
--#define RES_1366X768_50HZ_PIXCLOCK    14301
--#define RES_1366X768_60HZ_PIXCLOCK    11646
--#define RES_1360X768_60HZ_PIXCLOCK    11799
--#define RES_1440X900_60HZ_PIXCLOCK    9390
--#define RES_1440X900_75HZ_PIXCLOCK    7315
--#define RES_1600X900_60HZ_PIXCLOCK    8415
--#define RES_1600X1024_60HZ_PIXCLOCK   7315
--#define RES_1680X1050_60HZ_PIXCLOCK   6814
--#define RES_1680X1050_75HZ_PIXCLOCK   5348
--#define RES_1792X1344_60HZ_PIXCLOCK   4902
--#define RES_1856X1392_60HZ_PIXCLOCK   4577
--#define RES_1920X1200_60HZ_PIXCLOCK   5173
--#define RES_1920X1440_60HZ_PIXCLOCK   4274
--#define RES_1920X1440_75HZ_PIXCLOCK   3367
--#define RES_2048X1536_60HZ_PIXCLOCK   3742
--
--#define RES_1360X768_RB_60HZ_PIXCLOCK 13889
--#define RES_1400X1050_RB_60HZ_PIXCLOCK 9901
--#define RES_1440X900_RB_60HZ_PIXCLOCK   11268
--#define RES_1600X900_RB_60HZ_PIXCLOCK   10230
--#define RES_1680X1050_RB_60HZ_PIXCLOCK 8403
--#define RES_1920X1080_RB_60HZ_PIXCLOCK 7225
--#define RES_1920X1200_RB_60HZ_PIXCLOCK 6497
- 
- /* LCD display method
- */
-diff --git a/drivers/video/via/viamode.c b/drivers/video/via/viamode.c
-index 4b06dd7..ea0bc7a 100644
---- a/drivers/video/via/viamode.c
-+++ b/drivers/video/via/viamode.c
-@@ -21,72 +21,6 @@
- 
+@@ -22,342 +22,272 @@
  #include <linux/via-core.h>
  #include "global.h"
--struct res_map_refresh res_map_refresh_tbl[] = {
--/*hres, vres, vclock, vmode_refresh*/
--	{480, 640, RES_480X640_60HZ_PIXCLOCK, 60},
--	{640, 480, RES_640X480_60HZ_PIXCLOCK, 60},
--	{640, 480, RES_640X480_75HZ_PIXCLOCK, 75},
--	{640, 480, RES_640X480_85HZ_PIXCLOCK, 85},
--	{640, 480, RES_640X480_100HZ_PIXCLOCK, 100},
--	{640, 480, RES_640X480_120HZ_PIXCLOCK, 120},
--	{720, 480, RES_720X480_60HZ_PIXCLOCK, 60},
--	{720, 576, RES_720X576_60HZ_PIXCLOCK, 60},
--	{800, 480, RES_800X480_60HZ_PIXCLOCK, 60},
--	{800, 600, RES_800X600_60HZ_PIXCLOCK, 60},
--	{800, 600, RES_800X600_75HZ_PIXCLOCK, 75},
--	{800, 600, RES_800X600_85HZ_PIXCLOCK, 85},
--	{800, 600, RES_800X600_100HZ_PIXCLOCK, 100},
--	{800, 600, RES_800X600_120HZ_PIXCLOCK, 120},
--	{848, 480, RES_848X480_60HZ_PIXCLOCK, 60},
--	{856, 480, RES_856X480_60HZ_PIXCLOCK, 60},
--	{1024, 512, RES_1024X512_60HZ_PIXCLOCK, 60},
--	{1024, 600, RES_1024X600_60HZ_PIXCLOCK, 60},
--	{1024, 768, RES_1024X768_60HZ_PIXCLOCK, 60},
--	{1024, 768, RES_1024X768_75HZ_PIXCLOCK, 75},
--	{1024, 768, RES_1024X768_85HZ_PIXCLOCK, 85},
--	{1024, 768, RES_1024X768_100HZ_PIXCLOCK, 100},
--/*  {1152,864, RES_1152X864_70HZ_PIXCLOCK,  70},*/
--	{1152, 864, RES_1152X864_75HZ_PIXCLOCK, 75},
--	{1280, 768, RES_1280X768_60HZ_PIXCLOCK, 60},
--	{1280, 800, RES_1280X800_60HZ_PIXCLOCK, 60},
--	{1280, 960, RES_1280X960_60HZ_PIXCLOCK, 60},
--	{1280, 1024, RES_1280X1024_60HZ_PIXCLOCK, 60},
--	{1280, 1024, RES_1280X1024_75HZ_PIXCLOCK, 75},
--	{1280, 1024, RES_1280X768_85HZ_PIXCLOCK, 85},
--	{1440, 1050, RES_1440X1050_60HZ_PIXCLOCK, 60},
--	{1600, 1200, RES_1600X1200_60HZ_PIXCLOCK, 60},
--	{1600, 1200, RES_1600X1200_75HZ_PIXCLOCK, 75},
--	{1280, 720, RES_1280X720_60HZ_PIXCLOCK, 60},
--	{1920, 1080, RES_1920X1080_60HZ_PIXCLOCK, 60},
--	{1400, 1050, RES_1400X1050_60HZ_PIXCLOCK, 60},
--	{1400, 1050, RES_1400X1050_75HZ_PIXCLOCK, 75},
--	{1368, 768, RES_1368X768_60HZ_PIXCLOCK, 60},
--	{960, 600, RES_960X600_60HZ_PIXCLOCK, 60},
--	{1000, 600, RES_1000X600_60HZ_PIXCLOCK, 60},
--	{1024, 576, RES_1024X576_60HZ_PIXCLOCK, 60},
--	{1088, 612, RES_1088X612_60HZ_PIXCLOCK, 60},
--	{1152, 720, RES_1152X720_60HZ_PIXCLOCK, 60},
--	{1200, 720, RES_1200X720_60HZ_PIXCLOCK, 60},
--	{1200, 900, RES_1200X900_60HZ_PIXCLOCK, 60},
--	{1280, 600, RES_1280X600_60HZ_PIXCLOCK, 60},
--	{1280, 720, RES_1280X720_50HZ_PIXCLOCK, 50},
--	{1280, 768, RES_1280X768_50HZ_PIXCLOCK, 50},
--	{1360, 768, RES_1360X768_60HZ_PIXCLOCK, 60},
--	{1366, 768, RES_1366X768_50HZ_PIXCLOCK, 50},
--	{1366, 768, RES_1366X768_60HZ_PIXCLOCK, 60},
--	{1440, 900, RES_1440X900_60HZ_PIXCLOCK, 60},
--	{1440, 900, RES_1440X900_75HZ_PIXCLOCK, 75},
--	{1600, 900, RES_1600X900_60HZ_PIXCLOCK, 60},
--	{1600, 1024, RES_1600X1024_60HZ_PIXCLOCK, 60},
--	{1680, 1050, RES_1680X1050_60HZ_PIXCLOCK, 60},
--	{1680, 1050, RES_1680X1050_75HZ_PIXCLOCK, 75},
--	{1792, 1344, RES_1792X1344_60HZ_PIXCLOCK, 60},
--	{1856, 1392, RES_1856X1392_60HZ_PIXCLOCK, 60},
--	{1920, 1200, RES_1920X1200_60HZ_PIXCLOCK, 60},
--	{1920, 1440, RES_1920X1440_60HZ_PIXCLOCK, 60},
--	{1920, 1440, RES_1920X1440_75HZ_PIXCLOCK, 75},
--	{2048, 1536, RES_2048X1536_60HZ_PIXCLOCK, 60}
--};
  
- struct io_reg CN400_ModeXregs[] = { {VIASR, SR10, 0xFF, 0x01},
- {VIASR, SR15, 0x02, 0x02},
-@@ -1057,7 +991,6 @@ struct VideoModeTable CEA_HDMI_Modes[] = {
- 	{CEAM1920x1080, ARRAY_SIZE(CEAM1920x1080)}
+-static struct pll_map pll_value[] = {
+-	{25175000,
+-		{99, 7, 3},
+-		{85, 3, 4},	/* ignoring bit difference: 0x00008000 */
+-		{141, 5, 4},
+-		{141, 5, 4} },
+-	{29581000,
+-		{33, 4, 2},
+-		{66, 2, 4},	/* ignoring bit difference: 0x00808000 */
+-		{166, 5, 4},	/* ignoring bit difference: 0x00008000 */
+-		{165, 5, 4} },
+-	{26880000,
+-		{15, 4, 1},
+-		{30, 2, 3},	/* ignoring bit difference: 0x00808000 */
+-		{150, 5, 4},
+-		{150, 5, 4} },
+-	{31500000,
+-		{53, 3, 3},	/* ignoring bit difference: 0x00008000 */
+-		{141, 4, 4},	/* ignoring bit difference: 0x00008000 */
+-		{176, 5, 4},
+-		{176, 5, 4} },
+-	{31728000,
+-		{31, 7, 1},
+-		{177, 5, 4},	/* ignoring bit difference: 0x00008000 */
+-		{177, 5, 4},
+-		{142, 4, 4} },
+-	{32688000,
+-		{73, 4, 3},
+-		{146, 4, 4},	/* ignoring bit difference: 0x00008000 */
+-		{183, 5, 4},
+-		{146, 4, 4} },
+-	{36000000,
+-		{101, 5, 3},	/* ignoring bit difference: 0x00008000 */
+-		{161, 4, 4},	/* ignoring bit difference: 0x00008000 */
+-		{202, 5, 4},
+-		{161, 4, 4} },
+-	{40000000,
+-		{89, 4, 3},
+-		{89, 4, 3},	/* ignoring bit difference: 0x00008000 */
+-		{112, 5, 3},
+-		{112, 5, 3} },
+-	{41291000,
+-		{23, 4, 1},
+-		{69, 3, 3},	/* ignoring bit difference: 0x00008000 */
+-		{115, 5, 3},
+-		{115, 5, 3} },
+-	{43163000,
+-		{121, 5, 3},
+-		{121, 5, 3},	/* ignoring bit difference: 0x00008000 */
+-		{121, 5, 3},
+-		{121, 5, 3} },
+-	{45250000,
+-		{127, 5, 3},
+-		{127, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{127, 5, 3},
+-		{127, 5, 3} },
+-	{46000000,
+-		{90, 7, 2},
+-		{103, 4, 3},	/* ignoring bit difference: 0x00008000 */
+-		{129, 5, 3},
+-		{103, 4, 3} },
+-	{46996000,
+-		{105, 4, 3},	/* ignoring bit difference: 0x00008000 */
+-		{131, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{131, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{105, 4, 3} },
+-	{48000000,
+-		{67, 20, 0},
+-		{134, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{134, 5, 3},
+-		{134, 5, 3} },
+-	{48875000,
+-		{99, 29, 0},
+-		{82, 3, 3},	/* ignoring bit difference: 0x00808000 */
+-		{82, 3, 3},	/* ignoring bit difference: 0x00808000 */
+-		{137, 5, 3} },
+-	{49500000,
+-		{83, 6, 2},
+-		{83, 3, 3},	/* ignoring bit difference: 0x00008000 */
+-		{138, 5, 3},
+-		{83, 3, 3} },
+-	{52406000,
+-		{117, 4, 3},
+-		{117, 4, 3},	/* ignoring bit difference: 0x00008000 */
+-		{117, 4, 3},
+-		{88, 3, 3} },
+-	{52977000,
+-		{37, 5, 1},
+-		{148, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{148, 5, 3},
+-		{148, 5, 3} },
+-	{56250000,
+-		{55, 7, 1},	/* ignoring bit difference: 0x00008000 */
+-		{126, 4, 3},	/* ignoring bit difference: 0x00008000 */
+-		{157, 5, 3},
+-		{157, 5, 3} },
+-	{57275000,
+-		{0, 0, 0},
+-		{2, 2, 0},
+-		{2, 2, 0},
+-		{157, 5, 3} },	/* ignoring bit difference: 0x00808000 */
+-	{60466000,
+-		{76, 9, 1},
+-		{169, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{169, 5, 3},	/* FIXED: old = {72, 2, 3} */
+-		{169, 5, 3} },
+-	{61500000,
+-		{86, 20, 0},
+-		{172, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{172, 5, 3},
+-		{172, 5, 3} },
+-	{65000000,
+-		{109, 6, 2},	/* ignoring bit difference: 0x00008000 */
+-		{109, 3, 3},	/* ignoring bit difference: 0x00008000 */
+-		{109, 3, 3},
+-		{109, 3, 3} },
+-	{65178000,
+-		{91, 5, 2},
+-		{182, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{109, 3, 3},
+-		{182, 5, 3} },
+-	{66750000,
+-		{75, 4, 2},
+-		{150, 4, 3},	/* ignoring bit difference: 0x00808000 */
+-		{150, 4, 3},
+-		{112, 3, 3} },
+-	{68179000,
+-		{19, 4, 0},
+-		{114, 3, 3},	/* ignoring bit difference: 0x00008000 */
+-		{190, 5, 3},
+-		{191, 5, 3} },
+-	{69924000,
+-		{83, 17, 0},
+-		{195, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{195, 5, 3},
+-		{195, 5, 3} },
+-	{70159000,
+-		{98, 20, 0},
+-		{196, 5, 3},	/* ignoring bit difference: 0x00808000 */
+-		{196, 5, 3},
+-		{195, 5, 3} },
+-	{72000000,
+-		{121, 24, 0},
+-		{161, 4, 3},	/* ignoring bit difference: 0x00808000 */
+-		{161, 4, 3},
+-		{161, 4, 3} },
+-	{78750000,
+-		{33, 3, 1},
+-		{66, 3, 2},	/* ignoring bit difference: 0x00008000 */
+-		{110, 5, 2},
+-		{110, 5, 2} },
+-	{80136000,
+-		{28, 5, 0},
+-		{68, 3, 2},	/* ignoring bit difference: 0x00008000 */
+-		{112, 5, 2},
+-		{112, 5, 2} },
+-	{83375000,
+-		{93, 2, 3},
+-		{93, 4, 2},	/* ignoring bit difference: 0x00800000 */
+-		{93, 4, 2},	/* ignoring bit difference: 0x00800000 */
+-		{117, 5, 2} },
+-	{83950000,
+-		{41, 7, 0},
+-		{117, 5, 2},	/* ignoring bit difference: 0x00008000 */
+-		{117, 5, 2},
+-		{117, 5, 2} },
+-	{84750000,
+-		{118, 5, 2},
+-		{118, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{118, 5, 2},
+-		{118, 5, 2} },
+-	{85860000,
+-		{84, 7, 1},
+-		{120, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{120, 5, 2},
+-		{118, 5, 2} },
+-	{88750000,
+-		{31, 5, 0},
+-		{124, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{174, 7, 2},	/* ignoring bit difference: 0x00808000 */
+-		{124, 5, 2} },
+-	{94500000,
+-		{33, 5, 0},
+-		{132, 5, 2},	/* ignoring bit difference: 0x00008000 */
+-		{132, 5, 2},
+-		{132, 5, 2} },
+-	{97750000,
+-		{82, 6, 1},
+-		{137, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{137, 5, 2},
+-		{137, 5, 2} },
+-	{101000000,
+-		{127, 9, 1},
+-		{141, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{141, 5, 2},
+-		{141, 5, 2} },
+-	{106500000,
+-		{119, 4, 2},
+-		{119, 4, 2},	/* ignoring bit difference: 0x00808000 */
+-		{119, 4, 2},
+-		{149, 5, 2} },
+-	{108000000,
+-		{121, 4, 2},
+-		{121, 4, 2},	/* ignoring bit difference: 0x00808000 */
+-		{151, 5, 2},
+-		{151, 5, 2} },
+-	{113309000,
+-		{95, 12, 0},
+-		{95, 3, 2},	/* ignoring bit difference: 0x00808000 */
+-		{95, 3, 2},
+-		{159, 5, 2} },
+-	{118840000,
+-		{83, 5, 1},
+-		{166, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{166, 5, 2},
+-		{166, 5, 2} },
+-	{119000000,
+-		{108, 13, 0},
+-		{133, 4, 2},	/* ignoring bit difference: 0x00808000 */
+-		{133, 4, 2},
+-		{167, 5, 2} },
+-	{121750000,
+-		{85, 5, 1},
+-		{170, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{68, 2, 2},
+-		{0, 0, 0} },
+-	{125104000,
+-		{53, 6, 0},	/* ignoring bit difference: 0x00008000 */
+-		{106, 3, 2},	/* ignoring bit difference: 0x00008000 */
+-		{175, 5, 2},
+-		{0, 0, 0} },
+-	{135000000,
+-		{94, 5, 1},
+-		{28, 3, 0},	/* ignoring bit difference: 0x00804000 */
+-		{151, 4, 2},
+-		{189, 5, 2} },
+-	{136700000,
+-		{115, 12, 0},
+-		{191, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{191, 5, 2},
+-		{191, 5, 2} },
+-	{138400000,
+-		{87, 9, 0},
+-		{116, 3, 2},	/* ignoring bit difference: 0x00808000 */
+-		{116, 3, 2},
+-		{194, 5, 2} },
+-	{146760000,
+-		{103, 5, 1},
+-		{206, 5, 2},	/* ignoring bit difference: 0x00808000 */
+-		{206, 5, 2},
+-		{206, 5, 2} },
+-	{153920000,
+-		{86, 8, 0},
+-		{86, 4, 1},	/* ignoring bit difference: 0x00808000 */
+-		{86, 4, 1},
+-		{86, 4, 1} },	/* FIXED: old = {84, 2, 1} */
+-	{156000000,
+-		{109, 5, 1},
+-		{109, 5, 1},	/* ignoring bit difference: 0x00808000 */
+-		{109, 5, 1},
+-		{108, 5, 1} },
+-	{157500000,
+-		{55, 5, 0},	/* ignoring bit difference: 0x00008000 */
+-		{22, 2, 0},	/* ignoring bit difference: 0x00802000 */
+-		{110, 5, 1},
+-		{110, 5, 1} },
+-	{162000000,
+-		{113, 5, 1},
+-		{113, 5, 1},	/* ignoring bit difference: 0x00808000 */
+-		{113, 5, 1},
+-		{113, 5, 1} },
+-	{187000000,
+-		{118, 9, 0},
+-		{131, 5, 1},	/* ignoring bit difference: 0x00808000 */
+-		{131, 5, 1},
+-		{131, 5, 1} },
+-	{193295000,
+-		{108, 8, 0},
+-		{81, 3, 1},	/* ignoring bit difference: 0x00808000 */
+-		{135, 5, 1},
+-		{135, 5, 1} },
+-	{202500000,
+-		{99, 7, 0},
+-		{85, 3, 1},	/* ignoring bit difference: 0x00808000 */
+-		{142, 5, 1},
+-		{142, 5, 1} },
+-	{204000000,
+-		{100, 7, 0},
+-		{143, 5, 1},	/* ignoring bit difference: 0x00808000 */
+-		{143, 5, 1},
+-		{143, 5, 1} },
+-	{218500000,
+-		{92, 6, 0},
+-		{153, 5, 1},	/* ignoring bit difference: 0x00808000 */
+-		{153, 5, 1},
+-		{153, 5, 1} },
+-	{234000000,
+-		{98, 6, 0},
+-		{98, 3, 1},	/* ignoring bit difference: 0x00008000 */
+-		{98, 3, 1},
+-		{164, 5, 1} },
+-	{267250000,
+-		{112, 6, 0},
+-		{112, 3, 1},	/* ignoring bit difference: 0x00808000 */
+-		{187, 5, 1},
+-		{187, 5, 1} },
+-	{297500000,
+-		{102, 5, 0},	/* ignoring bit difference: 0x00008000 */
+-		{166, 4, 1},	/* ignoring bit difference: 0x00008000 */
+-		{208, 5, 1},
+-		{208, 5, 1} },
+-	{74481000,
+-		{26, 5, 0},
+-		{125, 3, 3},	/* ignoring bit difference: 0x00808000 */
+-		{208, 5, 3},
+-		{209, 5, 3} },
+-	{172798000,
+-		{121, 5, 1},
+-		{121, 5, 1},	/* ignoring bit difference: 0x00808000 */
+-		{121, 5, 1},
+-		{121, 5, 1} },
+-	{122614000,
+-		{60, 7, 0},
+-		{137, 4, 2},	/* ignoring bit difference: 0x00808000 */
+-		{137, 4, 2},
+-		{172, 5, 2} },
+-	{74270000,
+-		{83, 8, 1},
+-		{208, 5, 3},
+-		{208, 5, 3},
+-		{0, 0, 0} },
+-	{148500000,
+-		{83, 8, 0},
+-		{208, 5, 2},
+-		{166, 4, 2},
+-		{208, 5, 2} }
++static struct pll_config cle266_pll_config[] = {
++	{19, 4, 0},
++	{26, 5, 0},
++	{28, 5, 0},
++	{31, 5, 0},
++	{33, 5, 0},
++	{55, 5, 0},
++	{102, 5, 0},
++	{53, 6, 0},
++	{92, 6, 0},
++	{98, 6, 0},
++	{112, 6, 0},
++	{41, 7, 0},
++	{60, 7, 0},
++	{99, 7, 0},
++	{100, 7, 0},
++	{83, 8, 0},
++	{86, 8, 0},
++	{108, 8, 0},
++	{87, 9, 0},
++	{118, 9, 0},
++	{95, 12, 0},
++	{115, 12, 0},
++	{108, 13, 0},
++	{83, 17, 0},
++	{67, 20, 0},
++	{86, 20, 0},
++	{98, 20, 0},
++	{121, 24, 0},
++	{99, 29, 0},
++	{33, 3, 1},
++	{15, 4, 1},
++	{23, 4, 1},
++	{37, 5, 1},
++	{83, 5, 1},
++	{85, 5, 1},
++	{94, 5, 1},
++	{103, 5, 1},
++	{109, 5, 1},
++	{113, 5, 1},
++	{121, 5, 1},
++	{82, 6, 1},
++	{31, 7, 1},
++	{55, 7, 1},
++	{84, 7, 1},
++	{83, 8, 1},
++	{76, 9, 1},
++	{127, 9, 1},
++	{33, 4, 2},
++	{75, 4, 2},
++	{119, 4, 2},
++	{121, 4, 2},
++	{91, 5, 2},
++	{118, 5, 2},
++	{83, 6, 2},
++	{109, 6, 2},
++	{90, 7, 2},
++	{93, 2, 3},
++	{53, 3, 3},
++	{73, 4, 3},
++	{89, 4, 3},
++	{105, 4, 3},
++	{117, 4, 3},
++	{101, 5, 3},
++	{121, 5, 3},
++	{127, 5, 3},
++	{99, 7, 3}
++};
++
++static struct pll_config k800_pll_config[] = {
++	{22, 2, 0},
++	{28, 3, 0},
++	{81, 3, 1},
++	{85, 3, 1},
++	{98, 3, 1},
++	{112, 3, 1},
++	{86, 4, 1},
++	{166, 4, 1},
++	{109, 5, 1},
++	{113, 5, 1},
++	{121, 5, 1},
++	{131, 5, 1},
++	{143, 5, 1},
++	{153, 5, 1},
++	{66, 3, 2},
++	{68, 3, 2},
++	{95, 3, 2},
++	{106, 3, 2},
++	{116, 3, 2},
++	{93, 4, 2},
++	{119, 4, 2},
++	{121, 4, 2},
++	{133, 4, 2},
++	{137, 4, 2},
++	{117, 5, 2},
++	{118, 5, 2},
++	{120, 5, 2},
++	{124, 5, 2},
++	{132, 5, 2},
++	{137, 5, 2},
++	{141, 5, 2},
++	{166, 5, 2},
++	{170, 5, 2},
++	{191, 5, 2},
++	{206, 5, 2},
++	{208, 5, 2},
++	{30, 2, 3},
++	{69, 3, 3},
++	{82, 3, 3},
++	{83, 3, 3},
++	{109, 3, 3},
++	{114, 3, 3},
++	{125, 3, 3},
++	{89, 4, 3},
++	{103, 4, 3},
++	{117, 4, 3},
++	{126, 4, 3},
++	{150, 4, 3},
++	{161, 4, 3},
++	{121, 5, 3},
++	{127, 5, 3},
++	{131, 5, 3},
++	{134, 5, 3},
++	{148, 5, 3},
++	{169, 5, 3},
++	{172, 5, 3},
++	{182, 5, 3},
++	{195, 5, 3},
++	{196, 5, 3},
++	{208, 5, 3},
++	{66, 2, 4},
++	{85, 3, 4},
++	{141, 4, 4},
++	{146, 4, 4},
++	{161, 4, 4},
++	{177, 5, 4}
++};
++
++static struct pll_config cx700_pll_config[] = {
++	{98, 3, 1},
++	{86, 4, 1},
++	{109, 5, 1},
++	{110, 5, 1},
++	{113, 5, 1},
++	{121, 5, 1},
++	{131, 5, 1},
++	{135, 5, 1},
++	{142, 5, 1},
++	{143, 5, 1},
++	{153, 5, 1},
++	{187, 5, 1},
++	{208, 5, 1},
++	{68, 2, 2},
++	{95, 3, 2},
++	{116, 3, 2},
++	{93, 4, 2},
++	{119, 4, 2},
++	{133, 4, 2},
++	{137, 4, 2},
++	{151, 4, 2},
++	{166, 4, 2},
++	{110, 5, 2},
++	{112, 5, 2},
++	{117, 5, 2},
++	{118, 5, 2},
++	{120, 5, 2},
++	{132, 5, 2},
++	{137, 5, 2},
++	{141, 5, 2},
++	{151, 5, 2},
++	{166, 5, 2},
++	{175, 5, 2},
++	{191, 5, 2},
++	{206, 5, 2},
++	{174, 7, 2},
++	{82, 3, 3},
++	{109, 3, 3},
++	{117, 4, 3},
++	{150, 4, 3},
++	{161, 4, 3},
++	{112, 5, 3},
++	{115, 5, 3},
++	{121, 5, 3},
++	{127, 5, 3},
++	{129, 5, 3},
++	{131, 5, 3},
++	{134, 5, 3},
++	{138, 5, 3},
++	{148, 5, 3},
++	{157, 5, 3},
++	{169, 5, 3},
++	{172, 5, 3},
++	{190, 5, 3},
++	{195, 5, 3},
++	{196, 5, 3},
++	{208, 5, 3},
++	{141, 5, 4},
++	{150, 5, 4},
++	{166, 5, 4},
++	{176, 5, 4},
++	{177, 5, 4},
++	{183, 5, 4},
++	{202, 5, 4}
++};
++
++static struct pll_config vx855_pll_config[] = {
++	{86, 4, 1},
++	{108, 5, 1},
++	{110, 5, 1},
++	{113, 5, 1},
++	{121, 5, 1},
++	{131, 5, 1},
++	{135, 5, 1},
++	{142, 5, 1},
++	{143, 5, 1},
++	{153, 5, 1},
++	{164, 5, 1},
++	{187, 5, 1},
++	{208, 5, 1},
++	{110, 5, 2},
++	{112, 5, 2},
++	{117, 5, 2},
++	{118, 5, 2},
++	{124, 5, 2},
++	{132, 5, 2},
++	{137, 5, 2},
++	{141, 5, 2},
++	{149, 5, 2},
++	{151, 5, 2},
++	{159, 5, 2},
++	{166, 5, 2},
++	{167, 5, 2},
++	{172, 5, 2},
++	{189, 5, 2},
++	{191, 5, 2},
++	{194, 5, 2},
++	{206, 5, 2},
++	{208, 5, 2},
++	{83, 3, 3},
++	{88, 3, 3},
++	{109, 3, 3},
++	{112, 3, 3},
++	{103, 4, 3},
++	{105, 4, 3},
++	{161, 4, 3},
++	{112, 5, 3},
++	{115, 5, 3},
++	{121, 5, 3},
++	{127, 5, 3},
++	{134, 5, 3},
++	{137, 5, 3},
++	{148, 5, 3},
++	{157, 5, 3},
++	{169, 5, 3},
++	{172, 5, 3},
++	{182, 5, 3},
++	{191, 5, 3},
++	{195, 5, 3},
++	{209, 5, 3},
++	{142, 4, 4},
++	{146, 4, 4},
++	{161, 4, 4},
++	{141, 5, 4},
++	{150, 5, 4},
++	{165, 5, 4},
++	{176, 5, 4}
  };
  
--int NUM_TOTAL_RES_MAP_REFRESH = ARRAY_SIZE(res_map_refresh_tbl);
- int NUM_TOTAL_CEA_MODES = ARRAY_SIZE(CEA_HDMI_Modes);
- int NUM_TOTAL_CN400_ModeXregs = ARRAY_SIZE(CN400_ModeXregs);
- int NUM_TOTAL_CN700_ModeXregs = ARRAY_SIZE(CN700_ModeXregs);
-diff --git a/drivers/video/via/viamode.h b/drivers/video/via/viamode.h
-index 5b1ced8..8a67ea1 100644
---- a/drivers/video/via/viamode.h
-+++ b/drivers/video/via/viamode.h
-@@ -41,14 +41,6 @@ struct patch_table {
- 	struct io_reg *io_reg_table;
- };
+ static struct fifo_depth_select display_fifo_depth_reg = {
+@@ -1674,26 +1604,48 @@ static u32 vx855_encode_pll(struct pll_config pll)
+ 		| pll.multiplier;
+ }
  
--struct res_map_refresh {
--	int hres;
--	int vres;
--	int pixclock;
--	int vmode_refresh;
--};
--
--extern int NUM_TOTAL_RES_MAP_REFRESH;
- extern int NUM_TOTAL_CEA_MODES;
- extern int NUM_TOTAL_CN400_ModeXregs;
- extern int NUM_TOTAL_CN700_ModeXregs;
-@@ -66,7 +58,6 @@ extern struct crt_mode_table CEAM1280x720[];
- extern struct crt_mode_table CEAM1920x1080[];
- extern struct VideoModeTable CEA_HDMI_Modes[];
+-u32 viafb_get_clk_value(int clk)
++static inline u32 get_pll_internal_frequency(u32 ref_freq,
++	struct pll_config pll)
+ {
+-	u32 value = 0;
+-	int i, best = 0;
++	return ref_freq / pll.divisor * pll.multiplier;
++}
  
--extern struct res_map_refresh res_map_refresh_tbl[];
- extern struct io_reg CN400_ModeXregs[];
- extern struct io_reg CN700_ModeXregs[];
- extern struct io_reg KM400_ModeXregs[];
+-	for (i = 1; i < ARRAY_SIZE(pll_value); i++) {
+-		if (abs(pll_value[i].clk - clk)
+-			< abs(pll_value[best].clk - clk))
+-			best = i;
++static inline u32 get_pll_output_frequency(u32 ref_freq, struct pll_config pll)
++{
++	return get_pll_internal_frequency(ref_freq, pll)>>pll.rshift;
++}
++
++static struct pll_config get_pll_config(struct pll_config *config, int size,
++	int clk)
++{
++	struct pll_config best = config[0];
++	const u32 f0 = 14318180; /* X1 frequency */
++	int i;
++
++	for (i = 1; i < size; i++) {
++		if (abs(get_pll_output_frequency(f0, config[i]) - clk)
++			< abs(get_pll_output_frequency(f0, best) - clk))
++			best = config[i];
+ 	}
+ 
++	return best;
++}
++
++u32 viafb_get_clk_value(int clk)
++{
++	u32 value = 0;
++
+ 	switch (viaparinfo->chip_info->gfx_chip_name) {
+ 	case UNICHROME_CLE266:
+ 	case UNICHROME_K400:
+-		value = cle266_encode_pll(pll_value[best].cle266_pll);
++		value = cle266_encode_pll(get_pll_config(cle266_pll_config,
++			ARRAY_SIZE(cle266_pll_config), clk));
+ 		break;
+ 	case UNICHROME_K800:
+ 	case UNICHROME_PM800:
+ 	case UNICHROME_CN700:
+-		value = k800_encode_pll(pll_value[best].k800_pll);
++		value = k800_encode_pll(get_pll_config(k800_pll_config,
++			ARRAY_SIZE(k800_pll_config), clk));
+ 		break;
+ 	case UNICHROME_CX700:
+ 	case UNICHROME_CN750:
+@@ -1701,11 +1653,13 @@ u32 viafb_get_clk_value(int clk)
+ 	case UNICHROME_P4M890:
+ 	case UNICHROME_P4M900:
+ 	case UNICHROME_VX800:
+-		value = k800_encode_pll(pll_value[best].cx700_pll);
++		value = k800_encode_pll(get_pll_config(cx700_pll_config,
++			ARRAY_SIZE(cx700_pll_config), clk));
+ 		break;
+ 	case UNICHROME_VX855:
+ 	case UNICHROME_VX900:
+-		value = vx855_encode_pll(pll_value[best].vx855_pll);
++		value = vx855_encode_pll(get_pll_config(vx855_pll_config,
++			ARRAY_SIZE(vx855_pll_config), clk));
+ 		break;
+ 	}
+ 
 -- 
 1.6.3.2
 
