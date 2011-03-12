@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab1CLWvL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 17:51:11 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40480 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab1CLWvG (ORCPT
+	id S1756254Ab1CLWvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 17:51:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57222 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab1CLWvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 17:51:06 -0500
+	Sat, 12 Mar 2011 17:51:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
         h=sender:from:subject:to:cc:date:message-id:in-reply-to:references
          :user-agent:mime-version:content-type:content-transfer-encoding;
-        b=c4hxcEu44pIKmPL2nGefbwwtwVz40CtoUj8PSznYoo825tdf1567lYxlehFsSMg8KR
-         BG2BUj35dq9w8IGIUWWBwEKweniLq4TjETzfwWmsM2t9j3+S60QR5D5mnOwPswDXZ/5G
-         0ERIlIwfqubztAKnde8PB30ocyx5kis0WMNOI=
+        b=d0g+cdlCcDHajPFKlT0vHbIr71IdQ95PYvcC5Y2CoDGEbuQSJLjaJbdQPaPMHVzY3G
+         DuLGzlVuBJRM65XO5h+gciJj2Zvi4lKl7ypKSEH4R/3ykMxt5hECDgLTmmCJqE6TPWWn
+         42rkxxV4QoPglTXs3BiFqfEGtfjR6//pBESOE=
 From: Andy Green <andy@warmcat.com>
-Subject: [RFC PATCH 4/5] OMAP2+: Set onboard Ethernet MAC address using unique
- CPU ID data
+Subject: [RFC PATCH 5/5] USBNET: SMSC95XX: if mac set in platform data no need
+ for random one
 To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: patches@linaro.org, Andy Green <andy.green@linaro.org>
-Date: Sat, 12 Mar 2011 22:51:02 +0000
-Message-ID: <20110312225102.27728.59452.stgit@otae.warmcat.com>
+Cc: patches@linaro.org, Steve Glendinning <steve.glendinning@smsc.com>,
+        Andy Green <andy.green@linaro.org>
+Date: Sat, 12 Mar 2011 22:51:09 +0000
+Message-ID: <20110312225109.27728.88417.stgit@otae.warmcat.com>
 In-Reply-To: <20110312224440.27728.60593.stgit@otae.warmcat.com>
 References: <20110312224440.27728.60593.stgit@otae.warmcat.com>
 User-Agent: StGIT/0.14.3
@@ -38,46 +39,36 @@ based on the device path.
 
 As part of the series, platform_data is enabled in usbnet layer.
 
-This patch used the usbnet platform data in the panda board
-definition file to set the MAC address of the USB <-> Ethernet
-onboard bridge to a unique value derived from unique CPU ID
-data.
+This patch allows smsc95xx usbnet driver to understand that the MAC
+setting was handled by plaform_data sent into usbnet, and that it
+does not need to overwrite the already correct MAC with a random one.
 
+Cc: Steve Glendinning <steve.glendinning@smsc.com>
 Signed-off-by: Andy Green <andy.green@linaro.org>
 ---
 
- arch/arm/mach-omap2/board-omap4panda.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/net/usb/smsc95xx.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index 7c7aa74..312154b 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -35,6 +35,7 @@
+diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+index bc86f4b..1d09cad 100644
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -639,6 +639,16 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
  
- #include <mach/hardware.h>
- #include <mach/omap4-common.h>
-+#include <mach/id.h>
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -404,7 +405,8 @@ static struct omap_board_mux board_mux[] __initdata = {
- #endif
- 
- struct usbnet_platform_data panda_usbnet_platform_data_usb1_1 = {
--	.flags = USBNET_PLATDATA_FLAG__FORCE_ETH_IFNAME,
-+	.flags = USBNET_PLATDATA_FLAG__FORCE_ETH_IFNAME |
-+			USBNET_PLATDATA_FLAG__USE_MAC,
- };
- 
- struct platform_async_platform_data panda_async_pdata_map[] = {
-@@ -422,6 +424,8 @@ static void __init omap4_panda_init(void)
- 		package = OMAP_PACKAGE_CBL;
- 	omap4_mux_init(board_mux, package);
- 
-+	omap2_die_id_to_mac(panda_usbnet_platform_data_usb1_1.mac,
-+				 sizeof(panda_usbnet_platform_data_usb1_1.mac));
- 	platform_async_platform_data_register(panda_async_pdata_map,
- 					   ARRAY_SIZE(panda_async_pdata_map));
- 
+ static void smsc95xx_init_mac_address(struct usbnet *dev)
+ {
++	struct usbnet_platform_data *pdata = dev->udev->dev.platform_data;
++
++	/*
++	 * if netdev platform data has taken responsibility for forcing
++	 * the MAC then nothing to do here
++	 */
++
++	if (pdata && pdata->flags & USBNET_PLATDATA_FLAG__USE_MAC)
++		return;
++
+ 	/* try reading mac address from EEPROM */
+ 	if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
+ 			dev->net->dev_addr) == 0) {
 
