@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab1CLBnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 20:43:43 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:30510 "EHLO
+	id S1754967Ab1CLBn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 20:43:29 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:59337 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab1CLBnj (ORCPT
+	with ESMTP id S1754936Ab1CLBnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 20:43:39 -0500
+	Fri, 11 Mar 2011 20:43:25 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=oCTtjRmWr5srxfUeq4FNFSZAlj8TqKa21OlMo2M1ciEm9DyZi7ybZDHf3uT5CtktE
-	Rnvk1Scw521TSgb92vsPw==
-Subject: [PATCH v2 05/12] efivars: Parameterize operations.
+	b=p0jRGRieSKP7+q9jWmCibzLlIb6WsG7Zwyl7XhAlSp+VtFkdgBdY2EGaX0zRXGo0+
+	qPgSkN0EUWwtaxJgT69cw==
+Subject: [PATCH v2 03/12] efivars: parameterize efivars
 To: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>
 From: Mike Waychison <mikew@google.com>
 Cc: Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Date: Fri, 11 Mar 2011 17:43:21 -0800
-Message-ID: <20110312014321.6133.10968.stgit@mike.mtv.corp.google.com>
+Date: Fri, 11 Mar 2011 17:43:11 -0800
+Message-ID: <20110312014311.6133.37898.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
 References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -33,160 +33,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of letting efivars access struct efi directly when dealing with
-variables, use an operations structure.  This allows a later change to
-reuse the efivars logic without having to pretend to support everything
-in struct efi.
+Now that we all global variable state is encapsulated by struct efivars,
+parameterize all functions to the efivars local to the control flow rather
+than at file scope.  We do this by removing the variable "efivars" at file
+scope and move its storage down to the end of the file.
+
+Variables get at efivars by storing the efivars pointer within each
+efivar_entry.  The "new_var" and "del_var" binary attribute files get at
+the efivars through the private pointer.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- drivers/firmware/efivars.c |   61 +++++++++++++++++++++++++++-----------------
- 1 files changed, 37 insertions(+), 24 deletions(-)
+ drivers/firmware/efivars.c |   49 ++++++++++++++++++++++++++++----------------
+ 1 files changed, 31 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index f22bfcf..b10b7d7 100644
+index 528ce47..5633018 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -89,19 +89,26 @@ MODULE_DESCRIPTION("sysfs interface to EFI Variables");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(EFIVARS_VERSION);
- 
-+struct efivar_operations {
-+	efi_get_variable_t *get_variable;
-+	efi_get_next_variable_t *get_next_variable;
-+	efi_set_variable_t *set_variable;
-+};
-+
- struct efivars {
- 	/*
- 	 * ->lock protects two things:
- 	 * 1) ->list - adds, removals, reads, writes
--	 * 2) efi.[gs]et_variable() calls.
-+	 * 2) ops.[gs]et_variable() calls.
- 	 * It must not be held when creating sysfs entries or calling kmalloc.
--	 * efi.get_next_variable() is only called from register_efivars(),
-+	 * ops.get_next_variable() is only called from register_efivars(),
- 	 * which is protected by the BKL, so that path is safe.
- 	 */
- 	spinlock_t lock;
- 	struct list_head list;
+@@ -103,8 +103,6 @@ struct efivars {
  	struct kset *kset;
  	struct bin_attribute *new_var, *del_var;
-+	const struct efivar_operations *ops;
  };
+-static struct efivars __efivars;
+-static struct efivars *efivars = &__efivars;
  
  /*
-@@ -182,11 +189,11 @@ get_var_data(struct efivars *efivars, struct efi_variable *var)
+  * The maximum size of VariableName + Data = 1024
+@@ -124,6 +122,7 @@ struct efi_variable {
  
- 	spin_lock(&efivars->lock);
- 	var->DataSize = 1024;
--	status = efi.get_variable(var->VariableName,
--				&var->VendorGuid,
--				&var->Attributes,
--				&var->DataSize,
--				var->Data);
-+	status = efivars->ops->get_variable(var->VariableName,
-+					    &var->VendorGuid,
-+					    &var->Attributes,
-+					    &var->DataSize,
-+					    var->Data);
- 	spin_unlock(&efivars->lock);
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
-@@ -299,11 +306,11 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
- 	}
  
- 	spin_lock(&efivars->lock);
--	status = efi.set_variable(new_var->VariableName,
--					&new_var->VendorGuid,
--					new_var->Attributes,
--					new_var->DataSize,
--					new_var->Data);
-+	status = efivars->ops->set_variable(new_var->VariableName,
-+					    &new_var->VendorGuid,
-+					    new_var->Attributes,
-+					    new_var->DataSize,
-+					    new_var->Data);
+ struct efivar_entry {
++	struct efivars *efivars;
+ 	struct efi_variable var;
+ 	struct list_head list;
+ 	struct kobject kobj;
+@@ -150,9 +149,10 @@ struct efivar_attribute efivar_attr_##_name = { \
+  * Prototype for sysfs creation function
+  */
+ static int
+-efivar_create_sysfs_entry(unsigned long variable_name_size,
+-				efi_char16_t *variable_name,
+-				efi_guid_t *vendor_guid);
++efivar_create_sysfs_entry(struct efivars *efivars,
++			  unsigned long variable_name_size,
++			  efi_char16_t *variable_name,
++			  efi_guid_t *vendor_guid);
  
- 	spin_unlock(&efivars->lock);
- 
-@@ -446,11 +453,11 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 	}
- 
- 	/* now *really* create the variable via EFI */
--	status = efi.set_variable(new_var->VariableName,
--			&new_var->VendorGuid,
--			new_var->Attributes,
--			new_var->DataSize,
--			new_var->Data);
-+	status = efivars->ops->set_variable(new_var->VariableName,
-+					    &new_var->VendorGuid,
-+					    new_var->Attributes,
-+					    new_var->DataSize,
-+					    new_var->Data);
- 
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
-@@ -511,11 +518,11 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 	del_var->Attributes = 0;
- 	del_var->DataSize = 0;
- 
--	status = efi.set_variable(del_var->VariableName,
--			&del_var->VendorGuid,
--			del_var->Attributes,
--			del_var->DataSize,
--			del_var->Data);
-+	status = efivars->ops->set_variable(del_var->VariableName,
-+					    &del_var->VendorGuid,
-+					    del_var->Attributes,
-+					    del_var->DataSize,
-+					    del_var->Data);
- 
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
-@@ -719,6 +726,7 @@ static void unregister_efivars(struct efivars *efivars)
+ /* Return the number of unicode characters in data */
+ static unsigned long
+@@ -176,7 +176,7 @@ utf8_strsize(efi_char16_t *data, unsigned long maxlength)
  }
  
- static int register_efivars(struct efivars *efivars,
-+			    const struct efivar_operations *ops,
- 			    struct kobject *parent_kobj)
+ static efi_status_t
+-get_var_data(struct efi_variable *var)
++get_var_data(struct efivars *efivars, struct efi_variable *var)
  {
+ 	efi_status_t status;
+ 
+@@ -221,7 +221,7 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
+ 	if (!entry || !buf)
+ 		return -EINVAL;
+ 
+-	status = get_var_data(var);
++	status = get_var_data(entry->efivars, var);
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
+ 
+@@ -244,7 +244,7 @@ efivar_size_read(struct efivar_entry *entry, char *buf)
+ 	if (!entry || !buf)
+ 		return -EINVAL;
+ 
+-	status = get_var_data(var);
++	status = get_var_data(entry->efivars, var);
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
+ 
+@@ -261,7 +261,7 @@ efivar_data_read(struct efivar_entry *entry, char *buf)
+ 	if (!entry || !buf)
+ 		return -EINVAL;
+ 
+-	status = get_var_data(var);
++	status = get_var_data(entry->efivars, var);
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
+ 
+@@ -276,6 +276,7 @@ static ssize_t
+ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
+ {
+ 	struct efi_variable *new_var, *var = &entry->var;
++	struct efivars *efivars = entry->efivars;
  	efi_status_t status = EFI_NOT_FOUND;
-@@ -735,6 +743,7 @@ static int register_efivars(struct efivars *efivars,
  
- 	spin_lock_init(&efivars->lock);
- 	INIT_LIST_HEAD(&efivars->list);
-+	efivars->ops = ops;
+ 	if (count != sizeof(struct efi_variable))
+@@ -325,7 +326,7 @@ efivar_show_raw(struct efivar_entry *entry, char *buf)
+ 	if (!entry || !buf)
+ 		return 0;
  
- 	efivars->kset = kset_create_and_add("vars", NULL, parent_kobj);
- 	if (!efivars->kset) {
-@@ -751,7 +760,7 @@ static int register_efivars(struct efivars *efivars,
- 	do {
- 		variable_name_size = 1024;
+-	status = get_var_data(var);
++	status = get_var_data(entry->efivars, var);
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
  
--		status = efi.get_next_variable(&variable_name_size,
-+		status = ops->get_next_variable(&variable_name_size,
- 						variable_name,
- 						&vendor_guid);
- 		switch (status) {
-@@ -782,6 +791,7 @@ out:
+@@ -413,6 +414,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 			     char *buf, loff_t pos, size_t count)
+ {
+ 	struct efi_variable *new_var = (struct efi_variable *)buf;
++	struct efivars *efivars = bin_attr->private;
+ 	struct efivar_entry *search_efivar, *n;
+ 	unsigned long strsize1, strsize2;
+ 	efi_status_t status = EFI_NOT_FOUND;
+@@ -459,8 +461,11 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 	spin_unlock(&efivars->lock);
+ 
+ 	/* Create the entry in sysfs.  Locking is not required here */
+-	status = efivar_create_sysfs_entry(utf8_strsize(new_var->VariableName,
+-			1024), new_var->VariableName, &new_var->VendorGuid);
++	status = efivar_create_sysfs_entry(efivars,
++					   utf8_strsize(new_var->VariableName,
++							1024),
++					   new_var->VariableName,
++					   &new_var->VendorGuid);
+ 	if (status) {
+ 		printk(KERN_WARNING "efivars: variable created, but sysfs entry wasn't.\n");
+ 	}
+@@ -472,6 +477,7 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
+ 			     char *buf, loff_t pos, size_t count)
+ {
+ 	struct efi_variable *del_var = (struct efi_variable *)buf;
++	struct efivars *efivars = bin_attr->private;
+ 	struct efivar_entry *search_efivar, *n;
+ 	unsigned long strsize1, strsize2;
+ 	efi_status_t status = EFI_NOT_FOUND;
+@@ -580,9 +586,10 @@ static struct kobject *efi_kobj;
+  * Returns 1 on failure, 0 on success
+  */
+ static int
+-efivar_create_sysfs_entry(unsigned long variable_name_size,
+-			efi_char16_t *variable_name,
+-			efi_guid_t *vendor_guid)
++efivar_create_sysfs_entry(struct efivars *efivars,
++			  unsigned long variable_name_size,
++			  efi_char16_t *variable_name,
++			  efi_guid_t *vendor_guid)
+ {
+ 	int i, short_name_size = variable_name_size / sizeof(efi_char16_t) + 38;
+ 	char *short_name;
+@@ -597,6 +604,7 @@ efivar_create_sysfs_entry(unsigned long variable_name_size,
+ 		return 1;
+ 	}
+ 
++	new_efivar->efivars = efivars;
+ 	memcpy(new_efivar->var.VariableName, variable_name,
+ 		variable_name_size);
+ 	memcpy(&(new_efivar->var.VendorGuid), vendor_guid, sizeof(efi_guid_t));
+@@ -691,6 +699,8 @@ out_free:
+ 	return error;
  }
  
- static struct efivars __efivars;
-+static struct efivar_operations ops;
- 
++static struct efivars __efivars;
++
  /*
   * For now we register the efi subsystem with the firmware subsystem
-@@ -809,7 +819,10 @@ efivars_init(void)
- 		return -ENOMEM;
- 	}
+  * and the vars subsystem with the efi subsystem.  In the future, it
+@@ -706,6 +716,7 @@ efivars_init(void)
+ 	efi_guid_t vendor_guid;
+ 	efi_char16_t *variable_name;
+ 	unsigned long variable_name_size = 1024;
++	struct efivars *efivars = &__efivars;
+ 	int error = 0;
  
--	error = register_efivars(&__efivars, efi_kobj);
-+	ops.get_variable = efi.get_variable;
-+	ops.set_variable = efi.set_variable;
-+	ops.get_next_variable = efi.get_next_variable;
-+	error = register_efivars(&__efivars, &ops, efi_kobj);
+ 	if (!efi_enabled)
+@@ -751,9 +762,10 @@ efivars_init(void)
+ 						&vendor_guid);
+ 		switch (status) {
+ 		case EFI_SUCCESS:
+-			efivar_create_sysfs_entry(variable_name_size,
+-							variable_name,
+-							&vendor_guid);
++			efivar_create_sysfs_entry(efivars,
++						  variable_name_size,
++						  variable_name,
++						  &vendor_guid);
+ 			break;
+ 		case EFI_NOT_FOUND:
+ 			break;
+@@ -788,6 +800,7 @@ out_free:
+ static void __exit
+ efivars_exit(void)
+ {
++	struct efivars *efivars = &__efivars;
+ 	struct efivar_entry *entry, *n;
  
- 	/* Don't forget the systab entry */
- 	error = sysfs_create_group(efi_kobj, &efi_subsys_attr_group);
+ 	list_for_each_entry_safe(entry, n, &efivars->list, list) {
 
