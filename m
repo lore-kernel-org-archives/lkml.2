@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab1CLBnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 20:43:39 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:30505 "EHLO
+	id S1755486Ab1CLBnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 20:43:50 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:59399 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755000Ab1CLBnf (ORCPT
+	with ESMTP id S1753352Ab1CLBnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 20:43:35 -0500
+	Fri, 11 Mar 2011 20:43:45 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=IovSb0sm4iNnOY2YSipKzYXeqNC/8MWXv6SxWpHahHHVj8DwxNLwE59N6kJFpBMPd
-	hP7c/PrfTLXGijECpSPpQ==
-Subject: [PATCH v2 04/12] efivars: Split out variable registration
+	b=dQDcIW/R/3uc9NqKPoy2Zev39OCGiwOxTfIrSeQLbrYFa5OP48eaq06yR0UH3faXs
+	sBu8ZxhqdXIEDgVAwozeA==
+Subject: [PATCH v2 07/12] efivars: Add Documentation
 To: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>
 From: Mike Waychison <mikew@google.com>
 Cc: Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Date: Fri, 11 Mar 2011 17:43:16 -0800
-Message-ID: <20110312014316.6133.41171.stgit@mike.mtv.corp.google.com>
+Date: Fri, 11 Mar 2011 17:43:32 -0800
+Message-ID: <20110312014332.6133.53355.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
 References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -33,192 +33,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In anticipation of re-using the variable facilities in efivars from
-elsewhere, split out the registration and unregistration of struct
-efivars from the rest of the EFI specific sysfs code.
+This patch documents the interface exposed by the 'efivars' module.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- drivers/firmware/efivars.c |  122 ++++++++++++++++++++++++--------------------
- 1 files changed, 67 insertions(+), 55 deletions(-)
+ Documentation/ABI/stable/sysfs-firmware-efi-vars |   75 ++++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/stable/sysfs-firmware-efi-vars
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 5633018..f22bfcf 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -95,7 +95,7 @@ struct efivars {
- 	 * 1) ->list - adds, removals, reads, writes
- 	 * 2) efi.[gs]et_variable() calls.
- 	 * It must not be held when creating sysfs entries or calling kmalloc.
--	 * efi.get_next_variable() is only called from efivars_init(),
-+	 * efi.get_next_variable() is only called from register_efivars(),
- 	 * which is protected by the BKL, so that path is safe.
- 	 */
- 	spinlock_t lock;
-@@ -699,54 +699,48 @@ out_free:
- 	return error;
- }
- 
--static struct efivars __efivars;
-+static void unregister_efivars(struct efivars *efivars)
-+{
-+	struct efivar_entry *entry, *n;
- 
--/*
-- * For now we register the efi subsystem with the firmware subsystem
-- * and the vars subsystem with the efi subsystem.  In the future, it
-- * might make sense to split off the efi subsystem into its own
-- * driver, but for now only efivars will register with it, so just
-- * include it here.
-- */
-+	list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+		spin_lock(&efivars->lock);
-+		list_del(&entry->list);
-+		spin_unlock(&efivars->lock);
-+		efivar_unregister(entry);
-+	}
-+	if (efivars->new_var)
-+		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->new_var);
-+	if (efivars->del_var)
-+		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->del_var);
-+	kfree(efivars->new_var);
-+	kfree(efivars->del_var);
-+	kset_unregister(efivars->kset);
-+}
- 
--static int __init
--efivars_init(void)
-+static int register_efivars(struct efivars *efivars,
-+			    struct kobject *parent_kobj)
- {
- 	efi_status_t status = EFI_NOT_FOUND;
- 	efi_guid_t vendor_guid;
- 	efi_char16_t *variable_name;
- 	unsigned long variable_name_size = 1024;
--	struct efivars *efivars = &__efivars;
- 	int error = 0;
- 
--	if (!efi_enabled)
--		return -ENODEV;
--
- 	variable_name = kzalloc(variable_name_size, GFP_KERNEL);
- 	if (!variable_name) {
- 		printk(KERN_ERR "efivars: Memory allocation failed.\n");
- 		return -ENOMEM;
- 	}
- 
--	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
--	       EFIVARS_DATE);
--
--	/* For now we'll register the efi directory at /sys/firmware/efi */
--	efi_kobj = kobject_create_and_add("efi", firmware_kobj);
--	if (!efi_kobj) {
--		printk(KERN_ERR "efivars: Firmware registration failed.\n");
--		error = -ENOMEM;
--		goto out_free;
--	}
--
- 	spin_lock_init(&efivars->lock);
- 	INIT_LIST_HEAD(&efivars->list);
- 
--	efivars->kset = kset_create_and_add("vars", NULL, efi_kobj);
-+	efivars->kset = kset_create_and_add("vars", NULL, parent_kobj);
- 	if (!efivars->kset) {
- 		printk(KERN_ERR "efivars: Subsystem registration failed.\n");
- 		error = -ENOMEM;
--		goto out_firmware_unregister;
-+		goto out;
- 	}
- 
- 	/*
-@@ -778,21 +772,54 @@ efivars_init(void)
- 	} while (status != EFI_NOT_FOUND);
- 
- 	error = create_efivars_bin_attributes(efivars);
--
--	/* Don't forget the systab entry */
--	error = sysfs_create_group(efi_kobj, &efi_subsys_attr_group);
- 	if (error)
--		printk(KERN_ERR "efivars: Sysfs attribute export failed with error %d.\n", error);
--	else
--		goto out_free;
-+		unregister_efivars(efivars);
- 
--	kset_unregister(efivars->kset);
-+out:
-+	kfree(variable_name);
- 
--out_firmware_unregister:
--	kobject_put(efi_kobj);
-+	return error;
-+}
- 
--out_free:
--	kfree(variable_name);
-+static struct efivars __efivars;
+diff --git a/Documentation/ABI/stable/sysfs-firmware-efi-vars b/Documentation/ABI/stable/sysfs-firmware-efi-vars
+new file mode 100644
+index 0000000..5def20b
+--- /dev/null
++++ b/Documentation/ABI/stable/sysfs-firmware-efi-vars
+@@ -0,0 +1,75 @@
++What:		/sys/firmware/efi/vars
++Date:		April 2004
++Contact:	Matt Domsch <Matt_Domsch@dell.com>
++Description:
++		This directory exposes interfaces for interactive with
++		EFI variables.  For more information on EFI variables,
++		see 'Variable Services' in the UEFI specification
++		(section 7.2 in specification version 2.3 Errata D).
 +
-+/*
-+ * For now we register the efi subsystem with the firmware subsystem
-+ * and the vars subsystem with the efi subsystem.  In the future, it
-+ * might make sense to split off the efi subsystem into its own
-+ * driver, but for now only efivars will register with it, so just
-+ * include it here.
-+ */
++		In summary, EFI variables are named, and are classified
++		into separate namespaces through the use of a vendor
++		GUID.  They also have an arbitrary binary value
++		associated with them.
 +
-+static int __init
-+efivars_init(void)
-+{
-+	int error = 0;
++		The efivars module enumerates these variables and
++		creates a separate directory for each one found.  Each
++		directory has a name of the form "<key>-<vendor guid>"
++		and contains the following files:
 +
-+	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
-+	       EFIVARS_DATE);
++		attributes:	A read-only text file enumerating the
++				EFI variable flags.  Potential values
++				include:
 +
-+	if (!efi_enabled)
-+		return -ENODEV;
++				EFI_VARIABLE_NON_VOLATILE
++				EFI_VARIABLE_BOOTSERVICE_ACCESS
++				EFI_VARIABLE_RUNTIME_ACCESS
++				EFI_VARIABLE_HARDWARE_ERROR_RECORD
++				EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS
 +
-+	/* For now we'll register the efi directory at /sys/firmware/efi */
-+	efi_kobj = kobject_create_and_add("efi", firmware_kobj);
-+	if (!efi_kobj) {
-+		printk(KERN_ERR "efivars: Firmware registration failed.\n");
-+		return -ENOMEM;
-+	}
++				See the EFI documentation for an
++				explanation of each of these variables.
 +
-+	error = register_efivars(&__efivars, efi_kobj);
++		data:		A read-only binary file that can be read
++				to attain the value of the EFI variable
 +
-+	/* Don't forget the systab entry */
-+	error = sysfs_create_group(efi_kobj, &efi_subsys_attr_group);
-+	if (error) {
-+		printk(KERN_ERR
-+		       "efivars: Sysfs attribute export failed with error %d.\n",
-+		       error);
-+		unregister_efivars(&__efivars);
-+		kobject_put(efi_kobj);
-+	}
- 
- 	return error;
- }
-@@ -800,22 +827,7 @@ out_free:
- static void __exit
- efivars_exit(void)
- {
--	struct efivars *efivars = &__efivars;
--	struct efivar_entry *entry, *n;
--
--	list_for_each_entry_safe(entry, n, &efivars->list, list) {
--		spin_lock(&efivars->lock);
--		list_del(&entry->list);
--		spin_unlock(&efivars->lock);
--		efivar_unregister(entry);
--	}
--	if (efivars->new_var)
--		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->new_var);
--	if (efivars->del_var)
--		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->del_var);
--	kfree(efivars->new_var);
--	kfree(efivars->del_var);
--	kset_unregister(efivars->kset);
-+	unregister_efivars(&__efivars);
- 	kobject_put(efi_kobj);
- }
- 
++		guid:		The vendor GUID of the variable.  This
++				should always match the GUID in the
++				variable's name.
++
++		raw_var:	A binary file that can be read to obtain
++				a structure that contains everything
++				there is to know about the variable.
++				For structure definition see "struct
++				efi_variable" in the kernel sources.
++
++				This file can also be written to in
++				order to update the value of a variable.
++				For this to work however, all fields of
++				the "struct efi_variable" passed must
++				match byte for byte with the structure
++				read out of the file, save for the value
++				portion.
++
++				**Note** the efi_variable structure
++				read/written with this file contains a
++				'long' type that may change widths
++				depending on your underlying
++				architecture.
++
++		size:		As ASCII representation of the size of
++				the variable's value.
++
++
++		In addition, two other magic binary files are provided
++		in the top-level directory and are used for adding and
++		removing variables:
++
++		new_var:	Takes a "struct efi_variable" and
++				instructs the EFI firmware to create a
++				new variable.
++
++		del_var:	Takes a "struct efi_variable" and
++				instructs the EFI firmware to remove any
++				variable that has a matching vendor GUID
++				and variable key name.
 
