@@ -1,29 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab1CLUIK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 15:08:10 -0500
-Received: from www.tglx.de ([62.245.132.106]:42950 "EHLO www.tglx.de"
+	id S1755358Ab1CLUWW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 15:22:22 -0500
+Received: from www.tglx.de ([62.245.132.106]:57408 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab1CLUIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 15:08:06 -0500
-Message-Id: <20110312200653.411470100@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Sat, 12 Mar 2011 20:07:45 -0000
+	id S1751724Ab1CLUWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 15:22:21 -0500
+Date: Sat, 12 Mar 2011 21:22:00 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Matthew Garrett <mjg@redhat.com>,
+cc: Matthew Garrett <mjg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch 1/1] platform-drivers: x86: pmic: Restore the dropped
-	buslock/unlock
-Content-Disposition: inline; filename=pmic-fixup-akpm-fixup,patch
+Subject: Re: [patch 1/1] platform-drivers: x86: pmic: Restore the dropped
+ buslock/unlock
+In-Reply-To: <20110312200653.411470100@linutronix.de>
+Message-ID: <alpine.LFD.2.00.1103122119280.2787@localhost6.localdomain6>
+References: <20110312200653.411470100@linutronix.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 12 Mar 2011, Thomas Gleixner wrote:
+
+Sigh. I really need to fix quilt to force refresh before mail. :(
+
+----------->
+
+Subject: platform-drivers: x86: pmic: Restore the dropped buslock/unlock
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 12 Mar 2011 20:55:19 +0100
+
 When I added the buslock/unlock mechanism to the pmic code in order to
 get rid of the horrible work queue stuff, stupid me missed to add the
-new callbacks to the irq_chip. In consequence Andrew removed the unused
-functions.
+new callbacks to the irq_chip.
+
+In consequence Andrew removed the unused functions, but I missed that.
 
 Add them back and hook them up proper.
 
@@ -97,10 +111,8 @@ Index: linux-next/drivers/platform/x86/intel_pmic_gpio.c
 +	.irq_mask		= pmic_irq_mask,
 +	.irq_unmask		= pmic_irq_unmask,
 +	.irq_set_type		= pmic_irq_type,
-+	.irq_bus_lock		= pmic_irq_buslock,
++	.irq_bus_lock		= pmic_bus_lock,
 +	.irq_bus_sync_unlock	= pmic_bus_sync_unlock,
  };
  
  static irqreturn_t pmic_irq_handler(int irq, void *data)
-
-
