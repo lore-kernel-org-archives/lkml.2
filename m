@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab1CLEWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 23:22:43 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:57434 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab1CLEWl (ORCPT
+	id S1753802Ab1CLEeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 23:34:31 -0500
+Received: from mail-px0-f179.google.com ([209.85.212.179]:39177 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab1CLEe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 23:22:41 -0500
-Message-ID: <e2b2f91fe62188975f8ddc82e581995e.squirrel@webmail.greenhost.nl>
-In-Reply-To: <20110312021001.GA16833@elie>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
-    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
-    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
-    <201103111255.44979.arnd@arndb.de>
-    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
-    <20110311235607.GB15853@elie>
-    <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
-    <20110312021001.GA16833@elie>
-Date: Sat, 12 Mar 2011 05:22:38 +0100 (CET)
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Jonathan Nieder" <jrnieder@gmail.com>
-Cc: "Arnd Bergmann" <arnd@arndb.de>, "Sage Weil" <sage@newdream.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org,
-        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
-        l@jasper.es
-User-Agent: SquirrelMail/1.4.17
+	Fri, 11 Mar 2011 23:34:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Pm4/gfd30EL2Vgy76KRZ1HaxF77sgTWatH8FppAbyg95P/uj/OCKfTaC6xA/ZV/9NK
+         fdwDoESdw/j7pqj9Gb0/HOfY8B2oNF0Jl03Fzs9JJTmp7Ld+WainRmrKH3k7KWeZqGrM
+         6vHu1lCZwzo6qGqioevE9CgFBxUS5lmdMdjOc=
+Date: Sat, 12 Mar 2011 12:34:09 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, discuss@lesswatts.org,
+        power@bughost.org, cpufreq@vger.kernel.org, linux@dominikbrodowski.net,
+        Mattia Dongili <malattia@linux.it>, Len Brown <lenb@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, herrmann.der.user@googlemail.com,
+        linux-omap@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [ANNOUNCE] cpupowerutils - cpufrequtils extended with quite
+ some features
+Message-ID: <20110312043409.GA3634@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <201103111247.00212.trenn@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 448baf4759cd3283a5930955cc61e1db
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <201103111247.00212.trenn@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, March 12, 2011 03:10, Jonathan Nieder wrote:
-> Indan Zupancic wrote:
->> I'm not pushing for any official convention, just what seems good taste.
->
-> In cases like this, conventions (consistency and best practices) are
-> very important.
+On Fri, Mar 11, 2011 at 12:46:59PM +0100, Thomas Renninger wrote:
+> Happy testing..., if you have a recent machine, you'll like it!
+> 
+> After some testing phase it would be great to get this tool
+> merged into the kernel git repo under:
+> tools/power/cpupower
+> and replace the Intel HW only supporting tools in tools/power/x86.
 
-I'm in no position to decide about this code's fate anyway, I only voice
-my opinion in the hope people won't make the mistake of adding this as a
-new system call.
+I got below output on my laptop:
 
->
->> Less code added, less bloat. Architecture independent, no need to update
->> all system call tables everywhere (all archs, libc versions and strace).
->> Two files changed, instead of 7 (which only hooks up x86).
->
-> Thanks for explaining.  Those do seem like good reasons to use a ioctl
-> instead of a new syscall.
+    |Mperf               || Idle_Stats                
+CPU | C0   | Cx   | Freq || POLL | C1   | C2   | C3   
+   0| 36.00| 64.00|   820||1843411670376227.2|1843411670376692.2|  0.00|  0.00
+   1| 44.69| 55.31|   920||  0.00|  0.00|  0.00|  0.00
 
-Ioctl or sync_file_range, it's obscure enough for an ioctl I guess.
+Seems below patch fix it:
 
->> In this case it's just a performance improvement over sync(2). It doesn't
->> add a new feature. Main argument given for the performance problem seems
->> to be "NFS can be slow". Anything else?
->
-> Huh?  It is not just the speed of the sync --- unnecessary writeback
-> will cause wear on your thumbdrive, eat up your laptop battery, and
-> kill I/O performance in other tasks running at the same time.
+Thanks,
+Yong
 
-The writeback will happen sooner or later, so there is no unnecessary
-writeback, except if you're overwriting/deleting just written data. If
-you're worried about unnecessary writeback then don't do any synching.
-You're actually arguing againt this feature and for fsync().
-
-Syncfs won't be called frequently anyway, if it was then fsync could
-be used instead. So it's pretty much a slightly better version of sync.
-
-You could call it sync2() and add a path parameter. And after a few
-years replace it with sync3 with a flag argument added. Then add a
-sync4 with a sigmask too. That seems the new convention and would be
-consistent...
-
-I think all new system calls (or other highly visible ABI change) should
-have half a year thinking time, and when they're in they're guaranteed to
-be not stable for at least 2 years. If after that time they're still in,
-they become stable and part of the official ABI. Removing something new
-should be as easy as adding something new. But the current trend of easily
-added, but hard to remove features is asking for long-term messiness. It
-takes time for code to depend on a new feature, so removing bad new stuff
-isn't as bad as removing oldstuff. Pity Linus didn't figure that out yet.
-
-> I'm afraid I don't understand what you're saying here at all.  Would
-> you say that fsync is superfluous, too?
-
-No, fsync actually makes sense.
-
-Greetings,
-
-Indan
-
-
+---
+--- utils/helpers/sysfs-orig.c	2011-03-12 12:32:06.179827929 +0800
++++ utils/helpers/sysfs.c	2011-03-12 12:24:36.865599924 +0800
+@@ -126,7 +126,7 @@
+ 		return 0;
+ 	}
+ 
+-	value = strtoul(linebuf, &endp, 0);
++	value = strtoull(linebuf, &endp, 0);
+ 
+ 	if ( endp == linebuf || errno == ERANGE )
+ 		return 0;
