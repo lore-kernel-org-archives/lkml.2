@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab1CLCNq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 21:13:46 -0500
-Received: from smtpout1.ssg.org.au ([203.2.94.74]:17040 "HELO
-	smtpout1.ssg.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753675Ab1CLCNp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 21:13:45 -0500
-X-Greylist: delayed 3424 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Mar 2011 21:13:44 EST
-From: "Myers, Jay" <Jay.Myers@wh.org.au>
-Date: Sat, 12 Mar 2011 12:06:44 +1100
-Subject: IMPORTANT: WEBMAIL NOTIFICATION
-Thread-Topic: IMPORTANT: WEBMAIL NOTIFICATION
-Thread-Index: AQHL4FHBXI0l48d4nUCWZ9bIdVzZjw==
-Message-ID: <50D747AEA3179540AF5CC27845545CCE045060BB83@WHSMail2.ssg.org.au>
-Accept-Language: en-US, en-AU
-Content-Language: en-AU
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-AU
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1755224Ab1CLCOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 21:14:22 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:35542 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753675Ab1CLCOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Mar 2011 21:14:21 -0500
+Date: Sat, 12 Mar 2011 04:10:22 +0200
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Andrew Morton <akpm@linux-foundation.org>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
+Subject: Re: [PATCH 3/4] calibrate: retry with wider bounds when converge
+	seems to fail
+Message-ID: <20110312021022.GC3823@esdhcp04044.research.nokia.com>
+References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com> <1299768487-13200-2-git-send-email-ext-phil.2.carmody@nokia.com> <1299768487-13200-3-git-send-email-ext-phil.2.carmody@nokia.com> <1299768487-13200-4-git-send-email-ext-phil.2.carmody@nokia.com> <20110311152744.ad5ef129.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Undisclosed recipients:;
-X-OriginalArrivalTime: 12 Mar 2011 01:06:46.0592 (UTC) FILETIME=[C23CAC00:01CBE051]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110311152744.ad5ef129.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IT Service,
+On 11/03/11 15:27 -0800, ext Andrew Morton wrote:
+> This is more informative, no?
+>
+> --- a/init/calibrate.c~calibrate-retry-with-wider-bounds-when-converge-seems-to-fail-fix
+> +++ a/init/calibrate.c
+> @@ -172,7 +172,7 @@ recalibrate:
+>  	/*
+>  	 * If we incremented every single time possible, presume we've
+>  	 * massively underestimated initially, and retry with a higher
+> -	 * start, and larger range. (Only seen on x86_64.)
+> +	 * start, and larger range. (Only seen on x86_64, due to SMIs)
+>  	 */
+>  	if (lpj + loopadd * 2 == lpj_base + loopadd_base * 2) {
+>  		lpj_base = lpj;
+> _
 
-A Computer Database Maintainance is currently going on our Webmail Message Center. Our Message Center needs to be re-set your spam guard
-because of the high amount of spam mails we receive daily. A Computerise Spamguard Quarantine Maintainance will help us prevent this everyday dilemma.
-To prevent this, please click on the link below to register your webmail account for Computerise Spamguard Quarantine.
+Works for me. Thanks.
 
-http://gambiachat.com/form/use/webupgrade/form1.html<http://secureuwebpgrade.com/secure/index.htm>
+Phil
 
-Failure to revalidate your account for upgrade means you still want to continue recieving large spam mails which will lead to exceeding the limit of mailbox.
-
-IT SpamGuard Service Helpdesk
