@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab1CLNGH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 08:06:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56966 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab1CLNGC (ORCPT
+	id S1753654Ab1CLNJN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 08:09:13 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46869 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab1CLNJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 08:06:02 -0500
+	Sat, 12 Mar 2011 08:09:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Ni8K7+9tdQoRyVqZcSyQsxe5YzdQDJZj/Gz64bH/CtU9+b+9rZKfb7LvvwwjVGWccI
-         LyBiGiV7JfxPgClfCv8hgvRZpsvSiIgPPJQtlmmEmI9vzTX9ZcFGvVhapHUNaiaPsuCq
-         6HH78PdE67+NbToPQxezNbtwtFAbjNfUxgs1s=
-MIME-Version: 1.0
-Date: Sat, 12 Mar 2011 18:36:01 +0530
-Message-ID: <AANLkTimU64tZ-ABAyhDTtzC1La2vGuk+fcGftguFrYLD@mail.gmail.com>
-Subject: error: #error Unknown data abort handler type from glue.h file
-From: Madhavi Manchala <madhavi.linux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=uK0XL7WKaouywAM5ZntFvUhu7xaDAp75XhJhrUVrG5FE/G0pshZiYSwKMXxrUfbDz3
+         ULvYeqnbOtrCiqVWH7qmf2tQ0Z9Vs73qWXSSXm/JgJm4VuxAviy7vcD2oDBD2Y1mYn+K
+         bSrozKI9epOHfzXrH4p17hCgZS0q3k85+H21U=
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Michael Hennerich <michael.hennerich@analog.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org,
+        device-driver-devel@blackfin.uclinux.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH] ad525x_dpot: [BUG] eeprom command send instead of dec/inc all commands
+Date: Sat, 12 Mar 2011 14:08:21 +0100
+Message-Id: <1299935301-3849-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
+When a DEC_ALL or INC_ALL command is issued, an eeprom command is send.
+This is because DPOT_DEC_ALL (DPOT_ADDR_CMD | 0x30) and DPOT_INC_ALL
+(DPOT_ADDR_CMD | 0x58) defines overlap with DPOT_ADDR_EEPROM (0x20).
 
-When I looked into the linux-2.6.36/arch/arm directory, I did not find
-the mach-s3c2510/s3c2510a directory for Samsung s3c2510a MCU. When I
-asked the same in the ARM forum, they told me that this MCU is a
-NO-MMU based MCU and in the current kernel there was no much support
-for it. For complete details, please look at the following link.
-http://comments.gmane.org/gmane.linux.ports.arm.kernel/108351
+So, DPOT_ADDR_CMD bit should be tested before DPOT_ADDR_EEPROM bit.
 
-So, I started developing the architecture files for my MCU i.e.
-Samsung S3C2510A. However, when I am trying to build the kernel after
-adding the support for S3C2510A processor, I am getting the following
-error.
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ drivers/misc/ad525x_dpot.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- CC      init/main.o
-In file included from
-/home/madhavi/linux-2.6.36/arch/arm/include/asm/cacheflush.h:15:0,
-                from include/linux/highmem.h:9,
-                from include/linux/pagemap.h:10,
-                from include/linux/mempolicy.h:70,
-                from init/main.c:50:
-/home/madhavi/linux-2.6.36/arch/arm/include/asm/glue.h:119:2: error:
-#error Unknown data abort handler type
-make[6]: *** [init/main.o] Error 1
-make[5]: *** [init] Error 2
-make[5]: Leaving directory `/home/madhavi/linux-2.6.36'
-make[4]: *** [/home/madhavi/linux-2.6.36/.image] Error 2
+diff --git a/drivers/misc/ad525x_dpot.c b/drivers/misc/ad525x_dpot.c
+index 7cb9110..b6c5391 100644
+--- a/drivers/misc/ad525x_dpot.c
++++ b/drivers/misc/ad525x_dpot.c
+@@ -289,8 +289,6 @@ static s32 dpot_write_spi(struct dpot_data *dpot, u8 reg, u16 value)
+ 			}
+ 			val = DPOT_SPI_RDAC | (reg & DPOT_RDAC_MASK);
+ 		}
+-	} else if (reg & DPOT_ADDR_EEPROM) {
+-		val = DPOT_SPI_EEPROM | (reg & DPOT_RDAC_MASK);
+ 	} else if (reg & DPOT_ADDR_CMD) {
+ 		switch (reg) {
+ 		case DPOT_DEC_ALL_6DB:
+@@ -306,6 +304,8 @@ static s32 dpot_write_spi(struct dpot_data *dpot, u8 reg, u16 value)
+ 			val = DPOT_SPI_INC_ALL;
+ 			break;
+ 		}
++	} else if (reg & DPOT_ADDR_EEPROM) {
++		val = DPOT_SPI_EEPROM | (reg & DPOT_RDAC_MASK);
+ 	} else if (reg & DPOT_ADDR_OTP) {
+ 		if (dpot->uid == DPOT_UID(AD5291_ID) ||
+ 			dpot->uid == DPOT_UID(AD5292_ID)) {
+-- 
+1.7.1
 
-When I looked into the sources of the /arch/arm/include/asm/glue.h
-file, none of the macro defines the CPU_DABORT_HANDLER. From the
-arch/arm/Makefile the abort handler for no-mmu based CPUs is as
-follows.
-
-obj-$(CONFIG_CPU_ABRT_NOMMU)    += abort-nommu.o
-
-In my case, the CONFIG_CPU_ABRT_NOMMU is defined in .config file to y.
-My question is, why again it is trying to check the abort handler from
-glue.h file? Shall I add a new macro in the glue.h file for defining
-the CPU_DABORT_HANDLER based on this new MCU (Samsung S3C2510A)?
-
-OR
-
-Is there any sources / links which supports the architecture of the
-Samasung S3C2510A MCU under any Linux kernel version?
-
-Any ideas / hits would be appreciated.
-
-Thanks for your help.
-
-Regards,
-Madhavi M.
