@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab1CLBJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 20:09:33 -0500
-Received: from peace.netnation.com ([204.174.223.2]:40645 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394Ab1CLBJc (ORCPT
+	id S1754712Ab1CLBLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 20:11:23 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34511 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752394Ab1CLBLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 20:09:32 -0500
-Date: Fri, 11 Mar 2011 17:09:30 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Mark Moseley <moseleymark@gmail.com>, linux-nfs@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] more vfs fixes for final
-Message-ID: <20110312010930.GD8211@hostway.ca>
-References: <20110310110931.GF22723@ZenIV.linux.org.uk> <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com> <20110310115856.GG22723@ZenIV.linux.org.uk> <20110311210938.GB8211@hostway.ca> <20110311213519.GA9404@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110311213519.GA9404@fieldses.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 11 Mar 2011 20:11:20 -0500
+Date: Fri, 11 Mar 2011 17:10:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-Id: <20110311171006.ec0d9c37.akpm@linux-foundation.org>
+In-Reply-To: <1299869011-26152-1-git-send-email-gthelen@google.com>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 04:35:19PM -0500, J. Bruce Fields wrote:
+On Fri, 11 Mar 2011 10:43:22 -0800
+Greg Thelen <gthelen@google.com> wrote:
 
-> On Fri, Mar 11, 2011 at 01:09:38PM -0800, Simon Kirby wrote:
-> > On Thu, Mar 10, 2011 at 11:58:56AM +0000, Al Viro wrote:
-> > 
-> > > commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
-> > > Author: J. Bruce Fields <bfields@fieldses.org>
-> > > Date:   Tue Jan 18 15:45:09 2011 -0500
-> > > 
-> > >     fs/dcache: allow d_obtain_alias() to return unhashed dentries
-> > 
-> > Hmm, I was hoping this or something recently would fix nfs_inode_cache
-> > growing forever and flush processes taking lots of system time since
-> > 2.6.36. For example:
-> > 
-> >   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-> > 3457486 3454365  99%    0.95K 105601       33   3379232K nfs_inode_cache
-> > 469638 248761  52%    0.10K  12042       39     48168K buffer_head
-> > 243712 216348  88%    0.02K    952      256      3808K kmalloc-16
-> > 232785 202185  86%    0.19K  11085       21     44340K dentry
-> > 149696  54633  36%    0.06K   2339       64      9356K kmalloc-64
-> > 115976 106806  92%    0.55K   4142       28     66272K radix_tree_node
-> >  76064  45680  60%    0.12K   2377       32      9508K kmalloc-128
-> >  62336  53427  85%    0.03K    487      128      1948K kmalloc-32
-> >  41958  41250  98%    0.75K   1998       21     31968K ext3_inode_cache
-> > 
-> > This clears them all, similar to what you posted:
-> > 
-> > echo 2 > /proc/sys/vm/drop_caches
-> > sync
-> > echo 2 > /proc/sys/vm/drop_caches
-> > 
-> > ...but 2.6.38-rc8 still doesn't seem to fix it.
-> > 
-> > http://0x.ca/sim/ref/2.6.37/cpu3_nfs.png
-> > http://www.spinics.net/lists/linux-nfs/msg18212.html
-> > 
-> > Any ideas?  This started with 2.6.36.
+>
+> ...
 > 
-> Do you have NFSv4 clients that are doing locking?  Then it's probably
-> 0997b17360 and 529d7b2a7f on the for-2.6.39 branch at:
+> This patch set provides the ability for each cgroup to have independent dirty
+> page limits.
+
+Here, it would be helpful to describe the current kernel behaviour. 
+And to explain what is wrong with it and why the patch set improves
+things!
+
 > 
-> 	git://linux-nfs.org/~bfields/linux.git for-2.6.39
-> 
-> Let me know if not.
+> ...
+>
+> Known shortcomings (see the patch 1/9 update to Documentation/cgroups/memory.txt
+> for more details):
+> - When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+>   writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+>   just inodes contributing dirty pages to the cgroup exceeding its limit.  
 
-Yes, but when this started, it was all NFSv3. I tried NFSv4 to see if
-it made any different (no, other than more I/O wait due to idmapd and
-flock(LOCK_EX) breaking on a file opened O_RDONLY, which works locally
-and on NFSv3 -- fixed by changing to open(O_RDWR) in my code), but
-otherwise NFSv3 and NFSv4 look pretty much the same and "leak" at the
-same rate.
+This is a pretty large shortcoming, I suspect.  Will it be addressed?
 
-Actually, I only changed the mount where it writes the log results, and
-not where it reads them from (a bunch of NFSv3 mounts that will take a
-lot more work to make NFSv4 since they currently run without libnss-mysql
-set up), so I haven't actually tested to see if it happens with purely
-NFSv4 mounts.
+There's a risk that a poorly (or maliciously) configured memcg could
+have a pretty large affect upon overall system behaviour.  Would
+elevated premissions be needed to do this?
 
-Anyway, it's locking on one file only, and it was purely for reducing
-writeback thrashing, so I could try without it if you think it might be
-related, but it all started without NFSv4. All this thing does is read a
-bunch of log files, crunch them into reports, and write them to another
-mount point, all run from xargs -P. Pretty basic readdir, read, write,
-unlink...not anything exotic.
+We could just crawl the memcg's page LRU and bring things under control
+that way, couldn't we?  That would fix it.  What were the reasons for
+not doing this?
 
-Simon-
+> - A cgroup may exceed its dirty limit if the memory is dirtied by a process in a
+>   different memcg.
+
+Please describe this scenario in (a lot) more detail?
+
+
