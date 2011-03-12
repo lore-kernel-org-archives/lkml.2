@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab1CLCoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Mar 2011 21:44:06 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36869 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab1CLCoC (ORCPT
+	id S1754878Ab1CLCwU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 21:52:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65102 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab1CLCwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 21:44:02 -0500
-Subject: Re: [PATCH-FOR-38] target: Fix READ_CAPACITY_16 regression
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Ben Jarvis <bjarvismn@gmail.com>
-In-Reply-To: <20110311184043.6438fe31.akpm@linux-foundation.org>
-References: <1299109971-27268-1-git-send-email-nab@linux-iscsi.org>
-	 <1299885455.6938.6.camel@mulgrave.site>
-	 <1299894371.31170.4.camel@haakon2.linux-iscsi.org>
-	 <20110311184043.6438fe31.akpm@linux-foundation.org>
-Content-Type: text/plain
-Date: Fri, 11 Mar 2011 18:37:16 -0800
-Message-Id: <1299897436.20043.31.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Fri, 11 Mar 2011 21:52:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Hg99EIl+tzLYAZ5yEuuIptnDgts2gXcCXG/jZqt1DhdGFodyHNmmtUTH+WxqvOX8/P
+         HOX+dS5mCiSGOqors4a9kfmapHJWs7Ib5vYHxwaSFusa3WkJCRz2rHWI/H5vMjDiVwKA
+         fYn+DvyNXOMW0jBMEAOjI8lCNlFdVqgSNZRvw=
+Message-ID: <4D7ADFDD.9080108@gmail.com>
+Date: Fri, 11 Mar 2011 21:52:13 -0500
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Indan Zupancic <indan@nul.nu>
+CC: Arnd Bergmann <arnd@arndb.de>, Sage Weil <sage@newdream.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>    <201103111255.44979.arnd@arndb.de>    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>    <4D7AC0FE.8070806@gmail.com> <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-11 at 18:40 -0800, Andrew Morton wrote:
-> On Fri, 11 Mar 2011 17:46:11 -0800 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > On Fri, 2011-03-11 at 17:17 -0600, James Bottomley wrote:
-> > > On Wed, 2011-03-02 at 15:52 -0800, Nicholas A. Bellinger wrote:
-> > > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > > 
-> > > > Hi James,
-> > > > 
-> > > > This patch fixes a regression for READ_CAPACITY to trigger SAI READ_CAPACITY_16 for
-> > > > >= 0xffffffff virtual backends.  This occured during v4.0.0-rc6 when the backend
-> > > > read_capacity* handlers where moved into generic target_core_cdb.c code, and the
-> > > > 'unsigned long long blocks_long' piece was dropped from target_emulate_readcapacity().
-> > > > 
-> > > > This fix has been tested with TCM_Loop on .38-rc7 with lio-4.1 and is working as expected
-> > > > with large block virtual backends:
-> > > > 
-> > > > [67826.897061] TARGET_CORE[loopback]->TPG[1]_LUN[0] - Adding READ-WRITE access for LUN in Demo Mode
-> > > > [67826.897061] scsi 7:0:1:0: Direct-Access     LIO-ORG  FILEIO           4.0  PQ: 0 ANSI: 5
-> > > > [67826.900933] sd 7:0:1:0: [sdd] 2621440000001 512-byte logical blocks: (1.34 PB/1.19 PiB)
-> > > > [67826.901510] sd 7:0:1:0: [sdd] Write Protect is off
-> > > > [67826.901684] sd 7:0:1:0: [sdd] Mode Sense: 2f 00 00 00
-> > > > 
-> > > > Please include into scsi-rc-fixes going to Linus for-38 mainline target code.
-> > > 
-> > > So the piece you didn't say is that this only affects volumes >2TB
-> > > volume which misreport the capacity (which is actually what the bug
-> > > description should have been).
-> > > 
-> > > That's hardly an oopsworthy fix at this stage ... I'll put it into misc
-> > > with a cc stable.
-> > > 
-> > 
-> > This has already been picked up by AKPM last week, and (I assume) will
-> > be queued to Linus for .38-FINAL via -mm.
-> 
-> Not really.  I often grab important-looking fixes which cross my
-> desk, in case they end up getting mis-scheduled or mislaid.
-> 
-> > Considering that is a critical fix that is not trigger by some obsecure
-> > corner case, I am not sure why this would be deferred for for a
-> > v2.6.38.x release when we already have a proper fix in place..?
-> 
-> 2.6.38.1 is OK.  No sane people will run 2.6.38 anyway ;)
+On 03/11/2011 08:33 PM, Indan Zupancic wrote:
+> On Sat, March 12, 2011 01:40, Ric Wheeler wrote:
+>> On 03/11/2011 06:45 PM, Indan Zupancic wrote:
+>>> On Fri, March 11, 2011 12:55, Arnd Bergmann wrote:
+>>>> On Friday 11 March 2011, Indan Zupancic wrote:
+>>>>>>         http://marc.info/?l=linux-fsdevel&amp;m=127970513829285&amp;w=2
+>>>>> The patch there seems much more reasonable than introducing a whole
+>>>>> new systemcall just for 20 lines of kernel code. New system calls are
+>>>>> added too easily nowadays.
+>>>> The only problem with adding new system calls is that we are stuck
+>>>> with the interface until the end of time, so we must be sure not
+>>>> to get it wrong. The same thing is true for any other interface
+>>>> such as ioctl or extensions to existing system calls. People usually
+>>>> get away with adding new ioctls more easily because it is less
+>>>> obvious when they are added.
+>>> Agreed.
+>>>
+>>> I'm not sure this feature is important enough to add. I can't really
+>>> think of a regular use case where this would be useful, generally
+>>> it's transparent on which mount files are. Add symlinks, and you
+>>> give users a lot of rope. Any user has to make sure that all the
+>>> files they want to sync are on the same file system.
+>>>
+>>> About the arguments against sync(2):
+>>>
+>>>>    - On machines with many mounts, it is not at all uncommon for some of
+>>>>      them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
+>>>>      those and may never get to the one you do care about (e.g., /).
+>>> It would be better to fix NFS, or mount it with the fsc option (assuming
+>>> a sync will write to the local cache instead of hanging forever then).
+>>>
+>>>>    - Some applications write lots of data to the file system and then
+>>>>      want to make sure it is flushed to disk.  Calling fsync(2) on each
+>>>>      file introduces unnecessary ordering constraints that result in a large
+>>>>      amount of sub-optimal writeback/flush/commit behavior by the file
+>>>>      system.
+>>> You can use sync_file_range() on those files to schedule the writes
+>>> and then do the fsync(2) as usual (both on files and dirs).
+>>>
+>>> If there still is a good reason to implement this, please don't add it
+>>> as a new system call, but add it to sync_file_range(), as that seems
+>>> the best place for odd file synchronisation operations.
+>>>
+>>> Greetings,
+>>>
+>>> Indan
+>>>
+>>>
+>>> --
+>> Hi Indan,
+>>
+>> I think that you missed the point of the extension.
+>>
+>> Ric
+> The point is clear, it's to synchronize a specific file system instead
+> of all of them.
+>
+> But actually doing that from a program is harder than it looks, because
+> programs work with files, not file systems. To make this feature useful
+> the program needs meta information it can't easily get. That was my first
+> point.
+>
+> The rest was just replying to the motivations given to add the feature.
+> If those motivations miss the point of the extension, don't blame me.
+>
+> If you want to add a new one, "I'd like sync /mounpoint to work", then
+> do so, but please tell what practical use that has, if you're not going
+> to unmount the thing soon after anyway.
+>
+> Other than this questionable use case, is there any other one that would
+> justify adding this extension?
+>
+> Greetings,
+>
+> Indan
+>
 
-Ok, thanks for the clarification here Andrew.  A for .38.1 item it shall
-be.
+Sage was pretty clear in stating the motivation which is the use case you think 
+is questionable. Probably not interesting for consumer devices, but definitely 
+extremely interesting in large servers with multiple file systems.
 
-Best Regards,
+In fact, we do it today as mentioned earlier in the thread - this simply exports 
+that useful capability in a clean way.
 
---nab
+Ric
 
