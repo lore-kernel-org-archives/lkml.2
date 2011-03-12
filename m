@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751171Ab1CLFBz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 00:01:55 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51119 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab1CLFBy convert rfc822-to-8bit (ORCPT
+	id S1751401Ab1CLFfa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 00:35:30 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:9403 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1CLFf2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 00:01:54 -0500
+	Sat, 12 Mar 2011 00:35:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=A3d0mIiPrxpkNLTx/I+/Hwveb19zNUBX/vguGvzgcofsrqgcjJmdr5bksL5ovWapHM
-         v9LjDtYpdovVLcAMZ06clQDuM6ZB1+4Ydo1lxPdZEh6rPBKeLHUXZRsWhiRK9Fu9upM1
-         LYxC2tQVtspaMAA7uoXl4lOe85sgiSZ0Xjnpk=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=tBe4/QPd0Y2dBh2YvaHpy+e8BpmsvInkZOFSUUKEpQjlF5oiFV937V9ts8h0jI+K1T
+         o48m3SWPw2yvpTOjdZhA==
 MIME-Version: 1.0
-In-Reply-To: <20110311161924.b902942a.akpm@linux-foundation.org>
-References: <1299822937-6522-1-git-send-email-roland@kernel.org>
- <x49fwqthh51.fsf@segfault.boston.devel.redhat.com> <20110311161924.b902942a.akpm@linux-foundation.org>
-From: Roland Dreier <roland@kernel.org>
-Date: Fri, 11 Mar 2011 21:01:33 -0800
-X-Google-Sender-Auth: 4DhxhcwARuRJqg3k7pHDsOxlOuk
-Message-ID: <AANLkTin39BqoZt-zhs-YFyvf5Y6kwcd89mQvem9VBzJc@mail.gmail.com>
-Subject: Re: [PATCH] aio: Wake all waiters when destroying ctx
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
-        stable@kernel.org
+In-Reply-To: <20110312041729.GB15526@home.goodmis.org>
+References: <1299877572-30353-1-git-send-email-teravest@google.com> <20110312041729.GB15526@home.goodmis.org>
+From: Justin TerAvest <teravest@google.com>
+Date: Fri, 11 Mar 2011 21:35:04 -0800
+Message-ID: <AANLkTi=Jo_bPiZDg0uYgN+scH1m=G59GQzbuMTZeeFyO@mail.gmail.com>
+Subject: Re: [PATCH] Add unaccounted time to timeslice_used.
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: jaxboe@fusionio.com, vgoyal@redhat.com, ctalbott@google.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 4:19 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> It's a fairly old bug (yes?) and we're presumably close to 2.6.38.  So
-> I scheduled the fix for 2.6.39 marked for backporting into 2.6.38.x and
-> earlier.
+On Fri, Mar 11, 2011 at 8:17 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, Mar 11, 2011 at 01:06:12PM -0800, Justin TerAvest wrote:
+>> There are two kind of times that tasks are not charged for: the first
+>> seek and the extra time slice used over the allocated timeslice. Both
+>> of these exported as a new unaccounted_time stat.
+>>
+>> I think it would be good to have this reported in 'time' as well, but
+>> that is probably a separate discussion.
+>>
+>> Signed-off-by: Justin TerAvest <teravest@google.com>
+>> ---
+>>  block/blk-cgroup.c  |   16 +++++++++++++++-
+>>  block/blk-cgroup.h  |   12 ++++++++++--
+>>  block/cfq-iosched.c |   21 +++++++++++++--------
+>>  block/cfq.h         |    6 +++---
+>>  4 files changed, 41 insertions(+), 14 deletions(-)
+>
+> Hi! Just an FYI, could you add what subsystem you are changing into the
+> subject. Like:
+>
+> [PATCH] block: Add unaccounted time to timeslice_used
+>
+> Otherwise, the subject looks like it's modifying the kernel internal time
+> source.
 
-Yes, AFAICT it's been there approximately forever.
+Sorry about that. I'll be more careful in the future.
 
-I agree that this is 2.6.39 stuff, and I included the stable@ cc so it gets
-into 2.6.38.1.  Seems like the best course.
+Thanks,
+Justin
 
- - R.
+>
+> Thanks,
+>
+> -- Steve
+>
+>
