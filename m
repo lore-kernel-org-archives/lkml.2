@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab1CLVWW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 16:22:22 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:53644 "EHLO ogre.sisk.pl"
+	id S1756064Ab1CLVXp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 16:23:45 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:53658 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755422Ab1CLVWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 16:22:18 -0500
+	id S1755728Ab1CLVWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 16:22:20 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/8] ACPI: Use syscore_ops instead of sysdev class and sysdev
-Date: Sat, 12 Mar 2011 22:16:51 +0100
+Subject: [PATCH 0/8] Allow subsystems to avoid using sysdevs for defining "core" PM callbacks
+Date: Sat, 12 Mar 2011 22:12:40 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
 Cc: Len Brown <lenb@kernel.org>, Greg KH <gregkh@suse.de>,
         Kay Sievers <kay.sievers@suse.de>,
@@ -17,98 +17,90 @@ Cc: Len Brown <lenb@kernel.org>, Greg KH <gregkh@suse.de>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
         Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Avi Kivity <avi@redhat.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <201103100131.58206.rjw@sisk.pl> <201103122212.40828.rjw@sisk.pl>
-In-Reply-To: <201103122212.40828.rjw@sisk.pl>
+        Avi Kivity <avi@redhat.com>
+References: <201103100131.58206.rjw@sisk.pl>
+In-Reply-To: <201103100131.58206.rjw@sisk.pl>
 MIME-Version: 1.0
+Message-Id: <201103122212.40828.rjw@sisk.pl>
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103122216.51858.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Hi,
 
-ACPI uses a sysdev class and a sysdev for executing
-irqrouter_resume() before turning on interrupts on the boot CPU.
-However, since irqrouter_resume() ignores its argument, the entire
-mechanism may be replaced with a struct syscore_ops object which
-is considerably simpler.
+On Thursday, March 10, 2011, Rafael J. Wysocki wrote:
+> There are multiple problems with sysdevs, or struct sys_device objects to
+> be precise, that are so annoying that some people have started to think
+> of removind them entirely from the kernel.  To me, personally, the most
+> obvious issue is the way sysdevs are used for defining suspend/resume
+> callbacks to be executed with one CPU on-line and interrupts disabled.
+> Greg and Kay may tell you more about the other problems with sysdevs. :-)
+> 
+> Some subsystems need to carry out certain operations during suspend after
+> we've disabled non-boot CPUs and interrupts have been switched off on the
+> only on-line one.  Currently, the only way to achieve that is to define
+> sysdev suspend/resume callbacks, but this is cumbersome and inefficient.
+> Namely, to do that, one has to define a sysdev class providing the callbacks
+> and a sysdev actually using them, which is excessively complicated.  Moreover,
+> the sysdev suspend/resume callbacks take arguments that are not really used
+> by the majority of subsystems defining sysdev suspend/resume callbacks
+> (or even if they are used, they don't really _need_ to be used, so they
+> are simply unnecessary).  Of course, if a sysdev is only defined to provide
+> suspend/resume (and maybe shutdown) callbacks, there's no real reason why
+> it should show up in sysfs.
+> 
+> For this reason, I thought it would be a good idea to provide a simpler
+> interface for subsystems to define "very late" suspend callbacks and
+> "very early" resume callbacks (and "very late" shutdown callbacks as well)
+> without the entire bloat related to sysdevs.  The interface is introduced
+> by the first of the following patches, while the second patch converts some
+> sysdev users related to the x86 architecture to using the new interface.
+> 
+> I believe that call sysdev users who need to define suspend/resume/shutdown
+> callbacks may be converted to using the interface provided by the first patch,
+> which in turn should allow us to convert the remaining sysdev functionality
+> into "normal" struct device interfaces.  Still, even if that turns out to be
+> too complicated, the bloat reduction resulting from the second patch kind of
+> shows that moving at least some sysdev users to a simpler interface (like in
+> the first patch) is a good idea anyway.
+> 
+> This is a proof of concept, so the patches have not been tested.  Please be
+> extrememly careful, because they touch sensitive code, so to speak.  In the
+> majority of cases the changes are rather straightforward, but there are some
+> more interesting cases as well (io_apic.c most importantly).
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/pci_link.c |   30 ++++++++----------------------
- 1 file changed, 8 insertions(+), 22 deletions(-)
+Since Greg likes the idea and there haven't been any objections so far, here's
+the official submission.  The patches have been tested on HP nx6325 and
+Toshiba Portege R500.
 
-Index: linux-2.6/drivers/acpi/pci_link.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/pci_link.c
-+++ linux-2.6/drivers/acpi/pci_link.c
-@@ -29,7 +29,7 @@
-  *	   for IRQ management (e.g. start()->_SRS).
-  */
- 
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
-@@ -757,14 +757,13 @@ static int acpi_pci_link_resume(struct a
- 	return 0;
- }
- 
--static int irqrouter_resume(struct sys_device *dev)
-+static void irqrouter_resume(void)
- {
- 	struct acpi_pci_link *link;
- 
- 	list_for_each_entry(link, &acpi_link_list, list) {
- 		acpi_pci_link_resume(link);
- 	}
--	return 0;
- }
- 
- static int acpi_pci_link_remove(struct acpi_device *device, int type)
-@@ -871,32 +870,19 @@ static int __init acpi_irq_balance_set(c
- 
- __setup("acpi_irq_balance", acpi_irq_balance_set);
- 
--/* FIXME: we will remove this interface after all drivers call pci_disable_device */
--static struct sysdev_class irqrouter_sysdev_class = {
--	.name = "irqrouter",
-+static struct syscore_ops irqrouter_syscore_ops = {
- 	.resume = irqrouter_resume,
- };
- 
--static struct sys_device device_irqrouter = {
--	.id = 0,
--	.cls = &irqrouter_sysdev_class,
--};
--
--static int __init irqrouter_init_sysfs(void)
-+static int __init irqrouter_init_ops(void)
- {
--	int error;
-+	if (!acpi_disabled && !acpi_noirq)
-+		register_syscore_ops(&irqrouter_syscore_ops);
- 
--	if (acpi_disabled || acpi_noirq)
--		return 0;
--
--	error = sysdev_class_register(&irqrouter_sysdev_class);
--	if (!error)
--		error = sysdev_register(&device_irqrouter);
--
--	return error;
-+	return 0;
- }
- 
--device_initcall(irqrouter_init_sysfs);
-+device_initcall(irqrouter_init_ops);
- 
- static int __init acpi_pci_link_init(void)
- {
+Patch [1/8] is regareded as 2.6.38 material, following Greg's advice.  The
+other patches in the set are regarded as 2.6.39 material.  The last one
+obviously depends on all of the previous ones.
+
+[1/8] - Introduce struct syscore_ops for registering operations to be run on
+        one CPU during suspend/resume/shutdown.
+
+[2/8] - Convert sysdev users in arch/x86 to using struct syscore_ops.
+
+[3/8] - Make ACPI use struct syscore_ops for irqrouter_resume().
+
+[4/8] - Make timekeeping use struct syscore_ops for suspend/resume.
+
+[5/8] - Make Intel IOMMU use struct syscore_ops for suspend/resume.
+
+[6/8] - Make KVM use struct syscore_ops for suspend/resume.
+
+[7/8] - Make cpufreq use struct syscore_ops for boot CPU suspend/resume.
+
+[8/8] - Introduce config switch allowing architectures to skip sysdev
+        suspend/resume/shutdown code.
+
+If there are no objectsions, I'd like to push these patches through the suspend
+tree.
+
+Thanks,
+Rafael
 
