@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab1CLU0S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 15:26:18 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35765 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593Ab1CLUXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 15:23:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=TMWTuQl6+HOhhEl9Y/Z8EUrfKMx6a5wtgfJUGVDjbRkOOC5hZeguJKQzBdOMIou84w
-         m6S1l2q2x2YRw913JW3yaSxhdUUeEMcj+wWdT8F6k4gwrqlhezGDRc2Wjn0RxXMS0aZL
-         4V7aX9JryaFvg5WvpSk3SrXQVpCCtdxbPomn8=
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Cc: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 02/13] i2c-designware: Check component type register
-Date: Sat, 12 Mar 2011 12:23:16 -0800
-Message-Id: <1299961407-26852-3-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1299961407-26852-1-git-send-email-dirk.brandewie@gmail.com>
-References: <1299961407-26852-1-git-send-email-dirk.brandewie@gmail.com>
+	id S1755542Ab1CLUba (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 15:31:30 -0500
+Received: from hera.kernel.org ([140.211.167.34]:54353 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132Ab1CLUb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 15:31:29 -0500
+Date: Sat, 12 Mar 2011 20:30:50 GMT
+From: tip-bot for Torben Hohn <torbenh@gmx.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torbenh@gmx.de, johnstul@us.ibm.com, tglx@linutronix.de,
+        richard.cochran@omicron.at
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torbenh@gmx.de, johnstul@us.ibm.com, tglx@linutronix.de,
+        richard.cochran@omicron.at
+In-Reply-To: <1299173174-348-4-git-send-email-torbenh@gmx.de>
+References: <1299173174-348-4-git-send-email-torbenh@gmx.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] posix-clocks: Check write permissions in posix syscalls
+Message-ID: <tip-6e6823d17b157f185be09f4c70181299f9273f0b@git.kernel.org>
+Git-Commit-ID: 6e6823d17b157f185be09f4c70181299f9273f0b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 12 Mar 2011 20:30:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
+Commit-ID:  6e6823d17b157f185be09f4c70181299f9273f0b
+Gitweb:     http://git.kernel.org/tip/6e6823d17b157f185be09f4c70181299f9273f0b
+Author:     Torben Hohn <torbenh@gmx.de>
+AuthorDate: Thu, 3 Mar 2011 18:26:14 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 12 Mar 2011 21:27:07 +0100
 
-Designware component type register is checked before attaching to the device.
+posix-clocks: Check write permissions in posix syscalls
 
-Signed-off-by: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+pc_clock_settime() and pc_clock_adjtime() do not check whether the fd
+was opened in write mode, so a clock can be set with a read only fd.
+
+[ tglx: We deliberately do not return -EPERM as we want this to be
+  	distingushable from the capability based permission check ]
+
+Signed-off-by: Torben Hohn <torbenh@gmx.de>
+LKML-Reference: <1299173174-348-4-git-send-email-torbenh@gmx.de>
+Cc: Richard Cochran <richard.cochran@omicron.at>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/i2c/busses/i2c-designware.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+ kernel/time/posix-clock.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware.c b/drivers/i2c/busses/i2c-designware.c
-index 040cf51..b2b2a19 100644
---- a/drivers/i2c/busses/i2c-designware.c
-+++ b/drivers/i2c/busses/i2c-designware.c
-@@ -69,6 +69,7 @@
- #define DW_IC_TXFLR		0x74
- #define DW_IC_RXFLR		0x78
- #define DW_IC_COMP_PARAM_1	0xf4
-+#define DW_IC_COMP_TYPE		0xfc
- #define DW_IC_TX_ABRT_SOURCE	0x80
+diff --git a/kernel/time/posix-clock.c b/kernel/time/posix-clock.c
+index 04498cb..25028dd 100644
+--- a/kernel/time/posix-clock.c
++++ b/kernel/time/posix-clock.c
+@@ -287,11 +287,16 @@ static int pc_clock_adjtime(clockid_t id, struct timex *tx)
+ 	if (err)
+ 		return err;
  
- #define DW_IC_CON_MASTER		0x1
-@@ -710,6 +711,7 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 	struct i2c_adapter *adap;
- 	struct resource *mem, *ioarea;
- 	int irq, r;
-+	u32 reg;
- 
- 	/* NOTE: driver uses the static register mapping */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -756,12 +758,19 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 		r = -EBUSY;
- 		goto err_unuse_clocks;
- 	}
--	{
--		u32 param1 = dw_readl(dev, DW_IC_COMP_PARAM_1);
- 
--		dev->tx_fifo_depth = ((param1 >> 16) & 0xff) + 1;
--		dev->rx_fifo_depth = ((param1 >> 8)  & 0xff) + 1;
-+	reg = dw_readl(dev, DW_IC_COMP_TYPE);
-+	if (reg != 0x44570140) {
-+		dev_err(&pdev->dev, "Unknown Synopsys component type: "
-+				"0x%08x\n",	reg);
-+		r = -ENODEV;
-+		goto err_iounmap;
- 	}
++	if ((cd.fp->f_mode & FMODE_WRITE) == 0) {
++		err = -EACCES;
++		goto out;
++	}
 +
-+	reg = dw_readl(dev, DW_IC_COMP_PARAM_1);
-+	dev->tx_fifo_depth = ((reg >> 16) & 0xff) + 1;
-+	dev->rx_fifo_depth = ((reg >> 8)  & 0xff) + 1;
-+
- 	i2c_dw_init(dev);
+ 	if (cd.clk->ops.clock_adjtime)
+ 		err = cd.clk->ops.clock_adjtime(cd.clk, tx);
+ 	else
+ 		err = -EOPNOTSUPP;
+-
++out:
+ 	put_clock_desc(&cd);
  
- 	dw_writel(dev, 0, DW_IC_INTR_MASK); /* disable IRQ */
--- 
-1.7.3.4
-
+ 	return err;
+@@ -344,11 +349,16 @@ static int pc_clock_settime(clockid_t id, const struct timespec *ts)
+ 	if (err)
+ 		return err;
+ 
++	if ((cd.fp->f_mode & FMODE_WRITE) == 0) {
++		err = -EACCES;
++		goto out;
++	}
++
+ 	if (cd.clk->ops.clock_settime)
+ 		err = cd.clk->ops.clock_settime(cd.clk, ts);
+ 	else
+ 		err = -EOPNOTSUPP;
+-
++out:
+ 	put_clock_desc(&cd);
+ 
+ 	return err;
