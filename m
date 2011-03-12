@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab1CLVJM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 16:09:12 -0500
-Received: from www.tglx.de ([62.245.132.106]:40206 "EHLO www.tglx.de"
+	id S1755697Ab1CLVU4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 16:20:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755593Ab1CLVJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 16:09:06 -0500
-Date: Sat, 12 Mar 2011 22:08:56 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, sodaville@linutronix.de
-Subject: [PATCH v2] x86/ce4100: set pci ops via callback instead of module init
-Message-ID: <20110312210856.GA16480@www.tglx.de>
-References: <20110311152247.GA14273@www.tglx.de> <alpine.LFD.2.00.1103111747460.2787@localhost6.localdomain6>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+	id S1755004Ab1CLVUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 16:20:55 -0500
+Date: Sat, 12 Mar 2011 22:11:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Vagin <avagin@gmail.com>
+Cc: Pavel Emelyanov <xemul@openvz.org>, Andrey Vagin <avagin@openvz.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>
+Subject: Re: + x86-mm-handle-mm_fault_error-in-kernel-space.patch added to
+	-mm tree
+Message-ID: <20110312211143.GA27460@redhat.com>
+References: <20110310142812.GA25224@redhat.com> <4D7926C9.9070206@parallels.com> <20110311111931.GA16052@redhat.com> <4D7A2FED.3060200@gmail.com> <20110311165700.GA30929@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103111747460.2787@localhost6.localdomain6>
-User-Agent: Mutt/1.4.2.2i
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <20110311165700.GA30929@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting those on subsys initcall will break any x86 platform except
-ce4100 which could lead to complains from users.
-To avoid I move to pci.init like others which use the same kind of
-quirk.
+On 03/11, Oleg Nesterov wrote:
+>
+> On 03/11, Andrew Vagin wrote:
+> >
+> >
+> The point is, if current was _NOT_ killed we should follow the current
+> pagefault_out_of_memory() logic or remove pagefault_out_of_memory()
+> completely.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- arch/x86/include/asm/ce4100.h     |    6 ++++++
- arch/x86/pci/ce4100.c             |    6 +++---
- arch/x86/platform/ce4100/ce4100.c |    2 ++
- 3 files changed, 11 insertions(+), 3 deletions(-)
- create mode 100644 arch/x86/include/asm/ce4100.h
+Yes, and I still think this is valid. And thus I still think the patch
+should be changed (btw, this problem is not x86 specific).
 
-diff --git a/arch/x86/include/asm/ce4100.h b/arch/x86/include/asm/ce4100.h
-new file mode 100644
-index 0000000..e656ad8
---- /dev/null
-+++ b/arch/x86/include/asm/ce4100.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_CE4100_H_
-+#define _ASM_CE4100_H_
-+
-+int ce4100_pci_init(void);
-+
-+#endif
-diff --git a/arch/x86/pci/ce4100.c b/arch/x86/pci/ce4100.c
-index c63c6d3..ed6060c 100644
---- a/arch/x86/pci/ce4100.c
-+++ b/arch/x86/pci/ce4100.c
-@@ -34,6 +34,7 @@
- #include <linux/pci.h>
- #include <linux/init.h>
- 
-+#include <asm/ce4100.h>
- #include <asm/pci_x86.h>
- 
- struct sim_reg {
-@@ -306,10 +307,9 @@ struct pci_raw_ops ce4100_pci_conf = {
- 	.write = ce4100_conf_write,
- };
- 
--static int __init ce4100_pci_init(void)
-+int __init ce4100_pci_init(void)
- {
- 	init_sim_regs();
- 	raw_pci_ops = &ce4100_pci_conf;
--	return 0;
-+	return pci_legacy_init();
- }
--subsys_initcall(ce4100_pci_init);
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index 68c0dbc..28071bb 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -15,6 +15,7 @@
- #include <linux/serial_reg.h>
- #include <linux/serial_8250.h>
- 
-+#include <asm/ce4100.h>
- #include <asm/prom.h>
- #include <asm/setup.h>
- #include <asm/i8259.h>
-@@ -136,6 +137,7 @@ void __init x86_ce4100_early_setup(void)
- 	x86_init.resources.probe_roms = x86_init_noop;
- 	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
- 	x86_init.mpparse.find_smp_config = x86_init_noop;
-+	x86_init.pci.init = ce4100_pci_init;
- 
- #ifdef CONFIG_X86_IO_APIC
- 	x86_init.pci.init_irq = sdv_pci_init;
--- 
-1.7.4
+However,
+
+> >> Why do you think the current task should be killed? In this case we
+> >> do not need oom-killer at all, we could always kill the caller of
+> >> alloc_page/etc.
+> >
+> > You don't understand. alloc_page calls oom-killer himself, then try
+> > allocate memory again. Pls look at __alloc_pages_slowpath().
+> > __alloc_pages_slowpat may fail if order > 3 || gfp_mask & __GFP_NOFAIL
+> > || test_thread_flag(TIF_MEMDIE)
+>
+> Andrew, please, I know this.
+
+Hmm. It turns out I do not ;)
+
+I thought I can find the case when handle_mm_fault() returns VM_FAULT_OOM
+and the caller is not killed, but I can't. I do not really understand
+mem_cgroup_handle_oom/etc, but it seems we always retry indefinitely even
+with mem_cgroup's. mm/hugetlb.c looks fine too...
+
+So, I have to apologize, I am starting to think you are right.
+
+
+
+Maybe someone could explain why pagefault_out_of_memory() is still
+needed?
+
+Oleg.
 
