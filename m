@@ -1,152 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab1CLXXN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 18:23:13 -0500
-Received: from mail2.microsoft.com ([131.107.115.215]:37535 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab1CLXXI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 18:23:08 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>,
-        Mike Sterling <Mike.Sterling@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
- driver
-Thread-Topic: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
- driver
-Thread-Index: AQHL325beDuENri3oES+5wMXWQ0GNpQnqf4A//969sCAAIh/AIACqoyQ
-Date: Sat, 12 Mar 2011 23:23:05 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048018F4D@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1299794912-1233-1-git-send-email-kys@microsoft.com>
- <20110310222034.GA19323@suse.de>
- <6E21E5352C11B742B20C142EB499E048018AA3@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20110310223256.GA8669@suse.de>
-In-Reply-To: <20110310223256.GA8669@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756293Ab1CLX3h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 18:29:37 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54057 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756201Ab1CLX3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 18:29:35 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andy Green <andy@warmcat.com>
+Subject: Re: [RFC PATCH 1/4] PLATFORM: introduce structure to bind async platform data to a dev path name
+Date: Sun, 13 Mar 2011 00:29:38 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        patches@linaro.org, Andy Green <andy.green@linaro.org>
+References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <20110312223212.27020.9839.stgit@otae.warmcat.com>
+In-Reply-To: <20110312223212.27020.9839.stgit@otae.warmcat.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103130029.38458.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Thursday, March 10, 2011 5:33 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; Haiyang Zhang; Mike Sterling; Abhishek Kane
-> (Mindtree Consulting PVT LTD); Hank Janssen
-> Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci driver
+On Saturday, March 12, 2011, Andy Green wrote:
+> This structure allows tagging arbitrary platform_data that can't be attached
+> to a device until after it is probed, with the device path name that it is
+> to be attached to.
 > 
-> On Thu, Mar 10, 2011 at 10:28:27PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@suse.de]
-> > > Sent: Thursday, March 10, 2011 5:21 PM
-> > > To: KY Srinivasan
-> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org; Haiyang Zhang; Mike Sterling; Abhishek Kane
-> > > (Mindtree Consulting PVT LTD); Hank Janssen
-> > > Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
-> driver
-> > >
-> > > On Thu, Mar 10, 2011 at 02:08:32PM -0800, K. Y. Srinivasan wrote:
-> > > > Make vmbus driver a platform pci driver. This is
-> > > > in preparation to cleaning up irq allocation for this
-> > > > driver.
-> > >
-> > > The idea is nice, but the nameing is a bit confusing.
-> > >
-> > > We have "platform drivers" which are much different from what you are
-> > > doing here, you are just creating a "normal" pci driver.
-> > >
-> > > Very minor comments below.
-> > >
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
-> > > > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-> > > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> > > > ---
-> > > >  drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++--------
-> -----
-> > > ----
-> > > >  1 files changed, 36 insertions(+), 27 deletions(-)
-> > > >
-> > > > diff --git a/drivers/staging/hv/vmbus_drv.c
-> b/drivers/staging/hv/vmbus_drv.c
-> > > > index 8b9394a..e4855ac 100644
-> > > > --- a/drivers/staging/hv/vmbus_drv.c
-> > > > +++ b/drivers/staging/hv/vmbus_drv.c
-> > > > @@ -43,6 +43,8 @@
-> > > >
-> > > >  static struct device *root_dev; /* Root device */
-> > > >
-> > > > +struct pci_dev *hv_pci_dev;
-> > > > +
-> > > >  /* Main vmbus driver data structure */
-> > > >  struct vmbus_driver_context {
-> > > >
-> > > > @@ -887,36 +889,24 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
-> > > >  	}
-> > > >  }
-> > > >
-> > > > -static struct dmi_system_id __initdata microsoft_hv_dmi_table[] = {
-> > > > -	{
-> > > > -		.ident = "Hyper-V",
-> > > > -		.matches = {
-> > > > -			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft
-> > > Corporation"),
-> > > > -			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-> > > > -			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
-> > > > -		},
-> > > > -	},
-> > > > -	{ },
-> > > > -};
-> > > > -MODULE_DEVICE_TABLE(dmi, microsoft_hv_dmi_table);
-> > >
-> > > You're sure it's safe to delete this now and just rely on the PCI ids,
-> > > right?  For some wierd reason I thought we needed both to catch all
-> > > types of systems, but I can't remember why.
-> > I have tested this; I don't think we need the dmi table.
+> Signed-off-by: Andy Green <andy.green@linaro.org>
+> ---
 > 
-> Ok, if you are sure, that's fine with me.
+>  include/linux/platform_device.h |   17 +++++++++++++++++
+>  1 files changed, 17 insertions(+), 0 deletions(-)
 > 
-> > > How about "hv_bus" as a name, as that's what this really is.  It's a
-> > > "bus adapter", like USB, Firewire, and all sorts of other bus
-> > > controllers.
-> >
-> > Sure; I will make these changes. Would you mind if I submit these name
-> changes as a separate patch.
-> 
-> How about just redo this patch?  I haven't reviewed the others yet, so
-> you might want to wait a day to see if I don't like any of them either
-> :)
+> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+> index 2e700ec..d8c0ba9 100644
+> --- a/include/linux/platform_device.h
+> +++ b/include/linux/platform_device.h
+> @@ -193,4 +193,21 @@ static inline char *early_platform_driver_setup_func(void)		\
+>  }
+>  #endif /* MODULE */
+>  
+> +/**
+> + * platform_async_platform_data - maps a known bus + device name on to
+> + *				  platform_data to be attached to that device
+> + *				  when it is eventually instantiated.  For use
+> + *				  with onboard devices on buses that probe
+> + *				  asynchronously.  Device path fields must
+> + *				  be separated with '/'.
+> + * @device_path:	bus / device path, eg, "usb1/1-1/1-1.1"
+> + * @platform_data:	platform_data to attach to device matching the
+> + *			device_path
+> + */
+> +
+> +struct platform_async_platform_data {
+> +	const char *device_path;
+> +	void *platform_data;
+> +};
+> +
+>  #endif /* _PLATFORM_DEVICE_H_ */
 
-Greg, I have redone this patch as well as [PATCH 12/21]. Do you want me send you just these two 
-patches or the entire series including these two. Also, does this patch-set address all of architectural 
-issues you had noted earlier in the vmbus core. Please let us know what else needs to be done to 
-exit staging as far as the vmbus driver is concerned. I want get a head start before the new week
-begins! Also, we have patches ready for all DPRINT cleanup. Hank is holding them off until
-we finish addressing the architectural issues first.
+Using device paths for this purpose seems to be very fragile to me.  Isn't
+there any better solution?
 
-Regards,
-
-K. Y
-
+Rafael
