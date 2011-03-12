@@ -1,135 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab1CLAkg (ORCPT <rfc822;w@1wt.eu>);
+	id S1754895Ab1CLAkm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Mar 2011 19:40:42 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56693 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab1CLAkg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Mar 2011 19:40:36 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48387 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830Ab1CLAke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Mar 2011 19:40:34 -0500
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Greg KH <greg@kroah.com>, l-m <linux-kernel@vger.kernel.org>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        l-o <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Tuomas Kulve <tuomas@kulve.fi>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: [PATCH] staging: tidspbridge: protect dmm_map properly
-Date: Fri, 11 Mar 2011 18:29:06 -0600
-Message-Id: <1299889746-16502-1-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.1
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=tEWvfDuJGTxMsjHGyqjbQaDUhwGL19PdbZj1ltiSD1dDicHGRQYMxNYtS1y5GHv/nO
+         MKgUkSIyKhUn0yf56K860D2w+shOWutjstbYF4ZGjtRsFjzmN2VODWTOWEWxfJ9xwXWW
+         vlvfNxg9CYQJWHCk1z0I75wu3tZP/YLgTE6Jc=
+Message-ID: <4D7AC0FE.8070806@gmail.com>
+Date: Fri, 11 Mar 2011 19:40:30 -0500
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Indan Zupancic <indan@nul.nu>
+CC: Arnd Bergmann <arnd@arndb.de>, Sage Weil <sage@newdream.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>    <201103111255.44979.arnd@arndb.de> <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+In-Reply-To: <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 03/11/2011 06:45 PM, Indan Zupancic wrote:
+> On Fri, March 11, 2011 12:55, Arnd Bergmann wrote:
+>> On Friday 11 March 2011, Indan Zupancic wrote:
+>>>>        http://marc.info/?l=linux-fsdevel&amp;m=127970513829285&amp;w=2
+>>> The patch there seems much more reasonable than introducing a whole
+>>> new systemcall just for 20 lines of kernel code. New system calls are
+>>> added too easily nowadays.
+>> The only problem with adding new system calls is that we are stuck
+>> with the interface until the end of time, so we must be sure not
+>> to get it wrong. The same thing is true for any other interface
+>> such as ioctl or extensions to existing system calls. People usually
+>> get away with adding new ioctls more easily because it is less
+>> obvious when they are added.
+> Agreed.
+>
+> I'm not sure this feature is important enough to add. I can't really
+> think of a regular use case where this would be useful, generally
+> it's transparent on which mount files are. Add symlinks, and you
+> give users a lot of rope. Any user has to make sure that all the
+> files they want to sync are on the same file system.
+>
+> About the arguments against sync(2):
+>
+>>   - On machines with many mounts, it is not at all uncommon for some of
+>>     them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
+>>     those and may never get to the one you do care about (e.g., /).
+> It would be better to fix NFS, or mount it with the fsc option (assuming
+> a sync will write to the local cache instead of hanging forever then).
+>
+>>   - Some applications write lots of data to the file system and then
+>>     want to make sure it is flushed to disk.  Calling fsync(2) on each
+>>     file introduces unnecessary ordering constraints that result in a large
+>>     amount of sub-optimal writeback/flush/commit behavior by the file
+>>     system.
+> You can use sync_file_range() on those files to schedule the writes
+> and then do the fsync(2) as usual (both on files and dirs).
+>
+> If there still is a good reason to implement this, please don't add it
+> as a new system call, but add it to sync_file_range(), as that seems
+> the best place for odd file synchronisation operations.
+>
+> Greetings,
+>
+> Indan
+>
+>
+> --
 
-Please consider to apply this patch in the staging tree, as the
-description says it fixes a crash in tidspbridge driver, this bug
-was already present but it seems to have surfaced by recent tests
-made by Felipe and Tuomas.
+Hi Indan,
 
-It is an urgent fix for 2.6.38.
+I think that you missed the point of the extension.
 
-More on this discussion:
-http://www.gossamer-threads.com/lists/linux/kernel/1351446
-
-Thanks,
-- omar
-
-From: Felipe Contreras <felipe.contreras@nokia.com>
-
-We need to protect not only the dmm_map list, but the individual
-map_obj's, otherwise, we might be building the scatter-gather list with
-garbage. So, use the existing proc_lock for that.
-
-I observed race conditions which caused kernel panics while running
-stress tests, also, Tuomas Kulve found it happening quite often in
-Gumstix Over. This patch fixes those.
-
-Cc: Tuomas Kulve <tuomas@kulve.fi>
-Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
- drivers/staging/tidspbridge/rmgr/proc.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index b47d7aa..e2fe165 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -781,12 +781,14 @@ int proc_begin_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 							(u32)pmpu_addr,
- 							ul_size, dir);
- 
-+	mutex_lock(&proc_lock);
-+
- 	/* find requested memory are in cached mapping information */
- 	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
- 	if (!map_obj) {
- 		pr_err("%s: find_containing_mapping failed\n", __func__);
- 		status = -EFAULT;
--		goto err_out;
-+		goto no_map;
- 	}
- 
- 	if (memory_give_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
-@@ -795,6 +797,8 @@ int proc_begin_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 		status = -EFAULT;
- 	}
- 
-+no_map:
-+	mutex_unlock(&proc_lock);
- err_out:
- 
- 	return status;
-@@ -819,21 +823,24 @@ int proc_end_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 							(u32)pmpu_addr,
- 							ul_size, dir);
- 
-+	mutex_lock(&proc_lock);
-+
- 	/* find requested memory are in cached mapping information */
- 	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
- 	if (!map_obj) {
- 		pr_err("%s: find_containing_mapping failed\n", __func__);
- 		status = -EFAULT;
--		goto err_out;
-+		goto no_map;
- 	}
- 
- 	if (memory_regain_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
- 		pr_err("%s: InValid address parameters %p %x\n",
- 		       __func__, pmpu_addr, ul_size);
- 		status = -EFAULT;
--		goto err_out;
- 	}
- 
-+no_map:
-+	mutex_unlock(&proc_lock);
- err_out:
- 	return status;
- }
-@@ -1726,9 +1733,8 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 		    (p_proc_object->hbridge_context, va_align, size_align);
- 	}
- 
--	mutex_unlock(&proc_lock);
- 	if (status)
--		goto func_end;
-+		goto unmap_failed;
- 
- 	/*
- 	 * A successful unmap should be followed by removal of map_obj
-@@ -1737,6 +1743,9 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 	 */
- 	remove_mapping_information(pr_ctxt, (u32) map_addr, size_align);
- 
-+unmap_failed:
-+	mutex_unlock(&proc_lock);
-+
- func_end:
- 	dev_dbg(bridge, "%s: hprocessor: 0x%p map_addr: 0x%p status: 0x%x\n",
- 		__func__, hprocessor, map_addr, status);
--- 
-1.7.1
+Ric
 
