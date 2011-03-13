@@ -1,121 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab1CMAop (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 19:44:45 -0500
-Received: from flusers.ccur.com ([173.221.59.2]:48224 "EHLO gamx.iccur.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756161Ab1CMAol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 19:44:41 -0500
-Date: Sat, 12 Mar 2011 19:43:36 -0500
-From: Joe Korty <joe.korty@ccur.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "loic.minier@linaro.org" <loic.minier@linaro.org>,
-        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "houston.jim@comcast.net" <houston.jim@comcast.net>,
-        "corbet@lwn.net" <corbet@lwn.net>
-Subject: Re: JRCU Theory of Operation
-Message-ID: <20110313004336.GA14518@tsunami.ccur.com>
-Reply-To: Joe Korty <joe.korty@ccur.com>
-References: <20101113223046.GB5445@nowhere>
- <20101116012846.GV2555@linux.vnet.ibm.com>
- <20101116135230.GA5362@nowhere>
- <20101116155104.GB2497@linux.vnet.ibm.com>
- <20101117005229.GC26243@nowhere>
- <20110307203106.GA23002@tsunami.ccur.com>
- <20110309221517.GB24670@tsunami.ccur.com>
- <20110310003419.GE2196@linux.vnet.ibm.com>
- <20110310195045.GA22146@tsunami.ccur.com>
- <20110312143629.GT2234@linux.vnet.ibm.com>
+	id S1756362Ab1CMBGx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 20:06:53 -0500
+Received: from kroah.org ([198.145.64.141]:47456 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754137Ab1CMBGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 20:06:52 -0500
+Date: Sat, 12 Mar 2011 17:01:55 -0800
+From: Greg KH <greg@kroah.com>
+To: Andy Green <andy@warmcat.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        patches@linaro.org, Andy Green <andy.green@linaro.org>
+Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
+ api
+Message-ID: <20110313010155.GA20396@kroah.com>
+References: <20110312222633.27020.19543.stgit@otae.warmcat.com>
+ <20110312223227.27020.83925.stgit@otae.warmcat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110312143629.GT2234@linux.vnet.ibm.com>
+In-Reply-To: <20110312223227.27020.83925.stgit@otae.warmcat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 12, 2011 at 09:36:29AM -0500, Paul E. McKenney wrote:
-> On Thu, Mar 10, 2011 at 02:50:45PM -0500, Joe Korty wrote:
->>
->> A longer answer, on a slighly expanded topic, goes as follows.  The heart
->> of jrcu is in this (slighly edited) line,
->>
->>   rcu_data[cpu].wait = preempt_count_cpu(cpu) > idle_cpu(cpu);
+On Sat, Mar 12, 2011 at 10:32:27PM +0000, Andy Green wrote:
+> This introduces a platform API so busses can allow platform_data to
+> be attached to any struct device they create from probing in one step.
 > 
-> So, if we are idle, then the preemption count must be 2 or greater
-> to make the current grace period wait on a CPU.  But if we are not
-> idle, then the preemption count need only be 1 or greater to make
-> the current grace period wait on a CPU.
+> The function checks through the async platform_data map if one was
+> previously registered, and checks the device's device path for itself
+> and its parents against the mapped device path names.
 > 
-> But why do should an idle CPU block the current RCU grace period
-> in any case?  The idle loop is defined to be a quiescent state
-> for rcu_sched.  (Not that permitting RCU read-side critical sections
-> in the idle loop would be a bad thing, as long as the associated
-> pitfalls were all properly avoided.)
+> If it sees a match, it attaches the associated platform_data and sets
+> that map entry's device_path to NULL so no further time is spent trying
+> to match it.
 
-Amazingly enough, the base preemption level for idle is '1', not '0'.
-This suprised me deeply, but on reflection it made sense.  When idle
-needs to be preempted, there is no need to actually preempt it .. one
-just kick starts it and it will go execute the schedule for you.
+This _really_ should just use the device tree stuff, that is what it is
+for, please don't duplicate it here in a not-as-flexible way.
 
+Why wouldn't that work for you instead for this type of thing?
 
+thanks,
 
-
->> Here, the garbage collector is making an attempt to deduce, at the
->> start of the current batch, whether or not some cpu is executing code
->> in a quiescent region.  If it is, then that cpu's wait state can be set
->> to zero right away -- we don't have to wait for that cpu to execute a
->> quiescent point tap later on to discover that fact.  This nicely covers
->> the user app and idle cpu situations discussed above.
->>
->> Now, we all know that fetching the preempt_count of some process running on
->> another cpu is guaranteed to return a stale (obsolete) value, and may even
->> be dangerous (pointers are being followed after all).  Putting aside the
->> question of safety, for now, leaves us with a trio of questions: are there
->> times when this inherently unstable value is in fact stable and useful?
->> When it is not stable, is that fact relevant or irrelevant to the correct
->> operation of jrcu? And finally, does the fact that we cannot tell when
->> it is stable and when it is not, also relevant?
-> 
-> And there is also the ordering of the preempt_disable() and the accesses
-> within the critical section...  Just because you recently saw a quiescent
-> state doesn't mean that the preceding critical section has completed --
-> even x86 is happy to spill stores out of a critical section ended by
-> preempt_enable.  If one of those stores is to an RCU protected
-> data structure, you might end up freeing the structure before the
-> store completed.
-> 
-> Or is the idea that you would wait 50 milliseconds after detecting
-> the quiescent state before invoking the corresponding RCU callbacks?
-
-Yep.  
-
-
-
-> I am missing how ->which switching is safe, given the possibility of
-> access from other CPUs.
-
-JRCU allows writes to continue through the old '->which'
-value for a period of time.  All it requires is that
-within 50 msecs that the writes have ceased and that
-the writing cpu has executed a smp_wmb() and the effects
-of the smp_wmb() have propagated throughout the system.
-
-Even though I keep saying 50msecs for everything, I
-suspect that the Q switching meets all the above quiescent
-requirements in a few tens of microseconds.  Thus even
-a 1 msec JRCU sampling period is expected to be safe,
-at least in regard to Q switching.
-
-Regards,
-Joe
-
+greg k-h
