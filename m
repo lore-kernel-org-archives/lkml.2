@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab1CMJCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 05:02:14 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:37482 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab1CMJCM (ORCPT
+	id S1754502Ab1CMKD1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 06:03:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50204 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab1CMKDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 05:02:12 -0400
-Date: Sun, 13 Mar 2011 17:01:58 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@lst.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add struct crypto_alg->cra_check_optimized for
-	crc32c_intel
-Message-ID: <20110313090158.GA12473@gondor.apana.org.au>
-References: <1299745272-25477-1-git-send-email-nab@linux-iscsi.org> <20110310084346.GA10650@gondor.apana.org.au> <1299747264.5263.35.camel@haakon2.linux-iscsi.org> <20110310090929.GA10919@gondor.apana.org.au> <1299748387.5263.45.camel@haakon2.linux-iscsi.org> <1299751517.5263.60.camel@haakon2.linux-iscsi.org>
+	Sun, 13 Mar 2011 06:03:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=I+DBEbMSQdH6a4JgXTvRjTOj6V/PZKLvViP2YGr50oQyldULyV46Ta8qoQ1V4jN+N/
+         AeB3JRSCihtG5G8G9/I5yVx5hqbOK5aekq9Vc5Ft8UfFpsEsNB1Cd8uKslsmvzts2Y80
+         3kGGYoLS5KN8nrDyMLP8/NVDhWYVI9QOxZooE=
+Message-ID: <4D7C9668.3000902@gmail.com>
+Date: Sun, 13 Mar 2011 12:03:20 +0200
+From: Nikolai Kondrashov <spbnick@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299751517.5263.60.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+References: <20110310171940.GA24972@kroah.com> <4D790A20.3050105@gmail.com> <20110310180959.GA26927@kroah.com> <4D793D05.3070908@gmail.com> <20110310211519.GA11862@kroah.com> <4D79CB47.2030405@gmail.com> <20110311170313.GA10202@kroah.com> <4D7A72E3.1050407@gmail.com> <20110311193433.GB14204@kroah.com> <4D7A8419.6080107@gmail.com> <20110311203032.GA14384@kroah.com>
+In-Reply-To: <20110311203032.GA14384@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 02:05:17AM -0800, Nicholas A. Bellinger wrote:
->
-> We are still expecting the libcrypto consumer (iscsi_target_mod.ko) to
-> call the arch independent crypto_alloc_hash("crc32c", ...) in order to
-> have libcrypto backend logic perform a request_module() upon
-> architecture dependent offload modules (like crc32c_intel.ko) that
-> libcrypto consumers are not (and should not) be calling directly via
-> crypto_alloc_host("crc32c_intel", ...), correct..?
+Hi Greg,
 
-Right.
+On 03/11/2011 10:30 PM, Greg KH wrote:
+> You can also go into the /sys/class/backlight/samsung/ directory and
+> mess with the backlight values in the files to see if it gets brighter
+> and dimmer.  If that works, then the driver is working properly.
+Thanks :)
+I see some strange behavior, though.
 
-> Where I am getting confused is wrt to a new crypto_alg_mod_lookup() ->
-> request_module() call for a struct shash_alg that has not yet be loaded
-> via arch/x86/crypto/crc32c-intel.c:crc32c_intel_mod_init() ->
-> crypto_register_shash().
+Every time I execute this in the /sys/class/backlight/samsung directory:
+sudo bash -c 'echo 1 > brightness'
+brightness is reduced a little until it reaches the minimum.
 
-If you look at crypto_alg_mod_lookup, basically there are two paths.
-Either we already have a registered algorithm of the requested name,
-or we don't.
+After that, every time I execute this:
+sudo bash -c 'echo 8 > brightness'
+it increases a little until it reaches the maximum.
 
-In the first case, we won't invoke request_module and in the second
-case we will.
+And each time a message appears in dmesg: "ACPI: Failed to switch the
+brightness", until the brightness stops changing.
 
-So what I'm suggesting is that in the first case we also invoke
-request_module conditionally.  Now exactly what that condition is
-is the tricky bit.
+At the same time, the little Gnome brightness adjustment window appears,
+showing the percentage of the brightness, which drops/raises to
+minimum/maximum in only four executions of these commands. After that, while
+brightness drops/raises with each execution, the percentage stays at
+minimum/maximum.
 
-The easiest is to flip a bit in the algorithm we just found.  This
-isn't optimal as it'll mean that for each unregistered algorithm
-we'll end up modprobing twice, but that shouldn't be too bad I
-think.
+Is this all normal?
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Also, brightness buttons seem to invoke the Gnome brightness percentage
+window, which shows it changing, but the brightness itself doesn't change.
+Is it also normal? If so, is it solved in the newer Gnome and is it what you
+tried to tell me before?
+
+Sometime ago I've found this hack on some forum, which I use currently
+to set the brightness:
+
+setpci -s 00:02.0 f4.b="$HEX_BYTE"
+
+It allows finer control of the brightness, but it seems it operates directly
+on the video card PCI register. I assume there is no sane way to use
+this interface from the platform driver, right?
+
+Then, does the wireless on/off button require gnome support too?
+
+Thank you very much :)
+
+Sincerely,
+Nick
