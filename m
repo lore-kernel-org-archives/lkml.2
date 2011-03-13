@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab1CMQor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 12:44:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753869Ab1CMQoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 12:44:44 -0400
-Date: Sun, 13 Mar 2011 18:43:59 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, virtualization@lists.osdl.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] vhost-net: use lock_sock_fast() in peek_head_len()
-Message-ID: <20110313164359.GA32562@redhat.com>
-References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
- <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
- <20110313150646.GA30494@redhat.com>
- <1300031570.2761.22.camel@edumazet-laptop>
- <20110313161915.GB30642@redhat.com>
- <1300033927.2761.26.camel@edumazet-laptop>
+	id S932118Ab1CMQyu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 12:54:50 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37555 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab1CMQyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 12:54:47 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: davem@davemloft.net
+Cc: jirislaby@gmail.com, netdev@vger.kernel.org, gregkh@suse.de,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>,
+        =?UTF-8?q?R=C3=A9mi=20Denis-Courmont?= 
+	<remi.denis-courmont@nokia.com>
+Subject: [PATCH 1/2] NET: cdc-phonet, fix stop-queue handling
+Date: Sun, 13 Mar 2011 17:54:30 +0100
+Message-Id: <1300035271-8138-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1300033927.2761.26.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 13, 2011 at 05:32:07PM +0100, Eric Dumazet wrote:
-> Le dimanche 13 mars 2011 à 18:19 +0200, Michael S. Tsirkin a écrit :
-> 
-> > Other side is in drivers/net/tun.c and net/packet/af_packet.c
-> > At least wrt tun it seems clear socket is not locked.
-> 
-> Yes (assuming you refer to tun_net_xmit())
-> 
-> > Besides queue, dequeue seems to be done without socket locked.
-> > 
-> 
-> It seems this code (assuming you speak of drivers/vhost/net.c ?) has
-> some races indeed.
-> 
+Currently there is a warning emitted by the cdc-phonet driver:
+WARNING: at include/linux/netdevice.h:1557 usbpn_probe+0x3bb/0x3f0 [cdc_phonet]()
+Modules linked in: ...
+Pid: 5877, comm: insmod Not tainted 2.6.37.3-16-desktop #1
+Call Trace:
+ [<ffffffff810059b9>] dump_trace+0x79/0x340
+ [<ffffffff81520fdc>] dump_stack+0x69/0x6f
+ [<ffffffff810580eb>] warn_slowpath_common+0x7b/0xc0
+ [<ffffffffa00254fb>] usbpn_probe+0x3bb/0x3f0 [cdc_phonet]
+...
+---[ end trace f5d3e02908603ab4 ]---
+netif_stop_queue() cannot be called before register_netdev()
 
-Hmm. Any more besides the one fixed here?
+So remove netif_stop_queue from the probe funtction to avoid that.
 
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: RÃ©mi Denis-Courmont <remi.denis-courmont@nokia.com>
+Cc: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/usb/cdc-phonet.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
+index 109751b..4cf4e36 100644
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -392,7 +392,6 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ 
+ 	pnd = netdev_priv(dev);
+ 	SET_NETDEV_DEV(dev, &intf->dev);
+-	netif_stop_queue(dev);
+ 
+ 	pnd->dev = dev;
+ 	pnd->usb = usb_get_dev(usbdev);
 -- 
-MST
+1.7.4.1
+
+
