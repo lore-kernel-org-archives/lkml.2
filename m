@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab1CMUaA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 16:30:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50344 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab1CMU37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 16:29:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=fyuRxtQtkSqFw6AnW9Lpc0iEoJgiVV1irXdpcVYN3kKaP9kllKZtYfE+COjpE724wl
-         aTNFUFh1QypAKy6l0eQWijVqkntmqHEG8U1nb7ywhe7GsprI8BptkXJH88KbCewYg1uf
-         /s7UgkSaqalVGbuX7t8OinbVuUtb19mGigU6s=
-Subject: Re: [PATCH net-next-2.6] ftmac100: use GFP_ATOMIC allocations
- where needed
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-In-Reply-To: <1300048002.2761.53.camel@edumazet-laptop>
-References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1300047388.2761.48.camel@edumazet-laptop>
-	 <1300048002.2761.53.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Mar 2011 21:29:53 +0100
-Message-ID: <1300048193.2761.55.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S932201Ab1CMUpm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 16:45:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55161 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755382Ab1CMUpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 16:45:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: andy.green@linaro.org
+Subject: Re: [RFC PATCH 1/4] PLATFORM: introduce structure to bind async platform data to a dev path name
+Date: Sun, 13 Mar 2011 21:45:26 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, patches@linaro.org
+References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131758.47663.rjw@sisk.pl> <4D7CFD11.5020604@linaro.org>
+In-Reply-To: <4D7CFD11.5020604@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103132145.26410.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 13 mars 2011 à 21:26 +0100, Eric Dumazet a écrit :
-> Le dimanche 13 mars 2011 à 21:16 +0100, Eric Dumazet a écrit :
+On Sunday, March 13, 2011, Andy Green wrote:
+> On 03/13/2011 04:58 PM, Somebody in the thread at some point said:
 > 
-> > BTW, it seems I missed the fact that ftmac100_alloc_rx_page() used a
-> > GFP_KERNEL allocation, while its called from softirq context (from
-> > ftmac100_rx_packet()) 
+> > So, you want to have a mechanism telling the driver "if the device
+> > happens to have this particular path, use that platform data", right?
 > 
-> Here is a patch against ftmac100
+> Yeah.
 > 
+> > And it works because the initialization code kind of knows what path the
+> > device is going to be at, so it can predict that and provide the mathing data.
+> >
+> > Unfortunately, this relies on how device paths are constructed at the moment,
+> > so if this approach is adopted in general, it will prevent us from changing
+> > that way in the future (or at least it will make that very difficult).
+> >
+> > Perhaps you could use some other kind of device identification here?
+> 
+> I'm sorry what prevents you changing paths in the future?
+> 
+> Nothing does, if you change the bus tag from like usb1 to UsB_1 you just 
+> fix up the strings in the board definition files at the same time, they 
+> are sitting there in the same tree and
+> 
+>   grep platform_async_platform_data arch/* -R
+> 
+> will show them all up in one hit.  It's no different if you changed the 
+> name of a driver, you'd patch the board definition files with devices 
+> that need to bind to that driver name to uplevel them to the new name.
 
-Oops, one typo in it sorry 
+Well, I'm in the process of doing something similar with sysdevs and, trust me,
+it is not fun. :-/
 
-> -static int ftmac100_alloc_rx_page(struct ftmac100 *priv, struct ftmac100_rxdes *rxdes)
-> +static int ftmac100_alloc_rx_page(struct ftmac100 *priv,
-> +				  struct ftmac100_rxdes *rxdes, gtp_t gfp)
+> The board definition file for these SoC cases usually has access to a 
+> pointer to the host controller directly since it instantiates them, if 
+> this was the only stumbling point and you thought it helped something 
+> the matching system can look for that particular pointer being a parent 
+> of the candidate probed device.
 
-Should be :   gfp_t gfp
+I think that would have been better than matching based on device paths.
 
-Please build and test the patch, I dont have an ARM testbed anyway.
+Whether or not it's the only stumbling point depends on what other people
+think.
 
-Thanks
-
-
+Thanks,
+Rafael
