@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab1CMMvw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 08:51:52 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54644 "EHLO ogre.sisk.pl"
+	id S1756260Ab1CMMxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 08:53:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54654 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab1CMMvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 08:51:50 -0400
+	id S1755883Ab1CMMxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 08:53:38 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: andy.green@linaro.org
-Subject: Re: [RFC PATCH 1/4] PLATFORM: introduce structure to bind async platform data to a dev path name
-Date: Sun, 13 Mar 2011 13:51:35 +0100
+Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach api
+Date: Sun, 13 Mar 2011 13:53:54 +0100
 User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, patches@linaro.org
-References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <20110313010329.GB20396@kroah.com> <4D7CA900.2070302@linaro.org>
-In-Reply-To: <4D7CA900.2070302@linaro.org>
+Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131141.07380.rjw@sisk.pl> <4D7CB15A.6030203@linaro.org>
+In-Reply-To: <4D7CB15A.6030203@linaro.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103131351.36078.rjw@sisk.pl>
+Message-Id: <201103131353.54612.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sunday, March 13, 2011, Andy Green wrote:
-> On 03/13/2011 01:03 AM, Somebody in the thread at some point said:
-> 
-> >>> Using device paths for this purpose seems to be very fragile to me.  Isn't
-> >>> there any better solution?
+> On 03/13/2011 10:41 AM, Somebody in the thread at some point said:
+> > On Sunday, March 13, 2011, Greg KH wrote:
+> >> On Sat, Mar 12, 2011 at 10:32:27PM +0000, Andy Green wrote:
+> >>> This introduces a platform API so busses can allow platform_data to
+> >>> be attached to any struct device they create from probing in one step.
+> >>>
+> >>> The function checks through the async platform_data map if one was
+> >>> previously registered, and checks the device's device path for itself
+> >>> and its parents against the mapped device path names.
+> >>>
+> >>> If it sees a match, it attaches the associated platform_data and sets
+> >>> that map entry's device_path to NULL so no further time is spent trying
+> >>> to match it.
 > >>
-> >> Given that this targets board definition files which commonly do the
-> >> platform_add_device for the USB bus controller synchronously, and
-> >> the bus-connected devices it is aimed at are soldered on to the
-> >> board connected to specific bus controllers, the bus paths are
-> >> completely deterministic.
+> >> This _really_ should just use the device tree stuff, that is what it is
+> >> for, please don't duplicate it here in a not-as-flexible way.
 > >
-> > No they are not.
+> > I agree.
 > >
-> > The physical layout is deterministic, but the bus number, and device
-> > number, is not.  You are using the bus number here in this path, so that
-> > is not going to work, sorry.
+> > @Andy: If it doesn't work for you for some reason, please let us know the
+> > usage case that is not covered (in detail).
 > 
-> Okay.  This is not a PC we are talking about.
-> 
-> If the platform / board definition file is registering the USB hosts 
-> synchronously at boot time, the driver is composed into the monolithic 
-> kernel, there are no PCI busses or whatever on the SoC, the bus indexing 
-> is totally deterministic.  This is extremely common in the platform / 
-> SoC case and is the case the patchset is targeted at.  Even further, the 
-> only time you'd use it is to reach a USB asset that is wired up the same 
-> board permanently as well.
-> 
-> Anyway this seems moot by now.
+> The device tree stuff does not yet exist in a workable way, 
+> platform_data is established everywhere except USB bus.  Device tree 
+> brings in bootloader version as a dependency: this method doesn't.
 
-However, if you add a new infrastructure like this, it should be at least
-usable on systems that you description doesn't apply to.
+It is not the same device tree we are talking about. :-)
+
+I mean device hierarchy (and I guess Greg meant the same).
 
 Thanks,
 Rafael
