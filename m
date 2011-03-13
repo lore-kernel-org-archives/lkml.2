@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab1CMWtn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 18:49:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51007 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752972Ab1CMWtl (ORCPT
+	id S1756291Ab1CMWu1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 18:50:27 -0400
+Received: from svr03.forbrazil.com.br ([174.36.1.42]:9826 "EHLO
+	svr03.forbrazil.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754005Ab1CMWu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 18:49:41 -0400
+	Sun, 13 Mar 2011 18:50:26 -0400
+X-Greylist: delayed 1170 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Mar 2011 18:50:26 EDT
+Message-ID: <20110313192351.vcu63lrnwgo88008@webmail.civilcorp.com.br>
+Date: Sun, 13 Mar 2011 19:23:51 -0300
+From: Max Allen <contact@max.com>
+Reply-to: max_allen40@yahoo.com.hk
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-In-Reply-To: <20110311024731.GB26122@google.com>
-References: <20110307021127.GB31188@google.com> <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
- <20110309112550.GA3050@google.com> <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
- <20110311021654.GA26122@google.com> <20110311024731.GB26122@google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 13 Mar 2011 15:49:15 -0700
-Message-ID: <AANLkTinXxCMVozx-NKEVXJLNrB1V93VEAJ8FiHQHXY_=@mail.gmail.com>
-Subject: Re: [PATCH 1/3] futex: do not pagefault_disable in futex_atomic_cmpxchg_inatomic()
-To: Michel Lespinasse <walken@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <darren@dvhart.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - svr03.forbrazil.com.br
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - max.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 6:47 PM, Michel Lespinasse <walken@google.com> wrote:
-> kernel/futex.c disables page faults before calling
-> futex_atomic_cmpxchg_inatomic(), so there is no need to do it again
-> within that function.
 
-This seems totally bogus.
+*Hello
+Do you need a loan?
+Such as: Personal Loan,Business Loan,Company Loan,Student Loan,Home Dept
+Loan E.T.C
 
-Even the comment is crap.
+If you do,Contact us via E_Mail
 
-Sure, the callers may disable preemption, but that has NOTHING to do
-with "pagefault_disable()". Th epagefault_[en/dis]able functions will
-touch the preempt count EVEN IF PREEMPTION ISN'T EVEN ENABLED!
+max_allen40@yahoo.com.hk
+Mr.Max Allen
 
-So what the f*ck does that "Note that preemption is disabled.." crap even mean?
 
-The thing is made even worse by the fact that as far as I can tell,
-the comment simply isn't true at all (even if you were to ignore the
-fundamental confusion about preemption vs the pagefault
-disable/enable). Not all callers of futex_atomic_cmpxchg_inatomic() do
-anything of the sort, whether it's preemptibility _or_ the proper
-pagefault_disable/enable(). Just look at the exit_robust_list() ->
-handle_futex_death(), for example.
 
-This kind of patch is the kind that personally makes me want to put
-you on a spam-list. Misleading commit messages with bogus and
-fundamentally incorrect added comments in the code. WTF?
 
-Did I miss some patch that changed that, or is this really as horribly
-bad as I think it is? I see it already made it into -tip.
 
-                              Linus
