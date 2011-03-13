@@ -1,120 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab1CMA15 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Mar 2011 19:27:57 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52370 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140Ab1CMA14 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Mar 2011 19:27:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=content-type:mime-version:subject:from:in-reply-to:date
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=xYIsOt8hQmnN8YrTm2x0pUmDfxqyZqbp0LAYAOi4Lh4cZu7XNq3cdD1hOFv+J0S8CZ
-         pzAr5gcpu3BHrVAqjrDQsiskvNAF6PJSYJ6bqZN/AdWBirHUajBLgPnVVfhTMBmJKuFo
-         /uqsrA10LbtL+GwjIsX1Juza72CXVvDbmcezI=
-Content-Type: text/plain; charset=iso-8859-1
-Mime-Version: 1.0 (Apple Message framework v1082)
-Subject: Re: [PATCH] Add 1-wire (w1) reset and resume command API support
-From: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <jeff.dagenais@gmail.com>
-In-Reply-To: <1299864221.8754.11.camel@jfddesk>
-Date: Sat, 12 Mar 2011 19:27:54 -0500
-Content-Transfer-Encoding: 8BIT
-Message-Id: <501F97A3-93A8-4F72-827C-837923A57075@gmail.com>
-References: <1299864221.8754.11.camel@jfddesk>
-To: linux-kernel@vger.kernel.org
-X-Mailer: Apple Mail (2.1082)
+	id S1756358Ab1CMAop (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Mar 2011 19:44:45 -0500
+Received: from flusers.ccur.com ([173.221.59.2]:48224 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756161Ab1CMAol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Mar 2011 19:44:41 -0500
+Date: Sat, 12 Mar 2011 19:43:36 -0500
+From: Joe Korty <joe.korty@ccur.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "loic.minier@linaro.org" <loic.minier@linaro.org>,
+        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        "houston.jim@comcast.net" <houston.jim@comcast.net>,
+        "corbet@lwn.net" <corbet@lwn.net>
+Subject: Re: JRCU Theory of Operation
+Message-ID: <20110313004336.GA14518@tsunami.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+References: <20101113223046.GB5445@nowhere>
+ <20101116012846.GV2555@linux.vnet.ibm.com>
+ <20101116135230.GA5362@nowhere>
+ <20101116155104.GB2497@linux.vnet.ibm.com>
+ <20101117005229.GC26243@nowhere>
+ <20110307203106.GA23002@tsunami.ccur.com>
+ <20110309221517.GB24670@tsunami.ccur.com>
+ <20110310003419.GE2196@linux.vnet.ibm.com>
+ <20110310195045.GA22146@tsunami.ccur.com>
+ <20110312143629.GT2234@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110312143629.GT2234@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-please disregard this patch in favor of my patch trio ([w1 PATCHES 1-2-3/3] ) with header note called "Add 1-wire (w1) support for DS2408 and multi-slave search in ds1wm"
+On Sat, Mar 12, 2011 at 09:36:29AM -0500, Paul E. McKenney wrote:
+> On Thu, Mar 10, 2011 at 02:50:45PM -0500, Joe Korty wrote:
+>>
+>> A longer answer, on a slighly expanded topic, goes as follows.  The heart
+>> of jrcu is in this (slighly edited) line,
+>>
+>>   rcu_data[cpu].wait = preempt_count_cpu(cpu) > idle_cpu(cpu);
+> 
+> So, if we are idle, then the preemption count must be 2 or greater
+> to make the current grace period wait on a CPU.  But if we are not
+> idle, then the preemption count need only be 1 or greater to make
+> the current grace period wait on a CPU.
+> 
+> But why do should an idle CPU block the current RCU grace period
+> in any case?  The idle loop is defined to be a quiescent state
+> for rcu_sched.  (Not that permitting RCU read-side critical sections
+> in the idle loop would be a bad thing, as long as the associated
+> pitfalls were all properly avoided.)
 
-On Mar 11, 2011, at 12:23 PM, Jean-Francois Dagenais wrote:
+Amazingly enough, the base preemption level for idle is '1', not '0'.
+This suprised me deeply, but on reflection it made sense.  When idle
+needs to be preempted, there is no need to actually preempt it .. one
+just kick starts it and it will go execute the schedule for you.
 
-> This is needed for my next patch about DS2408
+
+
+
+>> Here, the garbage collector is making an attempt to deduce, at the
+>> start of the current batch, whether or not some cpu is executing code
+>> in a quiescent region.  If it is, then that cpu's wait state can be set
+>> to zero right away -- we don't have to wait for that cpu to execute a
+>> quiescent point tap later on to discover that fact.  This nicely covers
+>> the user app and idle cpu situations discussed above.
+>>
+>> Now, we all know that fetching the preempt_count of some process running on
+>> another cpu is guaranteed to return a stale (obsolete) value, and may even
+>> be dangerous (pointers are being followed after all).  Putting aside the
+>> question of safety, for now, leaves us with a trio of questions: are there
+>> times when this inherently unstable value is in fact stable and useful?
+>> When it is not stable, is that fact relevant or irrelevant to the correct
+>> operation of jrcu? And finally, does the fact that we cannot tell when
+>> it is stable and when it is not, also relevant?
 > 
-> From aba11ba9d50c0fa7a29c81ecb81c13afb986b042 Mon Sep 17 00:00:00 2001
-> From: =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <dagenaisj@sonatest.com>
-> Date: Thu, 10 Mar 2011 11:04:16 -0500
-> Subject: [PATCH] Add 1-wire (w1) reset and resume command API support
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=UTF-8
-> Content-Transfer-Encoding: 8bit
-> To: johnpol@2ka.mipt.ru
-> Cc: linux-kernel@vger.kernel.org
+> And there is also the ordering of the preempt_disable() and the accesses
+> within the critical section...  Just because you recently saw a quiescent
+> state doesn't mean that the preceding critical section has completed --
+> even x86 is happy to spill stores out of a critical section ended by
+> preempt_enable.  If one of those stores is to an RCU protected
+> data structure, you might end up freeing the structure before the
+> store completed.
 > 
-> Signed-off-by: Jean-François Dagenais <dagenaisj@sonatest.com>
-> ---
-> drivers/w1/w1.h    |    2 ++
-> drivers/w1/w1_io.c |   26 ++++++++++++++++++++++++++
-> 2 files changed, 28 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
-> index d8a9709..f804eba 100644
-> --- a/drivers/w1/w1.h
-> +++ b/drivers/w1/w1.h
-> @@ -55,6 +55,7 @@ struct w1_reg_num
-> #define W1_READ_ROM		0x33
-> #define W1_READ_PSUPPLY		0xB4
-> #define W1_MATCH_ROM		0x55
-> +#define W1_RESUME_CMD		0xA5
-> 
-> #define W1_SLAVE_ACTIVE		0
-> 
-> @@ -213,6 +214,7 @@ void w1_write_block(struct w1_master *, const u8 *,
-> int);
-> void w1_touch_block(struct w1_master *, u8 *, int);
-> u8 w1_read_block(struct w1_master *, u8 *, int);
-> int w1_reset_select_slave(struct w1_slave *sl);
-> +int w1_reset_resume_command(struct w1_master *);
-> void w1_next_pullup(struct w1_master *, int);
-> 
-> static inline struct w1_slave* dev_to_w1_slave(struct device *dev)
-> diff --git a/drivers/w1/w1_io.c b/drivers/w1/w1_io.c
-> index 3ebe972..8e8b64c 100644
-> --- a/drivers/w1/w1_io.c
-> +++ b/drivers/w1/w1_io.c
-> @@ -390,6 +390,32 @@ int w1_reset_select_slave(struct w1_slave *sl)
-> EXPORT_SYMBOL_GPL(w1_reset_select_slave);
-> 
-> /**
-> + * When the workflow with a slave amongst many requires several
-> + * successive commands a reset between each, this function is similar
-> + * to doing a reset then a match ROM for the last matched ROM. The
-> + * advantage being that the matched ROM step is skipped in favor of the
-> + * resume command. The slave must support the command of course.
-> + *
-> + * If the bus has only one slave, traditionnaly the match ROM is
-> skipped
-> + * and a "SKIP ROM" is done for efficiency. On multi-slave busses, this
-> + * doesn't work of course, but the resume command is the next best
-> thing.
-> + *
-> + * The w1 master lock must be held.
-> + *
-> + * @param dev     the master device
-> + */
-> +int w1_reset_resume_command(struct w1_master *dev)
-> +{
-> +	if (w1_reset_bus(dev))
-> +		return -1;
-> +
-> +	/* This will make only the last matched slave perform a skip ROM. */
-> +	w1_write_8(dev, W1_RESUME_CMD);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(w1_reset_resume_command);
-> +
-> +/**
-> * Put out a strong pull-up of the specified duration after the next
-> write
-> * operation.  Not all hardware supports strong pullups.  Hardware that
-> * doesn't support strong pullups will sleep for the given time after
-> the
-> -- 
-> 1.7.4.1
-> 
-> 
+> Or is the idea that you would wait 50 milliseconds after detecting
+> the quiescent state before invoking the corresponding RCU callbacks?
+
+Yep.  
+
+
+
+> I am missing how ->which switching is safe, given the possibility of
+> access from other CPUs.
+
+JRCU allows writes to continue through the old '->which'
+value for a period of time.  All it requires is that
+within 50 msecs that the writes have ceased and that
+the writing cpu has executed a smp_wmb() and the effects
+of the smp_wmb() have propagated throughout the system.
+
+Even though I keep saying 50msecs for everything, I
+suspect that the Q switching meets all the above quiescent
+requirements in a few tens of microseconds.  Thus even
+a 1 msec JRCU sampling period is expected to be safe,
+at least in regard to Q switching.
+
+Regards,
+Joe
 
