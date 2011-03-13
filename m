@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab1CMSNM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 14:13:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60554 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab1CMSNK (ORCPT
+	id S1755957Ab1CMSY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 14:24:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54017 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab1CMSY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 14:13:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=bfN6Ict4t+z7c2/57WD7agTl1Z44x/tcbbMwBzKF+1+PfPdEUbZi+yQG0v2nPW/aUe
-         lGGbpguUZh/STwKP9vV9/jr7lV8FdOWtahDbf9hTYSd16ofWNCDDIB+/g/I9tkvlkIrX
-         MJjahweBSyKIBacdoiBOA7Nfc5IIsCfEvQBAA=
-Message-ID: <4D7D0933.9010502@linaro.org>
-Date: Sun, 13 Mar 2011 18:13:07 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
+	Sun, 13 Mar 2011 14:24:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [REVIEW] NVM Express driver
+Date: Sun, 13 Mar 2011 19:24:25 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20110303204749.GY3663@linux.intel.com>
+In-Reply-To: <20110303204749.GY3663@linux.intel.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
- api
-References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131141.07380.rjw@sisk.pl> <4D7CB15A.6030203@linaro.org> <201103131353.54612.rjw@sisk.pl> <4D7CC4D0.90305@linaro.org> <20110313161528.GB10718@kroah.com> <4D7CFB3B.8060008@linaro.org> <20110313174811.GA11504@kroah.com>
-In-Reply-To: <20110313174811.GA11504@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103131924.25032.arnd@arndb.de>
+X-Provags-ID: V02:K0:Cg3jA2V1iAkTuphpodeaBW8k/fDa+WefDW7e7oY6WRf
+ UPlbuaONVeSDJW3KGiBdnWv+ZY+Y+aZanGXeW3+vAbk7rndz8P
+ GlIpaSxiGHhZ8ClNj/YwE+bqGf7S5LNg3NdgeWCyT5UdYseV72
+ +jFWZgzfSM7BHexqy3viI3aaFaF5yN9znnl6ocOxrz6WjZuJ7T
+ OD/DiT1oAcui22Y5HbgnA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2011 05:48 PM, Somebody in the thread at some point said:
-> On Sun, Mar 13, 2011 at 05:13:31PM +0000, Andy Green wrote:
->> So when there's a bit more of Device Tree in evidence, are you going
->> to accept Device-tree based patches in usbnet etc along these lines,
->> or does that trigger the "do it in userspace" response, in which
->> case we are both wasting each others' time continuing to discuss
->> this at all?
->
-> As mentioned numerous times before, network naming stuff happens in
-> userspace, not in the kernel, so no matter what infrastructure is added,
+On Thursday 03 March 2011 21:47:49 Matthew Wilcox wrote:
 
-The naming of that network interface happens in smsc95xx, in kernel: it 
-uses a dodgy heuristic to choose between usb%d eth%d and others and gets 
-it wrong in this case due to stuff outside its view.  There's nothing 
-golden and wonderful about that which needs protecting from outside hints.
+> You may have seen the recent announcement of the NVM Express spec;
+> here's the driver.  I've put a git tree up on kernel.org with
+> all the history that's fit to be released (earlier versions
+> were full of Intel codenames and are not suited to public
+> consumption).  If you'd rather review the history, it's at
+> http://git.kernel.org/?p=linux/kernel/git/willy/nvme.git;a=summary
 
-> insisting on naming the network device 'eth0' is not going to happen
-> within the kernel.  Please use the tools we have today to do this with
-> no kernel changes.
->
-> As for other changes, it all depends on what you need to accomplish,
-> right?  Those will be gladly reviewed on a case-by-case basis.
+Looks really nice overall, I only have a few comments about
+the ioctl interface. As Greg already commented, it would be
+good to reduce the number of ioctl commands to a minimum.
 
-The immediate thing I would have liked to accomplish is to help smsc95xx 
-make the right decision about naming and to use the MAC address in 
-platform_data.  It seemed this was a general issue though, so I 
-generalized how it was done.  But I don't have examples on my desk of 
-boards with soldered-on USB other than smsc95xx Ethernet bridge.
+> +static int nvme_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd,
+> +                                                       unsigned long arg)
+> +{
+> +       struct nvme_ns *ns = bdev->bd_disk->private_data;
+> +
+> +       switch (cmd) {
+> +       case NVME_IOCTL_IDENTIFY_NS:
+> +               return nvme_identify(ns, arg, 0);
+> +       case NVME_IOCTL_IDENTIFY_CTRL:
+> +               return nvme_identify(ns, arg, 1);
+> +       case NVME_IOCTL_GET_RANGE_TYPE:
+> +               return nvme_get_range_type(ns, arg);
+> +       case NVME_IOCTL_SUBMIT_IO:
+> +               return nvme_submit_io(ns, (void __user *)arg);
+> +       case NVME_IOCTL_DOWNLOAD_FW:
+> +               return nvme_download_firmware(ns, (void __user *)arg);
+> +       case NVME_IOCTL_ACTIVATE_FW:
+> +               return nvme_activate_firmware(ns, arg);
+> +       default:
+> +               return -ENOTTY;
+> +       }
+> +}
 
-At least, I am grateful we get down to brass tacks now and you clearly 
-reject allowing the driver to take guidance to act more appropriately 
-for its environment in the first place.  Therefore, this won't get fixed 
-by Device Tree either.
+The argument is a pointer for all of these, as far as I can tell,
+so you could do the typecast here once instead of doing it for
+two of them.
 
-So, we don't need to discuss this any further: thanks again for your time.
+> +static const struct block_device_operations nvme_fops = {
+> +       .owner          = THIS_MODULE,
+> +       .ioctl          = nvme_ioctl,
+> +};
 
--Andy
+This is missing a .compat_ioctl pointer to work with 32 bit user
+space. The data structures all seem compatible, so that should
+be a trivial change.
+
+> +#define NVME_IOCTL_IDENTIFY_NS _IOW('N', 0x40, struct nvme_id_ns)
+> +#define NVME_IOCTL_IDENTIFY_CTRL _IOW('N', 0x41, struct nvme_id_ctrl)
+> +#define NVME_IOCTL_GET_RANGE_TYPE _IOW('N', 0x42, struct nvme_lba_range_type)
+> +#define NVME_IOCTL_SUBMIT_IO   _IOWR('N', 0x43, struct nvme_rw_command)
+> +#define NVME_IOCTL_DOWNLOAD_FW _IOR('N', 0x44, struct nvme_dlfw)
+> +#define NVME_IOCTL_ACTIVATE_FW _IO('N', 0x45)
+
+I believe you have confused read and write here. IIRC, _IOW means
+copy_from_user and _IOR means copy_to_user.
+
+The code for NVME_IOCTL_SUBMIT_IO takes a nvme_user_io argument,
+not nvme_rw_command.
+
+You might want to have an upper bound on the amount of user data
+that one can pass to SUBMIT_IO and others.
+
+	Arnd
