@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1CMK2y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 06:28:54 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:35305 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755191Ab1CMK13 (ORCPT
+	id S1756535Ab1CMK1N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 06:27:13 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:39909 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab1CMK0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 06:27:29 -0400
-Date: Sun, 13 Mar 2011 11:27:17 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Rick Jones <rick.jones2@hp.com>
-Cc: Tianji Li <Tianji.Li@nuim.ie>, Dave T?ht <d@taht.net>,
-        sedat.dilek@gmail.com, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, bloat-devel@lists.bufferbloat.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: ANNOUNCE: debloat-testing kernel git tree
-Message-ID: <20110313102716.GC1827@ucw.cz>
-References: <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
- <87fwr9jxya.fsf@cruithne.co.teklibre.org>
- <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
- <8739n9ii7z.fsf@cruithne.co.teklibre.org>
- <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
- <87tyfph2az.fsf@cruithne.co.teklibre.org>
- <1299176168.2157.14.camel@tardy>
- <4D6FEFD4.9010608@nuim.ie>
- <20110308065819.GA1357@ucw.cz>
- <1299610096.2087.8.camel@tardy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299610096.2087.8.camel@tardy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 13 Mar 2011 06:26:24 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        arnaud.patard@rtp-net.org
+Subject: [PATCH v2 13/24] staging: xgifb: vb_util: delete commented-out code
+Date: Sun, 13 Mar 2011 12:26:17 +0200
+Message-Id: <1300011988-2109-14-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1300011988-2109-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1300011988-2109-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Delete commented-out code.
 
-> > Bandwidth varies greatly with time. On cellphone, you can go from
-> > 5KB/sec GPRS to 300KB/sec HSDPA and back...
-> 
-> How quickly/often and does that trigger an event in the host that would
-> allow adjustment of the queue?
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ drivers/staging/xgifb/vb_util.c |   34 ----------------------------------
+ drivers/staging/xgifb/vb_util.h |    2 --
+ 2 files changed, 0 insertions(+), 36 deletions(-)
 
-I'd expect it to get fast when you leave the building, and back to
-slow when you re-enter. It all depends how good 3G coverage is, but
-seeing it change more than once a minute is not that uncommon.
-
-Event... not sure. Linux can ask for current signal strength, and I
-assume connection type works in similar way...
-								Pavel
-
+diff --git a/drivers/staging/xgifb/vb_util.c b/drivers/staging/xgifb/vb_util.c
+index f542d66..465bcda 100644
+--- a/drivers/staging/xgifb/vb_util.c
++++ b/drivers/staging/xgifb/vb_util.c
+@@ -21,22 +21,6 @@ void XGINew_SetReg1(unsigned long port, unsigned short index,
+ 	outb(data, port + 1);
+ }
+ 
+-/* --------------------------------------------------------------------- */
+-/* Function : XGINew_SetReg2 */
+-/* Input : */
+-/* Output : */
+-/* Description : AR( 3C0 ) */
+-/* --------------------------------------------------------------------- */
+-/*
+-void XGINew_SetReg2(unsigned long port, unsigned short index, unsigned short data)
+-{
+-	InPortByte((P unsigned char)port + 0x3da - 0x3c0) ;
+-	OutPortByte(XGINew_P3c0, index);
+-	OutPortByte(XGINew_P3c0, data);
+-	OutPortByte(XGINew_P3c0, 0x20);
+-}
+-*/
+-
+ void XGINew_SetReg3(unsigned long port, unsigned short data)
+ {
+ 	outb(data, port);
+@@ -103,21 +87,3 @@ void XGINew_SetRegOR(unsigned long Port, unsigned short Index,
+ 	temp |= DataOR;
+ 	XGINew_SetReg1(Port, Index, temp);
+ }
+-
+-#if 0
+-void NewDelaySeconds(int seconds)
+-{
+-	int i;
+-
+-	for (i = 0; i < seconds; i++) {
+-
+-	}
+-}
+-
+-void Newdebugcode(unsigned char code)
+-{
+-	/* OutPortByte(0x80, code); */
+-	/* OutPortByte(0x300, code); */
+-	/* NewDelaySeconds(0x3); */
+-}
+-#endif
+diff --git a/drivers/staging/xgifb/vb_util.h b/drivers/staging/xgifb/vb_util.h
+index 156f644..bf52127 100644
+--- a/drivers/staging/xgifb/vb_util.h
++++ b/drivers/staging/xgifb/vb_util.h
+@@ -1,7 +1,5 @@
+ #ifndef _VBUTIL_
+ #define _VBUTIL_
+-extern   void     NewDelaySeconds( int );
+-extern   void     Newdebugcode(unsigned char);
+ extern   void     XGINew_SetReg1(unsigned long, unsigned short, unsigned short);
+ extern   void     XGINew_SetReg3(unsigned long, unsigned short);
+ extern    unsigned char     XGINew_GetReg1(unsigned long, unsigned short);
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.5.6.5
+
