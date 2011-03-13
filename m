@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab1CMVDx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 17:03:53 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20900 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab1CMVDu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 17:03:50 -0400
-Date: Sun, 13 Mar 2011 22:03:28 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-btrfs@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH] BTRFS: Fix mem leak in btrfs_submit_direct()
-In-Reply-To: <alpine.LNX.2.00.1103132145250.29706@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1103132202450.29706@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1103132145250.29706@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756533Ab1CMVIV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 17:08:21 -0400
+Received: from verein.lst.de ([213.95.11.211]:47235 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752374Ab1CMVIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 17:08:18 -0400
+X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Mar 2011 17:08:18 EDT
+Date: Sun, 13 Mar 2011 21:59:11 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, arnd@arndb.de, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+Message-ID: <20110313205911.GA4239@lst.de>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net> <20110303072223.GA28133@elie> <87bp1sziqn.fsf@linux.vnet.ibm.com> <Pine.LNX.4.64.1103071515070.11152@cobra.newdream.net> <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Mar 2011, Jesper Juhl wrote:
+> +/*
+> + * sync a single super
+> + */
 
-> When memory is low and the allocation for 'dip->csums' fail in 
-> fs/btrfs/inode.c:btrfs_submit_direct() we make the situation worse by 
-> leaking the memory allocated to 'dip'.
-> This patch removes the leak by kfree()'ing 'dip' before jumping to the 
-> 'free_ordered' label.
-> 
+Not exactly the most descriptive comment.
 
-Ignore this patch. I see now that Daniel J Blueman already submitted a fix 
-for this issue. Sorry about the noise.
+Otherwise looks good,
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
