@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab1CMTAj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 15:00:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55160 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677Ab1CMTAi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 15:00:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GgiVfovRQjGe+tW7iC3LCRPVtxKK/lwY1n9VKfRkKIR3StwHzh7d8GcwIE1d8VkQyR
-         Sp5TnKTnuIkkxbKcaTGdI82ZOV2tGEI2Cuxg4WFcXWTgSmHLLigiaaQWuczfE+oTVHNK
-         LLFclyIh96laQ/wYjB6k1Ym8zbqLTfmcIDF6k=
+	id S1755980Ab1CMTae (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 15:30:34 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:38598 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755108Ab1CMTad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 15:30:33 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 2.6.38
+Date: Sun, 13 Mar 2011 12:34:47 -0700
+Message-ID: <1300044887-30680-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-In-Reply-To: <20110311223119.GA31049@kroah.com>
-References: <1299724988-25351-1-git-send-email-a.beregalov@gmail.com>
-	<1299724988-25351-2-git-send-email-a.beregalov@gmail.com>
-	<20110311223119.GA31049@kroah.com>
-Date: Sun, 13 Mar 2011 22:00:37 +0300
-Message-ID: <AANLkTimKX0fceVHRSS5CU59F-2RnQbHqQR8pyJXQiBhB@mail.gmail.com>
-Subject: Re: [PATCH next 2/6] staging: bcm: fix memory leaks
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 March 2011 01:31, Greg KH <greg@kroah.com> wrote:
-> On Thu, Mar 10, 2011 at 05:43:04AM +0300, Alexander Beregalov wrote:
->> Free resources before exit.
->
-> Next time, test your patches before sending them out.  This one breaks
-> the build so I've dropped all of the patches in this series.  Please fix
-> them, test them (by at the very _least_ building them) and then resend
-> them.
+Hi Linus,
 
-Sorry for that, I have sent them again.
+Please pull hwmon subsystem fixes for Linux 2.6.38 from:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+
+Thanks,
+Guenter Roeck
+
+------
+
+The following changes since commit a5abba989deceb731047425812d268daf7536575:
+
+  Linux 2.6.38-rc8 (2011-03-07 21:09:37 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+
+Hans de Goede (2):
+      hwmon/f71882fg: Fix a typo in a comment
+      hwmon/f71882fg: Set platform drvdata to NULL later
+
+ drivers/hwmon/f71882fg.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
