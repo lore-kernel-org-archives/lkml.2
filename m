@@ -1,34 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab1CNCcI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 22:32:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56011 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab1CNCcE (ORCPT
+	id S1755165Ab1CNCc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 22:32:58 -0400
+Received: from hermes.umt.edu ([150.131.192.6]:38749 "EHLO hermes.umt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753203Ab1CNCc5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 22:32:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=oodrLuJXQwiyqSMrFDMgO7lAo93KWWoI/LMP7KN06EB1U27tCKGGXqqxxN7X7B5Qsf
-         qG7PHnSB3cyMfx8F0ha/+3nKdZi9Nukb1TYS31vWCf34/oCtWcwERyxkrxt5FKxlZYNf
-         5ygznU7PPwVcrU9IlP5SuOg1V95XC6HU/p4kc=
+	Sun, 13 Mar 2011 22:32:57 -0400
+X-Greylist: delayed 8325 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Mar 2011 22:32:57 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-From: Justin <wellspring3@gmail.com>
-Date: Sun, 13 Mar 2011 19:31:43 -0700
-Message-ID: <AANLkTim9jsGz=ELPNUVJHWN8Z4EzBrFA03XXt_QYPsEh@mail.gmail.com>
-Subject: milw0rm rootkit
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Subject: RE: Very Important!!!
+Date: Sun, 13 Mar 2011 17:54:11 -0600
+Message-ID: <2202015F5917F54BA51051D1F1F86FBA02C30694@MUMMAILVS1.gs.umt.edu>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Very Important!!!
+Thread-Index: Acvh1FCEIb+kt8uvS1GVVahOMZJnIgABHTYn
+References: <2202015F5917F54BA51051D1F1F86FBA02C30571@MUMMAILVS1.gs.umt.edu>
+From: "Wexler, Jessica" <Jessica.Wexler@mso.umt.edu>
+To: "Wexler, Jessica" <Jessica.Wexler@mso.umt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My mothers computer was hacked with a program that seems to be
-milw0rm. The hacker left the source file in C on her computer. I have
-it and the IP address of the FTP server that he seemed to download it
-from. Who can I give the file to to be sure that it gets patched? And
-is there anything else I should do to help you guys make sure that
-this doesnt happen again?
+ 
 
-I am not on the list, so please CC me any responses, thanks
+________________________________
+
+From: Wexler, Jessica
+Sent: Sun 3/13/2011 5:13 PM
+To: info@simon.org
+Subject: Very Important!!!
+
+
+Mrs.Ruth .E. Simon picked your email for an inheritance of $18Million.For details email: e.simon@rogers.com <https://mail.google.com/mail/h/q0qadi2c9u2y/?v=b&cs=wh&to=e.simon@rogers.com>  
