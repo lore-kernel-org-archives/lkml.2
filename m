@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab1CMNV2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 09:21:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48394 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755401Ab1CMNVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 09:21:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=FU5Bk3zx9nyvgC9xb8Qo95VuYpCTX6qPuk/iZQqf61/COe5aSZkhnyQu9QE1PfrU49
-         kp8jj4bHZV72ClFGfhGIxEJ++TCQZx9O7ryyYZl8atap7bSpXrStbcLVoIMpm2RirUiC
-         lj4AdQN5q+rqvZ1OnvR/qTKhiSieZ+dlgcW7w=
-Message-ID: <4D7CC4D0.90305@linaro.org>
-Date: Sun, 13 Mar 2011 13:21:20 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
+	id S1756470Ab1CMNkG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 09:40:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53393 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754605Ab1CMNkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 09:40:04 -0400
+Message-ID: <4D7CC931.1090204@suse.cz>
+Date: Sun, 13 Mar 2011 14:40:01 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
- api
-References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131141.07380.rjw@sisk.pl> <4D7CB15A.6030203@linaro.org> <201103131353.54612.rjw@sisk.pl>
-In-Reply-To: <201103131353.54612.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] genksyms: Track changes to enum constant
+References: <1299997825-18977-1-git-send-email-mmarek@suse.cz> <20110313071902.GA3377@merkur.ravnborg.org>
+In-Reply-To: <20110313071902.GA3377@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2011 12:53 PM, Somebody in the thread at some point said:
+On 13.3.2011 08:19, Sam Ravnborg wrote:
+> Hi Michal.
+> 
+> Patch serie looks good.
+> You can add my ack to all of them if you do a second round.
 
->>>> This _really_ should just use the device tree stuff, that is what it is
->>>> for, please don't duplicate it here in a not-as-flexible way.
->>>
->>> I agree.
->>>
->>> @Andy: If it doesn't work for you for some reason, please let us know the
->>> usage case that is not covered (in detail).
+Thanks.
+
+
+> On Sun, Mar 13, 2011 at 07:30:18AM +0100, Michal Marek wrote:
+>> This series makes genksyms remember the values of enum constants and use them
+>> during symbol expansion. This makes sure that patches like
 >>
->> The device tree stuff does not yet exist in a workable way,
->> platform_data is established everywhere except USB bus.  Device tree
->> brings in bootloader version as a dependency: this method doesn't.
->
-> It is not the same device tree we are talking about. :-)
->
-> I mean device hierarchy (and I guess Greg meant the same).
+>> | enum e {
+>> |  	E1,
+>> | 	E2,
+>> |+	E3,
+>> | 	E_MAX
+>> | };
+>> |
+>> | struct s {
+>> | 	int a[E_MAX];
+>> | }
+>> |
+>> | int f(struct s *s) { ... }
+>> | EXPORT_SYMBOL(f)
+>>
+>> change the checksum of the exported symbol. Previously, it would just use the
+>> string "E_MAX" in the calculation and the change would go unnoticed. The main
+>> part is in patches 6/7 and 7/7, the rest are cleanups and preparatory patches.
+> 
+> This nice explanation would be good to include in the changelog
+> of 7/8 so "git log" give a better intro to the changes.
 
-I see.  Elsewhere on the previous thread people were proposing to use 
-New Shiny Device Tree, hence the confusion.
+Good idea, I'll update the patch description.
 
-I am using the old style device tree to walk the device's parent path. 
-What were you guys actually suggesting to do differently via the device 
-tree then that's cleaner?
-
--Andy
+Michal
