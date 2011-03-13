@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab1CMRI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 13:08:56 -0400
-Received: from 210513-www4.sumeffect.com ([98.129.86.238]:60070 "EHLO
-	210513-www4.sumeffect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab1CMRIz (ORCPT
+	id S1755822Ab1CMRNh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 13:13:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49295 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab1CMRNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 13:08:55 -0400
-To: linux-kernel@vger.kernel.org
-Subject: Spirituality
-From: earn2011@yahoo.com
-Reply-To: earn2011@yahoo.com
-Content-Type: text/plain; charset=UTF-8
-Message-Id: <20110313170311.0A45851CA9@210513-www4.sumeffect.com>
-Date: Sun, 13 Mar 2011 12:03:11 -0500 (CDT)
+	Sun, 13 Mar 2011 13:13:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=Ddoo5Pw3UqD9VD8e6YuKQucZY2ZbKdZKJkqBzcjKK+82f4Q0GjwWOCAlQeUAeQwYYk
+         E4B7HK6A7G52Ap/aDIN7aW0xzYM3aVPoLry3vgYBo00rk29jo5LPv+PwsLSdwvAvU6Gu
+         jEclwqdwPkTvTai6F9AA8KhRajLEiXr/YR5VE=
+Message-ID: <4D7CFB3B.8060008@linaro.org>
+Date: Sun, 13 Mar 2011 17:13:31 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110302 Fedora/3.1.8-3.fc16 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
+ api
+References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131141.07380.rjw@sisk.pl> <4D7CB15A.6030203@linaro.org> <201103131353.54612.rjw@sisk.pl> <4D7CC4D0.90305@linaro.org> <20110313161528.GB10718@kroah.com>
+In-Reply-To: <20110313161528.GB10718@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Name: Jenefer Jackson
-Email: earn2011@yahoo.com
-Hi Friend, 
+On 03/13/2011 04:15 PM, Somebody in the thread at some point said:
+> On Sun, Mar 13, 2011 at 01:21:20PM +0000, Andy Green wrote:
+>> On 03/13/2011 12:53 PM, Somebody in the thread at some point said:
+>>
+>>>>>> This _really_ should just use the device tree stuff, that is what it is
+>>>>>> for, please don't duplicate it here in a not-as-flexible way.
+>>>>>
+>>>>> I agree.
+>>>>>
+>>>>> @Andy: If it doesn't work for you for some reason, please let us know the
+>>>>> usage case that is not covered (in detail).
+>>>>
+>>>> The device tree stuff does not yet exist in a workable way,
+>>>> platform_data is established everywhere except USB bus.  Device tree
+>>>> brings in bootloader version as a dependency: this method doesn't.
+>>>
+>>> It is not the same device tree we are talking about. :-)
+>>>
+>>> I mean device hierarchy (and I guess Greg meant the same).
+>>
+>> I see.  Elsewhere on the previous thread people were proposing to
+>> use New Shiny Device Tree, hence the confusion.
+>
+> Yes, I meant the "new shiny device tree" work from Grant, who in an
+> earlier message, said that this could all be done using that instead of
+> your proposal.
 
-Are You Ready For Success $$$$$$$$!?
+That is what I took you to mean, since I already use oldstyle device 
+tree as far as I could see it was possible.  So I have no idea what 
+Rafael thought you or he meant by strongly agreeing with you when he was 
+mistaken that thought you meant oldstyle device tree.  Anyway never mind.
 
-You Are Eligible to Travel this Program Anywhere in the World.
+Well I never heard mentioned before that Device Tree targets 
+asynchronously probed device configuration.  If it does, and can do the 
+same effective as the first patchset, then I guess that will (when it 
+exists) fulfil a similar job and that'd be fine.
 
-The Hometown Merchant Marketing Program"Welcome To Our Site!!!
-Make $100-$200 Placing Ads! Get the 2 Sacks Of $$....
+But what this overall patch set does in panda.c, usbnet and smsc95xx 
+will need the same work done on it either way to deliver the same new 
+configuration features in the driver side, via Shiny New Device Tree or 
+whatever.
 
-IF YOU ARE READY TO MAKE SOME QUICK CONSISTENT MONEY, KEEP READING......
-IF YOU CAN POST 3 FREE ADS A DAY, YOU WILL START GETTING $$$$$$$$ DUMPED INTO 
-YOUR PAYPAL ACCOUNT EVERY DAY!!!!  GUARANTEED!!!
+So when there's a bit more of Device Tree in evidence, are you going to 
+accept Device-tree based patches in usbnet etc along these lines, or 
+does that trigger the "do it in userspace" response, in which case we 
+are both wasting each others' time continuing to discuss this at all?
 
-Join Now!! Get Your $680 USD Guaranteed Commissions!!!~
-
-Even during the boom years in any economy it's not possible to find a form 
-of free income, BUT THIS IS EXACTLY THAT! and it will make you free money   
-for the rest of your life.
-
-It's Easy To Make Money Everyday From Home With This Program...Even If 
-You're Starting From Scratch With Zero Knowledge, Experience Or Budget!
-I'll Show You Exactly How.
-
-We've Start putting New 40 Members in YOUR TEAM for the March 8- 15 - /2011
-commission cycle...and GROWING everyday Earn by $100 up to $200 or more.
-
-IMPORTANT:Join before March 15, 2011 is the Cut-Off day to lock in your position.The 
-Commission is base on the date of your Regitration our weekly Cycle Cut-off.Once you  
-are complete? you can Start to recieved the monthly commissions DUMPED INTO Your ATM!!!   
-
-Go Here To Secure not less than $680 Commission Now and it still growing as 
-many people joining under you. important secure your position right away:
-
-Your commission will Send Arrive Through ,Paypal,or Credit Card in your area  
-on April 20/2011...And Hurry For the 8 Remaining Position This Week!!
-
-Once your Membership are set up, you will be able to earn $680 in less than 
-2 hours a day.  I will show you how we do that and then I will help you  
-through the process so that YOU SUCCEED!
-
-You Can access the $680 in any ATM when you join now before cut-off.
-
-Click below!!
-https://www.plimus.com/jsp/redirect.jsp?contractId=2912206&referrer=earnhere2011
-
-HERE IS A SCREENSHOT OF PAYMENTS THAT YOU RECEIVED IN A 1 DAY PERIOD WITH THESE ADS.
-
-TYPE  DATE   &  TIME ------ NEW MEMBERS ------------- COUNTRY
-
-P -- March.11  @ 2:38  AM-----Jinky Robinson----------- United States
-P -- March.11  @ 2:53  AM-----Ailaine Smith ----------- United States
-P -- March.11  @ 2:56  AM-----Mandene Jonhson---------- United States
-M -- March.11  @ 4:19  AM-----Cristian Gatmaitan------- Singapore
-P -- March.11  @ 4:28  AM-----Jhon Carmalon------------ Italy
-M -- March.11  @ 6:01  AM-----lalaine Brown------------ Australia
-P -- March.11  @ 7:11  AM-----Rebecca Underwood-------- Hungary
-P -- March.11  @ 7:39  AM-----Jericho Jackson---------- Canada
-P -- March.11  @ 9:42  AM-----Thomas Silva ------------ Sri Lanka
-M -- March.11  @ 9:58  PM-----Grace Taylor------------- United Kingdom
-P -- March.11  @ 10:21 PM-----Gina Henry--------------- New Zealand
-P -- March.11  @ 11:24 PM-----Mohammed Ahmen ---------- Mexico
-M -- March.11  @ 11:33 PM-----Tracey Furlong----------- Puerto Rico
-P -- March.11  @ 11:41 PM-----Jane furlong------------- Potugal
-P -- March.11  @ 11:47 PM-----Janice Youngtown--------- Taiwan
-P -- March.11  @ 11:53 PM-----Shirley Ong-------------- China
-P -- March.11  @ 1:45  AM --- Ryann Lambert ----------- Europe
-M -- March.11  @ 12:34 AM --- Nick Gauci -------------- Calefornia
-M -- March.11  @ 10:24 AM --- Don Riley --------------- Netherland
-P -- March.11  @ 10:30 AM --- Lorne Whittaker --------- Swetzerland
-P -- March.11  @ 02:14 AM --- Ashwani Vohra ----------- Brazil
-M -- March.11  @ 2:34  AM --- Kevin Hunt -------------- Sweden
-P -- March.11  @ 1:54  AM --- Charles James Mills ----- South Africa
-P -- March.11  @ 12:34 AM --- Delia Lane -------------- New York
-P -- March.11  @ 6:45  AM --- Mohamed Salamaikom------- Saudi Arabia
-M -- March.11  @ 5:34  AM --- Aleksandar Gjuroski ----- Japan
-P -- March.11  @ 12:34 PM --- Andrew Karim ------------ England
-P -- March.11  @ 8:23  AM --- Carla Pereira ----------- South Korea
-P -- March.11  @ 2:34  PM --- Carl Krause ------------- United States
-M -- March.11  @ 9:14  AM --- David Cook -------------- Denmark
-
-Therefore, you have a GUARANTEED $680 Commissions  every month from now on!
-
-Earn $17 USD Per Process!Each $17 USD x 40 =$680 Commission will be yours...
-
-Be Sure to Copy the link below & Paste into your browser and press enter:
-To Secure your $680 commission!!!
-
-You will access your money in any ATM when you follow the instructions you receive.
-
-Click below!!
-https://www.plimus.com/jsp/redirect.jsp?contractId=2912206&referrer=earnhere2011
-
-Just one simple payment of 17 USD and you could have earn $680 that is yours,And you    
-have a chance to recieve unlimited commissions every 20th of the month. Today its $680   
-For the start of the month of March  if goes up daily until the end of the month.
-
-You must UPGRADE right away or before others do....
-
-Caring for Your Success, Jenefer Jackson
-
-http://www.truthitnow.com/cart.php?m=product_detail&p=8
+-Andy
