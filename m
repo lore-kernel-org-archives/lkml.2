@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab1CMQ7G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 12:59:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54926 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab1CMQ7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 12:59:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: andy.green@linaro.org
-Subject: Re: [RFC PATCH 1/4] PLATFORM: introduce structure to bind async platform data to a dev path name
-Date: Sun, 13 Mar 2011 17:58:47 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, patches@linaro.org
-References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131351.36078.rjw@sisk.pl> <4D7CCC4D.801@linaro.org>
-In-Reply-To: <4D7CCC4D.801@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103131758.47663.rjw@sisk.pl>
+	id S1755633Ab1CMRGh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 13:06:37 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58115 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755367Ab1CMRGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 13:06:36 -0400
+Date: Sun, 13 Mar 2011 18:06:32 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, x86@kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Bogus setting of CONSTANT TSC ?
+Message-ID: <20110313170632.GK2499@one.firstfloor.org>
+References: <20110311212418.GA14784@redhat.com> <alpine.LFD.2.00.1103121851390.2787@localhost6.localdomain6>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103121851390.2787@localhost6.localdomain6>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 13, 2011, Andy Green wrote:
-> On 03/13/2011 12:51 PM, Somebody in the thread at some point said:
-> 
-> >> Okay.  This is not a PC we are talking about.
-> >>
-> >> If the platform / board definition file is registering the USB hosts
-> >> synchronously at boot time, the driver is composed into the monolithic
-> >> kernel, there are no PCI busses or whatever on the SoC, the bus indexing
-> >> is totally deterministic.  This is extremely common in the platform /
-> >> SoC case and is the case the patchset is targeted at.  Even further, the
-> >> only time you'd use it is to reach a USB asset that is wired up the same
-> >> board permanently as well.
-> >>
-> >> Anyway this seems moot by now.
-> >
-> > However, if you add a new infrastructure like this, it should be at least
-> > usable on systems that you description doesn't apply to.
-> 
-> Sounds reasonable, except the platform data is coming from a 
-> board-specific board definition file at boot-time to talk about assets 
-> that are on fixed interfaces of a specific board.
+> This was initially introduced with commit 39b3a7 ([PATCH] i386/x86-64:
+> Generalize X86_FEATURE_CONSTANT_TSC flag), though the changelog is
+> utterly useless. Andi ??
 
-I'm not sure how this contradicts what I said above.
+Only Nehalem and beyond set the 8000_0007 flag, but Intel has had a constant
+TSC since Yonah. That is what this logic implements.
 
-> It's not really applicable to wider generic bus use, just like platform_data
-> usually isn't and has to be targeted at "device at XYZ on I2C bus n" with 
-> knowledge of what driver is bound to that device.  Despite that 
-> "impedence mismatch", it covers the SoC onboard USB asset case just fine 
-> as it is.
+However on Nehalem and beyond if the 8000_0007 is clear the BIOS wants
+to tell us that it knows the system doesn't have a synchronized TSC.
+This is currently still broken, but the timer watchdog usually catches
+it later. It only affects a few relatively obscure systems.
 
-So, you want to have a mechanism telling the driver "if the device
-happens to have this particular path, use that platform data", right?
-
-And it works because the initialization code kind of knows what path the
-device is going to be at, so it can predict that and provide the mathing data.
-
-Unfortunately, this relies on how device paths are constructed at the moment,
-so if this approach is adopted in general, it will prevent us from changing
-that way in the future (or at least it will make that very difficult).
-
-Perhaps you could use some other kind of device identification here?
-
-Rafael
+-Andi
