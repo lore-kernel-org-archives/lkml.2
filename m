@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab1CMF4j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 00:56:39 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50922 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab1CMF4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 00:56:38 -0500
-Date: Sat, 12 Mar 2011 21:56:27 -0800
+	id S1751580Ab1CMGJf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 01:09:35 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:53108 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812Ab1CMGJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 01:09:34 -0500
+Date: Sat, 12 Mar 2011 22:09:22 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Joe Korty <joe.korty@ccur.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -20,104 +19,202 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "tglx@linutronix.de" <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "houston.jim@comcast.net" <houston.jim@comcast.net>,
-        "corbet@lwn.net" <corbet@lwn.net>
-Subject: Re: JRCU Theory of Operation
-Message-ID: <20110313055627.GW2234@linux.vnet.ibm.com>
+        "houston.jim@comcast.net" <houston.jim@comcast.net>
+Subject: Re: [PATCH] An RCU for SMP with a single CPU garbage collector
+Message-ID: <20110313060922.GX2234@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101116012846.GV2555@linux.vnet.ibm.com>
+References: <1289410271.2084.25.camel@laptop>
+ <20101111041920.GD3134@linux.vnet.ibm.com>
+ <20101113223046.GB5445@nowhere>
+ <20101116012846.GV2555@linux.vnet.ibm.com>
  <20101116135230.GA5362@nowhere>
  <20101116155104.GB2497@linux.vnet.ibm.com>
  <20101117005229.GC26243@nowhere>
  <20110307203106.GA23002@tsunami.ccur.com>
- <20110309221517.GB24670@tsunami.ccur.com>
- <20110310003419.GE2196@linux.vnet.ibm.com>
- <20110310195045.GA22146@tsunami.ccur.com>
- <20110312143629.GT2234@linux.vnet.ibm.com>
- <20110313004336.GA14518@tsunami.ccur.com>
+ <20110312143653.GA22072@linux.vnet.ibm.com>
+ <20110313012504.GB14518@tsunami.ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110313004336.GA14518@tsunami.ccur.com>
+In-Reply-To: <20110313012504.GB14518@tsunami.ccur.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 12, 2011 at 07:43:36PM -0500, Joe Korty wrote:
-> On Sat, Mar 12, 2011 at 09:36:29AM -0500, Paul E. McKenney wrote:
-> > On Thu, Mar 10, 2011 at 02:50:45PM -0500, Joe Korty wrote:
-> >>
-> >> A longer answer, on a slighly expanded topic, goes as follows.  The heart
-> >> of jrcu is in this (slighly edited) line,
-> >>
-> >>   rcu_data[cpu].wait = preempt_count_cpu(cpu) > idle_cpu(cpu);
+On Sat, Mar 12, 2011 at 08:25:04PM -0500, Joe Korty wrote:
+> On Sat, Mar 12, 2011 at 09:36:53AM -0500, Paul E. McKenney wrote:
+> > Hello, Joe,
 > > 
-> > So, if we are idle, then the preemption count must be 2 or greater
-> > to make the current grace period wait on a CPU.  But if we are not
-> > idle, then the preemption count need only be 1 or greater to make
-> > the current grace period wait on a CPU.
-> > 
-> > But why do should an idle CPU block the current RCU grace period
-> > in any case?  The idle loop is defined to be a quiescent state
-> > for rcu_sched.  (Not that permitting RCU read-side critical sections
-> > in the idle loop would be a bad thing, as long as the associated
-> > pitfalls were all properly avoided.)
+> > My biggest question is "what does JRCU do that Frederic's patchset
+> > does not do?"  I am not seeing it at the moment.  Given that Frederic's
+> > patchset integrates into RCU, thus providing the full RCU API, I really
+> > need a good answer to consider JRCU.
 > 
-> Amazingly enough, the base preemption level for idle is '1', not '0'.
-> This suprised me deeply, but on reflection it made sense.  When idle
-> needs to be preempted, there is no need to actually preempt it .. one
-> just kick starts it and it will go execute the schedule for you.
+> Well, it's tiny, it's fast, and it does exactly one thing
+> and does that really well.  If a user doesn't need that
+> one thing they shouldn't use JRCU.  But mostly it is an
+> exciting thought-experiment on another interesting way to
+> do RCU.  Who knows, maybe it may end up being better than
+> for what it was aimed at.
 
-Ah, got it, thank you!
+Fair enough!  From my perspective, I am likely to learn something from
+watching you work on it, and it is reasonably likely that you will
+come up with something useful for the existing RCU implementations.
+And who knows what you might come up with?
 
-> >> Here, the garbage collector is making an attempt to deduce, at the
-> >> start of the current batch, whether or not some cpu is executing code
-> >> in a quiescent region.  If it is, then that cpu's wait state can be set
-> >> to zero right away -- we don't have to wait for that cpu to execute a
-> >> quiescent point tap later on to discover that fact.  This nicely covers
-> >> the user app and idle cpu situations discussed above.
-> >>
-> >> Now, we all know that fetching the preempt_count of some process running on
-> >> another cpu is guaranteed to return a stale (obsolete) value, and may even
-> >> be dangerous (pointers are being followed after all).  Putting aside the
-> >> question of safety, for now, leaves us with a trio of questions: are there
-> >> times when this inherently unstable value is in fact stable and useful?
-> >> When it is not stable, is that fact relevant or irrelevant to the correct
-> >> operation of jrcu? And finally, does the fact that we cannot tell when
-> >> it is stable and when it is not, also relevant?
+> > For one, what sort of validation have you done?
 > > 
-> > And there is also the ordering of the preempt_disable() and the accesses
-> > within the critical section...  Just because you recently saw a quiescent
-> > state doesn't mean that the preceding critical section has completed --
-> > even x86 is happy to spill stores out of a critical section ended by
-> > preempt_enable.  If one of those stores is to an RCU protected
-> > data structure, you might end up freeing the structure before the
-> > store completed.
-> > 
-> > Or is the idea that you would wait 50 milliseconds after detecting
-> > the quiescent state before invoking the corresponding RCU callbacks?
+> >                                                         Thanx, Paul
 > 
-> Yep.  
+> Not much, I'm writing the code and sending it out for
+> comment.  And it is currently missing many of the tweaks
+> needed to make it a production RCU.
+
+Ah, OK.  I strongly recommend rcutorture.
+
+> >> +struct rcu_data {
+> >> +     u8 wait;                /* goes false when this cpu consents to
+> >> +                              * the retirement of the current batch */
+> >> +     u8 which;               /* selects the current callback list */
+> >> +     struct rcu_list cblist[2]; /* current & previous callback lists */
+> >> +} ____cacheline_aligned_in_smp;
+> >> +
+> >> +static struct rcu_data rcu_data[NR_CPUS];
+> > 
+> > Why not DEFINE_PER_CPU(struct rcu_data, rcu_data)?
+> 
+> All part of being lockless.  I didn't want to have to tie
+> into cpu onlining and offlining and wanted to eliminate
+> sprinking special tests and/or online locks throughout
+> the code.  Also, note the single for_each_present_cpu(cpu)
+> statement in JRCU .. this loops over all offline cpus and
+> gradually expires any residuals they have left behind.
+
+OK, but the per-CPU variables do not come and go with the CPUs.
+So I am still not seeing how the array is helping compared to
+per-CPU variables.
+
+> >> +/*
+> >> + * Return our CPU id or zero if we are too early in the boot process to
+> >> + * know what that is.  For RCU to work correctly, a cpu named '0' must
+> >> + * eventually be present (but need not ever be online).
+> >> + */
+> >> +static inline int rcu_cpu(void)
+> >> +{
+> >> +     return current_thread_info()->cpu;
+> > 
+> > OK, I'll bite...  Why not smp_processor_id()?
+> 
+> Until recently, it was :) but it was a multiline thing,
+> with 'if' stmts and such, to handle early boot conditions
+> when smp_processor_id() isn't valid.
+> 
+> JRCU, perhaps quixotically,  tries to do something
+> meaningful all the way back to the first microsecond of
+> existance, when the CPU is switched from 16 to 32 bit mode.
+> In that early epoch, things like 'cpus' and 'interrupts'
+> and 'tasks' don't quite yet exist in the form we are used
+> to for them.
 
 OK.
 
-> > I am missing how ->which switching is safe, given the possibility of
-> > access from other CPUs.
+> > And what to do about the architectures that put the CPU number somewhere
+> > else?
 > 
-> JRCU allows writes to continue through the old '->which'
-> value for a period of time.  All it requires is that
-> within 50 msecs that the writes have ceased and that
-> the writing cpu has executed a smp_wmb() and the effects
-> of the smp_wmb() have propagated throughout the system.
+> I confess I keep forgetting to look at that other 21 or
+> so other architectures, I had thought they all had ->cpu.
+> I look into it and, at least for those, reintroduce the
+> old smp_processor_id() expression.
+
+But those that have ->cpu can safely use smp_processor_id(), right?
+
+> >> +void rcu_barrier(void)
+> >> +{
+> >> +     struct rcu_synchronize rcu;
+> >> +
+> >> +     if (!rcu_scheduler_active)
+> >> +             return;
+> >> +
+> >> +     init_completion(&rcu.completion);
+> >> +     call_rcu(&rcu.head, wakeme_after_rcu);
+> >> +     wait_for_completion(&rcu.completion);
+> >> +     atomic_inc(&rcu_stats.nbarriers);
+> >> +
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(rcu_barrier);
+> > 
+> > The rcu_barrier() function must wait on all RCU callbacks, regardless of
+> > which CPU they are queued on.  This is important when unloading modules
+> > that use call_rcu().  In contrast, the above looks to me like it waits
+> > only on the current CPU's callbacks.
 > 
-> Even though I keep saying 50msecs for everything, I
-> suspect that the Q switching meets all the above quiescent
-> requirements in a few tens of microseconds.  Thus even
-> a 1 msec JRCU sampling period is expected to be safe,
-> at least in regard to Q switching.
+> Oops.  I'll come up with an alternate mechanism.  Thanks for finding this.
 
-I would feel better about this is the CPU vendors were willing to give
-an upper bound...
+NP.  ;-)
 
-							Thanx, Paul
+> > So, what am I missing?
+> 
+> Nothing.  You were right :)
+> 
+> >> +     /*
+> >> +      * Swap current and previous lists.  Other cpus must not see this
+> >> +      * out-of-order w.r.t. the just-completed plist init, hence the above
+> >> +      * smp_wmb().
+> >> +      */
+> >> +     rd->which++;
+> > 
+> > You do seem to have interrupts disabled when sampling ->which, but
+> > this is not safe for cross-CPU accesses to ->which, right?  The other
+> > CPU might queue onto the wrong element.  This would mean that you
+> > would not be guaranteed a full 50ms delay from quiescent state to
+> > corresponding RCU callback invocation.
+> > 
+> > Or am I missing something subtle here?
+> 
+> JRCU expects updates to the old queue to continue for a
+> while, it only requires that they end and a trailing wmb
+> be fully executed before the next sampling period ends.
+
+OK.  I remain skeptical, but mainly because similar setups have proven
+buggy in the past.
+
+> >> +     /*
+> >> +      * End the current RCU batch and start a new one.
+> >> +      */
+> >> +     for_each_present_cpu(cpu) {
+> >> +             rd = &rcu_data[cpu];
+> > 
+> > And here we get the cross-CPU accesses that I was worried about above.
+> 
+> Yep.  This is one of the trio of reasons why JRCU is for
+> small SMP systems.  It's the tradeoff I made to move the
+> entire RCU load off onto one CPU.  If that is not important
+> (and it won't be to any but to specialized systems), one
+> is expected to use RCU_TREE.
+
+OK, so here is one of the things that you are trying to do with JRCU that
+the current in-kernel RCU implementations do not do, namely, cause RCU
+callbacks to be consistently invoked on some other CPU.  If I remember
+correctly, Frederic's changes do not support this either, because his
+workloads run almost entirely in user space, and are therefore not
+expected to generate RCU callbacks.
+
+Oddly enough, user-space RCU -does- support this notion.  ;-)
+
+> The other two of the trio of reasons: doing kfree's on the
+> 'wrong' cpu puts the freed buffer in the 'wrong' per-cpu
+> free queue, and putting all the load on one cpu means
+> that cpu could hit 100% cpu utilization just doing rcu
+> callbacks, for systems with thousands of cpus and have
+> the io fabrics necessary to keep those cpus busy.
+
+That would be one reason I have been reluctant to implement callback
+offloading in advance of a definite need!
+
+Though I must admit that I am unsure how JRCU's call_rcu() implementation
+does this safely -- it looks to me like it is only excluding irqs,
+not other CPUs.
+
+						Thanx, Paul
