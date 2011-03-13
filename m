@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab1CMMxk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 08:53:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54654 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883Ab1CMMxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 08:53:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: andy.green@linaro.org
-Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach api
-Date: Sun, 13 Mar 2011 13:53:54 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131141.07380.rjw@sisk.pl> <4D7CB15A.6030203@linaro.org>
-In-Reply-To: <4D7CB15A.6030203@linaro.org>
+	id S1756311Ab1CMNCH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 09:02:07 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57758 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab1CMNCE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 09:02:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=fcpxgqYG5c8/Y3HAwOw40Ii+29gSV0pggUU6MFRo7kPKOEH/xg7uCloNU5u+2e4XKK
+         l+foCrrJ15acrYqbGIqxIVqIYUqoGnuBVFcKds2upmWGMyPL4om94bAOqDHAFsOHzeNI
+         b7SB6oL1I0RZI9Hg+wxBySAEeIBTe+tG2uvMM=
+Message-ID: <4D7CC048.805@gmail.com>
+Date: Sun, 13 Mar 2011 15:02:00 +0200
+From: Nikolai Kondrashov <spbnick@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103131353.54612.rjw@sisk.pl>
+To: =?UTF-8?B?UmljaGFyZCBTY2jDvHR6?= <r.schtz@t-online.de>
+CC: Greg KH <greg@kroah.com>, Matthew Garrett <mjg@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+References: <20110310171940.GA24972@kroah.com> <4D790A20.3050105@gmail.com> <20110310180959.GA26927@kroah.com> <4D793D05.3070908@gmail.com> <20110310211519.GA11862@kroah.com> <4D79CB47.2030405@gmail.com> <20110311170313.GA10202@kroah.com> <4D7A72E3.1050407@gmail.com> <20110311193433.GB14204@kroah.com> <4D7A8419.6080107@gmail.com> <20110311203032.GA14384@kroah.com> <4D7C9668.3000902@gmail.com> <4D7CA2A8.4010700@t-online.de>
+In-Reply-To: <4D7CA2A8.4010700@t-online.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 13, 2011, Andy Green wrote:
-> On 03/13/2011 10:41 AM, Somebody in the thread at some point said:
-> > On Sunday, March 13, 2011, Greg KH wrote:
-> >> On Sat, Mar 12, 2011 at 10:32:27PM +0000, Andy Green wrote:
-> >>> This introduces a platform API so busses can allow platform_data to
-> >>> be attached to any struct device they create from probing in one step.
-> >>>
-> >>> The function checks through the async platform_data map if one was
-> >>> previously registered, and checks the device's device path for itself
-> >>> and its parents against the mapped device path names.
-> >>>
-> >>> If it sees a match, it attaches the associated platform_data and sets
-> >>> that map entry's device_path to NULL so no further time is spent trying
-> >>> to match it.
-> >>
-> >> This _really_ should just use the device tree stuff, that is what it is
-> >> for, please don't duplicate it here in a not-as-flexible way.
-> >
-> > I agree.
-> >
-> > @Andy: If it doesn't work for you for some reason, please let us know the
-> > usage case that is not covered (in detail).
-> 
-> The device tree stuff does not yet exist in a workable way, 
-> platform_data is established everywhere except USB bus.  Device tree 
-> brings in bootloader version as a dependency: this method doesn't.
+On 03/13/2011 12:55 PM, Richard Schütz wrote:
+> That sounds like the driver is interfering with the ACPI video driver.
+> Add "acpi_backlight=vendor" to your kernel boot parameters and try again.
+Thank you, this helped :)
 
-It is not the same device tree we are talking about. :-)
+Greg, is it OK that both 0 and 1 backlight values have the same effect on
+brightness?
 
-I mean device hierarchy (and I guess Greg meant the same).
+Thanks.
 
-Thanks,
-Rafael
+Sincerely,
+Nick
