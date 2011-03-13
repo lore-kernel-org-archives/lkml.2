@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab1CMPb7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 11:31:59 -0400
-Received: from compulab.co.il ([67.18.134.219]:37869 "EHLO compulab.co.il"
+	id S1754044Ab1CMPdf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 11:33:35 -0400
+Received: from compulab.co.il ([67.18.134.219]:37877 "EHLO compulab.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351Ab1CMPb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 11:31:56 -0400
-Message-ID: <4D7CE2BB.5010802@compulab.co.il>
-Date: Sun, 13 Mar 2011 17:28:59 +0200
+	id S1753351Ab1CMPde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 11:33:34 -0400
+Message-ID: <4D7CE31E.207@compulab.co.il>
+Date: Sun, 13 Mar 2011 17:30:38 +0200
 From: Denis Turischev <denis@compulab.co.il>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
@@ -15,9 +15,9 @@ To: Samuel Ortiz <sameo@linux.intel.com>
 CC: LKML <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         David Brownell <dbrownell@users.sourceforge.net>
-Subject: [PATCH 2/3] lpc_sch: expand for Tunnel Creek
-References: <4D7CE230.1070004@compulab.co.il>
-In-Reply-To: <4D7CE230.1070004@compulab.co.il>
+Subject: [PATCH 3/3] sch_gpio: expand for Tunnel Creak
+References: <4D7CE230.1070004@compulab.co.il> <4D7CE2BB.5010802@compulab.co.il>
+In-Reply-To: <4D7CE2BB.5010802@compulab.co.il>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-ACL-Warn: {
@@ -33,47 +33,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Poulsbo SCH and Tunnel Creek provide almost the
-same LPC interface. Use the same driver for both devices while
-storing PCI ID to distinguish between platforms to apply plarform
-related quirks.
+Almost the same driver for both Poulsbo and Tunnel Creek.
+The difference is in quantity of GPIOs powered by the core power
+rail and by suspend power supply, default values for some GPIOs, etc.
+Detect actual hardware by platform device ID assigned in lpc_sch
+and set configuration accordingly.
 
 Signed-off-by: Denis Turischev <denis@compulab.co.il>
 ---
- drivers/mfd/lpc_sch.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ drivers/gpio/Kconfig    |    7 +++++--
+ drivers/gpio/sch_gpio.c |   46 +++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 44 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-index 51b2f60..ea3f52c 100644
---- a/drivers/mfd/lpc_sch.c
-+++ b/drivers/mfd/lpc_sch.c
-@@ -61,6 +61,7 @@ static struct mfd_cell lpc_sch_cells[] = {
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 664660e..7ef9108 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -100,18 +100,21 @@ config GPIO_VR41XX
+ 	  Say yes here to support the NEC VR4100 series General-purpose I/O Uint
 
- static struct pci_device_id lpc_sch_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC) },
- 	{ 0, }
- };
- MODULE_DEVICE_TABLE(pci, lpc_sch_ids);
-@@ -70,6 +71,7 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
+ config GPIO_SCH
+-	tristate "Intel SCH GPIO"
++	tristate "Intel SCH/TunnelCreek GPIO"
+ 	depends on GPIOLIB && PCI
+ 	select MFD_CORE
+ 	select LPC_SCH
+ 	help
+-	  Say yes here to support GPIO interface on Intel Poulsbo SCH.
++	  Say yes here to support GPIO interface on Intel Poulsbo SCH
++	  or Intel Tunnel Creek processor.
+ 	  The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
+ 	  powered by the core power rail and are turned off during sleep
+ 	  modes (S3 and higher). The remaining four GPIOs are powered by
+ 	  the Intel SCH suspend power supply. These GPIOs remain
+ 	  active during S3. The suspend powered GPIOs can be used to wake the
+ 	  system from the Suspend-to-RAM state.
++	  The Intel Tunnel Creek processor has 5 GPIOs powered by the
++	  core power rail and 9 from suspend power supply.
+
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called sch-gpio.
+diff --git a/drivers/gpio/sch_gpio.c b/drivers/gpio/sch_gpio.c
+index 5835213..065ae21 100644
+--- a/drivers/gpio/sch_gpio.c
++++ b/drivers/gpio/sch_gpio.c
+@@ -187,7 +187,11 @@ static struct gpio_chip sch_gpio_resume = {
+ static int __devinit sch_gpio_probe(struct platform_device *pdev)
  {
- 	unsigned int base_addr_cfg;
- 	unsigned short base_addr;
-+	int i;
-
- 	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
- 	if (!(base_addr_cfg & (1 << 31))) {
-@@ -99,7 +101,10 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
- 	gpio_sch_resource.start = base_addr;
- 	gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
-
--	return mfd_add_devices(&dev->dev, -1,
-+	for (i=0; i < ARRAY_SIZE(lpc_sch_cells); i++)
-+		lpc_sch_cells[i].id = id->device;
+ 	struct resource *res;
+-	int err;
++	int err, id;
 +
-+	return mfd_add_devices(&dev->dev, 0,
- 			lpc_sch_cells, ARRAY_SIZE(lpc_sch_cells), NULL, 0);
- }
++	id = pdev->id;
++	if (!id)
++		return -ENODEV;
 
+ 	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+ 	if (!res)
+@@ -198,12 +202,40 @@ static int __devinit sch_gpio_probe(struct platform_device *pdev)
+
+ 	gpio_ba = res->start;
+
+-	sch_gpio_core.base = 0;
+-	sch_gpio_core.ngpio = 10;
+-	sch_gpio_core.dev = &pdev->dev;
++	switch (id) {
++		case PCI_DEVICE_ID_INTEL_SCH_LPC:
++			sch_gpio_core.base = 0;
++			sch_gpio_core.ngpio = 10;
++
++			sch_gpio_resume.base = 10;
++			sch_gpio_resume.ngpio = 4;
++
++			/*
++			 * GPIO[6:0] enabled by default
++			 * GPIO7 is configured by the CMC as SLPIOVR
++			 * Enable GPIO[9:8] core powered gpios explicitly
++			 */
++			outb(0x3, gpio_ba + CGEN + 1);
++			/*
++			 * SUS_GPIO[2:0] enabled by default
++			 * Enable SUS_GPIO3 resume powered gpio explicitly
++			 */
++			outb(0x8, gpio_ba + RGEN);
++			break;
++
++		case PCI_DEVICE_ID_INTEL_ITC_LPC:
++			sch_gpio_core.base = 0;
++			sch_gpio_core.ngpio = 5;
++
++			sch_gpio_resume.base = 5;
++			sch_gpio_resume.ngpio = 9;
++			break;
++
++		default:
++			return -ENODEV;
++	}
+
+-	sch_gpio_resume.base = 10;
+-	sch_gpio_resume.ngpio = 4;
++	sch_gpio_core.dev = &pdev->dev;	
+ 	sch_gpio_resume.dev = &pdev->dev;
+
+ 	err = gpiochip_add(&sch_gpio_core);
 -- 
 1.7.0.4
