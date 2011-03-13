@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab1CMWph (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 18:45:37 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59705 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab1CMWpe convert rfc822-to-8bit (ORCPT
+	id S1755964Ab1CMWtn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 18:49:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51007 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752972Ab1CMWtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 18:45:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=n9Kt1n7Rs/uSemUzjz0Cm4EUHySeuZUl2Fe3KiVluNxbZheocxZVAJ2C6quiMyb5Pr
-         25aioDj+/vhceIO8ligs7qoiEKAlabYjq3Xm/4GUqIRpou6Pq/mZD1rD5dRyrkzNu1Fk
-         GIvfl/YyX4B18dgS4c7ztvY6VDu0V/Q2LAbz0=
+	Sun, 13 Mar 2011 18:49:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiko9Y6z79XwkxN7dEAyikQbO=Azdiu0hhK+uiJc@mail.gmail.com>
-References: <1300033426-22404-1-git-send-email-richard.genoud@gmail.com> <AANLkTiko9Y6z79XwkxN7dEAyikQbO=Azdiu0hhK+uiJc@mail.gmail.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Sun, 13 Mar 2011 23:45:17 +0100
-Message-ID: <AANLkTikJVqk7UO6Be1A12SRp62z0h7rjEdhUa-uMYH2t@mail.gmail.com>
-Subject: =?UTF-8?Q?Re=3A_=5BPATCH=5D_cifssmb=3A_=5BFIX=5D_warning=3A_=E2=80=98pdata=E2=80=99_may_?=
-	=?UTF-8?Q?be_used_uninitialized?=
-To: Steve French <smfrench@gmail.com>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110311024731.GB26122@google.com>
+References: <20110307021127.GB31188@google.com> <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
+ <20110309112550.GA3050@google.com> <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
+ <20110311021654.GA26122@google.com> <20110311024731.GB26122@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 13 Mar 2011 15:49:15 -0700
+Message-ID: <AANLkTinXxCMVozx-NKEVXJLNrB1V93VEAJ8FiHQHXY_=@mail.gmail.com>
+Subject: Re: [PATCH 1/3] futex: do not pagefault_disable in futex_atomic_cmpxchg_inatomic()
+To: Michel Lespinasse <walken@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <darren@dvhart.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/13 Steve French <smfrench@gmail.com>:
-> This does look a problem with the compiler.  Which compiler version?
->
-> As you noted, pdata is either initialized or we return rc!=0 and don't use it.
->
-The compiler is gcc from ubuntu 10.10 :
-gcc (Ubuntu/Linaro 4.4.4-14ubuntu5) 4.4.5
+On Thu, Mar 10, 2011 at 6:47 PM, Michel Lespinasse <walken@google.com> wrote:
+> kernel/futex.c disables page faults before calling
+> futex_atomic_cmpxchg_inatomic(), so there is no need to do it again
+> within that function.
+
+This seems totally bogus.
+
+Even the comment is crap.
+
+Sure, the callers may disable preemption, but that has NOTHING to do
+with "pagefault_disable()". Th epagefault_[en/dis]able functions will
+touch the preempt count EVEN IF PREEMPTION ISN'T EVEN ENABLED!
+
+So what the f*ck does that "Note that preemption is disabled.." crap even mean?
+
+The thing is made even worse by the fact that as far as I can tell,
+the comment simply isn't true at all (even if you were to ignore the
+fundamental confusion about preemption vs the pagefault
+disable/enable). Not all callers of futex_atomic_cmpxchg_inatomic() do
+anything of the sort, whether it's preemptibility _or_ the proper
+pagefault_disable/enable(). Just look at the exit_robust_list() ->
+handle_futex_death(), for example.
+
+This kind of patch is the kind that personally makes me want to put
+you on a spam-list. Misleading commit messages with bogus and
+fundamentally incorrect added comments in the code. WTF?
+
+Did I miss some patch that changed that, or is this really as horribly
+bad as I think it is? I see it already made it into -tip.
+
+                              Linus
