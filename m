@@ -1,48 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab1CMWu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 18:50:27 -0400
-Received: from svr03.forbrazil.com.br ([174.36.1.42]:9826 "EHLO
-	svr03.forbrazil.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005Ab1CMWu0 (ORCPT
+	id S932183Ab1CMWws (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 18:52:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55182 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752579Ab1CMWwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 18:50:26 -0400
-X-Greylist: delayed 1170 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Mar 2011 18:50:26 EDT
-Message-ID: <20110313192351.vcu63lrnwgo88008@webmail.civilcorp.com.br>
-Date: Sun, 13 Mar 2011 19:23:51 -0300
-From: Max Allen <contact@max.com>
-Reply-to: max_allen40@yahoo.com.hk
-To: undisclosed-recipients:;
-Subject: 
+	Sun, 13 Mar 2011 18:52:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - svr03.forbrazil.com.br
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - max.com
+In-Reply-To: <4D7A33FF.80509@fusionio.com>
+References: <4D7A33FF.80509@fusionio.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 13 Mar 2011 15:51:56 -0700
+Message-ID: <AANLkTi=NAeBWE28Vygx5Qf+OYgMW2Js180fptQnbbXmw@mail.gmail.com>
+Subject: Re: [GIT PULL] Single important block patch for 2.6.38
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lukas Czerner <lczerner@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 11, 2011 at 6:38 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>
+> This fixes a regression introduced early in the 2.6.38 series, where
+> blkdev_issue_zeroout() has a nasty race that causes a panic. Thanks to
+> Lukas Czerner for finding and fixing this one. Please pull!
 
-*Hello
-Do you need a loan?
-Such as: Personal Loan,Business Loan,Company Loan,Student Loan,Home Dept
-Loan E.T.C
+What about the "Null pointer OOPS in sync_inodes_sb" issue due to the
+broken sb->s_bdi setting to NULL?
 
-If you do,Contact us via E_Mail
-
-max_allen40@yahoo.com.hk
-Mr.Max Allen
-
-
-
-
-
+                       Linus
