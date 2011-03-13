@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab1CMNE6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 09:04:58 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54670 "EHLO ogre.sisk.pl"
+	id S1756514Ab1CMNFG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 09:05:06 -0400
+Received: from mail.fuw.edu.pl ([193.0.80.14]:42214 "EHLO mail.fuw.edu.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756453Ab1CMNEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 09:04:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1756420Ab1CMNFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 09:05:01 -0400
+From: "R. J. Wysocki" <Rafal.Wysocki@fuw.edu.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/10] ARM: Use struct syscore_ops instead of sysdevs for PM in timer and leds
-Date: Sun, 13 Mar 2011 14:04:33 +0100
+Subject: [PATCH 9/10] sh: Use struct syscore_ops instead of sysdev class and sysdev
+Date: Sun, 13 Mar 2011 14:03:49 +0100
 User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
 Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
@@ -22,180 +22,301 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103131404.33311.rjw@sisk.pl>
+Message-Id: <201103131403.49561.rwys@fuw.edu.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Convert arch/arm/kernel/time.c and arch/arm/kernel/leds.c to using
-struct syscore_ops for power management instead of sysdev classes
-and sysdevs.
+Convert the SuperH clocks framework and shared interrupt handling
+code to using struct syscore_ops instead of a sysdev classes and
+sysdevs for power managment.
 
-This simplifies the code in arch/arm/kernel/time.c quite a bit and is
-necessary for removing sysdevs from the kernel entirely in future.
+This reduces the code size significantly and simplifies it.  The
+optimizations causing things not to be restored after creating a
+hibernation image are removed, but they might lead to undesirable
+effects during resume from hibernation (e.g. the clocks would be left
+as the boot kernel set them, which might be not the same way as the
+hibernated kernel had seen them before the hibernation).
+
+This also is necessary for removing sysdevs from the kernel entirely
+in the future.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/include/asm/mach/time.h |    1 -
- arch/arm/kernel/leds.c           |   28 ++++++++++++++++------------
- arch/arm/kernel/time.c           |   33 +++++++++++----------------------
- 3 files changed, 27 insertions(+), 35 deletions(-)
+ drivers/sh/clk/core.c       |   68 +++++++--------------------
+ drivers/sh/intc/core.c      |  108 ++++++++++++++------------------------------
+ drivers/sh/intc/internals.h |    2 
+ 3 files changed, 53 insertions(+), 125 deletions(-)
 
-Index: linux-2.6/arch/arm/kernel/time.c
+Index: linux-2.6/drivers/sh/clk/core.c
 ===================================================================
---- linux-2.6.orig/arch/arm/kernel/time.c
-+++ linux-2.6/arch/arm/kernel/time.c
+--- linux-2.6.orig/drivers/sh/clk/core.c
++++ linux-2.6/drivers/sh/clk/core.c
 @@ -21,7 +21,7 @@
- #include <linux/timex.h>
- #include <linux/errno.h>
- #include <linux/profile.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/list.h>
 -#include <linux/sysdev.h>
 +#include <linux/syscore_ops.h>
- #include <linux/timer.h>
- #include <linux/irq.h>
+ #include <linux/seq_file.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
+@@ -630,68 +630,36 @@ long clk_round_parent(struct clk *clk, u
+ EXPORT_SYMBOL_GPL(clk_round_parent);
  
-@@ -117,48 +117,37 @@ void timer_tick(void)
- #endif
- 
- #if defined(CONFIG_PM) && !defined(CONFIG_GENERIC_CLOCKEVENTS)
--static int timer_suspend(struct sys_device *dev, pm_message_t state)
-+static int timer_suspend(void)
+ #ifdef CONFIG_PM
+-static int clks_sysdev_suspend(struct sys_device *dev, pm_message_t state)
++static void clks_core_resume(void)
  {
--	struct sys_timer *timer = container_of(dev, struct sys_timer, dev);
+-	static pm_message_t prev_state;
+ 	struct clk *clkp;
+ 
+-	switch (state.event) {
+-	case PM_EVENT_ON:
+-		/* Resumeing from hibernation */
+-		if (prev_state.event != PM_EVENT_FREEZE)
+-			break;
 -
--	if (timer->suspend != NULL)
-+	if (system_timer->suspend)
- 		timer->suspend();
- 
- 	return 0;
- }
- 
--static int timer_resume(struct sys_device *dev)
-+static void timer_resume(void)
- {
--	struct sys_timer *timer = container_of(dev, struct sys_timer, dev);
+-		list_for_each_entry(clkp, &clock_list, node) {
+-			if (likely(clkp->ops)) {
+-				unsigned long rate = clkp->rate;
 -
--	if (timer->resume != NULL)
--		timer->resume();
--
--	return 0;
-+	if (system_timer->resume)
-+		system_timer->resume();
- }
- #else
- #define timer_suspend NULL
- #define timer_resume NULL
- #endif
- 
--static struct sysdev_class timer_sysclass = {
--	.name		= "timer",
-+static struct syscore_ops timer_syscore_ops = {
- 	.suspend	= timer_suspend,
- 	.resume		= timer_resume,
- };
- 
--static int __init timer_init_sysfs(void)
-+static int __init timer_init_syscore_ops(void)
- {
--	int ret = sysdev_class_register(&timer_sysclass);
--	if (ret == 0) {
--		system_timer->dev.cls = &timer_sysclass;
--		ret = sysdev_register(&system_timer->dev);
--	}
-+	register_syscore_ops(&timer_syscore_ops);
- 
--	return ret;
-+	return 0;
- }
- 
--device_initcall(timer_init_sysfs);
-+device_initcall(timer_init_syscore_ops);
- 
- void __init time_init(void)
- {
-Index: linux-2.6/arch/arm/include/asm/mach/time.h
-===================================================================
---- linux-2.6.orig/arch/arm/include/asm/mach/time.h
-+++ linux-2.6/arch/arm/include/asm/mach/time.h
-@@ -34,7 +34,6 @@
-  *   timer interrupt which may be pending.
-  */
- struct sys_timer {
--	struct sys_device	dev;
- 	void			(*init)(void);
- 	void			(*suspend)(void);
- 	void			(*resume)(void);
-Index: linux-2.6/arch/arm/kernel/leds.c
-===================================================================
---- linux-2.6.orig/arch/arm/kernel/leds.c
-+++ linux-2.6/arch/arm/kernel/leds.c
-@@ -10,6 +10,7 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- 
- #include <asm/leds.h>
- 
-@@ -69,36 +70,37 @@ static ssize_t leds_store(struct sys_dev
- 
- static SYSDEV_ATTR(event, 0200, NULL, leds_store);
- 
--static int leds_suspend(struct sys_device *dev, pm_message_t state)
-+static struct sysdev_class leds_sysclass = {
-+	.name		= "leds",
-+};
+-				if (likely(clkp->ops->set_parent))
+-					clkp->ops->set_parent(clkp,
+-						clkp->parent);
+-				if (likely(clkp->ops->set_rate))
+-					clkp->ops->set_rate(clkp, rate);
+-				else if (likely(clkp->ops->recalc))
+-					clkp->rate = clkp->ops->recalc(clkp);
+-			}
++	list_for_each_entry(clkp, &clock_list, node) {
++		if (likely(clkp->ops)) {
++			unsigned long rate = clkp->rate;
 +
-+static struct sys_device leds_device = {
-+	.id		= 0,
-+	.cls		= &leds_sysclass,
-+};
-+
-+static int leds_suspend(void)
- {
- 	leds_event(led_stop);
- 	return 0;
- }
- 
--static int leds_resume(struct sys_device *dev)
-+static void leds_resume(void)
- {
- 	leds_event(led_start);
++			if (likely(clkp->ops->set_parent))
++				clkp->ops->set_parent(clkp,
++					clkp->parent);
++			if (likely(clkp->ops->set_rate))
++				clkp->ops->set_rate(clkp, rate);
++			else if (likely(clkp->ops->recalc))
++				clkp->rate = clkp->ops->recalc(clkp);
+ 		}
+-		break;
+-	case PM_EVENT_FREEZE:
+-		break;
+-	case PM_EVENT_SUSPEND:
+-		break;
+ 	}
+-
+-	prev_state = state;
 -	return 0;
+-}
+-
+-static int clks_sysdev_resume(struct sys_device *dev)
+-{
+-	return clks_sysdev_suspend(dev, PMSG_ON);
  }
  
--static int leds_shutdown(struct sys_device *dev)
-+static void leds_shutdown(void)
- {
- 	leds_event(led_halted);
--	return 0;
- }
- 
--static struct sysdev_class leds_sysclass = {
--	.name		= "leds",
-+static struct syscore_ops leds_syscore_ops = {
- 	.shutdown	= leds_shutdown,
- 	.suspend	= leds_suspend,
- 	.resume		= leds_resume,
- };
- 
--static struct sys_device leds_device = {
--	.id		= 0,
--	.cls		= &leds_sysclass,
+-static struct sysdev_class clks_sysdev_class = {
+-	.name = "clks",
 -};
 -
- static int __init leds_init(void)
+-static struct sysdev_driver clks_sysdev_driver = {
+-	.suspend = clks_sysdev_suspend,
+-	.resume = clks_sysdev_resume,
+-};
+-
+-static struct sys_device clks_sysdev_dev = {
+-	.cls = &clks_sysdev_class,
++static struct syscore_ops clks_syscore_ops = {
++	.resume = clks_core_resume,
+ };
+ 
+-static int __init clk_sysdev_init(void)
++static int __init clk_syscore_init(void)
  {
- 	int ret;
-@@ -107,6 +109,8 @@ static int __init leds_init(void)
- 		ret = sysdev_register(&leds_device);
- 	if (ret == 0)
- 		ret = sysdev_create_file(&leds_device, &attr_event);
-+	if (ret == 0)
-+		register_syscore_ops(&leds_syscore_ops);
- 	return ret;
+-	sysdev_class_register(&clks_sysdev_class);
+-	sysdev_driver_register(&clks_sysdev_class, &clks_sysdev_driver);
+-	sysdev_register(&clks_sysdev_dev);
++	register_syscore_ops(&clks_syscore_ops);
+ 
+ 	return 0;
+ }
+-subsys_initcall(clk_sysdev_init);
++subsys_initcall(clk_syscore_init);
+ #endif
+ 
+ /*
+Index: linux-2.6/drivers/sh/intc/core.c
+===================================================================
+--- linux-2.6.orig/drivers/sh/intc/core.c
++++ linux-2.6/drivers/sh/intc/core.c
+@@ -24,7 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/interrupt.h>
+ #include <linux/sh_intc.h>
+-#include <linux/sysdev.h>
++#include <linux/syscore_ops.h>
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/radix-tree.h>
+@@ -376,108 +376,70 @@ err0:
+ 	return -ENOMEM;
  }
  
+-static ssize_t
+-show_intc_name(struct sys_device *dev, struct sysdev_attribute *attr, char *buf)
++static int intc_suspend(void)
+ {
+ 	struct intc_desc_int *d;
+ 
+-	d = container_of(dev, struct intc_desc_int, sysdev);
++	list_for_each_entry(d, &intc_list, list) {
++		int irq;
+ 
+-	return sprintf(buf, "%s\n", d->chip.name);
+-}
++		/* enable wakeup irqs belonging to this intc controller */
++		for_each_active_irq(irq) {
++			struct irq_data *data;
++			struct irq_desc *desc;
++			struct irq_chip *chip;
++
++			data = irq_get_irq_data(irq);
++			chip = irq_data_get_irq_chip(data);
++			if (chip != &d->chip)
++				continue;
++			desc = irq_to_desc(irq);
++			if ((desc->status & IRQ_WAKEUP))
++				chip->irq_enable(data);
++		}
++	}
+ 
+-static SYSDEV_ATTR(name, S_IRUGO, show_intc_name, NULL);
++	return 0;
++}
+ 
+-static int intc_suspend(struct sys_device *dev, pm_message_t state)
++static void intc_resume(void)
+ {
+ 	struct intc_desc_int *d;
+-	struct irq_data *data;
+-	struct irq_desc *desc;
+-	struct irq_chip *chip;
+-	int irq;
+-
+-	/* get intc controller associated with this sysdev */
+-	d = container_of(dev, struct intc_desc_int, sysdev);
+-
+-	switch (state.event) {
+-	case PM_EVENT_ON:
+-		if (d->state.event != PM_EVENT_FREEZE)
+-			break;
++
++	list_for_each_entry(d, &intc_list, list) {
++		int irq;
+ 
+ 		for_each_active_irq(irq) {
+-			desc = irq_to_desc(irq);
++			struct irq_data *data;
++			struct irq_desc *desc;
++			struct irq_chip *chip;
++
+ 			data = irq_get_irq_data(irq);
+ 			chip = irq_data_get_irq_chip(data);
+-
+ 			/*
+ 			 * This will catch the redirect and VIRQ cases
+ 			 * due to the dummy_irq_chip being inserted.
+ 			 */
+ 			if (chip != &d->chip)
+ 				continue;
++			desc = irq_to_desc(irq);
+ 			if (desc->status & IRQ_DISABLED)
+ 				chip->irq_disable(data);
+ 			else
+ 				chip->irq_enable(data);
+ 		}
+-		break;
+-	case PM_EVENT_FREEZE:
+-		/* nothing has to be done */
+-		break;
+-	case PM_EVENT_SUSPEND:
+-		/* enable wakeup irqs belonging to this intc controller */
+-		for_each_active_irq(irq) {
+-			desc = irq_to_desc(irq);
+-			data = irq_get_irq_data(irq);
+-			chip = irq_data_get_irq_chip(data);
+-
+-			if (chip != &d->chip)
+-				continue;
+-			if ((desc->status & IRQ_WAKEUP))
+-				chip->irq_enable(data);
+-		}
+-		break;
+ 	}
+-
+-	d->state = state;
+-
+-	return 0;
+ }
+ 
+-static int intc_resume(struct sys_device *dev)
+-{
+-	return intc_suspend(dev, PMSG_ON);
+-}
+-
+-struct sysdev_class intc_sysdev_class = {
+-	.name		= "intc",
++struct syscore_ops intc_syscore_ops = {
+ 	.suspend	= intc_suspend,
+ 	.resume		= intc_resume,
+ };
+ 
+-/* register this intc as sysdev to allow suspend/resume */
+-static int __init register_intc_sysdevs(void)
++static int __init intc_syscore_init(void)
+ {
+-	struct intc_desc_int *d;
+-	int error;
++	register_syscore_ops(&intc_syscore_ops);
+ 
+-	error = sysdev_class_register(&intc_sysdev_class);
+-	if (!error) {
+-		list_for_each_entry(d, &intc_list, list) {
+-			d->sysdev.id = d->index;
+-			d->sysdev.cls = &intc_sysdev_class;
+-			error = sysdev_register(&d->sysdev);
+-			if (error == 0)
+-				error = sysdev_create_file(&d->sysdev,
+-							   &attr_name);
+-			if (error)
+-				break;
+-		}
+-	}
+-
+-	if (error)
+-		pr_err("sysdev registration error\n");
+-
+-	return error;
++	return 0;
+ }
+-device_initcall(register_intc_sysdevs);
++device_initcall(intc_syscore_init);
+Index: linux-2.6/drivers/sh/intc/internals.h
+===================================================================
+--- linux-2.6.orig/drivers/sh/intc/internals.h
++++ linux-2.6/drivers/sh/intc/internals.h
+@@ -51,9 +51,7 @@ struct intc_subgroup_entry {
+ 
+ struct intc_desc_int {
+ 	struct list_head list;
+-	struct sys_device sysdev;
+ 	struct radix_tree_root tree;
+-	pm_message_t state;
+ 	raw_spinlock_t lock;
+ 	unsigned int index;
+ 	unsigned long *reg;
 
