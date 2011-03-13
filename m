@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1CMUZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 16:25:22 -0400
-Received: from mout.perfora.net ([74.208.4.194]:49152 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab1CMUZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 16:25:18 -0400
-From: Stephen Wilson <wilsons@start.ca>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH 08/12] mm: implement access_remote_vm
-Date: Sun, 13 Mar 2011 15:49:20 -0400
-Message-Id: <1300045764-24168-9-git-send-email-wilsons@start.ca>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <1300045764-24168-1-git-send-email-wilsons@start.ca>
-References: <1300045764-24168-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:YhpxUSWchY40D0ArQ2ZUTQsFiS5VWqTdPbSGyzfC/kt
- 52/A0xvPudnv66CLfdNkvUlwSlGiPoG+T3iGHJgwKYGL0oUNOw
- kHm1fjMbYILefdnkz/a5Twrtlgk8GZDB6e2UHs33qb1qOp4pG9
- 59GytjiY+z9saa6/sjCcfDqxXRX5UcJfuPklKPZ3HfpiQk4gLp
- Uug9XGhfX+aT7hJoc3RX64NMC3svW/18N0QGXBTzso=
+	id S932206Ab1CMU0t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 16:26:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65098 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932138Ab1CMU0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 16:26:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=bXtFxZRo7UdWU3bP7g4FRY+H9Y754+2TygZCEG8CCtCTR2/hiErs3sQwZAIN9AQaau
+         A7szqMNDUVNiBDE0A6031+b2RqRBlvm2MJG9LlB8A4jMone4aY9Ud1wroES8R07IeFvN
+         cG4ZpUrsksPNXmJkBfcPER8I0+9cHPT30cIe8=
+Subject: [PATCH net-next-2.6] ftmac100: use GFP_ATOMIC allocations where
+ needed
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+In-Reply-To: <1300047388.2761.48.camel@edumazet-laptop>
+References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1300047388.2761.48.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Mar 2011 21:26:42 +0100
+Message-ID: <1300048002.2761.53.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide an alternative to access_process_vm that allows the caller to obtain a
-reference to the supplied mm_struct.
+Le dimanche 13 mars 2011 à 21:16 +0100, Eric Dumazet a écrit :
 
-Signed-off-by: Stephen Wilson <wilsons@start.ca>
+> BTW, it seems I missed the fact that ftmac100_alloc_rx_page() used a
+> GFP_KERNEL allocation, while its called from softirq context (from
+> ftmac100_rx_packet()) 
+
+Here is a patch against ftmac100
+
+[PATCH net-next-2.6] ftmac100: use GFP_ATOMIC allocations where needed
+
+When running in softirq context, we should use GFP_ATOMIC allocations
+instead of GFP_KERNEL ones.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 ---
- include/linux/mm.h |    2 ++
- mm/memory.c        |   16 ++++++++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ drivers/net/ftmac100.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 694512d..e5fde8a 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -964,6 +964,8 @@ static inline int handle_mm_fault(struct mm_struct *mm,
+diff --git a/drivers/net/ftmac100.c b/drivers/net/ftmac100.c
+index df70368..76cf77a 100644
+--- a/drivers/net/ftmac100.c
++++ b/drivers/net/ftmac100.c
+@@ -80,7 +80,8 @@ struct ftmac100 {
+ 	struct mii_if_info mii;
+ };
  
- extern int make_pages_present(unsigned long addr, unsigned long end);
- extern int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write);
-+extern int access_remote_vm(struct mm_struct *mm, unsigned long addr,
-+		void *buf, int len, int write);
+-static int ftmac100_alloc_rx_page(struct ftmac100 *priv, struct ftmac100_rxdes *rxdes);
++static int ftmac100_alloc_rx_page(struct ftmac100 *priv,
++				  struct ftmac100_rxdes *rxdes, gfp_t gfp);
  
- int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			unsigned long start, int nr_pages, int write, int force,
-diff --git a/mm/memory.c b/mm/memory.c
-index 68eec4f..c26e4f9 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3654,6 +3654,22 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
- 	return buf - old_buf;
- }
+ /******************************************************************************
+  * internal functions (hardware register access)
+@@ -441,7 +442,7 @@ static bool ftmac100_rx_packet(struct ftmac100 *priv, int *processed)
+ 	skb->truesize += length;
+ 	__pskb_pull_tail(skb, min(length, 64));
  
-+/**
-+ * @access_remote_vm - access another process' address space
-+ * @mm:		the mm_struct of the target address space
-+ * @addr:	start address to access
-+ * @buf:	source or destination buffer
-+ * @len:	number of bytes to transfer
-+ * @write:	whether the access is a write
-+ *
-+ * The caller must hold a reference on @mm.
-+ */
-+int access_remote_vm(struct mm_struct *mm, unsigned long addr,
-+		void *buf, int len, int write)
-+{
-+	return __access_remote_vm(NULL, mm, addr, buf, len, write);
-+}
-+
- /*
-  * Access another process' address space.
-  * Source/target buffer must be kernel space,
--- 
-1.7.3.5
+-	ftmac100_alloc_rx_page(priv, rxdes);
++	ftmac100_alloc_rx_page(priv, rxdes, GFP_ATOMIC);
+ 
+ 	ftmac100_rx_pointer_advance(priv);
+ 
+@@ -659,13 +660,14 @@ static int ftmac100_xmit(struct ftmac100 *priv, struct sk_buff *skb,
+ /******************************************************************************
+  * internal functions (buffer)
+  *****************************************************************************/
+-static int ftmac100_alloc_rx_page(struct ftmac100 *priv, struct ftmac100_rxdes *rxdes)
++static int ftmac100_alloc_rx_page(struct ftmac100 *priv,
++				  struct ftmac100_rxdes *rxdes, gtp_t gfp)
+ {
+ 	struct net_device *netdev = priv->netdev;
+ 	struct page *page;
+ 	dma_addr_t map;
+ 
+-	page = alloc_page(GFP_KERNEL);
++	page = alloc_page(gfp);
+ 	if (!page) {
+ 		if (net_ratelimit())
+ 			netdev_err(netdev, "failed to allocate rx page\n");
+@@ -736,7 +738,7 @@ static int ftmac100_alloc_buffers(struct ftmac100 *priv)
+ 	for (i = 0; i < RX_QUEUE_ENTRIES; i++) {
+ 		struct ftmac100_rxdes *rxdes = &priv->descs->rxdes[i];
+ 
+-		if (ftmac100_alloc_rx_page(priv, rxdes))
++		if (ftmac100_alloc_rx_page(priv, rxdes, GFP_KERNEL))
+ 			goto err;
+ 	}
+ 
+
 
