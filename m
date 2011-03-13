@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab1CMTup (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 15:50:45 -0400
-Received: from mout.perfora.net ([74.208.4.194]:62352 "EHLO mout.perfora.net"
+	id S932153Ab1CMTvE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 15:51:04 -0400
+Received: from mout.perfora.net ([74.208.4.194]:62880 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755361Ab1CMTum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 15:50:42 -0400
+	id S932070Ab1CMTur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 15:50:47 -0400
 From: Stephen Wilson <wilsons@start.ca>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>
@@ -18,111 +18,74 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Nick Piggin <npiggin@kernel.dk>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
         Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/12] enable writing to /proc/pid/mem
-Date: Sun, 13 Mar 2011 15:49:12 -0400
-Message-Id: <1300045764-24168-1-git-send-email-wilsons@start.ca>
+        linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
+Subject: [PATCH 02/12] x86: mark associated mm when running a task in 32 bit compatibility mode
+Date: Sun, 13 Mar 2011 15:49:14 -0400
+Message-Id: <1300045764-24168-3-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.3.5
-X-Provags-ID: V02:K0:BtSNuB9t5UrpIlrwgmnAgjvvI1C345Bs+bZJ85TlzFy
- GMvMkxABfEhvGfALvVfJKkVQMuspVdcfrxxTZPMmOv1P9tXuEh
- Zzu2VZ8fTvm5szcvAVOGmoIpKCFuTBbHs0MGG9TNICnFTKB1bi
- c+yzb5oqsffB/jbZVpThDeIMCmmAteAUrCCz57Wsc5KGUJzcYl
- g9dlV8WY/hGc5C4xUyfj5eErXvH1BqyAGM+BNoGXSo=
+In-Reply-To: <1300045764-24168-1-git-send-email-wilsons@start.ca>
+References: <1300045764-24168-1-git-send-email-wilsons@start.ca>
+X-Provags-ID: V02:K0:RRnBxgTJrV+gEiMcrP2zKHjGeMQoN+wMlkZPowCfep2
+ vNA++5kQ3Qf5UtBW5oHxTZ4Ptqmt2AgG5HpUKY6NSONfO6K27z
+ nsgLguDQWlQR+CCZNTt5x2LOo9s4f3MibgZdsv9dKlgGbDBZlT
+ +V+Ojxa7nYwnGLM+4jLW2SRFD1WMZdfqOQS10gCK+qyTu+cdsf
+ BaEdpncxhuTfiFQTQUTd4P3JV3mcBcCPmX+D/do8X8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For a long time /proc/pid/mem has provided a read-only interface, at least
-since 2.4.0.  However, a write capability has existed "forever" in tree via the
-function mem_write(), disabled with an #ifdef along with the comment "this is a
-security hazard".  Currently, the main problem with mem_write() is that between
-the time permissions are checked and the actual write the target task could
-exec a setuid-root binary.
+This patch simply follows the same practice as for setting the TIF_IA32 flag.
+In particular, an mm is marked as holding 32-bit tasks when a 32-bit binary is
+exec'ed.  Both ELF and a.out formats are updated.
 
-This patch series enables safe writes to /proc/pid/mem.  Such functionality is
-useful as it gives debuggers a simple and efficient mechanism to manipulate a
-process' address space.  Memory can be read and written using single calls to
-pread(2) and pwrite(2) instead of iteratively calling into ptrace(2).  In
-addition, /proc/pid/mem has always had write permissions enabled, so clearly it
-*wants* to be written to. 
+Signed-off-by: Stephen Wilson <wilsons@start.ca>
+Reviewed-by: Michel Lespinasse <walken@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/ia32/ia32_aout.c    |    1 +
+ arch/x86/kernel/process_64.c |    8 ++++++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
-
-The first version of these patches was split into two series.  Here they are
-combined together for easier reference and review.
-
-
-Patches 1-5 make is_gate_vma() and in_gate_vma() functions of mm_struct, not
-task_struct.  These patches are of particular interest to the x86 architecture
-maintainers and were originally distributed as a stand alone series[1].  From a
-conceptual point of view, the question of whether an address lies in a gate vma
-should be asked with respect to a particular mm, not a particular task.  From a
-practical point of view, this change will help simplify current and future
-operations on mm's.  In particular, it allows some code paths to avoid the need
-to hold task_lock.  The principle change there is to mirror TIF_IA32 via a new
-flag in mm_context_t. 
-
-
-Patches 6-12 build on the new flexibility to enable secure writes to
-/proc/pid/mem.  These patches impact the memory and procfs subsystems and were
-originally distributed as a stand alone series[2].   The principle strategy is
-to get a reference to the target task's mm before the permission check, and to
-hold that reference until after the write completes.
-
-This patch set is based on v2.6.38-rc8.
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index 2d93bdb..fd84387 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -298,6 +298,7 @@ static int load_aout_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	/* OK, This is the point of no return */
+ 	set_personality(PER_LINUX);
+ 	set_thread_flag(TIF_IA32);
++	current->mm->context.ia32_compat = 1;
  
-The general approach used was suggested to me by Alexander Viro, but any
-mistakes present in these patches are entirely my own.
-
---
-steve
-
-
-[1] lkml.org/lkml/2011/3/8/409
-[2] lkml.org/lkml/2011/3/8/418
-
-
-Changes since v1:
-
-  - Rename mm_context_t.compat to ia32_compat as suggested by Michel
-    Lespinasse.
-
-  - Rework check_mem_permission() to return ERR_PTR and hold cred_guard_mutex
-    as suggested by Alexander Viro.
-
-  - Collapse patches into a single series.
-
-Stephen Wilson (12):
-      x86: add context tag to mark mm when running a task in 32-bit compatibility mode
-      x86: mark associated mm when running a task in 32 bit compatibility mode
-      mm: arch: make get_gate_vma take an mm_struct instead of a task_struct
-      mm: arch: make in_gate_area take an mm_struct instead of a task_struct
-      mm: arch: rename in_gate_area_no_task to in_gate_area_no_mm
-      mm: use mm_struct to resolve gate vma's in __get_user_pages
-      mm: factor out main logic of access_process_vm
-      mm: implement access_remote_vm
-      proc: disable mem_write after exec
-      proc: hold cred_guard_mutex in check_mem_permission()
-      proc: make check_mem_permission() return an mm_struct on success
-      proc: enable writing to /proc/pid/mem
-
-
- arch/powerpc/kernel/vdso.c         |    6 +-
- arch/s390/kernel/vdso.c            |    6 +-
- arch/sh/kernel/vsyscall/vsyscall.c |    6 +-
- arch/x86/ia32/ia32_aout.c          |    1 +
- arch/x86/include/asm/mmu.h         |    6 +++
- arch/x86/kernel/process_64.c       |    8 ++++
- arch/x86/mm/init_64.c              |   16 ++++----
- arch/x86/vdso/vdso32-setup.c       |   15 ++++---
- fs/binfmt_elf.c                    |    2 +-
- fs/proc/base.c                     |   79 ++++++++++++++++++++++++------------
- fs/proc/task_mmu.c                 |    8 ++-
- include/linux/mm.h                 |   12 +++--
- kernel/kallsyms.c                  |    4 +-
- mm/memory.c                        |   73 ++++++++++++++++++++++++---------
- mm/mlock.c                         |    4 +-
- mm/nommu.c                         |    2 +-
- 16 files changed, 165 insertions(+), 83 deletions(-)
-
-
+ 	setup_new_exec(bprm);
+ 
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index bd387e8..6c9dd92 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -501,6 +501,10 @@ void set_personality_64bit(void)
+ 	/* Make sure to be in 64bit mode */
+ 	clear_thread_flag(TIF_IA32);
+ 
++	/* Ensure the corresponding mm is not marked. */
++	if (current->mm)
++		current->mm->context.ia32_compat = 0;
++
+ 	/* TBD: overwrites user setup. Should have two bits.
+ 	   But 64bit processes have always behaved this way,
+ 	   so it's not too bad. The main problem is just that
+@@ -516,6 +520,10 @@ void set_personality_ia32(void)
+ 	set_thread_flag(TIF_IA32);
+ 	current->personality |= force_personality32;
+ 
++	/* Mark the associated mm as containing 32-bit tasks. */
++	if (current->mm)
++		current->mm->context.ia32_compat = 1;
++
+ 	/* Prepare the first "return" to user space */
+ 	current_thread_info()->status |= TS_COMPAT;
+ }
+-- 
+1.7.3.5
 
