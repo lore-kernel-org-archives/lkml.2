@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab1CMQKV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 12:10:21 -0400
-Received: from void.printf.net ([89.145.121.20]:40511 "EHLO void.printf.net"
+	id S1754689Ab1CMQRX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 12:17:23 -0400
+Received: from kroah.org ([198.145.64.141]:41491 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753663Ab1CMQKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 12:10:19 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] viafb: kill lcd_panel_id
-References: <1299964979-3391-1-git-send-email-FlorianSchandinat@gmx.de>
-	<1299964979-3391-2-git-send-email-FlorianSchandinat@gmx.de>
-Date: Sun, 13 Mar 2011 12:07:42 -0400
-In-Reply-To: <1299964979-3391-2-git-send-email-FlorianSchandinat@gmx.de>
-	(Florian Tobias Schandinat's message of "Sat, 12 Mar 2011 21:22:56
-	+0000")
-Message-ID: <m3hbb7xaup.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
+	id S1754067Ab1CMQRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 12:17:22 -0400
+Date: Sun, 13 Mar 2011 09:14:35 -0700
+From: Greg KH <greg@kroah.com>
+To: andy.green@linaro.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, patches@linaro.org
+Subject: Re: [RFC PATCH 1/4] PLATFORM: introduce structure to bind async
+ platform data to a dev path name
+Message-ID: <20110313161435.GA10718@kroah.com>
+References: <20110312222633.27020.19543.stgit@otae.warmcat.com>
+ <20110312223212.27020.9839.stgit@otae.warmcat.com>
+ <201103130029.38458.rjw@sisk.pl>
+ <4D7C0423.9020204@linaro.org>
+ <20110313010329.GB20396@kroah.com>
+ <4D7CA900.2070302@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7CA900.2070302@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+On Sun, Mar 13, 2011 at 11:22:40AM +0000, Andy Green wrote:
+> On 03/13/2011 01:03 AM, Somebody in the thread at some point said:
+> 
+> >>>Using device paths for this purpose seems to be very fragile to me.  Isn't
+> >>>there any better solution?
+> >>
+> >>Given that this targets board definition files which commonly do the
+> >>platform_add_device for the USB bus controller synchronously, and
+> >>the bus-connected devices it is aimed at are soldered on to the
+> >>board connected to specific bus controllers, the bus paths are
+> >>completely deterministic.
+> >
+> >No they are not.
+> >
+> >The physical layout is deterministic, but the bus number, and device
+> >number, is not.  You are using the bus number here in this path, so that
+> >is not going to work, sorry.
+> 
+> Okay.  This is not a PC we are talking about.
 
-On Sat, Mar 12 2011, Florian Tobias Schandinat wrote:
-> This patch removes all internal uses of another mostly artificial
-> value. It does duplicate the information of the maximum resolution and
-> it is not flexible as only a few resolutions exist. Hence it is better
-> to remove it and clean the mess up.
-> No runtime change expected.
->
-> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+I know that, and again, it doesn't matter.
 
-We're passing viafb_lcd_panel_id at boot-time on OLPC XO-1.5.
-Won't this break boot for us, and anyone else who needs to use it?
+You CAN NOT GUARANTEE the USB device ordering of bus numbers or device
+numbers.  It's that simple.
 
-Thanks,
+> If the platform / board definition file is registering the USB hosts
+> synchronously at boot time, the driver is composed into the
+> monolithic kernel, there are no PCI busses or whatever on the SoC,
+> the bus indexing is totally deterministic.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Not true, it could change for a number of reasons, not the least being
+your kernel version changed.
+
+So again NEVER rely on this, bad things could happen in the field when
+you least expect it.
+
+thanks,
+
+greg k-h
