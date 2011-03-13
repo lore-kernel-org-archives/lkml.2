@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab1CMI4l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 04:56:41 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:46988 "EHLO
+	id S1754388Ab1CMJCO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 05:02:14 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:37482 "EHLO
 	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab1CMI4j (ORCPT
+	with ESMTP id S1753303Ab1CMJCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 04:56:39 -0400
-Date: Sun, 13 Mar 2011 16:56:36 +0800
+	Sun, 13 Mar 2011 05:02:12 -0400
+Date: Sun, 13 Mar 2011 17:01:58 +0800
 From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: tadeusz.struk@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        aidan.o.mahony@intel.com, gabriele.paoloni@intel.com,
-        adrian.hoban@intel.com
-Subject: Re: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets
-	that are not multiple of 64bytes
-Message-ID: <20110313085636.GB12392@gondor.apana.org.au>
-References: <4d77a344.ufBJ2BimO/o2UpKI%tadeusz.struk@intel.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@lst.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Add struct crypto_alg->cra_check_optimized for
+	crc32c_intel
+Message-ID: <20110313090158.GA12473@gondor.apana.org.au>
+References: <1299745272-25477-1-git-send-email-nab@linux-iscsi.org> <20110310084346.GA10650@gondor.apana.org.au> <1299747264.5263.35.camel@haakon2.linux-iscsi.org> <20110310090929.GA10919@gondor.apana.org.au> <1299748387.5263.45.camel@haakon2.linux-iscsi.org> <1299751517.5263.60.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4d77a344.ufBJ2BimO/o2UpKI%tadeusz.struk@intel.com>
+In-Reply-To: <1299751517.5263.60.camel@haakon2.linux-iscsi.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 03:56:52PM +0000, tadeusz.struk@intel.com wrote:
-> From: Tadeusz Struk <tadeusz.struk@intel.com>
-> Date: Wed, 9 Mar 2011 15:01:06 +0000
-> Subject: [PATCH] RFC4106 AES-GCM Driver - fixed problem with packets that are not multiple of 64bytes
-> 
-> Hi Herbert,
-> This patch fixes problem with packets that are not multiple of 64bytes.
+On Thu, Mar 10, 2011 at 02:05:17AM -0800, Nicholas A. Bellinger wrote:
+>
+> We are still expecting the libcrypto consumer (iscsi_target_mod.ko) to
+> call the arch independent crypto_alloc_hash("crc32c", ...) in order to
+> have libcrypto backend logic perform a request_module() upon
+> architecture dependent offload modules (like crc32c_intel.ko) that
+> libcrypto consumers are not (and should not) be calling directly via
+> crypto_alloc_host("crc32c_intel", ...), correct..?
 
-Patch applied.  Thanks!
+Right.
+
+> Where I am getting confused is wrt to a new crypto_alg_mod_lookup() ->
+> request_module() call for a struct shash_alg that has not yet be loaded
+> via arch/x86/crypto/crc32c-intel.c:crc32c_intel_mod_init() ->
+> crypto_register_shash().
+
+If you look at crypto_alg_mod_lookup, basically there are two paths.
+Either we already have a registered algorithm of the requested name,
+or we don't.
+
+In the first case, we won't invoke request_module and in the second
+case we will.
+
+So what I'm suggesting is that in the first case we also invoke
+request_module conditionally.  Now exactly what that condition is
+is the tricky bit.
+
+The easiest is to flip a bit in the algorithm we just found.  This
+isn't optimal as it'll mean that for each unregistered algorithm
+we'll end up modprobing twice, but that shouldn't be too bad I
+think.
+
+Cheers,
 -- 
 Email: Herbert Xu <herbert@gondor.apana.org.au>
 Home Page: http://gondor.apana.org.au/~herbert/
