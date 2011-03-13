@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab1CMPH1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 11:07:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22938 "EHLO mx1.redhat.com"
+	id S1753698Ab1CMPHx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 11:07:53 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54781 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753103Ab1CMPHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 11:07:00 -0400
-Date: Sun, 13 Mar 2011 17:06:47 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] vhost-net: use lock_sock_fast() in peek_head_len()
-Message-ID: <20110313150646.GA30494@redhat.com>
-References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
- <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+	id S1752478Ab1CMPHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 11:07:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/8] x86: Use syscore_ops instead of sysdev classes and sysdevs
+Date: Sun, 13 Mar 2011 16:07:59 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Avi Kivity <avi@redhat.com>
+References: <201103100131.58206.rjw@sisk.pl> <201103122215.48206.rjw@sisk.pl> <alpine.LFD.2.00.1103131500340.2787@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103131500340.2787@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103131607.59855.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 17, 2011 at 04:11:17PM +0800, Jason Wang wrote:
-> We can use lock_sock_fast() instead of lock_sock() in order to get
-> speedup in peek_head_len().
+On Sunday, March 13, 2011, Thomas Gleixner wrote:
+> On Sat, 12 Mar 2011, Rafael J. Wysocki wrote:
+> > -static int lapic_resume(struct sys_device *dev)
+> > +static void lapic_resume(void)
+> >  {
+> >  	unsigned int l, h;
+> >  	unsigned long flags;
+> > @@ -2083,7 +2083,7 @@ static int lapic_resume(struct sys_devic
+> >  	struct IO_APIC_route_entry **ioapic_entries = NULL;
+> >  
+> >  	if (!apic_pm_state.active)
+> > -		return 0;
+> > +		return;
+> >  
+> >  	local_irq_save(flags);
 > 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/vhost/net.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> That want's the following on top:
 > 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index c32a2e4..50b622a 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -211,12 +211,12 @@ static int peek_head_len(struct sock *sk)
+> @@ -2079,8 +2079,7 @@ static void lapic_resume(void)
 >  {
->  	struct sk_buff *head;
->  	int len = 0;
-> +	bool slow = lock_sock_fast(sk);
+>  	unsigned int l, h;
+>  	unsigned long flags;
+> -	int maxlvt;
+> -	int ret = 0;
+> +	int maxlvt, ret;
+>  	struct IO_APIC_route_entry **ioapic_entries = NULL;
 >  
-> -	lock_sock(sk);
->  	head = skb_peek(&sk->sk_receive_queue);
->  	if (head)
->  		len = head->len;
-> -	release_sock(sk);
-> +	unlock_sock_fast(sk, slow);
->  	return len;
->  }
->  
+>  	if (!apic_pm_state.active)
+> @@ -2091,7 +2090,6 @@ static void lapic_resume(void)
+>  		ioapic_entries = alloc_ioapic_entries();
+>  		if (!ioapic_entries) {
+>  			WARN(1, "Alloc ioapic_entries in lapic resume failed.");
+> -			ret = -ENOMEM;
+>  			goto restore;
+>  		}
 
-Wanted to apply this, but looking at the code I think the lock_sock here
-is wrong. What we really need is to handle the case where the skb is
-pulled from the receive queue after skb_peek.  However this is not the
-right lock to use for that, sk_receive_queue.lock is.
-So I expect the following is the right way to handle this.
-Comments?
+Right, I'll fold it into the final version of the patch.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Otherwise, Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 0329c41..5720301 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -213,12 +213,13 @@ static int peek_head_len(struct sock *sk)
- {
- 	struct sk_buff *head;
- 	int len = 0;
-+	unsigned long flags;
- 
--	lock_sock(sk);
-+	spin_lock_irqsave(&sk->sk_receive_queue.lock, flags);
- 	head = skb_peek(&sk->sk_receive_queue);
--	if (head)
-+	if (likely(head))
- 		len = head->len;
--	release_sock(sk);
-+	spin_unlock_irqrestore(&sk->sk_receive_queue.lock, flags);
- 	return len;
- }
- 
+Thanks!
+
+Rafael
