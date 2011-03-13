@@ -1,220 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab1CMGJf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 01:09:35 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53108 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812Ab1CMGJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 01:09:34 -0500
-Date: Sat, 12 Mar 2011 22:09:22 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Joe Korty <joe.korty@ccur.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "loic.minier@linaro.org" <loic.minier@linaro.org>,
-        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "houston.jim@comcast.net" <houston.jim@comcast.net>
-Subject: Re: [PATCH] An RCU for SMP with a single CPU garbage collector
-Message-ID: <20110313060922.GX2234@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1289410271.2084.25.camel@laptop>
- <20101111041920.GD3134@linux.vnet.ibm.com>
- <20101113223046.GB5445@nowhere>
- <20101116012846.GV2555@linux.vnet.ibm.com>
- <20101116135230.GA5362@nowhere>
- <20101116155104.GB2497@linux.vnet.ibm.com>
- <20101117005229.GC26243@nowhere>
- <20110307203106.GA23002@tsunami.ccur.com>
- <20110312143653.GA22072@linux.vnet.ibm.com>
- <20110313012504.GB14518@tsunami.ccur.com>
+	id S1752336Ab1CMGYx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 01:24:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60515 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab1CMGYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 01:24:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jRQFsWH6LxyT7YWpDxV/0FtTXW+hxJtrRbTmuH2iNoCXEPU3wexA2MRGKeRFF3pW5v
+         qRGK92avmk9QoT4MJpUdJb+Ilq7zjcrE7UWtNBU6ySmWKCSBf1s6+9G09AFEZEZm262s
+         RMEKU/CVpC4OzXB+qwVaFOxgy+ntJxAMWVtg8=
+Date: Sat, 12 Mar 2011 22:24:11 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com, linux-input@vger.kernel.org,
+        Olaf Hering <olaf@aepfle.de>
+Subject: Re: [PATCH] input/xen-fbfront: advertise either absolute or relative
+ coordinates
+Message-ID: <20110313062411.GB31566@core.coreip.homeip.net>
+References: <alpine.DEB.2.00.1103111124400.2968@kaball-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110313012504.GB14518@tsunami.ccur.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <alpine.DEB.2.00.1103111124400.2968@kaball-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 12, 2011 at 08:25:04PM -0500, Joe Korty wrote:
-> On Sat, Mar 12, 2011 at 09:36:53AM -0500, Paul E. McKenney wrote:
-> > Hello, Joe,
-> > 
-> > My biggest question is "what does JRCU do that Frederic's patchset
-> > does not do?"  I am not seeing it at the moment.  Given that Frederic's
-> > patchset integrates into RCU, thus providing the full RCU API, I really
-> > need a good answer to consider JRCU.
+Hi Stefano,
+
+On Fri, Mar 11, 2011 at 11:30:10AM +0000, Stefano Stabellini wrote:
+> From: Olaf Hering <olaf@aepfle.de>
 > 
-> Well, it's tiny, it's fast, and it does exactly one thing
-> and does that really well.  If a user doesn't need that
-> one thing they shouldn't use JRCU.  But mostly it is an
-> exciting thought-experiment on another interesting way to
-> do RCU.  Who knows, maybe it may end up being better than
-> for what it was aimed at.
-
-Fair enough!  From my perspective, I am likely to learn something from
-watching you work on it, and it is reasonably likely that you will
-come up with something useful for the existing RCU implementations.
-And who knows what you might come up with?
-
-> > For one, what sort of validation have you done?
-> > 
-> >                                                         Thanx, Paul
+> A virtualized display device is usually viewed with the vncviewer
+> application, either by 'xm vnc domU' or with vncviewer localhost:port.
+> vncviewer and the RFB protocol provides absolute coordinates to the
+> virtual display. These coordinates are either passed through to a PV
+> guest or converted to relative coordinates for a HVM guest.
 > 
-> Not much, I'm writing the code and sending it out for
-> comment.  And it is currently missing many of the tweaks
-> needed to make it a production RCU.
-
-Ah, OK.  I strongly recommend rcutorture.
-
-> >> +struct rcu_data {
-> >> +     u8 wait;                /* goes false when this cpu consents to
-> >> +                              * the retirement of the current batch */
-> >> +     u8 which;               /* selects the current callback list */
-> >> +     struct rcu_list cblist[2]; /* current & previous callback lists */
-> >> +} ____cacheline_aligned_in_smp;
-> >> +
-> >> +static struct rcu_data rcu_data[NR_CPUS];
-> > 
-> > Why not DEFINE_PER_CPU(struct rcu_data, rcu_data)?
+> A PV guest receives these coordinates and passes them to the kernels
+> evdev driver. There it can be picked up by applications such as the
+> xorg-input drivers. Using absolute coordinates avoids issues such as
+> guest mouse pointer not tracking host mouse pointer due to wrong mouse
+> acceleration settings in the guests X display.
 > 
-> All part of being lockless.  I didn't want to have to tie
-> into cpu onlining and offlining and wanted to eliminate
-> sprinking special tests and/or online locks throughout
-> the code.  Also, note the single for_each_present_cpu(cpu)
-> statement in JRCU .. this loops over all offline cpus and
-> gradually expires any residuals they have left behind.
+> Advertise either absolute or relative coordinates to the input system
+> and the evdev driver, depending on what dom0 provides. The xorg-input
+> driver prefers relative coordinates even if a devices provides both.
 
-OK, but the per-CPU variables do not come and go with the CPUs.
-So I am still not seeing how the array is helping compared to
-per-CPU variables.
+So if I am reading this correctly the original version handled changes
+in backend capabilities and could switch between delivering either
+relative or absolute coordinates. The new version selects the
+capabilities at boot time and sticks with them. Was it really the
+intended behavior?
 
-> >> +/*
-> >> + * Return our CPU id or zero if we are too early in the boot process to
-> >> + * know what that is.  For RCU to work correctly, a cpu named '0' must
-> >> + * eventually be present (but need not ever be online).
-> >> + */
-> >> +static inline int rcu_cpu(void)
-> >> +{
-> >> +     return current_thread_info()->cpu;
-> > 
-> > OK, I'll bite...  Why not smp_processor_id()?
-> 
-> Until recently, it was :) but it was a multiline thing,
-> with 'if' stmts and such, to handle early boot conditions
-> when smp_processor_id() isn't valid.
-> 
-> JRCU, perhaps quixotically,  tries to do something
-> meaningful all the way back to the first microsecond of
-> existance, when the CPU is switched from 16 to 32 bit mode.
-> In that early epoch, things like 'cpus' and 'interrupts'
-> and 'tasks' don't quite yet exist in the form we are used
-> to for them.
+BTW, drivers/input is intended for core input and handlers stuff with
+drivers suppsed to be in drivers/input/<type>. Would you mind if I moved
+this driver to drivers/input/misc?
 
-OK.
+Thanks.
 
-> > And what to do about the architectures that put the CPU number somewhere
-> > else?
-> 
-> I confess I keep forgetting to look at that other 21 or
-> so other architectures, I had thought they all had ->cpu.
-> I look into it and, at least for those, reintroduce the
-> old smp_processor_id() expression.
-
-But those that have ->cpu can safely use smp_processor_id(), right?
-
-> >> +void rcu_barrier(void)
-> >> +{
-> >> +     struct rcu_synchronize rcu;
-> >> +
-> >> +     if (!rcu_scheduler_active)
-> >> +             return;
-> >> +
-> >> +     init_completion(&rcu.completion);
-> >> +     call_rcu(&rcu.head, wakeme_after_rcu);
-> >> +     wait_for_completion(&rcu.completion);
-> >> +     atomic_inc(&rcu_stats.nbarriers);
-> >> +
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(rcu_barrier);
-> > 
-> > The rcu_barrier() function must wait on all RCU callbacks, regardless of
-> > which CPU they are queued on.  This is important when unloading modules
-> > that use call_rcu().  In contrast, the above looks to me like it waits
-> > only on the current CPU's callbacks.
-> 
-> Oops.  I'll come up with an alternate mechanism.  Thanks for finding this.
-
-NP.  ;-)
-
-> > So, what am I missing?
-> 
-> Nothing.  You were right :)
-> 
-> >> +     /*
-> >> +      * Swap current and previous lists.  Other cpus must not see this
-> >> +      * out-of-order w.r.t. the just-completed plist init, hence the above
-> >> +      * smp_wmb().
-> >> +      */
-> >> +     rd->which++;
-> > 
-> > You do seem to have interrupts disabled when sampling ->which, but
-> > this is not safe for cross-CPU accesses to ->which, right?  The other
-> > CPU might queue onto the wrong element.  This would mean that you
-> > would not be guaranteed a full 50ms delay from quiescent state to
-> > corresponding RCU callback invocation.
-> > 
-> > Or am I missing something subtle here?
-> 
-> JRCU expects updates to the old queue to continue for a
-> while, it only requires that they end and a trailing wmb
-> be fully executed before the next sampling period ends.
-
-OK.  I remain skeptical, but mainly because similar setups have proven
-buggy in the past.
-
-> >> +     /*
-> >> +      * End the current RCU batch and start a new one.
-> >> +      */
-> >> +     for_each_present_cpu(cpu) {
-> >> +             rd = &rcu_data[cpu];
-> > 
-> > And here we get the cross-CPU accesses that I was worried about above.
-> 
-> Yep.  This is one of the trio of reasons why JRCU is for
-> small SMP systems.  It's the tradeoff I made to move the
-> entire RCU load off onto one CPU.  If that is not important
-> (and it won't be to any but to specialized systems), one
-> is expected to use RCU_TREE.
-
-OK, so here is one of the things that you are trying to do with JRCU that
-the current in-kernel RCU implementations do not do, namely, cause RCU
-callbacks to be consistently invoked on some other CPU.  If I remember
-correctly, Frederic's changes do not support this either, because his
-workloads run almost entirely in user space, and are therefore not
-expected to generate RCU callbacks.
-
-Oddly enough, user-space RCU -does- support this notion.  ;-)
-
-> The other two of the trio of reasons: doing kfree's on the
-> 'wrong' cpu puts the freed buffer in the 'wrong' per-cpu
-> free queue, and putting all the load on one cpu means
-> that cpu could hit 100% cpu utilization just doing rcu
-> callbacks, for systems with thousands of cpus and have
-> the io fabrics necessary to keep those cpus busy.
-
-That would be one reason I have been reluctant to implement callback
-offloading in advance of a definite need!
-
-Though I must admit that I am unsure how JRCU's call_rcu() implementation
-does this safely -- it looks to me like it is only excluding irqs,
-not other CPUs.
-
-						Thanx, Paul
+-- 
+Dmitry
