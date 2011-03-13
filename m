@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab1CMK1f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 06:27:35 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:46240 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab1CMK01 (ORCPT
+	id S1756656Ab1CMK2y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 06:28:54 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:35305 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755191Ab1CMK13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 06:26:27 -0400
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        arnaud.patard@rtp-net.org
-Subject: [PATCH v2 24/24] staging: xgifb: clean up register function variable names
-Date: Sun, 13 Mar 2011 12:26:28 +0200
-Message-Id: <1300011988-2109-25-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1300011988-2109-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1300011988-2109-1-git-send-email-aaro.koskinen@iki.fi>
+	Sun, 13 Mar 2011 06:27:29 -0400
+Date: Sun, 13 Mar 2011 11:27:17 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Rick Jones <rick.jones2@hp.com>
+Cc: Tianji Li <Tianji.Li@nuim.ie>, Dave T?ht <d@taht.net>,
+        sedat.dilek@gmail.com, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, bloat-devel@lists.bufferbloat.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: ANNOUNCE: debloat-testing kernel git tree
+Message-ID: <20110313102716.GC1827@ucw.cz>
+References: <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
+ <87fwr9jxya.fsf@cruithne.co.teklibre.org>
+ <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
+ <8739n9ii7z.fsf@cruithne.co.teklibre.org>
+ <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
+ <87tyfph2az.fsf@cruithne.co.teklibre.org>
+ <1299176168.2157.14.camel@tardy>
+ <4D6FEFD4.9010608@nuim.ie>
+ <20110308065819.GA1357@ucw.cz>
+ <1299610096.2087.8.camel@tardy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299610096.2087.8.camel@tardy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliminate mixed case from variable names.
+Hi!
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/staging/xgifb/vb_util.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+> > Bandwidth varies greatly with time. On cellphone, you can go from
+> > 5KB/sec GPRS to 300KB/sec HSDPA and back...
+> 
+> How quickly/often and does that trigger an event in the host that would
+> allow adjustment of the queue?
 
-diff --git a/drivers/staging/xgifb/vb_util.c b/drivers/staging/xgifb/vb_util.c
-index 19bcdab..a97e44f 100644
---- a/drivers/staging/xgifb/vb_util.c
-+++ b/drivers/staging/xgifb/vb_util.c
-@@ -23,30 +23,30 @@ u8 xgifb_reg_get(unsigned long port, u8 index)
- 	return data;
- }
- 
--void xgifb_reg_and_or(unsigned long Port, u8 Index,
--		unsigned DataAND, unsigned DataOR)
-+void xgifb_reg_and_or(unsigned long port, u8 index,
-+		unsigned data_and, unsigned data_or)
- {
- 	u8 temp;
- 
--	temp = xgifb_reg_get(Port, Index); /* XGINew_Part1Port index 02 */
--	temp = (temp & (DataAND)) | DataOR;
--	xgifb_reg_set(Port, Index, temp);
-+	temp = xgifb_reg_get(port, index); /* XGINew_Part1Port index 02 */
-+	temp = (temp & data_and) | data_or;
-+	xgifb_reg_set(port, index, temp);
- }
- 
--void xgifb_reg_and(unsigned long Port, u8 Index, unsigned DataAND)
-+void xgifb_reg_and(unsigned long port, u8 index, unsigned data_and)
- {
- 	u8 temp;
- 
--	temp = xgifb_reg_get(Port, Index); /* XGINew_Part1Port index 02 */
--	temp &= DataAND;
--	xgifb_reg_set(Port, Index, temp);
-+	temp = xgifb_reg_get(port, index); /* XGINew_Part1Port index 02 */
-+	temp &= data_and;
-+	xgifb_reg_set(port, index, temp);
- }
- 
--void xgifb_reg_or(unsigned long Port, u8 Index, unsigned DataOR)
-+void xgifb_reg_or(unsigned long port, u8 index, unsigned data_or)
- {
- 	u8 temp;
- 
--	temp = xgifb_reg_get(Port, Index); /* XGINew_Part1Port index 02 */
--	temp |= DataOR;
--	xgifb_reg_set(Port, Index, temp);
-+	temp = xgifb_reg_get(port, index); /* XGINew_Part1Port index 02 */
-+	temp |= data_or;
-+	xgifb_reg_set(port, index, temp);
- }
+I'd expect it to get fast when you leave the building, and back to
+slow when you re-enter. It all depends how good 3G coverage is, but
+seeing it change more than once a minute is not that uncommon.
+
+Event... not sure. Linux can ask for current signal strength, and I
+assume connection type works in similar way...
+								Pavel
+
 -- 
-1.5.6.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
