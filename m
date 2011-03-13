@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab1CMRQA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 13:16:00 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:43519 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755173Ab1CMRP5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 13:15:57 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19qNxBPZkJqq8eqUY2tvffFLZh63MIjQDoJ5fxNpU
-	eq7dS4eE8qA5If
-Message-ID: <4D7CFBC7.2060109@gmx.de>
-Date: Sun, 13 Mar 2011 18:15:51 +0100
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1755862Ab1CMRVO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 13:21:14 -0400
+Received: from psw.ro ([94.62.132.84]:45165 "EHLO psw.ro"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755173Ab1CMRVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 13:21:12 -0400
+X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Mar 2011 13:21:12 EDT
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] viafb: kill lcd_panel_id
-References: <1299964979-3391-1-git-send-email-FlorianSchandinat@gmx.de>	<1299964979-3391-2-git-send-email-FlorianSchandinat@gmx.de> <m3hbb7xaup.fsf@pullcord.laptop.org>
-In-Reply-To: <m3hbb7xaup.fsf@pullcord.laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Date: Sun, 13 Mar 2011 19:15:32 +0200
+From: Arthur Titeica <arthur@psw.ro>
+To: Anders Eriksson <aeriksson@fastmail.fm>
+Cc: <airlied@redhat.com>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>, <alexdeucher@gmail.com>,
+        <xorg-driver-ati@lists.x.org>
+Subject: Re: Radeon jittery post 2.6.35
+Organization: PharmEc Software
+In-Reply-To: <4D7CCFC3.7030906@fastmail.fm>
+References: <4D7CCFC3.7030906@fastmail.fm>
+Message-ID: <fa08dc3d3df640f1330a094d25cdbd3a@psw.ro>
+User-Agent: Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+ On Sun, 13 Mar 2011 15:08:03 +0100, Anders Eriksson wrote:
+>
+> I've uploaded a video of a 38-rc8 boot:
+> http://www.easy-share.com/1914220540/2.6.38-rc8_bad_x.mp4
+>
+ Here's a link to a speedier server: 
+ http://www.psw.ro/tmp/radeon/2.6.38-rc8_bad_x.mp4
 
-Chris Ball schrieb:
-> Hi Florian,
-> 
-> On Sat, Mar 12 2011, Florian Tobias Schandinat wrote:
->> This patch removes all internal uses of another mostly artificial
->> value. It does duplicate the information of the maximum resolution and
->> it is not flexible as only a few resolutions exist. Hence it is better
->> to remove it and clean the mess up.
->> No runtime change expected.
->>
->> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> 
-> We're passing viafb_lcd_panel_id at boot-time on OLPC XO-1.5.
-> Won't this break boot for us, and anyone else who needs to use it?
-
-No need to worry. The external interface is kept for compatibility, only the 
-internal uses are replace by panel hres/vres which contain the same information 
-but are more generic.
-I have not yet tested it on OLPC as I did not have the time to compile a new 
-kernel for it, but as it works on my VX900 laptop which also uses the 
-viafb_lcd_panel_id setting it should be fine.
-
-
-Thanks,
-
-Florian Tobias Schandinat
+-- 
+ Arthur Titeica
 
