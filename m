@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab1CMQys (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 12:54:48 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37554 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab1CMQyr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 12:54:47 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: davem@davemloft.net
-Cc: jirislaby@gmail.com, netdev@vger.kernel.org, gregkh@suse.de,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        =?UTF-8?q?R=C3=A9mi=20Denis-Courmont?= 
-	<remi.denis-courmont@nokia.com>
-Subject: [PATCH 2/2] NET: cdc-phonet, handle empty phonet header
-Date: Sun, 13 Mar 2011 17:54:31 +0100
-Message-Id: <1300035271-8138-2-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300035271-8138-1-git-send-email-jslaby@suse.cz>
-References: <1300035271-8138-1-git-send-email-jslaby@suse.cz>
+	id S1755543Ab1CMQ7G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 12:59:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54926 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab1CMQ7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 12:59:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: andy.green@linaro.org
+Subject: Re: [RFC PATCH 1/4] PLATFORM: introduce structure to bind async platform data to a dev path name
+Date: Sun, 13 Mar 2011 17:58:47 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, patches@linaro.org
+References: <20110312222633.27020.19543.stgit@otae.warmcat.com> <201103131351.36078.rjw@sisk.pl> <4D7CCC4D.801@linaro.org>
+In-Reply-To: <4D7CCC4D.801@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103131758.47663.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, for N 5800 XM I get:
-cdc_phonet: probe of 1-6:1.10 failed with error -22
+On Sunday, March 13, 2011, Andy Green wrote:
+> On 03/13/2011 12:51 PM, Somebody in the thread at some point said:
+> 
+> >> Okay.  This is not a PC we are talking about.
+> >>
+> >> If the platform / board definition file is registering the USB hosts
+> >> synchronously at boot time, the driver is composed into the monolithic
+> >> kernel, there are no PCI busses or whatever on the SoC, the bus indexing
+> >> is totally deterministic.  This is extremely common in the platform /
+> >> SoC case and is the case the patchset is targeted at.  Even further, the
+> >> only time you'd use it is to reach a USB asset that is wired up the same
+> >> board permanently as well.
+> >>
+> >> Anyway this seems moot by now.
+> >
+> > However, if you add a new infrastructure like this, it should be at least
+> > usable on systems that you description doesn't apply to.
+> 
+> Sounds reasonable, except the platform data is coming from a 
+> board-specific board definition file at boot-time to talk about assets 
+> that are on fixed interfaces of a specific board.
 
-It's because phonet_header is empty. Extra altsetting looks like
-there:
-E 05 24 00 01 10 03 24 ab 05 24 06 0a 0b 04 24 fd  .$....$..$....$.
-E 00                                               .
+I'm not sure how this contradicts what I said above.
 
-I don't see the header used anywhere so just check if the phonet
-descriptor is there, not the structure itself.
+> It's not really applicable to wider generic bus use, just like platform_data
+> usually isn't and has to be targeted at "device at XYZ on I2C bus n" with 
+> knowledge of what driver is bound to that device.  Despite that 
+> "impedence mismatch", it covers the SoC onboard USB asset case just fine 
+> as it is.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
-Cc: David S. Miller <davem@davemloft.net>
----
- drivers/net/usb/cdc-phonet.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+So, you want to have a mechanism telling the driver "if the device
+happens to have this particular path, use that platform data", right?
 
-diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
-index 4cf4e36..f967913 100644
---- a/drivers/net/usb/cdc-phonet.c
-+++ b/drivers/net/usb/cdc-phonet.c
-@@ -328,13 +328,13 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
- {
- 	static const char ifname[] = "usbpn%d";
- 	const struct usb_cdc_union_desc *union_header = NULL;
--	const struct usb_cdc_header_desc *phonet_header = NULL;
- 	const struct usb_host_interface *data_desc;
- 	struct usb_interface *data_intf;
- 	struct usb_device *usbdev = interface_to_usbdev(intf);
- 	struct net_device *dev;
- 	struct usbpn_dev *pnd;
- 	u8 *data;
-+	int phonet = 0;
- 	int len, err;
- 
- 	data = intf->altsetting->extra;
-@@ -355,10 +355,7 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 					(struct usb_cdc_union_desc *)data;
- 				break;
- 			case 0xAB:
--				if (phonet_header || dlen < 5)
--					break;
--				phonet_header =
--					(struct usb_cdc_header_desc *)data;
-+				phonet = 1;
- 				break;
- 			}
- 		}
-@@ -366,7 +363,7 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 		len -= dlen;
- 	}
- 
--	if (!union_header || !phonet_header)
-+	if (!union_header || !phonet)
- 		return -EINVAL;
- 
- 	data_intf = usb_ifnum_to_if(usbdev, union_header->bSlaveInterface0);
--- 
-1.7.4.1
+And it works because the initialization code kind of knows what path the
+device is going to be at, so it can predict that and provide the mathing data.
 
+Unfortunately, this relies on how device paths are constructed at the moment,
+so if this approach is adopted in general, it will prevent us from changing
+that way in the future (or at least it will make that very difficult).
 
+Perhaps you could use some other kind of device identification here?
+
+Rafael
