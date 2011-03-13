@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1CMROV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 13:14:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44777 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab1CMROU (ORCPT
+	id S1755955Ab1CMRQA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 13:16:00 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:43519 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755173Ab1CMRP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 13:14:20 -0400
-Date: Sun, 13 Mar 2011 18:14:19 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [REVIEW] NVM Express driver
-Message-ID: <20110313171419.GL2499@one.firstfloor.org>
-References: <20110303204749.GY3663@linux.intel.com> <m24o79cmv4.fsf@firstfloor.org> <20110312055146.GA4183@linux.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110312055146.GA4183@linux.intel.com>
-User-Agent: Mutt/1.4.2.2i
+	Sun, 13 Mar 2011 13:15:57 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19qNxBPZkJqq8eqUY2tvffFLZh63MIjQDoJ5fxNpU
+	eq7dS4eE8qA5If
+Message-ID: <4D7CFBC7.2060109@gmx.de>
+Date: Sun, 13 Mar 2011 18:15:51 +0100
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: Chris Ball <cjb@laptop.org>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] viafb: kill lcd_panel_id
+References: <1299964979-3391-1-git-send-email-FlorianSchandinat@gmx.de>	<1299964979-3391-2-git-send-email-FlorianSchandinat@gmx.de> <m3hbb7xaup.fsf@pullcord.laptop.org>
+In-Reply-To: <m3hbb7xaup.fsf@pullcord.laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 12, 2011 at 12:51:46AM -0500, Matthew Wilcox wrote:
-> Is there a good API to iterate through each socket, then each core in a
-> socket, then each HT sibling?  eg, if I have 20 queues and 2x6x2 CPUs,
+Hi Chris,
 
-Not for this particular order. And also you have to handle
-hotplug in any case anyways.
-
-And whatever you do, don't add NR_CPUS arrays.
-
-> I want to assign at least one queue to each core; some threads will get
-> their own queues and others will have to share with their HT sibling.
-
-Please write a generic library function for this if you do this.
-
+Chris Ball schrieb:
+> Hi Florian,
 > 
-> > > +	nprps = DIV_ROUND_UP(length, PAGE_SIZE);
-> > > +	npages = DIV_ROUND_UP(8 * nprps, PAGE_SIZE);
-> > > +	prps = kmalloc(sizeof(*prps) + sizeof(__le64 *) * npages, GFP_ATOMIC);
-> > > +	prp_page = 0;
-> > > +	if (nprps <= (256 / 8)) {
-> > > +		pool = dev->prp_small_pool;
-> > > +		prps->npages = 0;
-> > 
-> > 
-> > Unchecked GFP_ATOMIC allocation? That will oops soon.
-> > Besides GFP_ATOMIC a very risky thing to do on a low memory situation,
-> > which can trigger writeouts.
+> On Sat, Mar 12 2011, Florian Tobias Schandinat wrote:
+>> This patch removes all internal uses of another mostly artificial
+>> value. It does duplicate the information of the maximum resolution and
+>> it is not flexible as only a few resolutions exist. Hence it is better
+>> to remove it and clean the mess up.
+>> No runtime change expected.
+>>
+>> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 > 
-> Ah yes, thank you.  There are a few other places like this.  Bizarrely,
-> they've not oopsed during the xfstests runs.
+> We're passing viafb_lcd_panel_id at boot-time on OLPC XO-1.5.
+> Won't this break boot for us, and anyone else who needs to use it?
 
-You need suitable background load. If you run it in LTP the harness has
-support for background load. For GFP_ATOMIC exhaustion you typically
-need something interrupt intensive, like a lot of networking.
+No need to worry. The external interface is kept for compatibility, only the 
+internal uses are replace by panel hres/vres which contain the same information 
+but are more generic.
+I have not yet tested it on OLPC as I did not have the time to compile a new 
+kernel for it, but as it works on my VX900 laptop which also uses the 
+viafb_lcd_panel_id setting it should be fine.
 
-> 
-> My plan for this is, instead of using a mempool, to submit partial I/Os
-> in the rare cases where a write cannot allocate memory.  I have the
-> design in my head, just not committed to code yet.  The design also
-> avoids allocating any memory in the driver for I/Os that do not cross
-> a page boundary.
 
-I forgot the latest status, but there were a lot of improvements
-with dirty pages handling since that "no memory allocation on writeout"
-rule was introduced. It may not be as big a problem as it used to 
-be with GFP_NOFS. 
+Thanks,
 
-Copying linux-mm in case there are deep thoughts on this there.
+Florian Tobias Schandinat
 
-Just GFP_ATOMIC is definitely still a bad idea there. 
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
