@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab1CMQYL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 12:24:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60779 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab1CMQYI (ORCPT
+	id S1754933Ab1CMQ22 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 12:28:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45215 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab1CMQ21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 12:24:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=XKcWa3txfb/AqmgmSrobITeVw8PWjQejAUkbYmRR3rriM+u39rI5m/evPQr6G9utky
-         k3SSo0f0scN5Mirq+pBjdjPNbbvMxMeqp2pyxtaMFsemUafHwNtO3NdgHwsPydlZIwPZ
-         VGaFD3nr/5hdFk+hewKKnxCpcuFgItE7CAppE=
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Steve French <sfrench@samba.org>
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH] =?UTF-8?q?cifssmb:=20[FIX]=20warning:=20=E2=80=98pdata=E2=80=99=20may=20be=20used=20uninitialized?=
-Date: Sun, 13 Mar 2011 17:23:46 +0100
-Message-Id: <1300033426-22404-1-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sun, 13 Mar 2011 12:28:27 -0400
+Date: Sun, 13 Mar 2011 16:28:12 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Greg KH <greg@kroah.com>
+Cc: Nikolai Kondrashov <spbnick@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110313162812.GA25369@srcf.ucam.org>
+References: <4D793D05.3070908@gmail.com> <20110310211519.GA11862@kroah.com> <4D79CB47.2030405@gmail.com> <20110311170313.GA10202@kroah.com> <4D7A72E3.1050407@gmail.com> <20110311193433.GB14204@kroah.com> <4D7A8419.6080107@gmail.com> <20110311203032.GA14384@kroah.com> <4D7C9668.3000902@gmail.com> <20110313161752.GC10718@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110313161752.GC10718@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This suppress the warning, as far as there's no way pdata is
-uninitialized, because validate_ntransact() will initialize pdata or
-return rc != 0. In this case (goto qsec_out), pdata won't be used.
+On Sun, Mar 13, 2011 at 09:17:53AM -0700, Greg KH wrote:
+> On Sun, Mar 13, 2011 at 12:03:20PM +0200, Nikolai Kondrashov wrote:
+> > Sometime ago I've found this hack on some forum, which I use currently
+> > to set the brightness:
+> > 
+> > setpci -s 00:02.0 f4.b="$HEX_BYTE"
+> > 
+> > It allows finer control of the brightness, but it seems it operates directly
+> > on the video card PCI register. I assume there is no sane way to use
+> > this interface from the platform driver, right?
+> 
+> Yes, do not do this, it causes all sorts of problems in the end, not the
+> least being the BIOS doesn't know what is going on at all as you are
+> changing the brightness without it knowing it.
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- fs/cifs/cifssmb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It's also modifying configuration that belongs to a device being managed 
+by another driver, so it's the kind of thing we frown upon. Having said 
+that, the Intel driver should gain native backlight support in .39.
 
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index 904aa47..efa3f8e 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -3138,7 +3138,7 @@ CIFSSMBGetCIFSACL(const int xid, struct cifsTconInfo *tcon, __u16 fid,
- 		__u32 parm_len;
- 		__u32 acl_len;
- 		struct smb_com_ntransact_rsp *pSMBr;
--		char *pdata;
-+		char *pdata = NULL;
- 
- /* validate_nttransact */
- 		rc = validate_ntransact(iov[0].iov_base, (char **)&parm,
 -- 
-1.7.1
-
+Matthew Garrett | mjg59@srcf.ucam.org
