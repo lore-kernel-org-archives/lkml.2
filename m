@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab1CMPG4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 11:06:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21618 "EHLO mx1.redhat.com"
+	id S1753620Ab1CMPH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 11:07:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab1CMPGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 11:06:55 -0400
-Date: Sun, 13 Mar 2011 15:58:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+	id S1753103Ab1CMPHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 11:07:00 -0400
+Date: Sun, 13 Mar 2011 17:06:47 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] tracing - putting cond_resched into tace_pipe loop
-Message-ID: <20110313145811.GA30558@redhat.com>
-References: <1299970786-8075-1-git-send-email-jolsa@redhat.com> <1299970786-8075-3-git-send-email-jolsa@redhat.com>
+Subject: Re: [PATCH 3/3] vhost-net: use lock_sock_fast() in peek_head_len()
+Message-ID: <20110313150646.GA30494@redhat.com>
+References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+ <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299970786-8075-3-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12, Jiri Olsa wrote:
->
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -3237,10 +3237,23 @@ waitagain:
->  		 * One of the trace_seq_* functions is not used properly.
->  		 */
->  		WARN_ON(iter->seq.full);
-> +
-> +		/*
-> +		 * There's a chance this loop might get quite tight,
-> +		 * causing latency in non preemptive kernel.
-> +		 */
-> +		cond_resched();
-> +		if (signal_pending(current)) {
-> +			sret = -EINTR;
-> +			break;
+On Mon, Jan 17, 2011 at 04:11:17PM +0800, Jason Wang wrote:
+> We can use lock_sock_fast() instead of lock_sock() in order to get
+> speedup in peek_head_len().
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/vhost/net.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index c32a2e4..50b622a 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -211,12 +211,12 @@ static int peek_head_len(struct sock *sk)
+>  {
+>  	struct sk_buff *head;
+>  	int len = 0;
+> +	bool slow = lock_sock_fast(sk);
+>  
+> -	lock_sock(sk);
+>  	head = skb_peek(&sk->sk_receive_queue);
+>  	if (head)
+>  		len = head->len;
+> -	release_sock(sk);
+> +	unlock_sock_fast(sk, slow);
+>  	return len;
+>  }
+>  
 
-First of all: I do not pretend I understand this code ;) Still, a
-couple of nits.
+Wanted to apply this, but looking at the code I think the lock_sock here
+is wrong. What we really need is to handle the case where the skb is
+pulled from the receive queue after skb_peek.  However this is not the
+right lock to use for that, sk_receive_queue.lock is.
+So I expect the following is the right way to handle this.
+Comments?
 
--EINTR doesn't look exactly right, I'd suggest -ERESTARTSYS. The same
-for tracing_wait_pipe() btw, I think it should be fixed.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-
-
-I wonder if it makes sense to simply "break" if signal_pending(), it
-is possible we already have something to report via trace_seq_to_user().
-Then we could do
-
-	-	if (sret == -EBUSY)
-	-		goto waitagain;
-	+	if (sret == -EBUSY) {
-	+		if (!signal_pending())
-	+			goto waitagain;
-	+		sret = -ERESTARTSYS;
-	+	}
-
-Or we can change tracing_wait_pipe() to check signal_pending()
-uncondditionally, I dunno.
-
-Up to you, but note that otherwise the logic looks a bit strange.
-Suppose that signal_pending() is already true when we call
-tracing_wait_pipe(). In this case we are going to do the "unnecessary"
-work and then return EINTR/ERESTART. This is correct, the next
-invocation does trace_seq_to_user() before anything else, just
-looks a bit strange.
-
-Oleg.
-
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 0329c41..5720301 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -213,12 +213,13 @@ static int peek_head_len(struct sock *sk)
+ {
+ 	struct sk_buff *head;
+ 	int len = 0;
++	unsigned long flags;
+ 
+-	lock_sock(sk);
++	spin_lock_irqsave(&sk->sk_receive_queue.lock, flags);
+ 	head = skb_peek(&sk->sk_receive_queue);
+-	if (head)
++	if (likely(head))
+ 		len = head->len;
+-	release_sock(sk);
++	spin_unlock_irqrestore(&sk->sk_receive_queue.lock, flags);
+ 	return len;
+ }
+ 
