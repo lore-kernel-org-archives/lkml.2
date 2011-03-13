@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab1CMQyu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 12:54:50 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37555 "EHLO
+	id S1755479Ab1CMQys (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 12:54:48 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37554 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab1CMQyr (ORCPT
+	with ESMTP id S1754643Ab1CMQyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Mar 2011 12:54:47 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -14,10 +14,12 @@ Cc: jirislaby@gmail.com, netdev@vger.kernel.org, gregkh@suse.de,
         Jiri Slaby <jslaby@suse.cz>,
         =?UTF-8?q?R=C3=A9mi=20Denis-Courmont?= 
 	<remi.denis-courmont@nokia.com>
-Subject: [PATCH 1/2] NET: cdc-phonet, fix stop-queue handling
-Date: Sun, 13 Mar 2011 17:54:30 +0100
-Message-Id: <1300035271-8138-1-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 2/2] NET: cdc-phonet, handle empty phonet header
+Date: Sun, 13 Mar 2011 17:54:31 +0100
+Message-Id: <1300035271-8138-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300035271-8138-1-git-send-email-jslaby@suse.cz>
+References: <1300035271-8138-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,40 +27,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there is a warning emitted by the cdc-phonet driver:
-WARNING: at include/linux/netdevice.h:1557 usbpn_probe+0x3bb/0x3f0 [cdc_phonet]()
-Modules linked in: ...
-Pid: 5877, comm: insmod Not tainted 2.6.37.3-16-desktop #1
-Call Trace:
- [<ffffffff810059b9>] dump_trace+0x79/0x340
- [<ffffffff81520fdc>] dump_stack+0x69/0x6f
- [<ffffffff810580eb>] warn_slowpath_common+0x7b/0xc0
- [<ffffffffa00254fb>] usbpn_probe+0x3bb/0x3f0 [cdc_phonet]
-...
----[ end trace f5d3e02908603ab4 ]---
-netif_stop_queue() cannot be called before register_netdev()
+Currently, for N 5800 XM I get:
+cdc_phonet: probe of 1-6:1.10 failed with error -22
 
-So remove netif_stop_queue from the probe funtction to avoid that.
+It's because phonet_header is empty. Extra altsetting looks like
+there:
+E 05 24 00 01 10 03 24 ab 05 24 06 0a 0b 04 24 fd  .$....$..$....$.
+E 00                                               .
+
+I don't see the header used anywhere so just check if the phonet
+descriptor is there, not the structure itself.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
 Cc: David S. Miller <davem@davemloft.net>
 ---
- drivers/net/usb/cdc-phonet.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/net/usb/cdc-phonet.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
-index 109751b..4cf4e36 100644
+index 4cf4e36..f967913 100644
 --- a/drivers/net/usb/cdc-phonet.c
 +++ b/drivers/net/usb/cdc-phonet.c
-@@ -392,7 +392,6 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
+@@ -328,13 +328,13 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ {
+ 	static const char ifname[] = "usbpn%d";
+ 	const struct usb_cdc_union_desc *union_header = NULL;
+-	const struct usb_cdc_header_desc *phonet_header = NULL;
+ 	const struct usb_host_interface *data_desc;
+ 	struct usb_interface *data_intf;
+ 	struct usb_device *usbdev = interface_to_usbdev(intf);
+ 	struct net_device *dev;
+ 	struct usbpn_dev *pnd;
+ 	u8 *data;
++	int phonet = 0;
+ 	int len, err;
  
- 	pnd = netdev_priv(dev);
- 	SET_NETDEV_DEV(dev, &intf->dev);
--	netif_stop_queue(dev);
+ 	data = intf->altsetting->extra;
+@@ -355,10 +355,7 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ 					(struct usb_cdc_union_desc *)data;
+ 				break;
+ 			case 0xAB:
+-				if (phonet_header || dlen < 5)
+-					break;
+-				phonet_header =
+-					(struct usb_cdc_header_desc *)data;
++				phonet = 1;
+ 				break;
+ 			}
+ 		}
+@@ -366,7 +363,7 @@ int usbpn_probe(struct usb_interface *intf, const struct usb_device_id *id)
+ 		len -= dlen;
+ 	}
  
- 	pnd->dev = dev;
- 	pnd->usb = usb_get_dev(usbdev);
+-	if (!union_header || !phonet_header)
++	if (!union_header || !phonet)
+ 		return -EINVAL;
+ 
+ 	data_intf = usb_ifnum_to_if(usbdev, union_header->bSlaveInterface0);
 -- 
 1.7.4.1
 
