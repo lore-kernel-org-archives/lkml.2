@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab1CMOYb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 10:24:31 -0400
-Received: from www.tglx.de ([62.245.132.106]:54539 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756472Ab1CMOYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 10:24:21 -0400
-Date: Sun, 13 Mar 2011 15:23:54 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com,
-        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 2/8] x86: Use syscore_ops instead of sysdev classes and
- sysdevs
-In-Reply-To: <201103122215.48206.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.00.1103131500340.2787@localhost6.localdomain6>
-References: <201103100131.58206.rjw@sisk.pl> <201103122212.40828.rjw@sisk.pl> <201103122215.48206.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756558Ab1CMOei (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 10:34:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25260 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab1CMOeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 10:34:36 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs" <linux-btrfs@vger.kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Btrfs fixes for 2.6.38
+Date: Sun, 13 Mar 2011 10:34:03 -0400
+Message-Id: <1300026223-sup-1330@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D7CD5F7.008F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Mar 2011, Rafael J. Wysocki wrote:
-> -static int lapic_resume(struct sys_device *dev)
-> +static void lapic_resume(void)
->  {
->  	unsigned int l, h;
->  	unsigned long flags;
-> @@ -2083,7 +2083,7 @@ static int lapic_resume(struct sys_devic
->  	struct IO_APIC_route_entry **ioapic_entries = NULL;
->  
->  	if (!apic_pm_state.active)
-> -		return 0;
-> +		return;
->  
->  	local_irq_save(flags);
+Hi everyone,
 
-That want's the following on top:
+We've been working on a few important Btrfs regressions for the last two
+weeks, and this pull request has the result.  Many thanks to Mitch
+Harder and Xin Zhong for nailing down the btrfs_file_write looping.
 
-@@ -2079,8 +2079,7 @@ static void lapic_resume(void)
- {
- 	unsigned int l, h;
- 	unsigned long flags;
--	int maxlvt;
--	int ret = 0;
-+	int maxlvt, ret;
- 	struct IO_APIC_route_entry **ioapic_entries = NULL;
- 
- 	if (!apic_pm_state.active)
-@@ -2091,7 +2090,6 @@ static void lapic_resume(void)
- 		ioapic_entries = alloc_ioapic_entries();
- 		if (!ioapic_entries) {
- 			WARN(1, "Alloc ioapic_entries in lapic resume failed.");
--			ret = -ENOMEM;
- 			goto restore;
- 		}
+Linus, please pull the master branch of the btrfs unstable tree:
 
-Otherwise, Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
 
-Thanks,
+These commits keep btrfs_file_write from looping forever when things go
+wrong with copy_from_user, and they also make sure not to produce
+partially up to date pages if copy_from_user gives us a short return.
 
-	tglx
+Hammering on btrfs fiemap found another bug where we returned
+overlapping extents, which made for incorrect results with the cp
+program (destination files larger than the original).
+
+This pull also has a commit to tweak our forced delalloc writeback while
+we are trying to reclaim space.  With a number of writers determined to
+fill the FS, we used to end up stuck in shrink_delalloc forever.
+
+Chris Mason (4) commits (+131/-60):
+    Btrfs: make sure not to return overlapping extents to fiemap (+27/-6)
+    Btrfs: deal with short returns from copy_from_user (+13/-0)
+    Btrfs: fix regressions in copy_from_user handling (+59/-42)
+    Btrfs: break out of shrink_delalloc earlier (+32/-12)
+
+Miao Xie (1) commits (+3/-2):
+    btrfs: fix not enough reserved space
+
+Daniel J Blueman (1) commits (+1/-0):
+    btrfs: fix dip leak
+
+Total: (6) commits (+135/-62)
+
+ fs/btrfs/ctree.h       |    9 ++++
+ fs/btrfs/extent-tree.c |   35 ++++++++++-----
+ fs/btrfs/extent_io.c   |   33 +++++++++++---
+ fs/btrfs/file.c        |  114 ++++++++++++++++++++++++++++++------------------
+ fs/btrfs/inode.c       |    6 ++-
+ 5 files changed, 135 insertions(+), 62 deletions(-)
