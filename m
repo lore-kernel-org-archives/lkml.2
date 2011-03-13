@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1CMUXz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 16:23:55 -0400
-Received: from mout.perfora.net ([74.208.4.194]:65091 "EHLO mout.perfora.net"
+	id S932187Ab1CMUZW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 16:25:22 -0400
+Received: from mout.perfora.net ([74.208.4.194]:49152 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab1CMUXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 16:23:54 -0400
+	id S932083Ab1CMUZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 16:25:18 -0400
 From: Stephen Wilson <wilsons@start.ca>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>
@@ -19,94 +19,70 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
         Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH 07/12] mm: factor out main logic of access_process_vm
-Date: Sun, 13 Mar 2011 15:49:19 -0400
-Message-Id: <1300045764-24168-8-git-send-email-wilsons@start.ca>
+Subject: [PATCH 08/12] mm: implement access_remote_vm
+Date: Sun, 13 Mar 2011 15:49:20 -0400
+Message-Id: <1300045764-24168-9-git-send-email-wilsons@start.ca>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1300045764-24168-1-git-send-email-wilsons@start.ca>
 References: <1300045764-24168-1-git-send-email-wilsons@start.ca>
-X-Provags-ID: V02:K0:D/2Aamkxi/4RKHCPuhob6sRRqTKiTAgpeIoK6CiZzp+
- M14MiMer3cpiYp0JRL+eYUnc/yU7R9rEO0T96plJXfqfHjutj7
- 3whw2SgRwdxSQvQCylXOtOxrVLOwHV8TJe9egmJa63y5CZ8Dn/
- R9OZp7genQgz25b+1svI9PzBmO4Z6zQsXquVfIB7UYO/PNTbMR
- o2g4DJlq0r9BQqHbwsTO6gWS/cBCtx7mbB9MNyrnfA=
+X-Provags-ID: V02:K0:YhpxUSWchY40D0ArQ2ZUTQsFiS5VWqTdPbSGyzfC/kt
+ 52/A0xvPudnv66CLfdNkvUlwSlGiPoG+T3iGHJgwKYGL0oUNOw
+ kHm1fjMbYILefdnkz/a5Twrtlgk8GZDB6e2UHs33qb1qOp4pG9
+ 59GytjiY+z9saa6/sjCcfDqxXRX5UcJfuPklKPZ3HfpiQk4gLp
+ Uug9XGhfX+aT7hJoc3RX64NMC3svW/18N0QGXBTzso=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce an internal helper __access_remote_vm and base access_process_vm on
-top of it.  This new method may be called with a NULL task_struct if page fault
-accounting is not desired.  This code will be shared with a new address space
-accessor that is independent of task_struct.
+Provide an alternative to access_process_vm that allows the caller to obtain a
+reference to the supplied mm_struct.
 
 Signed-off-by: Stephen Wilson <wilsons@start.ca>
 ---
- mm/memory.c |   35 +++++++++++++++++++++++++----------
- 1 files changed, 25 insertions(+), 10 deletions(-)
+ include/linux/mm.h |    2 ++
+ mm/memory.c        |   16 ++++++++++++++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 694512d..e5fde8a 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -964,6 +964,8 @@ static inline int handle_mm_fault(struct mm_struct *mm,
+ 
+ extern int make_pages_present(unsigned long addr, unsigned long end);
+ extern int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write);
++extern int access_remote_vm(struct mm_struct *mm, unsigned long addr,
++		void *buf, int len, int write);
+ 
+ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			unsigned long start, int nr_pages, int write, int force,
 diff --git a/mm/memory.c b/mm/memory.c
-index 36445e3..68eec4f 100644
+index 68eec4f..c26e4f9 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -3593,20 +3593,15 @@ int generic_access_phys(struct vm_area_struct *vma, unsigned long addr,
- #endif
- 
- /*
-- * Access another process' address space.
-- * Source/target buffer must be kernel space,
-- * Do not walk the page table directly, use get_user_pages
-+ * Access another process' address space as given in mm.  If non-NULL, use the
-+ * given task for page fault accounting.
-  */
--int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write)
-+static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
-+		unsigned long addr, void *buf, int len, int write)
- {
--	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
- 	void *old_buf = buf;
- 
--	mm = get_task_mm(tsk);
--	if (!mm)
--		return 0;
--
- 	down_read(&mm->mmap_sem);
- 	/* ignore errors, just check how much was successfully transferred */
- 	while (len) {
-@@ -3655,12 +3650,32 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, in
- 		addr += bytes;
- 	}
- 	up_read(&mm->mmap_sem);
--	mmput(mm);
- 
+@@ -3654,6 +3654,22 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
  	return buf - old_buf;
  }
  
- /*
-+ * Access another process' address space.
-+ * Source/target buffer must be kernel space,
-+ * Do not walk the page table directly, use get_user_pages
++/**
++ * @access_remote_vm - access another process' address space
++ * @mm:		the mm_struct of the target address space
++ * @addr:	start address to access
++ * @buf:	source or destination buffer
++ * @len:	number of bytes to transfer
++ * @write:	whether the access is a write
++ *
++ * The caller must hold a reference on @mm.
 + */
-+int access_process_vm(struct task_struct *tsk, unsigned long addr,
++int access_remote_vm(struct mm_struct *mm, unsigned long addr,
 +		void *buf, int len, int write)
 +{
-+	struct mm_struct *mm;
-+	int ret;
-+
-+	mm = get_task_mm(tsk);
-+	if (!mm)
-+		return 0;
-+
-+	ret = __access_remote_vm(tsk, mm, addr, buf, len, write);
-+	mmput(mm);
-+
-+	return ret;
++	return __access_remote_vm(NULL, mm, addr, buf, len, write);
 +}
 +
-+/*
-  * Print the name of a VMA.
-  */
- void print_vma_addr(char *prefix, unsigned long ip)
+ /*
+  * Access another process' address space.
+  * Source/target buffer must be kernel space,
 -- 
 1.7.3.5
 
