@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab1CNPQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:16:56 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:56764 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab1CNPQy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:16:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Fh7AXEku3IuDxUK1X9skuVmUoGMi3QHG/V/YJ4Dy6If6QtmTDGeKEfQLfBRs8WNOr3
-         skW56WB1Hhlx0nTcw+9nRX7rwaU9PZ3Ij0RVgswWtkeY4vloCRC0M7n6aRHhmp+06nVQ
-         i1f+Ge57f6iUKPSz/407v3nN/67fdZ6Ql90qg=
-Date: Tue, 15 Mar 2011 00:16:30 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v6 6/9] memcg: add cgroupfs interface to memcg dirty
- limits
-Message-ID: <20110314151630.GG11699@barrios-desktop>
-References: <1299869011-26152-1-git-send-email-gthelen@google.com>
- <1299869011-26152-7-git-send-email-gthelen@google.com>
+	id S1756890Ab1CNPSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:18:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755320Ab1CNPSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 11:18:32 -0400
+Date: Mon, 14 Mar 2011 11:17:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Lina Lu <lulina_nuaa@foxmail.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Re: Re: blk-throttle.c : When limit is changed, must start a
+ newslice
+Message-ID: <20110314151747.GB31120@redhat.com>
+References: <tencent_6A5F95FF2112DFE963C44E4E@qq.com>
+ <201103110038174067110@foxmail.com>
+ <201103121933025463003@foxmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299869011-26152-7-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201103121933025463003@foxmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 10:43:28AM -0800, Greg Thelen wrote:
-> Add cgroupfs interface to memcg dirty page limits:
->   Direct write-out is controlled with:
->   - memory.dirty_ratio
->   - memory.dirty_limit_in_bytes
+On Sat, Mar 12, 2011 at 07:33:07PM +0800, Lina Lu wrote:
+> On 2011-03-11 03:55:55, Vivek Goyal wrote:
+> >On Fri, Mar 11, 2011 at 12:38:18AM +0800, Lina Lu wrote:
+> >> [..]
+> >> Hi Vivek,
+> >> I have test the following patch, but the latency still there.
+> >> 
+> >> I try to find why there are 5~10 seconds latency today. After collect the blktrace, I 
+> >> think the reason is that throtl_trim_slice() don't aways update the tg->slice_start[rw], 
+> >> although we call it once dispatch a bio.
+> >
+> >lina,
+> >
+> >Trim slice should not even matter now. Upon limit change, this patch
+> >should reset the slice and start a new one irrespective of the fact
+> >where are.
+> >
+> >In your traces, do you see limit change message and do you see a new
+> >slice starting.
+> >
+> >I did similar test yesterday on my box and this patch worked. Can you
+> >capture some block traces and I can have a look at those. Key thing
+> >to look for is limit change message and whether it started a new
+> >slice or not.
+> >
+> >Thanks
+> >Vivek
+> >
+> 	
+> Hi Vivek,
+> 	
+> Here is the blktrace and iostat results when I change the limit from 1024000000000000
+> to 1024000. When the limit changed, there is about 3 seconds lantency.
 > 
->   Background write-out is controlled with:
->   - memory.dirty_background_ratio
->   - memory.dirty_background_limit_bytes
-> 
-> Other memcg cgroupfs files support 'M', 'm', 'k', 'K', 'g'
-> and 'G' suffixes for byte counts.  This patch provides the
-> same functionality for memory.dirty_limit_in_bytes and
-> memory.dirty_background_limit_bytes.
-> 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> blktrace:	
+> 253,1    0        0     4.177733270     0  m   N throtl / [R] trim slice nr=1 bytes=102400000000000 io=429496729 start=4297788991 end=4297789100 jiffies=4297788992
+> 253,1    0        0     4.187393582     0  m   N throtl / [R] extend slice start=4297788991 end=4297789200 jiffies=4297789002
+> 253,1    0        0     4.276120505     0  m   N throtl / [R] trim slice nr=1 bytes=102400000000000 io=429496729 start=4297789091 end=4297789200 jiffies=4297789091
+> 253,1    0        0     4.285934091     0  m   N throtl / [R] extend slice start=4297789091 end=4297789300 jiffies=4297789101
+> 253,1    1        0     4.348552814     0  m   N throtl schedule work. delay=0 jiffies=4297789163
+> 253,1    1        0     4.348571560     0  m   N throtl limit changed =1
+> 253,1    0        0     4.349839104     0  m   N throtl / [R] extend slice start=4297789091 end=4297793000 jiffies=4297789164
+> 253,1    0        0     4.349844118     0  m   N throtl / [R] bio. bdisp=3928064 sz=4096 bps=1024000 iodisp=959 iops=4294967295 queued=0/0
 
--- 
-Kind regards,
-Minchan Kim
+Lina,
+
+Thanks for the traces.
+
+I think we did call process_limit_change() but we did not start the new
+slice. I guess this happened because, we seem to be starting slice only
+if group on run tree. Because before limit udpates, most likely group
+is not on run tree as limits are very high, hence we missed resetting
+the slice.
+
+        hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
+                if (throtl_tg_on_rr(tg) && tg->limits_changed) {
+                        throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
+                                " riops=%u wiops=%u", tg->bps[READ],
+                                tg->bps[WRITE], tg->iops[READ],
+                                tg->iops[WRITE]);
+
+Actually many races have been fixed in Jens's block tree. Is it possible to
+test origin/for-2.6.39/core branch of Jens's tree with following patch applied
+and see if it fixes the issue for you?
+
+Thanks
+Vivek
+
+---
+ block/blk-throttle.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+Index: linux-2.6-block/block/blk-throttle.c
+===================================================================
+--- linux-2.6-block.orig/block/blk-throttle.c	2011-03-14 10:27:57.000000000 -0400
++++ linux-2.6-block/block/blk-throttle.c	2011-03-14 10:30:47.267170956 -0400
+@@ -756,6 +756,15 @@ static void throtl_process_limit_change(
+ 			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
+ 			tg->iops[READ], tg->iops[WRITE]);
+ 
++		/*
++		 * Restart the slices for both READ and WRITES. It
++		 * might happen that a group's limit are dropped
++		 * suddenly and we don't want to account recently
++		 * dispatched IO with new low rate
++		 */
++		throtl_start_new_slice(td, tg, 0);
++		throtl_start_new_slice(td, tg, 1);
++
+ 		if (throtl_tg_on_rr(tg))
+ 			tg_update_disptime(td, tg);
+ 	}
+@@ -821,7 +830,8 @@ throtl_schedule_delayed_work(struct thro
+ 
+ 	struct delayed_work *dwork = &td->throtl_work;
+ 
+-	if (total_nr_queued(td) > 0) {
++	/* schedule work if limits changed even if no bio is queued */
++	if (total_nr_queued(td) > 0 || td->limits_changed) {
+ 		/*
+ 		 * We might have a work scheduled to be executed in future.
+ 		 * Cancel that and schedule a new one.
+@@ -1002,6 +1012,19 @@ int blk_throtl_bio(struct request_queue 
+ 	/* Bio is with-in rate limit of group */
+ 	if (tg_may_dispatch(td, tg, bio, NULL)) {
+ 		throtl_charge_bio(tg, bio);
++
++		/*
++		 * We need to trim slice even when bios are not being queued
++		 * otherwise it might happen that a bio is not queued for
++		 * a long time and slice keeps on extending and trim is not
++		 * called for a long time. Now if limits are reduced suddenly
++		 * we take into account all the IO dispatched so far at new
++		 * low rate and * newly queued IO gets a really long dispatch
++		 * time.
++		 *
++		 * So keep on trimming slice even if bio is not queued.
++		 */
++		throtl_trim_slice(td, tg, rw);
+ 		goto out;
+ 	}
+ 
