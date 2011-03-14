@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab1CNT5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:57:33 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:45700 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab1CNT5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:57:31 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Justin <wellspring3@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: milw0rm rootkit
-In-Reply-To: Your message of "Mon, 14 Mar 2011 12:28:11 PDT."
-             <AANLkTimE94jf0N54c5ijKUs3Ln_hhNUuCecuda98y2O9@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <AANLkTim9jsGz=ELPNUVJHWN8Z4EzBrFA03XXt_QYPsEh@mail.gmail.com> <20110314190813.GC20259@home.goodmis.org>
-            <AANLkTimE94jf0N54c5ijKUs3Ln_hhNUuCecuda98y2O9@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1300132649_5270P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 14 Mar 2011 15:57:29 -0400
-Message-ID: <37114.1300132649@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4D7E732A.00E6,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1756051Ab1CNT65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:58:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab1CNT64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 15:58:56 -0400
+Date: Mon, 14 Mar 2011 20:58:23 +0100
+From: Johannes Weiner <jweiner@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH] thp+memcg-numa: fix BUG at include/linux/mm.h:370!
+Message-ID: <20110314195823.GC2140@redhat.com>
+References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
+ <20110314155232.GB10696@random.random>
+ <alpine.LSU.2.00.1103140910570.2601@sister.anvils>
+ <AANLkTikvt+o+UaksmvM5C7FWt7hTMJyaPiUGhQ+6OKBg@mail.gmail.com>
+ <20110314171730.GF10696@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314171730.GF10696@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1300132649_5270P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Mar 14, 2011 at 06:17:31PM +0100, Andrea Arcangeli wrote:
+> On Mon, Mar 14, 2011 at 09:56:10AM -0700, Linus Torvalds wrote:
+> > Does mem_cgroup_newpage_charge() even _need_ the mmap_sem at all? And
+> > if not, why not release the read-lock early? And even if it _does_
+> > need it, why not do
 
-On Mon, 14 Mar 2011 12:28:11 PDT, Justin said:
-> Yes, she runs 2.6.34.8-68.fc13.i686.PAE
+[...]
 
-Which is the most recently released Fedora 13 kernel, from Feb 24,
-so not ancient...
+> About mem_cgroup_newpage_charge I think you're right it won't need the
+> mmap_sem. Running it under it is sure safe. But if it's not needed we
+> can move the up_read before the mem_cgroup_newpage_charge like you
+> suggested. Johannes/Minchan could you confirm the mmap_sem isn't
+> needed around mem_cgroup_newpage_charge? The mm and new_page are
+> stable without the mmap_sem, only the vma goes away but the memcg
+> shouldn't care.
 
-> I know this is for the kernel... The C file seems to exploit a
-> vulnerability in the kernel, so I thought I should let the kernel
-> people know so they could patch it upstream.
+We don't care about the vma.  It's all about assigning the physical
+page to the memcg that mm->owner belongs to.
 
-Toss the .c file to 'security@kernel.org', that's what it's there for.
-If you have enough kernel savvy to figure out what's getting abused,
-cc: the subsystem maintainer.  But if you don't, that's OK too,
-somebody reading security@ will handle that if needed.
+It would be the first callsite not holding the mmap_sem, but that is
+only because all existing sites are fault handlers that don't drop the
+lock for other reasons.
 
-
---==_Exmh_1300132649_5270P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNfnMpcC3lWbTT17ARAkroAJ9heg3Lck9WJqTnVddMzvws3Ar+kgCfUQUx
-7yNsjY8Kuvundu+YiDTm8x4=
-=jmhl
------END PGP SIGNATURE-----
-
---==_Exmh_1300132649_5270P--
-
+I am not aware of anything that would rely on the lock in there, or
+would not deserve to break if it did.
