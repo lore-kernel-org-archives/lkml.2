@@ -1,44 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab1CNTuR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:50:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59707 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754351Ab1CNTuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:50:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,317,1297065600"; 
-   d="scan'208";a="720066594"
-From: Andi Kleen <andi@firstfloor.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH tip:x86/mm 1/3] x86: A fast way to check capabilities of the current cpu
-References: <20110312115010.GC2005@htj.dyndns.org>
-Date: Mon, 14 Mar 2011 12:49:14 -0700
-In-Reply-To: <20110312115010.GC2005@htj.dyndns.org> (Tejun Heo's message of
-	"Sat, 12 Mar 2011 12:50:10 +0100")
-Message-ID: <m2k4g1zdmt.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755981Ab1CNTyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:54:31 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:37500 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab1CNTya convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 15:54:30 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Mike Sterling" <Mike.Sterling@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: RE: [PATCH 10/21] Staging: hv: Cleanup root device handling
+Thread-Topic: [PATCH 10/21] Staging: hv: Cleanup root device handling
+Thread-Index: AQHL325PocxW5f6Slk6ZU6fmhggziZQts+SA//+PD0A=
+Date: Mon, 14 Mar 2011 19:54:29 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048019582@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1299794886-1200-1-git-send-email-kys@microsoft.com>
+ <20110314193333.GA18944@kroah.com>
+In-Reply-To: <20110314193333.GA18944@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
-
-> Add this_cpu_has() which determines if the current cpu has a certain
-> ability using a segment prefix and a bit test operation.
 
 
-Hmm: if the CPU capability is really tested in a performance critical
-path, wouldn't it even be better to just use static_branch() now? 
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Monday, March 14, 2011 3:34 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Mike
+> Sterling; Abhishek Kane (Mindtree Consulting PVT LTD)
+> Subject: Re: [PATCH 10/21] Staging: hv: Cleanup root device handling
+> 
+> On Thu, Mar 10, 2011 at 02:08:06PM -0800, K. Y. Srinivasan wrote:
+> > Now we can complete the cleanup of the root device
+> > management. Use the preferred APIs for creating and
+> > managing the root device. As part of this cleanup get rid
+> > of the root device object from vmbus_driver_context.
+> 
+> I don't understand, what is the "root device"?
 
--Andi
+This would be the device under /sys/devices that all 
+other hyperv devices would be grouped under. 
+This notion of the root device existed in the existing
+code; however  its creation and management was
+unnecessarily complicated. 
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+Regards,
+
+K. Y
+
+> 
+> The hyper-v "bus controller"?
+> 
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
+> > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > ---
+> >  drivers/staging/hv/vmbus_drv.c |  126 ++++++----------------------------------
+> >  1 files changed, 18 insertions(+), 108 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > index b473f46..8b9394a 100644
+> > --- a/drivers/staging/hv/vmbus_drv.c
+> > +++ b/drivers/staging/hv/vmbus_drv.c
+> > @@ -19,6 +19,7 @@
+> >   *   Hank Janssen  <hjanssen@microsoft.com>
+> >   */
+> >  #include <linux/init.h>
+> > +#include <linux/err.h>
+> >  #include <linux/module.h>
+> >  #include <linux/device.h>
+> >  #include <linux/irq.h>
+> > @@ -40,6 +41,8 @@
+> >  #define VMBUS_IRQ		0x5
+> >  #define VMBUS_IRQ_VECTOR	IRQ5_VECTOR
+> >
+> > +static struct device *root_dev; /* Root device */
+> 
+> This shouldn't be a "raw" struct device, should it?  It should be of a
+> type that shows exactly what it is.  Is it a hyper_v device that talks
+> on the bus?
+> 
+> Or is it a "platform" device that controls all of the devices on the
+> bus, and as such should be the "root" device of the bus tree?
+> 
+> confused,
+> 
+> greg k-h
+
