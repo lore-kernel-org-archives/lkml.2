@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab1CNMfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:35:09 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:58182 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752031Ab1CNMfG (ORCPT
+	id S1755537Ab1CNMhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:37:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36908 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab1CNMhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:35:06 -0400
-From: Haojian Zhuang <hzhuang1@marvell.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "dtor@mail.ru" <dtor@mail.ru>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Mar 2011 05:34:08 -0700
-Subject: RE: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM
- chip
-Thread-Topic: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM
- chip
-Thread-Index: AcviOvmQ6K5EANjdQ22g6tWEQIwe6gACLnrg
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05CEAFFB95@SC-VEXCH1.marvell.com>
-References: <1299512600-29047-3-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-4-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-5-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-6-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-7-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-8-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-9-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-10-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-11-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-12-git-send-email-haojian.zhuang@marvell.com>
- <20110314112838.GK31153@sortiz-mobl>
-In-Reply-To: <20110314112838.GK31153@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: Al82 DSRo KWnQ RU0D eF9U hpm1 vZ6E ACyHUQ== AC1Rtw==
- AD4q4Q== AIPBgQ== AJs3ZQ== AJ2GLg== AJ/MvQ== AKvNWw==
- AL8kuQ==;9;YQAuAHoAdQBtAG0AbwBAAHQAbwB3AGUAcgB0AGUAYwBoAC4AaQB0ADsAYgByAG8AbwBuAGkAZQBAAG8AcABlAG4AcwBvAHUAcgBjAGUALgB3AG8AbABmAHMAbwBuAG0AaQBjAHIAbwAuAGMAbwBtADsAZABtAGkAdAByAHkALgB0AG8AcgBvAGsAaABvAHYAQABnAG0AYQBpAGwALgBjAG8AbQA7AGQAdABvAHIAQABtAGEAaQBsAC4AcgB1ADsAagBvAGgAbgBwAG8AbABAADIAawBhAC4AbQBpAHAAdAAuAHIAdQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAHIAZwBAAHMAbABpAG0AbABvAGcAaQBjAC4AYwBvAC4AdQBrADsAcgBwAHUAcgBkAGkAZQBAAHIAcABzAHkAcwAuAG4AZQB0ADsAcwBhAG0AZQBvAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0A;Sosha1_v1;7;{6976EA08-2F96-4CFE-A4EF-8EB6C5133491};aAB6AGgAdQBhAG4AZwAxAEAAbQBhAHIAdgBlAGwAbAAuAGMAbwBtAA==;Mon,
- 14 Mar 2011 12:34:08
- GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAbQBmAGQAOgAgAHAAeABhAC0AdwAxADoAIABNAEYARAAgAGQAcgBpAHYAZQByACAAZgBvAHIAIABQAFgAQQAgADEAdwBpAHIAZQAgAGMAbwBuAHQAcgBvAGwAIAArACAARABTADEAVwBNACAAYwBoAGkAcAA=
-x-cr-puzzleid: {6976EA08-2F96-4CFE-A4EF-8EB6C5133491}
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Mon, 14 Mar 2011 08:37:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=edVpVcnx0emvvWtSVqSlVDPbCyRx7rIlv45ZN3aO3b5l4M1m/VzvzpknBi2Urr6Nmh
+         r/+bTRLrdjb8EQ+FqbWMy513bpZ8Urh0N15dago6xAQyr0coIGF7eXek5hVrIcWwD11r
+         +9g/Gfma5IR3DgBq5DnJkGK99Sg6InxGMSEkQ=
 MIME-Version: 1.0
+In-Reply-To: <201103111700.17373.arnd@arndb.de>
+References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com>
+	<201103111615.01829.arnd@arndb.de>
+	<000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com>
+	<201103111700.17373.arnd@arndb.de>
+Date: Mon, 14 Mar 2011 21:37:51 +0900
+X-Google-Sender-Auth: LxjztE8xmRIW1a_UnMXxe_qaKPE
+Message-ID: <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
+Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU) driver
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        =?EUC-KR?B?tOvAzrHi?= <inki.dae@samsung.com>,
+        =?EUC-KR?B?sK25zrHU?= <mk7.kang@samsung.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2ECZIM8023055
 
-
-
->-----Original Message-----
->From: Samuel Ortiz [mailto:sameo@linux.intel.com]
->Sent: 2011ƒÍ3‘¬14»’ 7:29 PM
->To: Haojian Zhuang
->Cc: johnpol@2ka.mipt.ru; a.zummo@towertech.it; lrg@slimlogic.co.uk;
->broonie@opensource.wolfsonmicro.com; dmitry.torokhov@gmail.com;
->dtor@mail.ru; rpurdie@rpsys.net; linux-kernel@vger.kernel.org
->Subject: Re: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control +
->DS1WM chip
+2011/3/12 Arnd Bergmann <arnd@arndb.de>:
+> On Friday 11 March 2011, Marek Szyprowski wrote:
+>> > > > does not support IOMMUs, but that could be changed by wrapping it
+>> > > > using the include/asm-generic/dma-mapping-common.h infrastructure.
+>> > >
+>> > > ARM dma-mapping framework also requires some additional research for better DMA
+>> > > support (there are still issues with multiple mappings to be resolved).
+>> >
+>> > You mean mapping the same memory into multiple devices, or a different problem?
+>>
+>> Mapping the same memory area multiple times with different cache settings is not
+>> legal on ARMv7+ systems. Currently the problems might caused by the low-memory
+>> kernel linear mapping and second mapping created for example by dma_alloc_coherent()
+>> function.
 >
->Hi Haojian,
+> Yes, I know this problem, but I don't think the case you describe is a serious
+> limitation (there are more interesting cases, though): dma_map_single() etc
+> will create additional *bus* addresses for a physical address, not additional
+> virtual addresses.
 >
->On Mon, Mar 07, 2011 at 11:43:20PM +0800, Haojian Zhuang wrote:
->> This driver provides registers and IRQ of PXA3xx chips to the ds1wm
->driver.
->Why is this an MFD driver ?
->
->Cheers,
->Samuel.
->
->--
->Intel Open Source Technology Centre
->http://oss.intel.com/
+> dma_alloc_coherent should allocate memory that is not also mapped cached,
+> which is what I thought we do correctly.
 
-Hi Samuel,
+I have also noticed that dma_map_single/page/sg() can map physical
+memory into an arbitrary device address region.
+But it is not enough solution for various kinds of IOMMUs.
+As Kukjin Kim addressed, we need to support larger page size than 4KB
+because we can reduce TLB miss when we have larger page size.
 
-Because there's already a DS1WM driver in drivers/w1/masters/ds1wm.c. In PXA silicons, W1 controler is compatible with this driver. So we implement it as MFD driver, like htc-pasic3.c.
+Our IOMMU(system mmu) supports all page size of ARM architecture
+including 16MB, 1MB, 64KB and 4KB.
+Since the largest size supported by buddy system of 32-bit architecture is 4MB,
+our system support all page sizes except 16MB.
+We proved that larger page size is helpful for DMA performance
+significantly (more than 10%, approximately).
+Big page size is not a problem for peripheral devices
+because their address space is not suffer from external fragmentation.
 
-Best Regards
-Haojian
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Thanks to Arnd, I never knew about include/linux/iommu.h
+
+Similar to dma-mappings.h, however, It is not enough for our
+requirements even though it allows private data to be stored in
+iommu_domain for platform-specific requirements.
+
+I think we can consider another solution for the various requirements.
+I think one of the most possible solutions is VCMM.
+Or we can enhance include/linux/iommu.h with reference of VCMM.
+
+You can find the most recent VCMM submitted at
+http://marc.info/?l=linux-kernel&m=129255948319341&w=2
+
+It looks somewhat complex but includes most of required features for
+various IOMMUs
+which will not be easily solved by include/linux/iommu.h
+
+You can find VCMM core in
+http://git.kernel.org/?p=linux/kernel/git/kki_ap/linux-2.6-samsung.git;a=blob;f=mm/vcm.c;h=9fff0106ec0078fad1488308305c8486adbed9c0;hb=refs/heads/2.6.36-samsung
+
+and platform specific implementation of VCMM in
+http://git.kernel.org/?p=linux/kernel/git/kki_ap/linux-2.6-samsung.git;a=blob;f=arch/arm/plat-s5p/s5p-vcm.c;h=7498c800aef8b01082e1b1c3ea0f66cefe3c85a1;hb=refs/heads/2.6.36-samsung
+
+Cho KyongHo.
