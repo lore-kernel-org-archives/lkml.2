@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757088Ab1CNUhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:37:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59582 "EHLO ogre.sisk.pl"
+	id S1757140Ab1CNUiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:38:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58709 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462Ab1CNUhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:37:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: [RFT][PATCH] PCI / ACPI: Do not require MSI support for PCIe native features
-Date: Mon, 14 Mar 2011 21:37:41 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201103052254.48515.rjw@sisk.pl> <201103142102.11164.rjw@sisk.pl> <20110314201909.GA4937@xanatos>
-In-Reply-To: <20110314201909.GA4937@xanatos>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1751368Ab1CNUiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 16:38:22 -0400
+Subject: Re: linux-next: build failure after merge of the final tree
+ (powerpc tree related)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@secretlab.ca>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110314203827.4b61818e.sfr@canb.auug.org.au>
+References: <20110314203827.4b61818e.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Mar 2011 07:37:54 +1100
+Message-ID: <1300135074.22236.788.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103142137.41607.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 14, 2011, Sarah Sharp wrote:
-> On Mon, Mar 14, 2011 at 09:02:11PM +0100, Rafael J. Wysocki wrote:
-> > On Monday, March 14, 2011, Sarah Sharp wrote:
-> > > Hi Rafael,
-> > > 
-> > > I applied this patch, on top of this patch:
-> > > PCI/ACPI: Report ASPM support to BIOS if not disabled from command line
-> > > 
-> > > Unfortunately, the Express Card still doesn't show up.  The trace looks
-> > > slightly different, but the irq still gets disabled.  dmesg is attached.
-> > 
-> > Hmm.  It looks like, for some reason, the check against
-> > pcie_aspm_support_enabled() returns false on your system.  Do you have
-> > ASPM enabled in .config?
+On Mon, 2011-03-14 at 20:38 +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> My .config is attached.  Looks like CONFIG_PCIEASPM=y.
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/gpio/langwell_gpio.c: In function 'lnw_irq_handler':
+> drivers/gpio/langwell_gpio.c:210: error: 'struct irq_desc' has no member named 'chip'
+> drivers/gpio/langwell_gpio.c:211: error: 'struct irq_desc' has no member named 'chip'
+> 
+> Caused by commit 17b9f9e2653a ("powerpc: Enable
+> GENERIC_HARDIRQS_NO_DEPRECATED") enabling
+> CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED for powerpc without previously
+> fixing up the above driver.
+> 
+> I have reverted that commit for today.
 
-Does it help if you replace "pcie_aspm_support_enabled()" with "true" in
-drivers/acpi/pci_root.c:acpi_pci_root_add() ?
+Except that the above driver has nothing to do with powerpc, it's some
+Intel Moorestown stuff...
 
-Rafael
+It should be fixed regardless I suppose, CC'ing Thomas.
+
+Cheers,
+Ben.
+
+
