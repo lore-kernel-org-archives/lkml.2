@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab1CNBEb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 21:04:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54424 "EHLO mx1.redhat.com"
+	id S1756707Ab1CNBPr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 21:15:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32314 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756668Ab1CNBEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 21:04:30 -0400
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-References: <20110301152457.GE26074@htj.dyndns.org>
-	<20110307204346.19557183C29@magilla.sf.frob.com>
-	<20110309102855.GC27010@htj.dyndns.org>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Sun, 13 Mar 2011 21:03:57 -0400
-In-Reply-To: <20110309102855.GC27010@htj.dyndns.org> (Tejun Heo's message of "Wed, 9 Mar 2011 11:28:55 +0100")
-Message-ID: <y0mtyf6wm0y.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+	id S1756139Ab1CNBPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 21:15:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,312,1297065600"; 
+   d="scan'208";a="402036677"
+Message-ID: <4D7D6C40.3020807@linux.intel.com>
+Date: Sun, 13 Mar 2011 18:15:44 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Darren Hart <darren@dvhart.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] futex: do not pagefault_disable in futex_atomic_cmpxchg_inatomic()
+References: <20110307021127.GB31188@google.com>	<alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>	<20110309112550.GA3050@google.com>	<alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>	<20110311021654.GA26122@google.com>	<20110311024731.GB26122@google.com>	<AANLkTinXxCMVozx-NKEVXJLNrB1V93VEAJ8FiHQHXY_=@mail.gmail.com> <AANLkTinmxcjRUj-JRtmO3JSAGWoiW+ec7JzTBpL32C=t@mail.gmail.com>
+In-Reply-To: <AANLkTinmxcjRUj-JRtmO3JSAGWoiW+ec7JzTBpL32C=t@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/13/2011 05:55 PM, Darren Hart wrote:
+> I have to apologize. These landed right as I was leaving for OSTS and
+> I didn't have time to review them properly.  I wondered about the
+> preempt vs pagefault disable and wondered how exit_robust_list() was
+> covered in Michel's comments (perhaps somewhere higher up the call
+> chain). I leaned on the review of others when I should have raised the
+> questions even if I didn't have the time to dig into them myself.
+> Linus shouldn't have had to raise those questions, I'll do better at
+> this in the future.
+>
+> I noticed that my name is the only one in futex.c with an email
+> address in the header
 
-Hi -
+Scratch that, the others are just on the Copyright line instead of the 
+feature line. What is the policy for updating email addresses in source 
+files? With git, I suppose they are no longer particularly useful. 
+Should I remove a bad address, or just learn from it and not include it 
+in future work?
 
-tj wrote:
+Thanks,
 
-> [...]
->> I've said before more than once what I think are the important
->> principles about compatibility that ought to be maintained [...]
-> The biggest changes the current ptrace users are gonna see are
-> probably the ones from P1 and those are really corner cases - /proc
-> state, behavior change visible only to other thread in a multithreaded
-> debugger [...]
-> Also, ptrace is inherently a very heavy mechanism.  [...]
-> If someone is looking for completely transparent light weight
-> monitoring [look elsewhere...]
-> I skipped a lot of parts but in general I think that you're trying
-> to do too much with ptrace.  ptrace has its place which is called
-> debugging.  [...]
-
-Take care not to define your problems away by something close to a
-false dichotomy: intrusive ptrace vs. transparent tracing.  One needs
-transparent enough debugging too, so that the presence of the debugger
-does not subvert the occurrence of complex or transient phenomena.
-This hazard is especially acute for multithreaded programs.  While
-ptrace is known to be an imperfect substrate for multithreaded
-debugging, it would be nice not to make it any worse.
-
-Note that I'm not claiming that your current proposals necessarily
-would do so, but the argument for treating ptrace as machinery
-appropriate only for "heavy-weight diddling" could lead that way.
-
-- FChE
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
