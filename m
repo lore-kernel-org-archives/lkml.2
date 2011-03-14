@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab1CNE3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 00:29:19 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51775 "EHLO gir.skynet.ie"
+	id S1752106Ab1CNE43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 00:56:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57225 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab1CNE3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 00:29:18 -0400
-Date: Mon, 14 Mar 2011 04:28:48 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm final final final fixes
-Message-ID: <alpine.DEB.2.00.1103140426200.2738@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751217Ab1CNE42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 00:56:28 -0400
+Message-ID: <4D7D9F92.5010604@kernel.org>
+Date: Sun, 13 Mar 2011 21:54:42 -0700
+From: "H. Peter Anvin" <hpa@kernel.org>
+Organization: Linux Kernel Organization, Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mike Waychison <mikew@google.com>
+CC: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
+Subject: Re: [PATCH v2 12/12] driver: Google Memory Console
+References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com> <20110312014358.6133.34911.stgit@mike.mtv.corp.google.com>
+In-Reply-To: <20110312014358.6133.34911.stgit@mike.mtv.corp.google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/11/2011 05:43 PM, Mike Waychison wrote:
+> This patch introduces the 'memconsole' driver.
+> 
+> Our firmware gives us access to an in-memory log of the firmware's
+> output.   This gives us visibility in a data-center of headless machines
+> as to what the firmware is doing.
+> 
+> The memory console is found by the driver by finding a header block in
+> the EBDA.  The buffer is then copied out, and is exported to userland in
+> the file /sys/firmware/log.
+> 
 
-Okay another radeon regression showed up in the late stages, and I've 
-pushed a fix for a 3rd problem, again reported on fusion systems which 
-currently none of the devs have access to.
+OK, I really don't like this.
 
-This is on top of the last req, which contains the other fusion fix and 
-the complete system hang fixes.
+All it has is a 32-bit nonrandom signature, no DMI keying or anything
+else to protect it.  This really isn't sufficient.
 
-Dave.
-
-The following changes since commit 9179746652faf0aba07b8b7f770dcf29892a24c6:
-
-  Merge branch 'media_fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6 (2011-03-10 13:22:10 -0800)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Dave Airlie (3):
-      drm/radeon: add pageflip hooks for fusion
-      drm/radeon: fix page flipping hangs on r300/r400
-      drm/radeon: fix problem with changing active VRAM size. (v2)
-
- drivers/gpu/drm/radeon/evergreen.c          |    3 +--
- drivers/gpu/drm/radeon/evergreen_blit_kms.c |    4 ++--
- drivers/gpu/drm/radeon/r100.c               |   22 ++--------------------
- drivers/gpu/drm/radeon/r600.c               |    3 +--
- drivers/gpu/drm/radeon/r600_blit_kms.c      |    4 ++--
- drivers/gpu/drm/radeon/radeon.h             |    2 +-
- drivers/gpu/drm/radeon/radeon_asic.c        |    3 +++
- drivers/gpu/drm/radeon/radeon_gem.c         |    5 ++++-
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |    3 ++-
- drivers/gpu/drm/radeon/radeon_ttm.c         |   14 ++++++++++++++
- drivers/gpu/drm/radeon/rs600.c              |    1 -
- drivers/gpu/drm/radeon/rs690.c              |    1 -
- drivers/gpu/drm/radeon/rv770.c              |    3 +--
- 13 files changed, 33 insertions(+), 35 deletions(-)
+	-hpa
