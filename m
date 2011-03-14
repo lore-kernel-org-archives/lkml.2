@@ -1,51 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab1CNTUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:20:19 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:43060 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab1CNTUS (ORCPT
+	id S1756243Ab1CNTVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:21:04 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:53454 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab1CNTVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:20:18 -0400
-Date: Mon, 14 Mar 2011 13:20:12 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Denis Turischev <denis@compulab.co.il>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [PATCH 3/3 v2] sch_gpio: expand for Tunnel Creek
-Message-ID: <20110314192012.GE16096@angua.secretlab.ca>
-References: <4D7CE230.1070004@compulab.co.il>
- <4D7CE2BB.5010802@compulab.co.il>
- <4D7CE31E.207@compulab.co.il>
- <4D7DF391.50302@compulab.co.il>
- <20110314114540.GO31153@sortiz-mobl>
+	Mon, 14 Mar 2011 15:21:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=b4wvKolZ4U4pTMDxEM50x+qvIEEHJLHMWrJXGGWHA1h4+yNpIz0431qKgjz8Nfezew
+         7s4ffy6gbRa9Pjn0leoQ==
+Date: Mon, 14 Mar 2011 12:20:52 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: "Theodore Ts'o" <tytso@mit.edu>
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: ext4 deep stack with mark_page_dirty reclaim
+Message-ID: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110314114540.GO31153@sortiz-mobl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 12:45:40PM +0100, Samuel Ortiz wrote:
-> Hi Denis,
-> 
-> On Mon, Mar 14, 2011 at 12:53:05PM +0200, Denis Turischev wrote:
-> > Almost the same driver for both Poulsbo and Tunnel Creek.
-> > The difference is in quantity of GPIOs powered by the core power
-> > rail and by suspend power supply, default values for some GPIOs, etc.
-> > Detect actual hardware by platform device ID assigned in lpc_sch
-> > and set configuration accordingly.
-> Grant, are you ok with me taking this patch ?
+When testing something else on 2.6.38-rc8 last night,
+I hit this x86_64 stack overflow.  I've never had one before,
+it seems worth reporting.  kdb was in, I jotted it down by hand
+(the notifier part of it will be notifying kdb of the fault).
+CONFIG_DEBUG_STACK_OVERFLOW and DEBUG_STACK_USAGE were not set.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+I should disclose that I have a hack in which may make my stack
+frames slightly larger than they should be: check against yours.
+So it may not be an overflow for anyone else, but still a trace
+to worry about.
 
-> 
-> Cheers,
-> Samuel.
-> 
-> -- 
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+The faulting address has a stray 2 in it: presumably from when
+the stack descended into the thread_info and got corrupted.
+
+BUG: unable to handle kernel paging request at ffff88027a704060
+IP: vprintk+0x100
+Thread overran stack, or stack corrupted
+ffff88007a7040a8 notifier_call_chain+0x40
+ffff88007a704108 __atomic_notifier_call_chain+0x48
+ffff88007a704148 __die+0x48
+ffff88007a7041a8 die+0x50
+ffff88007a7041e8 do_general_protection+0x168
+ffff88007a704248 general_protection+0x1f
+ffff88007a704338 schedule+0x25a
+ffff88007a7044a8 io_schedule+0x35
+ffff88007a7044c8 get_request_wait+0xc6
+ffff88007a704568 __make_request+0x36d
+ffff88007a7045d8 generic_make_request+0x2f2
+ffff88007a7046a8 submit_bio+0xe1
+ffff88007a704738 swap_writepage+0xa3
+ffff88007a704788 pageout+0x151
+ffff88007a704808 shrink_page_list+0x2db
+ffff88007a7048b8 shrink_inactive_list+0x2d3
+ffff88007a7049b8 shrink_zone+0x17d
+ffff88007a704a98 shrink_zones+0x0xa3
+ffff88007a704b18 do_try_to_free_pages+0x87
+ffff88007a704ba8 try_to_free_mem_cgroup_pages+0x8e
+ffff88007a704c18 mem_cgroup_hierarchical_reclaim+0x220
+ffff88007a704cc8 mem_cgroup_do_charge+0xdc
+ffff88007a704d48 __mem_cgroup_try_charge+0x19c
+ffff88007a704dc8 mem_cgroup_charge_common+0xa8
+ffff88007a704e48 mem_cgroup_cache_charge+0x19a
+ffff88007a704ec8 add_to_page_cache_locked+0x57
+ffff88007a704f28 add_to_page_cache_lru+0x3e
+ffff88007a704f78 find_or_create_page+0x69
+ffff88007a704fe8 grow_dev_page+0x4a
+ffff88007a705048 grow_buffers+0x41
+ffff88007a705088 __getblk_slow+0xd7
+ffff88007a7050d8 __getblk+0x44
+ffff88007a705128 __ext4_get_inode_loc+0x12c
+ffff88007a7051d8 ext4_get_inode_loc+0x30
+ffff88007a705208 ext4_reserve_inode_write+0x21
+ffff88007a705258 ext4_mark_inode_dirty+0x3b
+ffff88007a7052f8 ext4_dirty_inode+0x3e
+ffff88007a705338 __mark_inode_dirty+0x32
+linux/fs.h       mark_inode_dirty
+linux/quotaops.h dquot_alloc_space
+linux/quotaops.h dquot_alloc_block
+ffff88007a705388 ext4_mb_new_blocks+0xc2
+ffff88007a705418 ext4_alloc_blocks+0x189
+ffff88007a7054e8 ext4_alloc_branch+0x73
+ffff88007a7055b8 ext4_ind_map_blocks+0x148
+ffff88007a7056c8 ext4_map_blocks+0x148
+ffff88007a705738 ext4_getblk+0x5f
+ffff88007a7057c8 ext4_bread+0x36
+ffff88007a705828 ext4_append+0x52
+ffff88007a705888 do_split+0x5b
+ffff88007a705968 ext4_dx_add_entry+0x4b4
+ffff88007a705a98 ext4_add_entry+0x7c
+ffff88007a705b48 ext4_add_nondir+0x2e
+ffff88007a705b98 ext4_create+0xf5
+ffff88007a705c28 vfs_create+0x83
+ffff88007a705c88 __open_namei_create+0x59
+ffff88007a705ce8 do_last+0x13b
+ffff88007a705d58 do_filp_open+0x2ae
+ffff88007a705ed8 do_sys_open+0x72
+ffff88007a705f58 sys_open+0x27
+
+Hugh
