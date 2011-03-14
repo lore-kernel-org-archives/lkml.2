@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab1CNGR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 02:17:58 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43642
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751079Ab1CNGRy (ORCPT
+	id S932263Ab1CNGwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 02:52:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54532 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab1CNGwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 02:17:54 -0400
-Date: Sun, 13 Mar 2011 23:18:32 -0700 (PDT)
-Message-Id: <20110313.231832.226787024.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: bhutchings@solarflare.com, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, peterz@infradead.org
-Subject: Re: linux-next: build failure after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110314170546.af552b4e.sfr@canb.auug.org.au>
-References: <20110314163135.f366742e.sfr@canb.auug.org.au>
-	<20110313.225312.193696949.davem@davemloft.net>
-	<20110314170546.af552b4e.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 14 Mar 2011 02:52:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=prEX+To+Sx8zPRQEOe7oLF2egUT2GryuGUbZ4DTBycgWM/05Djg2M/WsB7Xd10+6sf
+         8SKLeRXf382cMQYJ0ZJkBefLA6a/qRLLYA9vxM/SXt6GN0pxHAgzajmjAYToIpo9IN7w
+         Ztf9hvdjZdj4NnbfDg/5kLxmxiSr9OT5JdnXc=
+Message-ID: <4D7DBB11.1010802@pobox.com>
+Date: Mon, 14 Mar 2011 02:52:01 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Seth Heasley <seth.heasley@intel.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.37.3] ahci: AHCI mode SATA patch for Intel Patsburg
+ SATA RAID controller
+References: <201103111157.42656.seth.heasley@intel.com>
+In-Reply-To: <201103111157.42656.seth.heasley@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 14 Mar 2011 17:05:46 +1100
+On 03/11/2011 02:57 PM, Seth Heasley wrote:
+> This patch adds an updated SATA RAID DeviceID for the Intel Patsburg PCH.
+>
+> Signed-off-by: Seth Heasley<seth.heasley@intel.com>
 
-> On Sun, 13 Mar 2011 22:53:12 -0700 (PDT) David Miller <davem@davemloft.net> wrote:
->>
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Mon, 14 Mar 2011 16:31:35 +1100
->> 
->> > Maybe some config option changed ...
->> 
->> Perhaps GENERIC_HARDIRQS_NO_DEPRECATED?
-> 
-> Yep, that has been turned on for powerpc now.  I guess you will have the
-> same problem on sparc64 of you merge the net-next and sparc trees ...
+applied
 
-I've done this as recently as last night, and for some reason I have no
-build problems.
+
