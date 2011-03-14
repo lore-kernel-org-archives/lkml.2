@@ -1,56 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1CNNc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 09:32:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52944 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab1CNNc1 (ORCPT
+	id S1753284Ab1CNNj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 09:39:58 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:59766 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab1CNNj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 09:32:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: KyongHo Cho <pullip.cho@samsung.com>
-Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU) driver
-Date: Mon, 14 Mar 2011 14:32:19 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        =?utf-8?q?=EB=8C=80=EC=9D=B8=EA=B8=B0?= <inki.dae@samsung.com>,
-        =?utf-8?q?=EA=B0=95=EB=AF=BC=EA=B7=9C?= <mk7.kang@samsung.com>,
-        linux-kernel@vger.kernel.org
-References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111700.17373.arnd@arndb.de> <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
-In-Reply-To: <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103141432.19614.arnd@arndb.de>
-X-Provags-ID: V02:K0:1t0CbBSJYb23HoK5daOXdtGlgWF/4jo/Bf27AdvvMgX
- b3DczkXzPJdkDMucs7I31CIJVJ//ycnr7kQl+M4wIaXIcWawJh
- gOlY67qK8vFBvBZwGDEOcP4QLrz09gLvChkN/bv8XaR0mFdqps
- HdFBFkBotoGbZMfcz6GnyUBwsK3ymoKYzRW8/Ql2H7LKntinju
- 3JQJXNOaF0o9lsXYNda2g==
+	Mon, 14 Mar 2011 09:39:57 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 14 Mar 2011 19:04:13 +0530
+Message-Id: <20110314133413.27435.67467.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+Subject: [PATCH v2 2.6.38-rc8-tip 1/20]  1: mm: Move replace_page() to mm/memory.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 March 2011, KyongHo Cho wrote:
-> I think we can consider another solution for the various requirements.
-> I think one of the most possible solutions is VCMM.
-> Or we can enhance include/linux/iommu.h with reference of VCMM.
 
-I think extending or changing the existing interface would be much
-preferred. It's always better to limit the number of interfaces
-that do the same thing, and we already have more duplication than
-we want with the two dma-mapping.h and iommu.h interfaces.
+User bkpt will use background page replacement approach to insert/delete
+breakpoints. Background page replacement approach is based on
+replace_page. Hence replace_page() loses its static attribute.
 
-Note that any aspect of the existing interface can be changed if
-necessary, as long as there is a way to migrate all the existing
-users. Since the iommu API is not exported to user space, there
-is no requirement to keep it stable.
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
+ include/linux/mm.h |    2 ++
+ mm/ksm.c           |   62 ----------------------------------------------------
+ mm/memory.c        |   62 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 64 insertions(+), 62 deletions(-)
 
-	Arnd
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 679300c..01a0740 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -984,6 +984,8 @@ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int replace_page(struct vm_area_struct *vma, struct page *page,
++					struct page *kpage, pte_t orig_pte);
+ 
+ /* Is the vma a continuation of the stack vma above it? */
+ static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
+diff --git a/mm/ksm.c b/mm/ksm.c
+index c2b2a94..f46e20d 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -765,68 +765,6 @@ out:
+ 	return err;
+ }
+ 
+-/**
+- * replace_page - replace page in vma by new ksm page
+- * @vma:      vma that holds the pte pointing to page
+- * @page:     the page we are replacing by kpage
+- * @kpage:    the ksm page we replace page by
+- * @orig_pte: the original value of the pte
+- *
+- * Returns 0 on success, -EFAULT on failure.
+- */
+-static int replace_page(struct vm_area_struct *vma, struct page *page,
+-			struct page *kpage, pte_t orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	unsigned long addr;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	pgd = pgd_offset(mm, addr);
+-	if (!pgd_present(*pgd))
+-		goto out;
+-
+-	pud = pud_offset(pgd, addr);
+-	if (!pud_present(*pud))
+-		goto out;
+-
+-	pmd = pmd_offset(pud, addr);
+-	BUG_ON(pmd_trans_huge(*pmd));
+-	if (!pmd_present(*pmd))
+-		goto out;
+-
+-	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-	if (!pte_same(*ptep, orig_pte)) {
+-		pte_unmap_unlock(ptep, ptl);
+-		goto out;
+-	}
+-
+-	get_page(kpage);
+-	page_add_anon_rmap(kpage, vma, addr);
+-
+-	flush_cache_page(vma, addr, pte_pfn(*ptep));
+-	ptep_clear_flush(vma, addr, ptep);
+-	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+-
+-	page_remove_rmap(page);
+-	if (!page_mapped(page))
+-		try_to_free_swap(page);
+-	put_page(page);
+-
+-	pte_unmap_unlock(ptep, ptl);
+-	err = 0;
+-out:
+-	return err;
+-}
+-
+ static int page_trans_compound_anon_split(struct page *page)
+ {
+ 	int ret = 0;
+diff --git a/mm/memory.c b/mm/memory.c
+index 5823698..2a3021c 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2669,6 +2669,68 @@ void unmap_mapping_range(struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
++/**
++ * replace_page - replace page in vma by new ksm page
++ * @vma:      vma that holds the pte pointing to page
++ * @page:     the page we are replacing by kpage
++ * @kpage:    the ksm page we replace page by
++ * @orig_pte: the original value of the pte
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int replace_page(struct vm_area_struct *vma, struct page *page,
++			struct page *kpage, pte_t orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	unsigned long addr;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	pgd = pgd_offset(mm, addr);
++	if (!pgd_present(*pgd))
++		goto out;
++
++	pud = pud_offset(pgd, addr);
++	if (!pud_present(*pud))
++		goto out;
++
++	pmd = pmd_offset(pud, addr);
++	BUG_ON(pmd_trans_huge(*pmd));
++	if (!pmd_present(*pmd))
++		goto out;
++
++	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
++	if (!pte_same(*ptep, orig_pte)) {
++		pte_unmap_unlock(ptep, ptl);
++		goto out;
++	}
++
++	get_page(kpage);
++	page_add_anon_rmap(kpage, vma, addr);
++
++	flush_cache_page(vma, addr, pte_pfn(*ptep));
++	ptep_clear_flush(vma, addr, ptep);
++	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
++
++	page_remove_rmap(page);
++	if (!page_mapped(page))
++		try_to_free_swap(page);
++	put_page(page);
++
++	pte_unmap_unlock(ptep, ptl);
++	err = 0;
++out:
++	return err;
++}
++
+ int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
