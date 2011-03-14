@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab1CNRsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 13:48:35 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40354 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab1CNRsc (ORCPT
+	id S1756926Ab1CNRto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 13:49:44 -0400
+Received: from 9.26.mail-out.ovh.net ([46.105.56.220]:43934 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1752892Ab1CNRtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 13:48:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=MZz/og0zbm1Zm3mARgWK+FP9+hEg70M/gbIxaMnMsKmSllVZzUNX1MUiYF/V1Gly72
-         a/nLU9lVXpSLExyLDQhlsRfUeZqC0qgF6bXbcCrqwp0rmi/VkN2312c9QCkiSSkeZ8QN
-         sh+xdP+yXclj8cYjSYjSYPtFGLQQw+fLo7jA8=
+	Mon, 14 Mar 2011 13:49:43 -0400
+X-Greylist: delayed 1195 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Mar 2011 13:49:42 EDT
+Message-ID: <4D7E4EF3.8080704@example.com>
+Date: Mon, 14 Mar 2011 18:22:59 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-Date: Mon, 14 Mar 2011 17:48:31 +0000
-Message-ID: <AANLkTikbco0iTe05iD4S+=Tsoi=k=STU-2aiv7+EDF9j@mail.gmail.com>
-Subject: [RFC][PATCH v2 11/23] (mn10300) __vmalloc: add gfp flags variant of
- pte and pmd allocation
-From: Prasad Joshi <prasadjoshi124@gmail.com>
-To: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com, Prasad Joshi <prasadjoshi124@gmail.com>,
-        Anand Mitra <mitra@kqinfotech.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 5689172230611628312
+X-Ovh-Remote: 178.36.153.11 (178-36-153-11.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__vmalloc: propagating GFP allocation flag.
+Hello,
 
-- adds functions to allow caller to pass the GFP flag for memory allocation
-- helps in fixing the Bug 30702 (__vmalloc(GFP_NOFS) can callback
-		  file system evict_inode).
+I do no have it and my Debian package doesn't have it either. I cannot 
+build and test linux-next kernels, as a minute ago. It searches for 
+rtl_nic/rtl8105e-1.fw.
 
-Signed-off-by: Anand Mitra <mitra@kqinfotech.com>
-Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
----
-Chnagelog:
-arch/mn10300/include/asm/pgalloc.h |    2 ++
-arch/mn10300/mm/pgtable.c          |   10 ++++++++--
-2 files changed, 10 insertions(+), 2 deletions(-)
----
-diff --git a/arch/mn10300/include/asm/pgalloc.h
-b/arch/mn10300/include/asm/pgalloc.h
-index 146bacf..35150ae 100644
---- a/arch/mn10300/include/asm/pgalloc.h
-+++ b/arch/mn10300/include/asm/pgalloc.h
-@@ -37,6 +37,8 @@ extern pgd_t *pgd_alloc(struct mm_struct *);
- extern void pgd_free(struct mm_struct *, pgd_t *);
+Please help.
 
- extern pte_t *pte_alloc_one_kernel(struct mm_struct *, unsigned long);
-+extern pte_t *__pte_alloc_one_kernel(struct mm_struct *, unsigned long, gfp_t);
-+
- extern struct page *pte_alloc_one(struct mm_struct *, unsigned long);
+Regards,
 
- static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-diff --git a/arch/mn10300/mm/pgtable.c b/arch/mn10300/mm/pgtable.c
-index 450f7ba..05077b4 100644
---- a/arch/mn10300/mm/pgtable.c
-+++ b/arch/mn10300/mm/pgtable.c
-@@ -62,14 +62,20 @@ void set_pmd_pfn(unsigned long vaddr, unsigned
-long pfn, pgprot_t flags)
- 	local_flush_tlb_one(vaddr);
- }
+Piotr Hosowicz
 
--pte_t *pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
-+pte_t *__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address,
-+		gfp_t gfp_mask)
- {
--	pte_t *pte = (pte_t *)__get_free_page(GFP_KERNEL|__GFP_REPEAT);
-+	pte_t *pte = (pte_t *)__get_free_page(gfp_mask);
- 	if (pte)
- 		clear_page(pte);
- 	return pte;
- }
-
-+pte_t *pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
-+{
-+	return __pte_alloc_one_kernel(mm, address, GFP_KERNEL | __GFP_REPEAT);
-+}
-+
- struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
- {
- 	struct page *pte;
+-- 
+Janusz Korwin-Mikke:
+"Dyktatury dziel± siê na dobre i z³e. Demokracja jest zawsze g³upia."
+NP: Banda Do Sol - Praça Da Paz
+NB: 2.6.38-rc8-git4
