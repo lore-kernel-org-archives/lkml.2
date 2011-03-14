@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab1CNVKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:10:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36688 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757246Ab1CNVKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:10:08 -0400
-Date: Mon, 14 Mar 2011 22:10:03 +0100
-From: Jan Kara <jack@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH v6 8/9] memcg: check memcg dirty limits in page
- writeback
-Message-ID: <20110314211002.GD4998@quack.suse.cz>
-References: <1299869011-26152-1-git-send-email-gthelen@google.com>
- <1299869011-26152-9-git-send-email-gthelen@google.com>
- <20110314175408.GE31120@redhat.com>
+	id S1757294Ab1CNVKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:10:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48463 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab1CNVKg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 17:10:36 -0400
+Date: Mon, 14 Mar 2011 21:10:31 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <greg@kroah.com>
+Cc: andy.green@linaro.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
+	api
+Message-ID: <20110314211031.GB32150@sirena.org.uk>
+References: <20110314205432.GA1856@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110314175408.GE31120@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110314205432.GA1856@kroah.com>
+X-Cookie: Cynic, n.:
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-03-11 13:54:08, Vivek Goyal wrote:
-> On Fri, Mar 11, 2011 at 10:43:30AM -0800, Greg Thelen wrote:
-> > If the current process is in a non-root memcg, then
-> > balance_dirty_pages() will consider the memcg dirty limits as well as
-> > the system-wide limits.  This allows different cgroups to have distinct
-> > dirty limits which trigger direct and background writeback at different
-> > levels.
-> > 
-> > If called with a mem_cgroup, then throttle_vm_writeout() queries the
-> > given cgroup for its dirty memory usage limits.
-> > 
-> > Signed-off-by: Andrea Righi <arighi@develer.com>
-> > Signed-off-by: Greg Thelen <gthelen@google.com>
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> > Changelog since v5:
-> > - Simplified this change by using mem_cgroup_balance_dirty_pages() rather than
-> >   cramming the somewhat different logic into balance_dirty_pages().  This means
-> >   the global (non-memcg) dirty limits are not passed around in the
-> >   struct dirty_info, so there's less change to existing code.
-> 
-> Yes there is less change to existing code but now we also have a separate
-> throttlig logic for cgroups. 
-> 
-> I thought that we are moving in the direction of IO less throttling
-> where bdi threads always do the IO and Jan Kara also implemented the
-> logic to distribute the finished IO pages uniformly across the waiting
-> threads.
-  Yes, we'd like to avoid doing IO from balance_dirty_pages(). But if the
-logic in cgroups specific part won't get too fancy (which it doesn't seem
-to be the case currently), it shouldn't be too hard to convert it to the new
-approach.
+On Mon, Mar 14, 2011 at 01:54:32PM -0700, Greg KH wrote:
+> On Mon, Mar 14, 2011 at 08:38:53AM +0000, Andy Green wrote:
 
-We can talk about it at LSF but at least with my approach to IO-less
-balance_dirty_pages() it would be easy to convert cgroups throttling to
-the new way. With Fengguang's approach it might be a bit harder since he
-computes a throughput and from that necessary delay for a throttled task
-but with cgroups that is impossible to compute so he'd have to add some
-looping if we didn't write enough pages from the cgroup yet. But still it
-would be reasonable doable AFAICT.
+> > For sure, in any other bus, we will never have this discussion about
+> > if the device driver should use relevant platform_data to be guided
+> > about what to do, that is what platform_data is for and it is very
+> > widely used indeed.
 
-> Keeping it separate for cgroups, reduces the complexity but also forks
-> off the balancing logic for root and other cgroups. So if Jan Kara's
-> changes go in, it automatically does not get used for memory cgroups.
-> 
-> Not sure how good a idea it is to use a separate throttling logic for
-> for non-root cgroups. 
-  Yeah, it looks a bit odd. I'd think that we could just cap
-task_dirty_limit() by a value computed from a cgroup limit and be done
-with that but I probably miss something... Sure there is also a different
-background limit but that's broken anyway because a flusher thread will
-quickly stop doing writeback if global background limit is not exceeded.
-But that's a separate topic so I'll reply with this to a more appropriate
-email ;)
+> Are you sure?  Try me on one of the other "real" busses out there like
+> PCI and see how all of these same arguments are identical :)
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+You were asking for concrete examples up thread, and this brings one to
+mind - I used to work on a system where we had to modify the PCI ethernet
+controller driver to tell it that while it did have two PHYs attached to
+the MDIO bus they were nothing to do with the data interface of the
+ethernet controller which was instead directly wired to a fixed
+configuration device.  This sort of thing could be handled by the device
+tree but...
+
+> The abuse of platform_data today does not give you the right to persist
+> in it.  Look at the work of the device tree developers to fix this
+> problem as proof of this.
+
+...the problem with device tree is that it's only available on a limited
+subset of architectures at the minute, with progress towards deploying
+it more widely being somewhat slow.
