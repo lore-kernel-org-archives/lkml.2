@@ -1,113 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab1CNJ1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 05:27:36 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:43445 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab1CNJ1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 05:27:35 -0400
-Message-ID: <0b7ab4190f781632fdb9a247f458edc2.squirrel@webmail.greenhost.nl>
-In-Reply-To: <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
-    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
-    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
-    <201103111255.44979.arnd@arndb.de>
-    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
-    <20110311235607.GB15853@elie>
-    <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
-    <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com>
-    <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
-    <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net>
-Date: Mon, 14 Mar 2011 10:27:25 +0100 (CET)
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Sage Weil" <sage@newdream.net>
-Cc: "Greg KH" <greg@kroah.com>, "Jonathan Nieder" <jrnieder@gmail.com>,
-        "Arnd Bergmann" <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org,
-        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
-        l@jasper.es
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 18b3e585b0ef946fc0f6ee9ab4fcc4ff
+	id S1756320Ab1CNJds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 05:33:48 -0400
+Received: from www.tglx.de ([62.245.132.106]:58098 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754380Ab1CNJdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 05:33:47 -0400
+Date: Mon, 14 Mar 2011 10:33:40 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, sodaville@linutronix.de
+Subject: [PATCH v2 current] x86/ce4100: set pci ops via callback instead of module init
+Message-ID: <20110314093340.GA21026@www.tglx.de>
+References: <20110311152247.GA14273@www.tglx.de> <alpine.LFD.2.00.1103111747460.2787@localhost6.localdomain6> <20110312210856.GA16480@www.tglx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110312210856.GA16480@www.tglx.de>
+User-Agent: Mutt/1.4.2.2i
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, March 14, 2011 05:29, Sage Weil wrote:
-> On Mon, 14 Mar 2011, Indan Zupancic wrote:
->> Everyone seems to want to add this new syncfs, but it's not even defined
->> what it does. "Same as sync, but only on one fs" is IMHO not good
->> enough, because sync's behaviour is pretty badly documented, and that's
->> a system call.
->
-> How about the man page below?  I tried to avoid the somewhat antiquated
-> implementation specific terminology in the sync(2) man page.
+Setting those on subsys initcall will break any x86 platform except
+ce4100 which could lead to complains from users.
+To avoid I move to pci.init like others which use the same kind of
+quirk.
 
-Good enough.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
 
->
-> I think adding this functionality into sync_file_range(2) is forcing
-> unrelated functionality into an existing interface; sync_file_range
-> operates on _files_, not an entire file system.  With each API addition
-> it is more important to make the interface simple and intuitive than
-> to minimize the size of our patches.  IMO that's why a new syscall
-> is preferable to, say, an equivalent ioctl.
+This is against v2.6.38-rc8. The PCI file joined the kernel in
+v2.6.38-rc1.
 
-Your new syncfs also operates on files, it's only the name of sync_file_range
-which is not very fitting. Other than that, syncing files in weird, nonstandard
-ways is what it does and in that sense it's a good place for syncfs functionality.
+ arch/x86/include/asm/ce4100.h     |    6 ++++++
+ arch/x86/pci/ce4100.c             |    6 +++---
+ arch/x86/platform/ce4100/ce4100.c |    2 ++
+ 3 files changed, 11 insertions(+), 3 deletions(-)
+ create mode 100644 arch/x86/include/asm/ce4100.h
 
-But hey, it seems I'm the only one favouring that approach, and as you don't
-mind the size of your patch, make sure to add support for syncfs to all other
-23 archs too in your next patch submission.
-
-Take care,
-
-Indan
-
-
-> Thanks-
-> sage
->
->
-> .TH SYNCFS 2 2011-03-13 "Linux" "Linux Programmer's Manual"
-> .SH NAME
-> syncfs \- commit cached file system state to stable storage
-> .SH SYNOPSIS
-> .B #include <unistd.h>
-> .sp
-> .B void syncfs(int fd);
-> .SH DESCRIPTION
-> .BR syncfs ()
-> flushes any cached data modifications to the file system containing the
-> file referenced by the file descriptor
-> .I fd
-> to stable storage (usually a disk).  This includes the results of any
-> file modifications or other file system operations that have completed
-> prior to the call to
-> .BR syncfs(2).
-> This is similar to
-> .BR sync(2),
-> but will commit changes for only a single file system instead of all
-> mounted file systems.
-> .SH ERRORS
-> This function is always successful.
-> .SH "SEE ALSO"
-> .BR bdflush (2),
-> .BR fdatasync (2),
-> .BR fsync (2),
-> .BR sync (2),
-> .BR sync (8),
-> .BR update (8)
->
-
+diff --git a/arch/x86/include/asm/ce4100.h b/arch/x86/include/asm/ce4100.h
+new file mode 100644
+index 0000000..e656ad8
+--- /dev/null
++++ b/arch/x86/include/asm/ce4100.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_CE4100_H_
++#define _ASM_CE4100_H_
++
++int ce4100_pci_init(void);
++
++#endif
+diff --git a/arch/x86/pci/ce4100.c b/arch/x86/pci/ce4100.c
+index 85b68ef..1ec2841 100644
+--- a/arch/x86/pci/ce4100.c
++++ b/arch/x86/pci/ce4100.c
+@@ -34,6 +34,7 @@
+ #include <linux/pci.h>
+ #include <linux/init.h>
+ 
++#include <asm/ce4100.h>
+ #include <asm/pci_x86.h>
+ 
+ struct sim_reg {
+@@ -306,10 +307,9 @@ struct pci_raw_ops ce4100_pci_conf = {
+ 	.write = ce4100_conf_write,
+ };
+ 
+-static int __init ce4100_pci_init(void)
++int __init ce4100_pci_init(void)
+ {
+ 	init_sim_regs();
+ 	raw_pci_ops = &ce4100_pci_conf;
+-	return 0;
++	return pci_legacy_init();
+ }
+-subsys_initcall(ce4100_pci_init);
+diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+index d2c0d51..cd6f184 100644
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@ -15,6 +15,7 @@
+ #include <linux/serial_reg.h>
+ #include <linux/serial_8250.h>
+ 
++#include <asm/ce4100.h>
+ #include <asm/setup.h>
+ #include <asm/io.h>
+ 
+@@ -129,4 +130,5 @@ void __init x86_ce4100_early_setup(void)
+ 	x86_init.resources.probe_roms = x86_init_noop;
+ 	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+ 	x86_init.mpparse.find_smp_config = sdv_find_smp_config;
++	x86_init.pci.init = ce4100_pci_init;
+ }
+-- 
+1.7.4
 
