@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab1CNBPr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 21:15:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32314 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756139Ab1CNBPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 21:15:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,312,1297065600"; 
-   d="scan'208";a="402036677"
-Message-ID: <4D7D6C40.3020807@linux.intel.com>
-Date: Sun, 13 Mar 2011 18:15:44 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1756723Ab1CNBcP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 21:32:15 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:45307 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab1CNBcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 21:32:12 -0400
+Message-ID: <89481603ed9cfc86efaa039c2dfeb955.squirrel@webmail.greenhost.nl>
+In-Reply-To: <4D7BBC03.3020404@garzik.org>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+    <201103111255.44979.arnd@arndb.de>
+    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+    <4D7AC0FE.8070806@gmail.com>
+    <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
+    <4D7ADFDD.9080108@gmail.com>
+    <e118a1458c29e4f44bf71c7095e4bce8.squirrel@webmail.greenhost.nl>
+    <4D7BBC03.3020404@garzik.org>
+Date: Mon, 14 Mar 2011 02:31:49 +0100 (CET)
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Jeff Garzik" <jeff@garzik.org>
+Cc: "Ric Wheeler" <ricwheeler@gmail.com>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Sage Weil" <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Darren Hart <darren@dvhart.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] futex: do not pagefault_disable in futex_atomic_cmpxchg_inatomic()
-References: <20110307021127.GB31188@google.com>	<alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>	<20110309112550.GA3050@google.com>	<alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>	<20110311021654.GA26122@google.com>	<20110311024731.GB26122@google.com>	<AANLkTinXxCMVozx-NKEVXJLNrB1V93VEAJ8FiHQHXY_=@mail.gmail.com> <AANLkTinmxcjRUj-JRtmO3JSAGWoiW+ec7JzTBpL32C=t@mail.gmail.com>
-In-Reply-To: <AANLkTinmxcjRUj-JRtmO3JSAGWoiW+ec7JzTBpL32C=t@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 523f42b60907f92a5b98f162865e3e4b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2011 05:55 PM, Darren Hart wrote:
-> I have to apologize. These landed right as I was leaving for OSTS and
-> I didn't have time to review them properly.  I wondered about the
-> preempt vs pagefault disable and wondered how exit_robust_list() was
-> covered in Michel's comments (perhaps somewhere higher up the call
-> chain). I leaned on the review of others when I should have raised the
-> questions even if I didn't have the time to dig into them myself.
-> Linus shouldn't have had to raise those questions, I'll do better at
-> this in the future.
+On Sat, March 12, 2011 19:31, Jeff Garzik wrote:
+> On 03/11/2011 10:50 PM, Indan Zupancic wrote:
+>> If sync(2) didn't exist and people wanted to add it I'd complain too. This
+>> has all the problems of sync(2), but with the "not sure if all the files are
+>> on the file system I think" problem added.
 >
-> I noticed that my name is the only one in futex.c with an email
-> address in the header
+> You are decades too late, then...
 
-Scratch that, the others are just on the Copyright line instead of the 
-feature line. What is the policy for updating email addresses in source 
-files? With git, I suppose they are no longer particularly useful. 
-Should I remove a bad address, or just learn from it and not include it 
-in future work?
+I know.
 
-Thanks,
+> sync_file_range() is not appropriate because that works on only one fd.
+>
+> The new syscall is fine, and addresses a need.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+The new syscall works on only one fd too. The behaviour of the proposed
+syncfs and an extended sync_file_range is exactly the same.
+
+Greetings,
+
+Indan
+
+
