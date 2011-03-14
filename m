@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab1CNP16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:27:58 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37847 "EHLO
+	id S1755593Ab1CNP2D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:28:03 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37853 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756898Ab1CNP1u (ORCPT
+	with ESMTP id S1756896Ab1CNP1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:27:50 -0400
-Message-Id: <20110314152226.541815887@chello.nl>
+	Mon, 14 Mar 2011 11:27:55 -0400
+Message-Id: <20110314152227.287704467@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Mon, 14 Mar 2011 16:06:15 +0100
+Date: Mon, 14 Mar 2011 16:06:23 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -21,105 +21,60 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 02/14] sched: Simplify cpu_power initialization
+Subject: [RFC][PATCH 10/14] sched: Simplify the free path some
 References: <20110314150613.749843433@chello.nl>
-Content-Disposition: inline; filename=sched-simplify-cpu_power.patch
+Content-Disposition: inline; filename=sched-foo9.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code in update_group_power() does what init_sched_groups_power()
-does and more, so remove the special init_ code and call the generic
-code instead.
+If we check the root_domain reference count we can see if its been
+used or not, use this observation to simplify some of the return
+paths.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 LKML-Reference: <new-submission>
 ---
- kernel/sched.c |   44 +++++---------------------------------------
- 1 file changed, 5 insertions(+), 39 deletions(-)
+ kernel/sched.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -6655,9 +6655,6 @@ cpu_attach_domain(struct sched_domain *s
- 	struct rq *rq = cpu_rq(cpu);
- 	struct sched_domain *tmp;
+@@ -6999,7 +6999,8 @@ static void __free_domain_allocs(struct 
  
--	for (tmp = sd; tmp; tmp = tmp->parent)
--		tmp->span_weight = cpumask_weight(sched_domain_span(tmp));
--
- 	/* Remove the sched domains which do not contribute to scheduling. */
- 	for (tmp = sd; tmp; ) {
- 		struct sched_domain *parent = tmp->parent;
-@@ -7135,11 +7132,6 @@ static void free_sched_groups(const stru
-  */
- static void init_sched_groups_power(int cpu, struct sched_domain *sd)
- {
--	struct sched_domain *child;
--	struct sched_group *group;
--	long power;
--	int weight;
--
- 	WARN_ON(!sd || !sd->groups);
- 
- 	if (cpu != group_first_cpu(sd->groups))
-@@ -7147,36 +7139,7 @@ static void init_sched_groups_power(int
- 
- 	sd->groups->group_weight = cpumask_weight(sched_group_cpus(sd->groups));
- 
--	child = sd->child;
--
--	sd->groups->cpu_power = 0;
--
--	if (!child) {
--		power = SCHED_LOAD_SCALE;
--		weight = cpumask_weight(sched_domain_span(sd));
--		/*
--		 * SMT siblings share the power of a single core.
--		 * Usually multiple threads get a better yield out of
--		 * that one core than a single thread would have,
--		 * reflect that in sd->smt_gain.
--		 */
--		if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
--			power *= sd->smt_gain;
--			power /= weight;
--			power >>= SCHED_LOAD_SHIFT;
--		}
--		sd->groups->cpu_power += power;
--		return;
--	}
--
--	/*
--	 * Add cpu_power of each child group to this groups cpu_power.
--	 */
--	group = child->groups;
--	do {
--		sd->groups->cpu_power += group->cpu_power;
--		group = group->next;
--	} while (group != child->groups);
-+	update_group_power(sd, cpu);
- }
- 
- /*
-@@ -7483,7 +7446,7 @@ static int __build_sched_domains(const s
- {
+ 	switch (what) {
+ 	case sa_rootdomain:
+-		free_rootdomain(&d->rd->rcu); /* fall through */
++		if (!atomic_read(&d->rd->refcount))
++			free_rootdomain(&d->rd->rcu); /* fall through */
+ 	case sa_sd:
+ 		free_percpu(d->sd); /* fall through */
+ 	case sa_sd_storage:
+@@ -7184,7 +7185,7 @@ static int __build_sched_domains(const s
  	enum s_alloc alloc_state = sa_none;
+ 	struct sched_domain *sd;
  	struct s_data d;
--	struct sched_domain *sd;
-+	struct sched_domain *sd, *tmp;
- 	int i;
- #ifdef CONFIG_NUMA
- 	d.sd_allnodes = 0;
-@@ -7506,6 +7469,9 @@ static int __build_sched_domains(const s
- 		sd = __build_book_sched_domain(&d, cpu_map, attr, sd, i);
- 		sd = __build_mc_sched_domain(&d, cpu_map, attr, sd, i);
- 		sd = __build_smt_sched_domain(&d, cpu_map, attr, sd, i);
-+
-+		for (tmp = sd; tmp; tmp = tmp->parent)
-+			tmp->span_weight = cpumask_weight(sched_domain_span(tmp));
+-	int i;
++	int i, ret = -ENOMEM;
+ 
+ 	alloc_state = __visit_domain_allocation_hell(&d, cpu_map);
+ 	if (alloc_state != sa_rootdomain)
+@@ -7236,12 +7237,10 @@ static int __build_sched_domains(const s
+ 		sched_domain_debug(sd, i);
  	}
  
- 	for_each_cpu(i, cpu_map) {
+-	__free_domain_allocs(&d, sa_sd, cpu_map);
+-	return 0;
+-
++	ret = 0;
+ error:
+ 	__free_domain_allocs(&d, alloc_state, cpu_map);
+-	return -ENOMEM;
++	return ret;
+ }
+ 
+ static int build_sched_domains(const struct cpumask *cpu_map)
 
 
