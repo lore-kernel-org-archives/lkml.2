@@ -1,195 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab1CNUgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:36:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58308 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803Ab1CNUfy convert rfc822-to-8bit (ORCPT
+	id S1757038Ab1CNUg7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:36:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51647 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab1CNUg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:35:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fWCluW/JsXGklwNCfe/jEpR5xzpJzrVIEmPzdSh4WxIsbDXRHaMgSN0UJC8xuD1UYA
-         BYCubLwLZV3gLVWxwxZMGrekSry4ec7BvBBYCt8QOapoSqIu5ZoVvuAoZCRg/zGdfoZq
-         xaU2wdYgkN61rvzDOjgAzgcZKc/DZdwWGwXTg=
+	Mon, 14 Mar 2011 16:36:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device driver into misc
+Date: Mon, 14 Mar 2011 21:36:43 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        mems applications <mems.applications@st.com>, rdunlap@xenotime.net,
+        carmine.iascone@st.com, matteo.dameno@st.com, rubini@cvml.unipv.it,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com> <4D7E771B.1040804@cam.ac.uk> <20110314211809.29da8518@endymion.delvare>
+In-Reply-To: <20110314211809.29da8518@endymion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <4D7E204E.7010303@stericsson.com>
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local>
-	<201011251747.48365.arnd@arndb.de>
-	<C832F8F5D375BD43BFA11E82E0FE9FE0082586F430@EXDCVYMBSTM005.EQ1STM.local>
-	<201011261224.59490.arnd@arndb.de>
-	<AANLkTinSb-9=xzX3LfZVYcKiDt5Qkm=qV6CiFGUyq+fC@mail.gmail.com>
-	<20101205112813.GB12542@viiv.ffwll.ch>
-	<AANLkTi=B=_3tHXgG02pQA=zE=i8TOz0BZ=Pe9ZZwGLh3@mail.gmail.com>
-	<4D7E204E.7010303@stericsson.com>
-Date: Mon, 14 Mar 2011 15:35:52 -0500
-Message-ID: <AANLkTimV3=VS1moXOt07d1XRJ72Sr6AVyUa6GFFJBX6D@mail.gmail.com>
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-From: Rob Clark <robdclark@gmail.com>
-To: Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103142136.43566.arnd@arndb.de>
+X-Provags-ID: V02:K0:HaLIu8RdjOQpr7wpPAuIkGTWe6tof3jLmTtsahgTbUR
+ I3z/Kyh9+zv7WCFgE6Bkf59yX6GrN+2tOkJAcuUSGRRwwNBfV8
+ eIqk6XDsUoKtT2j1HHsT6A6oV5pQURFhZyapLcuqL1GyJcGjzf
+ DhdwbZRoB9m/JWLiTZaJkDX1CwX+cBB5paxHxYgyzHTO5zN0Vo
+ OevLFpsI9ejV4DX0bgBIg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 9:03 AM, Marcus Lorentzon
-<marcus.xm.lorentzon@stericsson.com> wrote:
-> On 03/12/2011 04:59 PM, Rob Clark wrote:
->>
->> On Sun, Dec 5, 2010 at 5:28 AM, Daniel Vetter<daniel@ffwll.ch>  wrote:
->>
->>>
->>> On Sat, Dec 04, 2010 at 04:34:22PM -0500, Alex Deucher wrote:
->>>
->>>>
->>>> This doesn't seem that different from the graphics chips we support
->>>> with kms.  I don't think it would require much work to use KMS.  One
->>>> thing we considered, but never ended up implementing was a generic
->>>> overlay API for KMS.  Most PC hardware still has overlays, but we
->>>> don't use them much any more on the desktop side.  It may be
->>>> worthwhile to design an appropriate API for them for these type of
->>>> hardware.
->>>>
->>>
->>> Just fyi about a generic overlay api: I've looked a bit into this when
->>> doing the intel overlay support and I think adding special overlay crtcs
->>> that can be attached real crtcs gives a nice clean api. We could the
->>> reuse
->>> the existing framebuffer/pageflipping api to get the buffers to the
->>> overlay engine.
->>>
->>
->> btw, has there been any further thought/discussion on this topic..
->> I've been experimenting with a drm driver interface on the OMAP SoC.
->> It is working well now for framebuffer type usage (mode setting,
->> virtual framebuffer spanning multiple diplays, and those types of
->> xrandr things)..  the next step that I've started thinking about is
->> overlay (or underlay.. the z-order is flexible) support..
->>
->> I was thinking in a similar direction (ie. a special, or maybe not so
->> special, sort of crtc) and came across this thread, so I thought I'd
->> resurrect the topic.
->>
->> In our case, most of the CRTCs in our driver could be used either with
->> (A)RGB buffers as a traditional framebuffer, or with a few different
->> formats of YUV as video under/overlays.  So if you had one display
->> attached, you might only use one CRTC for traditional GUI/gfx layer,
->> and the rest are available for video.  If you had two displays, then
->> you'd steal one of the video CRTCs and use it for the gfx layer on the
->> second display.  And so on.
->>
->>
->
-> We have similar HW and are also interested in finding some common ground for
-> overlays in KMS. Just as you describe, we have no hard connection between a
-> CRTC and output. Instead we only have overlays. Normal gfx use case is then
-> of course one of these overlays dedicated to one display. And when adding
-> video overlays, we also prefer YUV "underlays" with fullscreen ARGB gfx on
-> top.
->
-> The problem with mapping this to the CRTCs in KMS today, is that there is no
-> differentiation between framebuffer width/height and crt width/height. And
-> of course YUV formats and fb position etc are missing.
->
-> One advantage of the set CRTC ioctl is that all information needed to switch
-> mode is contained in one atomic set mode ioctl. So we have to think about if
-> we want a new more advanced set crtc including overlay config. Or if we want
-> to split mode setup into several requests. And then we must decide if
-> multiple setup ioctls will need some type of "commit" to get the atomic mode
-> switch we have today. For example I don't want to have to do a set_crtc
-> enabling blending without overlay being setup. It should be just as glitch
-> free as KMS is today.
->>
->> Rough thinking:
->> + add some 'caps' to the CRTC to indicate whether it can handle YUV,
->> ARGB, scaling
->> + add an x/y offset relative to the encoder (as opposed to the
->> existing x/y offset relative to the framebuffer)
->> + add a z-order parameter
->>
->>
->
-> Exactly what I would like to have. Especially the caps for scaling, since we
-> have one HW that can't do scaling.
->>
->> Not sure about intel hw if it is supporting clip-rects.. if so, maybe
->> need to add something about that.  In our case we jut put the video
->> behind the gfx layer and use the alpha channel in the gfx framebuffer
->> to clip/blend rather than using clip-rects.
->>
->>
->
-> If this is common ground, I would like to have one clip rect per
-> CRTC/overlay to enable framebuffers larger than overlay viewport. That makes
-> it easier to reuse a large buffer for multiple overlays/framebuffers without
-> having to stress memory management driver. But this is just a "nice to have"
-> feature. Maybe this can be mapped to stride/start address mappings on HW
-> without clip rect. But that will probably include alignment requirements on
-> position and size.
+On Monday 14 March 2011 21:18:09 Jean Delvare wrote:
+> Jonathan is correct. Pressure sensors are not hardware monitoring
+> devices, their drivers have nothing to do in drivers/hwmon. This is
+> something for drivers/misc or staging/iio.
 
+I generally try to prevent people from adding more ad-hoc interfaces
+to drivers/misc. Anything that is called a drivers/misc driver to me
+must qualify as "there can't possibly be a second driver with the
+same semantics", otherwise it should be part of another subsystem
+with clear rules, or be put into its own file system.
 
-Good point, I had overlooked that but we do have same requirement for
-cropping as well.. although in the crtc we already specify an x/y
-offset within the drm_framebuffer that the crtc is attached to.. so I
-guess if we have an input width/height (output is implied I guess by
-the encoder/connector) then we should be fine for cropping
+While it seems that right now everyone is just trying to keep move
+the driver to some other subsystem, I think it's worth noting that
+it is indeed a useful thing to have the driver, I'm optimistic
+that we can find some place for it. ;-)
 
-Although in some cases top/left crop offset could be changing frame by
-frame (think use cases like zero-copy video stabilization or pan/scan)
-so might be nice to have a way to specify new x/y offset when
-flipping.  I guess that would be an extension/change to existing page
-flip ioctl.
+Now how about the IIO stuff? This is the first time I've even
+heard about it. Does it have any major disadvantages besides
+being staging-quality?
 
-BR,
--R
-
->>>
->>> The real pain starts when we want format discovery from userspace with
->>> all
->>> the alignement/size/layout constrains. Add in tiling support and its
->>> almost impossible to do in a generic way. But also for kms userspace
->>> needs
->>> to know these constrains (implemented for generic use in libkms). I favor
->>> such an approach for overlays, too (if it ever happens) - i.e. a few
->>> helpers in libkms that allocate an appropriate buffer for a given format
->>> and size and returns the buffer, strides and offsets for the different
->>> planes.
->>>
->>
->> hmm, I guess I know about the OMAP display subsystem, and it's overlay
->> formats/capabilities.. but not enough about other hw to say anything
->> intelligent here.  But I guess even if we ignore the format of the
->> data in the buffer, at least the APIs to setup/attach overlay CRTCs at
->> various positions could maybe be something we can start with as a
->> first step.  At least standardizing this part seems like a good first
->> step.  But I'm definitely interested if someone has some ideas.
->>
->>
->
-> Yes, so we could try and find some common ground and add support for that.
-> But still enable drivers to extend that with the features where we find no
-> common ground. Just as GEM doesn't provide allocation ioctl, only free.
->
-> And in the end we have to see if the common ground is enough to actually
-> build an application on. If not, there's not much use for a partial common
-> API. Maybe that's why there's no overlay API in KMS tiday?
->
-> Maybe vendor libkms can be used to fill in the gaps?
->
-> /BR
-> /Marcus
->
->
+	Arnd
