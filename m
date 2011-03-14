@@ -1,109 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab1CNVzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:55:52 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:24609 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755825Ab1CNVzv convert rfc822-to-8bit (ORCPT
+	id S932207Ab1CNV4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:56:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49306 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab1CNV4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:55:51 -0400
+	Mon, 14 Mar 2011 17:56:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=yOJ2B46UKKYONGatOhhQ2LNyrCa7ndEOk+i5NiG8NjoSPB+OveeEubSnfXG5YMKe1z
-         wnyX5sF46IBDp5+xTXOw==
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=pc/YwPH0QX5W6sPwTlOjhDugF0vUAU9qMGfGWO5N44VdZ8gwBMrAhfY0tLRtvSMgod
+         9aDDz5IeRxA5QVPVzpfkWDDTQigX1LK3uAeoa68s138Qy4ZTdHxc5CbM2UhfqUlaM14H
+         6vSrzodkjCyALFc2f2wtSJsCzqizry//N2oV0=
+Date: Mon, 14 Mar 2011 18:56:03 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
+Message-ID: <20110314215603.GD2388@ghostprotocols.net>
+References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+ <20110314204341.GC9388@ghostprotocols.net>
+ <20110314205100.GG6139@nowhere>
+ <20110314210315.GC2388@ghostprotocols.net>
+ <20110314212050.GH6139@nowhere>
 MIME-Version: 1.0
-In-Reply-To: <20110314135516.GA31120@redhat.com>
-References: <1299877572-30353-1-git-send-email-teravest@google.com> <20110314135516.GA31120@redhat.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Mon, 14 Mar 2011 14:55:27 -0700
-Message-ID: <AANLkTi=UwYRUkZ4WjqU3eiFcnmW4KnnB4xNBanopip9S@mail.gmail.com>
-Subject: Re: [PATCH] Add unaccounted time to timeslice_used.
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, ctalbott@google.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314212050.GH6139@nowhere>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 6:55 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Fri, Mar 11, 2011 at 01:06:12PM -0800, Justin TerAvest wrote:
->> There are two kind of times that tasks are not charged for: the first
->> seek and the extra time slice used over the allocated timeslice. Both
->> of these exported as a new unaccounted_time stat.
->>
->> I think it would be good to have this reported in 'time' as well, but
->> that is probably a separate discussion.
->>
->
-> Justin,
->
-> I would say that for such optimization do make sure that you mention that
-> these are useful only if one is driving a queue depth of 1.
+Em Mon, Mar 14, 2011 at 10:20:53PM +0100, Frederic Weisbecker escreveu:
+> On Mon, Mar 14, 2011 at 06:03:15PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Mar 14, 2011 at 09:51:02PM +0100, Frederic Weisbecker escreveu:
+> > > On Mon, Mar 14, 2011 at 05:43:41PM -0300, Arnaldo Carvalho de Melo wrote:
 
-Hi Vivek,
+> > But starter on a starter? Couldn't grok, could you provide an example?
+> 
+> I have no strong example in mind.
+> 
+> But one may want to count instructions when we are in an interrupt and
+> lock A is held.
 
-That's a good point. I should have mentioned that.
+Those would be and/or starter/stopper expressions, something like:
 
->
-> Otherwise previous queue might have dumped bunch of requests in device
-> and expired. Now new queue's first request completion time is also
-> impacted by the requests dumped by other queues.
->
-> There are already so many stats which I have never used so far and I have
-> not encountered anybody else using these either. I think primary reason
-> being that in general nobody forced the queue depth of 1 hence most of the
-> timing stats are of no use.
+$ perf record -e instructions@(irq:irq_handler_entry(irq=eth0) && lock:lock_acquired(foo_lock))..irq:irq_handler_exit(\1) \
+	      -e instructions \
+	netperf
 
-We could probably put the data collected here back into "time"
-eventually, but having it separate right now helps build confidence in
-the accuracy of the stats.
+when all starters before the stopper are valid, we entered a range.
+ 
+> Or count instruction when A and B are held.
 
->
-> So personally I am not very keen on keep on increasing number of stats in
-> CFQ which are useful only when using queue depth 1 as that might not be
-> the common case. But Jens likes it, so....
->
-> Also a comment inline.
->
-> [..]
->> @@ -3314,9 +3321,7 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->>       BUG_ON(!cfq_cfqq_on_rr(cfqq));
->>
->>       cfq_service_tree_add(cfqd, cfqq, 1);
->> -
->> -     cfqq->slice_end = 0;
->> -     cfq_mark_cfqq_slice_new(cfqq);
->> +     __cfq_set_active_queue(cfqd, cfqq);
->
-> So far a new queue selection was always in select_queue(). Now this will
-> change it and new queue selection will also take place in
-> cfq_preempt_queue().
->
-> Also I think this is not right. It is not necessary that we select the
-> preempting queue. For example a sync queue in one group can preempt the
-> async in root group but it might happen that we still select again
-> the root group's sync queue for dispatch.
->
-> So queue selection logic should be driven by select_queue() which selects
-> group first then workload with-in group and then queue with-in workload
-> and we shoud not be setting active queue here.
+Using wildcards that matches just the things we want to make it a bit
+more compact:
 
-That sounds reasonable. I will send out another version of the patch
-that will only clear the stats for the cfqq.
+$ perf record -e inst*@(irq:*entry(irq=eth0) && lock:*acquired(A) && \
+			lock:*acquired(B))..(lock:*release(A) || lock:*release(B)) \
+	./my_workload
 
-Thanks,
-Justin
+Parenthesis don't have to be used just for filters :) Just like in C,
+they can be used to express the list of parameters for a function or for
+expressions, etc.
 
->
-> Thanks
-> Vivek
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> Or count instruction in page faults happening in read() syscall.
+
+We would need to use 'perf probe' first to insert the entry and exit
+probes on the page fault handling path:
+
+[root@felicio ~]# perf list *fault* *:*fault*
+
+List of pre-defined events (to be used in -e):
+  page-faults OR faults                      [Software event]
+  minor-faults                               [Software event]
+  major-faults                               [Software event]
+  alignment-faults                           [Software event]
+  emulation-faults                           [Software event]
+
+  kvm:kvm_page_fault                         [Tracepoint event]
+[root@felicio ~]#
+
+But then an expression could be used like I showed above for the
+previous use case you mentioned.
+
+> Event range define a state, and anytime you need to profile/trace a
+> desired stacked state, starters on starters can be a good solution,
+> thus even a common practice.
+
+See above, is that what you're thinking about?
+  
+> > But I could think of this as a way to express filters:
+> > 
+> > $ perf record -e instructions@irq:irq:irq_handler_entry(irq=eth0)..irq:irq_handler_exit(\1) \
+> > 	      -e instructions \
+> > 	netperf
+> > 
+> > looks quite natural for someone used to git and sed, i.e. developers :)
+> 
+> Yeah indeed, I like filters defined in parenthesis after the event!
+
+:-)
+
+- Arnaldo
