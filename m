@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab1CNOF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 10:05:29 -0400
-Received: from shutemov.name ([188.40.19.243]:37339 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753495Ab1CNOF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 10:05:28 -0400
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH, v9 0/3] Introduce timer slack controller
-Date: Mon, 14 Mar 2011 16:05:21 +0200
-Message-Id: <1300111524-5666-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755171Ab1CNOHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 10:07:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:44410 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab1CNOHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 10:07:33 -0400
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=u2_5ZAQ68KIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=w1DaJl7zj12HNWzAuV0A:9 a=hAY4_PuGj8YHOQu6YyoA:7 a=rUD7nDIBCanixhGV-OET1-tXNOgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] tracing - putting cond_resched into tace_pipe loop
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, fweisbec@gmail.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110313145811.GA30558@redhat.com>
+References: <1299970786-8075-1-git-send-email-jolsa@redhat.com>
+	 <1299970786-8075-3-git-send-email-jolsa@redhat.com>
+	 <20110313145811.GA30558@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 14 Mar 2011 10:07:31 -0400
+Message-ID: <1300111651.9910.87.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
+On Sun, 2011-03-13 at 15:58 +0100, Oleg Nesterov wrote:
+> On 03/12, Jiri Olsa wrote:
+> >
+> > --- a/kernel/trace/trace.c
+> > +++ b/kernel/trace/trace.c
+> > @@ -3237,10 +3237,23 @@ waitagain:
+> >  		 * One of the trace_seq_* functions is not used properly.
+> >  		 */
+> >  		WARN_ON(iter->seq.full);
+> > +
+> > +		/*
+> > +		 * There's a chance this loop might get quite tight,
+> > +		 * causing latency in non preemptive kernel.
+> > +		 */
+> > +		cond_resched();
+> > +		if (signal_pending(current)) {
+> > +			sret = -EINTR;
+> > +			break;
+> 
+> First of all: I do not pretend I understand this code ;) Still, a
+> couple of nits.
+> 
+> -EINTR doesn't look exactly right, I'd suggest -ERESTARTSYS. The same
+> for tracing_wait_pipe() btw, I think it should be fixed.
 
-v9:
- - update documentation
- - minor cleanup
-v8:
- - change hiearchy rules
- - introduce timer_slack.effective_slack_ns
- - get_task_timer_slack() -> task_get_effective_timer_slack()
- - task_get_effective_timer_slack() splited in separate patch
- - implement PR_GET_EFFECTIVE_TIMERSLACK
-v7:
- - totally reworked interface and rewritten from scratch
-   (See Documentation/cgroups/timer_slack.txt for more information)
-v6:
- - add documentation
- - use notifier_call_chain() instead of check hook
- - fix validate_change()
- - cleanup
-v5:
- - -EBUSY on writing to timer_slack.min_slack_ns/max_slack_ns if a child has
-   wider min-max range
-v4:
- - hierarchy support
- - drop dummy_timer_slack_check()
- - workaround lockdep false (?) positive
- - allow 0 as timer slack value
-v3:
- - rework interface
- - s/EXPORT_SYMBOL/EXPORT_SYMBOL_GPL/
-v2:
- - fixed with CONFIG_CGROUP_TIMER_SLACK=y
-v1:
- - initial revision
+Yeah, the tracing_wait_pipe() could be changed. I probably copied that
+from someplace else in the kernel ;)
 
-Kirill A. Shutemov (3):
-  hrtimer: introduce effective timer slack
-  hrtimer: implement PR_GET_EFFECTIVE_TIMERSLACK
-  cgroups: introduce timer slack controller
+> 
+> 
+> 
+> I wonder if it makes sense to simply "break" if signal_pending(), it
+> is possible we already have something to report via trace_seq_to_user().
+> Then we could do
+> 
+> 	-	if (sret == -EBUSY)
+> 	-		goto waitagain;
+> 	+	if (sret == -EBUSY) {
+> 	+		if (!signal_pending())
+> 	+			goto waitagain;
+> 	+		sret = -ERESTARTSYS;
+> 	+	}
+> 
+> Or we can change tracing_wait_pipe() to check signal_pending()
+> uncondditionally, I dunno.
+> 
+> Up to you, but note that otherwise the logic looks a bit strange.
+> Suppose that signal_pending() is already true when we call
+> tracing_wait_pipe(). In this case we are going to do the "unnecessary"
+> work and then return EINTR/ERESTART. This is correct, the next
+> invocation does trace_seq_to_user() before anything else, just
+> looks a bit strange.
 
- Documentation/cgroups/timer_slack.txt |   72 +++++++++++++++++++
- fs/select.c                           |    7 +--
- include/linux/cgroup_subsys.h         |    6 ++
- include/linux/prctl.h                 |    6 ++
- include/linux/sched.h                 |   10 +++
- init/Kconfig                          |    8 ++
- kernel/Makefile                       |    1 +
- kernel/cgroup_timer_slack.c           |  124 +++++++++++++++++++++++++++++++++
- kernel/fork.c                         |    4 +
- kernel/futex.c                        |    4 +-
- kernel/hrtimer.c                      |    2 +-
- kernel/sys.c                          |    3 +
- 12 files changed, 239 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/cgroups/timer_slack.txt
- create mode 100644 kernel/cgroup_timer_slack.c
+I'm not sure that this needs the signal_pending() or the break, or even
+the cond_resched(). Perhaps the first patch fixes the bug. But that
+while loop does not block, and it should just spin enough to fill a
+page. If it is not filling the page then that's a bug.
 
--- 
-1.7.4.1
+Jiri,
+
+Can you reproduce the bug with just he first patch? Actually, I can
+reproduce it on vanilla, I'll apply your first patch and see if that
+fixes things. If not, then we need to find out why and fix those.
+
+-- Steve
+
 
