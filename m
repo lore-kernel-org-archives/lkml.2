@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab1CNLJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:09:39 -0400
-Received: from nm27-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.232]:35624 "HELO
-	nm27-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753496Ab1CNLHW (ORCPT
+	id S1754229Ab1CNLKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:10:15 -0400
+Received: from nm20.bullet.mail.sp2.yahoo.com ([98.139.91.90]:42233 "HELO
+	nm20.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753657Ab1CNLHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:07:22 -0400
-X-Yahoo-Newman-Id: 691756.59443.bm@omp1029.mail.sp2.yahoo.com
+	Mon, 14 Mar 2011 07:07:10 -0400
+X-Yahoo-Newman-Id: 183808.96091.bm@omp1023.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: CiXo7uIVM1nsn6hkQP.Ri.Z0w8HTT7TKMgQkQJkPn1CoTp4
- Cz1nsRpV7LyAL4pAUxRdJ0wP5NYCw592xfZqkFtuc4vZ2GDBTL1k4sC4Q86R
- G6EPX_p6YbieuTDPsydEwJhZWbNOrpsdlwH72feOE7smIUTq8fgInM137zaj
- gAIdqyD5a284.Iu8OUO9FS4.fBe5Ala2LVTokG_h1vxpLhUgnGzj6R132ael
- J_9m8OFyCbsfprERaO4CsMbN5EfA.Vk1qgBr53OjE3JgyyMYwRYHZ4P43hDm
- 7J78IjRF5HqEsq9jJMlBelgN5iomQ702iQtq3ZzYF_B6wnBJysEdzdao2fzW
- uMLziPkQcj87epK.0ZRbmp_X9m_0yzSNDXns_dgF7WzFwqz.Ap2NgBtspcAm
- mHQar.SXbu82JqS6cdjTvrZuWmHMCefnY75oZyLoUpLIjU6W7pU5GdoMwjyn
- wgG5lZQ.GpbhrYyVNpbNBkyz9kg5RpHAIyP7TwYA_yykXuXYPVxznb2hLy8B
- j2iKNJoQqjfbPuPO4538-
+X-YMail-OSG: QiFaRQYVM1lGu.WaLXMqUD8K414GghGPGFHlY9UWviS9_da
+ f7lRHSv6I5zalRiVPXH7l9IXdwo2zGpmJTrnQUi7Aj.ewkuWec.NXsz6hqz1
+ FVFxRoAXzt8MXD7orzW2hXpKoVGgJFBkUlfHMjPDoNDlrbfy4v.nk9s5ghYX
+ xRc76.KujNDfi3MwEpT8vp9XrdLXcmgLARBYWjBkySH.j8qEenlB9Zgei69J
+ lJ6Sz6eVS7IPpz00b5xLDETzDB1SaiQ5bPnBzIjRgikNZ4cqKb1ziFBChKNx
+ _NYlwu_WD98yJK7F2UTIUYfCHIQSUzsrKaBkX89eKx8VecaTSdZ5SIVR8pCg
+ 9jb2jqfw-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,10 +27,11 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 12/21] target: Fix bogus return in transport_add_device_to_core_hba failure path
-Date: Mon, 14 Mar 2011 04:06:06 -0700
-Message-Id: <1300100775-10012-13-git-send-email-nab@linux-iscsi.org>
+        Dan Carpenter <error27@gmail.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: [PATCH 09/21] target: Convert rd_build_device_space() to use errno
+Date: Mon, 14 Mar 2011 04:06:03 -0700
+Message-Id: <1300100775-10012-10-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
 References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
@@ -41,43 +39,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Dan Carpenter <error27@gmail.com>
 
-This patch removes a bogus conditional+return check within the failure path
-of transport_add_device_to_core_hba().  This breakage was introduced during
-the v4 conversion to remove struct se_cmd passthrough ops for INQUIRY /
-READ_CAPCITY during struct se_device creation and registration process.
+This patch converts rd_build_device_space() to return errno usage
+for failures in rd_create_virtdevice().
 
-Reported-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_transport.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/target/target_core_rd.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index af56ce2..536de6f 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1621,7 +1621,7 @@ struct se_device *transport_add_device_to_core_hba(
- 	const char *inquiry_prod,
- 	const char *inquiry_rev)
- {
--	int ret = 0, force_pt;
-+	int force_pt;
- 	struct se_device  *dev;
- 
- 	dev = kzalloc(sizeof(struct se_device), GFP_KERNEL);
-@@ -1738,9 +1738,8 @@ struct se_device *transport_add_device_to_core_hba(
+diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
+index 0d0a583..663177e 100644
+--- a/drivers/target/target_core_rd.c
++++ b/drivers/target/target_core_rd.c
+@@ -151,7 +151,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
+ 	if (rd_dev->rd_page_count <= 0) {
+ 		printk(KERN_ERR "Illegal page count: %u for Ramdisk device\n",
+ 			rd_dev->rd_page_count);
+-		return -1;
++		return -EINVAL;
  	}
- 	scsi_dump_inquiry(dev);
+ 	total_sg_needed = rd_dev->rd_page_count;
  
-+	return dev;
- out:
--	if (!ret)
--		return dev;
- 	kthread_stop(dev->process_thread);
+@@ -161,7 +161,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
+ 	if (!(sg_table)) {
+ 		printk(KERN_ERR "Unable to allocate memory for Ramdisk"
+ 			" scatterlist tables\n");
+-		return -1;
++		return -ENOMEM;
+ 	}
  
- 	spin_lock(&hba->device_lock);
+ 	rd_dev->sg_table_array = sg_table;
+@@ -176,7 +176,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
+ 		if (!(sg)) {
+ 			printk(KERN_ERR "Unable to allocate scatterlist array"
+ 				" for struct rd_dev\n");
+-			return -1;
++			return -ENOMEM;
+ 		}
+ 
+ 		sg_init_table((struct scatterlist *)&sg[0], sg_per_table);
+@@ -192,7 +192,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
+ 			if (!(pg)) {
+ 				printk(KERN_ERR "Unable to allocate scatterlist"
+ 					" pages for struct rd_dev_sg_table\n");
+-				return -1;
++				return -ENOMEM;
+ 			}
+ 			sg_assign_page(&sg[j], pg);
+ 			sg[j].length = PAGE_SIZE;
+@@ -254,15 +254,14 @@ static struct se_device *rd_create_virtdevice(
+ 	struct se_dev_limits dev_limits;
+ 	struct rd_dev *rd_dev = p;
+ 	struct rd_host *rd_host = hba->hba_ptr;
+-	int dev_flags = 0, ret = -EINVAL;
++	int dev_flags = 0, ret;
+ 	char prod[16], rev[4];
+ 
+ 	memset(&dev_limits, 0, sizeof(struct se_dev_limits));
+ 
+-	if (rd_build_device_space(rd_dev) < 0) {
+-		ret = -ENOMEM;
++	ret = rd_build_device_space(rd_dev);
++	if (ret < 0)
+ 		goto fail;
+-	}
+ 
+ 	snprintf(prod, 16, "RAMDISK-%s", (rd_dev->rd_direct) ? "DR" : "MCP");
+ 	snprintf(rev, 4, "%s", (rd_dev->rd_direct) ? RD_DR_VERSION :
 -- 
 1.7.4.1
 
