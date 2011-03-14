@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab1CNMZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:25:54 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58884 "EHLO mx3.mail.elte.hu"
+	id S1755418Ab1CNM2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:28:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50432 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754227Ab1CNMZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:25:53 -0400
-Date: Mon, 14 Mar 2011 13:25:39 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alan Modra <amodra@gmail.com>
-Cc: Jan Beulich <JBeulich@novell.com>, "H.J. Lu" <hjl.tools@gmail.com>,
-        binutils@sourceware.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: PATCH: Add --size-check=[error|warning]
-Message-ID: <20110314122539.GA27205@elte.hu>
-References: <20110311165802.GA3508@intel.com>
- <4D7A64670200007800035F4C@vpn.id2.novell.com>
- <AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
- <4D7DE39302000078000362E6@vpn.id2.novell.com>
- <20110314095534.GB18058@elte.hu>
- <20110314104131.GG6275@bubble.grove.modra.org>
- <20110314122342.GA26825@elte.hu>
+	id S1752031Ab1CNM2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 08:28:15 -0400
+Date: Mon, 14 Mar 2011 12:27:46 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: swap: Unlock swapfile inode mutex before closing file on
+ bad swapfiles
+Message-ID: <20110314122746.GA32408@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110314122342.GA26825@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If an administrator tries to swapon a file backed by NFS, the inode mutex is
+taken (as it is for any swapfile) but later identified to be a bad swapfile
+due to the lack of bmap and tries to cleanup. During cleanup, an attempt is
+made to close the file but with inode->i_mutex still held. Closing an NFS
+file syncs it which tries to acquire the inode mutex leading to deadlock. If
+lockdep is enabled the following appears on the console;
 
-(resend, fixed the To line)
+[  120.968832] =============================================
+[  120.972757] [ INFO: possible recursive locking detected ]
+[  120.972757] 2.6.38-rc8-autobuild #1
+[  120.972757] ---------------------------------------------
+[  120.972757] swapon/2192 is trying to acquire lock:
+[  120.972757]  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff81130652>] vfs_fsync_range+0x47/0x7c
+[  120.972757]
+[  120.972757] but task is already holding lock:
+[  120.972757]  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff810f9405>] sys_swapon+0x28d/0xae7
+[  120.972757]
+[  120.972757] other info that might help us debug this:
+[  120.972757] 1 lock held by swapon/2192:
+[  120.972757]  #0:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff810f9405>] sys_swapon+0x28d/0xae7
+[  120.972757]
+[  120.972757] stack backtrace:
+[  120.972757] Pid: 2192, comm: swapon Not tainted 2.6.38-rc8-autobuild #1
+[  120.972757] Call Trace:
+[  120.972757]  [<ffffffff81075ca8>] ? __lock_acquire+0x2eb/0x1623
+[  120.972757]  [<ffffffff810cd5ad>] ? find_get_pages_tag+0x14a/0x174
+[  120.972757]  [<ffffffff810d6d01>] ? pagevec_lookup_tag+0x25/0x2e
+[  120.972757]  [<ffffffff81130652>] ? vfs_fsync_range+0x47/0x7c
+[  120.972757]  [<ffffffff810770b3>] ? lock_acquire+0xd3/0x100
+[  120.972757]  [<ffffffff81130652>] ? vfs_fsync_range+0x47/0x7c
+[  120.972757]  [<ffffffffa03df8ab>] ? nfs_flush_one+0x0/0xdf [nfs]
+[  120.972757]  [<ffffffff81309cdf>] ? mutex_lock_nested+0x40/0x2b1
+[  120.972757]  [<ffffffff81130652>] ? vfs_fsync_range+0x47/0x7c
+[  120.972757]  [<ffffffff81130652>] ? vfs_fsync_range+0x47/0x7c
+[  120.972757]  [<ffffffff811306e6>] ? vfs_fsync+0x1c/0x1e
+[  120.972757]  [<ffffffffa03d0c87>] ? nfs_file_flush+0x64/0x69 [nfs]
+[  120.972757]  [<ffffffff811097c9>] ? filp_close+0x43/0x72
+[  120.972757]  [<ffffffff810f9bb1>] ? sys_swapon+0xa39/0xae7
+[  120.972757]  [<ffffffff81002b7a>] ? sysret_check+0x2e/0x69
+[  120.972757]  [<ffffffff81002b42>] ? system_call_fastpath+0x16/0x1b
 
-* Alan Modra <amodra@gmail.com> wrote:
- 
-> On Mon, Mar 14, 2011 at 10:55:34AM +0100, Ingo Molnar wrote:
-> > The thing is, it is absolutely, breath-takingy incompetent for
-> 
-> kernel developers to write such poor asm!  And not notice the error
-> for 4 years! [...]
+This patch releases the mutex if its held before calling filep_close()
+so swapon fails as expected without deadlock when the swapfile is backed
+by NFS.  If accepted for 2.6.39, it should also be considered a -stable
+candidate for 2.6.38 and 2.6.37.
 
-It is not 'poor asm'.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/swapfile.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-The 'bug' is just a slight assymetry in ENTRY()/END() debug-symbols sequences, with 
-lots of assembly code between the ENTRY() and the END(). Here's an example:
-    
-         ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-           ...
-         END(do_hypervisor_callback)
-
-Human reviewers almost never catch such small mismatches, and binutils never even 
-warned about it either - for over a decade.
-
-Now kernel bisections are insta-broken on latest binutils, and there's nothing to do 
-about it on the kernel side as during bisection all later fixes are unfolded. The 
-fix itself i already applied - but my argument was not about that:
-
-> [...] Oh, and the binutils developers to write such a poor assembler in the first 
-> place.  ;-)
-> 
-> Seriously, you are complaining because something is fixed??
- 
-No, i reported this bug because the kernel build gets broken going back 130,000 
-commits, breaking bisection and causing other damage - while issuing a warning 
-message would achieve the same effect of warning the developer about the mismatch.
-
-> > The correct solution is to turn it into a warning as me and others have suggested.
-> 
-> I disagree.  The whole world is not the linux kernel.  I think HJ is
-> bending over backwards to even offer a switch that turns the error
-> into a warning.
- 
-It's not about a switch at all - it's to not break builds by default. I.e. the 
-default behavior should be to issue a warning and ignore the directive.
- 
-This is a very simple concept of compatibility: the build environment should always 
-be very permissive - stuff that build fine before should be allowed to build.
-
-Also, i hope you are not suggesting to break projects just because they are not 
-important to you personally? The fix is exceedingly simple to do for the binutils 
-project - and impossible to do for the kernel project (because during bisection - 
-which is a very powerful debugging tool - older versions of the source get checked 
-out).
-
-Thanks,
-
-	Ingo
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 0341c57..6d6d28c 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2149,8 +2149,13 @@ bad_swap_2:
+ 	p->flags = 0;
+ 	spin_unlock(&swap_lock);
+ 	vfree(swap_map);
+-	if (swap_file)
++	if (swap_file) {
++		if (did_down) {
++			mutex_unlock(&inode->i_mutex);
++			did_down = 0;
++		}
+ 		filp_close(swap_file, NULL);
++	}
+ out:
+ 	if (page && !IS_ERR(page)) {
+ 		kunmap(page);
