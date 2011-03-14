@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab1CNUu0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:50:26 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:41045 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756886Ab1CNUuZ (ORCPT
+	id S1757225Ab1CNUul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:50:41 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43633
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757217Ab1CNUui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:50:25 -0400
-X-Greylist: delayed 828 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Mar 2011 16:50:25 EDT
-Message-ID: <4D7E7C28.7040103@fastmail.fm>
-Date: Mon, 14 Mar 2011 21:35:52 +0100
-From: Anders Eriksson <aeriksson@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101003 Lightning/1.0b3pre Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Arthur Titeica <arthur@psw.ro>, airlied@redhat.com
-CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        alexdeucher@gmail.com, xorg-driver-ati@lists.x.org
-Subject: Re: Radeon jittery post 2.6.35
-References: <4D7CCFC3.7030906@fastmail.fm> <fa08dc3d3df640f1330a094d25cdbd3a@psw.ro>
-In-Reply-To: <fa08dc3d3df640f1330a094d25cdbd3a@psw.ro>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Mar 2011 16:50:38 -0400
+Date: Mon, 14 Mar 2011 13:51:16 -0700 (PDT)
+Message-Id: <20110314.135116.112600339.davem@davemloft.net>
+To: benh@kernel.crashing.org
+Cc: sfr@canb.auug.org.au, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        buytenh@secretlab.ca, grant.likely@secretlab.ca, tglx@linutronix.de
+Subject: Re: linux-next: build failure after merge of the final tree
+ (powerpc tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1300135074.22236.788.camel@pasglop>
+References: <20110314203827.4b61818e.sfr@canb.auug.org.au>
+	<1300135074.22236.788.camel@pasglop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.252.238.16
-X-Scan-Result: No virus found in message 1PzEUh-0003O2-9F.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PzEUh-0003O2-9F 9d2e19097b786e72729ffd42882eaf49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 03/13/11 18:15, Arthur Titeica wrote:
-> On Sun, 13 Mar 2011 15:08:03 +0100, Anders Eriksson wrote:
->>
->> I've uploaded a video of a 38-rc8 boot:
->> http://www.easy-share.com/1914220540/2.6.38-rc8_bad_x.mp4
->>
-> Here's a link to a speedier server:
-> http://www.psw.ro/tmp/radeon/2.6.38-rc8_bad_x.mp4
->
-Thanks!
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Tue, 15 Mar 2011 07:37:54 +1100
 
-Did you have a look at it? Any ideas what might be the cause?
+> On Mon, 2011-03-14 at 20:38 +1100, Stephen Rothwell wrote:
+>> Hi all,
+>> 
+>> After merging the final tree, today's linux-next build (powerpc
+>> allyesconfig) failed like this:
+>> 
+>> drivers/gpio/langwell_gpio.c: In function 'lnw_irq_handler':
+>> drivers/gpio/langwell_gpio.c:210: error: 'struct irq_desc' has no member named 'chip'
+>> drivers/gpio/langwell_gpio.c:211: error: 'struct irq_desc' has no member named 'chip'
+>> 
+>> Caused by commit 17b9f9e2653a ("powerpc: Enable
+>> GENERIC_HARDIRQS_NO_DEPRECATED") enabling
+>> CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED for powerpc without previously
+>> fixing up the above driver.
+>> 
+>> I have reverted that commit for today.
+> 
+> Except that the above driver has nothing to do with powerpc, it's some
+> Intel Moorestown stuff...
+> 
+> It should be fixed regardless I suppose, CC'ing Thomas.
+
+I've had to make fixes to this driver in sparc64 allmodconfig builds
+too :-)
