@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab1CNPeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:34:25 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63627 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab1CNPeY (ORCPT
+	id S1754127Ab1CNPjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:39:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52190 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab1CNPjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:34:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Waldemar.Rymarkiewicz@tieto.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Date: Mon, 14 Mar 2011 16:34:10 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: matti.j.aaltonen@nokia.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hthebaud@insidefr.com
-References: <1299766808-2535-1-git-send-email-waldemar.rymarkiewicz@tieto.com> <201103101720.53782.arnd@arndb.de> <99B09243E1A5DA4898CDD8B7001114481082FAE10A@EXMB04.eu.tieto.com>
-In-Reply-To: <99B09243E1A5DA4898CDD8B7001114481082FAE10A@EXMB04.eu.tieto.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 14 Mar 2011 11:39:00 -0400
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=NhuigFM5MhYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=zdxEythPr7tWOBHJrEAA:9 a=2wP2RcBBQrGI4eaDbuEA:7 a=kplWZ88arCsNC6myGvoPV1duPtwA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 3/20]  3: uprobes: Breakground page
+ replacement.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20110314133433.27435.49566.sendpatchset@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	 <20110314133433.27435.49566.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 14 Mar 2011 11:38:57 -0400
+Message-ID: <1300117137.9910.110.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103141634.10865.arnd@arndb.de>
-X-Provags-ID: V02:K0:02VN0N31Lzub4WhWu54f3DA+mm6k4CUBYJsljq7RudP
- Eknr3KAlS3WaVwGtayEkBLziCFro+RPSwASf9kOEY+Sz8QNKXL
- D03p1T+B26eI4QhXWLb5skjSPHe5nyNwJdR7c8lOw4LRNyzJ9k
- 0RmrR/aLNS7GlmJqW0PAWBv2v32IOjwlDikux5sO39tVBsSGsm
- CvTe9rQfyhCmjI22fGxTA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 March 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
-> >Oh, I see you simply do
-> >
-> >       ret = i2c_master_send(client, info->buf, len);
-> >       usleep_range(1000, 10000);
-> >
-> >and assume that the buffer can always be written within a 
-> >milisecond, so you just slow down output enough to never have 
-> >to worry about it, right?
-> >
-> >A nicer solution would be to have an interrupt driven output 
-> >so you know when the i2c buffers have been flushed.
-> 
-> Well, I get the idea of interrupt driven output, but as I have
-> little linux kernel experience I'm not sure how to implement this. 
-> Can you extend you thoughts or if you know piont me a driver which
-> uses that concept?
+On Mon, 2011-03-14 at 19:04 +0530, Srikar Dronamraju wrote:
+> +/*
+> + * Called with tsk->mm->mmap_sem held (either for read or write and
+> + * with a reference to tsk->mm.
+> + */
+> +static int write_opcode(struct task_struct *tsk, struct uprobe * uprobe,
+> +                       unsigned long vaddr, uprobe_opcode_t opcode)
+> +{
+> +       struct page *old_page, *new_page;
+> +       void *vaddr_old, *vaddr_new;
+> +       struct vm_area_struct *vma;
+> +       spinlock_t *ptl;
+> +       pte_t *orig_pte;
+> +       unsigned long addr;
+> +       int ret = -EINVAL;
+> +
+> +       /* Read the page with vaddr into memory */
+> +       ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
+> +       if (ret <= 0)
+> +               return -EINVAL;
+> +       ret = -EINVAL;
+> +
+> +       /*
+> +        * check if the page we are interested is read-only mapped
+> +        * Since we are interested in text pages, Our pages of interest
+> +        * should be mapped read-only.
+> +        */
+> +       if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
+> +                                               (VM_READ|VM_EXEC))
+> +               goto put_out;
+> + 
 
-Most serial drivers do this, see drivers/tty/serial for a number
-of examples, or drivers/serial on older kernels.
+I'm confused by the above comment and code. You state we are only
+interested text pages mapped read-only, but then if the page is mapped
+read/exec we exit out? It is fine if it is anything but READ/EXEC.
 
-> I'm not sure who should rise an interrupt when data has
-> been flushed. I2c core or the chip itself?
+I'm also curious to why we can't modify text code that is also mapped as
+read/write.
 
-That would depend on your hardware. The only important
-part is that you make sure you can send out data at any
-time. If i2c_master_send() causes accesses to your
-buffer after returning, there has to be an i2c method
-of making sure that it has completed.
+-- Steve
 
-If the usleep_range is trying to synchronize between the
-NFC and the I2C chip, you must wait for a notication from
-the NFC hardware that it's done.
 
-> What's more, I guess the i2c_master_send  is a synchronous
-> call and when it returnes we know it flushed data. Right? 
-
-If i2c_master_send is synchronous, you might not
-need the usleep_range() at all. Removing that call
-would be entirely reasonable.
-
-	Arnd
