@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab1CNDvz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 23:51:55 -0400
-Received: from flusers.ccur.com ([173.221.59.2]:29291 "EHLO gamx.iccur.com"
+	id S1756893Ab1CNDwE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 23:52:04 -0400
+Received: from flusers.ccur.com ([173.221.59.2]:45685 "EHLO gamx.iccur.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755985Ab1CNDvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756767Ab1CNDvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Mar 2011 23:51:50 -0400
 Date: Sun, 13 Mar 2011 23:50:44 -0400
 From: Joe Korty <joe.korty@ccur.com>
@@ -14,8 +14,8 @@ Cc: fweisbec@gmail.com, peterz@infradead.org, laijs@cn.fujitsu.com,
         loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
         josh@joshtriplett.org, houston.jim@comcast.net, andi@firstfloor.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] jrcu: introduce alternate implementation of rcu_cpu
-Message-ID: <20110314035044.GA12997@tsunami.ccur.com>
+Subject: [PATCH 7/9] jrcu: support lazy / not-lazy end-of-batch recognition
+Message-ID: <20110314035044.GA12983@tsunami.ccur.com>
 Reply-To: Joe Korty <joe.korty@ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,58 +25,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jrcu: introduce an alternate implementation of rcu_cpu().
+jrcu: make lazy/not-lazy end-of-batch recognition a config option.
 
-This new implementation is based on smp_processor_id().
-It is for those architectures which do not have
-thread_info->cpu.
-
-(We prefer the thread_info version as it works in early
-boot where smp_processor_id() has not yet been set up).
+Some mb() are not needed for correct operation, they just make JRCU
+recognize end-of-batch at the earliest possible moment.  Mark those
+semi-optional mb's with an #ifdef.
 
 Signed-off-by: Joe Korty <joe.korty@ccur.com>
 
+Index: b/init/Kconfig
+===================================================================
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -434,6 +434,23 @@ config JRCU_DAEMON
+ 	  Required. The context switch when leaving the daemon is needed
+ 	  to get the CPU to reliably participate in end-of-batch processing.
+ 
++config JRCU_LAZY
++	bool "Should JRCU be lazy recognizing end-of-batch"
++	depends on JRCU
++	default n
++	help
++	  If you say Y here, JRCU will on occasion fail to recognize
++	  end-of-batch for an rcu period or two.
++
++	  If you say N here, JRCU will be more aggressive; in fact it
++	  will always recognize end-of-batch at the earliest possible time.
++
++	  Being lazy should be fractionally more efficient in that JRCU
++	  inserts fewer memory barriers along some high performance kernel
++	  code paths.
++
++	  If unsure, say N.
++
+ config PREEMPT_COUNT_CPU
+ 	# bool "Let one CPU look at another CPUs preemption count"
+ 	bool
+Index: b/include/linux/preempt.h
+===================================================================
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -10,12 +10,36 @@
+ #include <linux/linkage.h>
+ #include <linux/list.h>
+ 
++/* cannot include rcupdate.h here, so open-code this */
++
++#if defined(CONFIG_JRCU)
++# define __add_preempt_count(val) do { \
++	int newval = (preempt_count() += (val)); \
++	if (newval == (val)) \
++		smp_wmb(); \
++} while (0)
++#else
++# define __add_preempt_count(val) do { preempt_count() += (val); } while (0)
++#endif
++
++#if defined(CONFIG_JRCU_LAZY) || !defined(CONFIG_JRCU)
++# define __sub_preempt_count(val) do { preempt_count() -= (val); } while (0)
++#else
++# define __sub_preempt_count(val) do { \
++	int newval = (preempt_count() -= (val)); \
++	if (newval == 0) { \
++		/* race with preemption OK, preempt will do the mb for us */ \
++		smp_wmb(); \
++	} \
++} while (0)
++#endif
++
+ #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
+   extern void add_preempt_count(int val);
+   extern void sub_preempt_count(int val);
+ #else
+-# define add_preempt_count(val)	do { preempt_count() += (val); } while (0)
+-# define sub_preempt_count(val)	do { preempt_count() -= (val); } while (0)
++# define add_preempt_count(val) __add_preempt_count(val)
++# define sub_preempt_count(val) __sub_preempt_count(val)
+ #endif
+ 
+ #define inc_preempt_count() add_preempt_count(1)
 Index: b/kernel/jrcu.c
 ===================================================================
 --- a/kernel/jrcu.c
 +++ b/kernel/jrcu.c
-@@ -140,11 +140,27 @@ static u64 rcu_timestamp;
-  * know what that is.  For RCU to work correctly, a cpu named '0' must
-  * eventually be present (but need not ever be online).
-  */
-+#ifdef HAVE_THREAD_INFO_CPU
- static inline int rcu_cpu(void)
- {
- 	return current_thread_info()->cpu;
- }
- 
-+#else
-+
-+static unsigned rcu_cpu_early_flag __read_mostly = 1;
-+
-+static inline int rcu_cpu(void)
-+{
-+	if (unlikely(rcu_cpu_early_flag)) {
-+		if (!(rcu_scheduler_active && nr_cpu_ids > 1))
-+			return 0;
-+		rcu_cpu_early_flag = 0;
-+	}
-+	return raw_smp_processor_id();
-+}
-+#endif /* HAVE_THREAD_INFO_CPU */
-+
- /*
-  * Invoke whenever the calling CPU consents to end-of-batch.  All CPUs
-  * must so consent before the batch is truly ended.
-Index: b/arch/x86/include/asm/thread_info.h
+@@ -154,9 +154,7 @@ static inline void rcu_eob(int cpu)
+ 	struct rcu_data *rd = &rcu_data[cpu];
+ 	if (unlikely(rd->wait)) {
+ 		rd->wait = 0;
+-#ifdef CONFIG_RCU_PARANOID
+-		/* not needed, we can tolerate some fuzziness on exactly
+-		 * when other CPUs see the above write insn. */
++#ifndef CONFIG_JRCU_LAZY
+ 		smp_wmb();
+ #endif
+ 	}
+Index: b/kernel/sched.c
 ===================================================================
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -29,6 +29,7 @@ struct thread_info {
- 	__u32			flags;		/* low level flags */
- 	__u32			status;		/* thread synchronous flags */
- 	__u32			cpu;		/* current CPU */
-+#define HAVE_THREAD_INFO_CPU	1
- 	int			preempt_count;	/* 0 => preemptable,
- 						   <0 => BUG */
- 	mm_segment_t		addr_limit;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3829,7 +3829,7 @@ void __kprobes add_preempt_count(int val
+ 	if (DEBUG_LOCKS_WARN_ON((preempt_count() < 0)))
+ 		return;
+ #endif
+-	preempt_count() += val;
++	__add_preempt_count(val);
+ #ifdef CONFIG_DEBUG_PREEMPT
+ 	/*
+ 	 * Spinlock count overflowing soon?
+@@ -3860,7 +3860,7 @@ void __kprobes sub_preempt_count(int val
+ 
+ 	if (preempt_count() == val)
+ 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+-	preempt_count() -= val;
++	__sub_preempt_count(val);
+ }
+ EXPORT_SYMBOL(sub_preempt_count);
+ 
