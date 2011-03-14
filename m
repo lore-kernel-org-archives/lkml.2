@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab1CNPyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:54:06 -0400
-Received: from kroah.org ([198.145.64.141]:56723 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab1CNPyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:54:04 -0400
-Date: Mon, 14 Mar 2011 08:53:03 -0700
-From: Greg KH <greg@kroah.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: omar.ramirez@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, ohad@wizery.com, fernando.lugo@ti.com,
-        tuomas@kulve.fi
-Subject: Re: [PATCH] staging: tidspbridge: protect dmm_map properly
-Message-ID: <20110314155303.GB5272@kroah.com>
-References: <1299889746-16502-1-git-send-email-omar.ramirez@ti.com>
- <20110312173626.GC24981@kroah.com>
- <AANLkTinp0e4EiEH=XV9gCSJzoh-VAY-6qqs91x0s80ro@mail.gmail.com>
- <20110313010633.GD20396@kroah.com>
- <1300116128-notmuch-felipe.contreras@nokia.com>
+	id S1756800Ab1CNP4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:56:39 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:4136 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500Ab1CNP4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 11:56:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=T/ve3AR1I+bP3RVzAOAjy0Iwl6Idc63BVe/Psi5KabPZMlPm32u3bZZ2BcSIGcb3kZ
+         kiTpwRF6+7SsHtq7f/qQ==
+From: Ian Lance Taylor <iant@google.com>
+To: "Jan Beulich" <JBeulich@novell.com>
+Cc: <sedat.dilek@gmail.com>, "Ingo Molnar" <mingo@elte.hu>, <amodra@gmail.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "binutils" <binutils@sourceware.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
+	<4D7E095802000078000363D5@vpn.id2.novell.com>
+	<AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>
+	<AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>
+	<4D7E166C0200007800036451@vpn.id2.novell.com>
+Date: Mon, 14 Mar 2011 08:56:29 -0700
+In-Reply-To: <4D7E166C0200007800036451@vpn.id2.novell.com> (Jan Beulich's
+	message of "Mon, 14 Mar 2011 12:21:48 +0000")
+Message-ID: <mcrtyf53dci.fsf@google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300116128-notmuch-felipe.contreras@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 05:33:09PM +0200, Felipe Contreras wrote:
-> greg@kroah.com wrote:
-> > On Sun, Mar 13, 2011 at 01:42:35AM +0200, Felipe Contreras wrote:
-> > > On Sat, Mar 12, 2011 at 7:36 PM, Greg KH <greg@kroah.com> wrote:
-> > > > How about I send it to Linus for .39 and then add it to the .38-stable
-> > > > tree when it comes out?
-> > > 
-> > > That was the plan for .38/.37-stable. I'd say that's fine, but it
-> > > would be even better to avoid people getting bit by this on plain .38.
-> > 
-> > What is one more week, when you all waited months to get this to me?  In
-> > other words, why should I suddenly now rush when no one else did?
-> 
-> The reason is because it didn't seem like it was happening often, but
-> in Tuomas' case, it does so much it's basically unusable. So _now_ we
-> know this could have possibly been affecting many people we didn't know
-> about.
-> 
-> You have to remember that this driver only started to work on .37, so
-> people might have tried it, seen it crashing and said "oh well, it's on
-> 'staging' for a reason", having no point of reference that would be a
-> valid conclusion, while in fact this is a regression from pre-staging
-> (the issue wasn't there).
+"Jan Beulich" <JBeulich@novell.com> writes:
 
-I understand you feeling like there is a rush here, but again, please
-recognize that we all have different priorities.  The number of users
-out there using this driver is very small and again, this patch can
-safely wait until the first .38-stable release comes out.
+> No - $(AS) isn't being used to translate .S files, $(CC) is being used
+> instead. That's why I pointed at the necessary -B option (so that
+> the compiler would be able to locate the wrapper H.J. suggested).
 
-> Anyway, I don't think .38.1 is going to be released in one week,
+You could also just put a -Wa option in your $(CC).  That seems simpler
+than a -B option.
 
-Is that a challenge?  :)
+(I don't really care about this issue one way or another.)
 
-> but I guess if people are having issues and not reporting them, they
-> can wait more.
-
-Thanks, I think they can.
-
-greg k-h
+Ian
