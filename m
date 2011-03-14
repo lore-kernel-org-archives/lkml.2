@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab1CNU63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:58:29 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:36587 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755927Ab1CNU62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:58:28 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: kernel-janitors@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/rtc/rtc-mrst.c: Use release_mem_region after request_mem_region
-Date: Mon, 14 Mar 2011 22:00:25 +0100
-Message-Id: <1300136425-3311-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1757133Ab1CNVDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:03:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43893 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751693Ab1CNVDS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 17:03:18 -0400
+Date: Mon, 14 Mar 2011 17:03:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <greg@kroah.com>
+cc: andy.green@linaro.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <patches@linaro.org>
+Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
+ api
+In-Reply-To: <20110314205432.GA1856@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1103141659080.4194-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory allocated using request_mem_region should be released using
-release_mem_region, not release_region.
+On Mon, 14 Mar 2011, Greg KH wrote:
 
-The semantic patch that fixes part of this problem is as follows:
-(http://coccinelle.lip6.fr/)
+> No, it has been determined a long time ago that network naming things
+> like this are to be done in userspace.  It's an argument that has come
+> and gone many years ago, sorry.  See all of the wonderful, and simple,
+> tools we have today in userspace to handle this type of thing.  Distros
+> can use them how ever they see fit, and even better, users can configure
+> them!  That means they don't have to rebuild their kernels, which is a
+> bit unreasonable, don't you think?
 
-// <smpl>
-@@
-expression E1,E2,E3;
-@@
-
-request_mem_region(E1,E2,E3)
 ...
-?- release_region(E1,E2)
-+ release_mem_region(E1,E2)
-// </smpl>
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+> Perhaps we should just always name these things 'eth%d'?  Oh wait, as it
+> really is a USB device, they are supposed to be called 'usb%d' as
+> determined (again) a long time ago.
+> 
+> If a distro/board manufacturer wants to hide the fact that this really
+> is a usb device by renaming it to eth0, then again, it can.  But don't
+> force the kernel to have that policy in it.
 
----
- drivers/rtc/rtc-mrst.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This argument does sound contradictory.  If network interface naming 
+should be left entirely up to userspace, then why doesn't the kernel 
+always generate names of the form "eth%d"?  Why not rip all that stuff 
+about "usb%d" or "wlan%d" out of the driver entirely?
 
-diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-index b86bc32..558dd7d 100644
---- a/drivers/rtc/rtc-mrst.c
-+++ b/drivers/rtc/rtc-mrst.c
-@@ -379,7 +379,7 @@ cleanup1:
- 	mrst_rtc.dev = NULL;
- 	rtc_device_unregister(mrst_rtc.rtc);
- cleanup0:
--	release_region(iomem->start, iomem->end + 1 - iomem->start);
-+	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
- 	dev_err(dev, "rtc-mrst: unable to initialise\n");
- 	return retval;
- }
-@@ -405,7 +405,7 @@ static void __exit rtc_mrst_do_remove(struct device *dev)
- 	mrst->rtc = NULL;
- 
- 	iomem = mrst->iomem;
--	release_region(iomem->start, iomem->end + 1 - iomem->start);
-+	release_mem_region(iomem->start, iomem->end + 1 - iomem->start);
- 	mrst->iomem = NULL;
- 
- 	mrst->dev = NULL;
+(Apart from the fact that this would be a user-visible change in kernel 
+policy and would break a large number of systems...)
+
+Alan Stern
 
