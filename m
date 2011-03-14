@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab1CNWt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 18:49:26 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:54879 "EHLO imr4.ericy.com"
+	id S1757443Ab1CNWvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 18:51:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52859 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751715Ab1CNWtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 18:49:25 -0400
-Date: Mon, 14 Mar 2011 15:48:59 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        mems applications <mems.applications@st.com>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "carmine.iascone@st.com" <carmine.iascone@st.com>,
-        "matteo.dameno@st.com" <matteo.dameno@st.com>,
-        "rubini@ipvvis.unipv.it" <rubini@cvml.unipv.it>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device
- driver into misc
-Message-ID: <20110314224859.GA16970@ericsson.com>
-References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com>
- <4D7E771B.1040804@cam.ac.uk>
- <20110314211809.29da8518@endymion.delvare>
- <201103142136.43566.arnd@arndb.de>
- <20110314224244.3d6d23ba@endymion.delvare>
+	id S1751529Ab1CNWvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 18:51:20 -0400
+Message-ID: <4D7E9BCC.5070204@zytor.com>
+Date: Mon, 14 Mar 2011 15:50:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110314224244.3d6d23ba@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Jesper Juhl <jj@chaosbits.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH][rfc] Use int as return type of main in arch/x86/boot/main.c
+References: <alpine.LNX.2.00.1103132257430.9985@swampdragon.chaosbits.net> <20110314190317.GA20259@home.goodmis.org>
+In-Reply-To: <20110314190317.GA20259@home.goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 05:42:44PM -0400, Jean Delvare wrote:
-> On Mon, 14 Mar 2011 21:36:43 +0100, Arnd Bergmann wrote:
-> > On Monday 14 March 2011 21:18:09 Jean Delvare wrote:
-> > > Jonathan is correct. Pressure sensors are not hardware monitoring
-> > > devices, their drivers have nothing to do in drivers/hwmon. This is
-> > > something for drivers/misc or staging/iio.
-> > 
-> > I generally try to prevent people from adding more ad-hoc interfaces
-> > to drivers/misc. Anything that is called a drivers/misc driver to me
-> > must qualify as "there can't possibly be a second driver with the
-> > same semantics", otherwise it should be part of another subsystem
-> > with clear rules, or be put into its own file system.
+On 03/14/2011 12:03 PM, Steven Rostedt wrote:
+> On Sun, Mar 13, 2011 at 11:00:09PM +0100, Jesper Juhl wrote:
+>> I believe the return type of main should always be 'int'.
 > 
-> I see drivers/misc differently. I see it as "not enough drivers of the
-> same type to justify a new subsystem". So I encourage people to put
-> things there in the absence of any suitable subsystem, until someone
-> gets enough motivation to start such a subsystem. This is more
-> pragmatic than requesting subsystems to be created upfront.
+> But this is not userspace, it is called from assmebly in header.S:
 > 
-Agreed.
+>  # Jump to C code (should not return)
+>  calll	main
+> 
+> We don't care what main returns. If it does return anything, then it
+> dies:
+> 
+> # Setup corrupt somehow...
+> setup_bad:
+>         movl    $setup_corrupt, %eax
+>         calll   puts
+>         # Fall through...
+> 
+>         .globl  die
+>         .type   die, @function
+> die:
+>         hlt
+>         jmp     die
+> 
 
-Note that there is already a pressure sensor in drivers/misc - bmp085.c.
-That chip also includes a temperature sensor.
+Yes, but some versions of gcc complains about a nonstandard signature to
+main().  At least that's what I assume Jesper's issue was.
 
-> That being said, staging is another option nowadays.
-> 
-> > While it seems that right now everyone is just trying to keep move
-> > the driver to some other subsystem, I think it's worth noting that
-> > it is indeed a useful thing to have the driver, I'm optimistic
-> > that we can find some place for it. ;-)
-> > 
-> > Now how about the IIO stuff? This is the first time I've even
-> > heard about it. Does it have any major disadvantages besides
-> > being staging-quality?
-> 
-> This is indeed the major disadvantage. IIO seems to take a lot of time
-> to move out of staging, although I don't know what the current ETA is.
-> 
-In general it would be nice to have a "sensors" subsystem. iio is going into
-that direction, so creating another one might not make much sense at this point.
-
-Guenter
+	-hpa
