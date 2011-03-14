@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab1CNWJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 18:09:35 -0400
-Received: from kroah.org ([198.145.64.141]:45477 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab1CNWJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 18:09:34 -0400
-Date: Mon, 14 Mar 2011 15:03:13 -0700
-From: Greg KH <greg@kroah.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Greg KH <gregkh@suse.de>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/trivial: Fix common spelling mistakes
-Message-ID: <20110314220313.GA21204@kroah.com>
-References: <alpine.LNX.2.00.1103141259500.19969@pobox.suse.cz>
- <1300139875-8688-1-git-send-email-peterhuewe@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300139875-8688-1-git-send-email-peterhuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757381Ab1CNWKA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 18:10:00 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40626 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757363Ab1CNWJ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 18:09:59 -0400
+Subject: Re: [PATCH 21/21] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
+	module
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <20110314145808.GA28480@lst.de>
+References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
+	 <1300100775-10012-22-git-send-email-nab@linux-iscsi.org>
+	 <20110314145808.GA28480@lst.de>
+Content-Type: text/plain
+Date: Mon, 14 Mar 2011 15:02:55 -0700
+Message-Id: <1300140175.28255.156.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 10:57:55PM +0100, Peter Huewe wrote:
-> This patch fixes some very common spelling mistakes in drivers/staging
-> The changes were carried out by hand and are made in
-> documentation/comments only - no functional change.
-> Variables were left untouched on purpose.
-> Linebreaks were also left untouched on purpose.
+On Mon, 2011-03-14 at 15:58 +0100, Christoph Hellwig wrote:
+> On Mon, Mar 14, 2011 at 04:06:15AM -0700, Nicholas A. Bellinger wrote:
+> >  drivers/target/Kconfig                         |    2 +
+> >  drivers/target/Makefile                        |    3 +
+> >  drivers/target/tcm_loop/Kconfig                |   11 +
+> >  drivers/target/tcm_loop/Makefile               |    5 +
+> >  drivers/target/tcm_loop/tcm_loop_configfs.c    |  643 ++++++++++++++++++++++++
+> >  drivers/target/tcm_loop/tcm_loop_core.h        |  141 ++++++
+> >  drivers/target/tcm_loop/tcm_loop_fabric.c      |  472 +++++++++++++++++
+> >  drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  574 +++++++++++++++++++++
+> >  8 files changed, 1851 insertions(+), 0 deletions(-)
 > 
-> The fixed spelling mistakes are:
-> WRONG -> RIGHT
-> 
-> accomodate -> accommodate
-> acommodate -> accommodate
-> 
-> adress -> address
-> addres -> address
-> 
-> hightest -> highest
-> hight -> height
-> hight -> high (when mentioned in contrast to low)
-> hightlight -> highlight
-> 
-> libary -> library
-> libaray -> library
-> 
-> occured -> occurred
-> 
-> reqest -> request
-> reguest -> request
-> requst -> request
-> reqeust -> request
-> 
-> acheive -> achieve
-> beggining -> beginning
-> embarass -> embarrass
-> enviroment -> environment
-> fagment -> fragment
-> indefinately-> indefinitely
-> knowlege -> knowledge
-> regester -> register
-> unferflow -> underflow
-> 
-> recieve -> receive
-> 
-> interupt -> interrupt
-> interrrupt -> interrupt
-> 
-> paralell -> parallel
-> paralel -> parallel
-> preceeding -> preceding
-> publically -> publicly
-> shedule -> shedule
-> supercede -> supersede
-> wierd -> weird
-> writen -> written
-> writting -> writing
-> 
-> And some other minor changes that caught my eye doing the changes
-> 
-> KernelVersion: Linux-next of 20110314 (c0ebee1a2)
+> Please descide on a naming scheme for the frontend modules.  You have
+> tcm_loop for thise one, and just iscsi for the iscsi frontend.
 
-Unfortunatly, I've applied a bunch of patches since the last linux-next
-tree.
+Ok, curently everything that appears under drivers/target/ beside
+iscsi_target_mod.ko is using a matching drivers/target/$FABRIC_MOD/ and
+$FABRIC_MOD.ko naming scheme.
 
-It would be nice if I could have taken a bunch of these changes, and if
-it was broken up into individual patches (each either doing only one
-spelling change, or only operating on one driver/file) then I could
-have.  But as it is, I can't :(
+I would prefer to keep iscsi_target_mod.ko for the software iSCSI case
+in order to prevent chaos with existing userspace tools and prevent
+breakage with existing other iSCSI target modules (IET is using
+iscsi_trgt.ko IIRC).
 
-So, another reason it makes sense to break patches up into the logical
-pieces.  Please do this and resend.
+How about dropping the 'tcm_' prefix from the drivers/target/tcm_subdir/
+to follow how the fabric module actually appears once loaded under
+/sys/kernel/config/target/$FABRIC/..?  We will need to keep the common
+'tcm_' prefix for the actual target fabric modules (or choose a
+different one) to handle those that interface with existing SCSI LLD
+code.
 
-thanks,
+>   I'm not sure what tcm actually stands for, but a common prefix defintively
+> is helpful.
+> 
 
-greg k-h
+target_core_mod -> tcm
+
+> And for only about 1700 lines of code I really don't see why it needs to be
+> split into multiple implementation files.
+> 
+
+This makes it a bit easier to grok as a reference for newcomers by
+having seperate sections for configfs control plane, struct
+target_core_fabric_ops API callers, and Linux/SCSI LLD specific glue.
+
+--nab 
+
