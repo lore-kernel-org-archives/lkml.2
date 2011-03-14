@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab1CNSNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 14:13:25 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42255 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465Ab1CNSNY (ORCPT
+	id S1754506Ab1CNSPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 14:15:01 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59840 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab1CNSPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 14:13:24 -0400
-Date: Mon, 14 Mar 2011 23:43:15 +0530
-From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Anton Blanchard <anton@samba.org>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
- overridden
-Message-ID: <20110314181315.GA16075@in.ibm.com>
-Reply-To: mahesh@linux.vnet.ibm.com
-References: <20100825002258.GD28360@kryten>
- <m139u37cii.fsf@fess.ebiederm.org>
- <4D771EE6.5050404@linux.vnet.ibm.com>
- <20110309122046.GC16951@cr0.redhat.com>
- <20110309234657.264d3080@kryten>
- <20110309142108.GD16951@cr0.redhat.com>
+	Mon, 14 Mar 2011 14:15:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=ZO1/a//tsj+kyNxLiILay8VJ5j9rvBdr7hvdXLJY5ub3A1ohW07Dtko4qvl5A9gOXB
+         SGVutMb1LVtFF0zkvxyavgiLH1yp0Wm8YNMGa4ldrrmvl9tNqf8LvetECv13c0hBWu2b
+         OiYE0Eq4th/DeL85tEntjWq1y+/BBCKbCSCBc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110309142108.GD16951@cr0.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 14 Mar 2011 18:14:58 +0000
+Message-ID: <AANLkTik=m5dCx_9bmnXfXJ9LPMwoS8Bc3CUoT7OAB5gY@mail.gmail.com>
+Subject: [RFC][PATCH v2 22/23] (asm-generic) __vmalloc: add gfp flags variant
+ of pte, pmd, and pud allocation
+From: Prasad Joshi <prasadjoshi124@gmail.com>
+To: Prasad Joshi <prasadjoshi124@gmail.com>,
+        Anand Mitra <mitra@kqinfotech.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 10:21:08PM +0800, Américo Wang wrote:
-> On Wed, Mar 09, 2011 at 11:46:57PM +1100, Anton Blanchard wrote:
-> >
-> >Hi,
-> >
-> >> The crashkernel region is specified via kernel cmdline, so why
-> >> not just drop a failure when it overlaps with RMO region?
-> >> Am I missing something?
-> >
-> >Unfortunately a ppc64 kernel requires a chunk of RMO memory. We would
-> >need the ability to specify multiple crashkernel regions - about 32MB
-> >in the RMO and the rest can be anywhere. That sounds pretty fragile for
-> >a user to configure successfully on the cmdline.
-> >
-> >Thats why the ppc64 crashkernel region begins mid way through the RMO
-> >region. It means both kernels get a chunk of RMO and we only have to
-> >deal with one crashkernel reservation in all the tools and
-> >documentation.
-> >
-> 
-> So, when I specify 128M in cmdline, 32M of them are RMO, and the
-> rest 96M are normal memory? And when I want to free all of them,
-> actually the 32M RMO will never be freed?
+__vmalloc: propagating GFP allocation flag.
 
-In ppc64 implementation the crashkernel region begins mid way through
-the RMO and spans across into the normal memory. For e.g. on power system
-with 128M RMO size, when user specifies 128M in cmdline, the crashkernel
-starts from default offset 64M through 192M. Which means 64M in RMO region
-and rest beyond RMO.
+- adds functions to allow caller to pass the GFP flag for memory allocation
+- helps in fixing the Bug 30702 (__vmalloc(GFP_NOFS) can callback
+		  file system evict_inode).
 
- <-------------------RMO--------------->
-                             <---rtas-->
-0                    64M               128M                     End
-|=====================|=================|===========|============|
-           Crash_start|<------------128M----------->| Crash End
+Signed-off-by: Anand Mitra <mitra@kqinfotech.com>
+Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
+---
+Chnagelog:
+include/asm-generic/4level-fixup.h  |    8 ++++++--
+include/asm-generic/pgtable-nopmd.h |    3 ++-
+include/asm-generic/pgtable-nopud.h |    1 +
+3 files changed, 9 insertions(+), 3 deletions(-)
+---
+diff --git a/include/asm-generic/4level-fixup.h
+b/include/asm-generic/4level-fixup.h
+index 77ff547..f638309 100644
+--- a/include/asm-generic/4level-fixup.h
++++ b/include/asm-generic/4level-fixup.h
+@@ -10,10 +10,14 @@
 
-During free we do free all of them including RMO region. But since the rtas
-region is always on top of RMO, crashkernel memory overlaps rtas region and
-we endup freeing that even, which is causing the crash.
+ #define pud_t				pgd_t
 
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+-#define pmd_alloc(mm, pud, address) \
+-	((unlikely(pgd_none(*(pud))) && __pmd_alloc(mm, pud, address))? \
++#define pmd_alloc_with_mask(mm, pud, address, mask) \
++	((unlikely(pgd_none(*(pud))) && __pmd_alloc(mm, pud, address, mask))? \
+  		NULL: pmd_offset(pud, address))
 
--- 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
++#define pmd_alloc(mm, pud, address) \
++	pmd_alloc_with_mask(mm, pud, address, GFP_KERNEL)
++
++#define pud_alloc_with_mask(mm, pgd, address, mask)	(pgd)
+ #define pud_alloc(mm, pgd, address)	(pgd)
+ #define pud_offset(pgd, start)		(pgd)
+ #define pud_none(pud)			0
+diff --git a/include/asm-generic/pgtable-nopmd.h
+b/include/asm-generic/pgtable-nopmd.h
+index 725612b..96ca8da 100644
+--- a/include/asm-generic/pgtable-nopmd.h
++++ b/include/asm-generic/pgtable-nopmd.h
+@@ -55,7 +55,8 @@ static inline pmd_t * pmd_offset(pud_t * pud,
+unsigned long address)
+  * allocating and freeing a pmd is trivial: the 1-entry pmd is
+  * inside the pud, so has no extra memory associated with it.
+  */
+-#define pmd_alloc_one(mm, address)		NULL
++#define __pmd_alloc_one(mm, address, mask)		NULL
++#define pmd_alloc_one(mm, address)				NULL
+ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
+ {
+ }
+diff --git a/include/asm-generic/pgtable-nopud.h
+b/include/asm-generic/pgtable-nopud.h
+index 810431d..5a21868 100644
+--- a/include/asm-generic/pgtable-nopud.h
++++ b/include/asm-generic/pgtable-nopud.h
+@@ -50,6 +50,7 @@ static inline pud_t * pud_offset(pgd_t * pgd,
+unsigned long address)
+  * allocating and freeing a pud is trivial: the 1-entry pud is
+  * inside the pgd, so has no extra memory associated with it.
+  */
++#define __pud_alloc_one(mm, address, mask)		NULL
+ #define pud_alloc_one(mm, address)		NULL
+ #define pud_free(mm, x)				do { } while (0)
+ #define __pud_free_tlb(tlb, x, a)		do { } while (0)
