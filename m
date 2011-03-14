@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab1CNFPR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 01:15:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55240 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab1CNFPO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 01:15:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vGsrnJyrU1Prw0vPlOUb2x+KhEDbKVgfwlYD6mNPmjN8a6WwVk4D0IJ/oUQPm4JXF4
-         tkkYUUc79CRGgx6BRzeqPR7rNK/bQ9m1cB7T34UTALNGn0gESf9oiTPe+H0LuUOWwzxN
-         9MrQjzgULESjLoXCHcwxOxfqQ4kRJe7OEKttU=
-MIME-Version: 1.0
-In-Reply-To: <20110311120010.GC1760@opensource.wolfsonmicro.com>
-References: <1299810886-19684-1-git-send-email-myungjoo.ham@samsung.com>
-	<1299810886-19684-3-git-send-email-myungjoo.ham@samsung.com>
-	<20110311120010.GC1760@opensource.wolfsonmicro.com>
-Date: Mon, 14 Mar 2011 14:15:13 +0900
-X-Google-Sender-Auth: Toms-wowiPLBexm8nRFtrANgTtk
-Message-ID: <AANLkTind=ew1paSLVkp7w2uqCDCb7AZnc0MyQ3Snwk7P@mail.gmail.com>
-Subject: Re: [PATCH v5 2/4] MAX8997/8966 PMIC Regulator Driver Initial Release
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
-        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752831Ab1CNFTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 01:19:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39135 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314Ab1CNFTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 01:19:30 -0400
+Date: Mon, 14 Mar 2011 16:19:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: linux-next: build failure after merge of the block tree
+Message-Id: <20110314161919.15e6d983.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__14_Mar_2011_16_19_19_+1100_pi37OvzeRJPvB/Ve"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 9:00 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Mar 11, 2011 at 11:34:44AM +0900, MyungJoo Ham wrote:
->> This patch supports PMIC/Regulator part of MAX8997/MAX8966 MFD.
->> In this initial release, selecting voltages or current-limit
->> and switching on/off the regulators are supported.
->
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->
-> though I do still think that voltage range information might make the
-> side effect handling more useful.
->
+--Signature=_Mon__14_Mar_2011_16_19_19_+1100_pi37OvzeRJPvB/Ve
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you.
+Hi Jens,
 
-The range information is partially used in choosing the voltage
-although it does not remember the range information of other
-previously-set regulators. I will try to let the driver hold the range
-information of the regulators affected by GPIO-DVS set or consider
-trying to put such features in the regulator core later.
+After merging the block tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+drivers/mtd/mtd_blkdevs.c: In function 'mtd_blktrans_cease_background':
+drivers/mtd/mtd_blkdevs.c:127: error: implicit declaration of function 'elv=
+_queue_empty'
+
+Caused by commit 7eaceaccab5f ("block: remove per-queue plugging")
+interacting with commit c7519dbf6f4b ("mtd_blkdevs: Add background
+processing support") from the mtd tree.
+
+I have no idea how to fix this up, so I have reverted the above commit
+from them mtd tree (along with commits a32159024620 "mtd: Add mtdswap
+block driver" and 89d8d32060de "mtd: fix printf format warnings, mostly
+lack of %zd for size_t, in mtdswap" that depend on it).
+
+Jens, maybe you could advise the mtd guys.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__14_Mar_2011_16_19_19_+1100_pi37OvzeRJPvB/Ve
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNfaVXAAoJEDMEi1NhKgbscBcH/i7m9rmFclEsha93WvWIh+Ym
+JSOpsavdTE76gYEqN6ENe5AOSB2xeAtOShXAW3qUsCx/udes0wnUu8C8mGnXGANq
+G102oDCr66chKKVsVDd5wl1eioi+/Q2YbfhNQlFRqwgro3nDAwesaC2PxgHkcOP7
+0hk5FKW4iNe/mR/84rcaeL9xkut4yckhslhE+BVEv2J9u+AyuvigwjB1rcW2sUWP
+je0jr3fxCJakr6f56XaXkiytf2WEdLZrmiS2ZZEpKhBulkWM67vRzipD3ehlUusn
+KX2APnOwgyRvyIocuh2hQ+s9CsJFqQg7b0xReYWTXatwLG5T5j+R0pUCF/B/OBI=
+=ksrx
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__14_Mar_2011_16_19_19_+1100_pi37OvzeRJPvB/Ve--
