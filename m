@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab1CNVgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:36:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40456 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab1CNVgC (ORCPT
+	id S1757266Ab1CNVjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:39:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48247 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756020Ab1CNVjO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:36:02 -0400
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=xhGTy1HZDggA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ipVQNDbXozVtx4Q8krgA:9 a=u21-jV3ZDdianZwZgeoA:7 a=DJ3uB8hdMvxDrSHSm7J-8EO7vPkA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Mon, 14 Mar 2011 17:35:59 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [RFC][PATCH 02/14] sched: Simplify cpu_power initialization
-Message-ID: <20110314213559.GE20259@home.goodmis.org>
-References: <20110314150613.749843433@chello.nl>
- <20110314152226.541815887@chello.nl>
+	Mon, 14 Mar 2011 17:39:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=e4qtCFo11dbUnSaxZmg2vyOzZ4+GaJzSCFmm4tgw9sJRri3RHWjIcAcLMTOm3omqt3
+         zSjOsaO4Dc8/FAe5Il0q2ORlKQocwRXPtYgifhTuQhUo8rAgFEXPYqMTEKShdU9UFqFL
+         JFW5N3XgXVTE3SFbYxREt+HgLRIpxFJtat+M4=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+Subject: Re: [PATCH] s3c_adc_battery: Fix method names when PM not set
+Date: Mon, 14 Mar 2011 23:38:40 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r1-anarsoul; KDE/4.6.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+References: <201103142112.39392.heiko@sntech.de>
+In-Reply-To: <201103142112.39392.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110314152226.541815887@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103142338.40584.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 04:06:15PM +0100, Peter Zijlstra wrote:
-> The code in update_group_power() does what init_sched_groups_power()
-> does and more, so remove the special init_ code and call the generic
-> code instead.
+On Monday 14 March 2011 22:12:39 Heiko Stübner wrote:
+> From: Heiko Stuebner <heiko@sntech.de>
 > 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <new-submission>
+> s3c_adc_battery declares wrong method names when CONFIG_PM is not set.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+
+Acked-by: Vasily Khoruzhick <anarsoul@gmail.com>
+ 
 > ---
->  kernel/sched.c |   44 +++++---------------------------------------
->  1 file changed, 5 insertions(+), 39 deletions(-)
+>  drivers/power/s3c_adc_battery.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -6655,9 +6655,6 @@ cpu_attach_domain(struct sched_domain *s
->  	struct rq *rq = cpu_rq(cpu);
->  	struct sched_domain *tmp;
->  
-> -	for (tmp = sd; tmp; tmp = tmp->parent)
-> -		tmp->span_weight = cpumask_weight(sched_domain_span(tmp));
-> -
->  	/* Remove the sched domains which do not contribute to scheduling. */
->  	for (tmp = sd; tmp; ) {
->  		struct sched_domain *parent = tmp->parent;
-
-This and ...
-
-[ snip what was explained in change log ]
-
->  
->  /*
-> @@ -7483,7 +7446,7 @@ static int __build_sched_domains(const s
->  {
->  	enum s_alloc alloc_state = sa_none;
->  	struct s_data d;
-> -	struct sched_domain *sd;
-> +	struct sched_domain *sd, *tmp;
->  	int i;
->  #ifdef CONFIG_NUMA
->  	d.sd_allnodes = 0;
-> @@ -7506,6 +7469,9 @@ static int __build_sched_domains(const s
->  		sd = __build_book_sched_domain(&d, cpu_map, attr, sd, i);
->  		sd = __build_mc_sched_domain(&d, cpu_map, attr, sd, i);
->  		sd = __build_smt_sched_domain(&d, cpu_map, attr, sd, i);
-> +
-> +		for (tmp = sd; tmp; tmp = tmp->parent)
-> +			tmp->span_weight = cpumask_weight(sched_domain_span(tmp));
->  	}
->  
->  	for_each_cpu(i, cpu_map) {
+> diff --git a/drivers/power/s3c_adc_battery.c
+> b/drivers/power/s3c_adc_battery.c index 4255f23..d36c289 100644
+> --- a/drivers/power/s3c_adc_battery.c
+> +++ b/drivers/power/s3c_adc_battery.c
+> @@ -406,8 +406,8 @@ static int s3c_adc_bat_resume(struct platform_device
+> *pdev) return 0;
+>  }
+>  #else
+> -#define s3c_adc_battery_suspend NULL
+> -#define s3c_adc_battery_resume NULL
+> +#define s3c_adc_bat_suspend NULL
+> +#define s3c_adc_bat_resume NULL
+>  #endif
 > 
-
-this, looks like a separate change than what was explained in the change
-log. Did you forget a "quilt new" between these two changes?
-
--- Steve
-
+>  static struct platform_driver s3c_adc_bat_driver = {
