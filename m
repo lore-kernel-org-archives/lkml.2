@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab1CNNzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 09:55:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5285 "EHLO mx1.redhat.com"
+	id S1753603Ab1CNN5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 09:57:31 -0400
+Received: from www.tglx.de ([62.245.132.106]:50258 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab1CNNzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 09:55:21 -0400
-Date: Mon, 14 Mar 2011 09:55:16 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: jaxboe@fusionio.com, ctalbott@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add unaccounted time to timeslice_used.
-Message-ID: <20110314135516.GA31120@redhat.com>
-References: <1299877572-30353-1-git-send-email-teravest@google.com>
+	id S1753242Ab1CNN53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 09:57:29 -0400
+Date: Mon, 14 Mar 2011 14:56:19 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Michel Lespinasse <walken@google.com>, Darren Hart <darren@dvhart.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] futex: do not pagefault_disable in
+ futex_atomic_cmpxchg_inatomic()
+In-Reply-To: <alpine.LFD.2.00.1103140913010.2787@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1103141126590.2787@localhost6.localdomain6>
+References: <20110307021127.GB31188@google.com> <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6> <20110309112550.GA3050@google.com> <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6> <20110311021654.GA26122@google.com>
+ <20110311024731.GB26122@google.com> <AANLkTinXxCMVozx-NKEVXJLNrB1V93VEAJ8FiHQHXY_=@mail.gmail.com> <alpine.LFD.2.00.1103140913010.2787@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299877572-30353-1-git-send-email-teravest@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 01:06:12PM -0800, Justin TerAvest wrote:
-> There are two kind of times that tasks are not charged for: the first
-> seek and the extra time slice used over the allocated timeslice. Both
-> of these exported as a new unaccounted_time stat.
+On Mon, 14 Mar 2011, Thomas Gleixner wrote:
+> On Sun, 13 Mar 2011, Linus Torvalds wrote:
+> > On Thu, Mar 10, 2011 at 6:47 PM, Michel Lespinasse <walken@google.com> wrote:
+> That's my fault. 
 > 
-> I think it would be good to have this reported in 'time' as well, but
-> that is probably a separate discussion.
+> I really checked the call sites of futex_atomic_cmpxchg_inatomic() and
+> totally failed to see the one in handle_futex_death() which does not
+> use the helper function cmpxchg_futex_value_locked(). That helper
+> function is safe and does the right thing:
 > 
+> 	pagefault_disable();
+> 	curval = futex_atomic_cmpxchg_inatomic(uaddr, uval, newval);
+> 	pagefault_enable();
+> 
+> So, that means we have all call sites covered except one, which needs
+> to be fixed _AND_ also pushed into stable as all arch implementations
+> except ARM rely on the caller doing the pagefault_disable().
 
-Justin,
+After applying some coffee to my brain, I noticed that the ability to
+fault in handle_futex_death() is desired. The get_user() before that
+call covers the case where the futex is paged out, but it does not
+handle the case where the futex is in a non writeable mapping. That
+lacks a big fat comment at least.
 
-I would say that for such optimization do make sure that you mention that
-these are useful only if one is driving a queue depth of 1.
+So the removal of the pagefault_disable() in ARM is correct, just the
+changelog and the comment there sucks. Sorry for not catching it.
 
-Otherwise previous queue might have dumped bunch of requests in device
-and expired. Now new queue's first request completion time is also
-impacted by the requests dumped by other queues.
+Thinking more about it. Adding a comment is to handle_futex_death() is
+good, but changing the code to make it entirely clear what is going on
+is even better.
 
-There are already so many stats which I have never used so far and I have
-not encountered anybody else using these either. I think primary reason
-being that in general nobody forced the queue depth of 1 hence most of the
-timing stats are of no use.
+-------->
+Subject: futex: Deobfuscate handle_futex_death()
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 14 Mar 2011 10:34:35 +0100
 
-So personally I am not very keen on keep on increasing number of stats in 
-CFQ which are useful only when using queue depth 1 as that might not be
-the common case. But Jens likes it, so....
+handle_futex_death() uses futex_atomic_cmpxchg_inatomic() without
+disabling page faults. That's ok, but totally non obvious.
 
-Also a comment inline.
+We don't hold locks so we actually can and want to fault here, because
+the get_user() before futex_atomic_cmpxchg_inatomic() does not
+guarantee a R/W mapping.
 
-[..]
-> @@ -3314,9 +3321,7 @@ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  	BUG_ON(!cfq_cfqq_on_rr(cfqq));
->  
->  	cfq_service_tree_add(cfqd, cfqq, 1);
-> -
-> -	cfqq->slice_end = 0;
-> -	cfq_mark_cfqq_slice_new(cfqq);
-> +	__cfq_set_active_queue(cfqd, cfqq);
+We could just add a big fat comment to explain this, but actually
+changing the code so that the functionality is entirely clear is
+better.
 
-So far a new queue selection was always in select_queue(). Now this will
-change it and new queue selection will also take place in
-cfq_preempt_queue(). 
+Use the helper function which disables page faults around the
+futex_atomic_cmpxchg_inatomic() and handle a fault with a call to
+fault_in_user_writeable() as all other places in the futex code do as
+well.
 
-Also I think this is not right. It is not necessary that we select the
-preempting queue. For example a sync queue in one group can preempt the
-async in root group but it might happen that we still select again
-the root group's sync queue for dispatch.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/futex.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-So queue selection logic should be driven by select_queue() which selects
-group first then workload with-in group and then queue with-in workload
-and we shoud not be setting active queue here.
-
-Thanks
-Vivek
+Index: linux-2.6-tip/kernel/futex.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/futex.c
++++ linux-2.6-tip/kernel/futex.c
+@@ -2458,9 +2458,20 @@ retry:
+ 		 * userspace.
+ 		 */
+ 		mval = (uval & FUTEX_WAITERS) | FUTEX_OWNER_DIED;
+-		if (futex_atomic_cmpxchg_inatomic(&nval, uaddr, uval, mval))
+-			return -1;
+-
++		/*
++		 * We are not holding a lock here, but we want to have
++		 * the pagefault_disable/enable() protection because
++		 * we want to handle the fault gracefully. If the
++		 * access fails we try to fault in the futex with R/W
++		 * verification via get_user_pages. get_user() above
++		 * does not guarantee R/W access. If that fails we
++		 * give up and leave the futex locked.
++		 */
++		if (cmpxchg_futex_value_locked(&nval, uaddr, uval, mval)) {
++			if (fault_in_user_writeable(uaddr))
++				return -1;
++			goto retry;
++		}
+ 		if (nval != uval)
+ 			goto retry;
+ 
