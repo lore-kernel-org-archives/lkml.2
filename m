@@ -1,72 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab1CNPnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:43:41 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60881 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab1CNPnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:43:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=EWW5t6OCwYJNSk55r+H72vb+5o3BYRwFwEC4rr4YPX3OTesWF3g8dS0LP/cjzC7JuN
-         QydM4z3SXK1G96oTazsAqOfqrPRw4EESmTe7x+0S/EHem17zcS1XsUcAOpiVZUKoACEe
-         jqzCbZWi1Z4BvFUyKL1O/kihSACz/PhmY1IO4=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf: Provide support for filters in perf stat
-Date: Mon, 14 Mar 2011 16:40:30 +0100
-Message-Id: <1300117230-8404-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1754633Ab1CNPno (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:43:44 -0400
+Received: from smtpbg55.qq.com ([64.71.138.44]:43374 "HELO smtpbg55.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754488Ab1CNPnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 11:43:42 -0400
+X-QQ-mid: esmtp10t1300117304t216t12681
+X-QQ-SSF: 00000000000000F0F9200F000000000
+Date: Mon, 14 Mar 2011 23:52:36 +0800
+From: "Lina Lu" <lulina_nuaa@foxmail.com>
+To: "Vivek Goyal" <vgoyal@redhat.com>
+Cc: "linux kernel mailing list" <linux-kernel@vger.kernel.org>
+References: <tencent_6A5F95FF2112DFE963C44E4E@qq.com>,
+ <201103110038174067110@foxmail.com>,
+ <201103121933025463003@foxmail.com>
+Subject: Re: Re: Re: blk-throttle.c : When limit is changed, must start anewslice
+Message-ID: <201103142352342813806@foxmail.com>
+X-mailer: Foxmail 6, 15, 201, 23 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="gb2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now the --filter option is usable with perf stat too.
+On 2011-03-14 23:18:31, Vivek Goyal wrote:
+>On Sat, Mar 12, 2011 at 07:33:07PM +0800, Lina Lu wrote:
+>> On 2011-03-11 03:55:55, Vivek Goyal wrote:
+>> >On Fri, Mar 11, 2011 at 12:38:18AM +0800, Lina Lu wrote:
+>> >> [..]
+>> >> Hi Vivek,
+>> >> I have test the following patch, but the latency still there.
+>> >> 
+>> >> I try to find why there are 5~10 seconds latency today. After collect the blktrace, I 
+>> >> think the reason is that throtl_trim_slice() don't aways update the tg->slice_start[rw], 
+>> >> although we call it once dispatch a bio.
+>> >
+>> >lina,
+>> >
+>> >Trim slice should not even matter now. Upon limit change, this patch
+>> >should reset the slice and start a new one irrespective of the fact
+>> >where are.
+>> >
+>> >In your traces, do you see limit change message and do you see a new
+>> >slice starting.
+>> >
+>> >I did similar test yesterday on my box and this patch worked. Can you
+>> >capture some block traces and I can have a look at those. Key thing
+>> >to look for is limit change message and whether it started a new
+>> >slice or not.
+>> >
+>> >Thanks
+>> >Vivek
+>> >
+>> 	
+>> Hi Vivek,
+>> 	
+>> Here is the blktrace and iostat results when I change the limit from 1024000000000000
+>> to 1024000. When the limit changed, there is about 3 seconds lantency.
+>> 
+>> blktrace:	
+>> 253,1    0        0     4.177733270     0  m   N throtl / [R] trim slice nr=1 bytes=102400000000000 io=429496729 start=4297788991 end=4297789100 jiffies=4297788992
+>> 253,1    0        0     4.187393582     0  m   N throtl / [R] extend slice start=4297788991 end=4297789200 jiffies=4297789002
+>> 253,1    0        0     4.276120505     0  m   N throtl / [R] trim slice nr=1 bytes=102400000000000 io=429496729 start=4297789091 end=4297789200 jiffies=4297789091
+>> 253,1    0        0     4.285934091     0  m   N throtl / [R] extend slice start=4297789091 end=4297789300 jiffies=4297789101
+>> 253,1    1        0     4.348552814     0  m   N throtl schedule work. delay=0 jiffies=4297789163
+>> 253,1    1        0     4.348571560     0  m   N throtl limit changed =1
+>> 253,1    0        0     4.349839104     0  m   N throtl / [R] extend slice start=4297789091 end=4297793000 jiffies=4297789164
+>> 253,1    0        0     4.349844118     0  m   N throtl / [R] bio. bdisp=3928064 sz=4096 bps=1024000 iodisp=959 iops=4294967295 queued=0/0
+>
+>Lina,
+>
+>Thanks for the traces.
+>
+>I think we did call process_limit_change() but we did not start the new
+>slice. I guess this happened because, we seem to be starting slice only
+>if group on run tree. Because before limit udpates, most likely group
+>is not on run tree as limits are very high, hence we missed resetting
+>the slice.
+>
+>        hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
+>                if (throtl_tg_on_rr(tg) && tg->limits_changed) {
+>                        throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
+>                                " riops=%u wiops=%u", tg->bps[READ],
+>                                tg->bps[WRITE], tg->iops[READ],
+>                                tg->iops[WRITE]);
+>
+	
+Do you mean that throtl_tg_on_rr() function returns 0 when the limits are very
+high?
+	
+>Actually many races have been fixed in Jens's block tree. Is it possible to
+>test origin/for-2.6.39/core branch of Jens's tree with following patch applied
+>and see if it fixes the issue for you?
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-stat.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+I only find 2.6.38 core in gitweb. Do you mean origin/for-2.6.38/core branch? 
+I'll test it as soon as possible and keep you know the result.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 21c0252..e2109f9 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -333,6 +333,12 @@ static int run_perf_stat(int argc __used, const char **argv)
- 		}
- 	}
+>Thanks
+>Vivek
+>
+>---
+> block/blk-throttle.c |   25 ++++++++++++++++++++++++-
+> 1 file changed, 24 insertions(+), 1 deletion(-)
+>
+>Index: linux-2.6-block/block/blk-throttle.c
+>===================================================================
+>--- linux-2.6-block.orig/block/blk-throttle.c	2011-03-14 10:27:57.000000000 -0400
+>+++ linux-2.6-block/block/blk-throttle.c	2011-03-14 10:30:47.267170956 -0400
+>@@ -756,6 +756,15 @@ static void throtl_process_limit_change(
+> 			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
+> 			tg->iops[READ], tg->iops[WRITE]);
+> 
+>+		/*
+>+		 * Restart the slices for both READ and WRITES. It
+>+		 * might happen that a group's limit are dropped
+>+		 * suddenly and we don't want to account recently
+>+		 * dispatched IO with new low rate
+>+		 */
+>+		throtl_start_new_slice(td, tg, 0);
+>+		throtl_start_new_slice(td, tg, 1);
+>+
+> 		if (throtl_tg_on_rr(tg))
+> 			tg_update_disptime(td, tg);
+> 	}
+>@@ -821,7 +830,8 @@ throtl_schedule_delayed_work(struct thro
+> 
+> 	struct delayed_work *dwork = &td->throtl_work;
+> 
+>-	if (total_nr_queued(td) > 0) {
+>+	/* schedule work if limits changed even if no bio is queued */
+>+	if (total_nr_queued(td) > 0 || td->limits_changed) {
+> 		/*
+> 		 * We might have a work scheduled to be executed in future.
+> 		 * Cancel that and schedule a new one.
+>@@ -1002,6 +1012,19 @@ int blk_throtl_bio(struct request_queue 
+> 	/* Bio is with-in rate limit of group */
+> 	if (tg_may_dispatch(td, tg, bio, NULL)) {
+> 		throtl_charge_bio(tg, bio);
+>+
+>+		/*
+>+		 * We need to trim slice even when bios are not being queued
+>+		 * otherwise it might happen that a bio is not queued for
+>+		 * a long time and slice keeps on extending and trim is not
+>+		 * called for a long time. Now if limits are reduced suddenly
+>+		 * we take into account all the IO dispatched so far at new
+>+		 * low rate and * newly queued IO gets a really long dispatch
+>+		 * time.
+>+		 *
+>+		 * So keep on trimming slice even if bio is not queued.
+>+		 */
+>+		throtl_trim_slice(td, tg, rw);
+> 		goto out;
+> 	}
  
-+	if (perf_evlist__set_filters(evsel_list)) {
-+		error("failed to set filter with %d (%s)\n", errno,
-+			strerror(errno));
-+		return -1;
-+	}
-+
- 	/*
- 	 * Enable counters and exec the command:
- 	 */
-@@ -634,6 +640,8 @@ static const struct option options[] = {
- 	OPT_CALLBACK('e', "event", &evsel_list, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events),
-+	OPT_CALLBACK(0, "filter", &evsel_list, "filter",
-+		     "event filter", parse_filter),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
- 	OPT_INTEGER('p', "pid", &target_pid,
--- 
-1.7.3.2
-
+t
