@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab1CNB7E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 21:59:04 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:46176 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab1CNB7C (ORCPT
+	id S1754136Ab1CNCSz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 22:18:55 -0400
+Received: from nwd2mail11.analog.com ([137.71.25.57]:9778 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab1CNCSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 21:59:02 -0400
-Message-ID: <10d164106e8d30b89d7263b067db01f0.squirrel@webmail.greenhost.nl>
-In-Reply-To: <4D7D7325.2040708@garzik.org>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
-    <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
-    <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
-    <201103111255.44979.arnd@arndb.de>
-    <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
-    <4D7AC0FE.8070806@gmail.com>
-    <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
-    <4D7ADFDD.9080108@gmail.com>
-    <e118a1458c29e4f44bf71c7095e4bce8.squirrel@webmail.greenhost.nl>
-    <4D7BBC03.3020404@garzik.org>
-    <89481603ed9cfc86efaa039c2dfeb955.squirrel@webmail.greenhost.nl>
-    <4D7D7325.2040708@garzik.org>
-Date: Mon, 14 Mar 2011 02:59:00 +0100 (CET)
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Jeff Garzik" <jeff@garzik.org>
-Cc: "Ric Wheeler" <ricwheeler@gmail.com>, "Arnd Bergmann" <arnd@arndb.de>,
-        "Sage Weil" <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
-User-Agent: SquirrelMail/1.4.17
+	Sun, 13 Mar 2011 22:18:53 -0400
+X-IronPort-AV: E=Sophos;i="4.62,313,1297054800"; 
+   d="scan'208";a="30217858"
+From: "Cai, Cliff" <Cliff.Cai@analog.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Cliff Cai <cliffcai.sh@gmail.com>, Mike Frysinger <vapier.adi@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Date: Sun, 13 Mar 2011 22:23:19 -0400
+Subject: RE: [alsa-devel] [Device-drivers-devel] [PATCH] Add driver for
+ Analog Devices ADAU1701 SigmaDSP
+Thread-Topic: [alsa-devel] [Device-drivers-devel] [PATCH] Add driver for
+ Analog Devices ADAU1701 SigmaDSP
+Thread-Index: Acvf4v0OjS0pJ98bTSG+gUiYlu1ScQCCt3aw
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16649F4AB9D@NWD2CMBX1.ad.analog.com>
+References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
+ <20110307114142.GB13471@opensource.wolfsonmicro.com>
+ <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
+ <20110307121502.GG13471@opensource.wolfsonmicro.com>
+ <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
+ <AANLkTik=wEyCEY5xsrdGJw6t_VHH9ByKt4mX348P8uD7@mail.gmail.com>
+ <20110309100055.GB6923@opensource.wolfsonmicro.com>
+ <DB904C5425BA6F4E8424B3B51A1414D16649F4A546@NWD2CMBX1.ad.analog.com>
+ <20110310134605.GC22195@opensource.wolfsonmicro.com>
+ <DB904C5425BA6F4E8424B3B51A1414D16649F4A8FB@NWD2CMBX1.ad.analog.com>
+ <20110311115344.GA1760@opensource.wolfsonmicro.com>
+In-Reply-To: <20110311115344.GA1760@opensource.wolfsonmicro.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: -0.6
-X-Scan-Signature: 7194f67edb0fd0030ea28d62f3968513
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2E2JG6u020317
 
-On Mon, March 14, 2011 02:45, Jeff Garzik wrote:
-> On 03/13/2011 09:31 PM, Indan Zupancic wrote:
->> The new syscall works on only one fd too. The behaviour of the proposed
->> syncfs and an extended sync_file_range is exactly the same.
+
+
+>-----Original Message-----
+>From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+>Sent: 2011Äê3ÔÂ11ÈÕ 19:54
+>To: Cai, Cliff
+>Cc: Cliff Cai; Mike Frysinger; alsa-devel@alsa-project.org;
+>linux-kernel@vger.kernel.org;
+>device-drivers-devel@blackfin.uclinux.org;
+>akpm@linux-foundation.org; lrg@slimlogic.co.uk
+>Subject: Re: [alsa-devel] [Device-drivers-devel] [PATCH] Add
+>driver for Analog Devices ADAU1701 SigmaDSP
 >
-> No, it's not.  You should read the patch before commenting.
+>On Fri, Mar 11, 2011 at 02:54:42AM -0500, Cai, Cliff wrote:
+>
+>> 1.The default firmware is used when the chip is just
+>powered-up, Once
+>> driver gets the control,it should load the custom firmware
+>to replace
+>> The default one, 2.we don't need to worry about this case,the driver
+>> which needs loading firmware Has to be compiled as a module,and of
+>> cause,we load it after the filesystem has been mounted.
+>
+>Forcing the driver to be build modular isn't great for
+>usability either, though - it's not very general and some
+>systems don't use modules at all for various reasons (eg,
+>simplicity or difficulties in keeping the fs and the kernel
+>partitions in sync).
+>
+>I'm not sure this gels well with the approach you're taking
+>with the driver just passing the firmware through.  On the one
+>hand you don't want the driver to know anything about the
+>firmware or join up the firmware handling with the audio
+>subsystem but on the other hand the driver is requiring that a
+>firmware be loaded as soon as the driver is even though it can
+>provide some very basic functionality without it.
+>It'd seem better to just let the user load firmware at their leisure.
+>
 
-Have you read my sync_file_range patch? Because it's exactly the
-same code, but put in sync_file_range instead of a new system call.
-How that can have different behaviour, I have no idea.
+Hi Mark,
 
-
+I think I need to have a check of the requirement from customer.
+Anyway,if I modified the driver according to the comments here,
+Would you like to accept it currently or we need to wait until the missing patch
+Has been merged in mainline?
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
