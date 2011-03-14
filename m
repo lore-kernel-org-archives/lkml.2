@@ -1,147 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab1CNSG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 14:06:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753196Ab1CNSG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 14:06:26 -0400
-Date: Mon, 14 Mar 2011 19:06:21 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2] tracing - avoid soft lockup in trace_pipe
-Message-ID: <20110314180621.GA5987@jolsa.brq.redhat.com>
-References: <1299970786-8075-1-git-send-email-jolsa@redhat.com>
- <1299970786-8075-3-git-send-email-jolsa@redhat.com>
- <20110313145811.GA30558@redhat.com>
- <1300111651.9910.87.camel@gandalf.stny.rr.com>
- <20110314141853.GB1936@jolsa.brq.redhat.com>
- <1300112926.9910.100.camel@gandalf.stny.rr.com>
- <20110314150746.GA4453@jolsa.brq.redhat.com>
- <1300116057.9910.106.camel@gandalf.stny.rr.com>
+	id S1753234Ab1CNSH3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 14:07:29 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46826 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1CNSH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 14:07:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=u1W9ir3nlbcjsq1Q3arHoihcMM9jb6RNFmN8ees571j8LwqEk/JWzDkVvikB8XiHZC
+         eVfTX3tsf8fhnnpiv9VOGo1FRUQqkYxidkQ168IdiDwoqTwbpz1CkATCmv7cv5l6Dujt
+         Lr+uOIVoOknG/1bpp90fXeOwNeCuaXyWJQDa8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300116057.9910.106.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 14 Mar 2011 18:07:26 +0000
+Message-ID: <AANLkTikenEE4GOHM4VgLEOrQjDXaYW+TRy8RLT9V28mu@mail.gmail.com>
+Subject: [RFC][PATCH v2 20/23] (xtensa) __vmalloc: add gfp flags variant of
+ pte, pmd, and pud allocation
+From: Prasad Joshi <prasadjoshi124@gmail.com>
+To: Chris Zankel <chris@zankel.net>, Prasad Joshi <prasadjoshi124@gmail.com>,
+        Anand Mitra <mitra@kqinfotech.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 11:20:57AM -0400, Steven Rostedt wrote:
-> On Mon, 2011-03-14 at 16:07 +0100, Jiri Olsa wrote:
-> > So we get back the the while loop with no data added and with
-> > TRACE_TYPE_HANDLED return code, which will keep us in the loop.
-> > 
-> > Not sure this is bug or feature :)
-> > 
-> > 
-> Most bugs are features ;)
-> 
-> honestly, I'd love to rip out all the "bin", "hex" etc formats as they
-> are pretty much deprecated.
-> 
-> But as you pointed out that this can keep us in the inner loop, we need
-> to fix that. I prefer to fix it within the nop print function. Perhaps
-> we need to fill in something. "type: %d", iter->ent->type ?
+__vmalloc: propagating GFP allocation flag.
 
-sounds ok :) attaching v2 patch
+- adds functions to allow caller to pass the GFP flag for memory allocation
+- helps in fixing the Bug 30702 (__vmalloc(GFP_NOFS) can callback
+		  file system evict_inode).
 
-thanks,
-jirka
-
-
+Signed-off-by: Anand Mitra <mitra@kqinfotech.com>
+Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
 ---
-running following commands:
-
-  # enable the binary option
-  echo 1 > ./options/bin
-  # disable context info option
-  echo 0 > ./options/context-info 
-  # tracing only events
-  echo 1 > ./events/enable
-  cat trace_pipe
-
-is causing lockup (in NON preemptive kernels) inside
-tracing_read_pipe function.
-
-The reason are:
- - bin/hex/raw output functions for events are set to
-   trace_nop_print function, which prints nothing and
-   returns TRACE_TYPE_HANDLED value
- - LOST EVENT trace do not handle trace_seq overflow
-
-These reasons force the while loop in tracing_read_pipe
-function never to break.
-
-The attached patch fixies handling of lost event trace, and
-changes trace_nop_print to print minimal info, which is needed
-for the correct tracing_read_pipe processing.
-
-v2 changes:
- - omit the cond_resched changes by trace_nop_print changes
- - WARN changed to WARN_ONCE and added info to be able
-   to find out the culprit
-
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Chnagelog:
+arch/xtensa/include/asm/pgalloc.h |    9 ++++++++-
+arch/xtensa/mm/pgtable.c          |   11 +++++++++--
+2 files changed, 17 insertions(+), 3 deletions(-)
 ---
- kernel/trace/trace.c        |   15 ++++++++++++---
- kernel/trace/trace_output.c |    3 +++
- 2 files changed, 15 insertions(+), 3 deletions(-)
+diff --git a/arch/xtensa/include/asm/pgalloc.h
+b/arch/xtensa/include/asm/pgalloc.h
+index 40cf9bc..d5a23ae 100644
+--- a/arch/xtensa/include/asm/pgalloc.h
++++ b/arch/xtensa/include/asm/pgalloc.h
+@@ -42,10 +42,17 @@ static inline void pgd_free(struct mm_struct *mm,
+pgd_t *pgd)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9541c27..5af42f4 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2013,9 +2013,10 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
- {
- 	enum print_line_t ret;
- 
--	if (iter->lost_events)
--		trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
--				 iter->cpu, iter->lost_events);
-+	if (iter->lost_events &&
-+	    !trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
-+				 iter->cpu, iter->lost_events))
-+		return TRACE_TYPE_PARTIAL_LINE;
- 
- 	if (iter->trace && iter->trace->print_line) {
- 		ret = iter->trace->print_line(iter);
-@@ -3229,6 +3230,14 @@ waitagain:
- 
- 		if (iter->seq.len >= cnt)
- 			break;
+ extern struct kmem_cache *pgtable_cache;
+
++static inline pte_t *
++__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address,
++		gfp_t gfp_mask)
++{
++	return kmem_cache_alloc(pgtable_cache, gfp_mask);
++}
 +
-+		/*
-+		 * Setting the full flag means we reached the trace_seq buffer
-+		 * size and we should leave by partial output condition above.
-+		 * One of the trace_seq_* functions is not used properly.
-+		 */
-+		WARN_ONCE(iter->seq.full, "full flag set for trace type %d",
-+			  iter->ent->type);
- 	}
- 	trace_access_unlock(iter->cpu_file);
- 	trace_event_read_unlock();
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 456be90..cf535cc 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -830,6 +830,9 @@ EXPORT_SYMBOL_GPL(unregister_ftrace_event);
- enum print_line_t trace_nop_print(struct trace_iterator *iter, int flags,
- 				  struct trace_event *event)
+ static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
+ 					 unsigned long address)
  {
-+	if (!trace_seq_printf(&iter->seq, "type: %d\n", iter->ent->type))
-+		return TRACE_TYPE_PARTIAL_LINE;
-+
- 	return TRACE_TYPE_HANDLED;
+-	return kmem_cache_alloc(pgtable_cache, GFP_KERNEL|__GFP_REPEAT);
++	return __pte_alloc_one_kernel(mm, address, GFP_KERNEL | __GFP_REPEAT);
  }
- 
--- 
-1.7.1
 
+ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
+diff --git a/arch/xtensa/mm/pgtable.c b/arch/xtensa/mm/pgtable.c
+index 6979927..eff6c1d 100644
+--- a/arch/xtensa/mm/pgtable.c
++++ b/arch/xtensa/mm/pgtable.c
+@@ -12,13 +12,15 @@
+
+ #if (DCACHE_SIZE > PAGE_SIZE)
+
+-pte_t* pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
++pte_t*
++__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address,
++		gfp_t gfp_mask)
+ {
+ 	pte_t *pte = NULL, *p;
+ 	int color = ADDR_COLOR(address);
+ 	int i;
+
+-	p = (pte_t*) __get_free_pages(GFP_KERNEL|__GFP_REPEAT, COLOR_ORDER);
++	p = (pte_t*) __get_free_pages(gfp_mask, COLOR_ORDER);
+
+ 	if (likely(p)) {
+ 		split_page(virt_to_page(p), COLOR_ORDER);
+@@ -35,6 +37,11 @@ pte_t* pte_alloc_one_kernel(struct mm_struct *mm,
+unsigned long address)
+ 	return pte;
+ }
+
++pte_t* pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
++{
++	return __pte_alloc_one_kernel(mm, address, GFP_KERNEL | __GFP_REPEAT);
++}
++
+ #ifdef PROFILING
+
+ int mask;
