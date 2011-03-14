@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab1CNLG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:06:26 -0400
-Received: from nm11.bullet.mail.sp2.yahoo.com ([98.139.91.81]:26379 "HELO
-	nm11.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752308Ab1CNLGV (ORCPT
+	id S1753259Ab1CNLG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:06:29 -0400
+Received: from nm16-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.210]:37906 "HELO
+	nm16-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752783Ab1CNLG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:06:21 -0400
-X-Yahoo-Newman-Id: 670668.67822.bm@omp1022.mail.sp2.yahoo.com
+	Mon, 14 Mar 2011 07:06:26 -0400
+X-Yahoo-Newman-Id: 694246.55340.bm@omp1022.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: UdhfxYcVM1nSd66Ap45rI8qihM59ljsJFK7n9OWvEfMZFMK
- ZOCSFNLA2XDa_27ZwsGS21N5hHBFT1DUF80gOQQ6HQd_Qbzf.BW5m2fK_DB9
- vMxLbTCbo5pZx7Lq.73VZVLJiHLKM2yygP4uVcwCxzjnGGrgBDvCuPj2TJRp
- Af3INqWvIww6a7gSnPdT4xbPtst5jNszLrUT5FzmtWKvs4iH2gkJEsa9E7cd
- iwYykZqHdPVUWC_TDPyHz_16kuKVSKLDz8fyJpCUr.8FJquipvbEHJCL2WXh
- mBTdEhkqGAxbQ5iBAKQgnFksjPI.0ooRpJVCtNqMf2AsaGelP03UgUIHr01E
- M7avSiWWTKgTdkLIeYdmK2qdgzgjPewVeBpt5FyZ3RynDK14.XkxZwMzLYv9
- d5xSIZpwxA3lzkDmLe2VBCrjvdO.gVcDTYGjIh9HV4l338NZx
+X-YMail-OSG: r5pTwqQVM1lV5yL.4vCMDxLs7bIpLgXOAJejiTOBTuW41Ao
+ BLWOOzLq_d7cnISjo2vT4ObyATlA_UdprawJTc5BlWE8mki.i0NFkZsQ8Vvh
+ ElYHUC9f3s3mYp9yWz4UBMs1HtUJEn.D6yvUXrnAPYXpRJvUfui9Ho1PFW7h
+ 2rCvsm2oiQhHvg0ojxrY.9C.A5_OOk_GHh1A1z2xRlEFgq7XGn9gJt.aXxSq
+ x4T1y4BwwMnwCrw6NsCw1_OYbmLYuT3qmLxRMmCDg6BtTlx0V2l4KBX4M.Az
+ TS3Y2mTB5X0aguOTbazXthMoDRH4HDuZA0VYb9mFpxfvFT6eV1LdDkk_kyrj
+ Aa2VLX134OhlNfS82Wa9IhFdRBNOsnx5_hJsLjlI7aIeDvsdQ68SFx5yckpu
+ IHIgfGWfL53IcZw64aqaezPdqBkW2vsp4Y5jZNY4GcLP7P4KMU.fvUKSaXJH
+ KPN3JUpVez4Z5_2a76PcKnPKY8YRKcXknDF4igJ5Wq1z7xTldd7xe8o59iID
+ SCM9dp8VnaG1N5GqYO5II3bfeHvc-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -28,130 +30,41 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 00/21] target patches for .39 scsi-misc (v3)
-Date: Mon, 14 Mar 2011 04:05:54 -0700
-Message-Id: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
+        Roland Dreier <rolandd@cisco.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: [PATCH 01/21] target: Fix memory leak on error path in pscsi_alloc_task
+Date: Mon, 14 Mar 2011 04:05:55 -0700
+Message-Id: <1300100775-10012-2-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
+References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Roland Dreier <rolandd@cisco.com>
 
-Hi James and Co,
+If allocation of pt->pscsi_cdb fails, we need to free the just-allocated
+pt or else it will be leaked.
 
-This is an updated 'for-39' target series consisting of the two previous
-series posted here:
-
-[PATCH 00/14] target patches for .39 scsi-misc (v2)
-http://marc.info/?l=linux-scsi&m=129866341626173&w=2
-
-[PATCH 0/5] target updates for scsi-post-merge .39 (round one)
-http://marc.info/?l=linux-scsi&m=129887410814785&w=2
-
-This series contains a few new minor fixes that have reported to linux-scsi
-in the last week since the original posting.  The most interesting pieces
-of this series are the new configfs based statistics groups and first mainline
-target fabric module (TCM_Loop).  The breakdown consists of:
-
-Patches #1 -> #16 are non critical bugfixes and minor improvements from
-.38 that have been queued as .39 misc items upon your request.
-
-Patches #17 -> #20 involve the addition of new ConfigFS context based
-statistics groups in target_core_stat.c following RFC-4455 to address
-the removal of the legacy ProcFS based target_core_mib.c in .38 code.
-
-And patch #21 adds the TCM_Loop virtual SCSI LLD module that was originally
-reviewed and intended for .38 code.  This module currently supports
-high level port emulation for SAS, FC and iSCSI ProtoIdents.
-
-This series is against .38-rc8, and is also available directly here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-misc-v3
-
-Please review and merge for into scsi-misc headed for mainline .39.
-
-Thanks!
-
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_pscsi.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Axel Lin (1):
-  target: Add __init/__exit annotation for
-    target_core_[init,exit]_configfs
-
-Christoph Hellwig (1):
-  target: remove EXTRA_CFLAGS
-
-Dan Carpenter (2):
-  target: Minor sparse warning fixes and annotations
-  target: Convert rd_build_device_space() to use errno
-
-Fubo Chen (2):
-  target: Remove unnecessary hba_dev_list walk and se_clear_dev_ports
-    legacy code
-  target: Fix generated *_drop_nodeacl() handler in tcm_mod_builder.py
-
-Jesper Juhl (2):
-  target: Fix match_strdup() memory leaks
-  target: Avoid mem leak and needless work in transport_generic_get_mem
-
-Nicholas Bellinger (12):
-  target: tcm_mod_builder.py generated Makefile cleanups
-  target: Convert backend ->create_virtdevice() call to return ERR_PTR
-  target: Remove spurious double cast from structure macro accessors
-  target: Convert TMR REQ/RSP definitions to target namespace
-  target: Fix bogus return in transport_add_device_to_core_hba failure
-    path
-  target: Fix FILEIO fd_buffered_io= token typo
-  target core v4.0.0-rc7-ml
-  target: add initial device backend context target_core_stat.c code
-  target: add initial fabric port context target_core_stat.c code
-  target: add initial fabric MappedLUN context target_core_stat.c code
-  target: Add fabric_stat_group for fabric module statistics
-    default_group
-  tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
-
-Roland Dreier (1):
-  target: Fix memory leak on error path in pscsi_alloc_task
-
- Documentation/target/tcm_mod_builder.py        |   18 +-
- drivers/target/Kconfig                         |    2 +
- drivers/target/Makefile                        |    7 +-
- drivers/target/target_core_configfs.c          |  117 ++-
- drivers/target/target_core_device.c            |   40 +-
- drivers/target/target_core_fabric_configfs.c   |  209 +++-
- drivers/target/target_core_fabric_lib.c        |    1 +
- drivers/target/target_core_file.c              |   28 +-
- drivers/target/target_core_hba.c               |   15 +-
- drivers/target/target_core_iblock.c            |   28 +-
- drivers/target/target_core_pscsi.c             |   22 +-
- drivers/target/target_core_rd.c                |   15 +-
- drivers/target/target_core_rd.h                |    2 -
- drivers/target/target_core_stat.c              | 1810 ++++++++++++++++++++++++
- drivers/target/target_core_stat.h              |    8 +
- drivers/target/target_core_transport.c         |   37 +-
- drivers/target/tcm_loop/Kconfig                |   11 +
- drivers/target/tcm_loop/Makefile               |    5 +
- drivers/target/tcm_loop/tcm_loop_configfs.c    |  643 +++++++++
- drivers/target/tcm_loop/tcm_loop_core.h        |  141 ++
- drivers/target/tcm_loop/tcm_loop_fabric.c      |  472 ++++++
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  574 ++++++++
- include/target/target_core_base.h              |   73 +-
- include/target/target_core_configfs.h          |    4 +
- include/target/target_core_fabric_ops.h        |    2 +-
- include/target/target_core_tmr.h               |   52 +-
- include/target/target_core_transport.h         |    4 +
- 27 files changed, 4151 insertions(+), 189 deletions(-)
- create mode 100644 drivers/target/target_core_stat.c
- create mode 100644 drivers/target/target_core_stat.h
- create mode 100644 drivers/target/tcm_loop/Kconfig
- create mode 100644 drivers/target/tcm_loop/Makefile
- create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_core.h
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-
+diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+index f2a0847..f596cb7 100644
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -817,6 +817,7 @@ pscsi_alloc_task(struct se_cmd *cmd)
+ 		if (!(pt->pscsi_cdb)) {
+ 			printk(KERN_ERR "pSCSI: Unable to allocate extended"
+ 					" pt->pscsi_cdb\n");
++			kfree(pt);
+ 			return NULL;
+ 		}
+ 	} else
 -- 
 1.7.4.1
 
