@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab1CNNka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 09:40:30 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:50336 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab1CNNkZ (ORCPT
+	id S1756140Ab1CNNkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 09:40:46 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:47298 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab1CNNkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 09:40:25 -0400
+	Mon, 14 Mar 2011 09:40:41 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -14,331 +14,352 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 14 Mar 2011 19:04:44 +0530
-Message-Id: <20110314133444.27435.50684.sendpatchset@localhost6.localdomain6>
+Date: Mon, 14 Mar 2011 19:04:54 +0530
+Message-Id: <20110314133454.27435.81020.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
 References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v2 2.6.38-rc8-tip 4/20]  4: uprobes: Adding and remove a uprobe in a rb tree.
+Subject: [PATCH v2 2.6.38-rc8-tip 5/20]  5: Uprobes: register/unregister probes.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Provides interfaces to add and remove uprobes from the global rb tree.
-Also provides definitions for uprobe_consumer, interfaces to add and
-remove a consumer to a uprobe.  There is a unique uprobe element in the
-rbtree for each unique inode:offset pair.
+A probe is specified by a file:offset.  While registering, a breakpoint
+is inserted for the first consumer, On subsequent probes, the consumer
+gets appended to the existing consumers. While unregistering a
+breakpoint is removed if the consumer happens to be the last consumer.
+All other unregisterations, the consumer is deleted from the list of
+consumers.
 
-Uprobe gets added to the global rb tree when the first consumer for that
-uprobe gets registered. It gets removed from the tree only when all
-registered consumers are unregistered.
+Probe specifications are maintained in a rb tree. A probe specification
+is converted into a uprobe before store in a rb tree.  A uprobe can be
+shared by many consumers.
 
-Multiple consumers can share the same probe. Each consumer provides a
-filter to limit the tasks on which the handler should run, a handler
-that runs on probe hit and a value which helps filter callback to limit
-the tasks on which the handler should run.
+Given a inode, we get a list of mm's that have mapped the inode.
+However we want to limit the probes to certain processes/threads.  The
+filtering should be at thread level. To limit the probes to a certain
+processes/threads, we would want to walk through the list of threads
+whose mm member refer to a given mm.
+
+Here are the options that I thought of:
+1. Use mm->owner and walk thro the thread_group of mm->owner, siblings
+of mm->owner, siblings of parent of mm->owner.  This should be
+good list to traverse. Not sure if this is an exhaustive
+enough list that all tasks that have a mm set to this mm_struct are
+walked through.
+
+2. Install probes on all mm's that have mapped the probes and filter
+only at probe hit time.
+
+3. walk thro do_each_thread; while_each_thread; I think this will catch
+all tasks that have a mm set to the given mm. However this might
+be too heavy esp if mm corresponds to a library.
+
+4. add a list_head element to the mm struct and update the list whenever
+the task->mm thread gets updated. This could mean extending the current
+mm->owner. However there is some maintainance overhead.
+
+Currently we use the second approach, i.e probe all mm's that have mapped
+the probes and filter only at probe hit.
+
+Also would be interested to know if there are ways to call
+replace_page without having to take mmap_sem.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- include/linux/uprobes.h |   12 +++
- kernel/uprobes.c        |  225 ++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 233 insertions(+), 4 deletions(-)
+ include/linux/mm_types.h |    5 +
+ include/linux/uprobes.h  |   32 ++++++++
+ kernel/uprobes.c         |  195 +++++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 221 insertions(+), 11 deletions(-)
 
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 26bc4e2..96e4a77 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -315,6 +315,11 @@ struct mm_struct {
+ #endif
+ 	/* How many tasks sharing this mm are OOM_DISABLE */
+ 	atomic_t oom_disable_count;
++#ifdef CONFIG_UPROBES
++	unsigned long uprobes_vaddr;
++	struct list_head uprobes_list;
++	atomic_t uprobes_count;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
 diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 350ccb0..f422bc6 100644
+index f422bc6..8654a06 100644
 --- a/include/linux/uprobes.h
 +++ b/include/linux/uprobes.h
-@@ -23,6 +23,7 @@
-  *	Jim Keniston
+@@ -31,6 +31,7 @@
+  * ARCH_SUPPORTS_UPROBES is not defined.
   */
+ typedef u8 uprobe_opcode_t;
++struct uprobe_arch_info	{};		/* arch specific info*/
  
-+#include <linux/rbtree.h>
- #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
- #include <asm/uprobes.h>
- #else
-@@ -50,6 +51,17 @@ typedef u8 uprobe_opcode_t;
- /* Unexported functions & macros for use by arch-specific code */
- #define uprobe_opcode_sz (sizeof(uprobe_opcode_t))
+ /* Post-execution fixups.  Some architectures may define others. */
+ #endif /* CONFIG_ARCH_SUPPORTS_UPROBES */
+@@ -62,6 +63,19 @@ struct uprobe_consumer {
+ 	struct uprobe_consumer *next;
+ };
  
-+struct uprobe_consumer {
-+	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
-+	/*
-+	 * filter is optional; If a filter exists, handler is run
-+	 * if and only if filter returns true.
-+	 */
-+	bool (*filter)(struct uprobe_consumer *self, struct task_struct *task);
-+
-+	struct uprobe_consumer *next;
++struct uprobe {
++	struct rb_node		rb_node;	/* node in the rb tree */
++	atomic_t		ref;
++	struct rw_semaphore	consumer_rwsem;
++	struct uprobe_arch_info	arch_info;	/* arch specific info if any */
++	struct uprobe_consumer	*consumers;
++	struct inode		*inode;		/* Also hold a ref to inode */
++	loff_t			offset;
++	u8			insn[MAX_UINSN_BYTES];	/* orig instruction */
++	u16			fixups;
++	int			copy;
 +};
 +
  /*
   * Most architectures can use the default versions of @read_opcode(),
   * @set_bkpt(), @set_orig_insn(), and @is_bkpt_insn();
+@@ -79,4 +93,22 @@ struct uprobe_consumer {
+  *	You may modify @user_bkpt->insn (e.g., the x86_64 port does this
+  *	for rip-relative instructions).
+  */
++
++#ifdef CONFIG_UPROBES
++extern int register_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer);
++extern void unregister_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer);
++#else /* CONFIG_UPROBES is not defined */
++static inline int register_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
++{
++	return -ENOSYS;
++}
++static inline void unregister_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
++{
++}
++
++#endif /* CONFIG_UPROBES */
+ #endif	/* _LINUX_UPROBES_H */
 diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 4f0f61b..6e692a8 100644
+index 6e692a8..4dbb90f 100644
 --- a/kernel/uprobes.c
 +++ b/kernel/uprobes.c
-@@ -33,10 +33,28 @@
+@@ -32,17 +32,6 @@
+ #include <linux/uprobes.h>
  #include <linux/rmap.h> /* needed for anon_vma_prepare */
  
- struct uprobe {
-+	struct rb_node		rb_node;	/* node in the rb tree */
-+	atomic_t		ref;		/* lifetime muck */
-+	struct rw_semaphore	consumer_rwsem;
-+	struct uprobe_consumer	*consumers;
-+	struct inode		*inode;		/* we hold a ref */
-+	loff_t			offset;
- 	u8			insn[MAX_UINSN_BYTES];
- 	u16			fixups;
- };
- 
-+static int valid_vma(struct vm_area_struct *vma)
-+{
-+	if (!vma->vm_file)
-+		return 0;
-+
-+	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
-+						(VM_READ|VM_EXEC))
-+		return 1;
-+
-+	return 0;
-+}
-+
- /*
-  * Called with tsk->mm->mmap_sem held (either for read or write and
-  * with a reference to tsk->mm.
-@@ -63,8 +81,7 @@ static int write_opcode(struct task_struct *tsk, struct uprobe * uprobe,
- 	 * Since we are interested in text pages, Our pages of interest
- 	 * should be mapped read-only.
- 	 */
--	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
--						(VM_READ|VM_EXEC))
-+	if (!valid_vma(vma))
- 		goto put_out;
- 
- 	/* Allocate a page */
-@@ -140,8 +157,7 @@ int __weak read_opcode(struct task_struct *tsk, unsigned long vaddr,
- 	 * Since we are interested in text pages, Our pages of interest
- 	 * should be mapped read-only.
- 	 */
--	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
--						(VM_READ|VM_EXEC))
-+	if (!valid_vma(vma))
- 		goto put_out;
- 
- 	lock_page(page);
-@@ -228,3 +244,204 @@ bool __weak is_bkpt_insn(u8 *insn)
- 	memcpy(&opcode, insn, UPROBES_BKPT_INSN_SIZE);
- 	return (opcode == UPROBES_BKPT_INSN);
+-struct uprobe {
+-	struct rb_node		rb_node;	/* node in the rb tree */
+-	atomic_t		ref;		/* lifetime muck */
+-	struct rw_semaphore	consumer_rwsem;
+-	struct uprobe_consumer	*consumers;
+-	struct inode		*inode;		/* we hold a ref */
+-	loff_t			offset;
+-	u8			insn[MAX_UINSN_BYTES];
+-	u16			fixups;
+-};
+-
+ static int valid_vma(struct vm_area_struct *vma)
+ {
+ 	if (!vma->vm_file)
+@@ -445,3 +434,187 @@ static int del_consumer(struct uprobe *uprobe,
+ 	up_write(&uprobe->consumer_rwsem);
+ 	return ret;
  }
 +
-+static struct rb_root uprobes_tree = RB_ROOT;
-+static DEFINE_MUTEX(uprobes_mutex);
-+static DEFINE_SPINLOCK(treelock);
-+
-+static int match_inode(struct uprobe *uprobe, struct inode *inode,
-+						struct rb_node **p)
++static int install_uprobe(struct mm_struct *mm, struct uprobe *uprobe)
 +{
-+	struct rb_node *n = *p;
++	int ret = 0;
 +
-+	if (inode < uprobe->inode)
-+		*p = n->rb_left;
-+	else if (inode > uprobe->inode)
-+		*p = n->rb_right;
-+	else
-+		return 1;
-+	return 0;
++	/*TODO: install breakpoint */
++	if (!ret)
++		atomic_inc(&mm->uprobes_count);
++	return ret;
 +}
 +
-+static int match_offset(struct uprobe *uprobe, loff_t offset,
-+						struct rb_node **p)
++static int remove_uprobe(struct mm_struct *mm, struct uprobe *uprobe)
 +{
-+	struct rb_node *n = *p;
++	int ret = 0;
 +
-+	if (offset < uprobe->offset)
-+		*p = n->rb_left;
-+	else if (offset > uprobe->offset)
-+		*p = n->rb_right;
-+	else
-+		return 1;
-+	return 0;
++	/*TODO: remove breakpoint */
++	if (!ret)
++		atomic_dec(&mm->uprobes_count);
++
++	return ret;
 +}
 +
-+
-+/* Called with treelock held */
-+static struct uprobe *__find_uprobe(struct inode * inode,
-+			 loff_t offset, struct rb_node **near_match)
++/* Returns 0 if it can install one probe */
++int register_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
 +{
-+	struct rb_node *n = uprobes_tree.rb_node;
-+	struct uprobe *uprobe, *u = NULL;
++	struct prio_tree_iter iter;
++	struct list_head tmp_list;
++	struct address_space *mapping;
++	struct mm_struct *mm, *tmpmm;
++	struct vm_area_struct *vma;
++	struct uprobe *uprobe;
++	int ret = -1;
 +
-+	while (n) {
-+		uprobe = rb_entry(n, struct uprobe, rb_node);
-+		if (match_inode(uprobe, inode, &n)) {
-+			if (near_match)
-+				*near_match = n;
-+			if (match_offset(uprobe, offset, &n)) {
-+				atomic_inc(&uprobe->ref);
-+				u = uprobe;
-+				break;
-+			}
-+		}
++	if (!inode || !consumer || consumer->next)
++		return -EINVAL;
++	uprobe = uprobes_add(inode, offset);
++	INIT_LIST_HEAD(&tmp_list);
++
++	mapping = inode->i_mapping;
++
++	mutex_lock(&uprobes_mutex);
++	if (uprobe->consumers) {
++		ret = 0;
++		goto consumers_add;
 +	}
-+	return u;
++
++	spin_lock(&mapping->i_mmap_lock);
++	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, 0, 0) {
++		loff_t vaddr;
++
++		if (!atomic_inc_not_zero(&vma->vm_mm->mm_users))
++			continue;
++
++		mm = vma->vm_mm;
++		if (!valid_vma(vma)) {
++			mmput(mm);
++			continue;
++		}
++
++		vaddr = vma->vm_start + offset;
++		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
++		if (vaddr > ULONG_MAX) {
++			/*
++			 * We cannot have a virtual address that is
++			 * greater than ULONG_MAX
++			 */
++			mmput(mm);
++			continue;
++		}
++		mm->uprobes_vaddr = (unsigned long) vaddr;
++		list_add(&mm->uprobes_list, &tmp_list);
++	}
++	spin_unlock(&mapping->i_mmap_lock);
++
++	if (list_empty(&tmp_list)) {
++		ret = 0;
++		goto consumers_add;
++	}
++	list_for_each_entry_safe(mm, tmpmm, &tmp_list, uprobes_list) {
++		down_read(&mm->mmap_sem);
++		if (!install_uprobe(mm, uprobe))
++			ret = 0;
++		list_del(&mm->uprobes_list);
++		up_read(&mm->mmap_sem);
++		mmput(mm);
++	}
++
++consumers_add:
++	add_consumer(uprobe, consumer);
++	mutex_unlock(&uprobes_mutex);
++	put_uprobe(uprobe);
++	return ret;
 +}
 +
-+/*
-+ * Find a uprobe corresponding to a given inode:offset
-+ * Acquires treelock
-+ */
-+static struct uprobe *find_uprobe(struct inode * inode, loff_t offset)
++void unregister_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
 +{
++	struct prio_tree_iter iter;
++	struct list_head tmp_list;
++	struct address_space *mapping;
++	struct mm_struct *mm, *tmpmm;
++	struct vm_area_struct *vma;
 +	struct uprobe *uprobe;
 +	unsigned long flags;
 +
-+	spin_lock_irqsave(&treelock, flags);
-+	uprobe = __find_uprobe(inode, offset, NULL);
-+	spin_unlock_irqrestore(&treelock, flags);
-+	return uprobe;
-+}
++	if (!inode || !consumer)
++		return;
 +
-+/*
-+ * Check if a uprobe is already inserted;
-+ *	If it does; return refcount incremented uprobe
-+ *	else add the current uprobe and return NULL
-+ * Acquires treelock.
-+ */
-+static struct uprobe *insert_uprobe(struct uprobe *uprobe)
-+{
-+	struct rb_node **p = &uprobes_tree.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct uprobe *u;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&treelock, flags);
-+	while (*p) {
-+		parent = *p;
-+		u = rb_entry(parent, struct uprobe, rb_node);
-+		if (u->inode > uprobe->inode)
-+			p = &(*p)->rb_left;
-+		else if (u->inode < uprobe->inode)
-+			p = &(*p)->rb_right;
-+		else {
-+			if (u->offset > uprobe->offset)
-+				p = &(*p)->rb_left;
-+			else if (u->offset < uprobe->offset)
-+				p = &(*p)->rb_right;
-+			else {
-+				atomic_inc(&u->ref);
-+				goto unlock_return;
-+			}
-+		}
-+	}
-+	u = NULL;
-+	rb_link_node(&uprobe->rb_node, parent, p);
-+	rb_insert_color(&uprobe->rb_node, &uprobes_tree);
-+	atomic_set(&uprobe->ref, 2);
-+
-+unlock_return:
-+	spin_unlock_irqrestore(&treelock, flags);
-+	return u;
-+}
-+
-+/* Should be called lock-less */
-+static void put_uprobe(struct uprobe *uprobe)
-+{
-+	if (atomic_dec_and_test(&uprobe->ref))
-+		kfree(uprobe);
-+}
-+
-+static struct uprobe *uprobes_add(struct inode *inode, loff_t offset)
-+{
-+	struct uprobe *uprobe, *cur_uprobe;
-+
-+	__iget(inode);
-+	uprobe = kzalloc(sizeof(struct uprobe), GFP_KERNEL);
-+
++	uprobe = find_uprobe(inode, offset);
 +	if (!uprobe) {
-+		iput(inode);
-+		return NULL;
++		printk(KERN_ERR "No uprobe found with inode:offset %p %lld\n",
++				inode, offset);
++		return;
 +	}
-+	uprobe->inode = inode;
-+	uprobe->offset = offset;
 +
-+	/* add to uprobes_tree, sorted on inode:offset */
-+	cur_uprobe = insert_uprobe(uprobe);
-+
-+	/* a uprobe exists for this inode:offset combination*/
-+	if (cur_uprobe) {
-+		kfree(uprobe);
-+		uprobe = cur_uprobe;
-+		iput(inode);
-+	} else
-+		init_rwsem(&uprobe->consumer_rwsem);
-+
-+	return uprobe;
-+}
-+
-+/* Acquires uprobe->consumer_rwsem */
-+static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
-+{
-+	struct uprobe_consumer *consumer;
-+
-+	down_read(&uprobe->consumer_rwsem);
-+	consumer = uprobe->consumers;
-+	while (consumer) {
-+		if (!consumer->filter || consumer->filter(consumer, current))
-+			consumer->handler(consumer, regs);
-+
-+		consumer = consumer->next;
++	if (!del_consumer(uprobe, consumer)) {
++		printk(KERN_ERR "No uprobe found with consumer %p\n",
++				consumer);
++		return;
 +	}
-+	up_read(&uprobe->consumer_rwsem);
-+}
 +
-+/* Acquires uprobe->consumer_rwsem */
-+static void add_consumer(struct uprobe *uprobe,
-+				struct uprobe_consumer *consumer)
-+{
-+	down_write(&uprobe->consumer_rwsem);
-+	consumer->next = uprobe->consumers;
-+	uprobe->consumers = consumer;
-+	up_write(&uprobe->consumer_rwsem);
-+	return;
-+}
++	INIT_LIST_HEAD(&tmp_list);
 +
-+/* Acquires uprobe->consumer_rwsem */
-+static int del_consumer(struct uprobe *uprobe,
-+				struct uprobe_consumer *consumer)
-+{
-+	struct uprobe_consumer *con;
-+	int ret = 0;
++	mapping = inode->i_mapping;
 +
-+	down_write(&uprobe->consumer_rwsem);
-+	con = uprobe->consumers;
-+	if (consumer == con) {
-+		uprobe->consumers = con->next;
-+		if (!con->next)
-+			put_uprobe(uprobe);
-+		ret = 1;
-+	} else {
-+		for (; con; con = con->next) {
-+			if (con->next == consumer) {
-+				con->next = consumer->next;
-+				ret = 1;
-+				break;
-+			}
++	mutex_lock(&uprobes_mutex);
++	if (uprobe->consumers)
++		goto put_unlock;
++
++	spin_lock(&mapping->i_mmap_lock);
++	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, 0, 0) {
++		if (!atomic_inc_not_zero(&vma->vm_mm->mm_users))
++			continue;
++
++		mm = vma->vm_mm;
++
++		if (!atomic_read(&mm->uprobes_count)) {
++			mmput(mm);
++			continue;
 +		}
++
++		if (valid_vma(vma)) {
++			loff_t vaddr;
++
++			vaddr = vma->vm_start + offset;
++			vaddr -= vma->vm_pgoff << PAGE_SHIFT;
++			if (vaddr > ULONG_MAX) {
++				/*
++				 * We cannot have a virtual address that is
++				 * greater than ULONG_MAX
++				 */
++				mmput(mm);
++				continue;
++			}
++			mm->uprobes_vaddr = (unsigned long) vaddr;
++			list_add(&mm->uprobes_list, &tmp_list);
++		} else
++			mmput(mm);
 +	}
-+	up_write(&uprobe->consumer_rwsem);
-+	return ret;
++	spin_unlock(&mapping->i_mmap_lock);
++	list_for_each_entry_safe(mm, tmpmm, &tmp_list, uprobes_list) {
++		down_read(&mm->mmap_sem);
++		remove_uprobe(mm, uprobe);
++		list_del(&mm->uprobes_list);
++		up_read(&mm->mmap_sem);
++		mmput(mm);
++	}
++
++	/*
++	 * There could be other threads that could be spinning on
++	 * treelock; some of these threads could be interested in this
++	 * uprobe.  Give these threads a chance to run.
++	 */
++	synchronize_sched();
++	spin_lock_irqsave(&treelock, flags);
++	rb_erase(&uprobe->rb_node, &uprobes_tree);
++	spin_unlock_irqrestore(&treelock, flags);
++	iput(uprobe->inode);
++
++put_unlock:
++	mutex_unlock(&uprobes_mutex);
++	put_uprobe(uprobe);
 +}
