@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab1CNAKF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 20:10:05 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:45171 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755824Ab1CNAKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 20:10:02 -0400
-Date: Sun, 13 Mar 2011 17:08:59 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] proc: make check_mem_permission() return an
- mm_struct on success
-Message-ID: <20110314000859.GF21770@outflux.net>
-References: <1300045764-24168-1-git-send-email-wilsons@start.ca>
- <1300045764-24168-12-git-send-email-wilsons@start.ca>
+	id S1756678Ab1CNAvB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 20:51:01 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:35081 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894Ab1CNAvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 20:51:00 -0400
+Date: Sun, 13 Mar 2011 17:50:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Korty <joe.korty@ccur.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "loic.minier@linaro.org" <loic.minier@linaro.org>,
+        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        "houston.jim@comcast.net" <houston.jim@comcast.net>,
+        "corbet@lwn.net" <corbet@lwn.net>
+Subject: Re: JRCU Theory of Operation
+Message-ID: <20110314005052.GE2167@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101116155104.GB2497@linux.vnet.ibm.com>
+ <20101117005229.GC26243@nowhere>
+ <20110307203106.GA23002@tsunami.ccur.com>
+ <20110309221517.GB24670@tsunami.ccur.com>
+ <20110310003419.GE2196@linux.vnet.ibm.com>
+ <20110310195045.GA22146@tsunami.ccur.com>
+ <20110312143629.GT2234@linux.vnet.ibm.com>
+ <20110313004336.GA14518@tsunami.ccur.com>
+ <20110313055627.GW2234@linux.vnet.ibm.com>
+ <20110313235351.GA15931@tsunami.ccur.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300045764-24168-12-git-send-email-wilsons@start.ca>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <20110313235351.GA15931@tsunami.ccur.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Sun, Mar 13, 2011 at 03:49:23PM -0400, Stephen Wilson wrote:
-> This change allows us to take advantage of access_remote_vm(), which in turn
-> eliminates a security issue with the mem_write() implementation.
+On Sun, Mar 13, 2011 at 07:53:51PM -0400, Joe Korty wrote:
+> On Sun, Mar 13, 2011 at 12:56:27AM -0500, Paul E. McKenney wrote:
+> > > Even though I keep saying 50msecs for everything, I
+> > > suspect that the Q switching meets all the above quiescent
+> > > requirements in a few tens of microseconds.  Thus even
+> > > a 1 msec JRCU sampling period is expected to be safe,
+> > > at least in regard to Q switching.
+> > 
+> > I would feel better about this is the CPU vendors were willing to give
+> > an upper bound...
 > 
-> The previous implementation of mem_write() was insecure since the target task
-> could exec a setuid-root binary between the permission check and the actual
-> write.  Holding a reference to the target mm_struct eliminates this
-> vulnerability.
-> 
-> Signed-off-by: Stephen Wilson <wilsons@start.ca>
-> ---
->  fs/proc/base.c |   58 ++++++++++++++++++++++++++++++++-----------------------
->  1 files changed, 34 insertions(+), 24 deletions(-)
-> 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index f6b644f..2af83bd 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -858,22 +863,25 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
->  	char *page;
->  	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
->  	unsigned long dst = *ppos;
-> +	struct mm_struct *mm;
->  
->  	copied = -ESRCH;
->  	if (!task)
->  		goto out_no_task;
->  
-> -	if (check_mem_permission(task))
-> -		goto out;
-> +	mm = check_mem_permission(task);
-> +	copied = PTR_ERR(mm);
-> +	if (IS_ERR(mm))
-> +		goto out_task;
->  
->  	copied = -EIO;
->  	if (file->private_data != (void *)((long)current->self_exec_id))
-> -		goto out;
-> +		goto out_mm;
+> I suspect they don't because they don't really know
+> themselves .. in that whatever it is, it keeps changing
+> from chip to chip, trying to describe such would be beyond
+> the english language, and any description would tie them
+> down on what they could do in future chip designs.
 
-The file->private_data test seems wrong to me. Is there a case were the mm
-returned from check_mem_permission(task) can refer to something that is no
-longer attached to task?
+Indeed!
 
-For example:
-- pid 100 ptraces pid 200
-- pid 100 opens /proc/200/mem
-- pid 200 execs into something else
+> But, there is a hint in current behavior.  It is well known
+> that many multithreaded apps don't uses barriers at all;
+> the authors had no idea what they are for.  Yet such apps
+> largely work.  This implies that the chip designers are
+> very aggressive in doing implied memory barriers wherever
+> possible, and they are very aggressive in pushing out
+> stores to caches very quickly even when memory barriers,
+> implied or not, are not present.
 
-A read of that mem fd could, IIUC, read from the new pid 200 mm, but
-only after passing check_mem_permission(task) again. This is stopped
-by the private_data test. But should it, since check_mem_permission()
-passed?
+Ahem.  Or that many barrier-omission failures have a low probability
+of occurring.  One case in point is a bug in RCU a few years back,
+where ten-hour rcutorture runs produced only a handful of errors (see
+http://paulmck.livejournal.com/14639.html).  Other cases are turned up by
+Peter Sewell's work, which tests code sequences with and without memory
+barriers (http://www.cl.cam.ac.uk/~pes20/).  In many cases, broken code
+sequences have failure rates in the parts per billion.
 
-Even if it does mean to block it, it's insufficient since pid 200
-could just exec u32 many times and align with the original private_data
-value. What is that test trying to do? And I'm curious for both mem_write
-as well as the existing mem_read use of the test, since I'd like to see
-a general solution to the "invalidate /proc fds across exec" so we can
-close CVE-2011-1020 for everything[1].
+This should not be a surprise.  You can see the same effect with locking.
+If you have very contention on a given lock, then there will be a very
+low probability of encountering bugs involving forgetting to acquire
+that lock.
 
-Associated with this, the drop of check_mem_permission(task) during the
-mem_read loop implies that the mm is locked during that loop and seems to
-reflect what you're saying ("Holding a reference to the target mm_struct
-eliminates this vulnerability."), meaning there's no reason to recheck
-permissions. Is that accurate?
+If the CPU count continues increasing, these sorts of latent bugs
+will have increasing probabilities of biting us.
 
-Thanks,
-
--Kees
-
-[1] https://lkml.org/lkml/2011/2/7/368
-
--- 
-Kees Cook
-Ubuntu Security Team
+						Thanx, Paul
