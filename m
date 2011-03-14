@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab1CNWKA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 18:10:00 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:40626 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757363Ab1CNWJ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 18:09:59 -0400
-Subject: Re: [PATCH 21/21] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
-	module
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>
-In-Reply-To: <20110314145808.GA28480@lst.de>
-References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
-	 <1300100775-10012-22-git-send-email-nab@linux-iscsi.org>
-	 <20110314145808.GA28480@lst.de>
-Content-Type: text/plain
-Date: Mon, 14 Mar 2011 15:02:55 -0700
-Message-Id: <1300140175.28255.156.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1757378Ab1CNWKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 18:10:34 -0400
+Received: from flusers.ccur.com ([173.221.59.2]:60010 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753099Ab1CNWKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 18:10:33 -0400
+Date: Mon, 14 Mar 2011 18:09:28 -0400
+From: Joe Korty <joe.korty@ccur.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "loic.minier@linaro.org" <loic.minier@linaro.org>,
+        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        "houston.jim@comcast.net" <houston.jim@comcast.net>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] jrcu: fix broken rcu_barrier
+Message-ID: <20110314220928.GA1348@tsunami.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+References: <20110314035044.GA12990@tsunami.ccur.com>
+ <20110314084718.GH2167@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314084718.GH2167@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-14 at 15:58 +0100, Christoph Hellwig wrote:
-> On Mon, Mar 14, 2011 at 04:06:15AM -0700, Nicholas A. Bellinger wrote:
-> >  drivers/target/Kconfig                         |    2 +
-> >  drivers/target/Makefile                        |    3 +
-> >  drivers/target/tcm_loop/Kconfig                |   11 +
-> >  drivers/target/tcm_loop/Makefile               |    5 +
-> >  drivers/target/tcm_loop/tcm_loop_configfs.c    |  643 ++++++++++++++++++++++++
-> >  drivers/target/tcm_loop/tcm_loop_core.h        |  141 ++++++
-> >  drivers/target/tcm_loop/tcm_loop_fabric.c      |  472 +++++++++++++++++
-> >  drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  574 +++++++++++++++++++++
-> >  8 files changed, 1851 insertions(+), 0 deletions(-)
+On Mon, Mar 14, 2011 at 04:47:18AM -0400, Paul E. McKenney wrote:
+> On Sun, Mar 13, 2011 at 11:50:44PM -0400, Joe Korty wrote:
+> > +void rcu_barrier(void)
+> > +{
+> > +	synchronize_sched();
+> > +	synchronize_sched();
+> > +}
 > 
-> Please descide on a naming scheme for the frontend modules.  You have
-> tcm_loop for thise one, and just iscsi for the iscsi frontend.
+> This is still broken.  You need to wait until all pre-existing RCU
+> callbacks on all CPUs have been invoked.  Although this does guarantee
+> that all callbacks on the current CPU have been invoked, if one of the
+> other CPUs is busy, it might not yet have processed the callbacks from
+> earlier grace periods.  The usual way to take care of this is to post
+> a callback on each CPU, then wait for them all to be invoked.
 
-Ok, curently everything that appears under drivers/target/ beside
-iscsi_target_mod.ko is using a matching drivers/target/$FABRIC_MOD/ and
-$FABRIC_MOD.ko naming scheme.
+Hi Paul,
+JRCU (eventually) chains together all callbacks from all
+cpus into a single queue and then it expires that single
+queue.  So the double synchronize_sched() should work as
+a rcu_barrier implementation.
 
-I would prefer to keep iscsi_target_mod.ko for the software iSCSI case
-in order to prevent chaos with existing userspace tools and prevent
-breakage with existing other iSCSI target modules (IET is using
-iscsi_trgt.ko IIRC).
-
-How about dropping the 'tcm_' prefix from the drivers/target/tcm_subdir/
-to follow how the fabric module actually appears once loaded under
-/sys/kernel/config/target/$FABRIC/..?  We will need to keep the common
-'tcm_' prefix for the actual target fabric modules (or choose a
-different one) to handle those that interface with existing SCSI LLD
-code.
-
->   I'm not sure what tcm actually stands for, but a common prefix defintively
-> is helpful.
-> 
-
-target_core_mod -> tcm
-
-> And for only about 1700 lines of code I really don't see why it needs to be
-> split into multiple implementation files.
-> 
-
-This makes it a bit easier to grok as a reference for newcomers by
-having seperate sections for configfs control plane, struct
-target_core_fabric_ops API callers, and Linux/SCSI LLD specific glue.
-
---nab 
-
+Thanks,
+Joe
