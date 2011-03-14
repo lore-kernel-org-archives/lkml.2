@@ -1,172 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab1CNLKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:10:39 -0400
-Received: from nm24.bullet.mail.sp2.yahoo.com ([98.139.91.94]:27292 "HELO
-	nm24.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753476Ab1CNLGw (ORCPT
+	id S1753294Ab1CNLMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:12:17 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36958 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab1CNLMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:06:52 -0400
-X-Yahoo-Newman-Id: 682812.40610.bm@omp1058.mail.sp2.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: CqRIae0VM1mD.hhOJLylcGHt1H9zYVA7DoEC7JADktfQHKS
- dQlUAHMrHOpEFJCTXypuhjdfq_4VKBljW4shBNwIjy5qayet0mrtZjdnBqda
- j1Yo5lWWJ0mBgnEFtrPN3Ci1qjIXrhREjER2qrShlqBExMsIbdedKtkEQT7v
- pgLNv6xk0NmC5rAnpQJgrlvo3lr9csq8BWV4.t6WqG0rfXomJ8yUe6c29lOq
- _MkwbjznJpet1Z8r0_ZkzQYg2uM5YeldaJEeDz4JRznY5aW91pTyoJSGbv2h
- B3KG__uJSEc_vYNa4Z6I.tZ0ZmsY0h_d2ZCB3ET7eZdm1lJX3uEiUdRSirbw
- _v4N8TeqwaOwGXkZs4Ql4IGnLbItCGBpGrnULRCPbtYJkjwJUpG8l.ytqIlM
- MrUtSnC8e99.KjSEURD8VzyCCLT0kv7Q-
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Fubo Chen <fubo.chen@gmail.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH 06/21] target: Remove unnecessary hba_dev_list walk and se_clear_dev_ports legacy code
-Date: Mon, 14 Mar 2011 04:06:00 -0700
-Message-Id: <1300100775-10012-7-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
-References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
+	Mon, 14 Mar 2011 07:12:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=X1WTgboRjfz1Q9mXVcsNp8ReMBhCzqfH8Rgdji8d/V+4od81+Ih64Ps2B51XhqD2U7
+         kch0ORHX4sb3nQ/QqJfU2UqU3UzYrMcoBWNKqoDYQaEURL+0k9RvmFT1pFs2O4HsPOh4
+         99diaq/NnrzRgWYa6KVooY4kFTcEk2juAnCLE=
+MIME-Version: 1.0
+In-Reply-To: <m3oc5eufrk.fsf@redhat.com>
+References: <20110311165802.GA3508@intel.com>
+	<4D7A64670200007800035F4C@vpn.id2.novell.com>
+	<AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
+	<4D7DE39302000078000362E6@vpn.id2.novell.com>
+	<20110314095534.GB18058@elte.hu>
+	<20110314104131.GG6275@bubble.grove.modra.org>
+	<AANLkTi=3AiLaw5Gnis8Ha4eRXirk0s-Cnk2zzN12YDpH__45869.1711457961$1300099861$gmane$org@mail.gmail.com>
+	<m3oc5eufrk.fsf@redhat.com>
+Date: Mon, 14 Mar 2011 13:12:15 +0200
+X-Google-Sender-Auth: XshIkjFij7bRBrnkvyB_i7hDuAs
+Message-ID: <AANLkTikOX_9G-kFEOCHJbnTootY4n4EPSounwjDjPiZc@mail.gmail.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+From: Pekka Enberg <penberg@kernel.org>
+To: Andreas Schwab <schwab@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Jan Beulich <JBeulich@novell.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, binutils@sourceware.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Modra <amodra@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fubo Chen <fubo.chen@gmail.com>
+Hi Andreas,
 
-This patch removes a legacy struct se_hba->hba_dev_list -> se_release_device_for_hba()
-list walk in core_delete_hba(), which is no longer required while using configfs
-VFS level parent/child struct config_group dependency referencing.  The reason
-is because any struct se_hba->hba_dev_list-> struct se_device members are going
-to have to be released via:
+Pekka Enberg <penberg@kernel.org> writes:
+>> So what do you suggest that testers who want to, say, build old Linux
+>> kernel versions with new binutils do?
 
-	rmdir /sys/kernel/config/target/core/$HBA/*
+On Mon, Mar 14, 2011 at 1:02 PM, Andreas Schwab <schwab@redhat.com> wrote:
+> The same that testers have to do in order to build old Linux kernel
+> versions with current versions of make.
 
-before rmdir release of struct se_hba via target_core_configfs.c:
-target_core_call_delhbafromtarget() -> core_delete_hba()
+Are you saying it's OK to screw over binutils users because GNU Make
+did that too?
 
-	rmdir /sys/kernel/config/target/core/$HBA
-
-to release struct se_hba in core_delete_hba().
-
-This patch also removes the legacy se_clear_dev_ports() function, which is
-left-over pre-configfs shutdown logic for when se_free_virtual_device()
-was responsible for walking struct se_device->dev_sep_list and calling
-core_dev_del_lun() for each individual active struct se_port->se_lun.
-
-The reason this can be removed is because all struct se_device->dev_sep_list
--> struct se_port communication is done via configfs symlinks, which
-means that an target fabric module's endpoints containg active struct
-se_port(s) will have to be released via target_core_fabric_configfs.c:
-target_fabric_port_unlink() via:
-
-	unlink /sys/kernel/config/target/$FABRIC_MOD/$ENDPOINT/tpgt_$TPGT/lun/lun_$LUN_ID/<symlink>
-
-before rmdir release of struct se_device in target_core_configfs.c:
-target_core_drop_subdev() -> se_free_virtual_device() can happen via:
-
-	rmdir /sys/kernel/config/target/core/$HBA/*
-
-to release struct se_subsystem_dev in target_core_drop_subdev()
-
-Reported-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Reported-by: Fubo Chen <fubo.chen@gmail.com>
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_device.c |   39 +---------------------------------
- drivers/target/target_core_hba.c    |   15 +-----------
- 2 files changed, 4 insertions(+), 50 deletions(-)
-
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 5da051a..c9085e3 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -780,49 +780,14 @@ void se_release_vpd_for_dev(struct se_device *dev)
- 	return;
- }
- 
--/*
-- * Called with struct se_hba->device_lock held.
-- */
--void se_clear_dev_ports(struct se_device *dev)
--{
--	struct se_hba *hba = dev->se_hba;
--	struct se_lun *lun;
--	struct se_portal_group *tpg;
--	struct se_port *sep, *sep_tmp;
--
--	spin_lock(&dev->se_port_lock);
--	list_for_each_entry_safe(sep, sep_tmp, &dev->dev_sep_list, sep_list) {
--		spin_unlock(&dev->se_port_lock);
--		spin_unlock(&hba->device_lock);
--
--		lun = sep->sep_lun;
--		tpg = sep->sep_tpg;
--		spin_lock(&lun->lun_sep_lock);
--		if (lun->lun_se_dev == NULL) {
--			spin_unlock(&lun->lun_sep_lock);
--			continue;
--		}
--		spin_unlock(&lun->lun_sep_lock);
--
--		core_dev_del_lun(tpg, lun->unpacked_lun);
--
--		spin_lock(&hba->device_lock);
--		spin_lock(&dev->se_port_lock);
--	}
--	spin_unlock(&dev->se_port_lock);
--
--	return;
--}
--
- /*	se_free_virtual_device():
-  *
-  *	Used for IBLOCK, RAMDISK, and FILEIO Transport Drivers.
-  */
- int se_free_virtual_device(struct se_device *dev, struct se_hba *hba)
- {
--	spin_lock(&hba->device_lock);
--	se_clear_dev_ports(dev);
--	spin_unlock(&hba->device_lock);
-+	if (!list_empty(&dev->dev_sep_list))
-+		dump_stack();
- 
- 	core_alua_free_lu_gp_mem(dev);
- 	se_release_device_for_hba(dev);
-diff --git a/drivers/target/target_core_hba.c b/drivers/target/target_core_hba.c
-index 4bbe820..d0d2ecc 100644
---- a/drivers/target/target_core_hba.c
-+++ b/drivers/target/target_core_hba.c
-@@ -153,19 +153,8 @@ out_free_hba:
- int
- core_delete_hba(struct se_hba *hba)
- {
--	struct se_device *dev, *dev_tmp;
--
--	spin_lock(&hba->device_lock);
--	list_for_each_entry_safe(dev, dev_tmp, &hba->hba_dev_list, dev_list) {
--
--		se_clear_dev_ports(dev);
--		spin_unlock(&hba->device_lock);
--
--		se_release_device_for_hba(dev);
--
--		spin_lock(&hba->device_lock);
--	}
--	spin_unlock(&hba->device_lock);
-+	if (!list_empty(&hba->hba_dev_list))
-+		dump_stack();
- 
- 	hba->transport->detach_hba(hba);
- 
--- 
-1.7.4.1
-
+                       Pekka
