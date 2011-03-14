@@ -1,73 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab1CNWYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 18:24:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56535 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932261Ab1CNWYL convert rfc822-to-8bit (ORCPT
+	id S1757427Ab1CNW1C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 18:27:02 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43720 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756505Ab1CNW1A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 18:24:11 -0400
+	Mon, 14 Mar 2011 18:27:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=ophirWphe7UDty65GqqJWZbW9a2TUpJ0hvNw4AxBsturGGFCvzzqsETfC/GNJ1Di5p
-         nRctIvIgNDJwNUlDfr40YRuJpqTklspPevPU36hXHRlmAPJ/7iY/tlKg5fj+ziiF5+GP
-         1rRtppt34A2cWQh4K/04XR6NPLaY+6pJ0mVF4=
+        b=NBu3ixcYDtwHG1gKWuE4Qk7H0jnb+JZOwqU5Xa7VCN0ldEtlgQ17Po3STXjmKU7kcH
+         SfHPkja3GItveNR+ElQfLEstG5wx1lByKuv9MBhv3u8TaSTeIbcdQ5eNpMGiolS85Krw
+         ml1dG2XzoLTWapuKQEsjYKBesIFkkxl61hHgA=
 MIME-Version: 1.0
-In-Reply-To: <4D7CCFC3.7030906@fastmail.fm>
-References: <4D7CCFC3.7030906@fastmail.fm>
-Date: Mon, 14 Mar 2011 18:20:33 -0400
-Message-ID: <AANLkTinug=6d6BKrZvA1HGZWNqgUNJKOBC3f8J5B_5oJ@mail.gmail.com>
-Subject: Re: Radeon jittery post 2.6.35
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Anders Eriksson <aeriksson@fastmail.fm>
-Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, xorg-driver-ati@lists.x.org
+In-Reply-To: <AANLkTim8nHe1jXagKg-5g0ZLh7J61LzAi0ww__Kgaerx@mail.gmail.com>
+References: <AANLkTim8nHe1jXagKg-5g0ZLh7J61LzAi0ww__Kgaerx@mail.gmail.com>
+Date: Mon, 14 Mar 2011 23:26:58 +0100
+Message-ID: <AANLkTi=C-LRv_aRAc9mpdMJXkyGEQLtYQ_E82hwYUjgi@mail.gmail.com>
+Subject: Re: [RFC][PATCH v2 21/23] (um) __vmalloc: add gfp flags variant of
+ pte and pmd allocation
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Prasad Joshi <prasadjoshi124@gmail.com>
+Cc: Jeff Dike <jdike@addtoit.com>, Tejun Heo <tj@kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        UML Mailing List <user-mode-linux-user@lists.sourceforge.net>,
+        Anand Mitra <mitra@kqinfotech.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 13, 2011 at 10:08 AM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
->  Hi,
+On Mon, Mar 14, 2011 at 7:12 PM, Prasad Joshi <prasadjoshi124@gmail.com> wrote:
+> diff --git a/arch/um/include/asm/pgalloc.h b/arch/um/include/asm/pgalloc.h
+> index 32c8ce4..8b6257e 100644
+> --- a/arch/um/include/asm/pgalloc.h
+> +++ b/arch/um/include/asm/pgalloc.h
+> @@ -27,6 +27,7 @@ extern pgd_t *pgd_alloc(struct mm_struct *);
+>  extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
 >
-> I've found what I guess is a radeon (or drm/kms) regression post 2.6.35.
-> I've got my TV conneced to my RS690G over HDMI, and the display has
-> always been jittery after POST and at the GRUB screen. Pre-KMS, the X
-> server (or driver got it sorted), and when KMS started, the display
-> stabilized right after the kernel driver was initiated. However, post
-> 2.6.35, I see the jitter is back.
+>  extern pte_t *pte_alloc_one_kernel(struct mm_struct *, unsigned long);
+> +extern pte_t *__pte_alloc_one_kernel(struct mm_struct *, unsigned long, gfp_t);
+>  extern pgtable_t pte_alloc_one(struct mm_struct *, unsigned long);
 >
-> I've spent the last month trying to bisect it, but pretty much failed.
-> It appears that versions closer to 2.6.38-rcX are more prone to display
-> jitter, while 2.6.36 or so can have many successful runs. It also
-> appears to be related to device power-on order, or so I've come to
-> believe; A stable display can turn jittery, just by power cycling the TV.
+>  static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+> diff --git a/arch/um/kernel/mem.c b/arch/um/kernel/mem.c
+> index 8137ccc..e4caf17 100644
+> --- a/arch/um/kernel/mem.c
+> +++ b/arch/um/kernel/mem.c
+> @@ -284,12 +284,15 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+>    free_page((unsigned long) pgd);
+>  }
 >
-> I've uploaded a video of a 38-rc8 boot:
-> http://www.easy-share.com/1914220540/2.6.38-rc8_bad_x.mp4
+> -pte_t *pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
+> +pte_t *
+> +__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address,
+> gfp_t gfp_mask)
+>  {
+> -   pte_t *pte;
+> +   return (pte_t *)__get_free_page(gfp_mask | __GFP_ZERO);
+> +}
 >
-> You'll see jitter at the POST screen and GRUB. When KMS kicks in it
-> stabilizes, and when Freevo starts X, it's back to jitter.
+> -   pte = (pte_t *)__get_free_page(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO);
+> -   return pte;
+> +pte_t *pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
+> +{
+> +   return __pte_alloc_one_kernel(mm, address, GFP_KERNEL | __GFP_REPEAT);
+>  }
+>
+>  pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long address)
+> @@ -303,15 +306,21 @@ pgtable_t pte_alloc_one(struct mm_struct *mm,
+> unsigned long address)
+>  }
+>
+>  #ifdef CONFIG_3_LEVEL_PGTABLES
+> -pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long address)
+> +pmd_t *
+> +__pmd_alloc_one(struct mm_struct *mm, unsigned long address, gfp_t gfp_mask)
+>  {
+> -   pmd_t *pmd = (pmd_t *) __get_free_page(GFP_KERNEL);
+> +   pmd_t *pmd = (pmd_t *) __get_free_page(gfp_mask);
+>
+>    if (pmd)
+>        memset(pmd, 0, PAGE_SIZE);
+>
+>    return pmd;
+>  }
+> +
+> +pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long address)
+> +{
+> +   return __pmd_alloc_one(mm, address, GFP_KERNEL);
+> +}
+>  #endif
+>
+>  void *uml_kmalloc(int size, int flags)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Does plain X or gnome/kde jitter too or just freevo?
+Sorry, this patch seems damaged.
 
-Alex
-
->
-> The jitter is always of the same kind. It looks like an old tv set which
-> loses sync. The contents on the display is, for a split second, placed
-> at the wrong part of the screen (vertically and to some extent
-> horizontally), and every 5-15 seconds or so, there is a big reset when
-> the TV tries to restart things (I guess). At the resets, thee is a loud
-> 'ping' in the nearby stereo too...
->
-> During the bisect  (and a t 38-rc8) I've seen this both at the console
-> (post KMS) and in X, so I'm not sure where the error is. I hope some of
-> you can get a better idea of where to hunt for the bug by looking at the
-> video.
->
-> -Anders
->
+-- 
+Thanks,
+//richard
