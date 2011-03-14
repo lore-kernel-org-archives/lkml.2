@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab1CNMR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:17:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36976 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755157Ab1CNMRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:17:25 -0400
-Date: Mon, 14 Mar 2011 13:00:25 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2/resend] trivial: fix common spelling mistakes
-In-Reply-To: <1299624593-13058-1-git-send-email-peterhuewe@gmx.de>
-Message-ID: <alpine.LNX.2.00.1103141259500.19969@pobox.suse.cz>
-References: <alpine.LNX.2.00.1101071103440.26685@pobox.suse.cz> <1299624593-13058-1-git-send-email-peterhuewe@gmx.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755319Ab1CNMU6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:20:58 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:48997 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab1CNMU5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Mon, 14 Mar 2011 08:20:57 -0400
+Message-Id: <4D7E166C0200007800036451@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 14 Mar 2011 12:21:48 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <sedat.dilek@gmail.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, <amodra@gmail.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "binutils" <binutils@sourceware.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
+ <4D7E095802000078000363D5@vpn.id2.novell.com>
+ <AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>
+ <AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>
+In-Reply-To: <AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Mar 2011, Peter Huewe wrote:
+>>> On 14.03.11 at 12:52, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Mon, Mar 14, 2011 at 12:38 PM, Sedat Dilek
+> <sedat.dilek@googlemail.com> wrote:
+>> [ Changing Alan's Email to valid <amodra@gmail.com> in CC ]
+>>
+>> On Mon, Mar 14, 2011 at 12:26 PM, Jan Beulich <JBeulich@novell.com> wrote:
+>>>>>> On 14.03.11 at 12:02, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>> [...]
+>>>> [2] Where can someone set a "global behaviour" (hardcoded options) for
+>>>> his/her assembler in the kernel's build-system (speaking of
+>>>> "--size-check=[error|warning]")?
+>>>
+>>> Nowhere, selecting behavior is possible only via the command line.
+>>>
+>>
+>> Via command-line, something like this would do it?
+>>
+>>     $ export AS="/usr/bin/as --size-check=warning
+>> [...]
 
-> This patch fixes some very common spelling mistakes.
-> The changes were carried out by hand and are made in
-> documentation/comments only - no functional change.
-> Variables were left untouched on purpose.
-> Linebreaks were also left untouched on purpose.
+No - $(AS) isn't being used to translate .S files, $(CC) is being used
+instead. That's why I pointed at the necessary -B option (so that
+the compiler would be able to locate the wrapper H.J. suggested).
+
+> By looking through the binutils source-code, I have seen ASFLAGS.
 > 
-> v2: Added some more spellchecks
+>      $ ASFLAGS="--size-check=warning" ; export ASFLAGS
 
-Hi Peter,
+Where did you find that? All places where I see references to this
+variable are in the testsuite.
 
-as usual, I'd prefer the drivers/staging bits going through Greg. Could 
-you please split those away and send it Greg's way? Thanks,
+Jan
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
