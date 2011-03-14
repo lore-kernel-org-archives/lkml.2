@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab1CNEUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 00:20:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51637 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab1CNEUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 00:20:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :content-transfer-encoding:content-disposition:message-id;
-        b=C6+vGSXsDWb18fW6DCFEy+8lrsyTRHLvXgjq+r7PAGMP5cZ3AWosBKU1N8LrdtWAFW
-         Tvdefk4IVK28UuIeQ1PjdZXMBHrWELraLW3qASLXVPJ1U1QnwCeMJeJhS93/AJzKzLEX
-         7QVo/L4hE91HgTLzueD8II1HVSKs1Mzxa19YY=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.35-rc4: mount results with and without MS_SILENT differ
-Date: Mon, 14 Mar 2011 05:20:08 +0100
-User-Agent: KMail/1.8.2
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Roman Borisov <ext-roman.borisov@nokia.com>,
-        Alexander Shishkin <virtuoso@slind.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201103140520.08737.vda.linux@googlemail.com>
+	id S1751652Ab1CNEZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 00:25:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59533 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867Ab1CNEZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 00:25:09 -0400
+Date: Mon, 14 Mar 2011 15:24:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: build failure after merge of the net tree
+Message-Id: <20110314152456.b49b2693.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This issue was discovered by users of busybox.
-Apparently, mount() calls with and without MS_SILENT
+--Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The following script was run in an empty test directory:
+Hi all,
 
-mkdir -p mount.dir mount.shared1 mount.shared2
-touch mount.dir/a mount.dir/b
-mount -vv --bind         mount.shared1 mount.shared1
-mount -vv --make-rshared mount.shared1
-mount -vv --bind         mount.shared2 mount.shared2
-mount -vv --make-rshared mount.shared2
-mount -vv --bind mount.shared2 mount.shared1
-mount -vv --bind mount.dir     mount.shared2
-ls -R mount.dir mount.shared1 mount.shared2
-umount mount.dir mount.shared1 mount.shared2 2>/dev/null
-umount mount.dir mount.shared1 mount.shared2 2>/dev/null
-umount mount.dir mount.shared1 mount.shared2 2>/dev/null
-rm -f mount.dir/a mount.dir/b mount.dir/c
-rmdir mount.dir mount.shared1 mount.shared2
+After merging the net tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
+kernel/irq/manage.c: In function 'irq_affinity_notify':
+kernel/irq/manage.c:182: error: 'struct irq_desc' has no member named 'affi=
+nity'
 
-mount -vv was used to show the mount() call arguments and result.
-Output shows that flag argument has 0x00008000 = MS_SILENT bit:
+Caused by commit cd7eab44e994 ("genirq: Add IRQ affinity notifiers")
+(which is also in the tip tree).  I am guessing that there is a fix for
+this also in the tip tree ... yep commit 1fb0ef31f428 ("genirq: Fix
+affinity notifier fallout").
 
-mount: mount('mount.shared1','mount.shared1','(null)',0x00009000,'(null)'):0
-mount: mount('','mount.shared1','',0x0010c000,''):0
-mount: mount('mount.shared2','mount.shared2','(null)',0x00009000,'(null)'):0
-mount: mount('','mount.shared2','',0x0010c000,''):0
-mount: mount('mount.shared2','mount.shared1','(null)',0x00009000,'(null)'):0
-mount: mount('mount.dir','mount.shared2','(null)',0x00009000,'(null)'):0
-mount.dir:
-a
-b
+I tried using the net tree from next-20110311 for today but that had the
+same problem.  So I merged the above fix commit from the tip tree.
 
-mount.shared1:
+I have no idea why this has suddenly become a problem in the net tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-mount.shared2:
-a
-b
+--Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-After adding --loud option to remove MS_SILENT bit from just one mount cmd:
+iQEcBAEBAgAGBQJNfZiYAAoJEDMEi1NhKgbs+DAIAIOgo7NgsH5GEsKVOtFodbSM
+Amykwyyxypt7reVWKUREs+VvnD/BVmjgZNJyGgwGzjgeNup8KwtM0fFuLWnu10A8
+4oaXMVq57gKb3ac6gI/7k/OzxsqBgCCKIyzpVErniLcRIKExfDnIpQABXOkZddNy
+aoDkKbsHKmid+/aecMgHs18cF3eBb7jVagegWIpemzgW7rYagJTZzcICZFfxOurq
+DpnQVAznb7uJu+HOtf2OMzr2Jiy7JGrZK9ld6sTIOODpoVKrBx25bxee3tQZk7Tz
+B6DcYwvWZ08YhLJqR4309mZXCYkBOeewyHDXNn7nO/BDmVqsMtQBP8926yTt1E8=
+=58DL
+-----END PGP SIGNATURE-----
 
-mkdir -p mount.dir mount.shared1 mount.shared2
-touch mount.dir/a mount.dir/b
-mount -vv --bind         mount.shared1 mount.shared1 2>&1
-mount -vv --make-rshared mount.shared1               2>&1
-mount -vv --bind         mount.shared2 mount.shared2 2>&1
-mount -vv --loud --make-rshared mount.shared2               2>&1  # <-HERE
-mount -vv --bind mount.shared2 mount.shared1         2>&1
-mount -vv --bind mount.dir     mount.shared2         2>&1
-ls -R mount.dir mount.shared1 mount.shared2      2>&1
-umount mount.dir mount.shared1 mount.shared2 2>/dev/null
-umount mount.dir mount.shared1 mount.shared2 2>/dev/null
-umount mount.dir mount.shared1 mount.shared2 2>/dev/null
-rm -f mount.dir/a mount.dir/b mount.dir/c
-rmdir mount.dir mount.shared1 mount.shared2
-
-
-The result is different now - look closely at mount.shared1 directory listing.
-Now it does show files 'a' and 'b':
-
-mount: mount('mount.shared1','mount.shared1','(null)',0x00009000,'(null)'):0
-mount: mount('','mount.shared1','',0x0010c000,''):0
-mount: mount('mount.shared2','mount.shared2','(null)',0x00009000,'(null)'):0
-mount: mount('','mount.shared2','',0x00104000,''):0
-mount: mount('mount.shared2','mount.shared1','(null)',0x00009000,'(null)'):0
-mount: mount('mount.dir','mount.shared2','(null)',0x00009000,'(null)'):0
-
-mount.dir:
-a
-b
-
-mount.shared1:
-a
-b
-
-mount.shared2:
-a
-b
-
-
-I am not asking whether mount command should or should not use MS_SILENT bit.
-It's an important question, but it doesn't belong to lkml.
-
-My question is, intuitively, MS_SILENT should only affect (suppress)
-kernel messages, it should never affect the outcome of the mount() call, right?
-
-Here it is obviously not the case - the behavior is different. Is it a bug?
-
--- 
-vda
+--Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n--
