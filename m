@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab1CNLHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:07:23 -0400
-Received: from nm10-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.198]:37718 "HELO
-	nm10-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753149Ab1CNLHR (ORCPT
+	id S1754280Ab1CNLHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:07:35 -0400
+Received: from nm24.bullet.mail.sp2.yahoo.com ([98.139.91.94]:29020 "HELO
+	nm24.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754018Ab1CNLHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:07:17 -0400
-X-Yahoo-Newman-Id: 412966.73120.bm@omp1053.mail.sp2.yahoo.com
+	Mon, 14 Mar 2011 07:07:30 -0400
+X-Yahoo-Newman-Id: 411206.2491.bm@omp1012.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: wk75DCgVM1kIOrSRxDw6GjQdQjf_QAyoecmsG3uorq6rU0I
- tJpEevXXhL0kk.FHBc6S8jIHP9LLOj5JZ1ylvtaf6Vj7pX1fWTLZzpQ0W5rn
- 3BpH.ndLo3vkVgjiJI7ZdDx_XNxwoXc7Bz6b2K2_j2zIua5Hl.Dnew7ksdSO
- _eLi_5eajoMJIfdPZplhQh54nvsNmgOMWa5i6MHh2nuj6tZY2mfJkhQF6PYH
- RaB.vO4cVMOmgau9sm8FhD.iXsviCSzi8kfenhcCy_I10Kr7X4biC0kOwqfZ
- SJZKC9as9h071hQsyp.D_CrfA.cEhtVnpm8DsUpZBpvOPOzChQ0onfVwYJG4
- yhqJNeDypno0fWHtqWRMl4LGf.2xZ2jPGNtouCJK8wqNfSfG50I2neSi8QVJ
- ro3NaTjFGR2RIiZrbchL_zbE.u6.4Jcn0CzuplQyJCbvViQZzUXJeSH19tPR
- Gf4IBKzxmguFfjocZkG8ItMVCIgxthKMeHSb4qzXEAQHLuzwNpR4aqKGnUBk
- ThUmgRWaD559WOJTQimblFhIJ5rRYHzcU1f8zbJHtmeCDiM0MMqFbuIEqJTd
- HejqdRoLuvdvuASW1HQLu.1iKITbx94BX
+X-YMail-OSG: xJEr4KYVM1nHbgoc9SPfij6Kn.NPVxo2efAf4PUWqzWyKnj
+ 546Q7vI.dQbTB5M.pXBRMIXYzxrj6MxRlESGyPcDZomt2lgy2qRl7_6sKDub
+ 2GinLSoXtstA3ldw7SYcGNtn3HDgM2n_5QtADXySybdHzuPpLMmakmxJ58eW
+ YTOMaXNb856n4l3kmBttUIkvL2v0Uho62i3q4njSchuoBC2npiglFqZMODj8
+ pQ8N.unIt1QowhF0PJWCbMrZ6O.ex2jnXswYKeMaUUAlVPZu0CLMoU3Xxb5r
+ Udvfue8MdWJ5CP3RHeYtWcT9dF6lQNdIk.Q.qY118FeZ9dAbOnHhOMTFtPk3
+ 1d27JWOS9PyLcg10aL5Wjrza4fVIHjhcF9IPhKQyHXyD9ulCmcn4R6rCx6vu
+ YcS2pHWAR1lpve.01vffRNxhRfJskrt0-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -31,11 +28,10 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH 11/21] target: Avoid mem leak and needless work in transport_generic_get_mem
-Date: Mon, 14 Mar 2011 04:06:05 -0700
-Message-Id: <1300100775-10012-12-git-send-email-nab@linux-iscsi.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 14/21] target: Fix FILEIO fd_buffered_io= token typo
+Date: Mon, 14 Mar 2011 04:06:08 -0700
+Message-Id: <1300100775-10012-15-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
 References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
@@ -43,56 +39,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-In drivers/target/target_core_transport.c::transport_generic_get_mem()
-there are a few potential memory leaks in the error paths. This patch
-makes sure that we free previously allocated memory when other allocations
-fail.  It also moves some work (INIT_LIST_HEAD() and assignment to
-se_mem->se_len) below all the allocations so that if something fails we
-don't do the work at all.
+This patch fixes a token typo for the TCM/FILEIO match_table_t used
+for toggling O_SYNC usage for individual struct file backend access.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Reported-by: Christophe Fergeau <cfergeau@gmail.com>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_transport.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/target/target_core_file.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 30c1223..af56ce2 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -4358,11 +4358,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
- 			printk(KERN_ERR "Unable to allocate struct se_mem\n");
- 			goto out;
- 		}
--		INIT_LIST_HEAD(&se_mem->se_list);
--		se_mem->se_len = (length > dma_size) ? dma_size : length;
- 
- /* #warning FIXME Allocate contigous pages for struct se_mem elements */
--		se_mem->se_page = (struct page *) alloc_pages(GFP_KERNEL, 0);
-+		se_mem->se_page = alloc_pages(GFP_KERNEL, 0);
- 		if (!(se_mem->se_page)) {
- 			printk(KERN_ERR "alloc_pages() failed\n");
- 			goto out;
-@@ -4373,6 +4371,8 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
- 			printk(KERN_ERR "kmap_atomic() failed\n");
- 			goto out;
- 		}
-+		INIT_LIST_HEAD(&se_mem->se_list);
-+		se_mem->se_len = (length > dma_size) ? dma_size : length;
- 		memset(buf, 0, se_mem->se_len);
- 		kunmap_atomic(buf, KM_IRQ0);
- 
-@@ -4391,6 +4391,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
- 
- 	return 0;
- out:
-+	if (se_mem)
-+		__free_pages(se_mem->se_page, 0);
-+	kmem_cache_free(se_mem_cache, se_mem);
- 	return -1;
- }
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index ae2bf71..b10db0c 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -515,7 +515,7 @@ enum {
+ static match_table_t tokens = {
+ 	{Opt_fd_dev_name, "fd_dev_name=%s"},
+ 	{Opt_fd_dev_size, "fd_dev_size=%s"},
+-	{Opt_fd_buffered_io, "fd_buffered_id=%d"},
++	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
+ 	{Opt_err, NULL}
+ };
  
 -- 
 1.7.4.1
