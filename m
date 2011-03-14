@@ -1,37 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab1CNBrz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 21:47:55 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:51396 "EHLO
+	id S1756757Ab1CNB45 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 21:56:57 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:34689 "EHLO
 	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab1CNBrx (ORCPT
+	with ESMTP id S1756708Ab1CNB4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 21:47:53 -0400
-Message-ID: <49b3cf559f9a26a84b6d7f65b38364b9.squirrel@webmail.greenhost.nl>
-In-Reply-To: <FB72B156-6DF9-413B-98F2-D23A449E9303@mit.edu>
+	Sun, 13 Mar 2011 21:56:54 -0400
+Message-ID: <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20110312173217.GA24981@kroah.com>
 References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
     <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
     <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
     <201103111255.44979.arnd@arndb.de>
     <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
-    <4D7AC0FE.8070806@gmail.com>
-    <1d4d1b7ae64da97f44cad0e2bda4f832.squirrel@webmail.greenhost.nl>
-    <4D7ADFDD.9080108@gmail.com>
-    <e118a1458c29e4f44bf71c7095e4bce8.squirrel@webmail.greenhost.nl>
-    <4D7BBC03.3020404@garzik.org>
-    <89481603ed9cfc86efaa039c2dfeb955.squirrel@webmail.greenhost.nl>
-    <FB72B156-6DF9-413B-98F2-D23A449E9303@mit.edu>
-Date: Mon, 14 Mar 2011 02:47:48 +0100 (CET)
+    <20110311235607.GB15853@elie>
+    <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+    <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com>
+Date: Mon, 14 Mar 2011 02:56:52 +0100 (CET)
 Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
 From: "Indan Zupancic" <indan@nul.nu>
-To: "Theodore Tso" <tytso@MIT.EDU>
-Cc: "Jeff Garzik" <jeff@garzik.org>, "Ric Wheeler" <ricwheeler@gmail.com>,
-        "Arnd Bergmann" <arnd@arndb.de>, "Sage Weil" <sage@newdream.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: "Greg KH" <greg@kroah.com>
+Cc: "Jonathan Nieder" <jrnieder@gmail.com>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Sage Weil" <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Jonathan Nieder" <jrnieder@gmail.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+        akpm@linux-foundation.org, linux-api@vger.kernel.org,
+        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
+        l@jasper.es
 User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
 Content-Type: text/plain;charset=UTF-8
@@ -39,30 +35,58 @@ Content-Transfer-Encoding: 8bit
 X-Priority: 3 (Normal)
 Importance: Normal
 X-Spam-Score: 0.1
-X-Scan-Signature: c74461a82029b6293650421ecb57b64a
+X-Scan-Signature: 74bd734068bee68206891dc8710ce62a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, March 14, 2011 02:37, Theodore Tso wrote:
+On Sat, March 12, 2011 18:32, Greg KH wrote:
+> On Fri, Mar 11, 2011 at 08:10:01PM -0600, Jonathan Nieder wrote:
+>> Indan Zupancic wrote:
+>>
+>> > I'm not pushing for any official convention, just what seems good taste.
+>>
+>> In cases like this, conventions (consistency and best practices) are
+>> very important.
+>>
+>> > Less code added, less bloat. Architecture independent, no need to update
+>> > all system call tables everywhere (all archs, libc versions and strace).
+>> > Two files changed, instead of 7 (which only hooks up x86).
+>>
+>> Thanks for explaining.  Those do seem like good reasons to use a ioctl
+>> instead of a new syscall.
 >
-> On Mar 13, 2011, at 9:31 PM, Indan Zupancic wrote:
->
->> The new syscall works on only one fd too. The behaviour of the proposed
->> syncfs and an extended sync_file_range is exactly the same.
->
-> No, it's quite different.   One syncs the entire file system; sync_file_range
-> requests that the pages associated with a file be pushed to disk --- it says
-> nothing about the metadata associated with the file.
+> No, make it a syscall, it's more obvious and will be documented much
+> better.
 
-You missed the part where a new flag for sync_file_range would be added that
-does sync the whole file system.
+There is no such guarantee. Everyone seems to want to add this new syncfs,
+but it's not even defined what it does. "Same as sync, but only on one fs"
+is IMHO not good enough, because sync's behaviour is pretty badly documented,
+and that's a system call. The sync_file_range argument effects are quite
+well defined, on the other hand, unlike sync behaviour. You're right for
+ioctls though.
 
-> I'm in favor of the new sys_syncfs system call.
+If it has to be added, I'm in favour of adding it as a new sync_file_range
+flag option, but wouldn't mind if it was added as some obscure ioctl either.
 
-Care to define its behaviour? Does it wait till all data is written out,
-does it flush disk caches, what if new data is written to the fs while
-a sync is going on, etc.
+Do you think that widespread sync() usage is something good? Don't you
+think sync(2) should be used as little as possible? And if so, why is
+it any different than syncfs?
+
+IMHO we're talking about some system call that shouldn't be used often, and
+only rarely in very specific cases. They could use sync(2) with exactly the
+same effect, but for performance reasons syncfs() is preferred. So instead
+of extremely slow it will be very slow in some cases. Hurray, progress!
+
+Next time you want an async version, and have to add a new systemcall with
+a flag argument. So instead of going down that path, please add one with
+a flag argument immediately. E.g:
+
+syncfs(const char* path, int fd, int flags);
+
+A NULL path, -1 fd and 0 flags is equal to sync (or something), and then
+vary the options. But as it's for a file system, wouldn't it make more
+sense to have just a path argument instead of an fd one?
 
 Greetings,
 
