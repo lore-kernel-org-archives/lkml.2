@@ -1,60 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab1CNT2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:28:32 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58191 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab1CNT2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:28:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=T4vr7RKWCWzEDsbBSKc0bvw7N/KeEJuhTPv7x1Jzs7wbI06ePecIq74hfpL8xfthxX
-         TY7WdMTHa0BWCdoPGcExLc4ktif++i5lXR9gprnKQi4OZ6CLsl3DHIpOSGTwFkH4i624
-         m1998J/X92LeQLqlYAsKw8Qp4F+Ap2qrAp4rI=
+	id S1752082Ab1CNTfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:35:16 -0400
+Received: from fieldses.org ([174.143.236.118]:59190 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab1CNTfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 15:35:14 -0400
+Date: Mon, 14 Mar 2011 15:35:01 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, roel <roel.kluin@gmail.com>,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: wrong index used in inner loop
+Message-ID: <20110314193501.GE25442@fieldses.org>
+References: <4D76A06A.4090405@gmail.com>
+ <20110309154230.66bc2c36.akpm@linux-foundation.org>
+ <20110310180800.GA31984@fieldses.org>
+ <4D799C6E.1050101@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20110314190813.GC20259@home.goodmis.org>
-References: <AANLkTim9jsGz=ELPNUVJHWN8Z4EzBrFA03XXt_QYPsEh@mail.gmail.com> <20110314190813.GC20259@home.goodmis.org>
-From: Justin <wellspring3@gmail.com>
-Date: Mon, 14 Mar 2011 12:28:11 -0700
-Message-ID: <AANLkTimE94jf0N54c5ijKUs3Ln_hhNUuCecuda98y2O9@mail.gmail.com>
-Subject: Re: milw0rm rootkit
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D799C6E.1050101@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, she runs 2.6.34.8-68.fc13.i686.PAE
+On Fri, Mar 11, 2011 at 11:52:14AM +0800, Mi Jinlong wrote:
+> 
+> 
+> J. Bruce Fields:
+> > On Wed, Mar 09, 2011 at 03:42:30PM -0800, Andrew Morton wrote:
+> >> On Tue, 08 Mar 2011 22:32:26 +0100
+> >> roel <roel.kluin@gmail.com> wrote:
+> >>
+> >>> Index i was already used in the outer loop
+> >>>
+> >>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> >>> ---
+> >>>  fs/nfsd/nfs4xdr.c |    4 ++--
+> >>>  1 files changed, 2 insertions(+), 2 deletions(-)
+> >>>
+> >>> Not 100% sure this one is needed but it looks suspicious.
+> >>>
+> >>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+> >>> index 1275b86..615f0a9 100644
+> >>> --- a/fs/nfsd/nfs4xdr.c
+> >>> +++ b/fs/nfsd/nfs4xdr.c
+> >>> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+> >>>  
+> >>>  	u32 dummy;
+> >>>  	char *machine_name;
+> >>> -	int i;
+> >>> +	int i, j;
+> >>>  	int nr_secflavs;
+> >>>  
+> >>>  	READ_BUF(16);
+> >>> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+> >>>  			READ_BUF(4);
+> >>>  			READ32(dummy);
+> >>>  			READ_BUF(dummy * 4);
+> >>> -			for (i = 0; i < dummy; ++i)
+> >>> +			for (j = 0; j < dummy; ++j)
+> >>>  				READ32(dummy);
+> >>>  			break;
+> >>>  		case RPC_AUTH_GSS:
+> >> ooh, big bug.
+> >>
+> >> I wonder why it was not previously detected at runtime.  Perhaps
+> >> nr_secflavs is always 1.
+> > 
+> > Yeah, no client uses this calback security information yet.
+> > 
+> > Mi Jinlong, do you think this is something we could have caught with
+> > another pynfs test?
+> 
+>   Yes, we must test it.
+> 
+>   After testing, the following test case is OK.
 
-I know this is for the kernel... The C file seems to exploit a
-vulnerability in the kernel, so I thought I should let the kernel
-people know so they could patch it upstream. Right? I know the hacker
-couldnt have gotten in if the security was stronger, but shouldnt the
-kernel be secured against the rootkit?
+I've pushed out a tree with your additional tests to
 
-On Mon, Mar 14, 2011 at 12:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Sun, Mar 13, 2011 at 07:31:43PM -0700, Justin wrote:
->> My mothers computer was hacked with a program that seems to be
->
-> Your mom runs Linux? Which distro?
->
->> milw0rm. The hacker left the source file in C on her computer. I have
->> it and the IP address of the FTP server that he seemed to download it
->> from. Who can I give the file to to be sure that it gets patched? And
->> is there anything else I should do to help you guys make sure that
->> this doesnt happen again?
->
-> This is the Linux kernel mailing list, which I'm pretty sure was not the
-> cause of the hack, and thus the wrong list. Please contact the people
-> from the distribution that you are using.
->
-> -- Steve
->
->
->>
->> I am not on the list, so please CC me any responses, thanks
->
+	git://linux-nfs.org/~bfields/pynfs41.git
+
+Let me know what I'm missing.
+
+Thanks again.--b.
+
+> 
+> --
+> thanks,
+> Mi Jinlong
+> 
+> 
+> >From 1afac3444b37bac66970f19c409660a304a53fb4 Mon Sep 17 00:00:00 2001
+> From: Mi Jinlong <mijinlong@cn.fujitsu.com>
+> Date: Sun, 11 Mar 2011 09:05:22 +0800
+> Subject: [PATCH] CLNT: test a decode problem which use wrong index
+> 
+> Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+> ---
+>  nfs4.1/server41tests/st_create_session.py |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
+> 
+> diff --git a/nfs4.1/server41tests/st_create_session.py b/nfs4.1/server41tests/st_create_session.py
+> index ff55d10..e3a8421 100644
+> --- a/nfs4.1/server41tests/st_create_session.py
+> +++ b/nfs4.1/server41tests/st_create_session.py
+> @@ -252,6 +252,22 @@ def testCbSecParms(t, env):
+>      c1 = env.c1.new_client(env.testname(t))
+>      sess1 = c1.create_session(sec=sec)
+>  
+> +def testCbSecParmsDec(t, env):
+> +    """A decode problem was found at NFS server that 
+> +       wrong index used in inner loop, 
+> +       http://marc.info/?l=linux-kernel&m=129961996327640&w=2
+> +
+> +    FLAGS: create_session all
+> +    CODE: CSESS16a
+> +    """
+> +    sec = [callback_sec_parms4(AUTH_NONE),
+> +           callback_sec_parms4(RPCSEC_GSS, cbsp_gss_handles=gss_cb_handles4(RPC_GSS_SVC_PRIVACY, "Handle from server", "Client handle")),
+> +           callback_sec_parms4(AUTH_SYS, cbsp_sys_cred=authsys_parms(5, "Random machine name", 7, 11, [])),
+> +           ]
+> +                               
+> +    c1 = env.c1.new_client(env.testname(t))
+> +    sess1 = c1.create_session(sec=sec)
+> +
+>  def testRdmaArray0(t, env):
+>      """Test 0 length rdma arrays
+>  
+> -- 
+> 1.7.4.1
+> 
+> 
