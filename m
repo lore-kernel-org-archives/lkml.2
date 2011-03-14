@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab1CNXb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 19:31:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44505 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750867Ab1CNXb4 (ORCPT
+	id S1752504Ab1CNXfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 19:35:23 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19297 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1CNXfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 19:31:56 -0400
-Date: Mon, 14 Mar 2011 16:30:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20]  0: Inode based uprobes
-Message-Id: <20110314163028.a05cec49.akpm@linux-foundation.org>
-In-Reply-To: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Mar 2011 19:35:22 -0400
+Date: Tue, 15 Mar 2011 00:35:02 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, greg@kroah.com, joe@perches.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH][rfc] Use int as return type of main in
+ arch/x86/boot/main.c
+In-Reply-To: <4D7E470E.8090204@zytor.com>
+Message-ID: <alpine.LNX.2.00.1103150034310.26293@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1103132257430.9985@swampdragon.chaosbits.net> <20110314113254.GA2761@gmail.com> <4D7E470E.8090204@zytor.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 19:04:03 +0530
-Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+On Mon, 14 Mar 2011, H. Peter Anvin wrote:
 
-> Advantages of uprobes over conventional debugging include:
+> On 03/14/2011 04:32 AM, Harry Wei wrote:
+> > On Sun, Mar 13, 2011 at 11:00:09PM +0100, Jesper Juhl wrote:
+> >> I believe the return type of main should always be 'int'.
+> >>
+> >> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > Acked-by: Harry Wei <harryxiyou@gmail.com>
 > 
-> 1. Non-disruptive.
-> Unlike current ptrace based mechanisms, uprobes tracing wouldnt
-> involve signals, stopping threads and context switching between the
-> tracer and tracee.
+> It would make more sense to rename the function to something other than
+> main().
 > 
-> 2. Much better handling of multithreaded programs because of XOL.
-> Current ptrace based mechanisms use single stepping inline, i.e they
-> copy back the original instruction on hitting a breakpoint.  In such
-> mechanisms tracers have to stop all the threads on a breakpoint hit or
-> tracers will not be able to handle all hits to the location of
-> interest. Uprobes uses execution out of line, where the instruction to
-> be traced is analysed at the time of breakpoint insertion and a copy
-> of instruction is stored at a different location.  On breakpoint hit,
-> uprobes jumps to that copied location and singlesteps the same
-> instruction and does the necessary fixups post singlestepping.
-> 
-> 3. Multiple tracers for an application.
-> Multiple uprobes based tracer could work in unison to trace an
-> application. There could one tracer that could be interested in
-> generic events for a particular set of process. While there could be
-> another tracer that is just interested in one specific event of a
-> particular process thats part of the previous set of process.
-> 
-> 4. Corelating events from kernels and userspace.
-> Uprobes could be used with other tools like kprobes, tracepoints or as
-> part of higher level tools like perf to give a consolidated set of
-> events from kernel and userspace.  In future we could look at a single
-> backtrace showing application, library and kernel calls.
+Right. That's probably a better aproach. Thanks.
 
-How do you envisage these features actually get used?  For example,
-will gdb be modified?  Will other debuggers be modified or written?
-
-IOW, I'm trying to get an understanding of how you expect this feature
-will actually become useful to end users - the kernel patch is only
-part of the story.
-
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
 
