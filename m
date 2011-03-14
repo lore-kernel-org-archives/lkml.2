@@ -1,29 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab1CNXI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 19:08:29 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55477 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751499Ab1CNXI2 (ORCPT
+	id S1757495Ab1CNXIz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 19:08:55 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:45997 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab1CNXIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 19:08:28 -0400
-Date: Mon, 14 Mar 2011 23:05:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Mike Waychison <mikew@google.com>, Matt Domsch <Matt_Domsch@dell.com>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Subject: Re: [PATCH v2 11/12] driver: Google EFI SMI
-Message-ID: <20110314230543.5b668ed2@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110314201346.GA1084@kroah.com>
-References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
-	<20110312014353.6133.94204.stgit@mike.mtv.corp.google.com>
-	<20110314154713.GF31340@kroah.com>
-	<AANLkTikhhYv2=memo-Rkhh1pG3v4-edrUROTgLoc6cbd@mail.gmail.com>
-	<20110314201346.GA1084@kroah.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Mon, 14 Mar 2011 19:08:53 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 15 Mar 2011 00:08:41 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] firewire: core: ignore link-active bit of new nodes, fix
+ device recognition
+Message-ID: <20110315000841.46230773@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,16 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Like the older ieee1394 core driver, firewire-core skipped scanning of
+any new node whose PHY sent a self ID without "link active" bits.  If a
+device had this bit off mistakenly, it meant that it was inaccessible to
+kernel drivers with the old IEEE 1394 driver stack but could still be
+accessed by userspace drivers through the raw1394 interface.
 
-> > I don't know if there is a good way to have this guy autoloaded, but
-> > that's probably fine. We will likely compile it in as a built-in or
-> > adjust our userland to have the module loaded.  We use it on all
-> > machines we've been building for the last 4-5 years, and a table of
-> > device IDs would just contain a list of a bunch of parts that aren't
-> > really google-specific.
-> 
-> What's wrong with using DMI strings?  Are there going to be that many
-> different ones of them here?
+But with firewire-core, userspace drivers don't get to see such buggy
+devices anymore.  This is effectively a driver regression since this
+device bug is otherwise harmless.
 
-If you've got them in the ACPI tables that's as good as DMI if not better
-IMHO
+We now attempt to scan all devices, even repeaters that don't have a
+link or powered-down devices that have everything but their PHY shut
+down when plugged in.  This results in futile repeated scanning attempts
+in case of such devices that really don't have an active link, but this
+doesn't hurt since recent workqueue infrastructure lets us run more
+concurrent scanning jobs than we can shake a stick at.
+
+This should fix accessibility of Focusrite Saffire PRO 26 I/O:
+http://sourceforge.net/mailarchive/forum.php?thread_name=20110314215622.5c751bb0%40stein&forum_name=ffado-user
+
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/firewire/core-device.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
+
+Index: b/drivers/firewire/core-device.c
+===================================================================
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -955,8 +955,9 @@ static void fw_device_init(struct work_s
+ 			device->config_rom_retries++;
+ 			schedule_delayed_work(&device->work, RETRY_DELAY);
+ 		} else {
+-			fw_notify("giving up on config rom for node id %x\n",
+-				  device->node_id);
++			if (device->node->link_on)
++				fw_notify("giving up on config rom for node id %x\n",
++					  device->node_id);
+ 			if (device->node == device->card->root_node)
+ 				fw_schedule_bm_work(device->card, 0);
+ 			fw_device_release(&device->device);
+@@ -1169,9 +1170,12 @@ void fw_node_event(struct fw_card *card,
+ 
+ 	switch (event) {
+ 	case FW_NODE_CREATED:
+-	case FW_NODE_LINK_ON:
+-		if (!node->link_on)
+-			break;
++		/*
++		 * Attempt to scan the node, regardless whether its self ID has
++		 * the L (link active) flag set or not.  Some broken devices
++		 * send L=0 but have an up-and-running link; others send L=1
++		 * without actually having a link.
++		 */
+  create:
+ 		device = kzalloc(sizeof(*device), GFP_ATOMIC);
+ 		if (device == NULL)
+@@ -1214,6 +1218,7 @@ void fw_node_event(struct fw_card *card,
+ 		break;
+ 
+ 	case FW_NODE_INITIATED_RESET:
++	case FW_NODE_LINK_ON:
+ 		device = node->data;
+ 		if (device == NULL)
+ 			goto create;
+@@ -1231,10 +1236,10 @@ void fw_node_event(struct fw_card *card,
+ 		break;
+ 
+ 	case FW_NODE_UPDATED:
+-		if (!node->link_on || node->data == NULL)
++		device = node->data;
++		if (device == NULL)
+ 			break;
+ 
+-		device = node->data;
+ 		device->node_id = node->node_id;
+ 		smp_wmb();  /* update node_id before generation */
+ 		device->generation = card->generation;
+
+
+-- 
+Stefan Richter
+-=====-==-== --== -====
+http://arcgraph.de/sr/
