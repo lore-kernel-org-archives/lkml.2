@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab1CNNKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 09:10:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65197 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab1CNNKU convert rfc822-to-8bit (ORCPT
+	id S1754649Ab1CNNOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 09:14:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36686 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab1CNNO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 09:10:20 -0400
+	Mon, 14 Mar 2011 09:14:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=D7enqVquhXo80jMtIbqYZ9vDnRfH7NklM5C+HApdtcNKnEMOImeTBxY/EX48qs4sD5
-         bteN8QdT3JbL4PIHHoQWkyyJBkHkT66zEkk9j70F9lVSaATkxWAcfQeMsWfYfuijh5fu
-         JhRt/0OG0ZfuxFO6sCAVyZ91aeBeU98hog+Zs=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1103141307590.19969@pobox.suse.cz>
-References: <1299686450-5475-1-git-send-email-benjamin.tissoires@enac.fr>
-	<alpine.LNX.2.00.1103141307590.19969@pobox.suse.cz>
-Date: Mon, 14 Mar 2011 14:10:19 +0100
-X-Google-Sender-Auth: Hrf1CjWXCRoNruF7V-s_yJ_th20
-Message-ID: <AANLkTiko4z7SJmObKsVCMHeqR2iAYdQ_j-aOhZWjssJ3@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Migrations to hid-multitouch, round 2
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=erKRUZGBcGgtYJkjTbACz0pxyUyX8kdaM2VVErPV8BGwD7sXchaSG9X7d7U3LJ2lcK
+         vySKtQbxAuG12pmwh9QRSQDw6DDUnbObZ7yGW9ucwRKph1gN/dzDNgi6Sj0nywJRVhPt
+         ALA280ySWSxaNioX0Miv6omeuaryzEP+4BTGo=
+Subject: Re: kernel 2.6.37 : oops in cleanup_once
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Yann Dupont <Yann.Dupont@univ-nantes.fr>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <4D7DF1A3.6020501@univ-nantes.fr>
+References: <4D491B8D.1000107@univ-nantes.fr>
+	 <1296643972.20445.9.camel@edumazet-laptop>
+	 <1296645887.20445.11.camel@edumazet-laptop>
+	 <4D495765.4090806@univ-nantes.fr>
+	 <1296658407.20445.19.camel@edumazet-laptop>
+	 <4D49726C.6020103@univ-nantes.fr>
+	 <1296659336.20445.22.camel@edumazet-laptop>
+	 <4D7DF1A3.6020501@univ-nantes.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Mar 2011 14:14:24 +0100
+Message-ID: <1300108464.3423.1.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 13:08, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 9 Mar 2011, Benjamin Tissoires wrote:
->
->> Hi guys,
->>
->> This is the second version for this patch series.
->>
->> Since last time, I integrated Henrik's comments.
->>
->> Cheers,
->> Benjamin
->>
->>  drivers/hid/Kconfig          |   21 +---
->>  drivers/hid/Makefile         |    3 -
->>  drivers/hid/hid-3m-pct.c     |  305 ------------------------------------------
->>  drivers/hid/hid-cando.c      |  276 --------------------------------------
->>  drivers/hid/hid-multitouch.c |  110 +++++++++++++---
->>  drivers/hid/hid-stantum.c    |  286 ---------------------------------------
->>  6 files changed, 97 insertions(+), 904 deletions(-)
->>
->> ;-)
->
-> Hi Benjamin,
->
-> thanks a lot for this work you have done.
->
-> Is there going to be second round of the patches with a few minor fixes
-> coming out from Henrik's review?
->
-> Thanks,
+Le lundi 14 mars 2011 Ã  11:44 +0100, Yann Dupont a Ã©crit :
+> Le 02/02/2011 16:08, Eric Dumazet a Ã©crit :
+> 
+> 
+> > I suspect a mem corruption from another layer (not inetpeer)
+> >
+> > Unfortunately many kmem caches share the "64 bytes" cache.
+> >
+> > Could you please add "slub_nomerge" on your boot command ?
+> >
+> ...
+> 
+> >
+> >> -Is there a very severe impact on performance ?
+> >>
+> > not at all
+> >
+> Maybe there is an impact after all : since then, we don't have problems 
+> anymore !
+> 
+> linkwood:~# uptime
+>   11:42:03 up 39 days, 17:08,  3 users,  load average: 0.01, 0.03, 0.05
+> 
+> So... could slub_nomerge hide or simply avoid the problem ?
+> Or are we just lucky this time ?
+> 
+> 
 
-Hi Jiri,
+I would say you are lucky ;)
 
-yes of course. I don't know if I'll have the time to do it today, but
-I'll do my best.
+Not all memory corruptions are noticed. Sometimes it touch unused parts
+of memory, or some parts with no critical content.
 
-Cheers,
-Benjamin
 
->
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
->
+
