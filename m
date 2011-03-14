@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab1CNPDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:03:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47947 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751391Ab1CNPDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:03:13 -0400
-Date: Mon, 14 Mar 2011 15:03:30 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        Igor Grinberg <grinberg@compulab.co.il>
-Subject: Re: [PATCH v3] Regulator: add suspend-finish API for regulator
- core.
-Message-ID: <20110314150330.GE2626@opensource.wolfsonmicro.com>
-References: <1299806039-12698-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1756853Ab1CNPDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:03:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45320 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756782Ab1CNPDj (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 14 Mar 2011 11:03:39 -0400
+Date: Mon, 14 Mar 2011 11:03:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Olaf Hering <olaf@aepfle.de>
+Subject: Re: [PATCH] input/xen-fbfront: advertise either absolute or
+ relative coordinates
+Message-ID: <20110314150321.GB11244@dumpdata.com>
+References: <alpine.DEB.2.00.1103111124400.2968@kaball-desktop>
+ <20110313062411.GB31566@core.coreip.homeip.net>
+ <alpine.DEB.2.00.1103141135170.3382@kaball-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299806039-12698-1-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: You love peace.
+In-Reply-To: <alpine.DEB.2.00.1103141135170.3382@kaball-desktop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D7E2E40.00F4,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 10:13:59AM +0900, MyungJoo Ham wrote:
-> The regulator core had suspend-prepare that turns off the regulators
-> when entering a system-wide suspend. However, it did not have
-> suspend-finish that pairs with suspend-prepare and the regulator core
-> has assumed that the regulator devices and their drivers support
-> autonomous recover at resume.
+> > BTW, drivers/input is intended for core input and handlers stuff with
+> > drivers suppsed to be in drivers/input/<type>. Would you mind if I moved
+> > this driver to drivers/input/misc?
+> 
+> I am OK with it.
+> Konrad, any comments on this?
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Go for it! Dmitry, were you thinking to do that for 2.6.39 or 2.6.40?
 
-We should be doing this automatically as part of the core but since
-we've not done that for suspend yet it seems reasonable to apply as-is
-then fix both the teardown and powerup paths together.  Since the code
-won't be called unless someone explicitly does so there's very little
-risk here.
+I've two more patches for xen-fbfront (and one for xen-kbdfront) that I was thinking
+could go for 2.6.39:
+
+http://lists.colo.xensource.com/archives/html/xen-devel/2011-03/msg00383.html
+
+oh, and they seemed to have not been posted here. I stuck them 
+in
+
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git #devel/fb_kb_front_use_page_gref
+
+and was testing them. Do you want me to repost them on LKML with you
+on the CC?
+
