@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab1CNL6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:58:17 -0400
-Received: from nm19-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.216]:23990 "HELO
-	nm19-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754987Ab1CNL6H (ORCPT
+	id S1755070Ab1CNL6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:58:19 -0400
+Received: from nm14.bullet.mail.ac4.yahoo.com ([98.139.52.211]:42697 "HELO
+	nm14.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754971Ab1CNL6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:58:07 -0400
-X-Yahoo-Newman-Id: 333814.2615.bm@omp1032.mail.sp2.yahoo.com
+	Mon, 14 Mar 2011 07:58:03 -0400
+X-Yahoo-Newman-Id: 178109.76023.bm@omp1061.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: mFP3ClkVM1klQi4x9_KCEWgfR1G0xsT6wkjgaEtU3fU7NiC
- JddMPG92uMSzvMVfUY_NA.MBu8WZIORDwBsZSWoZL2u9ZIiiaYK0XdvPZXXD
- 2aoieCcKQ4iuYy1W6i3XDvxzQM5Y.5x2MZJc9mEywFwb3CMhy2SsoI0dMMQg
- GDfhLUnlZ9e_pongJ57tOiV1JUMxnC12nd6JXBaFqAKN8BwYfOtBJ.fHaW8R
- ilIRgyE4oAi6GSEDckMz10zim8iG6H4cqZDLbYIXcER0B_h20Mhhv_Trr2wP
- WSorQL2naEtK6vTMDk5q2CtHen7nkW1r.M3w3bqy0mTl8H8SffTEINSPmPor
- sqA--
+X-YMail-OSG: 0nizFDUVM1nDaCM2KF6DV2xWthzdPNAl7sQXKX4osGzmDX2
+ LVH7Shp_xge3a3TWu42gJ7zEoMXiAt4WTg.SZqvoANLyiruJzKtUGo2SooPL
+ aZLJEj0eYdCrFTvOc6eoBPNbQ5oduuBc7XfDuyYwOtGDjHMm80hMcVLK_jvN
+ B364jaI.Te3hek8g213FYGxNvCHmJyIrULUUQ7QmrA9q5GFuuZthjaTBDm.A
+ GBWWeHElFCIdhKDoAAmh91naH0MnIhF6vH5WoAxrcnFvWmrAzAarFCjmWE7r
+ JjizDwGzbeRDJS2l_m717rjL0o05WZow8GzzaJD1vI1fh
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -28,9 +27,9 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC-v2 08/12] iscsi-target: Add Sequence/PDU list + DataIN response logic
-Date: Mon, 14 Mar 2011 04:57:05 -0700
-Message-Id: <1300103829-10337-9-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC-v2 07/12] iscsi-target: Add CHAP Authentication support using libcrypto
+Date: Mon, 14 Mar 2011 04:57:04 -0700
+Message-Id: <1300103829-10337-8-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
 References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
@@ -40,846 +39,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds Sequence/PDU list logic used by RFC-3720 for
-DataSequenceInOrder=[Yes,No] and DataPDUInOrder=[Yes,No].  It also
-includes support for these modes of support for generating iSCSI
-DataIN response data from iscsi_target.c:iscsi_send_data_in().
+This patch adds support for libcrypto md5 based iSCSI CHAP authentication
+support for iscsi_target_mod.  This includes support for mutual and one-way
+NodeACL authentication for SessionType=Normal and SessionType=Discovery
+via /sys/kernel/config/target/iscsi.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/iscsi/iscsi_seq_and_pdu_list.c     |  712 +++++++++++++++++++++
- drivers/target/iscsi/iscsi_seq_and_pdu_list.h     |   88 +++
- drivers/target/iscsi/iscsi_target_datain_values.c |  549 ++++++++++++++++
- drivers/target/iscsi/iscsi_target_datain_values.h |   15 +
- 4 files changed, 1364 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/iscsi/iscsi_seq_and_pdu_list.c
- create mode 100644 drivers/target/iscsi/iscsi_seq_and_pdu_list.h
- create mode 100644 drivers/target/iscsi/iscsi_target_datain_values.c
- create mode 100644 drivers/target/iscsi/iscsi_target_datain_values.h
+ drivers/target/iscsi/iscsi_auth_chap.c |  502 ++++++++++++++++++++++++++++++++
+ drivers/target/iscsi/iscsi_auth_chap.h |   33 ++
+ 2 files changed, 535 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/iscsi/iscsi_auth_chap.c
+ create mode 100644 drivers/target/iscsi/iscsi_auth_chap.h
 
-diff --git a/drivers/target/iscsi/iscsi_seq_and_pdu_list.c b/drivers/target/iscsi/iscsi_seq_and_pdu_list.c
+diff --git a/drivers/target/iscsi/iscsi_auth_chap.c b/drivers/target/iscsi/iscsi_auth_chap.c
 new file mode 100644
-index 0000000..732215f
+index 0000000..7d7d27f
 --- /dev/null
-+++ b/drivers/target/iscsi/iscsi_seq_and_pdu_list.c
-@@ -0,0 +1,712 @@
++++ b/drivers/target/iscsi/iscsi_auth_chap.c
+@@ -0,0 +1,502 @@
 +/*******************************************************************************
-+ * This file contains main functions related to iSCSI DataSequenceInOrder=No
-+ * and DataPDUInOrder=No.
++ * This file houses the main functions for the iSCSI CHAP support
 + *
-+ * Copyright (c) 2003 PyX Technologies, Inc.
-+ * Copyright (c) 2006-2007 SBE, Inc.  All Rights Reserved.
-+ © Copyright 2007-2011 RisingTide Systems LLC.
-+ *
-+ * Licensed to the Linux Foundation under the General Public License (GPL) version 2.
-+ *
-+ * Author: Nicholas A. Bellinger <nab@linux-iscsi.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ ******************************************************************************/
-+
-+#include <linux/slab.h>
-+#include <linux/random.h>
-+
-+#include "iscsi_debug.h"
-+#include "iscsi_target_core.h"
-+#include "iscsi_target_util.h"
-+#include "iscsi_seq_and_pdu_list.h"
-+
-+#define OFFLOAD_BUF_SIZE	32768
-+
-+/*	iscsi_dump_seq_list():
-+ *
-+ *
-+ */
-+void iscsi_dump_seq_list(struct iscsi_cmd *cmd)
-+{
-+	int i;
-+	struct iscsi_seq *seq;
-+
-+	printk(KERN_INFO "Dumping Sequence List for ITT: 0x%08x:\n",
-+			cmd->init_task_tag);
-+
-+	for (i = 0; i < cmd->seq_count; i++) {
-+		seq = &cmd->seq_list[i];
-+		printk(KERN_INFO "i: %d, pdu_start: %d, pdu_count: %d,"
-+			" offset: %d, xfer_len: %d, seq_send_order: %d,"
-+			" seq_no: %d\n", i, seq->pdu_start, seq->pdu_count,
-+			seq->offset, seq->xfer_len, seq->seq_send_order,
-+			seq->seq_no);
-+	}
-+}
-+
-+/*	iscsi_dump_pdu_list():
-+ *
-+ *
-+ */
-+void iscsi_dump_pdu_list(struct iscsi_cmd *cmd)
-+{
-+	int i;
-+	struct iscsi_pdu *pdu;
-+
-+	printk(KERN_INFO "Dumping PDU List for ITT: 0x%08x:\n",
-+			cmd->init_task_tag);
-+
-+	for (i = 0; i < cmd->pdu_count; i++) {
-+		pdu = &cmd->pdu_list[i];
-+		printk(KERN_INFO "i: %d, offset: %d, length: %d,"
-+			" pdu_send_order: %d, seq_no: %d\n", i, pdu->offset,
-+			pdu->length, pdu->pdu_send_order, pdu->seq_no);
-+	}
-+}
-+
-+/*	iscsi_ordered_seq_lists():
-+ *
-+ *
-+ */
-+static inline void iscsi_ordered_seq_lists(
-+	struct iscsi_cmd *cmd,
-+	u8 type)
-+{
-+	u32 i, seq_count = 0;
-+
-+	for (i = 0; i < cmd->seq_count; i++) {
-+		if (cmd->seq_list[i].type != SEQTYPE_NORMAL)
-+			continue;
-+		cmd->seq_list[i].seq_send_order = seq_count++;
-+	}
-+}
-+
-+/*	iscsi_ordered_pdu_lists():
-+ *
-+ *
-+ */
-+static inline void iscsi_ordered_pdu_lists(
-+	struct iscsi_cmd *cmd,
-+	u8 type)
-+{
-+	u32 i, pdu_send_order = 0, seq_no = 0;
-+
-+	for (i = 0; i < cmd->pdu_count; i++) {
-+redo:
-+		if (cmd->pdu_list[i].seq_no == seq_no) {
-+			cmd->pdu_list[i].pdu_send_order = pdu_send_order++;
-+			continue;
-+		}
-+		seq_no++;
-+		pdu_send_order = 0;
-+		goto redo;
-+	}
-+}
-+
-+/*	iscsi_create_random_array():
-+ *
-+ *	Generate count random values into array.
-+ *	Use 0x80000000 to mark generates valued in array[].
-+ */
-+static inline void iscsi_create_random_array(u32 *array, u32 count)
-+{
-+	int i, j, k;
-+
-+	if (count == 1) {
-+		array[0] = 0;
-+		return;
-+	}
-+
-+	for (i = 0; i < count; i++) {
-+redo:
-+		get_random_bytes(&j, sizeof(u32));
-+		j = (1 + (int) (9999 + 1) - j) % count;
-+		for (k = 0; k < i + 1; k++) {
-+			j |= 0x80000000;
-+			if ((array[k] & 0x80000000) && (array[k] == j))
-+				goto redo;
-+		}
-+		array[i] = j;
-+	}
-+
-+	for (i = 0; i < count; i++)
-+		array[i] &= ~0x80000000;
-+
-+	return;
-+}
-+
-+/*	iscsi_randomize_pdu_lists():
-+ *
-+ *
-+ */
-+static inline int iscsi_randomize_pdu_lists(
-+	struct iscsi_cmd *cmd,
-+	u8 type)
-+{
-+	int i = 0;
-+	u32 *array, pdu_count, seq_count = 0, seq_no = 0, seq_offset = 0;
-+
-+	for (pdu_count = 0; pdu_count < cmd->pdu_count; pdu_count++) {
-+redo:
-+		if (cmd->pdu_list[pdu_count].seq_no == seq_no) {
-+			seq_count++;
-+			continue;
-+		}
-+		array = kzalloc(seq_count * sizeof(u32), GFP_KERNEL);
-+		if (!(array)) {
-+			printk(KERN_ERR "Unable to allocate memory"
-+				" for random array.\n");
-+			return -1;
-+		}
-+		iscsi_create_random_array(array, seq_count);
-+
-+		for (i = 0; i < seq_count; i++)
-+			cmd->pdu_list[seq_offset+i].pdu_send_order = array[i];
-+
-+		kfree(array);
-+
-+		seq_offset += seq_count;
-+		seq_count = 0;
-+		seq_no++;
-+		goto redo;
-+	}
-+
-+	if (seq_count) {
-+		array = kzalloc(seq_count * sizeof(u32), GFP_KERNEL);
-+		if (!(array)) {
-+			printk(KERN_ERR "Unable to allocate memory for"
-+				" random array.\n");
-+			return -1;
-+		}
-+		iscsi_create_random_array(array, seq_count);
-+
-+		for (i = 0; i < seq_count; i++)
-+			cmd->pdu_list[seq_offset+i].pdu_send_order = array[i];
-+
-+		kfree(array);
-+	}
-+
-+	return 0;
-+}
-+
-+/*	iscsi_randomize_seq_lists():
-+ *
-+ *
-+ */
-+static inline int iscsi_randomize_seq_lists(
-+	struct iscsi_cmd *cmd,
-+	u8 type)
-+{
-+	int i, j = 0;
-+	u32 *array, seq_count = cmd->seq_count;
-+
-+	if ((type == PDULIST_IMMEDIATE) || (type == PDULIST_UNSOLICITED))
-+		seq_count--;
-+	else if (type == PDULIST_IMMEDIATE_AND_UNSOLICITED)
-+		seq_count -= 2;
-+
-+	if (!seq_count)
-+		return 0;
-+
-+	array = kzalloc(seq_count * sizeof(u32), GFP_KERNEL);
-+	if (!(array)) {
-+		printk(KERN_ERR "Unable to allocate memory for random array.\n");
-+		return -1;
-+	}
-+	iscsi_create_random_array(array, seq_count);
-+
-+	for (i = 0; i < cmd->seq_count; i++) {
-+		if (cmd->seq_list[i].type != SEQTYPE_NORMAL)
-+			continue;
-+		cmd->seq_list[i].seq_send_order = array[j++];
-+	}
-+
-+	kfree(array);
-+	return 0;
-+}
-+
-+/*	iscsi_determine_counts_for_list():
-+ *
-+ *
-+ */
-+static inline void iscsi_determine_counts_for_list(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_build_list *bl,
-+	u32 *seq_count,
-+	u32 *pdu_count)
-+{
-+	int check_immediate = 0;
-+	u32 burstlength = 0, offset = 0;
-+	u32 unsolicited_data_length = 0;
-+	struct iscsi_conn *conn = CONN(cmd);
-+
-+	if ((bl->type == PDULIST_IMMEDIATE) ||
-+	    (bl->type == PDULIST_IMMEDIATE_AND_UNSOLICITED))
-+		check_immediate = 1;
-+
-+	if ((bl->type == PDULIST_UNSOLICITED) ||
-+	    (bl->type == PDULIST_IMMEDIATE_AND_UNSOLICITED))
-+		unsolicited_data_length = (cmd->data_length >
-+			SESS_OPS_C(conn)->FirstBurstLength) ?
-+			SESS_OPS_C(conn)->FirstBurstLength : cmd->data_length;
-+
-+	while (offset < cmd->data_length) {
-+		*pdu_count += 1;
-+
-+		if (check_immediate) {
-+			check_immediate = 0;
-+			offset += bl->immediate_data_length;
-+			*seq_count += 1;
-+			if (unsolicited_data_length)
-+				unsolicited_data_length -=
-+					bl->immediate_data_length;
-+			continue;
-+		}
-+		if (unsolicited_data_length > 0) {
-+			if ((offset + CONN_OPS(conn)->MaxRecvDataSegmentLength)
-+					>= cmd->data_length) {
-+				unsolicited_data_length -=
-+					(cmd->data_length - offset);
-+				offset += (cmd->data_length - offset);
-+				continue;
-+			}
-+			if ((offset + CONN_OPS(conn)->MaxRecvDataSegmentLength)
-+					>= SESS_OPS_C(conn)->FirstBurstLength) {
-+				unsolicited_data_length -=
-+					(SESS_OPS_C(conn)->FirstBurstLength -
-+					offset);
-+				offset += (SESS_OPS_C(conn)->FirstBurstLength -
-+					offset);
-+				burstlength = 0;
-+				*seq_count += 1;
-+				continue;
-+			}
-+
-+			offset += CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			unsolicited_data_length -=
-+				CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			continue;
-+		}
-+		if ((offset + CONN_OPS(conn)->MaxRecvDataSegmentLength) >=
-+		     cmd->data_length) {
-+			offset += (cmd->data_length - offset);
-+			continue;
-+		}
-+		if ((burstlength + CONN_OPS(conn)->MaxRecvDataSegmentLength) >=
-+		     SESS_OPS_C(conn)->MaxBurstLength) {
-+			offset += (SESS_OPS_C(conn)->MaxBurstLength -
-+					burstlength);
-+			burstlength = 0;
-+			*seq_count += 1;
-+			continue;
-+		}
-+
-+		burstlength += CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+		offset += CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+	}
-+}
-+
-+
-+/*	iscsi_build_pdu_and_seq_list():
-+ *
-+ *	Builds PDU and/or Sequence list,  called while DataSequenceInOrder=No
-+ *	and DataPDUInOrder=No.
-+ */
-+static inline int iscsi_build_pdu_and_seq_list(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_build_list *bl)
-+{
-+	int check_immediate = 0, datapduinorder, datasequenceinorder;
-+	u32 burstlength = 0, offset = 0, i = 0;
-+	u32 pdu_count = 0, seq_no = 0, unsolicited_data_length = 0;
-+	struct iscsi_conn *conn = CONN(cmd);
-+	struct iscsi_pdu *pdu = cmd->pdu_list;
-+	struct iscsi_seq *seq = cmd->seq_list;
-+
-+	datapduinorder = SESS_OPS_C(conn)->DataPDUInOrder;
-+	datasequenceinorder = SESS_OPS_C(conn)->DataSequenceInOrder;
-+
-+	if ((bl->type == PDULIST_IMMEDIATE) ||
-+	    (bl->type == PDULIST_IMMEDIATE_AND_UNSOLICITED))
-+		check_immediate = 1;
-+
-+	if ((bl->type == PDULIST_UNSOLICITED) ||
-+	    (bl->type == PDULIST_IMMEDIATE_AND_UNSOLICITED))
-+		unsolicited_data_length = (cmd->data_length >
-+			SESS_OPS_C(conn)->FirstBurstLength) ?
-+			SESS_OPS_C(conn)->FirstBurstLength : cmd->data_length;
-+
-+	while (offset < cmd->data_length) {
-+		pdu_count++;
-+		if (!datapduinorder) {
-+			pdu[i].offset = offset;
-+			pdu[i].seq_no = seq_no;
-+		}
-+		if (!datasequenceinorder && (pdu_count == 1)) {
-+			seq[seq_no].pdu_start = i;
-+			seq[seq_no].seq_no = seq_no;
-+			seq[seq_no].offset = offset;
-+			seq[seq_no].orig_offset = offset;
-+		}
-+
-+		if (check_immediate) {
-+			check_immediate = 0;
-+			if (!datapduinorder) {
-+				pdu[i].type = PDUTYPE_IMMEDIATE;
-+				pdu[i++].length = bl->immediate_data_length;
-+			}
-+			if (!datasequenceinorder) {
-+				seq[seq_no].type = SEQTYPE_IMMEDIATE;
-+				seq[seq_no].pdu_count = 1;
-+				seq[seq_no].xfer_len =
-+					bl->immediate_data_length;
-+			}
-+			offset += bl->immediate_data_length;
-+			pdu_count = 0;
-+			seq_no++;
-+			if (unsolicited_data_length)
-+				unsolicited_data_length -=
-+					bl->immediate_data_length;
-+			continue;
-+		}
-+		if (unsolicited_data_length > 0) {
-+			if ((offset +
-+			     CONN_OPS(conn)->MaxRecvDataSegmentLength) >=
-+			     cmd->data_length) {
-+				if (!datapduinorder) {
-+					pdu[i].type = PDUTYPE_UNSOLICITED;
-+					pdu[i].length =
-+						(cmd->data_length - offset);
-+				}
-+				if (!datasequenceinorder) {
-+					seq[seq_no].type = SEQTYPE_UNSOLICITED;
-+					seq[seq_no].pdu_count = pdu_count;
-+					seq[seq_no].xfer_len = (burstlength +
-+						(cmd->data_length - offset));
-+				}
-+				unsolicited_data_length -=
-+						(cmd->data_length - offset);
-+				offset += (cmd->data_length - offset);
-+				continue;
-+			}
-+			if ((offset +
-+			     CONN_OPS(conn)->MaxRecvDataSegmentLength) >=
-+					SESS_OPS_C(conn)->FirstBurstLength) {
-+				if (!datapduinorder) {
-+					pdu[i].type = PDUTYPE_UNSOLICITED;
-+					pdu[i++].length =
-+					   (SESS_OPS_C(conn)->FirstBurstLength -
-+						offset);
-+				}
-+				if (!datasequenceinorder) {
-+					seq[seq_no].type = SEQTYPE_UNSOLICITED;
-+					seq[seq_no].pdu_count = pdu_count;
-+					seq[seq_no].xfer_len = (burstlength +
-+					   (SESS_OPS_C(conn)->FirstBurstLength -
-+						offset));
-+				}
-+				unsolicited_data_length -=
-+					(SESS_OPS_C(conn)->FirstBurstLength -
-+						offset);
-+				offset += (SESS_OPS_C(conn)->FirstBurstLength -
-+						offset);
-+				burstlength = 0;
-+				pdu_count = 0;
-+				seq_no++;
-+				continue;
-+			}
-+
-+			if (!datapduinorder) {
-+				pdu[i].type = PDUTYPE_UNSOLICITED;
-+				pdu[i++].length =
-+				     CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			}
-+			burstlength += CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			offset += CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			unsolicited_data_length -=
-+				CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			continue;
-+		}
-+		if ((offset + CONN_OPS(conn)->MaxRecvDataSegmentLength) >=
-+		     cmd->data_length) {
-+			if (!datapduinorder) {
-+				pdu[i].type = PDUTYPE_NORMAL;
-+				pdu[i].length = (cmd->data_length - offset);
-+			}
-+			if (!datasequenceinorder) {
-+				seq[seq_no].type = SEQTYPE_NORMAL;
-+				seq[seq_no].pdu_count = pdu_count;
-+				seq[seq_no].xfer_len = (burstlength +
-+					(cmd->data_length - offset));
-+			}
-+			offset += (cmd->data_length - offset);
-+			continue;
-+		}
-+		if ((burstlength + CONN_OPS(conn)->MaxRecvDataSegmentLength) >=
-+		     SESS_OPS_C(conn)->MaxBurstLength) {
-+			if (!datapduinorder) {
-+				pdu[i].type = PDUTYPE_NORMAL;
-+				pdu[i++].length =
-+					(SESS_OPS_C(conn)->MaxBurstLength -
-+						burstlength);
-+			}
-+			if (!datasequenceinorder) {
-+				seq[seq_no].type = SEQTYPE_NORMAL;
-+				seq[seq_no].pdu_count = pdu_count;
-+				seq[seq_no].xfer_len = (burstlength +
-+					(SESS_OPS_C(conn)->MaxBurstLength -
-+					burstlength));
-+			}
-+			offset += (SESS_OPS_C(conn)->MaxBurstLength -
-+					burstlength);
-+			burstlength = 0;
-+			pdu_count = 0;
-+			seq_no++;
-+			continue;
-+		}
-+
-+		if (!datapduinorder) {
-+			pdu[i].type = PDUTYPE_NORMAL;
-+			pdu[i++].length =
-+				CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+		}
-+		burstlength += CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+		offset += CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+	}
-+
-+	if (!datasequenceinorder) {
-+		if (bl->data_direction & ISCSI_PDU_WRITE) {
-+			if (bl->randomize & RANDOM_R2T_OFFSETS) {
-+				if (iscsi_randomize_seq_lists(cmd, bl->type)
-+						< 0)
-+					return -1;
-+			} else
-+				iscsi_ordered_seq_lists(cmd, bl->type);
-+		} else if (bl->data_direction & ISCSI_PDU_READ) {
-+			if (bl->randomize & RANDOM_DATAIN_SEQ_OFFSETS) {
-+				if (iscsi_randomize_seq_lists(cmd, bl->type)
-+						< 0)
-+					return -1;
-+			} else
-+				iscsi_ordered_seq_lists(cmd, bl->type);
-+		}
-+#if 0
-+		iscsi_dump_seq_list(cmd);
-+#endif
-+	}
-+	if (!datapduinorder) {
-+		if (bl->data_direction & ISCSI_PDU_WRITE) {
-+			if (bl->randomize & RANDOM_DATAOUT_PDU_OFFSETS) {
-+				if (iscsi_randomize_pdu_lists(cmd, bl->type)
-+						< 0)
-+					return -1;
-+			} else
-+				iscsi_ordered_pdu_lists(cmd, bl->type);
-+		} else if (bl->data_direction & ISCSI_PDU_READ) {
-+			if (bl->randomize & RANDOM_DATAIN_PDU_OFFSETS) {
-+				if (iscsi_randomize_pdu_lists(cmd, bl->type)
-+						< 0)
-+					return -1;
-+			} else
-+				iscsi_ordered_pdu_lists(cmd, bl->type);
-+		}
-+#if 0
-+		iscsi_dump_pdu_list(cmd);
-+#endif
-+	}
-+
-+	return 0;
-+}
-+
-+/*	iscsi_do_build_list():
-+ *
-+ *	Only called while DataSequenceInOrder=No or DataPDUInOrder=No.
-+ */
-+int iscsi_do_build_list(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_build_list *bl)
-+{
-+	u32 pdu_count = 0, seq_count = 1;
-+	struct iscsi_conn *conn = CONN(cmd);
-+	struct iscsi_pdu *pdu = NULL;
-+	struct iscsi_seq *seq = NULL;
-+
-+	iscsi_determine_counts_for_list(cmd, bl, &seq_count, &pdu_count);
-+
-+	if (!SESS_OPS_C(conn)->DataSequenceInOrder) {
-+		seq = kzalloc(seq_count * sizeof(struct iscsi_seq), GFP_ATOMIC);
-+		if (!(seq)) {
-+			printk(KERN_ERR "Unable to allocate struct iscsi_seq list\n");
-+			return -1;
-+		}
-+		cmd->seq_list = seq;
-+		cmd->seq_count = seq_count;
-+	}
-+
-+	if (!SESS_OPS_C(conn)->DataPDUInOrder) {
-+		pdu = kzalloc(pdu_count * sizeof(struct iscsi_pdu), GFP_ATOMIC);
-+		if (!(pdu)) {
-+			printk(KERN_ERR "Unable to allocate struct iscsi_pdu list.\n");
-+			kfree(seq);
-+			return -1;
-+		}
-+		cmd->pdu_list = pdu;
-+		cmd->pdu_count = pdu_count;
-+	}
-+
-+	return iscsi_build_pdu_and_seq_list(cmd, bl);
-+}
-+
-+/*	iscsi_get_pdu_holder():
-+ *
-+ *
-+ */
-+struct iscsi_pdu *iscsi_get_pdu_holder(
-+	struct iscsi_cmd *cmd,
-+	u32 offset,
-+	u32 length)
-+{
-+	u32 i;
-+	struct iscsi_pdu *pdu = NULL;
-+
-+	if (!cmd->pdu_list) {
-+		printk(KERN_ERR "struct iscsi_cmd->pdu_list is NULL!\n");
-+		return NULL;
-+	}
-+
-+	pdu = &cmd->pdu_list[0];
-+
-+	for (i = 0; i < cmd->pdu_count; i++)
-+		if ((pdu[i].offset == offset) && (pdu[i].length == length))
-+			return &pdu[i];
-+
-+	printk(KERN_ERR "Unable to locate PDU holder for ITT: 0x%08x, Offset:"
-+		" %u, Length: %u\n", cmd->init_task_tag, offset, length);
-+	return NULL;
-+}
-+
-+/*	iscsi_get_pdu_holder_for_seq():
-+ *
-+ *
-+ */
-+struct iscsi_pdu *iscsi_get_pdu_holder_for_seq(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_seq *seq)
-+{
-+	u32 i;
-+	struct iscsi_conn *conn = CONN(cmd);
-+	struct iscsi_pdu *pdu = NULL;
-+
-+	if (!cmd->pdu_list) {
-+		printk(KERN_ERR "struct iscsi_cmd->pdu_list is NULL!\n");
-+		return NULL;
-+	}
-+
-+	if (SESS_OPS_C(conn)->DataSequenceInOrder) {
-+redo:
-+		pdu = &cmd->pdu_list[cmd->pdu_start];
-+
-+		for (i = 0; pdu[i].seq_no != cmd->seq_no; i++) {
-+#if 0
-+			printk(KERN_INFO "pdu[i].seq_no: %d, pdu[i].pdu"
-+				"_send_order: %d, pdu[i].offset: %d,"
-+				" pdu[i].length: %d\n", pdu[i].seq_no,
-+				pdu[i].pdu_send_order, pdu[i].offset,
-+				pdu[i].length);
-+#endif
-+			if (pdu[i].pdu_send_order == cmd->pdu_send_order) {
-+				cmd->pdu_send_order++;
-+				return &pdu[i];
-+			}
-+		}
-+
-+		cmd->pdu_start += cmd->pdu_send_order;
-+		cmd->pdu_send_order = 0;
-+		cmd->seq_no++;
-+
-+		if (cmd->pdu_start < cmd->pdu_count)
-+			goto redo;
-+
-+		printk(KERN_ERR "Command ITT: 0x%08x unable to locate"
-+			" struct iscsi_pdu for cmd->pdu_send_order: %u.\n",
-+			cmd->init_task_tag, cmd->pdu_send_order);
-+		return NULL;
-+	} else {
-+		if (!seq) {
-+			printk(KERN_ERR "struct iscsi_seq is NULL!\n");
-+			return NULL;
-+		}
-+#if 0
-+		printk(KERN_INFO "seq->pdu_start: %d, seq->pdu_count: %d,"
-+			" seq->seq_no: %d\n", seq->pdu_start, seq->pdu_count,
-+			seq->seq_no);
-+#endif
-+		pdu = &cmd->pdu_list[seq->pdu_start];
-+
-+		if (seq->pdu_send_order == seq->pdu_count) {
-+			printk(KERN_ERR "Command ITT: 0x%08x seq->pdu_send"
-+				"_order: %u equals seq->pdu_count: %u\n",
-+				cmd->init_task_tag, seq->pdu_send_order,
-+				seq->pdu_count);
-+			return NULL;
-+		}
-+
-+		for (i = 0; i < seq->pdu_count; i++) {
-+			if (pdu[i].pdu_send_order == seq->pdu_send_order) {
-+				seq->pdu_send_order++;
-+				return &pdu[i];
-+			}
-+		}
-+
-+		printk(KERN_ERR "Command ITT: 0x%08x unable to locate iscsi"
-+			"_pdu_t for seq->pdu_send_order: %u.\n",
-+			cmd->init_task_tag, seq->pdu_send_order);
-+		return NULL;
-+	}
-+
-+	return NULL;
-+}
-+
-+/*	iscsi_get_seq_holder():
-+ *
-+ *
-+ */
-+struct iscsi_seq *iscsi_get_seq_holder(
-+	struct iscsi_cmd *cmd,
-+	u32 offset,
-+	u32 length)
-+{
-+	u32 i;
-+
-+	if (!cmd->seq_list) {
-+		printk(KERN_ERR "struct iscsi_cmd->seq_list is NULL!\n");
-+		return NULL;
-+	}
-+
-+	for (i = 0; i < cmd->seq_count; i++) {
-+#if 0
-+		printk(KERN_INFO "seq_list[i].orig_offset: %d, seq_list[i]."
-+			"xfer_len: %d, seq_list[i].seq_no %u\n",
-+			cmd->seq_list[i].orig_offset, cmd->seq_list[i].xfer_len,
-+			cmd->seq_list[i].seq_no);
-+#endif
-+		if ((cmd->seq_list[i].orig_offset +
-+				cmd->seq_list[i].xfer_len) >=
-+				(offset + length))
-+			return &cmd->seq_list[i];
-+	}
-+
-+	printk(KERN_ERR "Unable to locate Sequence holder for ITT: 0x%08x,"
-+		" Offset: %u, Length: %u\n", cmd->init_task_tag, offset,
-+		length);
-+	return NULL;
-+}
-diff --git a/drivers/target/iscsi/iscsi_seq_and_pdu_list.h b/drivers/target/iscsi/iscsi_seq_and_pdu_list.h
-new file mode 100644
-index 0000000..7b4c1bd
---- /dev/null
-+++ b/drivers/target/iscsi/iscsi_seq_and_pdu_list.h
-@@ -0,0 +1,88 @@
-+#ifndef ISCSI_SEQ_AND_PDU_LIST_H
-+#define ISCSI_SEQ_AND_PDU_LIST_H
-+
-+/* struct iscsi_pdu->status */
-+#define DATAOUT_PDU_SENT			1
-+
-+/* struct iscsi_seq->type */
-+#define SEQTYPE_IMMEDIATE			1
-+#define SEQTYPE_UNSOLICITED			2
-+#define SEQTYPE_NORMAL				3
-+
-+/* struct iscsi_seq->status */
-+#define DATAOUT_SEQUENCE_GOT_R2T		1
-+#define DATAOUT_SEQUENCE_WITHIN_COMMAND_RECOVERY 2
-+#define DATAOUT_SEQUENCE_COMPLETE		3
-+
-+/* iscsi_determine_counts_for_list() type */
-+#define PDULIST_NORMAL				1
-+#define PDULIST_IMMEDIATE			2
-+#define PDULIST_UNSOLICITED			3
-+#define PDULIST_IMMEDIATE_AND_UNSOLICITED	4
-+
-+/* struct iscsi_pdu->type */
-+#define PDUTYPE_IMMEDIATE			1
-+#define PDUTYPE_UNSOLICITED			2
-+#define PDUTYPE_NORMAL				3
-+
-+/* struct iscsi_pdu->status */
-+#define ISCSI_PDU_NOT_RECEIVED			0
-+#define ISCSI_PDU_RECEIVED_OK			1
-+#define ISCSI_PDU_CRC_FAILED			2
-+#define ISCSI_PDU_TIMED_OUT			3
-+
-+/* struct iscsi_build_list->randomize */
-+#define RANDOM_DATAIN_PDU_OFFSETS		0x01
-+#define RANDOM_DATAIN_SEQ_OFFSETS		0x02
-+#define RANDOM_DATAOUT_PDU_OFFSETS		0x04
-+#define RANDOM_R2T_OFFSETS			0x08
-+
-+/* struct iscsi_build_list->data_direction */
-+#define ISCSI_PDU_READ				0x01
-+#define ISCSI_PDU_WRITE				0x02
-+
-+struct iscsi_build_list {
-+	u8		data_direction;
-+	u8		randomize;
-+	u8		type;
-+	u32		immediate_data_length;
-+} ____cacheline_aligned;
-+
-+struct iscsi_pdu {
-+	int		status;
-+	int		type;
-+	u8		flags;
-+	u32		data_sn;
-+	u32		length;
-+	u32		offset;
-+	u32		pdu_send_order;
-+	u32		seq_no;
-+} ____cacheline_aligned;
-+
-+struct iscsi_seq {
-+	int		sent;
-+	int		status;
-+	int		type;
-+	u32		data_sn;
-+	u32		first_datasn;
-+	u32		last_datasn;
-+	u32		next_burst_len;
-+	u32		pdu_start;
-+	u32		pdu_count;
-+	u32		offset;
-+	u32		orig_offset;
-+	u32		pdu_send_order;
-+	u32		r2t_sn;
-+	u32		seq_send_order;
-+	u32		seq_no;
-+	u32		xfer_len;
-+} ____cacheline_aligned;
-+
-+extern struct iscsi_global *iscsi_global;
-+
-+extern int iscsi_do_build_list(struct iscsi_cmd *, struct iscsi_build_list *);
-+extern struct iscsi_pdu *iscsi_get_pdu_holder(struct iscsi_cmd *, u32, u32);
-+extern struct iscsi_pdu *iscsi_get_pdu_holder_for_seq(struct iscsi_cmd *, struct iscsi_seq *);
-+extern struct iscsi_seq *iscsi_get_seq_holder(struct iscsi_cmd *, u32, u32);
-+
-+#endif /* ISCSI_SEQ_AND_PDU_LIST_H */
-diff --git a/drivers/target/iscsi/iscsi_target_datain_values.c b/drivers/target/iscsi/iscsi_target_datain_values.c
-new file mode 100644
-index 0000000..b6986d3
---- /dev/null
-+++ b/drivers/target/iscsi/iscsi_target_datain_values.c
-@@ -0,0 +1,549 @@
-+/*******************************************************************************
-+ * This file contains the iSCSI Target DataIN value generation functions.
-+ *
-+ * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
-+ * Copyright (c) 2006 SBE, Inc.  All Rights Reserved.
++ * Copyright (c) 2002, 2003, 2004, 2005 PyX Technologies, Inc.
++ * Copyright (c) 2005, 2006, 2007 SBE, Inc.
 + * © Copyright 2007-2011 RisingTide Systems LLC.
 + *
 + * Licensed to the Linux Foundation under the General Public License (GPL) version 2.
@@ -897,554 +80,525 @@ index 0000000..b6986d3
 + * GNU General Public License for more details.
 + ******************************************************************************/
 +
-+#include <linux/delay.h>
 +#include <linux/string.h>
-+#include <linux/timer.h>
-+#include <linux/slab.h>
-+#include <linux/init.h>
-+#include <linux/spinlock.h>
-+#include <linux/smp_lock.h>
-+#include <linux/in.h>
-+#include <scsi/iscsi_proto.h>
++#include <linux/crypto.h>
++#include <linux/err.h>
++#include <linux/scatterlist.h>
 +
-+#include "iscsi_debug.h"
 +#include "iscsi_target_core.h"
-+#include "iscsi_seq_and_pdu_list.h"
-+#include "iscsi_target_erl1.h"
-+#include "iscsi_target_util.h"
-+#include "iscsi_target_datain_values.h"
++#include "iscsi_target_nego.h"
++#include "iscsi_auth_chap.h"
 +
-+struct iscsi_datain_req *iscsi_allocate_datain_req(void)
++#ifdef DEBUG_CHAP
++#define PRINT(x...)		printk(KERN_INFO x)
++#else
++#define PRINT(x...)
++#endif
++
++unsigned char chap_asciihex_to_binaryhex(unsigned char val[2])
 +{
-+	struct iscsi_datain_req *dr;
++	unsigned char result = 0;
++	/*
++	 * MSB
++	 */
++	if ((val[0] >= 'a') && (val[0] <= 'f'))
++		result = ((val[0] - 'a' + 10) & 0xf) << 4;
++	else
++		if ((val[0] >= 'A') && (val[0] <= 'F'))
++			result = ((val[0] - 'A' + 10) & 0xf) << 4;
++		else /* digit */
++			result = ((val[0] - '0') & 0xf) << 4;
++	/*
++	 * LSB
++	 */
++	if ((val[1] >= 'a') && (val[1] <= 'f'))
++		result |= ((val[1] - 'a' + 10) & 0xf);
++	else
++		if ((val[1] >= 'A') && (val[1] <= 'F'))
++			result |= ((val[1] - 'A' + 10) & 0xf);
++		else /* digit */
++			result |= ((val[1] - '0') & 0xf);
 +
-+	dr = kmem_cache_zalloc(lio_dr_cache, GFP_ATOMIC);
-+	if (!(dr)) {
-+		printk(KERN_ERR "Unable to allocate memory for"
-+				" struct iscsi_datain_req\n");
-+		return NULL;
-+	}
-+	INIT_LIST_HEAD(&dr->dr_list);
-+
-+	return dr;
++	return result;
 +}
 +
-+void iscsi_attach_datain_req(struct iscsi_cmd *cmd, struct iscsi_datain_req *dr)
++int chap_string_to_hex(unsigned char *dst, unsigned char *src, int len)
 +{
-+	spin_lock(&cmd->datain_lock);
-+	list_add_tail(&dr->dr_list, &cmd->datain_list);
-+	spin_unlock(&cmd->datain_lock);
++	int i = 0, j = 0;
++
++	for (i = 0; i < len; i += 2)
++		dst[j++] = (unsigned char) chap_asciihex_to_binaryhex(&src[i]);
++
++	dst[j] = '\0';
++	return j;
 +}
 +
-+void iscsi_free_datain_req(struct iscsi_cmd *cmd, struct iscsi_datain_req *dr)
++void chap_binaryhex_to_asciihex(char *dst, char *src, int src_len)
 +{
-+	spin_lock(&cmd->datain_lock);
-+	list_del(&dr->dr_list);
-+	spin_unlock(&cmd->datain_lock);
++	int i;
 +
-+	kmem_cache_free(lio_dr_cache, dr);
++	for (i = 0; i < src_len; i++)
++		sprintf(&dst[i*2], "%02x", (int) src[i] & 0xff);
 +}
 +
-+void iscsi_free_all_datain_reqs(struct iscsi_cmd *cmd)
++void chap_set_random(char *data, int length)
 +{
-+	struct iscsi_datain_req *dr, *dr_tmp;
++	long r;
++	unsigned n;
 +
-+	spin_lock(&cmd->datain_lock);
-+	list_for_each_entry_safe(dr, dr_tmp, &cmd->datain_list, dr_list) {
-+		list_del(&dr->dr_list);
-+		kmem_cache_free(lio_dr_cache, dr);
++	while (length > 0) {
++
++		get_random_bytes(&r, sizeof(long));
++		r = r ^ (r >> 8);
++		r = r ^ (r >> 4);
++		n = r & 0x7;
++
++		get_random_bytes(&r, sizeof(long));
++		r = r ^ (r >> 8);
++		r = r ^ (r >> 5);
++		n = (n << 3) | (r & 0x7);
++
++		get_random_bytes(&r, sizeof(long));
++		r = r ^ (r >> 8);
++		r = r ^ (r >> 5);
++		n = (n << 2) | (r & 0x3);
++
++		*data++ = n;
++		 length--;
 +	}
-+	spin_unlock(&cmd->datain_lock);
 +}
 +
-+struct iscsi_datain_req *iscsi_get_datain_req(struct iscsi_cmd *cmd)
++static struct iscsi_chap *chap_server_open(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	const char *A_str,
++	char *AIC_str,
++	unsigned int *AIC_len)
 +{
-+	struct iscsi_datain_req *dr;
++	struct iscsi_chap *chap;
++	int ret;
 +
-+	if (list_empty(&cmd->datain_list)) {
-+		printk(KERN_ERR "cmd->datain_list is empty for ITT:"
-+			" 0x%08x\n", cmd->init_task_tag);
++	if (!(auth->naf_flags & NAF_USERID_SET) ||
++	    !(auth->naf_flags & NAF_PASSWORD_SET)) {
++		printk(KERN_ERR "CHAP user or password not set for"
++				" Initiator ACL\n");
 +		return NULL;
 +	}
-+	list_for_each_entry(dr, &cmd->datain_list, dr_list)
-+		break;
 +
-+	return dr;
++	conn->auth_protocol = kzalloc(sizeof(struct iscsi_chap), GFP_KERNEL);
++	if (!(conn->auth_protocol))
++		return NULL;
++
++	chap = (struct iscsi_chap *) conn->auth_protocol;
++	/*
++	 * We only support MD5 MDA presently.
++	 */
++	if (strncmp(A_str, "CHAP_A=5", 8)) {
++		printk(KERN_ERR "CHAP_A is not MD5.\n");
++		return NULL;
++	}
++	PRINT("[server] Got CHAP_A=5\n");
++	/*
++	 * Send back CHAP_A set to MD5.
++	 */
++	*AIC_len = sprintf(AIC_str, "CHAP_A=5");
++	*AIC_len += 1;
++	chap->digest_type = CHAP_DIGEST_MD5;
++	PRINT("[server] Sending CHAP_A=%d\n", chap->digest_type);
++	/*
++	 * Set Identifier.
++	 */
++	chap->id = ISCSI_TPG_C(conn)->tpg_chap_id++;
++	*AIC_len += sprintf(AIC_str + *AIC_len, "CHAP_I=%d", chap->id);
++	*AIC_len += 1;
++	PRINT("[server] Sending CHAP_I=%d\n", chap->id);
++	/*
++	 * Generate Challenge.
++	 */
++	ret = chap_gen_challenge(conn, 1, AIC_str, AIC_len);
++	if (ret < 0)
++		return NULL;
++
++	return chap;
 +}
 +
-+/*	iscsi_set_datain_values_yes_and_yes():
-+ *
-+ *	For Normal and Recovery DataSequenceInOrder=Yes and DataPDUInOrder=Yes.
-+ */
-+static inline struct iscsi_datain_req *iscsi_set_datain_values_yes_and_yes(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_datain *datain)
++void chap_close(struct iscsi_conn *conn)
 +{
-+	u32 next_burst_len, read_data_done, read_data_left;
-+	struct iscsi_conn *conn = CONN(cmd);
-+	struct iscsi_datain_req *dr;
-+
-+	dr = iscsi_get_datain_req(cmd);
-+	if (!(dr))
-+		return NULL;
-+
-+	if (dr->recovery && dr->generate_recovery_values) {
-+		if (iscsi_create_recovery_datain_values_datasequenceinorder_yes(
-+					cmd, dr) < 0)
-+			return NULL;
-+
-+		dr->generate_recovery_values = 0;
-+	}
-+
-+	next_burst_len = (!dr->recovery) ?
-+			cmd->next_burst_len : dr->next_burst_len;
-+	read_data_done = (!dr->recovery) ?
-+			cmd->read_data_done : dr->read_data_done;
-+
-+	read_data_left = (cmd->data_length - read_data_done);
-+	if (!(read_data_left)) {
-+		printk(KERN_ERR "ITT: 0x%08x read_data_left is zero!\n",
-+				cmd->init_task_tag);
-+		return NULL;
-+	}
-+
-+	if ((read_data_left <= CONN_OPS(conn)->MaxRecvDataSegmentLength) &&
-+	    (read_data_left <= (SESS_OPS_C(conn)->MaxBurstLength -
-+	     next_burst_len))) {
-+		datain->length = read_data_left;
-+
-+		datain->flags |= (ISCSI_FLAG_CMD_FINAL | ISCSI_FLAG_DATA_STATUS);
-+		if (SESS_OPS_C(conn)->ErrorRecoveryLevel > 0)
-+			datain->flags |= ISCSI_FLAG_DATA_ACK;
-+	} else {
-+		if ((next_burst_len +
-+		     CONN_OPS(conn)->MaxRecvDataSegmentLength) <
-+		     SESS_OPS_C(conn)->MaxBurstLength) {
-+			datain->length =
-+				CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			next_burst_len += datain->length;
-+		} else {
-+			datain->length = (SESS_OPS_C(conn)->MaxBurstLength -
-+					  next_burst_len);
-+			next_burst_len = 0;
-+
-+			datain->flags |= ISCSI_FLAG_CMD_FINAL;
-+			if (SESS_OPS_C(conn)->ErrorRecoveryLevel > 0)
-+				datain->flags |= ISCSI_FLAG_DATA_ACK;
-+		}
-+	}
-+
-+	datain->data_sn = (!dr->recovery) ? cmd->data_sn++ : dr->data_sn++;
-+	datain->offset = read_data_done;
-+
-+	if (!dr->recovery) {
-+		cmd->next_burst_len = next_burst_len;
-+		cmd->read_data_done += datain->length;
-+	} else {
-+		dr->next_burst_len = next_burst_len;
-+		dr->read_data_done += datain->length;
-+	}
-+
-+	if (!dr->recovery) {
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS)
-+			dr->dr_complete = DATAIN_COMPLETE_NORMAL;
-+
-+		return dr;
-+	}
-+
-+	if (!dr->runlength) {
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
-+	} else {
-+		if ((dr->begrun + dr->runlength) == dr->data_sn) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
-+	}
-+
-+	return dr;
++	kfree(conn->auth_protocol);
++	conn->auth_protocol = NULL;
 +}
 +
-+/*	iscsi_set_datain_values_no_and_yes():
-+ *
-+ *	For Normal and Recovery DataSequenceInOrder=No and DataPDUInOrder=Yes.
-+ */
-+static inline struct iscsi_datain_req *iscsi_set_datain_values_no_and_yes(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_datain *datain)
++int chap_gen_challenge(
++	struct iscsi_conn *conn,
++	int caller,
++	char *C_str,
++	unsigned int *C_len)
 +{
-+	u32 offset, read_data_done, read_data_left, seq_send_order;
-+	struct iscsi_conn *conn = CONN(cmd);
-+	struct iscsi_datain_req *dr;
-+	struct iscsi_seq *seq;
++	unsigned char challenge_asciihex[CHAP_CHALLENGE_LENGTH * 2 + 1];
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
 +
-+	dr = iscsi_get_datain_req(cmd);
-+	if (!(dr))
-+		return NULL;
++	memset(challenge_asciihex, 0, CHAP_CHALLENGE_LENGTH * 2 + 1);
 +
-+	if (dr->recovery && dr->generate_recovery_values) {
-+		if (iscsi_create_recovery_datain_values_datasequenceinorder_no(
-+					cmd, dr) < 0)
-+			return NULL;
++	chap_set_random(chap->challenge, CHAP_CHALLENGE_LENGTH);
++	chap_binaryhex_to_asciihex(challenge_asciihex, chap->challenge,
++					CHAP_CHALLENGE_LENGTH);
++	/*
++	 * Set CHAP_C, and copy the generated challenge into C_str.
++	 */
++	*C_len += sprintf(C_str + *C_len, "CHAP_C=0x%s", challenge_asciihex);
++	*C_len += 1;
 +
-+		dr->generate_recovery_values = 0;
-+	}
-+
-+	read_data_done = (!dr->recovery) ?
-+			cmd->read_data_done : dr->read_data_done;
-+	seq_send_order = (!dr->recovery) ?
-+			cmd->seq_send_order : dr->seq_send_order;
-+
-+	read_data_left = (cmd->data_length - read_data_done);
-+	if (!(read_data_left)) {
-+		printk(KERN_ERR "ITT: 0x%08x read_data_left is zero!\n",
-+				cmd->init_task_tag);
-+		return NULL;
-+	}
-+
-+	seq = iscsi_get_seq_holder_for_datain(cmd, seq_send_order);
-+	if (!(seq))
-+		return NULL;
-+
-+	seq->sent = 1;
-+
-+	if (!dr->recovery && !seq->next_burst_len)
-+		seq->first_datasn = cmd->data_sn;
-+
-+	offset = (seq->offset + seq->next_burst_len);
-+
-+	if ((offset + CONN_OPS(conn)->MaxRecvDataSegmentLength) >=
-+	     cmd->data_length) {
-+		datain->length = (cmd->data_length - offset);
-+		datain->offset = offset;
-+
-+		datain->flags |= ISCSI_FLAG_CMD_FINAL;
-+		if (SESS_OPS_C(conn)->ErrorRecoveryLevel > 0)
-+			datain->flags |= ISCSI_FLAG_DATA_ACK;
-+
-+		seq->next_burst_len = 0;
-+		seq_send_order++;
-+	} else {
-+		if ((seq->next_burst_len +
-+		     CONN_OPS(conn)->MaxRecvDataSegmentLength) <
-+		     SESS_OPS_C(conn)->MaxBurstLength) {
-+			datain->length =
-+				CONN_OPS(conn)->MaxRecvDataSegmentLength;
-+			datain->offset = (seq->offset + seq->next_burst_len);
-+
-+			seq->next_burst_len += datain->length;
-+		} else {
-+			datain->length = (SESS_OPS_C(conn)->MaxBurstLength -
-+					  seq->next_burst_len);
-+			datain->offset = (seq->offset + seq->next_burst_len);
-+
-+			datain->flags |= ISCSI_FLAG_CMD_FINAL;
-+			if (SESS_OPS_C(conn)->ErrorRecoveryLevel > 0)
-+				datain->flags |= ISCSI_FLAG_DATA_ACK;
-+
-+			seq->next_burst_len = 0;
-+			seq_send_order++;
-+		}
-+	}
-+
-+	if ((read_data_done + datain->length) == cmd->data_length)
-+		datain->flags |= ISCSI_FLAG_DATA_STATUS;
-+
-+	datain->data_sn = (!dr->recovery) ? cmd->data_sn++ : dr->data_sn++;
-+	if (!dr->recovery) {
-+		cmd->seq_send_order = seq_send_order;
-+		cmd->read_data_done += datain->length;
-+	} else {
-+		dr->seq_send_order = seq_send_order;
-+		dr->read_data_done += datain->length;
-+	}
-+
-+	if (!dr->recovery) {
-+		if (datain->flags & ISCSI_FLAG_CMD_FINAL)
-+			seq->last_datasn = datain->data_sn;
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS)
-+			dr->dr_complete = DATAIN_COMPLETE_NORMAL;
-+
-+		return dr;
-+	}
-+
-+	if (!dr->runlength) {
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
-+	} else {
-+		if ((dr->begrun + dr->runlength) == dr->data_sn) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
-+	}
-+
-+	return dr;
++	PRINT("[%s] Sending CHAP_C=0x%s\n\n", (caller) ? "server" : "client",
++			challenge_asciihex);
++	return 0;
 +}
 +
-+/*	iscsi_set_datain_values_yes_and_no():
-+ *
-+ *	For Normal and Recovery DataSequenceInOrder=Yes and DataPDUInOrder=No.
-+ */
-+static inline struct iscsi_datain_req *iscsi_set_datain_values_yes_and_no(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_datain *datain)
++int chap_server_compute_md5(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	char *NR_in_ptr,
++	char *NR_out_ptr,
++	unsigned int *NR_out_len)
 +{
-+	u32 next_burst_len, read_data_done, read_data_left;
-+	struct iscsi_conn *conn = CONN(cmd);
-+	struct iscsi_datain_req *dr;
-+	struct iscsi_pdu *pdu;
++	char *endptr;
++	unsigned char id, digest[MD5_SIGNATURE_SIZE];
++	unsigned char type, response[MD5_SIGNATURE_SIZE * 2 + 2];
++	unsigned char identifier[10], *challenge, *challenge_binhex;
++	unsigned char client_digest[MD5_SIGNATURE_SIZE];
++	unsigned char server_digest[MD5_SIGNATURE_SIZE];
++	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
++	struct crypto_hash *tfm;
++	struct hash_desc desc;
++	struct scatterlist sg;
++	int auth_ret = -1, ret, challenge_len;
 +
-+	dr = iscsi_get_datain_req(cmd);
-+	if (!(dr))
-+		return NULL;
++	memset(identifier, 0, 10);
++	memset(chap_n, 0, MAX_CHAP_N_SIZE);
++	memset(chap_r, 0, MAX_RESPONSE_LENGTH);
++	memset(digest, 0, MD5_SIGNATURE_SIZE);
++	memset(response, 0, MD5_SIGNATURE_SIZE * 2 + 2);
++	memset(client_digest, 0, MD5_SIGNATURE_SIZE);
++	memset(server_digest, 0, MD5_SIGNATURE_SIZE);
 +
-+	if (dr->recovery && dr->generate_recovery_values) {
-+		if (iscsi_create_recovery_datain_values_datasequenceinorder_yes(
-+					cmd, dr) < 0)
-+			return NULL;
-+
-+		dr->generate_recovery_values = 0;
++	challenge = kzalloc(CHAP_CHALLENGE_STR_LEN, GFP_KERNEL);
++	if (!(challenge)) {
++		printk(KERN_ERR "Unable to allocate challenge buffer\n");
++		return -1;
 +	}
 +
-+	next_burst_len = (!dr->recovery) ?
-+			cmd->next_burst_len : dr->next_burst_len;
-+	read_data_done = (!dr->recovery) ?
-+			cmd->read_data_done : dr->read_data_done;
-+
-+	read_data_left = (cmd->data_length - read_data_done);
-+	if (!(read_data_left)) {
-+		printk(KERN_ERR "ITT: 0x%08x read_data_left is zero!\n",
-+				cmd->init_task_tag);
-+		return dr;
++	challenge_binhex = kzalloc(CHAP_CHALLENGE_STR_LEN, GFP_KERNEL);
++	if (!(challenge_binhex)) {
++		printk(KERN_ERR "Unable to allocate challenge_binhex buffer\n");
++		kfree(challenge);
++		return -1;
++	}
++	/*
++	 * Extract CHAP_N.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_N", MAX_CHAP_N_SIZE, chap_n,
++				&type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_N.\n");
++		goto out;
++	}
++	if (type == HEX) {
++		printk(KERN_ERR "Could not find CHAP_N.\n");
++		goto out;
 +	}
 +
-+	pdu = iscsi_get_pdu_holder_for_seq(cmd, NULL);
-+	if (!(pdu))
-+		return dr;
-+
-+	if ((read_data_done + pdu->length) == cmd->data_length) {
-+		pdu->flags |= (ISCSI_FLAG_CMD_FINAL | ISCSI_FLAG_DATA_STATUS);
-+		if (SESS_OPS_C(conn)->ErrorRecoveryLevel > 0)
-+			pdu->flags |= ISCSI_FLAG_DATA_ACK;
-+
-+		next_burst_len = 0;
-+	} else {
-+		if ((next_burst_len + CONN_OPS(conn)->MaxRecvDataSegmentLength) <
-+		     SESS_OPS_C(conn)->MaxBurstLength)
-+			next_burst_len += pdu->length;
-+		else {
-+			pdu->flags |= ISCSI_FLAG_CMD_FINAL;
-+			if (SESS_OPS_C(conn)->ErrorRecoveryLevel > 0)
-+				pdu->flags |= ISCSI_FLAG_DATA_ACK;
-+
-+			next_burst_len = 0;
-+		}
++	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
++		printk(KERN_ERR "CHAP_N values do not match!\n");
++		goto out;
++	}
++	PRINT("[server] Got CHAP_N=%s\n", chap_n);
++	/*
++	 * Extract CHAP_R.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_R", MAX_RESPONSE_LENGTH, chap_r,
++				&type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_R.\n");
++		goto out;
++	}
++	if (type != HEX) {
++		printk(KERN_ERR "Could not find CHAP_R.\n");
++		goto out;
 +	}
 +
-+	pdu->data_sn = (!dr->recovery) ? cmd->data_sn++ : dr->data_sn++;
-+	if (!dr->recovery) {
-+		cmd->next_burst_len = next_burst_len;
-+		cmd->read_data_done += pdu->length;
-+	} else {
-+		dr->next_burst_len = next_burst_len;
-+		dr->read_data_done += pdu->length;
++	PRINT("[server] Got CHAP_R=%s\n", chap_r);
++	chap_string_to_hex(client_digest, chap_r, strlen(chap_r));
++
++	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm)) {
++		printk(KERN_ERR "Unable to allocate struct crypto_hash\n");
++		goto out;
++	}
++	desc.tfm = tfm;
++	desc.flags = 0;
++
++	ret = crypto_hash_init(&desc);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_init() failed\n");
++		crypto_free_hash(tfm);
++		goto out;
 +	}
 +
-+	datain->flags = pdu->flags;
-+	datain->length = pdu->length;
-+	datain->offset = pdu->offset;
-+	datain->data_sn = pdu->data_sn;
-+
-+	if (!dr->recovery) {
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS)
-+			dr->dr_complete = DATAIN_COMPLETE_NORMAL;
-+
-+		return dr;
++	sg_init_one(&sg, (void *)&chap->id, 1);
++	ret = crypto_hash_update(&desc, &sg, 1);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for id\n");
++		crypto_free_hash(tfm);
++		goto out;
 +	}
 +
-+	if (!dr->runlength) {
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
-+	} else {
-+		if ((dr->begrun + dr->runlength) == dr->data_sn) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
++	sg_init_one(&sg, (void *)&auth->password, strlen(auth->password));
++	ret = crypto_hash_update(&desc, &sg, strlen(auth->password));
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for password\n");
++		crypto_free_hash(tfm);
++		goto out;
 +	}
 +
-+	return dr;
-+}
-+
-+/*	iscsi_set_datain_values_no_and_no():
-+ *
-+ *	For Normal and Recovery DataSequenceInOrder=No and DataPDUInOrder=No.
-+ */
-+static inline struct iscsi_datain_req *iscsi_set_datain_values_no_and_no(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_datain *datain)
-+{
-+	u32 read_data_done, read_data_left, seq_send_order;
-+	struct iscsi_conn *conn = CONN(cmd);
-+	struct iscsi_datain_req *dr;
-+	struct iscsi_pdu *pdu;
-+	struct iscsi_seq *seq = NULL;
-+
-+	dr = iscsi_get_datain_req(cmd);
-+	if (!(dr))
-+		return NULL;
-+
-+	if (dr->recovery && dr->generate_recovery_values) {
-+		if (iscsi_create_recovery_datain_values_datasequenceinorder_no(
-+					cmd, dr) < 0)
-+			return NULL;
-+
-+		dr->generate_recovery_values = 0;
++	sg_init_one(&sg, (void *)chap->challenge, strlen(chap->challenge));
++	ret = crypto_hash_update(&desc, &sg, strlen(chap->challenge));
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for challenge\n");
++		crypto_free_hash(tfm);
++		goto out;
 +	}
 +
-+	read_data_done = (!dr->recovery) ?
-+			cmd->read_data_done : dr->read_data_done;
-+	seq_send_order = (!dr->recovery) ?
-+			cmd->seq_send_order : dr->seq_send_order;
-+
-+	read_data_left = (cmd->data_length - read_data_done);
-+	if (!(read_data_left)) {
-+		printk(KERN_ERR "ITT: 0x%08x read_data_left is zero!\n",
-+				cmd->init_task_tag);
-+		return NULL;
++	ret = crypto_hash_final(&desc, server_digest);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_final() failed for server digest\n");
++		crypto_free_hash(tfm);
++		goto out;
 +	}
++	crypto_free_hash(tfm);
 +
-+	seq = iscsi_get_seq_holder_for_datain(cmd, seq_send_order);
-+	if (!(seq))
-+		return NULL;
++	chap_binaryhex_to_asciihex(response, server_digest, MD5_SIGNATURE_SIZE);
++	PRINT("[server] MD5 Server Digest: %s\n", response);
 +
-+	seq->sent = 1;
-+
-+	if (!dr->recovery && !seq->next_burst_len)
-+		seq->first_datasn = cmd->data_sn;
-+
-+	pdu = iscsi_get_pdu_holder_for_seq(cmd, seq);
-+	if (!(pdu))
-+		return NULL;
-+
-+	if (seq->pdu_send_order == seq->pdu_count) {
-+		pdu->flags |= ISCSI_FLAG_CMD_FINAL;
-+		if (SESS_OPS_C(conn)->ErrorRecoveryLevel > 0)
-+			pdu->flags |= ISCSI_FLAG_DATA_ACK;
-+
-+		seq->next_burst_len = 0;
-+		seq_send_order++;
++	if (memcmp(server_digest, client_digest, MD5_SIGNATURE_SIZE) != 0) {
++		PRINT("[server] MD5 Digests do not match!\n\n");
++		goto out;
 +	} else
-+		seq->next_burst_len += pdu->length;
-+
-+	if ((read_data_done + pdu->length) == cmd->data_length)
-+		pdu->flags |= ISCSI_FLAG_DATA_STATUS;
-+
-+	pdu->data_sn = (!dr->recovery) ? cmd->data_sn++ : dr->data_sn++;
-+	if (!dr->recovery) {
-+		cmd->seq_send_order = seq_send_order;
-+		cmd->read_data_done += pdu->length;
-+	} else {
-+		dr->seq_send_order = seq_send_order;
-+		dr->read_data_done += pdu->length;
++		PRINT("[server] MD5 Digests match, CHAP connetication"
++				" successful.\n\n");
++	/*
++	 * One way authentication has succeeded, return now if mutual
++	 * authentication is not enabled.
++	 */
++	if (!auth->authenticate_target) {
++		kfree(challenge);
++		kfree(challenge_binhex);
++		return 0;
++	}
++	/*
++	 * Get CHAP_I.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_I", 10, identifier, &type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_I.\n");
++		goto out;
 +	}
 +
-+	datain->flags = pdu->flags;
-+	datain->length = pdu->length;
-+	datain->offset = pdu->offset;
-+	datain->data_sn = pdu->data_sn;
-+
-+	if (!dr->recovery) {
-+		if (datain->flags & ISCSI_FLAG_CMD_FINAL)
-+			seq->last_datasn = datain->data_sn;
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS)
-+			dr->dr_complete = DATAIN_COMPLETE_NORMAL;
-+
-+		return dr;
++	if (type == HEX)
++		id = (unsigned char)simple_strtoul((char *)&identifier[2],
++					&endptr, 0);
++	else
++		id = (unsigned char)simple_strtoul(identifier, &endptr, 0);
++	/*
++	 * RFC 1994 says Identifier is no more than octet (8 bits).
++	 */
++	PRINT("[server] Got CHAP_I=%d\n", id);
++	/*
++	 * Get CHAP_C.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_C", CHAP_CHALLENGE_STR_LEN,
++			challenge, &type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_C.\n");
++		goto out;
 +	}
 +
-+	if (!dr->runlength) {
-+		if (datain->flags & ISCSI_FLAG_DATA_STATUS) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
-+	} else {
-+		if ((dr->begrun + dr->runlength) == dr->data_sn) {
-+			dr->dr_complete =
-+			    (dr->recovery == DATAIN_WITHIN_COMMAND_RECOVERY) ?
-+				DATAIN_COMPLETE_WITHIN_COMMAND_RECOVERY :
-+				DATAIN_COMPLETE_CONNECTION_RECOVERY;
-+		}
++	if (type != HEX) {
++		printk(KERN_ERR "Could not find CHAP_C.\n");
++		goto out;
++	}
++	PRINT("[server] Got CHAP_C=%s\n", challenge);
++	challenge_len = chap_string_to_hex(challenge_binhex, challenge,
++				strlen(challenge));
++	if (!(challenge_len)) {
++		printk(KERN_ERR "Unable to convert incoming challenge\n");
++		goto out;
++	}
++	/*
++	 * Generate CHAP_N and CHAP_R for mutual authentication.
++	 */
++	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm)) {
++		printk(KERN_ERR "Unable to allocate struct crypto_hash\n");
++		goto out;
++	}
++	desc.tfm = tfm;
++	desc.flags = 0;
++
++	ret = crypto_hash_init(&desc);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_init() failed\n");
++		crypto_free_hash(tfm);
++		goto out;
 +	}
 +
-+	return dr;
++	sg_init_one(&sg, (void *)&id, 1);
++	ret = crypto_hash_update(&desc, &sg, 1);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for id\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	sg_init_one(&sg, (void *)auth->password_mutual,
++				strlen(auth->password_mutual));
++	ret = crypto_hash_update(&desc, &sg, strlen(auth->password_mutual));
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for"
++				" password_mutual\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++	/*
++	 * Convert received challenge to binary hex.
++	 */
++	sg_init_one(&sg, (void *)challenge_binhex, challenge_len);
++	ret = crypto_hash_update(&desc, &sg, challenge_len);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for ma challenge\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	ret = crypto_hash_final(&desc, digest);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_final() failed for ma digest\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++	crypto_free_hash(tfm);
++	/*
++	 * Generate CHAP_N and CHAP_R.
++	 */
++	*NR_out_len = sprintf(NR_out_ptr, "CHAP_N=%s", auth->userid_mutual);
++	*NR_out_len += 1;
++	PRINT("[server] Sending CHAP_N=%s\n", auth->userid_mutual);
++	/*
++	 * Convert response from binary hex to ascii hext.
++	 */
++	chap_binaryhex_to_asciihex(response, digest, MD5_SIGNATURE_SIZE);
++	*NR_out_len += sprintf(NR_out_ptr + *NR_out_len, "CHAP_R=0x%s",
++			response);
++	*NR_out_len += 1;
++	PRINT("[server] Sending CHAP_R=0x%s\n", response);
++	auth_ret = 0;
++out:
++	kfree(challenge);
++	kfree(challenge_binhex);
++	return auth_ret;
 +}
 +
-+/*	iscsi_get_datain_values():
-+ *
-+ *
-+ */
-+struct iscsi_datain_req *iscsi_get_datain_values(
-+	struct iscsi_cmd *cmd,
-+	struct iscsi_datain *datain)
++int chap_got_response(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	char *NR_in_ptr,
++	char *NR_out_ptr,
++	unsigned int *NR_out_len)
 +{
-+	struct iscsi_conn *conn = CONN(cmd);
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
 +
-+	if (SESS_OPS_C(conn)->DataSequenceInOrder &&
-+	    SESS_OPS_C(conn)->DataPDUInOrder)
-+		return iscsi_set_datain_values_yes_and_yes(cmd, datain);
-+	else if (!SESS_OPS_C(conn)->DataSequenceInOrder &&
-+		  SESS_OPS_C(conn)->DataPDUInOrder)
-+		return iscsi_set_datain_values_no_and_yes(cmd, datain);
-+	else if (SESS_OPS_C(conn)->DataSequenceInOrder &&
-+		 !SESS_OPS_C(conn)->DataPDUInOrder)
-+		return iscsi_set_datain_values_yes_and_no(cmd, datain);
-+	else if (!SESS_OPS_C(conn)->DataSequenceInOrder &&
-+		   !SESS_OPS_C(conn)->DataPDUInOrder)
-+		return iscsi_set_datain_values_no_and_no(cmd, datain);
++	switch (chap->digest_type) {
++	case CHAP_DIGEST_MD5:
++		if (chap_server_compute_md5(conn, auth, NR_in_ptr,
++				NR_out_ptr, NR_out_len) < 0)
++			return -1;
++		break;
++	default:
++		printk(KERN_ERR "Unknown CHAP digest type %d!\n",
++				chap->digest_type);
++		return -1;
++	}
 +
-+	return NULL;
++	return 0;
 +}
-diff --git a/drivers/target/iscsi/iscsi_target_datain_values.h b/drivers/target/iscsi/iscsi_target_datain_values.h
++
++u32 chap_main_loop(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	char *in_text,
++	char *out_text,
++	int *in_len,
++	int *out_len)
++{
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
++
++	if (!(chap)) {
++		chap = chap_server_open(conn, auth, in_text, out_text, out_len);
++		if (!(chap))
++			return 2;
++		chap->chap_state = CHAP_STAGE_SERVER_AIC;
++		return 0;
++	} else if (chap->chap_state == CHAP_STAGE_SERVER_AIC) {
++		convert_null_to_semi(in_text, *in_len);
++		if (chap_got_response(conn, auth, in_text, out_text,
++				out_len) < 0) {
++			chap_close(conn);
++			return 2;
++		}
++		if (auth->authenticate_target)
++			chap->chap_state = CHAP_STAGE_SERVER_NR;
++		else
++			*out_len = 0;
++		chap_close(conn);
++		return 1;
++	}
++
++	return 2;
++}
+diff --git a/drivers/target/iscsi/iscsi_auth_chap.h b/drivers/target/iscsi/iscsi_auth_chap.h
 new file mode 100644
-index 0000000..6d44288
+index 0000000..a4492b6
 --- /dev/null
-+++ b/drivers/target/iscsi/iscsi_target_datain_values.h
-@@ -0,0 +1,15 @@
-+#ifndef ISCSI_TARGET_DATAIN_VALUES_H
-+#define ISCSI_TARGET_DATAIN_VALUES_H
++++ b/drivers/target/iscsi/iscsi_auth_chap.h
+@@ -0,0 +1,33 @@
++#ifndef _ISCSI_CHAP_H_
++#define _ISCSI_CHAP_H_
 +
-+extern struct iscsi_datain_req *iscsi_allocate_datain_req(void);
-+extern void iscsi_attach_datain_req(struct iscsi_cmd *, struct iscsi_datain_req *);
-+extern void iscsi_free_datain_req(struct iscsi_cmd *, struct iscsi_datain_req *);
-+extern void iscsi_free_all_datain_reqs(struct iscsi_cmd *);
-+extern struct iscsi_datain_req *iscsi_get_datain_req(struct iscsi_cmd *);
-+extern struct iscsi_datain_req *iscsi_get_datain_values(struct iscsi_cmd *,
-+			struct iscsi_datain *);
++#define CHAP_DIGEST_MD5		5
++#define CHAP_DIGEST_SHA		6
 +
-+extern struct iscsi_global *iscsi_global;
-+extern struct kmem_cache *lio_dr_cache;
++#define CHAP_CHALLENGE_LENGTH	16
++#define CHAP_CHALLENGE_STR_LEN	4096
++#define MAX_RESPONSE_LENGTH	64	/* sufficient for MD5 */
++#define	MAX_CHAP_N_SIZE		512
 +
-+#endif   /*** ISCSI_TARGET_DATAIN_VALUES_H ***/
++#define MD5_SIGNATURE_SIZE	16	/* 16 bytes in a MD5 message digest */
++
++#define CHAP_STAGE_CLIENT_A	1
++#define CHAP_STAGE_SERVER_AIC	2
++#define CHAP_STAGE_CLIENT_NR	3
++#define CHAP_STAGE_CLIENT_NRIC	4
++#define CHAP_STAGE_SERVER_NR	5
++
++extern int chap_gen_challenge(struct iscsi_conn *, int, char *, unsigned int *);
++extern u32 chap_main_loop(struct iscsi_conn *, struct iscsi_node_auth *, char *, char *,
++				int *, int *);
++
++struct iscsi_chap {
++	unsigned char	digest_type;
++	unsigned char	id;
++	unsigned char	challenge[CHAP_CHALLENGE_LENGTH];
++	unsigned int	challenge_len;
++	unsigned int	authenticate_target;
++	unsigned int	chap_state;
++} ____cacheline_aligned;
++
++#endif   /*** _ISCSI_CHAP_H_ ***/
 -- 
 1.7.4.1
 
