@@ -1,37 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab1CNFEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 01:04:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51755 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab1CNFEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 01:04:09 -0400
-Message-ID: <4D7DA16F.5010601@kernel.org>
-Date: Sun, 13 Mar 2011 22:02:39 -0700
-From: "H. Peter Anvin" <hpa@kernel.org>
-Organization: Linux Kernel Organization, Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752370Ab1CNFPR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 01:15:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55240 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab1CNFPO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 01:15:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vGsrnJyrU1Prw0vPlOUb2x+KhEDbKVgfwlYD6mNPmjN8a6WwVk4D0IJ/oUQPm4JXF4
+         tkkYUUc79CRGgx6BRzeqPR7rNK/bQ9m1cB7T34UTALNGn0gESf9oiTPe+H0LuUOWwzxN
+         9MrQjzgULESjLoXCHcwxOxfqQ4kRJe7OEKttU=
 MIME-Version: 1.0
-To: Tim Hockin <thockin@google.com>
-CC: Mike Waychison <mikew@google.com>, Greg KH <greg@kroah.com>,
-        Matt Domsch <Matt_Domsch@dell.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        San Mehat <san@google.com>
-Subject: Re: [PATCH v2 12/12] driver: Google Memory Console
-References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com> <20110312014358.6133.34911.stgit@mike.mtv.corp.google.com> <4D7D9F92.5010604@kernel.org> <AANLkTik5iAPou_bPa4xk6iR27sOk2yrexaaTUe-g=VEe@mail.gmail.com>
-In-Reply-To: <AANLkTik5iAPou_bPa4xk6iR27sOk2yrexaaTUe-g=VEe@mail.gmail.com>
+In-Reply-To: <20110311120010.GC1760@opensource.wolfsonmicro.com>
+References: <1299810886-19684-1-git-send-email-myungjoo.ham@samsung.com>
+	<1299810886-19684-3-git-send-email-myungjoo.ham@samsung.com>
+	<20110311120010.GC1760@opensource.wolfsonmicro.com>
+Date: Mon, 14 Mar 2011 14:15:13 +0900
+X-Google-Sender-Auth: Toms-wowiPLBexm8nRFtrANgTtk
+Message-ID: <AANLkTind=ew1paSLVkp7w2uqCDCb7AZnc0MyQ3Snwk7P@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] MAX8997/8966 PMIC Regulator Driver Initial Release
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
+        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2011 09:58 PM, Tim Hockin wrote:
-> "Sufficient" or not, that's how the BIOSes we've got work.  We can't
-> retrofit that.
+On Fri, Mar 11, 2011 at 9:00 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Mar 11, 2011 at 11:34:44AM +0900, MyungJoo Ham wrote:
+>> This patch supports PMIC/Regulator part of MAX8997/MAX8966 MFD.
+>> In this initial release, selecting voltages or current-limit
+>> and switching on/off the regulators are supported.
+>
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>
+> though I do still think that voltage range information might make the
+> side effect handling more useful.
+>
 
-Uhm... what about, say, a DMI signature?
+Thank you.
 
-	-hpa
+The range information is partially used in choosing the voltage
+although it does not remember the range information of other
+previously-set regulators. I will try to let the driver hold the range
+information of the regulators affected by GPIO-DVS set or consider
+trying to put such features in the regulator core later.
+
+-- 
+MyungJoo Ham (함명주), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
