@@ -1,125 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1CNQhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 12:37:46 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:34261 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab1CNQhp (ORCPT
+	id S1755878Ab1CNQiC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 12:38:02 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:19093 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755421Ab1CNQiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 12:37:45 -0400
-Date: Mon, 14 Mar 2011 11:37:42 -0500
-From: scameron@beardog.cce.hp.com
-To: Jens Axboe <axboe@kernel.dk>
-Cc: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
-        linux-kernel@vger.kernel.org, smcameron@yahoo.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH 0/7] cciss: updates as of March 11, 2011
-Message-ID: <20110314163742.GA3742@beardog.cce.hp.com>
-References: <20110311205306.2211.53569.stgit@beardog.cce.hp.com> <4D7B36E6.2050702@kernel.dk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7B36E6.2050702@kernel.dk>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 14 Mar 2011 12:38:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=dQu2Yje24nLTcQtSlnzmBPiMPQvGiAKcz+Gw2ETHvbN3mYh1dg8QUW6bti7hZJPsLb
+         LXF7MZtcMAVy+W4xAnew==
+Date: Mon, 14 Mar 2011 09:37:43 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] thp+memcg-numa: fix BUG at include/linux/mm.h:370!
+In-Reply-To: <20110314155232.GB10696@random.random>
+Message-ID: <alpine.LSU.2.00.1103140910570.2601@sister.anvils>
+References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils> <20110314155232.GB10696@random.random>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 12, 2011 at 10:03:34AM +0100, Jens Axboe wrote:
-> On 2011-03-11 21:55, Stephen M. Cameron wrote:
-> > The following series is vs. Jens Axboe's for-2.6.39/drivers branch. 
-> > 
-> > ---
-> > 
-> > Stephen M. Cameron (7):
-> >       cciss: hoist tag masking out of loop
-> >       cciss: Inform controller we are using 32-bit tags.
-> >       cciss: Mask off error bits of c->busaddr in cmd_special_free when calling pci_free_consistent
-> >       cciss: remove unnecessary casts
-> >       cciss: fix missed command status value CMD_UNABORTABLE
-> >       cciss: add cciss_tape_cmds module paramter
-> >       cciss: export resettable host attribute
+On Mon, 14 Mar 2011, Andrea Arcangeli wrote:
 > 
-> I have applied 1-5/7, 6 and 7 do not apply. Please check
-> for-2.6.39/drivers and check and resend those last two patches.
+> Correct! I'd suggest to fix it without duplicating the
+> mem_cgroup_newpage_charge. It's just one more put_page than needed
+> with memcg enabled and NUMA disabled (I guess most memcg testing
+> happened with NUMA enabled). The larger diff likely rejects with -mm
+> NUMA code... I'll try to diff it with a smaller -U2 (this code has
+> little change to be misplaced) that may allow it to apply clean
+> regardless of the merging order, so it may make life easier.
 
-Ok, I am confused.  Maybe I'm doing something wrong, but
-I can't quite spot what it is.
+I did try it that way at first (didn't help when I mistakenly put
+#ifndef instead of #ifdef around the put_page!), but was repulsed
+by seeing yet another #ifdef CONFIG_NUMA, so went with the duplicating
+version - which Linus has now taken.
 
-Does this look right?
+> 
+> It may have been overkill to keep the NUMA case separated in order to
+> avoid spurious allocations for the not-NUMA case, code become more
+> complex and I'm not sure if it's really worthwhile. The optimization
+> makes sense but it's minor and it created more complexity than
+> strictly needed. For now we can't change it in the short term as it
+> has been tested this way, but if people dislike the additional
+> complexity that this optimization created, I'm not against dropping it
+> in the future. Your comment was positive about the optimization (you
+> said understandable) so I wanted to share my current thinking on these
+> ifdefs...
 
-[scameron@localhost linux-2.6]$ git remote update
-Fetching origin
-Fetching james
-Fetching jens
-[scameron@localhost linux-2.6]$ git checkout -b hp-cciss-2011-03-14 jens/for-2.6.39/drivers 
-Branch hp-cciss-2011-03-14 set up to track remote branch for-2.6.39/drivers from jens.
-Switched to a new branch 'hp-cciss-2011-03-14'
+I was certainly tempted to remove all the non-NUMA cases, but as you
+say, now is not the right time for that since we needed a quick bugfix.
 
-Now I try to apply the patch 6, which I downloadeded from here:
-http://marc.info/?l=linux-kernel&m=129987702317844&q=raw
-(that is, the same one I mailed out on Friday, which I had to do because stg
-has a bug that it won't honor CC to yourself):
+I do appreciate why you did it that way, it is nicer to be allocating
+on the outside, though unsuitable in the NUMA case.  But given how this
+bug has passed unnoticed for so long, it seems like nobody has been
+testing non-NUMA, so yes, best to simplify and make non-NUMA do the
+same as NUMA in 2.6.39.
 
-[scameron@localhost linux-2.6]$ patch -p1 --dry-run < /tmp/cciss-add-cciss_tape_cmds-module-parameter.patch 
-patching file Documentation/blockdev/cciss.txt
-patching file drivers/block/cciss.c
-Hunk #2 succeeded at 4116 (offset 39 lines).
-Hunk #3 succeeded at 4631 (offset 39 lines).
-patching file drivers/block/cciss_scsi.c
-patching file drivers/block/cciss_scsi.h
-patch unexpectedly ends in middle of line
+Since Linus has taken my version that you didn't like, perhaps you can
+get even by sending him your "mm: PageBuddy cleanups" patch, the version
+I didn't like (for its silly branches) so was reluctant to push myself.
 
-Ok... that's weird.
+I'd really like to see that fix in, since it's a little hard to argue
+for in -stable, being all about a system which is already unstable.
+But I think it needs a stronger title than "PageBuddy cleanups" -
+"fix BUG in bad_page()"?
 
-Well, if I delete this bit at the end (which was not put there by me) which says:
-  --
-  To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-  the body of a message to majordomo@vger.kernel.org
-  More majordomo info at  http://vger.kernel.org/majordomo-info.html
-  Please read the FAQ at  http://www.tux.org/lkml/
-
-then it does seem to apply...
- 
-[scameron@localhost linux-2.6]$ patch -p1 --dry-run < /tmp/cciss-add-cciss_tape_cmds-module-parameter.patch 
-patching file Documentation/blockdev/cciss.txt
-patching file drivers/block/cciss.c
-Hunk #2 succeeded at 4116 (offset 39 lines).
-Hunk #3 succeeded at 4631 (offset 39 lines).
-patching file drivers/block/cciss_scsi.c
-patching file drivers/block/cciss_scsi.h
-[scameron@localhost linux-2.6]$
-
-And compiles too...
-
-[scameron@localhost linux-2.6]$ make SUBDIRS=drivers/block modules
-  CC [M]  drivers/block/floppy.o
-  CC [M]  drivers/block/cciss.o
-  CC [M]  drivers/block/pktcdvd.o
-...
-
-So not sure why it doesn't apply for you, unless somehow I'm not checking
-out your git tree in the right way.
-
-And then git log is showing patch 7 is applied after all?
-
-commit 957c2ec558caff09a3bdf333871fc617830f063d
-Author: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Date:   Fri Mar 11 20:06:09 2011 +0100
-
-    cciss: export resettable host attribute
-
-    This attribute, requested by Redhat, allows kexec-tools to know
-    whether the controller can honor the reset_devices kernel parameter
-    and actually reset the controller.  For kdump to work properly it
-    is necessary that the reset_devices parameter be honored.  This
-    attribute enables kexec-tools to warn the user if they attempt to
-    designate a non-resettable controller as the dump device.
-
-    Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-
-Maybe you hand applied it?
-
--- steve
-
+Hugh
