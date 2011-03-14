@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab1CNKPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 06:15:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54247 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab1CNKPg (ORCPT
+	id S1751948Ab1CNKQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 06:16:33 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60778 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab1CNKQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 06:15:36 -0400
-Date: Mon, 14 Mar 2011 10:15:13 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Jamie Iles <jamie@jamieiles.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Subject: Re: [PATCH] macb: detect IP version to determin if we are on at91
-	or avr32
-Message-ID: <20110314101512.GA26085@n2100.arm.linux.org.uk>
-References: <1299863585-17263-1-git-send-email-plagnioj@jcrosoft.com>
+	Mon, 14 Mar 2011 06:16:32 -0400
+Date: Mon, 14 Mar 2011 11:16:12 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
+Message-ID: <20110314101612.GD28960@pengutronix.de>
+References: <201102011711.31258.jeremy.kerr@canonical.com>
+ <1299134429.100626.661279191478.0.gpush@pororo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1299863585-17263-1-git-send-email-plagnioj@jcrosoft.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1299134429.100626.661279191478.0.gpush@pororo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 06:13:05PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> +	if (macb_is_at91(bp)) {
-> +		bp->pclk = clk_get(&pdev->dev, "macb_clk");
-> +		if (IS_ERR(bp->pclk)) {
-> +			dev_err(&pdev->dev, "failed to get macb_clk\n");
-> +			goto err_out_free_dev;
-> +		}
-> +		clk_enable(bp->pclk);
-> +	} else {
-> +		bp->pclk = clk_get(&pdev->dev, "pclk");
-> +		if (IS_ERR(bp->pclk)) {
-> +			dev_err(&pdev->dev, "failed to get pclk\n");
-> +			goto err_out_free_dev;
-> +		}
-> +		bp->hclk = clk_get(&pdev->dev, "hclk");
-> +		if (IS_ERR(bp->hclk)) {
-> +			dev_err(&pdev->dev, "failed to get hclk\n");
-> +			goto err_out_put_pclk;
-> +		}
-> +
-> +		clk_enable(bp->pclk);
-> +		clk_enable(bp->hclk);
-> +	}
+On Thu, Mar 03, 2011 at 02:40:29PM +0800, Jeremy Kerr wrote:
+> Hi all,
+> 
+> These patches are an attempt to allow platforms to share clock code. At
+> present, the definitions of 'struct clk' are local to platform code,
+> which makes allocating and initialising cross-platform clock sources
+> difficult, and makes it impossible to compile a single image containing
+> support for two ARM platforms with different struct clks.
+> 
+> The three patches are for the architecture-independent kernel code,
+> introducing the common clk infrastructure. The changelog for the first
+> patch includes details about the new clock definitions.
+> 
+> Many thanks to the following for their input:
+>  * Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>  * Ben Dooks <ben-linux@fluff.org>
+>  * Baruch Siach <baruch@tkos.co.il>
+>  * Russell King <linux@arm.linux.org.uk>
+>  * Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>  * Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+>  * Vincent Guittot <vincent.guittot@linaro.org>
+>  * Sascha Hauer <s.hauer@pengutronix.de>
+>  * Ryan Mallon <ryan@bluewatersys.com>
+>  * Colin Cross <ccross@google.com>
+>  * Jassi Brar <jassisinghbrar@gmail.com>
+>  * Saravana Kannan <skannan@codeaurora.org>
 
-This is the same kind of sillyness that started getting OMAP into problems
-with the clk API.  Just do this instead:
+Tested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-	bp->pclk = clk_get(&pdev->dev, "pclk");
-	if (IS_ERR(bp->pclk)) {
-		dev_err(&pdev->dev, "failed to get pclk\n");
-		goto err_out_free_dev;
-	}
-	bp->hclk = clk_get(&pdev->dev, "hclk");
-	if (IS_ERR(bp->hclk)) {
-		dev_err(&pdev->dev, "failed to get hclk\n");
-		goto err_out_put_pclk;
-	}
+who is responsible to take this patch?  Russell?
 
-	clk_enable(bp->pclk);
-	clk_enable(bp->hclk);
+Best regards
+Uwe
 
-And then require _all_ platforms using this driver to provide a pclk and
-a hclk for this device, whether they exist in the SoC or not.  Where they
-don't, provide dummy clocks for it.
-
-This probably means you end up with _less_ bloat overall because you're
-not having to build the above code.  You've less lines of source code to
-maintain.  You have a simplified dirver with consistent requirements
-across all platforms.  You don't need to read the version register, and
-you don't need macb_is_at91() and macb_is_avr32().
-
-With clkdev it's _cheap_ to provide these dummy clocks once you have one
-dummy clock already in place.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
