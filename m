@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab1CNVDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:03:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43893 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751693Ab1CNVDS (ORCPT
+	id S1757240Ab1CNVD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:03:28 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39160 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757193Ab1CNVDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:03:18 -0400
-Date: Mon, 14 Mar 2011 17:03:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: andy.green@linaro.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <patches@linaro.org>
-Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
- api
-In-Reply-To: <20110314205432.GA1856@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1103141659080.4194-100000@iolanthe.rowland.org>
+	Mon, 14 Mar 2011 17:03:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=jHeETUIzi3Q8lh1rxVgbOJjfelGRU5FQ/FhswlsHu4mz3C3TPqxacd7tEKw8z3xRJr
+         T+spmFZICpyYELU6tEsq/whsBTWj1HfziMLxyqcn2QzvIwdujpPDvQwrahZ9J6YGtH94
+         bfcRACoqwRFr+ClGOntghglWS8RN7kfFjJi+0=
+Date: Mon, 14 Mar 2011 18:03:15 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
+Message-ID: <20110314210315.GC2388@ghostprotocols.net>
+References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+ <20110314204341.GC9388@ghostprotocols.net>
+ <20110314205100.GG6139@nowhere>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314205100.GG6139@nowhere>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011, Greg KH wrote:
+Em Mon, Mar 14, 2011 at 09:51:02PM +0100, Frederic Weisbecker escreveu:
+> On Mon, Mar 14, 2011 at 05:43:41PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > - Count instructions inside softirqs, outside softirqs and everywhere:
 
-> No, it has been determined a long time ago that network naming things
-> like this are to be done in userspace.  It's an argument that has come
-> and gone many years ago, sorry.  See all of the wonderful, and simple,
-> tools we have today in userspace to handle this type of thing.  Distros
-> can use them how ever they see fit, and even better, users can configure
-> them!  That means they don't have to rebuild their kernels, which is a
-> bit unreasonable, don't you think?
+> > > 	$ perf stat -e irq:softirq_entry -e irq:softirq_exit \
+> > > 		-e instructions --starter 0 --stopper 1 --enable-on-starter \
+> > > 		-e instructions --starter 1 --stopper 0 \
+> > > 		-e instructions ./perf bench sched messaging
 
-...
+> > $ perf record -e instructions@irq:softirq_entry..irq:softirq_exit \
+> > 	      -e instructions@irq:softirq_exit..irq:softirq_entry \
+> > 	      -e instructions \
+> > 	perf bench sched messaging
 
-> Perhaps we should just always name these things 'eth%d'?  Oh wait, as it
-> really is a USB device, they are supposed to be called 'usb%d' as
-> determined (again) a long time ago.
-> 
-> If a distro/board manufacturer wants to hide the fact that this really
-> is a usb device by renaming it to eth0, then again, it can.  But don't
-> force the kernel to have that policy in it.
+> Agreed that's nice but may be more as a shortcut than a full replacement?
+> Otherwise it becomes hard or unreadable to define a filter on a starter. Or
+> a starter on a starter.
 
-This argument does sound contradictory.  If network interface naming 
-should be left entirely up to userspace, then why doesn't the kernel 
-always generate names of the form "eth%d"?  Why not rip all that stuff 
-about "usb%d" or "wlan%d" out of the driver entirely?
+Sure, multiple ways to express ranges probably is ok, with more complex
+ones for more complex cases, like the way you did, that first defines an
+evlist that is the set of starters/stoppers and then evsel->evidx to add
+starters/stoppers to later events.
 
-(Apart from the fact that this would be a user-visible change in kernel 
-policy and would break a large number of systems...)
+But starter on a starter? Couldn't grok, could you provide an example?
 
-Alan Stern
+But I could think of this as a way to express filters:
 
+$ perf record -e instructions@irq:irq:irq_handler_entry(irq=eth0)..irq:irq_handler_exit(\1) \
+	      -e instructions \
+	netperf
+
+looks quite natural for someone used to git and sed, i.e. developers :)
+
+- Arnaldo
