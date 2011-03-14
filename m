@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab1CNPuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:50:40 -0400
-Received: from kroah.org ([198.145.64.141]:50417 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755610Ab1CNPt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:49:57 -0400
-Date: Mon, 14 Mar 2011 08:45:10 -0700
-From: Greg KH <greg@kroah.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Matt Domsch <Matt_Domsch@dell.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Subject: Re: [PATCH v2 10/12] Introduce CONFIG_GOOGLE_FIRMWARE
-Message-ID: <20110314154510.GE31340@kroah.com>
-References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
- <20110312014347.6133.4388.stgit@mike.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110312014347.6133.4388.stgit@mike.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756820Ab1CNPus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:50:48 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:34176 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756452Ab1CNPuq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 11:50:46 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Nm/phTDw8k3v+d8G6jtrrJ0UFn6BZnXsmjhCIxDnc0SLAZ+TaeoJ8ni1OYMnnuIhihLTxPg0a/itMVk3OEAAEXEWOvU36rX34flPbpF0ZXjMhJb1IzDbwhFjQz/BoAlX;
+Date: Mon, 14 Mar 2011 08:50:34 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Denis Turischev <denis@compulab.co.il>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [PATCH 1/3] pci_ids: add Intel Tunnel Creek LPC Bridge device
+ ID.
+Message-ID: <20110314085034.19d3430d@jbarnes-desktop>
+In-Reply-To: <20110314114335.GN31153@sortiz-mobl>
+References: <4D7CE230.1070004@compulab.co.il>
+	<20110314114335.GN31153@sortiz-mobl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 05:43:47PM -0800, Mike Waychison wrote:
-> In order to keep Google's firmware drivers organized amongst themselves,
-> create a new directory for them to live in.  As well, all Google
-> firmware drivers are gated on CONFIG_GOOGLE_FIRMWARE=y, which defaults
-> to 'n' in the kernel build.
+On Mon, 14 Mar 2011 12:43:36 +0100
+Samuel Ortiz <sameo@linux.intel.com> wrote:
 
-Everything defaults to 'n' in the kernel build system, so this really
-isn't a big deal :)
-
+> Hi Denis,
 > 
-> Signed-off-by: Mike Waychison <mikew@google.com>
-> ---
->  drivers/firmware/Kconfig         |    2 ++
->  drivers/firmware/Makefile        |    2 ++
->  drivers/firmware/google/Kconfig  |   14 ++++++++++++++
->  drivers/firmware/google/Makefile |    1 +
->  4 files changed, 19 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/firmware/google/Kconfig
->  create mode 100644 drivers/firmware/google/Makefile
-> 
-> diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
-> index e710424..d848b26 100644
-> --- a/drivers/firmware/Kconfig
-> +++ b/drivers/firmware/Kconfig
-> @@ -134,4 +134,6 @@ config ISCSI_IBFT
->  	  detect iSCSI boot parameters dynamically during system boot, say Y.
->  	  Otherwise, say N.
->  
-> +source "drivers/firmware/google/Kconfig"
-> +
->  endmenu
-> diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
-> index 1c3c173..6f68007 100644
-> --- a/drivers/firmware/Makefile
-> +++ b/drivers/firmware/Makefile
-> @@ -11,3 +11,5 @@ obj-$(CONFIG_DMIID)		+= dmi-id.o
->  obj-$(CONFIG_ISCSI_IBFT_FIND)	+= iscsi_ibft_find.o
->  obj-$(CONFIG_ISCSI_IBFT)	+= iscsi_ibft.o
->  obj-$(CONFIG_FIRMWARE_MEMMAP)	+= memmap.o
-> +
-> +obj-$(CONFIG_GOOGLE_FIRMWARE)	+= google/
-> diff --git a/drivers/firmware/google/Kconfig b/drivers/firmware/google/Kconfig
-> new file mode 100644
-> index 0000000..7834729
-> --- /dev/null
-> +++ b/drivers/firmware/google/Kconfig
-> @@ -0,0 +1,14 @@
-> +config GOOGLE_FIRMWARE
-> +	bool "Google Firmware Drivers"
-> +	depends on X86
-> +	default n
-> +	help
-> +	  These firmware drivers are used by Google's servers.  They are
-> +	  only useful if you are working directly on one of their
-> +	  proprietary servers or implementing similar firmware
-> +	  interfaces.  If in doubt, say "N".
+> On Sun, Mar 13, 2011 at 05:26:40PM +0200, Denis Turischev wrote:
+> > Signed-off-by: Denis Turischev <denis@compulab.co.il>
+> Jesse, are you ok with me carrying this patch ? The 2 following patches from
+> this patchset depend on it, obviously.
 
-How about dropping the "or implementing..." part of this sentance, as
-that leaves a lot open for some people to justify enabling this option
-for their machines, when it really isn't true at all at this point in
-time.
+Yeah, np, assuming the PCI IDs are used in several places.
 
-thanks,
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-greg k-h
+-- 
+Jesse Barnes, Intel Open Source Technology Center
