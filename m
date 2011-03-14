@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab1CNXXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 19:23:04 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:37497 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab1CNXXC (ORCPT
+	id S1751976Ab1CNXb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 19:31:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44505 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750867Ab1CNXb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 19:23:02 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D7EA38F.5070002@cam.ac.uk>
-Date: Mon, 14 Mar 2011 23:23:59 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        mems applications <mems.applications@st.com>, rdunlap@xenotime.net,
-        carmine.iascone@st.com, matteo.dameno@st.com, rubini@cvml.unipv.it,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device
- driver into misc
-References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com>	<4D7E771B.1040804@cam.ac.uk>	<20110314211809.29da8518@endymion.delvare>	<201103142136.43566.arnd@arndb.de> <20110314224244.3d6d23ba@endymion.delvare>
-In-Reply-To: <20110314224244.3d6d23ba@endymion.delvare>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Mar 2011 19:31:56 -0400
+Date: Mon, 14 Mar 2011 16:30:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20]  0: Inode based uprobes
+Message-Id: <20110314163028.a05cec49.akpm@linux-foundation.org>
+In-Reply-To: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/11 21:42, Jean Delvare wrote:
-> On Mon, 14 Mar 2011 21:36:43 +0100, Arnd Bergmann wrote:
->> On Monday 14 March 2011 21:18:09 Jean Delvare wrote:
->>> Jonathan is correct. Pressure sensors are not hardware monitoring
->>> devices, their drivers have nothing to do in drivers/hwmon. This is
->>> something for drivers/misc or staging/iio.
->>
->> I generally try to prevent people from adding more ad-hoc interfaces
->> to drivers/misc. Anything that is called a drivers/misc driver to me
->> must qualify as "there can't possibly be a second driver with the
->> same semantics", otherwise it should be part of another subsystem
->> with clear rules, or be put into its own file system.
+On Mon, 14 Mar 2011 19:04:03 +0530
+Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+
+> Advantages of uprobes over conventional debugging include:
 > 
-> I see drivers/misc differently. I see it as "not enough drivers of the
-> same type to justify a new subsystem". So I encourage people to put
-> things there in the absence of any suitable subsystem, until someone
-> gets enough motivation to start such a subsystem. This is more
-> pragmatic than requesting subsystems to be created upfront.
-To my mind, there will one day be a suitable 'sensors' subsystem so
-an important side point is to try and minimise interface changes needed
-to move to that (IIO or something better). Sysfs is easy to fix, so
-lets at least work on shared interfaces in there.  Hwmon is a mature
-and reasonable starting point; it's where we got a lot of IIO's
-similar interfaces from.  The trick is convincing people to consider
-generality and it's a hard trick to pull off.
+> 1. Non-disruptive.
+> Unlike current ptrace based mechanisms, uprobes tracing wouldnt
+> involve signals, stopping threads and context switching between the
+> tracer and tracee.
 > 
-> That being said, staging is another option nowadays.
+> 2. Much better handling of multithreaded programs because of XOL.
+> Current ptrace based mechanisms use single stepping inline, i.e they
+> copy back the original instruction on hitting a breakpoint.  In such
+> mechanisms tracers have to stop all the threads on a breakpoint hit or
+> tracers will not be able to handle all hits to the location of
+> interest. Uprobes uses execution out of line, where the instruction to
+> be traced is analysed at the time of breakpoint insertion and a copy
+> of instruction is stored at a different location.  On breakpoint hit,
+> uprobes jumps to that copied location and singlesteps the same
+> instruction and does the necessary fixups post singlestepping.
 > 
->> While it seems that right now everyone is just trying to keep move
->> the driver to some other subsystem, I think it's worth noting that
->> it is indeed a useful thing to have the driver, I'm optimistic
->> that we can find some place for it. ;-)
->>
->> Now how about the IIO stuff? This is the first time I've even
->> heard about it. Does it have any major disadvantages besides
->> being staging-quality?
-To play devil's advocate with my own code...
-
-It's big. If all you want is something that looks like hwmon then
-you won't care about maybe 80% of the core and support code. Just
-look at hwmon to see how slim a subsystem can be.
-Now a key point is to ensure such driver writers don't have to care.
-I think we achieve that (though there is room for improvement of
-course!)
-
-The issue is that its the heavy 'interesting' bits that the developers
-need which are also the reason the whole thing exists in the first place.
-
-The other big issue for contributors is that there is still a reasonable
-amount of churn in the core code and that brings a test burden that
-continues after a driver is merged (if they use the more complex bits
-that is).
+> 3. Multiple tracers for an application.
+> Multiple uprobes based tracer could work in unison to trace an
+> application. There could one tracer that could be interested in
+> generic events for a particular set of process. While there could be
+> another tracer that is just interested in one specific event of a
+> particular process thats part of the previous set of process.
 > 
-> This is indeed the major disadvantage. IIO seems to take a lot of time
-> to move out of staging, although I don't know what the current ETA is.
-> 
-Whilst I'd like to say soon there are a couple more big changes to make
-(such as the ongoing changes to allow threaded interrupts for the triggers
-- basically implementing what Thomas Gleixner suggested and having virtual
-interrupt chips) and some of these will take a fair bit of bedding down. In the
-original write I got quite a few things wrong :( Mind you quite a lot of
-evolution of requirements has taken place as well.
+> 4. Corelating events from kernels and userspace.
+> Uprobes could be used with other tools like kprobes, tracepoints or as
+> part of higher level tools like perf to give a consolidated set of
+> events from kernel and userspace.  In future we could look at a single
+> backtrace showing application, library and kernel calls.
 
-Usual sob story (50+ drivers of mixed quality to avoid breaking,
-little manpower, steady stream of new drivers keeping people busy reviewing
-etc etc)
+How do you envisage these features actually get used?  For example,
+will gdb be modified?  Will other debuggers be modified or written?
 
-Having said that, for the simple drivers the interfaces are mostly fixed
-and nothing much has changed for quite a few months. (e.g. anything that
-is slow and only uses hwmon style sysfs interfaces).
+IOW, I'm trying to get an understanding of how you expect this feature
+will actually become useful to end users - the kernel patch is only
+part of the story.
 
-Of course, if anyone does have any time (looks around hopefully...)
-Particularly helpful are people pointing out what really needs fixing
-before attempting to move out of staging.   Much better if we get that
-sort of feedback in plenty of time rather than on sending a pull request
-to Linus. I like to spread my arguments out ;)
 
-Thanks,
-
-Jonathan
