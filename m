@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab1CNMrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:47:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52931 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755717Ab1CNMrU (ORCPT
+	id S1755840Ab1CNMrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:47:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39597 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755791Ab1CNMrf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:47:20 -0400
-Date: Mon, 14 Mar 2011 12:46:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        =?utf-8?B?6rCV66+86rec?= <mk7.kang@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        =?utf-8?B?64yA7J246riw?= <inki.dae@samsung.com>,
-        kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU
-	(IOMMU) driver
-Message-ID: <20110314124652.GF26085@n2100.arm.linux.org.uk>
-References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111615.01829.arnd@arndb.de> <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com> <201103111700.17373.arnd@arndb.de> <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
-MIME-Version: 1.0
+	Mon, 14 Mar 2011 08:47:35 -0400
+Subject: Re: [PATCH] SUNRPC: svc_register error overwritten in next iteration
+Mime-Version: 1.0 (Apple Message framework v1082)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <4D7B74C7.7060506@gmail.com>
+Date: Mon, 14 Mar 2011 08:47:18 -0400
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F864C699-63D9-46EB-998F-A783038A7356@oracle.com>
+References: <4D7B74C7.7060506@gmail.com>
+To: roel <roel.kluin@gmail.com>
+X-Mailer: Apple Mail (2.1082)
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D7E0E59.012B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 09:37:51PM +0900, KyongHo Cho wrote:
-> I have also noticed that dma_map_single/page/sg() can map physical
-> memory into an arbitrary device address region.
-> But it is not enough solution for various kinds of IOMMUs.
-> As Kukjin Kim addressed, we need to support larger page size than 4KB
-> because we can reduce TLB miss when we have larger page size.
+
+On Mar 12, 2011, at 8:27 AM, roel wrote:
+
+> The break is in the inner loop, the svc_register() error is overwritten
+> in the next iteration. Only the error in the last iteration is returned.
 > 
-> Our IOMMU(system mmu) supports all page size of ARM architecture
-> including 16MB, 1MB, 64KB and 4KB.
-> Since the largest size supported by buddy system of 32-bit architecture is 4MB,
-> our system support all page sizes except 16MB.
-> We proved that larger page size is helpful for DMA performance
-> significantly (more than 10%, approximately).
-> Big page size is not a problem for peripheral devices
-> because their address space is not suffer from external fragmentation.
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+> net/sunrpc/svc.c |    2 ++
+> 1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> Is this needed?
 
-1. dma_map_single() et.al. is used for mapping *system* *RAM* for devices
-   using whatever is necessary.  It must not be used for trying to setup
-   arbitary other mappings.
+Maybe.  Did you encounter a problem here?
 
-2. It doesn't matter where the memory for dma_map_single() et.al. comes
-   from provided the virtual address is a valid system RAM address or
-   the struct page * is a valid struct page in the memory map (iow, you
-   can't create this yourself.)
+> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+> index 08e05a8..5fd08c0 100644
+> --- a/net/sunrpc/svc.c
+> +++ b/net/sunrpc/svc.c
+> @@ -889,6 +889,8 @@ int svc_register(const struct svc_serv *serv, const int family,
+> 			if (error < 0)
+> 				break;
+> 		}
+> +		if (error < 0)
+> +			break;
+> 	}
+> 
+> 	return error;
 
-3. In the case of an IOMMU, the DMA API does not limit you to only using
-   4K pages to setup the IOMMU mappings.  You can use whatever you like
-   provided the hardware can cope with it.  You can coalesce several
-   existing entries together provided you track what you're doing and can
-   undo what's been done when the mapping is no longer required.
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
-So really there's no reason not to use 64K, 1M and 16M IOMMU entries if
-that's the size of buffer which has been passed to the DMA API.
+
+
+
