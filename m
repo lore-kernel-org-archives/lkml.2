@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab1CNUqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:46:33 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:53618 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab1CNUqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:46:32 -0400
-Date: Mon, 14 Mar 2011 16:46:27 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: ext4 deep stack with mark_page_dirty reclaim
-Message-ID: <20110314204627.GB8120@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org
-References: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
+	id S1756665Ab1CNUuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:50:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26924 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab1CNUuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 16:50:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=p+M21XcbsvEVBEB6xQkqagmAYMVHXRxuDsEocDfgzImf5pRyMGBaWEFMNHYubhxDIN
+         9G9jlBkCzfhKumal2djg==
+Date: Mon, 14 Mar 2011 13:50:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Frantisek Hrbata <fhrbata@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3 for 2.6.38] oom: select_bad_process: ignore TIF_MEMDIE
+ zombies
+In-Reply-To: <20110314190508.GC21845@redhat.com>
+Message-ID: <alpine.DEB.2.00.1103141344460.31514@chino.kir.corp.google.com>
+References: <20110303100030.B936.A69D9226@jp.fujitsu.com> <20110308134233.GA26884@redhat.com> <alpine.DEB.2.00.1103081549530.27910@chino.kir.corp.google.com> <20110309151946.dea51cde.akpm@linux-foundation.org> <alpine.DEB.2.00.1103111142260.30699@chino.kir.corp.google.com>
+ <20110312123413.GA18351@redhat.com> <20110312134341.GA27275@redhat.com> <AANLkTinHGSb2_jfkwx=Wjv96phzPCjBROfCTFCKi4Wey@mail.gmail.com> <20110313212726.GA24530@redhat.com> <20110314190419.GA21845@redhat.com> <20110314190508.GC21845@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 12:20:52PM -0700, Hugh Dickins wrote:
-> When testing something else on 2.6.38-rc8 last night,
-> I hit this x86_64 stack overflow.  I've never had one before,
-> it seems worth reporting.  kdb was in, I jotted it down by hand
-> (the notifier part of it will be notifying kdb of the fault).
-> CONFIG_DEBUG_STACK_OVERFLOW and DEBUG_STACK_USAGE were not set.
+On Mon, 14 Mar 2011, Oleg Nesterov wrote:
+
+> select_bad_process() assumes that a TIF_MEMDIE process should go away.
+> But it can only go away it its parent does wait(). Change this check to
+> ignore the TIF_MEMDIE zombies.
 > 
-> I should disclose that I have a hack in which may make my stack
-> frames slightly larger than they should be: check against yours.
-> So it may not be an overflow for anyone else, but still a trace
-> to worry about.
 
-Here's the trace translated to the stack space used by each function.
-There are a few piggy ext4 functions that we can try to shrink, but
-the real problem is just how deep the whole stack is getting.
+The equivalent of this change would be to set TIF_MEMDIE for all threads 
+in a thread group when choosing a process to kill; as we've already 
+discussed in your first series of patches, that has the risk of fully 
+depleting memory reserves and causing the kernel the deadlock.  We want to 
+limit TIF_MEMDIE to an oom killed task or to current when it is responding 
+to a SIGKILL or already in the exit path because we know it's exiting and 
+without memory reserves it may never exit.
 
->From the syscall to the lowest-level ext4 function is 3712 bytes, and
-everything from there to the schedule() which then triggered the GPF
-was another 3728 of stack space....
+This patch is even more concerning, however, because select_bad_process() 
+isn't even guaranteed to select a thread from the same thread group this 
+time.
 
-				- Ted
-
- 240 schedule+0x25a
- 368 io_schedule+0x35
-  32 get_request_wait+0xc6
- 160 __make_request+0x36d
- 112 generic_make_request+0x2f2
- 208 submit_bio+0xe1
- 144 swap_writepage+0xa3
-  80 pageout+0x151
- 128 shrink_page_list+0x2db
- 176 shrink_inactive_list+0x2d3
- 256 shrink_zone+0x17d
- 224 shrink_zones+0x0xa3
- 128 do_try_to_free_pages+0x87
- 144 try_to_free_mem_cgroup_pages+0x8e
- 112 mem_cgroup_hierarchical_reclaim+0x220
- 176 mem_cgroup_do_charge+0xdc
- 128 __mem_cgroup_try_charge+0x19c
- 128 mem_cgroup_charge_common+0xa8
- 128 mem_cgroup_cache_charge+0x19a
- 128 add_to_page_cache_locked+0x57
-  96 add_to_page_cache_lru+0x3e
-  80 find_or_create_page+0x69
- 112 grow_dev_page+0x4a
-  96 grow_buffers+0x41
-  64 __getblk_slow+0xd7
-  80 __getblk+0x44
-  80 __ext4_get_inode_loc+0x12c
- 176 ext4_get_inode_loc+0x30
-  48 ext4_reserve_inode_write+0x21
-  80 ext4_mark_inode_dirty+0x3b
- 160 ext4_dirty_inode+0x3e
-  64 __mark_inode_dirty+0x32
-  80 linux/fs.h       mark_inode_dirty
-   0 linux/quotaops.h dquot_alloc_space
-   0 linux/quotaops.h dquot_alloc_block
-   0 ext4_mb_new_blocks+0xc2
- 144 ext4_alloc_blocks+0x189
- 208 ext4_alloc_branch+0x73
- 208 ext4_ind_map_blocks+0x148
- 272 ext4_map_blocks+0x148
- 112 ext4_getblk+0x5f
- 144 ext4_bread+0x36
-  96 ext4_append+0x52
-  96 do_split+0x5b
- 224 ext4_dx_add_entry+0x4b4
- 304 ext4_add_entry+0x7c
- 176 ext4_add_nondir+0x2e
-  80 ext4_create+0xf5
- 144 vfs_create+0x83
-  96 __open_namei_create+0x59
-  96 do_last+0x13b
- 112 do_filp_open+0x2ae
- 384 do_sys_open+0x72
- 128 sys_open+0x27
+> Note: this is _not_ enough. Just a minimal fix.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+> 
+>  mm/oom_kill.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> --- 38/mm/oom_kill.c~2_tif_memdie_zombie	2011-03-14 18:51:49.000000000 +0100
+> +++ 38/mm/oom_kill.c	2011-03-14 18:52:39.000000000 +0100
+> @@ -311,7 +311,8 @@ static struct task_struct *select_bad_pr
+>  		 * blocked waiting for another task which itself is waiting
+>  		 * for memory. Is there a better alternative?
+>  		 */
+> -		if (test_tsk_thread_flag(p, TIF_MEMDIE))
+> +		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
+> +		    !p->exit_state && thread_group_empty(p))
+>  			return ERR_PTR(-1UL);
+>  
+>  		/*
+> 
+> 
