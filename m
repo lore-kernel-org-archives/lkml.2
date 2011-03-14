@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab1CNEZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 00:25:11 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59533 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab1CNEZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 00:25:09 -0400
-Date: Mon, 14 Mar 2011 15:24:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20110314152456.b49b2693.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n"
+	id S1751882Ab1CNE1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 00:27:00 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:54928 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab1CNE06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 00:26:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=VvMiigqDlbuH0Hqkrmwen2PXt
+	FnrixQYpeRAfpaArafOExe9ED7Oc1T9v/uA0+MjVOszSMLLVRfBMsqEuRh59UZgZ
+	euPIwzPz1KMKVw51+ZdaBz9k7b+CAn0oWL46rBwjtxsLciiwvPiLVTwgx52coqM8
+	oaRkaGE3a8BZNjAfVk=
+Date: Sun, 13 Mar 2011 21:29:17 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Indan Zupancic <indan@nul.nu>
+cc: Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org,
+        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
+        l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+In-Reply-To: <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+Message-ID: <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+ <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+ <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+ <201103111255.44979.arnd@arndb.de> <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+ <20110311235607.GB15853@elie> <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+ <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com>
+ <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 14 Mar 2011, Indan Zupancic wrote:
+> Everyone seems to want to add this new syncfs, but it's not even defined 
+> what it does. "Same as sync, but only on one fs" is IMHO not good 
+> enough, because sync's behaviour is pretty badly documented, and that's 
+> a system call.
 
-Hi all,
+How about the man page below?  I tried to avoid the somewhat antiquated 
+implementation specific terminology in the sync(2) man page.
 
-After merging the net tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+I think adding this functionality into sync_file_range(2) is forcing 
+unrelated functionality into an existing interface; sync_file_range 
+operates on _files_, not an entire file system.  With each API addition it 
+is more important to make the interface simple and intuitive than to 
+minimize the size of our patches.  IMO that's why a new syscall is 
+preferable to, say, an equivalent ioctl.
 
-kernel/irq/manage.c: In function 'irq_affinity_notify':
-kernel/irq/manage.c:182: error: 'struct irq_desc' has no member named 'affi=
-nity'
+Thanks-
+sage
 
-Caused by commit cd7eab44e994 ("genirq: Add IRQ affinity notifiers")
-(which is also in the tip tree).  I am guessing that there is a fix for
-this also in the tip tree ... yep commit 1fb0ef31f428 ("genirq: Fix
-affinity notifier fallout").
 
-I tried using the net tree from next-20110311 for today but that had the
-same problem.  So I merged the above fix commit from the tip tree.
-
-I have no idea why this has suddenly become a problem in the net tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNfZiYAAoJEDMEi1NhKgbs+DAIAIOgo7NgsH5GEsKVOtFodbSM
-Amykwyyxypt7reVWKUREs+VvnD/BVmjgZNJyGgwGzjgeNup8KwtM0fFuLWnu10A8
-4oaXMVq57gKb3ac6gI/7k/OzxsqBgCCKIyzpVErniLcRIKExfDnIpQABXOkZddNy
-aoDkKbsHKmid+/aecMgHs18cF3eBb7jVagegWIpemzgW7rYagJTZzcICZFfxOurq
-DpnQVAznb7uJu+HOtf2OMzr2Jiy7JGrZK9ld6sTIOODpoVKrBx25bxee3tQZk7Tz
-B6DcYwvWZ08YhLJqR4309mZXCYkBOeewyHDXNn7nO/BDmVqsMtQBP8926yTt1E8=
-=58DL
------END PGP SIGNATURE-----
-
---Signature=_Mon__14_Mar_2011_15_24_56_+1100_FzgnEkGE9v5sPp+n--
+.TH SYNCFS 2 2011-03-13 "Linux" "Linux Programmer's Manual"
+.SH NAME
+syncfs \- commit cached file system state to stable storage
+.SH SYNOPSIS
+.B #include <unistd.h>
+.sp
+.B void syncfs(int fd);
+.SH DESCRIPTION
+.BR syncfs ()
+flushes any cached data modifications to the file system containing the 
+file referenced by the file descriptor
+.I fd
+to stable storage (usually a disk).  This includes the results of any
+file modifications or other file system operations that have completed
+prior to the call to
+.BR syncfs(2).
+This is similar to 
+.BR sync(2),
+but will commit changes for only a single file system instead of all
+mounted file systems.
+.SH ERRORS
+This function is always successful.
+.SH "SEE ALSO"
+.BR bdflush (2),
+.BR fdatasync (2),
+.BR fsync (2),
+.BR sync (2),
+.BR sync (8),
+.BR update (8)
