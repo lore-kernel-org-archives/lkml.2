@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab1CNUiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:38:23 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58709 "EHLO gate.crashing.org"
+	id S1757121Ab1CNUlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:41:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40355 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab1CNUiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:38:22 -0400
-Subject: Re: linux-next: build failure after merge of the final tree
- (powerpc tree related)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <buytenh@secretlab.ca>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110314203827.4b61818e.sfr@canb.auug.org.au>
-References: <20110314203827.4b61818e.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Mar 2011 07:37:54 +1100
-Message-ID: <1300135074.22236.788.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751368Ab1CNUlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 16:41:14 -0400
+Date: Mon, 14 Mar 2011 21:31:52 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>, David Rientjes <rientjes@google.com>,
+        Frantisek Hrbata <fhrbata@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3 for 2.6.38] oom: oom_kill_process: don't set
+	TIF_MEMDIE if !p->mm
+Message-ID: <20110314203152.GA25080@redhat.com>
+References: <alpine.DEB.2.00.1103081549530.27910@chino.kir.corp.google.com> <20110309151946.dea51cde.akpm@linux-foundation.org> <alpine.DEB.2.00.1103111142260.30699@chino.kir.corp.google.com> <20110312123413.GA18351@redhat.com> <20110312134341.GA27275@redhat.com> <AANLkTinHGSb2_jfkwx=Wjv96phzPCjBROfCTFCKi4Wey@mail.gmail.com> <20110313212726.GA24530@redhat.com> <20110314190419.GA21845@redhat.com> <20110314190446.GB21845@redhat.com> <AANLkTi=YnG7tYCSrCPTNSQANOkD2MkP0tMjbOyZbx4NG@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=YnG7tYCSrCPTNSQANOkD2MkP0tMjbOyZbx4NG@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-14 at 20:38 +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/gpio/langwell_gpio.c: In function 'lnw_irq_handler':
-> drivers/gpio/langwell_gpio.c:210: error: 'struct irq_desc' has no member named 'chip'
-> drivers/gpio/langwell_gpio.c:211: error: 'struct irq_desc' has no member named 'chip'
-> 
-> Caused by commit 17b9f9e2653a ("powerpc: Enable
-> GENERIC_HARDIRQS_NO_DEPRECATED") enabling
-> CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED for powerpc without previously
-> fixing up the above driver.
-> 
-> I have reverted that commit for today.
+On 03/14, Linus Torvalds wrote:
+>
+> On Mon, Mar 14, 2011 at 12:04 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > oom_kill_process() simply sets TIF_MEMDIE and returns if PF_EXITING.
+> > This is very wrong by many reasons. In particular, this thread can
+> > be the dead group leader. Check p->mm != NULL.
+>
+> Explain more, please. Maybe I'm missing some context because I wasn't
+> cc'd on the original thread, but PF_EXITING gets set by exit_signal(),
+> and exit_mm() is called almost immediately afterwards which will set
+> p->mm to NULL.
+>
+> So afaik, this will basically just remove the whole point of the code
+> entirely - so why not remove it then?
 
-Except that the above driver has nothing to do with powerpc, it's some
-Intel Moorestown stuff...
+I am afraid I am going to lie... But iirc I tried to remove this code
+before. Can't find the previous discussion, probably I am wrong.
 
-It should be fixed regardless I suppose, CC'ing Thomas.
+Anyway. I never understood why do we have this special case.
 
-Cheers,
-Ben.
+> The combination of testing PF_EXITING and p->mm just doesn't seem to
+> make any sense.
 
+To me, it doesn't make too much sense even if we do not check ->mm.
+
+But. I _think_ the intent was to wait until this "exiting" process
+does exit_mm() and frees the memory. This is like the
+"the process of releasing memory " code in select_bad_process(). Once
+again, this is only my speculation.
+
+In any case, this patch doesn't pretend to be the right fix.
+
+Oleg.
 
