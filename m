@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab1CNLpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:45:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22048 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab1CNLpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:45:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,315,1297065600"; 
-   d="scan'208";a="897012701"
-Date: Mon, 14 Mar 2011 12:45:40 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Denis Turischev <denis@compulab.co.il>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [PATCH 3/3 v2] sch_gpio: expand for Tunnel Creek
-Message-ID: <20110314114540.GO31153@sortiz-mobl>
-References: <4D7CE230.1070004@compulab.co.il>
- <4D7CE2BB.5010802@compulab.co.il>
- <4D7CE31E.207@compulab.co.il>
- <4D7DF391.50302@compulab.co.il>
+	id S1754600Ab1CNLwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:52:53 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60157 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213Ab1CNLww convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 07:52:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=FGGxjqAcRe3/leGC6Spr2DOzDOPszirTVPa67+VdG/K5bAafzkzC2lQXqCvWaqJ0tB
+         lUYtLBBoPKyaToy2ZVQxDekZEkfD4nD+VSGOouGRsoYHi6vnmEL2+ZX2LpjrLffK1ZhH
+         LDUL/Dx7gTgdIOZqYXHaZLpA/TO5JTkJmdwtE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7DF391.50302@compulab.co.il>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
+	<4D7E095802000078000363D5@vpn.id2.novell.com>
+	<AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>
+Date: Mon, 14 Mar 2011 12:52:51 +0100
+Message-ID: <AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: amodra@gmail.com, Ingo Molnar <mingo@elte.hu>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        binutils <binutils@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Denis,
+On Mon, Mar 14, 2011 at 12:38 PM, Sedat Dilek
+<sedat.dilek@googlemail.com> wrote:
+> [ Changing Alan's Email to valid <amodra@gmail.com> in CC ]
+>
+> On Mon, Mar 14, 2011 at 12:26 PM, Jan Beulich <JBeulich@novell.com> wrote:
+>>>>> On 14.03.11 at 12:02, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> [...]
+>>> [2] Where can someone set a "global behaviour" (hardcoded options) for
+>>> his/her assembler in the kernel's build-system (speaking of
+>>> "--size-check=[error|warning]")?
+>>
+>> Nowhere, selecting behavior is possible only via the command line.
+>>
+>
+> Via command-line, something like this would do it?
+>
+>     $ export AS="/usr/bin/as --size-check=warning
+> [...]
+>
+> - Sedat -
+>
 
-On Mon, Mar 14, 2011 at 12:53:05PM +0200, Denis Turischev wrote:
-> Almost the same driver for both Poulsbo and Tunnel Creek.
-> The difference is in quantity of GPIOs powered by the core power
-> rail and by suspend power supply, default values for some GPIOs, etc.
-> Detect actual hardware by platform device ID assigned in lpc_sch
-> and set configuration accordingly.
-Grant, are you ok with me taking this patch ?
+By looking through the binutils source-code, I have seen ASFLAGS.
 
-Cheers,
-Samuel.
+     $ ASFLAGS="--size-check=warning" ; export ASFLAGS
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Would that work?
+
+- Sedat -
