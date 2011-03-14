@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab1CNMvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:51:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48362 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755639Ab1CNMvH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:51:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=Y2ERvGDK1JxYgHUtjB0TeYVr90rM7yyulwtmU5KN937zdSpzpfn0A6Aw3M0N6AvxGO
-         nRpho1VCPFWaJeNPhoq0oVc4lX66VSoOKpztB6oFSwt6wX50Ilh5x1+ayEs5niEV4ndZ
-         VqZe/9ScupYDFCMWxEP9bb6GrYSj3PCLQ6Pno=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <4D7E166C0200007800036451@vpn.id2.novell.com>
-References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
-	<4D7E095802000078000363D5@vpn.id2.novell.com>
-	<AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>
-	<AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>
-	<4D7E166C0200007800036451@vpn.id2.novell.com>
-Date: Mon, 14 Mar 2011 13:51:05 +0100
-Message-ID: <AANLkTikkWC47U_n--zWq+B-V0zPW+p85WLtPRczEdkNR@mail.gmail.com>
+	id S1755909Ab1CNMzn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:55:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755770Ab1CNMzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 08:55:40 -0400
+From: Andreas Schwab <schwab@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Jan Beulich <JBeulich@novell.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, binutils@sourceware.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Modra <amodra@gmail.com>
 Subject: Re: PATCH: Add --size-check=[error|warning]
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Ingo Molnar <mingo@elte.hu>, amodra@gmail.com,
-        "H.J. Lu" <hjl.tools@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        binutils <binutils@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+References: <20110311165802.GA3508@intel.com>
+	<4D7A64670200007800035F4C@vpn.id2.novell.com>
+	<AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
+	<4D7DE39302000078000362E6@vpn.id2.novell.com>
+	<20110314095534.GB18058@elte.hu>
+	<20110314104131.GG6275@bubble.grove.modra.org>
+	<AANLkTi=3AiLaw5Gnis8Ha4eRXirk0s-Cnk2zzN12YDpH__45869.1711457961$1300099861$gmane$org@mail.gmail.com>
+	<m3oc5eufrk.fsf@redhat.com>
+	<AANLkTikOX_9G-kFEOCHJbnTootY4n4EPSounwjDjPiZc@mail.gmail.com>
+	<m3fwqpvrjy.fsf@redhat.com> <20110314121321.GE23257@elte.hu>
+X-Yow: CHUBBY CHECKER owns my BUILDING!
+Date: Mon, 14 Mar 2011 13:55:10 +0100
+In-Reply-To: <20110314121321.GE23257@elte.hu> (Ingo Molnar's message of "Mon,
+	14 Mar 2011 13:13:21 +0100")
+Message-ID: <m3bp1dvp3l.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 1:21 PM, Jan Beulich <JBeulich@novell.com> wrote:
->>>> On 14.03.11 at 12:52, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->> On Mon, Mar 14, 2011 at 12:38 PM, Sedat Dilek
->> <sedat.dilek@googlemail.com> wrote:
->>> [ Changing Alan's Email to valid <amodra@gmail.com> in CC ]
->>>
->>> On Mon, Mar 14, 2011 at 12:26 PM, Jan Beulich <JBeulich@novell.com> wrote:
->>>>>>> On 14.03.11 at 12:02, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->>> [...]
->>>>> [2] Where can someone set a "global behaviour" (hardcoded options) for
->>>>> his/her assembler in the kernel's build-system (speaking of
->>>>> "--size-check=[error|warning]")?
->>>>
->>>> Nowhere, selecting behavior is possible only via the command line.
->>>>
->>>
->>> Via command-line, something like this would do it?
->>>
->>>     $ export AS="/usr/bin/as --size-check=warning
->>> [...]
->
-> No - $(AS) isn't being used to translate .S files, $(CC) is being used
-> instead. That's why I pointed at the necessary -B option (so that
-> the compiler would be able to locate the wrapper H.J. suggested).
->
+Ingo Molnar <mingo@elte.hu> writes:
 
-OK, now I am enlightened in things of -B option.
-Anyway, can I see the correct command line to use?
-(OMG, I am glad this is not the $500.000 question @ "Who Wants to Be a
-Millionaire?" quiz show. Jan wanna be my telephone joker :-)?)
-
->> By looking through the binutils source-code, I have seen ASFLAGS.
->>
->>      $ ASFLAGS="--size-check=warning" ; export ASFLAGS
+> * Andreas Schwab <schwab@redhat.com> wrote:
 >
-> Where did you find that? All places where I see references to this
-> variable are in the testsuite.
+>> Pekka Enberg <penberg@kernel.org> writes:
+>> 
+>> > Hi Andreas,
+>> >
+>> > Pekka Enberg <penberg@kernel.org> writes:
+>> >>> So what do you suggest that testers who want to, say, build old Linux
+>> >>> kernel versions with new binutils do?
+>> >
+>> > On Mon, Mar 14, 2011 at 1:02 PM, Andreas Schwab <schwab@redhat.com> wrote:
+>> >> The same that testers have to do in order to build old Linux kernel
+>> >> versions with current versions of make.
+>> >
+>> > Are you saying it's OK to screw over binutils users because GNU Make
+>> > did that too?
+>> 
+>> I'm just telling you the facts.
 >
-> Jan
->
+> And you are wrong
 
-WildWildWeb, IIRC I saw ASFLAGS used in a Gentoo package and AS in
-Cross-LFS/binutils build instructions.
+This is just ridiculous.  You are defining away facts just because they
+don't fit your view.
 
-- Sedat -
+> latest Make does not break reasonably old kernel builds such as
+> v2.6.30.
+
+$ git tag --contains 3c955b4 | head -1
+v2.6.36
+
+Andreas.
+
+-- 
+Andreas Schwab, schwab@redhat.com
+GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
+"And now for something completely different."
