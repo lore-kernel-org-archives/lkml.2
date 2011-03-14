@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1CNRBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 13:01:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53589 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab1CNRBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 13:01:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Waldemar.Rymarkiewicz@tieto.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Date: Mon, 14 Mar 2011 18:01:01 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: matti.j.aaltonen@nokia.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hthebaud@insidefr.com
-References: <1299766808-2535-1-git-send-email-waldemar.rymarkiewicz@tieto.com> <201103141700.26457.arnd@arndb.de> <99B09243E1A5DA4898CDD8B7001114481082FAE168@EXMB04.eu.tieto.com>
-In-Reply-To: <99B09243E1A5DA4898CDD8B7001114481082FAE168@EXMB04.eu.tieto.com>
+	id S1754000Ab1CNRIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 13:08:23 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48415 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986Ab1CNRIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 13:08:22 -0400
+Date: Mon, 14 Mar 2011 22:32:27 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 1/20]  1: mm: Move replace_page() to
+ mm/memory.c
+Message-ID: <20110314170227.GN24254@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+ <20110314133413.27435.67467.sendpatchset@localhost6.localdomain6>
+ <1300112195.9910.92.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103141801.01333.arnd@arndb.de>
-X-Provags-ID: V02:K0:RMAqGJ/qAGQ19Zd1xe1JbHpZxOuFo70Db0t6Fb7Ggod
- anPxvFOYZu4O8q/w39pw3g2nXkJIwt2Gb5cknuQcczFT9ENK75
- 9yaBFEjf7AhztxL/Itzn4WE9ble/+HpgmB21uQilStWU0/icSB
- WeOpinsec3PnKVa5fsl3cPS4Ah8XUnfk+Z4yrm2NipRLbDwvS9
- 1sFrWuSPJHiiPTIW+CxPg==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1300112195.9910.92.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 March 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
-> >> No, it's simply there as I have been faceing i2c write error while I 
-> >> do two consecutive writes.
-> >> The second fails now and then. That's seems to be a chip issue.
-> >> I will try to investigate this issue.
-> >
-> >Ok. It sounds like a bug in the i2c driver, you should also 
-> >take a look there. Maybe it has never had to deal with this 
-> >much write data at once.
+* Steven Rostedt <rostedt@goodmis.org> [2011-03-14 10:16:35]:
+
+> On Mon, 2011-03-14 at 19:04 +0530, Srikar Dronamraju wrote:
+> > User bkpt will use background page replacement approach to insert/delete
+> > breakpoints. Background page replacement approach is based on
+> > replace_page. Hence replace_page() loses its static attribute.
+> > 
 > 
-> It's been confirmed now that this is how chip is supposed to work and the
-> driver should not care about this scenario. Upper layers (onfc stack) handle this.
-> Thus, will simply remove urange_sleep and that's it.
+> Just a nitpick, but since replace_page() is being moved, could you
+> specify that in the change log. Something like:
+> 
+> "Hence, replace_page() is moved from ksm.c into memory.c and its static
+> attribute is removed."
 
-It sounds strange that this will be handled in user space, since
-it won't have any idea if the hardware is available again.
+Okay, Will take care to add the moved from ksm.c into memory.c in the
+next version of patchset.
 
-I've tried to find the onfc stack that talks to this device but
-couldn't see it. Do you have a URL for this?
+> 
+> I like to see in the change log "move x to y" when that is actually
+> done, because it is hard to see if anything actually changed when code
+> is moved. Ideally it is best to move code in one patch and make the
 
-	Arnd
+As discussed in IRC, moving and removing the static attribute had to
+be one patch so that mm/ksm.c compiles correctly. The other option we
+have is to remove the static attribute first and then moving the
+function.
+
+> change in another. If you do cut another version of this patch set,
+> could you do that. This alone is not enough to require a new release.
+> 
+
+-- 
+Thanks and Regards
+Srikar
