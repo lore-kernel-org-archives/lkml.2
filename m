@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1CNLG3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:06:29 -0400
-Received: from nm16-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.210]:37906 "HELO
-	nm16-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752783Ab1CNLG0 (ORCPT
+	id S1753419Ab1CNLGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:06:42 -0400
+Received: from nm2-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.248]:30564 "HELO
+	nm2-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752840Ab1CNLGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:06:26 -0400
-X-Yahoo-Newman-Id: 694246.55340.bm@omp1022.mail.sp2.yahoo.com
+	Mon, 14 Mar 2011 07:06:38 -0400
+X-Yahoo-Newman-Id: 867291.36099.bm@omp1042.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: r5pTwqQVM1lV5yL.4vCMDxLs7bIpLgXOAJejiTOBTuW41Ao
- BLWOOzLq_d7cnISjo2vT4ObyATlA_UdprawJTc5BlWE8mki.i0NFkZsQ8Vvh
- ElYHUC9f3s3mYp9yWz4UBMs1HtUJEn.D6yvUXrnAPYXpRJvUfui9Ho1PFW7h
- 2rCvsm2oiQhHvg0ojxrY.9C.A5_OOk_GHh1A1z2xRlEFgq7XGn9gJt.aXxSq
- x4T1y4BwwMnwCrw6NsCw1_OYbmLYuT3qmLxRMmCDg6BtTlx0V2l4KBX4M.Az
- TS3Y2mTB5X0aguOTbazXthMoDRH4HDuZA0VYb9mFpxfvFT6eV1LdDkk_kyrj
- Aa2VLX134OhlNfS82Wa9IhFdRBNOsnx5_hJsLjlI7aIeDvsdQ68SFx5yckpu
- IHIgfGWfL53IcZw64aqaezPdqBkW2vsp4Y5jZNY4GcLP7P4KMU.fvUKSaXJH
- KPN3JUpVez4Z5_2a76PcKnPKY8YRKcXknDF4igJ5Wq1z7xTldd7xe8o59iID
- SCM9dp8VnaG1N5GqYO5II3bfeHvc-
+X-YMail-OSG: GVUeHIYVM1mSXpJm9M.vQbsRsD74Cyr0YsoMQYIIsxov6pi
+ RRaqtWPLrGnzcu3s2YdTBRyGDirk.QR3o2g0qi35kqoo2yDOiC447TTfrpOl
+ bESrUinHRjNmRdgnZW84Ki9Eiz16u4MYEABTXonSpf33zRQ2mTG6mQuqtGJZ
+ BBTKz.sFGAat2SvzRqMkuSLC08skrJMPYw1gTwbKYlXqxhVD6b3jguKRHeDi
+ 0dZiyXX0pSiksBCZ3.tsrLFbe4FlgRAZe5Lnvndcnkggg3xsZuI3adPsu.bh
+ afrdott.gLVGE1jnHQ8trlBGXVhywVEf9nw_gdeQ3bFjBsbxgMx4g0kkISJT
+ YMFY1XWlnypTXfVyBvB4su3haXjJnc9UgOv.LZ9di84DieqOPaVmRmSw7sxX
+ dPaUFbE6iksmwTQBZ57YU3sW1A9FzNPd7yO.a83SkT2BgBNIdHckTkcRDSyl
+ UWq2OunwDFu126vwxjcu7UNjdFxCrK1sDV9H.
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,11 +29,10 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
-        Roland Dreier <rolandd@cisco.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH 01/21] target: Fix memory leak on error path in pscsi_alloc_task
-Date: Mon, 14 Mar 2011 04:05:55 -0700
-Message-Id: <1300100775-10012-2-git-send-email-nab@linux-iscsi.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 03/21] target: tcm_mod_builder.py generated Makefile cleanups
+Date: Mon, 14 Mar 2011 04:05:57 -0700
+Message-Id: <1300100775-10012-4-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
 References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
@@ -42,29 +40,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <rolandd@cisco.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-If allocation of pt->pscsi_cdb fails, we need to free the just-allocated
-pt or else it will be leaked.
+This patch converts the tcm_mod_builder.py generation script to
+create a new drivers/target/$TCM_FABRIC_MOD/Makefile and update
+drivers/target/Makefile, instead of creating+updating a 'Kbuild'
+filename.
 
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+It also removes the remaining EXTRA_CFLAGS includes from
+tcm_mod_build_kbuild(), and converts fabric module generated .c
+code to us ""-style includes for $FABRIC_MOD_[base,fabric].h
+
+Reported-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_pscsi.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ Documentation/target/tcm_mod_builder.py |   17 ++++++++---------
+ 1 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-index f2a0847..f596cb7 100644
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -817,6 +817,7 @@ pscsi_alloc_task(struct se_cmd *cmd)
- 		if (!(pt->pscsi_cdb)) {
- 			printk(KERN_ERR "pSCSI: Unable to allocate extended"
- 					" pt->pscsi_cdb\n");
-+			kfree(pt);
- 			return NULL;
- 		}
- 	} else
+diff --git a/Documentation/target/tcm_mod_builder.py b/Documentation/target/tcm_mod_builder.py
+index dbeb8a0..89af6c7 100755
+--- a/Documentation/target/tcm_mod_builder.py
++++ b/Documentation/target/tcm_mod_builder.py
+@@ -239,8 +239,8 @@ def tcm_mod_build_configfs(proto_ident, fabric_mod_dir_var, fabric_mod_name):
+ 	buf += "#include <target/target_core_configfs.h>\n"
+ 	buf += "#include <target/target_core_base.h>\n"
+ 	buf += "#include <target/configfs_macros.h>\n\n"
+-	buf += "#include <" + fabric_mod_name + "_base.h>\n"
+-	buf += "#include <" + fabric_mod_name + "_fabric.h>\n\n"
++	buf += "#include \"" + fabric_mod_name + "_base.h\"\n"
++	buf += "#include \"" + fabric_mod_name + "_fabric.h\"\n\n"
+ 
+ 	buf += "/* Local pointer to allocated TCM configfs fabric module */\n"
+ 	buf += "struct target_fabric_configfs *" + fabric_mod_name + "_fabric_configfs;\n\n"
+@@ -583,9 +583,9 @@ def tcm_mod_dump_fabric_ops(proto_ident, fabric_mod_dir_var, fabric_mod_name):
+ 	buf += "#include <target/target_core_fabric_lib.h>\n"
+ 	buf += "#include <target/target_core_device.h>\n"
+ 	buf += "#include <target/target_core_tpg.h>\n"
+-	buf += "#include <target/target_core_configfs.h>\n"
+-	buf += "#include <" + fabric_mod_name + "_base.h>\n"
+-	buf += "#include <" + fabric_mod_name + "_fabric.h>\n\n"
++	buf += "#include <target/target_core_configfs.h>\n\n"
++	buf += "#include \"" + fabric_mod_name + "_base.h\"\n"
++	buf += "#include \"" + fabric_mod_name + "_fabric.h\"\n\n"
+ 
+ 	buf += "int " + fabric_mod_name + "_check_true(struct se_portal_group *se_tpg)\n"
+ 	buf += "{\n"
+@@ -973,14 +973,13 @@ def tcm_mod_dump_fabric_ops(proto_ident, fabric_mod_dir_var, fabric_mod_name):
+ def tcm_mod_build_kbuild(fabric_mod_dir_var, fabric_mod_name):
+ 
+ 	buf = ""
+-	f = fabric_mod_dir_var + "/Kbuild"
++	f = fabric_mod_dir_var + "/Makefile"
+ 	print "Writing file: " + f
+ 
+ 	p = open(f, 'w')
+ 	if not p:
+ 		tcm_mod_err("Unable to open file: " + f)
+ 
+-	buf = "EXTRA_CFLAGS += -I$(srctree)/drivers/target/ -I$(srctree)/include/ -I$(srctree)/drivers/scsi/ -I$(srctree)/include/scsi/ -I$(srctree)/drivers/target/" + fabric_mod_name + "\n\n"
+ 	buf += fabric_mod_name + "-objs			:= " + fabric_mod_name + "_fabric.o \\\n"
+ 	buf += "					   " + fabric_mod_name + "_configfs.o\n"
+ 	buf += "obj-$(CONFIG_" + fabric_mod_name.upper() + ")		+= " + fabric_mod_name + ".o\n"
+@@ -1018,7 +1017,7 @@ def tcm_mod_build_kconfig(fabric_mod_dir_var, fabric_mod_name):
+ 
+ def tcm_mod_add_kbuild(tcm_dir, fabric_mod_name):
+ 	buf = "obj-$(CONFIG_" + fabric_mod_name.upper() + ")	+= " + fabric_mod_name.lower() + "/\n"
+-	kbuild = tcm_dir + "/drivers/target/Kbuild"
++	kbuild = tcm_dir + "/drivers/target/Makefile"
+ 
+ 	f = open(kbuild, 'a')
+ 	f.write(buf)
+@@ -1064,7 +1063,7 @@ def main(modname, proto_ident):
+ 	tcm_mod_build_kbuild(fabric_mod_dir, fabric_mod_name)
+ 	tcm_mod_build_kconfig(fabric_mod_dir, fabric_mod_name)
+ 
+-	input = raw_input("Would you like to add " + fabric_mod_name + "to drivers/target/Kbuild..? [yes,no]: ")
++	input = raw_input("Would you like to add " + fabric_mod_name + "to drivers/target/Makefile..? [yes,no]: ")
+ 	if input == "yes" or input == "y":
+ 		tcm_mod_add_kbuild(tcm_dir, fabric_mod_name)
+ 
 -- 
 1.7.4.1
 
