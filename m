@@ -1,42 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab1CNAHv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Mar 2011 20:07:51 -0400
-Received: from void.printf.net ([89.145.121.20]:33694 "EHLO void.printf.net"
+	id S1756673Ab1CNAKF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Mar 2011 20:10:05 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:45171 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756605Ab1CNAHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Mar 2011 20:07:49 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] viafb: kill lcd_panel_id
-References: <1299964979-3391-1-git-send-email-FlorianSchandinat@gmx.de>
-	<1299964979-3391-2-git-send-email-FlorianSchandinat@gmx.de>
-	<m3hbb7xaup.fsf@pullcord.laptop.org> <4D7CFBC7.2060109@gmx.de>
-Date: Sun, 13 Mar 2011 20:05:13 -0400
-In-Reply-To: <4D7CFBC7.2060109@gmx.de> (Florian Tobias Schandinat's message of
-	"Sun, 13 Mar 2011 18:15:51 +0100")
-Message-ID: <m3zkoywoqu.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
+	id S1755824Ab1CNAKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Mar 2011 20:10:02 -0400
+Date: Sun, 13 Mar 2011 17:08:59 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Stephen Wilson <wilsons@start.ca>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/12] proc: make check_mem_permission() return an
+ mm_struct on success
+Message-ID: <20110314000859.GF21770@outflux.net>
+References: <1300045764-24168-1-git-send-email-wilsons@start.ca>
+ <1300045764-24168-12-git-send-email-wilsons@start.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300045764-24168-12-git-send-email-wilsons@start.ca>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+Hi Stephen,
 
-On Sun, Mar 13 2011, Florian Tobias Schandinat wrote:
-> No need to worry. The external interface is kept for compatibility,
-> only the internal uses are replace by panel hres/vres which contain
-> the same information but are more generic.
->
-> I have not yet tested it on OLPC as I did not have the time to compile
-> a new kernel for it, but as it works on my VX900 laptop which also
-> uses the viafb_lcd_panel_id setting it should be fine.
+On Sun, Mar 13, 2011 at 03:49:23PM -0400, Stephen Wilson wrote:
+> This change allows us to take advantage of access_remote_vm(), which in turn
+> eliminates a security issue with the mem_write() implementation.
+> 
+> The previous implementation of mem_write() was insecure since the target task
+> could exec a setuid-root binary between the permission check and the actual
+> write.  Holding a reference to the target mm_struct eliminates this
+> vulnerability.
+> 
+> Signed-off-by: Stephen Wilson <wilsons@start.ca>
+> ---
+>  fs/proc/base.c |   58 ++++++++++++++++++++++++++++++++-----------------------
+>  1 files changed, 34 insertions(+), 24 deletions(-)
+> 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index f6b644f..2af83bd 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -858,22 +863,25 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+>  	char *page;
+>  	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+>  	unsigned long dst = *ppos;
+> +	struct mm_struct *mm;
+>  
+>  	copied = -ESRCH;
+>  	if (!task)
+>  		goto out_no_task;
+>  
+> -	if (check_mem_permission(task))
+> -		goto out;
+> +	mm = check_mem_permission(task);
+> +	copied = PTR_ERR(mm);
+> +	if (IS_ERR(mm))
+> +		goto out_task;
+>  
+>  	copied = -EIO;
+>  	if (file->private_data != (void *)((long)current->self_exec_id))
+> -		goto out;
+> +		goto out_mm;
 
-Thanks, this makes sense; the patch looks fine, then.
+The file->private_data test seems wrong to me. Is there a case were the mm
+returned from check_mem_permission(task) can refer to something that is no
+longer attached to task?
+
+For example:
+- pid 100 ptraces pid 200
+- pid 100 opens /proc/200/mem
+- pid 200 execs into something else
+
+A read of that mem fd could, IIUC, read from the new pid 200 mm, but
+only after passing check_mem_permission(task) again. This is stopped
+by the private_data test. But should it, since check_mem_permission()
+passed?
+
+Even if it does mean to block it, it's insufficient since pid 200
+could just exec u32 many times and align with the original private_data
+value. What is that test trying to do? And I'm curious for both mem_write
+as well as the existing mem_read use of the test, since I'd like to see
+a general solution to the "invalidate /proc fds across exec" so we can
+close CVE-2011-1020 for everything[1].
+
+Associated with this, the drop of check_mem_permission(task) during the
+mem_read loop implies that the mm is locked during that loop and seems to
+reflect what you're saying ("Holding a reference to the target mm_struct
+eliminates this vulnerability."), meaning there's no reason to recheck
+permissions. Is that accurate?
+
+Thanks,
+
+-Kees
+
+[1] https://lkml.org/lkml/2011/2/7/368
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Kees Cook
+Ubuntu Security Team
