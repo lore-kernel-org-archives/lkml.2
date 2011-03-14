@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab1CNUDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:03:55 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:42541 "EHLO
+	id S1753314Ab1CNUHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:07:06 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8123 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab1CNUDy convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751814Ab1CNUHD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:03:54 -0400
+	Mon, 14 Mar 2011 16:07:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=Jvvp6OBwGn9YqLGvlPKqklsh/4c6EJ/MkR35thAk9LVDwroqtR8Yr7vH92+HL+9xjf
-         y0DyWirXCi1RqOop08VA==
+        b=dAjzSmsDhZjIl0cHWaRuPgBSc/1xcr1z/XHUsbQwDMG9KM2LwLOMBVq6Txc+CL9Of5
+         UwZ0TC1SYSH1quc1tyIg==
 MIME-Version: 1.0
-In-Reply-To: <4D7D9F92.5010604@kernel.org>
+In-Reply-To: <20110314195937.GA594@kroah.com>
 References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
- <20110312014358.6133.34911.stgit@mike.mtv.corp.google.com> <4D7D9F92.5010604@kernel.org>
+ <20110312014347.6133.4388.stgit@mike.mtv.corp.google.com> <20110314154510.GE31340@kroah.com>
+ <AANLkTimz7P9D6HKe1JN2ihg4TVsaDJ3y255CP3b0FJsT@mail.gmail.com> <20110314195937.GA594@kroah.com>
 From: Mike Waychison <mikew@google.com>
-Date: Mon, 14 Mar 2011 13:03:30 -0700
-Message-ID: <AANLkTino-QB=2ctS4QFWQAr3gXTc5GfC5q5bQcFguVNs@mail.gmail.com>
-Subject: Re: [PATCH v2 12/12] driver: Google Memory Console
-To: "H. Peter Anvin" <hpa@kernel.org>
-Cc: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Date: Mon, 14 Mar 2011 13:06:41 -0700
+Message-ID: <AANLkTi=ZKZ-Z4kWRU6+mS8jnbf1+xPQxU_P4yTjkQdmo@mail.gmail.com>
+Subject: Re: [PATCH v2 10/12] Introduce CONFIG_GOOGLE_FIRMWARE
+To: Greg KH <greg@kroah.com>
+Cc: Matt Domsch <Matt_Domsch@dell.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
@@ -34,25 +34,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 13, 2011 at 9:54 PM, H. Peter Anvin <hpa@kernel.org> wrote:
-> On 03/11/2011 05:43 PM, Mike Waychison wrote:
->> This patch introduces the 'memconsole' driver.
+On Mon, Mar 14, 2011 at 12:59 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Mar 14, 2011 at 12:49:17PM -0700, Mike Waychison wrote:
+>> On Mon, Mar 14, 2011 at 8:45 AM, Greg KH <greg@kroah.com> wrote:
+>> > On Fri, Mar 11, 2011 at 05:43:47PM -0800, Mike Waychison wrote:
+>> >> In order to keep Google's firmware drivers organized amongst themselves,
+>> >> create a new directory for them to live in.  As well, all Google
+>> >> firmware drivers are gated on CONFIG_GOOGLE_FIRMWARE=y, which defaults
+>> >> to 'n' in the kernel build.
+>> >
+>> > Everything defaults to 'n' in the kernel build system, so this really
+>> > isn't a big deal :)
 >>
->> Our firmware gives us access to an in-memory log of the firmware's
->> output.   This gives us visibility in a data-center of headless machines
->> as to what the firmware is doing.
+>> Well, I was hoping that we could have options gating on
+>> CONFIG_GOOGLE_FIRMWARE, but default to 'y'.  This makes our lives a
+>> bit easier as it means we have a single switch we need to enable on
+>> our side and all the options we care about (presumably all
+>> google-specific drivers) get enabled.
 >>
->> The memory console is found by the driver by finding a header block in
->> the EBDA.  The buffer is then copied out, and is exported to userland in
->> the file /sys/firmware/log.
->>
+>> If you have strong objections to this, I can flip the default values
+>> of the specific config options to 'n' as well though...
 >
-> OK, I really don't like this.
->
-> All it has is a 32-bit nonrandom signature, no DMI keying or anything
-> else to protect it.  This really isn't sufficient.
+> As decreed by Linus and others, all new config options should default to
+> 'n', unless your box is going to blow up into tiny pieces if you don't
+> select it.
 
-Good point.  I'll add some DMI strings checks.  It *should* be
-sufficient to just ensure that "Google, Inc." is the board vendor
-string (though I'll need to run some tests to verify that this covers
-the boards we care about).
+Fair enough.
+
+>
+> thanks,
+>
+> greg k-h
+>
