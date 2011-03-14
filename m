@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab1CNUQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:16:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57887 "EHLO hera.kernel.org"
+	id S1755409Ab1CNURj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:17:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57906 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab1CNUQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:16:57 -0400
-Date: Mon, 14 Mar 2011 20:16:11 GMT
+	id S1751813Ab1CNURh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 16:17:37 -0400
+Date: Mon, 14 Mar 2011 20:15:46 GMT
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, darren@dvhart.com, tglx@linutronix.de,
-        walken@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, darren@dvhart.com, tglx@linutronix.de,
-        walken@google.com
+Cc: mingo@redhat.com, torvalds@linux-foundation.org, schwidefsky@de.ibm.com,
+        peterz@infradead.org, cmetcalf@tilera.com, tony.luck@intel.com,
+        ralf@linux-mips.org, monstr@monstr.eu, linux@arm.linux.org.uk,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        darren@dvhart.com, lethal@linux-sh.org, davem@davemloft.net,
+        dhowells@redhat.com, benh@kernel.crashing.org, mattst88@gmail.com,
+        jejb@parisc-linux.org, walken@google.com
+Reply-To: mingo@redhat.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, schwidefsky@de.ibm.com, cmetcalf@tilera.com,
+        tony.luck@intel.com, linux@arm.linux.org.uk, ralf@linux-mips.org,
+        monstr@monstr.eu, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, darren@dvhart.com, lethal@linux-sh.org,
+        davem@davemloft.net, dhowells@redhat.com, benh@kernel.crashing.org,
+        jejb@parisc-linux.org, mattst88@gmail.com, walken@google.com
 In-Reply-To: <alpine.LFD.2.00.1103141126590.2787@localhost6.localdomain6>
 References: <alpine.LFD.2.00.1103141126590.2787@localhost6.localdomain6>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/futexes] arm: Remove bogus comment in futex_atomic_cmpxchg_inatomic()
-Message-ID: <tip-07d5ecae2940ddd77746e2fb597dcf57d3c2e277@git.kernel.org>
-Git-Commit-ID: 07d5ecae2940ddd77746e2fb597dcf57d3c2e277
+Subject: [tip:core/futexes] futex: Deobfuscate handle_futex_death()
+Message-ID: <tip-6e0aa9f8a8190e0879a29bd67aa606b51734a122@git.kernel.org>
+Git-Commit-ID: 6e0aa9f8a8190e0879a29bd67aa606b51734a122
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Mar 2011 20:16:11 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Mar 2011 20:15:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  07d5ecae2940ddd77746e2fb597dcf57d3c2e277
-Gitweb:     http://git.kernel.org/tip/07d5ecae2940ddd77746e2fb597dcf57d3c2e277
+Commit-ID:  6e0aa9f8a8190e0879a29bd67aa606b51734a122
+Gitweb:     http://git.kernel.org/tip/6e0aa9f8a8190e0879a29bd67aa606b51734a122
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Mon, 14 Mar 2011 20:00:30 +0100
+AuthorDate: Mon, 14 Mar 2011 10:34:35 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 14 Mar 2011 21:10:26 +0100
+CommitDate: Mon, 14 Mar 2011 21:08:47 +0100
 
-arm: Remove bogus comment in futex_atomic_cmpxchg_inatomic()
+futex: Deobfuscate handle_futex_death()
 
-commit 522d7dec(futex: Remove redundant pagefault_disable in
-futex_atomic_cmpxchg_inatomic()) added a bogus comment.
+handle_futex_death() uses futex_atomic_cmpxchg_inatomic() without
+disabling page faults. That's ok, but totally non obvious.
 
-/* Note that preemption is disabled by futex_atomic_cmpxchg_inatomic
- * call sites. */
+We don't hold locks so we actually can and want to fault here, because
+the get_user() before futex_atomic_cmpxchg_inatomic() does not
+guarantee a R/W mapping.
 
-Bogus in two aspects:
+We could just add a big fat comment to explain this, but actually
+changing the code so that the functionality is entirely clear is
+better.
 
-1) pagefault_disable != preempt_disable even if the mechanism we use
-   is the same
+Use the helper function which disables page faults around the
+futex_atomic_cmpxchg_inatomic() and handle a fault with a call to
+fault_in_user_writeable() as all other places in the futex code do as
+well.
 
-2) we have a call site which deliberately does not disable pagefaults
-   as it wants the possible fault to be handled - though that has been
-   changed for consistency reasons now.
-
-Sigh. I really should have seen that when committing the above. :(
-
-Catched-by-and-rightfully-ranted-at-by: Linus Torvalds <torvalds@linux-foundation.org>
+Pointed-out-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <alpine.LFD.2.00.1103141126590.2787@localhost6.localdomain6>
+Acked-by: Darren Hart <darren@dvhart.com>
 Cc: Michel Lespinasse <walken@google.com>
-Cc: Darren Hart <darren@dvhart.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Michal Simek <monstr@monstr.eu>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+LKML-Reference: <alpine.LFD.2.00.1103141126590.2787@localhost6.localdomain6>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arm/include/asm/futex.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ kernel/futex.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/futex.h b/arch/arm/include/asm/futex.h
-index 0e29d8e..199a6b6 100644
---- a/arch/arm/include/asm/futex.h
-+++ b/arch/arm/include/asm/futex.h
-@@ -97,9 +97,6 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
- 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
- 		return -EFAULT;
- 
--	/* Note that preemption is disabled by futex_atomic_cmpxchg_inatomic
--	 * call sites. */
+diff --git a/kernel/futex.c b/kernel/futex.c
+index c6bef6e..e9251d9 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2458,9 +2458,20 @@ retry:
+ 		 * userspace.
+ 		 */
+ 		mval = (uval & FUTEX_WAITERS) | FUTEX_OWNER_DIED;
+-		if (futex_atomic_cmpxchg_inatomic(&nval, uaddr, uval, mval))
+-			return -1;
 -
- 	__asm__ __volatile__("@futex_atomic_cmpxchg_inatomic\n"
- 	"1:	" T(ldr) "	%1, [%4]\n"
- 	"	teq	%1, %2\n"
++		/*
++		 * We are not holding a lock here, but we want to have
++		 * the pagefault_disable/enable() protection because
++		 * we want to handle the fault gracefully. If the
++		 * access fails we try to fault in the futex with R/W
++		 * verification via get_user_pages. get_user() above
++		 * does not guarantee R/W access. If that fails we
++		 * give up and leave the futex locked.
++		 */
++		if (cmpxchg_futex_value_locked(&nval, uaddr, uval, mval)) {
++			if (fault_in_user_writeable(uaddr))
++				return -1;
++			goto retry;
++		}
+ 		if (nval != uval)
+ 			goto retry;
+ 
