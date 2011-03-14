@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab1CNRSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 13:18:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64443 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242Ab1CNRSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 13:18:08 -0400
-Date: Mon, 14 Mar 2011 18:17:31 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <jweiner@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH] thp+memcg-numa: fix BUG at include/linux/mm.h:370!
-Message-ID: <20110314171730.GF10696@random.random>
-References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
- <20110314155232.GB10696@random.random>
- <alpine.LSU.2.00.1103140910570.2601@sister.anvils>
- <AANLkTikvt+o+UaksmvM5C7FWt7hTMJyaPiUGhQ+6OKBg@mail.gmail.com>
+	id S1753112Ab1CNR1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 13:27:33 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63467 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1CNR1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 13:27:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=v/Bw9JmRgqKtaHX6nmch5fdK7MPbbENSLRkABWGw+ApVOphZGpggGMeNCxqn7BEP4m
+         2juZjxFRrAB6dEQ6SRZL0SuX9S+BXvvEyQsYCdWScI2smIHqRIqxxr7eUDQzr99C1F3+
+         HbwPW5/ZGOlQdGsnSrFMkZHQ5pPzdcufhg+xQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikvt+o+UaksmvM5C7FWt7hTMJyaPiUGhQ+6OKBg@mail.gmail.com>
+Date: Mon, 14 Mar 2011 17:27:10 +0000
+Message-ID: <AANLkTik3qn-RVUTZp5+gTk+wB9SO_MsxySHEwE8Yzi-e@mail.gmail.com>
+Subject: [RFC][PATCH v2 00/23] (alpha) __vmalloc: add gfp flags variant of pte
+ and pmd allocation
+From: Prasad Joshi <prasadjoshi124@gmail.com>
+To: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+__vmalloc: propagating GFP allocation flag.
 
-On Mon, Mar 14, 2011 at 09:56:10AM -0700, Linus Torvalds wrote:
-> On Mon, Mar 14, 2011 at 9:37 AM, Hugh Dickins <hughd@google.com> wrote:
-> >
-> > I did try it that way at first (didn't help when I mistakenly put
-> > #ifndef instead of #ifdef around the put_page!), but was repulsed
-> > by seeing yet another #ifdef CONFIG_NUMA, so went with the duplicating
-> > version - which Linus has now taken.
-> 
-> I have to admit to being repulsed by the whole patch, but my main
-> source of "that's effin ugly" was from the crazy lock handling.
-> 
-> Does mem_cgroup_newpage_charge() even _need_ the mmap_sem at all? And
-> if not, why not release the read-lock early? And even if it _does_
-> need it, why not do
-> 
+- adds functions to allow caller to pass the GFP flag for memory allocation
+- helps in fixing the Bug 30702 (__vmalloc(GFP_NOFS) can callback
+  file system evict_inode).
 
-The mmap_sem is needed for the page allocation, or the "vma" can
-become a dangling pointer (the vma is passed to alloc_hugepage_vma).
+Signed-off-by: Anand Mitra <mitra@kqinfotech.com>
+Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
+---
+Chnagelog:
+arch/alpha/include/asm/pgalloc.h |   18 ++++++++++++++----
+1 files changed, 14 insertions(+), 4 deletions(-)
+---
+diff --git a/arch/alpha/include/asm/pgalloc.h b/arch/alpha/include/asm/pgalloc.h
+index bc2a0da..d05dfc2 100644
+--- a/arch/alpha/include/asm/pgalloc.h
++++ b/arch/alpha/include/asm/pgalloc.h
+@@ -38,10 +38,15 @@ pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ }
 
->     ret = mem_cgroup_newpage_charge();
->     up_read(&mm->mmap_sem);
->     if (ret) {
->         ...
-> 
-> finally, the #ifdef CONFIG_NUMA is ugly, but it's ugly in the return
-> path of the function too, and the nicer way would probably be to have
-> it in one place and do something like
-> 
->     /*
->      * The allocation rules are different for the NUMA/non-NUMA cases
->      * For the NUMA case, we allocate here, for the non-numa case we
->      * use the allocation in *hpage
->      */
->     static inline struct page *collapse_alloc_hugepage(struct page **hpage)
->     {
->     #ifdef CONFIG_NUMA
->         VM_BUG_ON(*hpage);
->         return alloc_hugepage_vma(khugepaged_defrag(), vma, address, node);
->     #else
->         VM_BUG_ON(!*hpage);
->         return *hpage;
->     #endif
->     }
-> 
->     static inline void collapse_free_hugepage(struct page *page)
->     {
->     #ifdef CONFIG_NUMA
->         put_page(new_page);
->     #else
->         /* Nothing to do */
->     #endif
->     }
-> 
-> and use that instead. The point being that the #ifdef'fery now ends up
-> being in a much more targeted area and much better abstracted, rather
-> than in the middle of code, and ugly as sin.
+ static inline pmd_t *
++__pmd_alloc_one(struct mm_struct *mm, unsigned long address, gfp_t gfp_mask)
++{
++	return (pmd_t *)__get_free_page(gfp_mask | __GFP_ZERO);
++}
++
++static inline pmd_t *
+ pmd_alloc_one(struct mm_struct *mm, unsigned long address)
+ {
+-	pmd_t *ret = (pmd_t *)__get_free_page(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO);
+-	return ret;
++	return __pmd_alloc_one(mm, address, GFP_KERNEL | __GFP_REPEAT);
+ }
 
-Agreed about the cleanup. I didn't add a new function for it like
-probably I should have to make it less ugly...
+ static inline void
+@@ -51,10 +56,15 @@ pmd_free(struct mm_struct *mm, pmd_t *pmd)
+ }
 
-About mem_cgroup_newpage_charge I think you're right it won't need the
-mmap_sem. Running it under it is sure safe. But if it's not needed we
-can move the up_read before the mem_cgroup_newpage_charge like you
-suggested. Johannes/Minchan could you confirm the mmap_sem isn't
-needed around mem_cgroup_newpage_charge? The mm and new_page are
-stable without the mmap_sem, only the vma goes away but the memcg
-shouldn't care.
+ static inline pte_t *
++__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addressi,
+gfp_t gfp_mask)
++{
++	return (pte_t *)__get_free_page(gfp_mask | __GFP_ZERO);
++}
++
++static inline pte_t *
+ pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
+ {
+-	pte_t *pte = (pte_t *)__get_free_page(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO);
+-	return pte;
++	return __pte_alloc_one_kernel(mm, address, GFP_KERNEL | __GFP_REPEAT);
+ }
 
-> But as mentioned, the lock handling is disgusting. Why is it even safe
-> to drop and re-take the lock at all?
-
-We have to upgrade the rwsem from read to write (hugepmd isn't allowed
-to materialize under code that runs with the mmap_sem read mode,
-that's one of the invariants to be safe when split_huge_page_pmd does
-nothing and let the regular pte walk go ahead). It is safe because we
-revalidate the vma after dropping the read lock and taking the write
-lock. It's generally impossible to upgrade the lock without first
-dropping it if more than one thread does that in parallel on the same
-mm (they all hold the read lock so somebody has to drop the read lock
-and revalidate before anyone has a chance to take the write lock). Now
-interestingly I notice that in this very case khugepaged is single
-threaded and no other places would call upgrade_read() on the mmap_sem
-anywhere, so it probably would be safe, but there's no method for that
-(because it'd need to be called at most by one thread at once on the
-same mm and that's probably not considered an useful case, even if it
-probably would be in collapse_huge_page). If we ever thread khugepaged
-to run on more than one core then we'd be forced to drop the lock too
-(unless we make the scan on the same mm mutually exclusive which isn't
-the best for large mm anyway). But I exclude we ever need to thread
-khugepaged though, it's blazing fast (unlike the ksmd scan). So if we
-implment an upgrade_read() we might be able to remove a find_vma in
-collapse_huge_page. It's not very important to optimize though as the
-memory copy should be the biggest cost anyway.
+ static inline void
