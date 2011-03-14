@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab1CNVTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:19:13 -0400
-Received: from www.tglx.de ([62.245.132.106]:55989 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755631Ab1CNVTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:19:11 -0400
-Date: Mon, 14 Mar 2011 22:17:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Miller <davem@davemloft.net>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        buytenh@secretlab.ca, grant.likely@secretlab.ca,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Feng Tang <feng.tang@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: linux-next: build failure after merge of the final tree (powerpc
- tree related)
-In-Reply-To: <20110314.135116.112600339.davem@davemloft.net>
-Message-ID: <alpine.LFD.2.00.1103142213081.2787@localhost6.localdomain6>
-References: <20110314203827.4b61818e.sfr@canb.auug.org.au> <1300135074.22236.788.camel@pasglop> <20110314.135116.112600339.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932133Ab1CNVU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:20:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56568 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755631Ab1CNVUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 17:20:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WsCV2HT+SXSdLFDASzcaGN3gr+0yY1xoFP+bcEgDEfJ29xexcTv11UvQPWIITJRB/C
+         /l6S1OvPIch74Uy6/tDATUhQFDhbsQvrsJK258nkQZLB5EmiAgSc0VDpd9+e+hKe6Dns
+         QMXb5aVAhMyppPsq9GRM1MKd37LlpESiGkZVk=
+Date: Mon, 14 Mar 2011 22:20:53 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
+Message-ID: <20110314212050.GH6139@nowhere>
+References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+ <20110314204341.GC9388@ghostprotocols.net>
+ <20110314205100.GG6139@nowhere>
+ <20110314210315.GC2388@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314210315.GC2388@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011, David Miller wrote:
-
-> From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Date: Tue, 15 Mar 2011 07:37:54 +1100
+On Mon, Mar 14, 2011 at 06:03:15PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Mar 14, 2011 at 09:51:02PM +0100, Frederic Weisbecker escreveu:
+> > On Mon, Mar 14, 2011 at 05:43:41PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > - Count instructions inside softirqs, outside softirqs and everywhere:
 > 
-> > On Mon, 2011-03-14 at 20:38 +1100, Stephen Rothwell wrote:
-> >> Hi all,
-> >> 
-> >> After merging the final tree, today's linux-next build (powerpc
-> >> allyesconfig) failed like this:
-> >> 
-> >> drivers/gpio/langwell_gpio.c: In function 'lnw_irq_handler':
-> >> drivers/gpio/langwell_gpio.c:210: error: 'struct irq_desc' has no member named 'chip'
-> >> drivers/gpio/langwell_gpio.c:211: error: 'struct irq_desc' has no member named 'chip'
-> >> 
-> >> Caused by commit 17b9f9e2653a ("powerpc: Enable
-> >> GENERIC_HARDIRQS_NO_DEPRECATED") enabling
-> >> CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED for powerpc without previously
-> >> fixing up the above driver.
-> >> 
-> >> I have reverted that commit for today.
-> > 
-> > Except that the above driver has nothing to do with powerpc, it's some
-> > Intel Moorestown stuff...
-> > 
-> > It should be fixed regardless I suppose, CC'ing Thomas.
+> > > > 	$ perf stat -e irq:softirq_entry -e irq:softirq_exit \
+> > > > 		-e instructions --starter 0 --stopper 1 --enable-on-starter \
+> > > > 		-e instructions --starter 1 --stopper 0 \
+> > > > 		-e instructions ./perf bench sched messaging
 > 
-> I've had to make fixes to this driver in sparc64 allmodconfig builds
-> too :-)
+> > > $ perf record -e instructions@irq:softirq_entry..irq:softirq_exit \
+> > > 	      -e instructions@irq:softirq_exit..irq:softirq_entry \
+> > > 	      -e instructions \
+> > > 	perf bench sched messaging
+> 
+> > Agreed that's nice but may be more as a shortcut than a full replacement?
+> > Otherwise it becomes hard or unreadable to define a filter on a starter. Or
+> > a starter on a starter.
+> 
+> Sure, multiple ways to express ranges probably is ok, with more complex
+> ones for more complex cases, like the way you did, that first defines an
+> evlist that is the set of starters/stoppers and then evsel->evidx to add
+> starters/stoppers to later events.
 
-Sigh. Yes, this wants to depend on x86 in the first place.
+Yep.
 
-But this is the second instance of blindly and mindlessly changing eoi
-to irq_eoi w/o looking at the reason for this change.
+> But starter on a starter? Couldn't grok, could you provide an example?
 
-Those patches should have been rejected based on their changelog in
-the first place:
+I have no strong example in mind.
 
-    Latest kernel has many changes in IRQ subsystem and its interfaces, like
-    adding "irq_eoi" for struct irq_chip, this patch is a follow up change
-    for that.
+But one may want to count instructions when we are in an interrupt and
+lock A is held.
 
-When noone beats me to fix that mess, I'll do it tomorrow morning.
+Or count instruction when A and B are held. Or count instruction in
+page faults happening in read() syscall.
 
-Thanks,
+Event range define a state, and anytime you need to profile/trace a
+desired stacked state, starters on starters can be a good solution,
+thus even a common practice.
+ 
+> But I could think of this as a way to express filters:
+> 
+> $ perf record -e instructions@irq:irq:irq_handler_entry(irq=eth0)..irq:irq_handler_exit(\1) \
+> 	      -e instructions \
+> 	netperf
+> 
+> looks quite natural for someone used to git and sed, i.e. developers :)
 
-	tglx
+Yeah indeed, I like filters defined in parenthesis after the event!
