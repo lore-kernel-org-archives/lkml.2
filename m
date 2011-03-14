@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab1CNVD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:03:28 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39160 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757193Ab1CNVDY (ORCPT
+	id S1757209Ab1CNVJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:09:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:35596 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab1CNVJ6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:03:24 -0400
+	Mon, 14 Mar 2011 17:09:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=jHeETUIzi3Q8lh1rxVgbOJjfelGRU5FQ/FhswlsHu4mz3C3TPqxacd7tEKw8z3xRJr
-         T+spmFZICpyYELU6tEsq/whsBTWj1HfziMLxyqcn2QzvIwdujpPDvQwrahZ9J6YGtH94
-         bfcRACoqwRFr+ClGOntghglWS8RN7kfFjJi+0=
-Date: Mon, 14 Mar 2011 18:03:15 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-Message-ID: <20110314210315.GC2388@ghostprotocols.net>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
- <20110314204341.GC9388@ghostprotocols.net>
- <20110314205100.GG6139@nowhere>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=KfMWCuIw3n01uz+MmpgZzZvOH/f2LBo+a2z3dMeK2ZiQsBGiZw1dh+cC6bAjHi1U6C
+         ZwgEU0Y1nubC8usANX1Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110314205100.GG6139@nowhere>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110314201346.GA1084@kroah.com>
+References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
+ <20110312014353.6133.94204.stgit@mike.mtv.corp.google.com>
+ <20110314154713.GF31340@kroah.com> <AANLkTikhhYv2=memo-Rkhh1pG3v4-edrUROTgLoc6cbd@mail.gmail.com>
+ <20110314201346.GA1084@kroah.com>
+From: Mike Waychison <mikew@google.com>
+Date: Mon, 14 Mar 2011 14:09:33 -0700
+Message-ID: <AANLkTinNvq0Y6=nxDaBP1uDR-SwdGX65yP1HiBHwpa4L@mail.gmail.com>
+Subject: Re: [PATCH v2 11/12] driver: Google EFI SMI
+To: Greg KH <greg@kroah.com>
+Cc: Matt Domsch <Matt_Domsch@dell.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Mar 14, 2011 at 09:51:02PM +0100, Frederic Weisbecker escreveu:
-> On Mon, Mar 14, 2011 at 05:43:41PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > - Count instructions inside softirqs, outside softirqs and everywhere:
+On Mon, Mar 14, 2011 at 1:13 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Mar 14, 2011 at 01:01:50PM -0700, Mike Waychison wrote:
+>> On Mon, Mar 14, 2011 at 8:47 AM, Greg KH <greg@kroah.com> wrote:
+>> > On Fri, Mar 11, 2011 at 05:43:53PM -0800, Mike Waychison wrote:
+>> >> The "gsmi" driver bridges userland with firmware specific routines for
+>> >> accessing hardware.
+>> >
+>> > As with the other driver in this series, what keeps this driver from
+>> > being loaded on hardware that does not support this functionality?  If
+>> > it is loaded, will it cause bad things to happen?
+>>
+>> gsmi itself is better guarded than the memconsole driver that the x86
+>> maintainers objected to.
+>>
+>> It relies on keying off of a couple different strings, looking for
+>> "GOOGLE" as either the OEM ID in the  FADT table, or "Google, Inc." as
+>> the board vendor.  We further discriminate whether the driver should
+>> load (it doesn't apply to all of our boards) with a couple other
+>> checks.  See gsmi_system_valid().  I've added a comment to the patch
+>> description indicating this for the upcoming v3 send-out.
+>
+> Ok, fair enough.  I'm guessing that you have tried testing the module by
+> loading it in a machine where this doesn't work?
+>
+>> > Also, what causes it to be loaded on hardware that needs it?  There
+>> > should be some MODULE_DEVICE_TABLE somewhere in this thing to cause it
+>> > to be autoloaded?
+>>
+>> I don't know if there is a good way to have this guy autoloaded, but
+>> that's probably fine. We will likely compile it in as a built-in or
+>> adjust our userland to have the module loaded.  We use it on all
+>> machines we've been building for the last 4-5 years, and a table of
+>> device IDs would just contain a list of a bunch of parts that aren't
+>> really google-specific.
+>
+> What's wrong with using DMI strings?  Are there going to be that many
+> different ones of them here?
 
-> > > 	$ perf stat -e irq:softirq_entry -e irq:softirq_exit \
-> > > 		-e instructions --starter 0 --stopper 1 --enable-on-starter \
-> > > 		-e instructions --starter 1 --stopper 0 \
-> > > 		-e instructions ./perf bench sched messaging
-
-> > $ perf record -e instructions@irq:softirq_entry..irq:softirq_exit \
-> > 	      -e instructions@irq:softirq_exit..irq:softirq_entry \
-> > 	      -e instructions \
-> > 	perf bench sched messaging
-
-> Agreed that's nice but may be more as a shortcut than a full replacement?
-> Otherwise it becomes hard or unreadable to define a filter on a starter. Or
-> a starter on a starter.
-
-Sure, multiple ways to express ranges probably is ok, with more complex
-ones for more complex cases, like the way you did, that first defines an
-evlist that is the set of starters/stoppers and then evsel->evidx to add
-starters/stoppers to later events.
-
-But starter on a starter? Couldn't grok, could you provide an example?
-
-But I could think of this as a way to express filters:
-
-$ perf record -e instructions@irq:irq:irq_handler_entry(irq=eth0)..irq:irq_handler_exit(\1) \
-	      -e instructions \
-	netperf
-
-looks quite natural for someone used to git and sed, i.e. developers :)
-
-- Arnaldo
+DMI strings would probably work.  I totally missed the fact that I
+could use them for MODULE_DEVICE_TABLE.  Let me re-work patch 11 and
+12 to use this matching stuff.
