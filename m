@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab1CNPOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:14:32 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51775 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752176Ab1CNPOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:14:31 -0400
-Date: Mon, 14 Mar 2011 08:13:20 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] proc: make check_mem_permission() return an
- mm_struct on success
-Message-ID: <20110314151320.GG21770@outflux.net>
-References: <1300045764-24168-1-git-send-email-wilsons@start.ca>
- <1300045764-24168-12-git-send-email-wilsons@start.ca>
- <20110314000859.GF21770@outflux.net>
- <20110314005948.GA28037@fibrous.localdomain>
+	id S1756825Ab1CNPQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:16:56 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:56764 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab1CNPQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 11:16:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Fh7AXEku3IuDxUK1X9skuVmUoGMi3QHG/V/YJ4Dy6If6QtmTDGeKEfQLfBRs8WNOr3
+         skW56WB1Hhlx0nTcw+9nRX7rwaU9PZ3Ij0RVgswWtkeY4vloCRC0M7n6aRHhmp+06nVQ
+         i1f+Ge57f6iUKPSz/407v3nN/67fdZ6Ql90qg=
+Date: Tue, 15 Mar 2011 00:16:30 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v6 6/9] memcg: add cgroupfs interface to memcg dirty
+ limits
+Message-ID: <20110314151630.GG11699@barrios-desktop>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <1299869011-26152-7-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110314005948.GA28037@fibrous.localdomain>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <1299869011-26152-7-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 13, 2011 at 08:59:48PM -0400, Stephen Wilson wrote:
-> On Sun, Mar 13, 2011 at 05:08:59PM -0700, Kees Cook wrote:
-> > On Sun, Mar 13, 2011 at 03:49:23PM -0400, Stephen Wilson wrote:
-> > >  	copied = -EIO;
-> > >  	if (file->private_data != (void *)((long)current->self_exec_id))
-> > > -		goto out;
-> > > +		goto out_mm;
-> > 
-> > The file->private_data test seems wrong to me. Is there a case were the mm
-> > returned from check_mem_permission(task) can refer to something that is no
-> > longer attached to task?
-> > 
-> > For example:
-> > - pid 100 ptraces pid 200
-> > - pid 100 opens /proc/200/mem
-> > - pid 200 execs into something else
+On Fri, Mar 11, 2011 at 10:43:28AM -0800, Greg Thelen wrote:
+> Add cgroupfs interface to memcg dirty page limits:
+>   Direct write-out is controlled with:
+>   - memory.dirty_ratio
+>   - memory.dirty_limit_in_bytes
 > 
-> If the _target_ task (pid 200) execs then we are OK -- we hold a
-> reference to the *old* mm and it is that to which we read and write via
-> access_remote_vm().
-
-Right, the old mm is held during read_mem(). But isn't the mm fetched
-from check_mem_permission(task) each time pid 100 reads from the
-/proc/200/mem fd? (And if so, that's still okay, it still passes through
-check_mem_permission() so the access will be validated.)
-
-> In the case of the file->private_data test we are looking at the
-> *ptracer* (pid 100).  Here we are guarding against the case where the
-> tracer exec's and accidentally leaks the fd (hence the test wrt
-> current).  IOW, /proc/pid/mem is implicitly close on exec.  This is just
-> a minor feature to protect against buggy user space reading/writing
-> mistakenly into the targets address space.
-
-Ah! Right, thanks, that clears that up.
-
-> > What is that test trying to do? And I'm curious for both mem_write
-> > as well as the existing mem_read use of the test, since I'd like to see
-> > a general solution to the "invalidate /proc fds across exec" so we can
-> > close CVE-2011-1020 for everything[1].
+>   Background write-out is controlled with:
+>   - memory.dirty_background_ratio
+>   - memory.dirty_background_limit_bytes
 > 
-> These patches certainly do not add to the problem -- but they do not try
-> to address the general issue either.
-
-The use of check_mem_permission() already protects /proc/pid/mem, but
-that test is much stricter than the may_ptrace() checks of things like
-/proc/pid/maps. Regardless, yeah, there's no problem here that I can see.
-
-> > Associated with this, the drop of check_mem_permission(task) during the
-> > mem_read loop implies that the mm is locked during that loop and seems to
-> > reflect what you're saying ("Holding a reference to the target mm_struct
-> > eliminates this vulnerability."), meaning there's no reason to recheck
-> > permissions. Is that accurate?
+> Other memcg cgroupfs files support 'M', 'm', 'k', 'K', 'g'
+> and 'G' suffixes for byte counts.  This patch provides the
+> same functionality for memory.dirty_limit_in_bytes and
+> memory.dirty_background_limit_bytes.
 > 
-> Yes, precisely.  Once we have a reference to the mm we do not need to
-> worry about things changing underneath our feet, so the second check in
-> mem_read() is redundant and can be dropped.
-
-Excellent. :)
-
--Kees
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
 -- 
-Kees Cook
-Ubuntu Security Team
+Kind regards,
+Minchan Kim
