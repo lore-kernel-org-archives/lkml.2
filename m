@@ -1,137 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1CNTfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:35:16 -0400
-Received: from fieldses.org ([174.143.236.118]:59190 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182Ab1CNTfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:35:14 -0400
-Date: Mon, 14 Mar 2011 15:35:01 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, roel <roel.kluin@gmail.com>,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: wrong index used in inner loop
-Message-ID: <20110314193501.GE25442@fieldses.org>
-References: <4D76A06A.4090405@gmail.com>
- <20110309154230.66bc2c36.akpm@linux-foundation.org>
- <20110310180800.GA31984@fieldses.org>
- <4D799C6E.1050101@cn.fujitsu.com>
+	id S1752096Ab1CNTgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:36:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47572 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750988Ab1CNTgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 15:36:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D799C6E.1050101@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110314190446.GB21845@redhat.com>
+References: <20110303100030.B936.A69D9226@jp.fujitsu.com> <20110308134233.GA26884@redhat.com>
+ <alpine.DEB.2.00.1103081549530.27910@chino.kir.corp.google.com>
+ <20110309151946.dea51cde.akpm@linux-foundation.org> <alpine.DEB.2.00.1103111142260.30699@chino.kir.corp.google.com>
+ <20110312123413.GA18351@redhat.com> <20110312134341.GA27275@redhat.com>
+ <AANLkTinHGSb2_jfkwx=Wjv96phzPCjBROfCTFCKi4Wey@mail.gmail.com>
+ <20110313212726.GA24530@redhat.com> <20110314190419.GA21845@redhat.com> <20110314190446.GB21845@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 14 Mar 2011 12:35:52 -0700
+Message-ID: <AANLkTi=YnG7tYCSrCPTNSQANOkD2MkP0tMjbOyZbx4NG@mail.gmail.com>
+Subject: Re: [PATCH 1/3 for 2.6.38] oom: oom_kill_process: don't set
+ TIF_MEMDIE if !p->mm
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>, David Rientjes <rientjes@google.com>,
+        Frantisek Hrbata <fhrbata@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 11:52:14AM +0800, Mi Jinlong wrote:
-> 
-> 
-> J. Bruce Fields:
-> > On Wed, Mar 09, 2011 at 03:42:30PM -0800, Andrew Morton wrote:
-> >> On Tue, 08 Mar 2011 22:32:26 +0100
-> >> roel <roel.kluin@gmail.com> wrote:
-> >>
-> >>> Index i was already used in the outer loop
-> >>>
-> >>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> >>> ---
-> >>>  fs/nfsd/nfs4xdr.c |    4 ++--
-> >>>  1 files changed, 2 insertions(+), 2 deletions(-)
-> >>>
-> >>> Not 100% sure this one is needed but it looks suspicious.
-> >>>
-> >>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-> >>> index 1275b86..615f0a9 100644
-> >>> --- a/fs/nfsd/nfs4xdr.c
-> >>> +++ b/fs/nfsd/nfs4xdr.c
-> >>> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
-> >>>  
-> >>>  	u32 dummy;
-> >>>  	char *machine_name;
-> >>> -	int i;
-> >>> +	int i, j;
-> >>>  	int nr_secflavs;
-> >>>  
-> >>>  	READ_BUF(16);
-> >>> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
-> >>>  			READ_BUF(4);
-> >>>  			READ32(dummy);
-> >>>  			READ_BUF(dummy * 4);
-> >>> -			for (i = 0; i < dummy; ++i)
-> >>> +			for (j = 0; j < dummy; ++j)
-> >>>  				READ32(dummy);
-> >>>  			break;
-> >>>  		case RPC_AUTH_GSS:
-> >> ooh, big bug.
-> >>
-> >> I wonder why it was not previously detected at runtime.  Perhaps
-> >> nr_secflavs is always 1.
-> > 
-> > Yeah, no client uses this calback security information yet.
-> > 
-> > Mi Jinlong, do you think this is something we could have caught with
-> > another pynfs test?
-> 
->   Yes, we must test it.
-> 
->   After testing, the following test case is OK.
+On Mon, Mar 14, 2011 at 12:04 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> oom_kill_process() simply sets TIF_MEMDIE and returns if PF_EXITING.
+> This is very wrong by many reasons. In particular, this thread can
+> be the dead group leader. Check p->mm != NULL.
 
-I've pushed out a tree with your additional tests to
+Explain more, please. Maybe I'm missing some context because I wasn't
+cc'd on the original thread, but PF_EXITING gets set by exit_signal(),
+and exit_mm() is called almost immediately afterwards which will set
+p->mm to NULL.
 
-	git://linux-nfs.org/~bfields/pynfs41.git
+So afaik, this will basically just remove the whole point of the code
+entirely - so why not remove it then?
 
-Let me know what I'm missing.
+The combination of testing PF_EXITING and p->mm just doesn't seem to
+make any sense.
 
-Thanks again.--b.
-
-> 
-> --
-> thanks,
-> Mi Jinlong
-> 
-> 
-> >From 1afac3444b37bac66970f19c409660a304a53fb4 Mon Sep 17 00:00:00 2001
-> From: Mi Jinlong <mijinlong@cn.fujitsu.com>
-> Date: Sun, 11 Mar 2011 09:05:22 +0800
-> Subject: [PATCH] CLNT: test a decode problem which use wrong index
-> 
-> Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-> ---
->  nfs4.1/server41tests/st_create_session.py |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> diff --git a/nfs4.1/server41tests/st_create_session.py b/nfs4.1/server41tests/st_create_session.py
-> index ff55d10..e3a8421 100644
-> --- a/nfs4.1/server41tests/st_create_session.py
-> +++ b/nfs4.1/server41tests/st_create_session.py
-> @@ -252,6 +252,22 @@ def testCbSecParms(t, env):
->      c1 = env.c1.new_client(env.testname(t))
->      sess1 = c1.create_session(sec=sec)
->  
-> +def testCbSecParmsDec(t, env):
-> +    """A decode problem was found at NFS server that 
-> +       wrong index used in inner loop, 
-> +       http://marc.info/?l=linux-kernel&m=129961996327640&w=2
-> +
-> +    FLAGS: create_session all
-> +    CODE: CSESS16a
-> +    """
-> +    sec = [callback_sec_parms4(AUTH_NONE),
-> +           callback_sec_parms4(RPCSEC_GSS, cbsp_gss_handles=gss_cb_handles4(RPC_GSS_SVC_PRIVACY, "Handle from server", "Client handle")),
-> +           callback_sec_parms4(AUTH_SYS, cbsp_sys_cred=authsys_parms(5, "Random machine name", 7, 11, [])),
-> +           ]
-> +                               
-> +    c1 = env.c1.new_client(env.testname(t))
-> +    sess1 = c1.create_session(sec=sec)
-> +
->  def testRdmaArray0(t, env):
->      """Test 0 length rdma arrays
->  
-> -- 
-> 1.7.4.1
-> 
-> 
+                      Linus
