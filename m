@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab1CNR3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 13:29:44 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45705 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab1CNR3n (ORCPT
+	id S1755214Ab1CNRaa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 13:30:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3222 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab1CNRa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 13:29:43 -0400
+	Mon, 14 Mar 2011 13:30:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=QuRxNl6zeUUUpeJUd65aYfoI9XQXn1oduDMwOR5Eh12ERLz2lsx+2f48Xws3DCWGye
-         RiliHHiTS80raajlZOP73BRxP7qwFTtbM78tutl+ZHFwokYmpZexmlUigQ6qAYPtvHLD
-         k3fyvpbwzvskG7sFFVSH0mUoAqcixP512JLP4=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=qBg+WqGkgafeuPe5td/ayZaMA7/TQK/JUvJecE4yoAS8aUp42+WupWZ0M4ARHOZ5YW
+         GNHyub3IKV/fGfMmQAbw==
+Date: Mon, 14 Mar 2011 10:30:20 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: swap: Unlock swapfile inode mutex before closing
+ file on bad swapfiles
+In-Reply-To: <20110314122746.GA32408@suse.de>
+Message-ID: <alpine.LSU.2.00.1103141026480.2894@sister.anvils>
+References: <20110314122746.GA32408@suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Mon, 14 Mar 2011 17:29:41 +0000
-Message-ID: <AANLkTikpM6RRNoT1nPk0Jws3SKff81wJRbJUnJAi3J=3@mail.gmail.com>
-Subject: [RFC][PATCH v2 02/23] (armho) __vmalloc: add gfp flags variant of pte
- and pmd allocation
-From: Prasad Joshi <prasadjoshi124@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__vmalloc: propagating GFP allocation flag.
+On Mon, 14 Mar 2011, Mel Gorman wrote:
 
-- adds functions to allow caller to pass the GFP flag for memory allocation
-- helps in fixing the Bug 30702 (__vmalloc(GFP_NOFS) can callback
-		  file system evict_inode).
+> This patch releases the mutex if its held before calling filep_close()
+> so swapon fails as expected without deadlock when the swapfile is backed
+> by NFS.  If accepted for 2.6.39, it should also be considered a -stable
+> candidate for 2.6.38 and 2.6.37.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Signed-off-by: Anand Mitra <mitra@kqinfotech.com>
-Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
----
-Chnagelog:
-arch/arm/include/asm/pgalloc.h |   11 +++++++++--
-1 files changed, 9 insertions(+), 2 deletions(-)
----
-diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
-index 22de005..0696068 100644
---- a/arch/arm/include/asm/pgalloc.h
-+++ b/arch/arm/include/asm/pgalloc.h
-@@ -28,6 +28,7 @@
- /*
-  * Since we have only two-level page tables, these are trivial
-  */
-+#define __pmd_alloc_one(mm,addr,mask)	({ BUG(); ((pmd_t *)2); })
- #define pmd_alloc_one(mm,addr)		({ BUG(); ((pmd_t *)2); })
- #define pmd_free(mm, pmd)		do { } while (0)
- #define pgd_populate(mm,pmd,pte)	BUG()
-@@ -59,17 +60,23 @@ static inline void clean_pte_table(pte_t *pte)
-  *  +------------+
-  */
- static inline pte_t *
--pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr)
-+__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr,
-gfp_t gfp_mask)
- {
- 	pte_t *pte;
+Acked-by: Hugh Dickins <hughd@google.com>
 
--	pte = (pte_t *)__get_free_page(PGALLOC_GFP);
-+	pte = (pte_t *)__get_free_page(gfp_mask | __GFP_NOTRACK | __GFP_ZERO);
- 	if (pte)
- 		clean_pte_table(pte);
-
- 	return pte;
- }
-
-+static inline pte_t *
-+pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr)
-+{
-+	return __pte_alloc_one_kernel(mm, addr, GFP_KERNEL | __GFP_REPEAT);
-+}
-+
- static inline pgtable_t
- pte_alloc_one(struct mm_struct *mm, unsigned long addr)
- {
+Thank you!
