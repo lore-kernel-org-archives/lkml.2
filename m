@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab1CNXt2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 19:49:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40709 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab1CNXt0 (ORCPT
+	id S1754066Ab1CNXxd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 19:53:33 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:8509 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab1CNXxc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 19:49:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 15 Mar 2011 08:42:57 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
+	Mon, 14 Mar 2011 19:53:32 -0400
+X-IronPort-AV: E=Sophos;i="4.62,319,1297065600"; 
+   d="scan'208";a="530257940"
+Subject: Re: [PATCH] nfsd: wrong index used in inner loop
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Mi Jinlong <mijinlong@cn.fujitsu.com>, roel <roel.kluin@gmail.com>,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH] thp+memcg-numa: fix BUG at include/linux/mm.h:370!
-Message-Id: <20110315084257.f6116c70.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110314195823.GC2140@redhat.com>
-References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
-	<20110314155232.GB10696@random.random>
-	<alpine.LSU.2.00.1103140910570.2601@sister.anvils>
-	<AANLkTikvt+o+UaksmvM5C7FWt7hTMJyaPiUGhQ+6OKBg@mail.gmail.com>
-	<20110314171730.GF10696@random.random>
-	<20110314195823.GC2140@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110314222229.GJ25442@fieldses.org>
+References: <4D76A06A.4090405@gmail.com>
+	 <20110309004955.GD15814@fieldses.org> <4D79A183.8090306@cn.fujitsu.com>
+	 <20110314222229.GJ25442@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Mon, 14 Mar 2011 19:52:11 -0400
+Message-ID: <1300146731.3026.4.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 14 Mar 2011 23:52:13.0614 (UTC) FILETIME=[D75FA4E0:01CBE2A2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 20:58:23 +0100
-Johannes Weiner <jweiner@redhat.com> wrote:
+On Mon, 2011-03-14 at 18:22 -0400, J. Bruce Fields wrote:
+> On Fri, Mar 11, 2011 at 12:13:55PM +0800, Mi Jinlong wrote:
+> > 
+> > 
+> > J. Bruce Fields:
+> > > On Tue, Mar 08, 2011 at 10:32:26PM +0100, roel wrote:
+> > >> Index i was already used in the outer loop
+> > >>
+> > >> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> > >> ---
+> > >>  fs/nfsd/nfs4xdr.c |    4 ++--
+> > >>  1 files changed, 2 insertions(+), 2 deletions(-)
+> > >>
+> > >> Not 100% sure this one is needed but it looks suspicious.
+> > > 
+> > > Looks bad to me, thanks.
+> > > 
+> > > nfsd4_decode_create_session should probably really be broken up a little
+> > > bit; if it wasn't so long this would have been more obvious.
+> > > 
+> > > I'll see if I can slip this into 2.6.38 with a couple other last-minute
+> > > patches....  Otherwise, it'll be in 2.6.39.
+> > > 
+> > > --b.
+> > > 
+> > >> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+> > >> index 1275b86..615f0a9 100644
+> > >> --- a/fs/nfsd/nfs4xdr.c
+> > >> +++ b/fs/nfsd/nfs4xdr.c
+> > >> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+> > >>  
+> > >>  	u32 dummy;
+> > >>  	char *machine_name;
+> > >> -	int i;
+> > >> +	int i, j;
+> > >>  	int nr_secflavs;
+> > >>  
+> > >>  	READ_BUF(16);
+> > >> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+> > >>  			READ_BUF(4);
+> > >>  			READ32(dummy);
+> > >>  			READ_BUF(dummy * 4);
+> > >> -			for (i = 0; i < dummy; ++i)
+> > >> +			for (j = 0; j < dummy; ++j)
+> > >>  				READ32(dummy);
+> > 
+> >   We must not use dummy for index here.
+> >   After the first index, READ32(dummy) will change dummy!!!!
+> 
+> Actually, wait, this is kind of silly.  I don't see why we couldn't just
+> skip the loop and do
+> 
+> 	p += dummy;
 
-> On Mon, Mar 14, 2011 at 06:17:31PM +0100, Andrea Arcangeli wrote:
-> > On Mon, Mar 14, 2011 at 09:56:10AM -0700, Linus Torvalds wrote:
-> > > Does mem_cgroup_newpage_charge() even _need_ the mmap_sem at all? And
-> > > if not, why not release the read-lock early? And even if it _does_
-> > > need it, why not do
-> 
-> [...]
-> 
-> > About mem_cgroup_newpage_charge I think you're right it won't need the
-> > mmap_sem. Running it under it is sure safe. But if it's not needed we
-> > can move the up_read before the mem_cgroup_newpage_charge like you
-> > suggested. Johannes/Minchan could you confirm the mmap_sem isn't
-> > needed around mem_cgroup_newpage_charge? The mm and new_page are
-> > stable without the mmap_sem, only the vma goes away but the memcg
-> > shouldn't care.
-> 
-> We don't care about the vma.  It's all about assigning the physical
-> page to the memcg that mm->owner belongs to.
-> 
-> It would be the first callsite not holding the mmap_sem, but that is
-> only because all existing sites are fault handlers that don't drop the
-> lock for other reasons.
-> 
-> I am not aware of anything that would rely on the lock in there, or
-> would not deserve to break if it did.
-> 
+This is exactly why I _hate_ the READ*() macros and their ilk, and am
+really happy we got rid of them in the client.
 
-mmap_sem is not required to held if uncharge() operation is done
-if vma turns out to be a stale pointer.
+READ_BUF() _sets_ p to whatever the value of argp->p is, and then
+updates argp->p. It is just very very very hard to see that due to the
+lack of transparency.
 
-Thanks,
--Kame
+IOW: You don't need the "p += dummy" either. That happens automatically
+when you next invoke READ_BUF().
+
+Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
