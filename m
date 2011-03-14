@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1CNId3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 04:33:29 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:34349 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab1CNId1 (ORCPT
+	id S1753138Ab1CNIic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 04:38:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64505 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab1CNIia convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 04:33:27 -0400
-Date: Mon, 14 Mar 2011 09:33:22 +0100
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (block
- tree  related)
-Message-ID: <20110314083322.GA11932@barkeeper1-xen.linbit>
-Mail-Followup-To: Jens Axboe <axboe@kernel.dk>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Philipp Reisner <philipp.reisner@linbit.com>,
-	linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org
-References: <20110311175830.29a387b2.sfr@canb.auug.org.au>
- <4D79CB66.2020302@kernel.dk>
+	Mon, 14 Mar 2011 04:38:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QkuNFAcdPbhFD/i4Uohyzsl6v9qsq8X8MK3Nwuz6eveOoaMWURoNwZP1zGG/zJANdK
+         SLWoAS03XoqF3BUyc/UTT3kPca3Hhn47Xf5e5ydu945H+eBNOes5yHMnfpRcXmpfqjgf
+         JCw4Js9oxcCNdq5pgxPRnLI8yL/5JRxtW//kI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D79CB66.2020302@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1300047388.2761.48.camel@edumazet-laptop>
+References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com> <1300047388.2761.48.camel@edumazet-laptop>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Mon, 14 Mar 2011 16:38:08 +0800
+Message-ID: <AANLkTi==o78Xq3CxSNpycdPeUUcX6+LYQa=HPqthgbgD@mail.gmail.com>
+Subject: Re: [PATCH] net: add Faraday FTGMAC100 Gigabit Ethernet driver
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 08:12:38AM +0100, Jens Axboe wrote:
-> On 2011-03-11 07:58, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> > 
-> > drivers/char/tpm/tpm_tis.c:96: warning: 'is_itpm' defined but not used
-> > drivers/block/drbd/drbd_bitmap.c: In function '__bm_change_bits_to':
-> > drivers/block/drbd/drbd_bitmap.c:1287: error: implicit declaration of function 'generic___test_and_set_le_bit'
-> > drivers/block/drbd/drbd_bitmap.c:1289: error: implicit declaration of function 'generic___test_and_clear_le_bit'
-> > drivers/block/drbd/drbd_bitmap.c: In function 'drbd_bm_test_bit':
-> > drivers/block/drbd/drbd_bitmap.c:1438: error: implicit declaration of function 'generic_test_le_bit'
-> > 
-> > Caused by commit 4b0715f09655 ("drbd: allow petabyte storage on 64bit
-> > arch").
-> > 
-> > I have applied this patch for today (surely there is a better way):
-> 
-> Thanks for not dropping it, I'll let the drbd guys send in a proper fix
-> and get it committed.
+Hi Eric,
 
-Should that be fixed by adding
-#include <asm-generic/bitops/le.h>
-to 
-arch/powerpc/include/asm/bitops.h
-(and arch/s390/include/asm/bitops.h, possibly others?)
+On Mon, Mar 14, 2011 at 4:16 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 10 mars 2011 à 16:08 +0800, Po-Yu Chuang a écrit :
+>> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+>>
+>> FTGMAC100 Ethernet Media Access Controller supports 10/100/1000 Mbps
+>> and MII/GMII.  This driver has been working on some ARM/NDS32 SoC's
+>> including Faraday A369 and Andes AG102.
+>
+> Hi
+>
+> It seems very close from drivers/net/ftmac100.c one. Are you sure a
+> factorization is not possible ?
 
-Or are we expected to include that ourselves, directly?
+First, the registers and descriptors of FTGMAC100 are not backward
+compatible to FTMAC100.
 
-We probably need to select CONFIG_GENERIC_FIND_NEXT_BIT
-from our Kconfig as well?
+Second, FTGMAC100 HW has some features new to FTMAC100
+(jumbo packet, checksum offload... etc.) and not all of them are supported
+in the current version. For example, NETIF_F_SG support might be the next
+step to improve.
 
-	Lars
+IMHO, it will be easier for me to maintain them and to add new features to
+FTGMAC100 driver if we separate these two drivers. How do you think?
+
+> BTW, it seems I missed the fact that ftmac100_alloc_rx_page() used a
+> GFP_KERNEL allocation, while its called from softirq context (from
+> ftmac100_rx_packet())
+
+Tested. Thank you.
+
+> Same problem of course in this Gigabit driver.
+
+Will fix it.
+
+Best regards,
+Po-Yu Chuang
