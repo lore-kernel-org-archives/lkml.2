@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab1CNW1n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 18:27:43 -0400
-Received: from leopard.mail.utk.edu ([160.36.0.85]:38675 "EHLO
-	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757404Ab1CNW1m (ORCPT
+	id S1757436Ab1CNWaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 18:30:06 -0400
+Received: from smtp10.mail.sp.isp-net.nl ([217.149.192.65]:51759 "EHLO
+	smtp10.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757361Ab1CNWaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 18:27:42 -0400
-Date: Mon, 14 Mar 2011 18:27:19 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: perf: kernel memory leak when inherit enabled
-In-Reply-To: <alpine.DEB.2.00.1103111745070.15818@cl320.eecs.utk.edu>
-Message-ID: <alpine.DEB.2.00.1103141824190.13179@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1103111745070.15818@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 14 Mar 2011 18:30:05 -0400
+X-Greylist: delayed 3330 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Mar 2011 18:30:04 EDT
+Message-ID: <4D7E89E7.3080505@xmsnet.nl>
+Date: Mon, 14 Mar 2011 22:34:31 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101125 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.38-rc echo 3 > /proc/sys/vm/drop_caches repairs mplayer distortions
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Language-Detected: en
+X-Spam-Scanned: InterNLnet Mail Scan System V2.03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Vince Weaver wrote:
-> 
-> While trying to use perf events with inherit enabled to profile some 
-> multi-threaded BLAS routines (using PAPI) I ended up out-of-memorying my 
-> machine.  It turns out you can quickly leak gigabytes of kernel memory
-> that isn't freed when the process exits.
+Since the start of the start of 2.6.38-rc I sporadic have problems with 
+mplayer. A mpeg stream sometimes gets distorted when mplayer starts. An 
+example is at http://www.xs4all.nl/~bruinjm/mplayer.png . I do not know 
+how to trigger the behaviour, so bissecting is not possible. Since 
+yesterday however I found a way to 'repair' mplayer:
 
-I've bisected this.  There's a whole day I'll never see again. binutils 
-2.21 and gcc-4.5 for the lose :(
+echo 3 > /proc/sys/vm/drop_caches
 
-Anyway this memory leak with inherit was introduced in 
-  4fd38e4595e
+This repairs mplayer while it is running. My latop is runs on nfsroot, 
+and the mpegstreams are payed over nfs or http. I can have two instances 
+of mplayer running the same mpeg stream over nfs or http with only one 
+instance distorded.
 
-Vince
+-- 
+Hans
 
