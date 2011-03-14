@@ -1,78 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab1CNOLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 10:11:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29834 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab1CNOLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 10:11:23 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>, Jan Beulich <JBeulich@novell.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>, binutils@sourceware.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Alan Modra <amodra@gmail.com>
-Subject: Re: PATCH: Add --size-check=[error|warning]
-References: <AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
-	<4D7DE39302000078000362E6@vpn.id2.novell.com>
-	<20110314095534.GB18058@elte.hu>
-	<20110314104131.GG6275@bubble.grove.modra.org>
-	<AANLkTi=3AiLaw5Gnis8Ha4eRXirk0s-Cnk2zzN12YDpH__45869.1711457961$1300099861$gmane$org@mail.gmail.com>
-	<m3oc5eufrk.fsf@redhat.com>
-	<AANLkTikOX_9G-kFEOCHJbnTootY4n4EPSounwjDjPiZc@mail.gmail.com>
-	<m3fwqpvrjy.fsf@redhat.com> <20110314121321.GE23257@elte.hu>
-	<m3bp1dvp3l.fsf@redhat.com> <20110314131729.GB28851@elte.hu>
-X-Yow: Will it improve my CASH FLOW?
-Date: Mon, 14 Mar 2011 14:43:51 +0100
-In-Reply-To: <20110314131729.GB28851@elte.hu> (Ingo Molnar's message of "Mon,
-	14 Mar 2011 14:17:29 +0100")
-Message-ID: <m339mpvmug.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755861Ab1CNOQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 10:16:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46921 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab1CNOQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 10:16:39 -0400
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=OjXHl2S905kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=bYIB0FJmsJ72RWxWkMAA:9 a=F5YJ6hA8T9Jc_4BLJwUA:7 a=SRk_bhL4__Hovp8lCaAlkije7vIA:4 a=PUjeQqilurYA:10 a=BNKvsySwfXAwWLcd:21 a=mUgUU-Re_TKvVb9x:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 1/20]  1: mm: Move replace_page() to
+ mm/memory.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20110314133413.27435.67467.sendpatchset@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	 <20110314133413.27435.67467.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 14 Mar 2011 10:16:35 -0400
+Message-ID: <1300112195.9910.92.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@elte.hu> writes:
+On Mon, 2011-03-14 at 19:04 +0530, Srikar Dronamraju wrote:
+> User bkpt will use background page replacement approach to insert/delete
+> breakpoints. Background page replacement approach is based on
+> replace_page. Hence replace_page() loses its static attribute.
+> 
 
-> * Andreas Schwab <schwab@redhat.com> wrote:
->
->> Ingo Molnar <mingo@elte.hu> writes:
->> 
->> > * Andreas Schwab <schwab@redhat.com> wrote:
->> >
->> >> Pekka Enberg <penberg@kernel.org> writes:
->> >> 
->> >> > Hi Andreas,
->> >> >
->> >> > Pekka Enberg <penberg@kernel.org> writes:
->> >> >>> So what do you suggest that testers who want to, say, build old Linux
->> >> >>> kernel versions with new binutils do?
->> >> >
->> >> > On Mon, Mar 14, 2011 at 1:02 PM, Andreas Schwab <schwab@redhat.com> wrote:
->> >> >> The same that testers have to do in order to build old Linux kernel
->> >> >> versions with current versions of make.
->> >> >
->> >> > Are you saying it's OK to screw over binutils users because GNU Make
->> >> > did that too?
->> >> 
->> >> I'm just telling you the facts.
->> >
->> > And you are wrong - latest Make does not break reasonably old kernel builds such 
->> > as v2.6.30.
->> 
->> This is just ridiculous.
->> You are defining away facts just because they don't fit your view.
->
-> No, i actually tried out the latest released Make version (3.82) and it still builds 
-> v2.6.30 fine:
+Just a nitpick, but since replace_page() is being moved, could you
+specify that in the change log. Something like:
 
-That's a very convincing argument.
+"Hence, replace_page() is moved from ksm.c into memory.c and its static
+attribute is removed."
 
-Andreas.
+I like to see in the change log "move x to y" when that is actually
+done, because it is hard to see if anything actually changed when code
+is moved. Ideally it is best to move code in one patch and make the
+change in another. If you do cut another version of this patch set,
+could you do that. This alone is not enough to require a new release.
 
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+Thanks,
+
+-- Steve
+
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> ---
+>  include/linux/mm.h |    2 ++
+>  mm/ksm.c           |   62 ----------------------------------------------------
+>  mm/memory.c        |   62 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 64 insertions(+), 62 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 679300c..01a0740 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -984,6 +984,8 @@ void account_page_writeback(struct page *page);
+>  int set_page_dirty(struct page *page);
+>  int set_page_dirty_lock(struct page *page);
+>  int clear_page_dirty_for_io(struct page *page);
+> +int replace_page(struct vm_area_struct *vma, struct page *page,
+> +					struct page *kpage, pte_t orig_pte);
+>  
+>  /* Is the vma a continuation of the stack vma above it? */
+>  static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
+> diff --git a/mm/ksm.c b/mm/ksm.c
+> index c2b2a94..f46e20d 100644
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -765,68 +765,6 @@ out:
+>  	return err;
+>  }
+>  
+> -/**
+> - * replace_page - replace page in vma by new ksm page
+> - * @vma:      vma that holds the pte pointing to page
+> - * @page:     the page we are replacing by kpage
+> - * @kpage:    the ksm page we replace page by
+> - * @orig_pte: the original value of the pte
+> - *
+> - * Returns 0 on success, -EFAULT on failure.
+> - */
+> -static int replace_page(struct vm_area_struct *vma, struct page *page,
+> -			struct page *kpage, pte_t orig_pte)
+> -{
+> -	struct mm_struct *mm = vma->vm_mm;
+> -	pgd_t *pgd;
+> -	pud_t *pud;
+> -	pmd_t *pmd;
+> -	pte_t *ptep;
+> -	spinlock_t *ptl;
+> -	unsigned long addr;
+> -	int err = -EFAULT;
+> -
+> -	addr = page_address_in_vma(page, vma);
+> -	if (addr == -EFAULT)
+> -		goto out;
+> -
+> -	pgd = pgd_offset(mm, addr);
+> -	if (!pgd_present(*pgd))
+> -		goto out;
+> -
+> -	pud = pud_offset(pgd, addr);
+> -	if (!pud_present(*pud))
+> -		goto out;
+> -
+> -	pmd = pmd_offset(pud, addr);
+> -	BUG_ON(pmd_trans_huge(*pmd));
+> -	if (!pmd_present(*pmd))
+> -		goto out;
+> -
+> -	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+> -	if (!pte_same(*ptep, orig_pte)) {
+> -		pte_unmap_unlock(ptep, ptl);
+> -		goto out;
+> -	}
+> -
+> -	get_page(kpage);
+> -	page_add_anon_rmap(kpage, vma, addr);
+> -
+> -	flush_cache_page(vma, addr, pte_pfn(*ptep));
+> -	ptep_clear_flush(vma, addr, ptep);
+> -	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+> -
+> -	page_remove_rmap(page);
+> -	if (!page_mapped(page))
+> -		try_to_free_swap(page);
+> -	put_page(page);
+> -
+> -	pte_unmap_unlock(ptep, ptl);
+> -	err = 0;
+> -out:
+> -	return err;
+> -}
+> -
+>  static int page_trans_compound_anon_split(struct page *page)
+>  {
+>  	int ret = 0;
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 5823698..2a3021c 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2669,6 +2669,68 @@ void unmap_mapping_range(struct address_space *mapping,
+>  }
+>  EXPORT_SYMBOL(unmap_mapping_range);
+>  
+> +/**
+> + * replace_page - replace page in vma by new ksm page
+> + * @vma:      vma that holds the pte pointing to page
+> + * @page:     the page we are replacing by kpage
+> + * @kpage:    the ksm page we replace page by
+> + * @orig_pte: the original value of the pte
+> + *
+> + * Returns 0 on success, -EFAULT on failure.
+> + */
+> +int replace_page(struct vm_area_struct *vma, struct page *page,
+> +			struct page *kpage, pte_t orig_pte)
+> +{
+> +	struct mm_struct *mm = vma->vm_mm;
+> +	pgd_t *pgd;
+> +	pud_t *pud;
+> +	pmd_t *pmd;
+> +	pte_t *ptep;
+> +	spinlock_t *ptl;
+> +	unsigned long addr;
+> +	int err = -EFAULT;
+> +
+> +	addr = page_address_in_vma(page, vma);
+> +	if (addr == -EFAULT)
+> +		goto out;
+> +
+> +	pgd = pgd_offset(mm, addr);
+> +	if (!pgd_present(*pgd))
+> +		goto out;
+> +
+> +	pud = pud_offset(pgd, addr);
+> +	if (!pud_present(*pud))
+> +		goto out;
+> +
+> +	pmd = pmd_offset(pud, addr);
+> +	BUG_ON(pmd_trans_huge(*pmd));
+> +	if (!pmd_present(*pmd))
+> +		goto out;
+> +
+> +	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+> +	if (!pte_same(*ptep, orig_pte)) {
+> +		pte_unmap_unlock(ptep, ptl);
+> +		goto out;
+> +	}
+> +
+> +	get_page(kpage);
+> +	page_add_anon_rmap(kpage, vma, addr);
+> +
+> +	flush_cache_page(vma, addr, pte_pfn(*ptep));
+> +	ptep_clear_flush(vma, addr, ptep);
+> +	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+> +
+> +	page_remove_rmap(page);
+> +	if (!page_mapped(page))
+> +		try_to_free_swap(page);
+> +	put_page(page);
+> +
+> +	pte_unmap_unlock(ptep, ptl);
+> +	err = 0;
+> +out:
+> +	return err;
+> +}
+> +
+>  int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
+>  {
+>  	struct address_space *mapping = inode->i_mapping;
+
+
