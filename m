@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab1CNPwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:52:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31728 "EHLO mx1.redhat.com"
+	id S1756775Ab1CNPyG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:54:06 -0400
+Received: from kroah.org ([198.145.64.141]:56723 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756466Ab1CNPwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:52:41 -0400
-Date: Mon, 14 Mar 2011 16:52:32 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] thp+memcg-numa: fix BUG at include/linux/mm.h:370!
-Message-ID: <20110314155232.GB10696@random.random>
-References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
+	id S1752130Ab1CNPyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 11:54:04 -0400
+Date: Mon, 14 Mar 2011 08:53:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Felipe Contreras <felipe.contreras@nokia.com>
+Cc: omar.ramirez@ti.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, ohad@wizery.com, fernando.lugo@ti.com,
+        tuomas@kulve.fi
+Subject: Re: [PATCH] staging: tidspbridge: protect dmm_map properly
+Message-ID: <20110314155303.GB5272@kroah.com>
+References: <1299889746-16502-1-git-send-email-omar.ramirez@ti.com>
+ <20110312173626.GC24981@kroah.com>
+ <AANLkTinp0e4EiEH=XV9gCSJzoh-VAY-6qqs91x0s80ro@mail.gmail.com>
+ <20110313010633.GD20396@kroah.com>
+ <1300116128-notmuch-felipe.contreras@nokia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
+In-Reply-To: <1300116128-notmuch-felipe.contreras@nokia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 01:08:47AM -0700, Hugh Dickins wrote:
->  mm/huge_memory.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
+On Mon, Mar 14, 2011 at 05:33:09PM +0200, Felipe Contreras wrote:
+> greg@kroah.com wrote:
+> > On Sun, Mar 13, 2011 at 01:42:35AM +0200, Felipe Contreras wrote:
+> > > On Sat, Mar 12, 2011 at 7:36 PM, Greg KH <greg@kroah.com> wrote:
+> > > > How about I send it to Linus for .39 and then add it to the .38-stable
+> > > > tree when it comes out?
+> > > 
+> > > That was the plan for .38/.37-stable. I'd say that's fine, but it
+> > > would be even better to avoid people getting bit by this on plain .38.
+> > 
+> > What is one more week, when you all waited months to get this to me?  In
+> > other words, why should I suddenly now rush when no one else did?
 > 
-> --- 2.6.38-rc8/mm/huge_memory.c	2011-03-08 09:27:16.000000000 -0800
-> +++ linux/mm/huge_memory.c	2011-03-13 18:26:21.000000000 -0700
-> @@ -1762,6 +1762,10 @@ static void collapse_huge_page(struct mm
->  #ifndef CONFIG_NUMA
->  	VM_BUG_ON(!*hpage);
->  	new_page = *hpage;
-> +	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
-> +		up_read(&mm->mmap_sem);
-> +		return;
-> +	}
->  #else
->  	VM_BUG_ON(*hpage);
->  	/*
-> @@ -1781,12 +1785,12 @@ static void collapse_huge_page(struct mm
->  		*hpage = ERR_PTR(-ENOMEM);
->  		return;
->  	}
-> -#endif
->  	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
->  		up_read(&mm->mmap_sem);
->  		put_page(new_page);
->  		return;
->  	}
-> +#endif
->  
->  	/* after allocating the hugepage upgrade to mmap_sem write mode */
->  	up_read(&mm->mmap_sem);
+> The reason is because it didn't seem like it was happening often, but
+> in Tuomas' case, it does so much it's basically unusable. So _now_ we
+> know this could have possibly been affecting many people we didn't know
+> about.
+> 
+> You have to remember that this driver only started to work on .37, so
+> people might have tried it, seen it crashing and said "oh well, it's on
+> 'staging' for a reason", having no point of reference that would be a
+> valid conclusion, while in fact this is a regression from pre-staging
+> (the issue wasn't there).
 
-Correct! I'd suggest to fix it without duplicating the
-mem_cgroup_newpage_charge. It's just one more put_page than needed
-with memcg enabled and NUMA disabled (I guess most memcg testing
-happened with NUMA enabled). The larger diff likely rejects with -mm
-NUMA code... I'll try to diff it with a smaller -U2 (this code has
-little change to be misplaced) that may allow it to apply clean
-regardless of the merging order, so it may make life easier.
+I understand you feeling like there is a rush here, but again, please
+recognize that we all have different priorities.  The number of users
+out there using this driver is very small and again, this patch can
+safely wait until the first .38-stable release comes out.
 
-It may have been overkill to keep the NUMA case separated in order to
-avoid spurious allocations for the not-NUMA case, code become more
-complex and I'm not sure if it's really worthwhile. The optimization
-makes sense but it's minor and it created more complexity than
-strictly needed. For now we can't change it in the short term as it
-has been tested this way, but if people dislike the additional
-complexity that this optimization created, I'm not against dropping it
-in the future. Your comment was positive about the optimization (you
-said understandable) so I wanted to share my current thinking on these
-ifdefs...
+> Anyway, I don't think .38.1 is going to be released in one week,
 
-Thanks,
-Andrea
+Is that a challenge?  :)
 
-===
-Subject: thp+memcg-numa: fix BUG at include/linux/mm.h:370!
+> but I guess if people are having issues and not reporting them, they
+> can wait more.
 
-From: Hugh Dickins <hughd@google.com>
+Thanks, I think they can.
 
-THP's collapse_huge_page() has an understandable but ugly difference
-in when its huge page is allocated: inside if NUMA but outside if not.
-It's hardly surprising that the memcg failure path forgot that, freeing
-the page in the non-NUMA case, then hitting a VM_BUG_ON in get_page()
-(or even worse, using the freed page).
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index dbe99a5..bf41114 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1785,5 +1785,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
- 		up_read(&mm->mmap_sem);
-+#ifdef CONFIG_NUMA
- 		put_page(new_page);
-+#endif
- 		return;
- 	}
-
+greg k-h
