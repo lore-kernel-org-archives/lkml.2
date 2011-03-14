@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab1CNVKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:10:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48463 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab1CNVKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:10:36 -0400
-Date: Mon, 14 Mar 2011 21:10:31 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <greg@kroah.com>
-Cc: andy.green@linaro.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [RFC PATCH 3/4] PLATFORM: Introduce async platform_data attach
-	api
-Message-ID: <20110314211031.GB32150@sirena.org.uk>
-References: <20110314205432.GA1856@kroah.com>
+	id S1757277Ab1CNVLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:11:37 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53567 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825Ab1CNVLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 17:11:36 -0400
+Date: Mon, 14 Mar 2011 17:11:19 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Andrew Morton <akpm@linux-foundation.org>, G@thunk.org
+Cc: Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+Message-ID: <20110314211119.GC8120@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Andrew Morton <akpm@linux-foundation.org>, G,
+	Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+	Jonathan Nieder <jrnieder@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+	Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+	linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+	viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+References: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+ <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+ <201103111255.44979.arnd@arndb.de>
+ <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+ <20110311235607.GB15853@elie>
+ <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+ <20110312021001.GA16833@elie>
+ <20110312173217.GA24981@kroah.com>
+ <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+ <20110314131042.5a7fb32f.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110314205432.GA1856@kroah.com>
-X-Cookie: Cynic, n.:
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110314131042.5a7fb32f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 01:54:32PM -0700, Greg KH wrote:
-> On Mon, Mar 14, 2011 at 08:38:53AM +0000, Andy Green wrote:
+On Mon, Mar 14, 2011 at 01:10:42PM -0700, Andrew Morton wrote:
+> 
+> There might one day be a requirement to be able to initiate a
+> resource-management-style writeback against a whole filesystem.  When
+> that happens, we'll regret not having added a "mode" argument to
+> sys_syncfs().
 
-> > For sure, in any other bus, we will never have this discussion about
-> > if the device driver should use relevant platform_data to be guided
-> > about what to do, that is what platform_data is for and it is very
-> > widely used indeed.
+I'm a bit nervous about exposing WB_SYNC_NONE to userspace, because
+its semantics are *definitely* hard to describe.  For example, at the
+moment if you do a WB_SYNC_NONE writeback, the writeback code will
+clamp the amount of data written back for each inode to
+MAX_WRITEBACK_PAGES (1024) pages.  Do we want to document that?
+Probably not!  But if we don't document it, what can userspace expect?
 
-> Are you sure?  Try me on one of the other "real" busses out there like
-> PCI and see how all of these same arguments are identical :)
+If you just issue a writeback_inodes_sb(), it's not the case that it
+will start a process that will eventually write out everything (i.e.,
+it's not the equivalent of a non-blocking data integrity sync).  It
+just means, "write out some stuff".
 
-You were asking for concrete examples up thread, and this brings one to
-mind - I used to work on a system where we had to modify the PCI ethernet
-controller driver to tell it that while it did have two PHYs attached to
-the MDIO bus they were nothing to do with the data interface of the
-ethernet controller which was instead directly wired to a fixed
-configuration device.  This sort of thing could be handled by the device
-tree but...
+I could imagine userspace wanting to start a non-blocking writeout of
+all data blocking pages, and which doesn't cause queue flush / barrier
+requests.  (i.e., a non-blocking-non-barrier-issuing-but-otherwise-a-
+data-integrity writeback) But that's not something that the current
+writeback machinery can do easily, at least not today.
 
-> The abuse of platform_data today does not give you the right to persist
-> in it.  Look at the work of the device tree developers to fix this
-> problem as proof of this.
+It wouldn't hurt to have a "flags" field which we could expand later
+--- but that can lead to portability headaches for userspace programs
+that don't know whether a particular kernel is going to support a
+particular flag or not.  So it's certainly not a panacea.
 
-...the problem with device tree is that it's only available on a limited
-subset of architectures at the minute, with progress towards deploying
-it more widely being somewhat slow.
+	   	   	    	 	       - Ted
