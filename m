@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab1CNP3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:29:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37851 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756894Ab1CNP1w (ORCPT
+	id S1756183Ab1CNP3O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:29:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47792 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab1CNP3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:27:52 -0400
-Message-Id: <20110314152227.578585014@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Mon, 14 Mar 2011 16:06:26 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 13/14] sched: Remove nodemask allocation
-References: <20110314150613.749843433@chello.nl>
-Content-Disposition: inline; filename=sched-foo12.patch
+	Mon, 14 Mar 2011 11:29:10 -0400
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=NhuigFM5MhYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=gHhx2tW0LaDl3lk1CoEA:9 a=2qVoUX2Bhxc_E71021c06H6PzCUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 3/20]  3: uprobes: Breakground page
+ replacement.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20110314133433.27435.49566.sendpatchset@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	 <20110314133433.27435.49566.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 14 Mar 2011 11:29:06 -0400
+Message-ID: <1300116546.9910.107.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's only one nodemask user left so remove it with a direct
-computation and save some memory and reduce some code-flow
-complexity.
+On Mon, 2011-03-14 at 19:04 +0530, Srikar Dronamraju wrote:
+> +/*
+> + * Most architectures can use the default versions of @read_opcode(),
+> + * @set_bkpt(), @set_orig_insn(), and @is_bkpt_insn();
+> + *
+> + * @set_ip:
+> + *     Set the instruction pointer in @regs to @vaddr.
+> + * @analyze_insn:
+> + *     Analyze @user_bkpt->insn.  Return 0 if @user_bkpt->insn is an
+> + *     instruction you can probe, or a negative errno (typically -%EPERM)
+> + *     otherwise. Determine what sort of
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
----
- kernel/sched.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
+sort of ... what?
 
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -6814,7 +6814,6 @@ struct sd_data {
- };
- 
- struct s_data {
--	cpumask_var_t		nodemask;
- 	cpumask_var_t		send_covered;
- 	struct sched_domain ** __percpu sd;
- 	struct sd_data 		sdd[SD_LV_MAX];
-@@ -6826,7 +6825,6 @@ enum s_alloc {
- 	sa_sd,
- 	sa_sd_storage,
- 	sa_send_covered,
--	sa_nodemask,
- 	sa_none,
- };
- 
-@@ -7011,8 +7009,6 @@ static void __free_domain_allocs(struct 
- 		} /* fall through */
- 	case sa_send_covered:
- 		free_cpumask_var(d->send_covered); /* fall through */
--	case sa_nodemask:
--		free_cpumask_var(d->nodemask); /* fall through */
- 	case sa_none:
- 		break;
- 	}
-@@ -7025,10 +7021,8 @@ static enum s_alloc __visit_domain_alloc
- 
- 	memset(d, 0, sizeof(*d));
- 
--	if (!alloc_cpumask_var(&d->nodemask, GFP_KERNEL))
--		return sa_none;
- 	if (!alloc_cpumask_var(&d->send_covered, GFP_KERNEL))
--		return sa_nodemask;
-+		return sa_none;
- 	for (i = 0; i < SD_LV_MAX; i++) {
- 		d->sdd[i].sd = alloc_percpu(struct sched_domain *);
- 		if (!d->sdd[i].sd)
-@@ -7125,7 +7119,8 @@ static struct sched_domain *__build_cpu_
- 	struct sched_domain *sd;
- 	sd = sd_init_CPU(d, i);
- 	set_domain_attribute(sd, attr);
--	cpumask_copy(sched_domain_span(sd), d->nodemask);
-+	cpumask_and(sched_domain_span(sd),
-+			cpumask_of_node(cpu_to_node(i)), cpu_map);
- 	sd->parent = parent;
- 	if (parent)
- 		parent->child = sd;
-@@ -7195,9 +7190,6 @@ static int __build_sched_domains(const s
- 
- 	/* Set up domains for cpus specified by the cpu_map. */
- 	for_each_cpu(i, cpu_map) {
--		cpumask_and(d.nodemask, cpumask_of_node(cpu_to_node(i)),
--			    cpu_map);
--
- 		sd = NULL;
- 		sd = __build_allnodes_sched_domain(&d, cpu_map, attr, sd, i);
- 		sd = __build_node_sched_domain(&d, cpu_map, attr, sd, i);
+-- Steve
 
+> + * @pre_xol:
+> + * @post_xol:
+> + *     XOL-related fixups @post_xol() (and possibly @pre_xol()) will need
+> + *     to do for this instruction, and annotate @user_bkpt accordingly.
+> + *     You may modify @user_bkpt->insn (e.g., the x86_64 port does this
+> + *     for rip-relative instructions).
+> + */ 
 
