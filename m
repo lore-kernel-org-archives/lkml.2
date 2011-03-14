@@ -1,132 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab1CNWnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 18:43:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60634 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab1CNWnt (ORCPT
+	id S1757485Ab1CNWqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 18:46:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54524 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab1CNWqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 18:43:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=P6UkIFu4poNmPsPvVqNttIK1ndAJ6ktaM+cHETTTsZJX2aNgZjkQjpvHLWWurmAF8Y
-         h2PU12UlG8lul4S3zr94ghU8PU0E7ZXJrWaP3ueOiJREwpIeOXrFz96aRpJda8LUtEIf
-         2TpUMGEtdFeGyWKr00QDopeHHhoMzkMvnHrEg=
-Date: Mon, 14 Mar 2011 23:43:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-Message-ID: <20110314224344.GA11443@nowhere>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
- <20110314204341.GC9388@ghostprotocols.net>
- <20110314205100.GG6139@nowhere>
- <20110314210315.GC2388@ghostprotocols.net>
- <20110314212050.GH6139@nowhere>
- <20110314215603.GD2388@ghostprotocols.net>
+	Mon, 14 Mar 2011 18:46:47 -0400
+Date: Mon, 14 Mar 2011 18:46:45 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: ext4 deep stack with mark_page_dirty reclaim
+Message-ID: <20110314224645.GA20348@infradead.org>
+References: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110314215603.GD2388@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 06:56:03PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Mar 14, 2011 at 10:20:53PM +0100, Frederic Weisbecker escreveu:
-> > On Mon, Mar 14, 2011 at 06:03:15PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Mon, Mar 14, 2011 at 09:51:02PM +0100, Frederic Weisbecker escreveu:
-> > > > On Mon, Mar 14, 2011 at 05:43:41PM -0300, Arnaldo Carvalho de Melo wrote:
-> 
-> > > But starter on a starter? Couldn't grok, could you provide an example?
-> > 
-> > I have no strong example in mind.
-> > 
-> > But one may want to count instructions when we are in an interrupt and
-> > lock A is held.
-> 
-> Those would be and/or starter/stopper expressions, something like:
-> 
-> $ perf record -e instructions@(irq:irq_handler_entry(irq=eth0) && lock:lock_acquired(foo_lock))..irq:irq_handler_exit(\1) \
-> 	      -e instructions \
-> 	netperf
-> 
-> when all starters before the stopper are valid, we entered a range.
+Direct reclaim (in the cgroup variant) at it's work.  We had a couple of
+flamewars on this before, but this trivial example with reclaim from
+the most simple case (swap space) shows that we really should never
+reclaim from memory allocation callers for stack usage reasons.
 
-So, if we want to stop when lock is released, we do:
-
-perf record -e instructions@(irq:irq_handler_entry(irq=eth0) && lock:lock_acquired(foo_lock))..lock:lock_release(foo_lock) && irq:irq_handler_exit(\1) \
-             -e instructions \
-	netperf
-
-Or || for stoppers like you do below? Hmm, I'm confused...
-
->  
-> > Or count instruction when A and B are held.
-> 
-> Using wildcards that matches just the things we want to make it a bit
-> more compact:
-> 
-> $ perf record -e inst*@(irq:*entry(irq=eth0) && lock:*acquired(A) && \
-> 			lock:*acquired(B))..(lock:*release(A) || lock:*release(B)) \
-> 	./my_workload
-> 
-> Parenthesis don't have to be used just for filters :) Just like in C,
-> they can be used to express the list of parameters for a function or for
-> expressions, etc.
-
-The && make sense. But the || ?
-
-What about:
-
--e inst*@(lock:*acquire(A)..lock:*release(A))@(lock:*acquire(B)..lock:*release(B))@(irq:*entry(irq=eth0)..irq:*exit(irq=eth0))
-
-That looks to me less confusing.
-
-
-> 
-> > Or count instruction in page faults happening in read() syscall.
-> 
-> We would need to use 'perf probe' first to insert the entry and exit
-> probes on the page fault handling path:
-> 
-> [root@felicio ~]# perf list *fault* *:*fault*
-> 
-> List of pre-defined events (to be used in -e):
->   page-faults OR faults                      [Software event]
->   minor-faults                               [Software event]
->   major-faults                               [Software event]
->   alignment-faults                           [Software event]
->   emulation-faults                           [Software event]
-> 
->   kvm:kvm_page_fault                         [Tracepoint event]
-> [root@felicio ~]#
-> 
-> But then an expression could be used like I showed above for the
-> previous use case you mentioned.
-
-Right.
-
-> 
-> > Event range define a state, and anytime you need to profile/trace a
-> > desired stacked state, starters on starters can be a good solution,
-> > thus even a common practice.
-> 
-> See above, is that what you're thinking about?
-
-I'm not sure. I can find the meaning of && in your expressions. But not
-the meaning of ||. I lack some sleep though :)
-
-But still, I'm all for trying to make a better and smarter way to
-express these events, following your suggestions, but I'm not sure I have
-the motivation to write a full parser capable of evaluating near C expressions.
