@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab1CNMzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:55:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30404 "EHLO mx1.redhat.com"
+	id S1753159Ab1CNM5N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:57:13 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45620 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755770Ab1CNMzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:55:40 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>, Jan Beulich <JBeulich@novell.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>, binutils@sourceware.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Alan Modra <amodra@gmail.com>
+	id S1752092Ab1CNM5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 08:57:09 -0400
+Date: Mon, 14 Mar 2011 13:56:46 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: sedat.dilek@gmail.com
+Cc: Jan Beulich <JBeulich@novell.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Alan Modra <amodra@bigpond.net.au>, binutils <binutils@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: PATCH: Add --size-check=[error|warning]
-References: <20110311165802.GA3508@intel.com>
-	<4D7A64670200007800035F4C@vpn.id2.novell.com>
-	<AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
-	<4D7DE39302000078000362E6@vpn.id2.novell.com>
-	<20110314095534.GB18058@elte.hu>
-	<20110314104131.GG6275@bubble.grove.modra.org>
-	<AANLkTi=3AiLaw5Gnis8Ha4eRXirk0s-Cnk2zzN12YDpH__45869.1711457961$1300099861$gmane$org@mail.gmail.com>
-	<m3oc5eufrk.fsf@redhat.com>
-	<AANLkTikOX_9G-kFEOCHJbnTootY4n4EPSounwjDjPiZc@mail.gmail.com>
-	<m3fwqpvrjy.fsf@redhat.com> <20110314121321.GE23257@elte.hu>
-X-Yow: CHUBBY CHECKER owns my BUILDING!
-Date: Mon, 14 Mar 2011 13:55:10 +0100
-In-Reply-To: <20110314121321.GE23257@elte.hu> (Ingo Molnar's message of "Mon,
-	14 Mar 2011 13:13:21 +0100")
-Message-ID: <m3bp1dvp3l.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Message-ID: <20110314125646.GA28851@elte.hu>
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@elte.hu> writes:
 
-> * Andreas Schwab <schwab@redhat.com> wrote:
->
->> Pekka Enberg <penberg@kernel.org> writes:
->> 
->> > Hi Andreas,
->> >
->> > Pekka Enberg <penberg@kernel.org> writes:
->> >>> So what do you suggest that testers who want to, say, build old Linux
->> >>> kernel versions with new binutils do?
->> >
->> > On Mon, Mar 14, 2011 at 1:02 PM, Andreas Schwab <schwab@redhat.com> wrote:
->> >> The same that testers have to do in order to build old Linux kernel
->> >> versions with current versions of make.
->> >
->> > Are you saying it's OK to screw over binutils users because GNU Make
->> > did that too?
->> 
->> I'm just telling you the facts.
->
-> And you are wrong
+* Sedat Dilek <sedat.dilek@googlemail.com> wrote:
 
-This is just ridiculous.  You are defining away facts just because they
-don't fit your view.
+> Nice to see there is an offer for a fix from binutils-side.
 
-> latest Make does not break reasonably old kernel builds such as
-> v2.6.30.
+Agreed.
 
-$ git tag --contains 3c955b4 | head -1
-v2.6.36
+> That's why I am on linux-next to squash bugs, not to ignore "warnings"
 
-Andreas.
+We x86 arch maintainers definitely do not ignore warnings from the assembler. 
+Assembler warnings were pretty good historically and seldom produce false positives.
 
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+> BTW "warnings", did someone tried gcc-4.6? I used a snapshot from mid February 
+> (from Debian/experimental): My linux-next build-log and the amount of warnings 
+> doubled or even more (unfortunately, I have thrown away that logs and binaries). 
+> Are all of these warnings ignoreable? Which of them are really severe?
+
+Most of those are -Wunused-but-set-variable warnings, right? I'm definitely not 
+ignoring the ones that affect the code i maintain - so they are very much useful.
+
+But if GCC broke the build unnecessarily, just to over-eagerly warn about something 
+that worked fine before, that would be extremely counter-productive! In such a 
+situation the Linux kernel project would likely be fed up enough to build its own 
+sane compiler/assembler/linker combo and would aim to become entirely independent in 
+terms of its build environment.
+
+Thanks,
+
+	Ingo
