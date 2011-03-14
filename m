@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab1CNIUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 04:20:08 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:37675 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279Ab1CNIUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 04:20:04 -0400
-X-ASG-Debug-ID: 1300090801-01de284cf859280001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D7DCFAD.3000704@fusionio.com>
-Date: Mon, 14 Mar 2011 09:19:57 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752872Ab1CNId3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 04:33:29 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:34349 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab1CNId1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 04:33:27 -0400
+Date: Mon, 14 Mar 2011 09:33:22 +0100
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (block
+ tree  related)
+Message-ID: <20110314083322.GA11932@barkeeper1-xen.linbit>
+Mail-Followup-To: Jens Axboe <axboe@kernel.dk>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Philipp Reisner <philipp.reisner@linbit.com>,
+	linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org
+References: <20110311175830.29a387b2.sfr@canb.auug.org.au>
+ <4D79CB66.2020302@kernel.dk>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: Re: [GIT PULL] Single important block patch for 2.6.38
-References: <4D7A33FF.80509@fusionio.com> <AANLkTi=NAeBWE28Vygx5Qf+OYgMW2Js180fptQnbbXmw@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [GIT PULL] Single important block patch for 2.6.38
-In-Reply-To: <AANLkTi=NAeBWE28Vygx5Qf+OYgMW2Js180fptQnbbXmw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1300090801
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57852
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D79CB66.2020302@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-13 23:51, Linus Torvalds wrote:
-> On Fri, Mar 11, 2011 at 6:38 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>
->> This fixes a regression introduced early in the 2.6.38 series, where
->> blkdev_issue_zeroout() has a nasty race that causes a panic. Thanks to
->> Lukas Czerner for finding and fixing this one. Please pull!
+On Fri, Mar 11, 2011 at 08:12:38AM +0100, Jens Axboe wrote:
+> On 2011-03-11 07:58, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> > 
+> > drivers/char/tpm/tpm_tis.c:96: warning: 'is_itpm' defined but not used
+> > drivers/block/drbd/drbd_bitmap.c: In function '__bm_change_bits_to':
+> > drivers/block/drbd/drbd_bitmap.c:1287: error: implicit declaration of function 'generic___test_and_set_le_bit'
+> > drivers/block/drbd/drbd_bitmap.c:1289: error: implicit declaration of function 'generic___test_and_clear_le_bit'
+> > drivers/block/drbd/drbd_bitmap.c: In function 'drbd_bm_test_bit':
+> > drivers/block/drbd/drbd_bitmap.c:1438: error: implicit declaration of function 'generic_test_le_bit'
+> > 
+> > Caused by commit 4b0715f09655 ("drbd: allow petabyte storage on 64bit
+> > arch").
+> > 
+> > I have applied this patch for today (surely there is a better way):
 > 
-> What about the "Null pointer OOPS in sync_inodes_sb" issue due to the
-> broken sb->s_bdi setting to NULL?
+> Thanks for not dropping it, I'll let the drbd guys send in a proper fix
+> and get it committed.
 
-Sent something out to George to test, hopefully we can close this one
-for 2.6.38 in a simple fashion.
+Should that be fixed by adding
+#include <asm-generic/bitops/le.h>
+to 
+arch/powerpc/include/asm/bitops.h
+(and arch/s390/include/asm/bitops.h, possibly others?)
 
--- 
-Jens Axboe
+Or are we expected to include that ourselves, directly?
 
+We probably need to select CONFIG_GENERIC_FIND_NEXT_BIT
+from our Kconfig as well?
+
+	Lars
