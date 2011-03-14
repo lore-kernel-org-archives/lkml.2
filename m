@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1CNTqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:46:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60640 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab1CNTqe (ORCPT
+	id S1755079Ab1CNTsD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:48:03 -0400
+Received: from mail2.microsoft.com ([131.107.115.215]:32470 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534Ab1CNTsB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:46:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device driver into misc
-Date: Mon, 14 Mar 2011 20:46:25 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
-Cc: mems applications <mems.applications@st.com>, rdunlap@xenotime.net,
-        carmine.iascone@st.com, matteo.dameno@st.com, rubini@cvml.unipv.it,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <> <1300128906-1066-1-git-send-email-matteo.dameno@st.com> <4D7E6A38.7010801@cam.ac.uk>
-In-Reply-To: <4D7E6A38.7010801@cam.ac.uk>
+	Mon, 14 Mar 2011 15:48:01 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/21] Staging: hv: Cleanup vmbus driver
+Thread-Topic: [PATCH 00/21] Staging: hv: Cleanup vmbus driver
+Thread-Index: AQHL4n95ADocU0k1/0q3XEHRD7vqbZQtOpOA
+Date: Mon, 14 Mar 2011 19:47:59 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048019566@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1299794382-709-1-git-send-email-kys@microsoft.com>
+ <20110314193716.GA22131@kroah.com>
+In-Reply-To: <20110314193716.GA22131@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103142046.25393.arnd@arndb.de>
-X-Provags-ID: V02:K0:pIaw/ZVOPLl5Em5hqCnt2cqHdmxnCnyZUxKNBoSaKLL
- ZVlvxLBH5hlKwv9U2nle1/85VorGk1OBUSiDQwAQGf7AxjAcvy
- bVmrI2cZtF8UzzuvWlG9qrOsCih70sDCf//EInipwL1UBzRnVr
- HR8K38lK5/d7H/ujg5+zN19KYTeDq9tmide6KmhoUwYmTkmz/i
- PGmdT+wM94I+pi5HVmqDw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 March 2011 20:19:20 Jonathan Cameron wrote:
-> The big issue raised last time around is that this is not a conventional human
-> input device.  Hence Dmitry isn't going to take it into input.  That doesn't
-> just mean that you have to move it's physical location; it also means you have
-> to not use the input interfaces at all.
 
-How about making this a hwmon driver instead?
-There are already a number of temperature sensor drivers in
-driver/hwmon/, I think it would fit in well there.
 
-This would mean moving it to the other directory,
-registering it to the common hwmon api (hwmon_device_register)
-and rewriting the user API to blend in with the other
-hwmon drivers.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Monday, March 14, 2011 3:37 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/21] Staging: hv: Cleanup vmbus driver
+> 
+> On Thu, Mar 10, 2011 at 01:59:42PM -0800, K. Y. Srinivasan wrote:
+> > This patch-set fixes the following issues in the vmbus driver (vmbus_drv.c):
+> >
+> > Cleanup root device management: (patches 1/21 through 10/21)
+> > 	1) Get rid of the hv_driver code from the vmbus abstraction
+> > 	2) Get rid of unnecessary call sequences and functions
+> > 	3) Cleanup the management of the root device by using the
+> > 	   standard mechanism for grouping devices under /sys/devices
+> 
+> I've applied the first 9 patches, as I had questions on 10 and 11, and
+> the others after that don't apply without those two applied.
 
-	Arnd
+Let me know what the questions are on 10 and 11. When I first sent you the 
+patch-set, you had suggested some name changes in 11. Thomas had a comment
+on 12.  This morning I sent
+the corrected version of 11 as well as 12.
+> 
+> So, care to resend the rest of the series when we've figured out the
+> root device stuff?
+
+Sure. Let me know what the issues/concerns are with regards to root
+device handling.
+
+Regards,
+
+K. Y
+
+
