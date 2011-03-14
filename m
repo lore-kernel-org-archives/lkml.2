@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab1CNVJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:09:59 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35596 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab1CNVJ6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:09:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=KfMWCuIw3n01uz+MmpgZzZvOH/f2LBo+a2z3dMeK2ZiQsBGiZw1dh+cC6bAjHi1U6C
-         ZwgEU0Y1nubC8usANX1Q==
+	id S1757262Ab1CNVKL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:10:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36688 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757246Ab1CNVKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 17:10:08 -0400
+Date: Mon, 14 Mar 2011 22:10:03 +0100
+From: Jan Kara <jack@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH v6 8/9] memcg: check memcg dirty limits in page
+ writeback
+Message-ID: <20110314211002.GD4998@quack.suse.cz>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <1299869011-26152-9-git-send-email-gthelen@google.com>
+ <20110314175408.GE31120@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110314201346.GA1084@kroah.com>
-References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
- <20110312014353.6133.94204.stgit@mike.mtv.corp.google.com>
- <20110314154713.GF31340@kroah.com> <AANLkTikhhYv2=memo-Rkhh1pG3v4-edrUROTgLoc6cbd@mail.gmail.com>
- <20110314201346.GA1084@kroah.com>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 14 Mar 2011 14:09:33 -0700
-Message-ID: <AANLkTinNvq0Y6=nxDaBP1uDR-SwdGX65yP1HiBHwpa4L@mail.gmail.com>
-Subject: Re: [PATCH v2 11/12] driver: Google EFI SMI
-To: Greg KH <greg@kroah.com>
-Cc: Matt Domsch <Matt_Domsch@dell.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314175408.GE31120@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 1:13 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Mar 14, 2011 at 01:01:50PM -0700, Mike Waychison wrote:
->> On Mon, Mar 14, 2011 at 8:47 AM, Greg KH <greg@kroah.com> wrote:
->> > On Fri, Mar 11, 2011 at 05:43:53PM -0800, Mike Waychison wrote:
->> >> The "gsmi" driver bridges userland with firmware specific routines for
->> >> accessing hardware.
->> >
->> > As with the other driver in this series, what keeps this driver from
->> > being loaded on hardware that does not support this functionality?  If
->> > it is loaded, will it cause bad things to happen?
->>
->> gsmi itself is better guarded than the memconsole driver that the x86
->> maintainers objected to.
->>
->> It relies on keying off of a couple different strings, looking for
->> "GOOGLE" as either the OEM ID in the  FADT table, or "Google, Inc." as
->> the board vendor.  We further discriminate whether the driver should
->> load (it doesn't apply to all of our boards) with a couple other
->> checks.  See gsmi_system_valid().  I've added a comment to the patch
->> description indicating this for the upcoming v3 send-out.
->
-> Ok, fair enough.  I'm guessing that you have tried testing the module by
-> loading it in a machine where this doesn't work?
->
->> > Also, what causes it to be loaded on hardware that needs it?  There
->> > should be some MODULE_DEVICE_TABLE somewhere in this thing to cause it
->> > to be autoloaded?
->>
->> I don't know if there is a good way to have this guy autoloaded, but
->> that's probably fine. We will likely compile it in as a built-in or
->> adjust our userland to have the module loaded.  We use it on all
->> machines we've been building for the last 4-5 years, and a table of
->> device IDs would just contain a list of a bunch of parts that aren't
->> really google-specific.
->
-> What's wrong with using DMI strings?  Are there going to be that many
-> different ones of them here?
+On Mon 14-03-11 13:54:08, Vivek Goyal wrote:
+> On Fri, Mar 11, 2011 at 10:43:30AM -0800, Greg Thelen wrote:
+> > If the current process is in a non-root memcg, then
+> > balance_dirty_pages() will consider the memcg dirty limits as well as
+> > the system-wide limits.  This allows different cgroups to have distinct
+> > dirty limits which trigger direct and background writeback at different
+> > levels.
+> > 
+> > If called with a mem_cgroup, then throttle_vm_writeout() queries the
+> > given cgroup for its dirty memory usage limits.
+> > 
+> > Signed-off-by: Andrea Righi <arighi@develer.com>
+> > Signed-off-by: Greg Thelen <gthelen@google.com>
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> > Changelog since v5:
+> > - Simplified this change by using mem_cgroup_balance_dirty_pages() rather than
+> >   cramming the somewhat different logic into balance_dirty_pages().  This means
+> >   the global (non-memcg) dirty limits are not passed around in the
+> >   struct dirty_info, so there's less change to existing code.
+> 
+> Yes there is less change to existing code but now we also have a separate
+> throttlig logic for cgroups. 
+> 
+> I thought that we are moving in the direction of IO less throttling
+> where bdi threads always do the IO and Jan Kara also implemented the
+> logic to distribute the finished IO pages uniformly across the waiting
+> threads.
+  Yes, we'd like to avoid doing IO from balance_dirty_pages(). But if the
+logic in cgroups specific part won't get too fancy (which it doesn't seem
+to be the case currently), it shouldn't be too hard to convert it to the new
+approach.
 
-DMI strings would probably work.  I totally missed the fact that I
-could use them for MODULE_DEVICE_TABLE.  Let me re-work patch 11 and
-12 to use this matching stuff.
+We can talk about it at LSF but at least with my approach to IO-less
+balance_dirty_pages() it would be easy to convert cgroups throttling to
+the new way. With Fengguang's approach it might be a bit harder since he
+computes a throughput and from that necessary delay for a throttled task
+but with cgroups that is impossible to compute so he'd have to add some
+looping if we didn't write enough pages from the cgroup yet. But still it
+would be reasonable doable AFAICT.
+
+> Keeping it separate for cgroups, reduces the complexity but also forks
+> off the balancing logic for root and other cgroups. So if Jan Kara's
+> changes go in, it automatically does not get used for memory cgroups.
+> 
+> Not sure how good a idea it is to use a separate throttling logic for
+> for non-root cgroups. 
+  Yeah, it looks a bit odd. I'd think that we could just cap
+task_dirty_limit() by a value computed from a cgroup limit and be done
+with that but I probably miss something... Sure there is also a different
+background limit but that's broken anyway because a flusher thread will
+quickly stop doing writeback if global background limit is not exceeded.
+But that's a separate topic so I'll reply with this to a more appropriate
+email ;)
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
