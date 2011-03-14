@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab1CNQma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 12:42:30 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:43846 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab1CNQm3 (ORCPT
+	id S1755097Ab1CNQqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 12:46:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58679 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab1CNQqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 12:42:29 -0400
+	Mon, 14 Mar 2011 12:46:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110311153134.GO1760@opensource.wolfsonmicro.com>
-References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
-	<20110311153134.GO1760@opensource.wolfsonmicro.com>
-Date: Mon, 14 Mar 2011 17:42:28 +0100
-Message-ID: <AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
-Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
+In-Reply-To: <AANLkTi=qN=i3VW=VXPQ1PAFTXFgo3O_jqykTkc7A7JLF@mail.gmail.com>
+References: <1297827283-22860-1-git-send-email-bibek.basu@stericsson.com>
+ <1297827283-22860-2-git-send-email-bibek.basu@stericsson.com>
+ <AANLkTi=Yv1fHVTC-BVBJ3WRPGOmOC3fCJ13G-dCegLYo@mail.gmail.com> <AANLkTi=qN=i3VW=VXPQ1PAFTXFgo3O_jqykTkc7A7JLF@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 14 Mar 2011 10:46:25 -0600
+X-Google-Sender-Auth: 60_9ZhPLfdWNj3UApJa3tcZXSP8
+Message-ID: <AANLkTi=o8CbHjJHZETokQP8bz5SyLnyLLadM4UMyZc=6@mail.gmail.com>
+Subject: Re: [PATCH] AB8500 GPIO : Driver for 42 AB8500 GPIO pins
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Bibek BASU <bibek.basu@stericsson.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 4:31 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Mar 11, 2011 at 04:26:18PM +0100, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This switches the ab3100 core to use the enable_time()
->> infrastructure from the regulator core.
+On Mon, Mar 14, 2011 at 10:37 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Mon, Mar 7, 2011 at 3:32 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
 >
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>> Grant can you have a look at this GPIO driver from a while back?
+>>
+>> Bibek can probably repost it if you don't have it in your archive...
+>>
+>> It'd be great if you could take this through the GPIO tree if/when
+>> it's OK with you.
+>
+> Ping on this, the ux500-core tree is now sent to Russell for merging
+> into 2.6.39 so if possible I'd like to have this merged into the
+> GPIO tree (unless there are still review comments...) note
+> Samuel's ACK if you pick it.
 
-Mark can you pick this into the regulator tree? I have sent my ux500
-tree upstream.
+I'm fine with it, but it looks like it needs to go via Russell's tree
+if it depends on the rest of the ux500-core patches.
 
-Yours,
-Linus Walleij
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+g.
