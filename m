@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab1CNE1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 00:27:00 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:54928 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab1CNE06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 00:26:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=VvMiigqDlbuH0Hqkrmwen2PXt
-	FnrixQYpeRAfpaArafOExe9ED7Oc1T9v/uA0+MjVOszSMLLVRfBMsqEuRh59UZgZ
-	euPIwzPz1KMKVw51+ZdaBz9k7b+CAn0oWL46rBwjtxsLciiwvPiLVTwgx52coqM8
-	oaRkaGE3a8BZNjAfVk=
-Date: Sun, 13 Mar 2011 21:29:17 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Indan Zupancic <indan@nul.nu>
-cc: Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org,
-        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
-        l@jasper.es
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-In-Reply-To: <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
-Message-ID: <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
- <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
- <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
- <201103111255.44979.arnd@arndb.de> <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
- <20110311235607.GB15853@elie> <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
- <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com>
- <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+	id S1752141Ab1CNE3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 00:29:19 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51775 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751599Ab1CNE3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 00:29:18 -0400
+Date: Mon, 14 Mar 2011 04:28:48 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm final final final fixes
+Message-ID: <alpine.DEB.2.00.1103140426200.2738@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011, Indan Zupancic wrote:
-> Everyone seems to want to add this new syncfs, but it's not even defined 
-> what it does. "Same as sync, but only on one fs" is IMHO not good 
-> enough, because sync's behaviour is pretty badly documented, and that's 
-> a system call.
 
-How about the man page below?  I tried to avoid the somewhat antiquated 
-implementation specific terminology in the sync(2) man page.
+Okay another radeon regression showed up in the late stages, and I've 
+pushed a fix for a 3rd problem, again reported on fusion systems which 
+currently none of the devs have access to.
 
-I think adding this functionality into sync_file_range(2) is forcing 
-unrelated functionality into an existing interface; sync_file_range 
-operates on _files_, not an entire file system.  With each API addition it 
-is more important to make the interface simple and intuitive than to 
-minimize the size of our patches.  IMO that's why a new syscall is 
-preferable to, say, an equivalent ioctl.
+This is on top of the last req, which contains the other fusion fix and 
+the complete system hang fixes.
 
-Thanks-
-sage
+Dave.
 
+The following changes since commit 9179746652faf0aba07b8b7f770dcf29892a24c6:
 
-.TH SYNCFS 2 2011-03-13 "Linux" "Linux Programmer's Manual"
-.SH NAME
-syncfs \- commit cached file system state to stable storage
-.SH SYNOPSIS
-.B #include <unistd.h>
-.sp
-.B void syncfs(int fd);
-.SH DESCRIPTION
-.BR syncfs ()
-flushes any cached data modifications to the file system containing the 
-file referenced by the file descriptor
-.I fd
-to stable storage (usually a disk).  This includes the results of any
-file modifications or other file system operations that have completed
-prior to the call to
-.BR syncfs(2).
-This is similar to 
-.BR sync(2),
-but will commit changes for only a single file system instead of all
-mounted file systems.
-.SH ERRORS
-This function is always successful.
-.SH "SEE ALSO"
-.BR bdflush (2),
-.BR fdatasync (2),
-.BR fsync (2),
-.BR sync (2),
-.BR sync (8),
-.BR update (8)
+  Merge branch 'media_fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6 (2011-03-10 13:22:10 -0800)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Dave Airlie (3):
+      drm/radeon: add pageflip hooks for fusion
+      drm/radeon: fix page flipping hangs on r300/r400
+      drm/radeon: fix problem with changing active VRAM size. (v2)
+
+ drivers/gpu/drm/radeon/evergreen.c          |    3 +--
+ drivers/gpu/drm/radeon/evergreen_blit_kms.c |    4 ++--
+ drivers/gpu/drm/radeon/r100.c               |   22 ++--------------------
+ drivers/gpu/drm/radeon/r600.c               |    3 +--
+ drivers/gpu/drm/radeon/r600_blit_kms.c      |    4 ++--
+ drivers/gpu/drm/radeon/radeon.h             |    2 +-
+ drivers/gpu/drm/radeon/radeon_asic.c        |    3 +++
+ drivers/gpu/drm/radeon/radeon_gem.c         |    5 ++++-
+ drivers/gpu/drm/radeon/radeon_legacy_crtc.c |    3 ++-
+ drivers/gpu/drm/radeon/radeon_ttm.c         |   14 ++++++++++++++
+ drivers/gpu/drm/radeon/rs600.c              |    1 -
+ drivers/gpu/drm/radeon/rs690.c              |    1 -
+ drivers/gpu/drm/radeon/rv770.c              |    3 +--
+ 13 files changed, 33 insertions(+), 35 deletions(-)
