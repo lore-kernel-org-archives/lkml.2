@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab1CNP1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:27:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56698 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab1CNP1q (ORCPT
+	id S1756276Ab1CNPaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:30:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37830 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab1CNP1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:27:46 -0400
-Message-Id: <20110314152227.479803494@chello.nl>
+	Mon, 14 Mar 2011 11:27:48 -0400
+Message-Id: <20110314150613.749843433@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Mon, 14 Mar 2011 16:06:25 +0100
+Date: Mon, 14 Mar 2011 16:06:13 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -19,99 +19,37 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>,
         Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 12/14] sched: Simplify NODE/ALLNODES domain creation
-References: <20110314150613.749843433@chello.nl>
-Content-Disposition: inline; filename=sched-foo11.patch
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: [RFC][PATCH 00/14] Rewrite sched_domain/sched_group creation
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't treat ALLNODES/NODE different for difference's sake. Simply
-always create the ALLNODES domain and let the sd_degenerate() checks
-kill it when its redundant. This simplifies the code flow.
+So I got annoyed with the whole sched_domain/sched_group creation mess again
+and decided to actuall do something about it. See here ;-)
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
+Its not completely done yet, but much of the ground-work is there.
+
+The final goal is to be able to have a simple way to dynamically specify the
+architecture topoplogy and have the generic code in charge of building the data
+structures. The architecture would need to provide a function that maps a cpu
+to a cpumask and a function that initializes the sched_domain (flags etc.),
+this would replace the now still hard-coded __build_*_sched_domain() calls in
+__build_sched_domains().
+
+With that we can also kill the current NODE and ALLNODES mess and generate
+appropriate masks from say the ACPI SLIT table by grouping CPUs on their node
+distance.
+
+This would allow us to kill the horrid mess in x86's cpu_coregroup_mask() and
+properly support the AMD magnycours stuff.
+
+Anyway, not quite there yet.. patches build and boot on a 2*6*2 wsm box.
+
 ---
- kernel/sched.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
-
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -6814,9 +6814,6 @@ struct sd_data {
- };
- 
- struct s_data {
--#ifdef CONFIG_NUMA
--	int			sd_allnodes;
--#endif
- 	cpumask_var_t		nodemask;
- 	cpumask_var_t		send_covered;
- 	struct sched_domain ** __percpu sd;
-@@ -7088,30 +7085,35 @@ static void claim_allocations(int cpu, s
- 	}
- }
- 
--static struct sched_domain *__build_numa_sched_domains(struct s_data *d,
--	const struct cpumask *cpu_map, struct sched_domain_attr *attr, int i)
-+static struct sched_domain *__build_allnodes_sched_domain(struct s_data *d,
-+	const struct cpumask *cpu_map, struct sched_domain_attr *attr,
-+	struct sched_domain *parent, int i)
- {
- 	struct sched_domain *sd = NULL;
- #ifdef CONFIG_NUMA
--	struct sched_domain *parent;
--
--	d->sd_allnodes = 0;
--	if (cpumask_weight(cpu_map) >
--	    SD_NODES_PER_DOMAIN * cpumask_weight(d->nodemask)) {
--		sd = sd_init_ALLNODES(d, i);
--		set_domain_attribute(sd, attr);
--		cpumask_copy(sched_domain_span(sd), cpu_map);
--		d->sd_allnodes = 1;
--	}
--	parent = sd;
-+	sd = sd_init_ALLNODES(d, i);
-+	set_domain_attribute(sd, attr);
-+	cpumask_copy(sched_domain_span(sd), cpu_map);
-+	sd->parent = parent;
-+	if (parent)
-+		parent->child = sd;
-+#endif
-+	return sd;
-+}
- 
-+static struct sched_domain *__build_node_sched_domain(struct s_data *d,
-+	const struct cpumask *cpu_map, struct sched_domain_attr *attr,
-+	struct sched_domain *parent, int i)
-+{
-+	struct sched_domain *sd = NULL;
-+#ifdef CONFIG_NUMA
- 	sd = sd_init_NODE(d, i);
- 	set_domain_attribute(sd, attr);
- 	sched_domain_node_span(cpu_to_node(i), sched_domain_span(sd));
-+	cpumask_and(sched_domain_span(sd), sched_domain_span(sd), cpu_map);
- 	sd->parent = parent;
- 	if (parent)
- 		parent->child = sd;
--	cpumask_and(sched_domain_span(sd), sched_domain_span(sd), cpu_map);
- #endif
- 	return sd;
- }
-@@ -7196,7 +7198,9 @@ static int __build_sched_domains(const s
- 		cpumask_and(d.nodemask, cpumask_of_node(cpu_to_node(i)),
- 			    cpu_map);
- 
--		sd = __build_numa_sched_domains(&d, cpu_map, attr, i);
-+		sd = NULL;
-+		sd = __build_allnodes_sched_domain(&d, cpu_map, attr, sd, i);
-+		sd = __build_node_sched_domain(&d, cpu_map, attr, sd, i);
- 		sd = __build_cpu_sched_domain(&d, cpu_map, attr, sd, i);
- 		sd = __build_book_sched_domain(&d, cpu_map, attr, sd, i);
- 		sd = __build_mc_sched_domain(&d, cpu_map, attr, sd, i);
+ include/linux/sched.h |   19 +-
+ kernel/sched.c        |  817 +++++++++++++------------------------------------
+ kernel/sched_fair.c   |   32 ++-
+ 3 files changed, 258 insertions(+), 610 deletions(-)
 
 
