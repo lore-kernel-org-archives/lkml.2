@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab1CNLGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:06:42 -0400
-Received: from nm2-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.248]:30564 "HELO
-	nm2-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752840Ab1CNLGi (ORCPT
+	id S1753550Ab1CNLGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:06:53 -0400
+Received: from nm23-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.224]:29264 "HELO
+	nm23-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753455Ab1CNLGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:06:38 -0400
-X-Yahoo-Newman-Id: 867291.36099.bm@omp1042.mail.sp2.yahoo.com
+	Mon, 14 Mar 2011 07:06:47 -0400
+X-Yahoo-Newman-Id: 558685.93507.bm@omp1001.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: GVUeHIYVM1mSXpJm9M.vQbsRsD74Cyr0YsoMQYIIsxov6pi
- RRaqtWPLrGnzcu3s2YdTBRyGDirk.QR3o2g0qi35kqoo2yDOiC447TTfrpOl
- bESrUinHRjNmRdgnZW84Ki9Eiz16u4MYEABTXonSpf33zRQ2mTG6mQuqtGJZ
- BBTKz.sFGAat2SvzRqMkuSLC08skrJMPYw1gTwbKYlXqxhVD6b3jguKRHeDi
- 0dZiyXX0pSiksBCZ3.tsrLFbe4FlgRAZe5Lnvndcnkggg3xsZuI3adPsu.bh
- afrdott.gLVGE1jnHQ8trlBGXVhywVEf9nw_gdeQ3bFjBsbxgMx4g0kkISJT
- YMFY1XWlnypTXfVyBvB4su3haXjJnc9UgOv.LZ9di84DieqOPaVmRmSw7sxX
- dPaUFbE6iksmwTQBZ57YU3sW1A9FzNPd7yO.a83SkT2BgBNIdHckTkcRDSyl
- UWq2OunwDFu126vwxjcu7UNjdFxCrK1sDV9H.
+X-YMail-OSG: 5_Fylc0VM1kY2p_713nrVuJLHXOrpS_D7SCwTx9bEfpa08r
+ 86xHspGInT.XlquuZ5HUSRxhquFURJDyE4hVo6ZketvG2zWTkbN5WLkZT7yR
+ bu1KZ5FDAGiC8FMBDBt9O1oIdNVSKuFv_AuLkzoXIlt_qqqagxSD7Hj8Sz5U
+ CCtwbwj4ozrrC.f_JbTh.VjTs5TpGjoqOH8nJQUHj_.YExbpLa2bg05mpfrq
+ HX74Jd4nhs7clmThQWqIKSP7KuuyokmoDGLkK5ntHn.vyL1U_YBynXPZ7Mip
+ yHgep.TCpw4Q3CJC_e5l1vJnsZW7ETe6CFASo8OgnAAHDlrV.xl8sYSz_n42
+ p6HwIYJiQp.OqwWNs_UKj2Ij_JJYCDwLSuq8GAfhYSDg1yVc9L.ViT3.L3Jj
+ grmde26bauTqrI6H8PEava14a
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,9 +29,9 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 03/21] target: tcm_mod_builder.py generated Makefile cleanups
-Date: Mon, 14 Mar 2011 04:05:57 -0700
-Message-Id: <1300100775-10012-4-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 05/21] target: Convert backend ->create_virtdevice() call to return ERR_PTR
+Date: Mon, 14 Mar 2011 04:05:59 -0700
+Message-Id: <1300100775-10012-6-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
 References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
@@ -42,83 +41,256 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts the tcm_mod_builder.py generation script to
-create a new drivers/target/$TCM_FABRIC_MOD/Makefile and update
-drivers/target/Makefile, instead of creating+updating a 'Kbuild'
-filename.
+This patch converts the target_core_store_dev_enable() -> struct
+se_subsystem_api->create_virtdevice() call to return proper ERR_PTR values
+back up to configfs logic during backend dependent struct se_device ENABLE
+exception conditions.
 
-It also removes the remaining EXTRA_CFLAGS includes from
-tcm_mod_build_kbuild(), and converts fabric module generated .c
-code to us ""-style includes for $FABRIC_MOD_[base,fabric].h
+Along with the change to target_core_configfs.c, this includes converting IBLOCK,
+FILEIO, pSCSI, and RAMDISK_* backend subsystem plugins to obtain upper level
+PTR_ERR return codes (where available), and return via ERR_PTR during a
+*_create_virtdev() failure.
 
-Reported-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Fubo Chen <fubo.chen@gmail.com>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- Documentation/target/tcm_mod_builder.py |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+ drivers/target/target_core_configfs.c |    4 +++-
+ drivers/target/target_core_file.c     |   13 +++++++++----
+ drivers/target/target_core_iblock.c   |   15 ++++++++-------
+ drivers/target/target_core_pscsi.c    |   18 +++++++++---------
+ drivers/target/target_core_rd.c       |    8 +++++---
+ 5 files changed, 34 insertions(+), 24 deletions(-)
 
-diff --git a/Documentation/target/tcm_mod_builder.py b/Documentation/target/tcm_mod_builder.py
-index dbeb8a0..89af6c7 100755
---- a/Documentation/target/tcm_mod_builder.py
-+++ b/Documentation/target/tcm_mod_builder.py
-@@ -239,8 +239,8 @@ def tcm_mod_build_configfs(proto_ident, fabric_mod_dir_var, fabric_mod_name):
- 	buf += "#include <target/target_core_configfs.h>\n"
- 	buf += "#include <target/target_core_base.h>\n"
- 	buf += "#include <target/configfs_macros.h>\n\n"
--	buf += "#include <" + fabric_mod_name + "_base.h>\n"
--	buf += "#include <" + fabric_mod_name + "_fabric.h>\n\n"
-+	buf += "#include \"" + fabric_mod_name + "_base.h\"\n"
-+	buf += "#include \"" + fabric_mod_name + "_fabric.h\"\n\n"
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index c9254d7..9721ef2 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -1827,7 +1827,9 @@ static ssize_t target_core_store_dev_enable(
+ 		return -EINVAL;
  
- 	buf += "/* Local pointer to allocated TCM configfs fabric module */\n"
- 	buf += "struct target_fabric_configfs *" + fabric_mod_name + "_fabric_configfs;\n\n"
-@@ -583,9 +583,9 @@ def tcm_mod_dump_fabric_ops(proto_ident, fabric_mod_dir_var, fabric_mod_name):
- 	buf += "#include <target/target_core_fabric_lib.h>\n"
- 	buf += "#include <target/target_core_device.h>\n"
- 	buf += "#include <target/target_core_tpg.h>\n"
--	buf += "#include <target/target_core_configfs.h>\n"
--	buf += "#include <" + fabric_mod_name + "_base.h>\n"
--	buf += "#include <" + fabric_mod_name + "_fabric.h>\n\n"
-+	buf += "#include <target/target_core_configfs.h>\n\n"
-+	buf += "#include \"" + fabric_mod_name + "_base.h\"\n"
-+	buf += "#include \"" + fabric_mod_name + "_fabric.h\"\n\n"
+ 	dev = t->create_virtdevice(hba, se_dev, se_dev->se_dev_su_ptr);
+-	if (!(dev) || IS_ERR(dev))
++	if (IS_ERR(dev))
++		return PTR_ERR(dev);
++	else if (!dev)
+ 		return -EINVAL;
  
- 	buf += "int " + fabric_mod_name + "_check_true(struct se_portal_group *se_tpg)\n"
- 	buf += "{\n"
-@@ -973,14 +973,13 @@ def tcm_mod_dump_fabric_ops(proto_ident, fabric_mod_dir_var, fabric_mod_name):
- def tcm_mod_build_kbuild(fabric_mod_dir_var, fabric_mod_name):
+ 	se_dev->se_dev_ptr = dev;
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index 676a010..ae2bf71 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -135,7 +135,7 @@ static struct se_device *fd_create_virtdevice(
+ 	mm_segment_t old_fs;
+ 	struct file *file;
+ 	struct inode *inode = NULL;
+-	int dev_flags = 0, flags;
++	int dev_flags = 0, flags, ret = -EINVAL;
  
- 	buf = ""
--	f = fabric_mod_dir_var + "/Kbuild"
-+	f = fabric_mod_dir_var + "/Makefile"
- 	print "Writing file: " + f
+ 	memset(&dev_limits, 0, sizeof(struct se_dev_limits));
  
- 	p = open(f, 'w')
- 	if not p:
- 		tcm_mod_err("Unable to open file: " + f)
+@@ -147,6 +147,7 @@ static struct se_device *fd_create_virtdevice(
+ 	if (IS_ERR(dev_p)) {
+ 		printk(KERN_ERR "getname(%s) failed: %lu\n",
+ 			fd_dev->fd_dev_name, IS_ERR(dev_p));
++		ret = PTR_ERR(dev_p);
+ 		goto fail;
+ 	}
+ #if 0
+@@ -166,8 +167,12 @@ static struct se_device *fd_create_virtdevice(
+ 		flags |= O_SYNC;
  
--	buf = "EXTRA_CFLAGS += -I$(srctree)/drivers/target/ -I$(srctree)/include/ -I$(srctree)/drivers/scsi/ -I$(srctree)/include/scsi/ -I$(srctree)/drivers/target/" + fabric_mod_name + "\n\n"
- 	buf += fabric_mod_name + "-objs			:= " + fabric_mod_name + "_fabric.o \\\n"
- 	buf += "					   " + fabric_mod_name + "_configfs.o\n"
- 	buf += "obj-$(CONFIG_" + fabric_mod_name.upper() + ")		+= " + fabric_mod_name + ".o\n"
-@@ -1018,7 +1017,7 @@ def tcm_mod_build_kconfig(fabric_mod_dir_var, fabric_mod_name):
+ 	file = filp_open(dev_p, flags, 0600);
+-
+-	if (IS_ERR(file) || !file || !file->f_dentry) {
++	if (IS_ERR(file)) {
++		printk(KERN_ERR "filp_open(%s) failed\n", dev_p);
++		ret = PTR_ERR(file);
++		goto fail;
++	}
++	if (!file || !file->f_dentry) {
+ 		printk(KERN_ERR "filp_open(%s) failed\n", dev_p);
+ 		goto fail;
+ 	}
+@@ -242,7 +247,7 @@ fail:
+ 		fd_dev->fd_file = NULL;
+ 	}
+ 	putname(dev_p);
+-	return NULL;
++	return ERR_PTR(ret);
+ }
  
- def tcm_mod_add_kbuild(tcm_dir, fabric_mod_name):
- 	buf = "obj-$(CONFIG_" + fabric_mod_name.upper() + ")	+= " + fabric_mod_name.lower() + "/\n"
--	kbuild = tcm_dir + "/drivers/target/Kbuild"
-+	kbuild = tcm_dir + "/drivers/target/Makefile"
+ /*	fd_free_device(): (Part of se_subsystem_api_t template)
+diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+index 422187b..9140be3 100644
+--- a/drivers/target/target_core_iblock.c
++++ b/drivers/target/target_core_iblock.c
+@@ -130,10 +130,11 @@ static struct se_device *iblock_create_virtdevice(
+ 	struct request_queue *q;
+ 	struct queue_limits *limits;
+ 	u32 dev_flags = 0;
++	int ret = -EINVAL;
  
- 	f = open(kbuild, 'a')
- 	f.write(buf)
-@@ -1064,7 +1063,7 @@ def main(modname, proto_ident):
- 	tcm_mod_build_kbuild(fabric_mod_dir, fabric_mod_name)
- 	tcm_mod_build_kconfig(fabric_mod_dir, fabric_mod_name)
+ 	if (!(ib_dev)) {
+ 		printk(KERN_ERR "Unable to locate struct iblock_dev parameter\n");
+-		return 0;
++		return ERR_PTR(ret);
+ 	}
+ 	memset(&dev_limits, 0, sizeof(struct se_dev_limits));
+ 	/*
+@@ -142,7 +143,7 @@ static struct se_device *iblock_create_virtdevice(
+ 	ib_dev->ibd_bio_set = bioset_create(32, 64);
+ 	if (!(ib_dev->ibd_bio_set)) {
+ 		printk(KERN_ERR "IBLOCK: Unable to create bioset()\n");
+-		return 0;
++		return ERR_PTR(-ENOMEM);
+ 	}
+ 	printk(KERN_INFO "IBLOCK: Created bio_set()\n");
+ 	/*
+@@ -154,8 +155,10 @@ static struct se_device *iblock_create_virtdevice(
  
--	input = raw_input("Would you like to add " + fabric_mod_name + "to drivers/target/Kbuild..? [yes,no]: ")
-+	input = raw_input("Would you like to add " + fabric_mod_name + "to drivers/target/Makefile..? [yes,no]: ")
- 	if input == "yes" or input == "y":
- 		tcm_mod_add_kbuild(tcm_dir, fabric_mod_name)
+ 	bd = blkdev_get_by_path(ib_dev->ibd_udev_path,
+ 				FMODE_WRITE|FMODE_READ|FMODE_EXCL, ib_dev);
+-	if (IS_ERR(bd))
++	if (IS_ERR(bd)) {
++		ret = PTR_ERR(bd);
+ 		goto failed;
++	}
+ 	/*
+ 	 * Setup the local scope queue_limits from struct request_queue->limits
+ 	 * to pass into transport_add_device_to_core_hba() as struct se_dev_limits.
+@@ -185,9 +188,7 @@ static struct se_device *iblock_create_virtdevice(
+ 	 * the QUEUE_FLAG_DISCARD bit for UNMAP/WRITE_SAME in SCSI + TRIM
+ 	 * in ATA and we need to set TPE=1
+ 	 */
+-	if (blk_queue_discard(bdev_get_queue(bd))) {
+-		struct request_queue *q = bdev_get_queue(bd);
+-
++	if (blk_queue_discard(q)) {
+ 		DEV_ATTRIB(dev)->max_unmap_lba_count =
+ 				q->limits.max_discard_sectors;
+ 		/*
+@@ -213,7 +214,7 @@ failed:
+ 	ib_dev->ibd_bd = NULL;
+ 	ib_dev->ibd_major = 0;
+ 	ib_dev->ibd_minor = 0;
+-	return NULL;
++	return ERR_PTR(ret);
+ }
  
+ static void iblock_free_device(void *p)
+diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+index f596cb7..e795f7d 100644
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -556,7 +556,7 @@ static struct se_device *pscsi_create_virtdevice(
+ 	if (!(pdv)) {
+ 		printk(KERN_ERR "Unable to locate struct pscsi_dev_virt"
+ 				" parameter\n");
+-		return NULL;
++		return ERR_PTR(-EINVAL);
+ 	}
+ 	/*
+ 	 * If not running in PHV_LLD_SCSI_HOST_NO mode, locate the
+@@ -566,7 +566,7 @@ static struct se_device *pscsi_create_virtdevice(
+ 		if (phv->phv_mode == PHV_LLD_SCSI_HOST_NO) {
+ 			printk(KERN_ERR "pSCSI: Unable to locate struct"
+ 				" Scsi_Host for PHV_LLD_SCSI_HOST_NO\n");
+-			return NULL;
++			return ERR_PTR(-ENODEV);
+ 		}
+ 		/*
+ 		 * For the newer PHV_VIRUTAL_HOST_ID struct scsi_device
+@@ -575,7 +575,7 @@ static struct se_device *pscsi_create_virtdevice(
+ 		if (!(se_dev->su_dev_flags & SDF_USING_UDEV_PATH)) {
+ 			printk(KERN_ERR "pSCSI: udev_path attribute has not"
+ 				" been set before ENABLE=1\n");
+-			return NULL;
++			return ERR_PTR(-EINVAL);
+ 		}
+ 		/*
+ 		 * If no scsi_host_id= was passed for PHV_VIRUTAL_HOST_ID,
+@@ -588,12 +588,12 @@ static struct se_device *pscsi_create_virtdevice(
+ 				printk(KERN_ERR "pSCSI: Unable to set hba_mode"
+ 					" with active devices\n");
+ 				spin_unlock(&hba->device_lock);
+-				return NULL;
++				return ERR_PTR(-EEXIST);
+ 			}
+ 			spin_unlock(&hba->device_lock);
+ 
+ 			if (pscsi_pmode_enable_hba(hba, 1) != 1)
+-				return NULL;
++				return ERR_PTR(-ENODEV);
+ 
+ 			legacy_mode_enable = 1;
+ 			hba->hba_flags |= HBA_FLAGS_PSCSI_MODE;
+@@ -603,14 +603,14 @@ static struct se_device *pscsi_create_virtdevice(
+ 			if (!(sh)) {
+ 				printk(KERN_ERR "pSCSI: Unable to locate"
+ 					" pdv_host_id: %d\n", pdv->pdv_host_id);
+-				return NULL;
++				return ERR_PTR(-ENODEV);
+ 			}
+ 		}
+ 	} else {
+ 		if (phv->phv_mode == PHV_VIRUTAL_HOST_ID) {
+ 			printk(KERN_ERR "pSCSI: PHV_VIRUTAL_HOST_ID set while"
+ 				" struct Scsi_Host exists\n");
+-			return NULL;
++			return ERR_PTR(-EEXIST);
+ 		}
+ 	}
+ 
+@@ -645,7 +645,7 @@ static struct se_device *pscsi_create_virtdevice(
+ 				hba->hba_flags &= ~HBA_FLAGS_PSCSI_MODE;
+ 			}
+ 			pdv->pdv_sd = NULL;
+-			return NULL;
++			return ERR_PTR(-ENODEV);
+ 		}
+ 		return dev;
+ 	}
+@@ -661,7 +661,7 @@ static struct se_device *pscsi_create_virtdevice(
+ 		hba->hba_flags &= ~HBA_FLAGS_PSCSI_MODE;
+ 	}
+ 
+-	return NULL;
++	return ERR_PTR(-ENODEV);
+ }
+ 
+ /*	pscsi_free_device(): (Part of se_subsystem_api_t template)
+diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
+index 979aebf..0d0a583 100644
+--- a/drivers/target/target_core_rd.c
++++ b/drivers/target/target_core_rd.c
+@@ -254,13 +254,15 @@ static struct se_device *rd_create_virtdevice(
+ 	struct se_dev_limits dev_limits;
+ 	struct rd_dev *rd_dev = p;
+ 	struct rd_host *rd_host = hba->hba_ptr;
+-	int dev_flags = 0;
++	int dev_flags = 0, ret = -EINVAL;
+ 	char prod[16], rev[4];
+ 
+ 	memset(&dev_limits, 0, sizeof(struct se_dev_limits));
+ 
+-	if (rd_build_device_space(rd_dev) < 0)
++	if (rd_build_device_space(rd_dev) < 0) {
++		ret = -ENOMEM;
+ 		goto fail;
++	}
+ 
+ 	snprintf(prod, 16, "RAMDISK-%s", (rd_dev->rd_direct) ? "DR" : "MCP");
+ 	snprintf(rev, 4, "%s", (rd_dev->rd_direct) ? RD_DR_VERSION :
+@@ -293,7 +295,7 @@ static struct se_device *rd_create_virtdevice(
+ 
+ fail:
+ 	rd_release_device_space(rd_dev);
+-	return NULL;
++	return ERR_PTR(ret);
+ }
+ 
+ static struct se_device *rd_DIRECT_create_virtdevice(
 -- 
 1.7.4.1
 
