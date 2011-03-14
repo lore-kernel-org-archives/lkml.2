@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab1CNTXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:23:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50238 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab1CNTXS (ORCPT
+	id S1756983Ab1CNTYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:24:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40630 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab1CNTYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:23:18 -0400
-Date: Mon, 14 Mar 2011 16:23:03 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+	Mon, 14 Mar 2011 15:24:48 -0400
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=JmPYChc5JtYA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3vXW2efjfCzugMQovxwA:9 a=zh-d5kGcDP9u90gcqBcWE3RN1N0A:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Mon, 14 Mar 2011 15:24:45 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jan Beulich <JBeulich@novell.com>, sedat.dilek@gmail.com,
+        Alan Modra <amodra@bigpond.net.au>, Ingo Molnar <mingo@elte.hu>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        binutils <binutils@sourceware.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf lock: fix sorting by wait_min
-Message-ID: <20110314192303.GB9388@ghostprotocols.net>
-References: <20110222174715.GC9687@joi.lan> <20110314165458.GA2693@joi.lan>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+Message-ID: <20110314192445.GD20259@home.goodmis.org>
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
+ <4D7E095802000078000363D5@vpn.id2.novell.com>
+ <4D7E4338.1060302@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110314165458.GA2693@joi.lan>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4D7E4338.1060302@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Mar 14, 2011 at 05:54:58PM +0100, Marcin Slusarz escreveu:
-> On Tue, Feb 22, 2011 at 06:47:15PM +0100, Marcin Slusarz wrote:
-> > if lock was uncontended, wait_time_min == ULLONG_MAX, so we need to handle
-> > this case differently to show high wait times first
+On Mon, Mar 14, 2011 at 09:32:56AM -0700, H. Peter Anvin wrote:
+> On 03/14/2011 04:26 AM, Jan Beulich wrote:
 > > 
-> > Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> > ---
-> >  tools/perf/builtin-lock.c |   13 ++++++++++++-
-> >  1 files changed, 12 insertions(+), 1 deletions(-)
+> > Making the kernel build system check for certain newly introduced
+> > gas options would again require changes to the kernel sources,
+> > which is precisely what is impossible to do for past kernel releases
+> > (and bisection in particular).
 > > 
-> > diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-> > index 0305a40..812ad26 100644
-> > --- a/tools/perf/builtin-lock.c
-> > +++ b/tools/perf/builtin-lock.c
-> > @@ -202,9 +202,20 @@ static struct thread_stat *thread_stat_findnew_first(u32 tid)
-> >  SINGLE_KEY(nr_acquired)
-> >  SINGLE_KEY(nr_contended)
-> >  SINGLE_KEY(wait_time_total)
-> > -SINGLE_KEY(wait_time_min)
-> >  SINGLE_KEY(wait_time_max)
-> >  
-> > +static int lock_stat_key_wait_time_min(struct lock_stat *one,
-> > +					struct lock_stat *two)
-> > +{
-> > +	u64 s1 = one->wait_time_min;
-> > +	u64 s2 = two->wait_time_min;
-> > +	if (s1 == ULLONG_MAX)
-> > +		s1 = 0;
-> > +	if (s2 == ULLONG_MAX)
-> > +		s2 = 0;
-> > +	return s1 > s2;
-> > +}
-> > +
-> >  struct lock_key {
-> >  	/*
-> >  	 * name: the value for specify by user
-> > -- 
 > 
-> Anything wrong with this patch?
-> I can't find it in linux-next.
+> But something like "make CC='gcc -Wa,--size-check=warning'" should work,
+> I believe (tweaking may be required, but that's the idea).  Passing an
+> option to the assembler is a helluva lot easier than redirecting to a
+> different assembler.
+> 
+> 	-hpa
+> 
 
-Hitoshi-san, can I have your acked-by for this one?
+Even if the above does work, how do we go about educating users doing
+bisects with latest binutils? This is a very common practice among
+kernel developers with users that hit bugs. And right now there's just a
+handful of people that know of this work-around.
 
-Thanks,
+It will become a huge burden to us and our users (which is everyone
+using Linux), if we do not understand the reason a build breaks when
+doing a bisect, just because some "bug" in asm which binutils use to
+work with now errors on.
 
-- Arnaldo
+If it was a bug in asm, but binutils can cope with it, then it should be
+a warning. If binutils can't cope, then error.
+
+-- Steve
+
