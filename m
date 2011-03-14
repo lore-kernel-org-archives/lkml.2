@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab1CNUoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:44:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41235 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab1CNUoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:44:05 -0400
-Date: Mon, 14 Mar 2011 17:43:41 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-Message-ID: <20110314204341.GC9388@ghostprotocols.net>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+	id S1757205Ab1CNUqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:46:33 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53618 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310Ab1CNUqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 16:46:32 -0400
+Date: Mon, 14 Mar 2011 16:46:27 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: ext4 deep stack with mark_page_dirty reclaim
+Message-ID: <20110314204627.GB8120@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-mm@kvack.org
+References: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LSU.2.00.1103141156190.3220@sister.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Mar 14, 2011 at 08:17:59PM +0100, Frederic Weisbecker escreveu:
-> Some examples:
+On Mon, Mar 14, 2011 at 12:20:52PM -0700, Hugh Dickins wrote:
+> When testing something else on 2.6.38-rc8 last night,
+> I hit this x86_64 stack overflow.  I've never had one before,
+> it seems worth reporting.  kdb was in, I jotted it down by hand
+> (the notifier part of it will be notifying kdb of the fault).
+> CONFIG_DEBUG_STACK_OVERFLOW and DEBUG_STACK_USAGE were not set.
 > 
-> - Trace lock events inside irqs
-> 
-> 	$ perf record -e irq:irq_handler_entry -e irq:irq_handler_exit \
-> 		-e lock:lock_acquire --starter 0 --stopper 1 --enable-on-starter \
-> 		perf bench sched messaging
+> I should disclose that I have a hack in which may make my stack
+> frames slightly larger than they should be: check against yours.
+> So it may not be an overflow for anyone else, but still a trace
+> to worry about.
 
-A more compact alternative that uses .. to delimit ranges (start and/or
-stop), like git does for changeset ranges and @ to determine where to
-enable the event:
+Here's the trace translated to the stack space used by each function.
+There are a few piggy ext4 functions that we can try to shrink, but
+the real problem is just how deep the whole stack is getting.
 
-perf record -e instructions@irq:irq_handler_entry..irq:irq_handler_exit \
-	perf bench sched messaging
+>From the syscall to the lowest-level ext4 function is 3712 bytes, and
+everything from there to the schedule() which then triggered the GPF
+was another 3728 of stack space....
 
-event-A at-range event-B to event-C
+				- Ted
 
-open ended ranges being possible as well, i.e. start counting when
-event-B triggers and stop only when the workload finishes, or count from
-workload start till event-C triggers.
- 		
-> 	$ perf script
-> 	
-> 	perf-4300  [000]  2000.209721: irq_handler_entry: irq=40 name=ahci
->       perf-4300  [000]  2000.209725: lock_acquire: 0xffff880037851c40 &(&host->lock)->rlock
->       perf-4300  [000]  2000.209731: irq_handler_exit: irq=40 ret=handled
->       perf-4300  [000]  2000.209821: irq_handler_entry: irq=40 name=ahci
->       perf-4300  [000]  2000.209823: lock_acquire: 0xffff880037851c40 &(&host->lock)->rlock
->       perf-4300  [000]  2000.209828: irq_handler_exit: irq=40 ret=handled
-> - Count instructions inside softirqs, outside softirqs and everywhere:
-> 
-> 	$ perf stat -e irq:softirq_entry -e irq:softirq_exit \
-> 		-e instructions --starter 0 --stopper 1 --enable-on-starter \
-> 		-e instructions --starter 1 --stopper 0 \
-> 		-e instructions ./perf bench sched messaging
-
-$ perf record -e instructions@irq:softirq_entry..irq:softirq_exit \
-	      -e instructions@irq:softirq_exit..irq:softirq_entry \
-	      -e instructions \
-	perf bench sched messaging
-
-- Arnaldo
+ 240 schedule+0x25a
+ 368 io_schedule+0x35
+  32 get_request_wait+0xc6
+ 160 __make_request+0x36d
+ 112 generic_make_request+0x2f2
+ 208 submit_bio+0xe1
+ 144 swap_writepage+0xa3
+  80 pageout+0x151
+ 128 shrink_page_list+0x2db
+ 176 shrink_inactive_list+0x2d3
+ 256 shrink_zone+0x17d
+ 224 shrink_zones+0x0xa3
+ 128 do_try_to_free_pages+0x87
+ 144 try_to_free_mem_cgroup_pages+0x8e
+ 112 mem_cgroup_hierarchical_reclaim+0x220
+ 176 mem_cgroup_do_charge+0xdc
+ 128 __mem_cgroup_try_charge+0x19c
+ 128 mem_cgroup_charge_common+0xa8
+ 128 mem_cgroup_cache_charge+0x19a
+ 128 add_to_page_cache_locked+0x57
+  96 add_to_page_cache_lru+0x3e
+  80 find_or_create_page+0x69
+ 112 grow_dev_page+0x4a
+  96 grow_buffers+0x41
+  64 __getblk_slow+0xd7
+  80 __getblk+0x44
+  80 __ext4_get_inode_loc+0x12c
+ 176 ext4_get_inode_loc+0x30
+  48 ext4_reserve_inode_write+0x21
+  80 ext4_mark_inode_dirty+0x3b
+ 160 ext4_dirty_inode+0x3e
+  64 __mark_inode_dirty+0x32
+  80 linux/fs.h       mark_inode_dirty
+   0 linux/quotaops.h dquot_alloc_space
+   0 linux/quotaops.h dquot_alloc_block
+   0 ext4_mb_new_blocks+0xc2
+ 144 ext4_alloc_blocks+0x189
+ 208 ext4_alloc_branch+0x73
+ 208 ext4_ind_map_blocks+0x148
+ 272 ext4_map_blocks+0x148
+ 112 ext4_getblk+0x5f
+ 144 ext4_bread+0x36
+  96 ext4_append+0x52
+  96 do_split+0x5b
+ 224 ext4_dx_add_entry+0x4b4
+ 304 ext4_add_entry+0x7c
+ 176 ext4_add_nondir+0x2e
+  80 ext4_create+0xf5
+ 144 vfs_create+0x83
+  96 __open_namei_create+0x59
+  96 do_last+0x13b
+ 112 do_filp_open+0x2ae
+ 384 do_sys_open+0x72
+ 128 sys_open+0x27
