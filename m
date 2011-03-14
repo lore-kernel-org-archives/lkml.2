@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab1CNK4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 06:56:24 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33408 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab1CNK4W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 06:56:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=K4wc8CiFhsLlJI5gudNW58NNzqBoj39vQ2czjRAlifjRP9lHvyPKzjWbKAyoL65jTm
-         8V+TZUBVjbJankUBhbDxEo/3XekJ8HZdTDCouGS1XzgcYyWNGhnZp/H/P655ZoWT2Q18
-         QrRSIFjwl1kceSWnBWrWop1CMCpAHLYjAWWlg=
-Subject: [PATCH] platform-driver-x86: samsung-laptop: make dmi_check_cb to
- return 1 instead of 0
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Mar 2011 18:56:18 +0800
-Message-ID: <1300100178.3761.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753167Ab1CNK4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 06:56:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62774 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752783Ab1CNK4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 06:56:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,315,1297065600"; 
+   d="scan'208";a="612661318"
+Date: Mon, 14 Mar 2011 11:56:37 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: johnpol@2ka.mipt.ru, a.zummo@towertech.it, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com, dmitry.torokhov@gmail.com,
+        dtor@mail.ru, rpurdie@rpsys.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: adopt mfd_data in 88pm860x backlight
+Message-ID: <20110314105637.GF31153@sortiz-mobl>
+References: <1299512600-29047-1-git-send-email-haojian.zhuang@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299512600-29047-1-git-send-email-haojian.zhuang@marvell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmi_check_system() walks the table running matching functions until
-someone returns non zero or we hit the end.
+Hi Haojian,
 
-This patch makes dmi_check_cb to return 1 so dmi_check_system() return
-immediately when a match is found.
+On Mon, Mar 07, 2011 at 11:43:09PM +0800, Haojian Zhuang wrote:
+> Copy 88pm860x platform data into different mfd_data structure for
+> backlight driver. So move the identification of device node from
+> backlight driver to mfd driver.
+Patch applied, thanks.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/samsung-laptop.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index e0b390d..de434c6 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -496,7 +496,7 @@ static int __init dmi_check_cb(const struct dmi_system_id *id)
- {
- 	pr_info("found laptop model '%s'\n",
- 		id->ident);
--	return 0;
-+	return 1;
- }
- 
- static struct dmi_system_id __initdata samsung_dmi_table[] = {
 -- 
-1.7.1
-
-
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
