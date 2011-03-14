@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab1CNJ7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 05:59:54 -0400
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:1834 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab1CNJ7w (ORCPT
+	id S1751711Ab1CNKB5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 06:01:57 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:59093 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab1CNKBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 05:59:52 -0400
-Message-ID: <df650e295afbf5651be743e58b06eb5b.squirrel@webmail.xs4all.nl>
-In-Reply-To: <s5hei6ahvtu.wl%tiwai@suse.de>
-References: <201103121919.05657.linux@rainbow-software.org>
-    <201103121952.39850.hverkuil@xs4all.nl>
-    <s5hei6ahvtu.wl%tiwai@suse.de>
-Date: Mon, 14 Mar 2011 10:59:47 +0100
-Subject: Re: [alsa-devel] radio-maestro broken (conflicts with snd-es1968)
-From: "Hans Verkuil" <hverkuil@xs4all.nl>
-To: "Takashi Iwai" <tiwai@suse.de>
-Cc: "Ondrej Zary" <linux@rainbow-software.org>, jirislaby@gmail.com,
-        alsa-devel@alsa-project.org,
-        "Kernel development list" <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-User-Agent: SquirrelMail/1.4.18
+	Mon, 14 Mar 2011 06:01:55 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGjy0GEyo=
+X-RZG-CLASS-ID: mo00
+Date: Mon, 14 Mar 2011 11:01:44 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com, linux-input@vger.kernel.org
+Subject: Re: [PATCH] input/xen-fbfront: advertise either absolute or relative
+ coordinates
+Message-ID: <20110314100144.GA4572@aepfle.de>
+References: <alpine.DEB.2.00.1103111124400.2968@kaball-desktop>
+ <20110313062411.GB31566@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110313062411.GB31566@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> At Sat, 12 Mar 2011 19:52:39 +0100,
-> Hans Verkuil wrote:
->>
->> On Saturday, March 12, 2011 19:19:00 Ondrej Zary wrote:
->> > Hello,
->> > the radio-maestro driver is badly broken. It's intended to drive the
->> radio on
->> > MediaForte ESS Maestro-based sound cards with integrated radio (like
->> > SF64-PCE2-04). But it conflicts with snd_es1968, ALSA driver for the
->> sound
->> > chip itself.
->> >
->> > If one driver is loaded, the other one does not work - because a
->> driver is
->> > already registered for the PCI device (there is only one). This was
->> probably
->> > broken by conversion of PCI probing in 2006:
->> > ttp://lkml.org/lkml/2005/12/31/93
->> >
->> > How to fix it properly? Include radio functionality in snd-es1968 and
->> delete
->> > radio-maestro?
->>
->> Interesting. I don't know anyone among the video4linux developers who
->> has
->> this hardware, so the radio-maestro driver hasn't been tested in at
->> least
->> 6 or 7 years.
->>
->> The proper fix would be to do it like the fm801.c alsa driver does: have
->> the radio functionality as an i2c driver. In fact, it would not surprise
->> me at all if you could use the tea575x-tuner.c driver (in
->> sound/i2c/other)
->> for the es1968 and delete the radio-maestro altogether.
->
-> I guess simply porting radio-maestro codes into snd-es1968 would work
-> without much hustles, and it's a bit safe way to go for now; smaller
-> changes have less chance for breakage, and as little people seem using
-> this driver, it'd be better to take a safer option, IMO.
+On Sat, Mar 12, Dmitry Torokhov wrote:
 
-I assume someone has hardware since someone reported this breakage. So try
-to use tuner-tea575x for the es1968. It shouldn't be too difficult.
-Additional cleanup should probably wait until we find a tester for the
-fm801 as well.
+> Hi Stefano,
+> 
+> On Fri, Mar 11, 2011 at 11:30:10AM +0000, Stefano Stabellini wrote:
+> > From: Olaf Hering <olaf@aepfle.de>
+> > 
+> > A virtualized display device is usually viewed with the vncviewer
+> > application, either by 'xm vnc domU' or with vncviewer localhost:port.
+> > vncviewer and the RFB protocol provides absolute coordinates to the
+> > virtual display. These coordinates are either passed through to a PV
+> > guest or converted to relative coordinates for a HVM guest.
+> > 
+> > A PV guest receives these coordinates and passes them to the kernels
+> > evdev driver. There it can be picked up by applications such as the
+> > xorg-input drivers. Using absolute coordinates avoids issues such as
+> > guest mouse pointer not tracking host mouse pointer due to wrong mouse
+> > acceleration settings in the guests X display.
+> > 
+> > Advertise either absolute or relative coordinates to the input system
+> > and the evdev driver, depending on what dom0 provides. The xorg-input
+> > driver prefers relative coordinates even if a devices provides both.
+> 
+> So if I am reading this correctly the original version handled changes
+> in backend capabilities and could switch between delivering either
+> relative or absolute coordinates. The new version selects the
+> capabilities at boot time and sticks with them. Was it really the
+> intended behavior?
 
-I don't like the idea to duplicate code.
+Yes, as mentioned in the description above, using absolute coordinates in
+the guests X11 is prefered because it avoids that the guest mouse
+pointer gets out of sync with the host/desktop mouse pointer.
+Very old Xen versions did not send absolute coordinates, but recent
+versions do.
 
-Regards,
-
-      Hans
-
-> If we have active testers for both devices, it's nicer to go forward
-> to clean-up works indeed, though.
->
->
-> thanks,
->
-> Takashi
->
->> Both are for the tea575x tuner, although radio-maestro seems to have
->> better
->> support for the g_tuner operation. It doesn't seem difficult to add that
->> to
->> tea575x-tuner.c.
->>
->> The fm801 code for driving the tea575x is pretty horrible and it should
->> be
->> possible to improve that. I suspect that those read/write/mute functions
->> really belong in tea575x-tuner.c and that only the low-level gpio
->> actions
->> need to be in the fm801/es1968 drivers.
->>
->> Hope this helps.
->>
->> Regards,
->>
->> 	Hans
->>
->> BTW: if anyone has spare hardware for testing the
->> radio-maestro/tea575x-tuner,
->> then I'm interested.
->>
->> --
->> Hans Verkuil - video4linux developer - sponsored by Cisco
->> _______________________________________________
->> Alsa-devel mailing list
->> Alsa-devel@alsa-project.org
->> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
->>
->
-
-
--- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
-
+Olaf
