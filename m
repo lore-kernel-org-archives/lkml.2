@@ -1,148 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1CNOEs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 10:04:48 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:55144 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752644Ab1CNOEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 10:04:46 -0400
-Message-ID: <4D7E204E.7010303@stericsson.com>
-Date: Mon, 14 Mar 2011 15:03:58 +0100
-From: Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Rob Clark <robdclark@gmail.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local>	<201011251747.48365.arnd@arndb.de>	<C832F8F5D375BD43BFA11E82E0FE9FE0082586F430@EXDCVYMBSTM005.EQ1STM.local>	<201011261224.59490.arnd@arndb.de>	<AANLkTinSb-9=xzX3LfZVYcKiDt5Qkm=qV6CiFGUyq+fC@mail.gmail.com>	<20101205112813.GB12542@viiv.ffwll.ch> <AANLkTi=B=_3tHXgG02pQA=zE=i8TOz0BZ=Pe9ZZwGLh3@mail.gmail.com>
-In-Reply-To: <AANLkTi=B=_3tHXgG02pQA=zE=i8TOz0BZ=Pe9ZZwGLh3@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755563Ab1CNOFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 10:05:32 -0400
+Received: from shutemov.name ([188.40.19.243]:37348 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754026Ab1CNOF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 10:05:28 -0400
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH, v9 3/3] cgroups: introduce timer slack controller
+Date: Mon, 14 Mar 2011 16:05:24 +0200
+Message-Id: <1300111524-5666-4-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300111524-5666-1-git-send-email-kirill@shutemov.name>
+References: <1300111524-5666-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2011 04:59 PM, Rob Clark wrote:
-> On Sun, Dec 5, 2010 at 5:28 AM, Daniel Vetter<daniel@ffwll.ch>  wrote:
->    
->> On Sat, Dec 04, 2010 at 04:34:22PM -0500, Alex Deucher wrote:
->>      
->>> This doesn't seem that different from the graphics chips we support
->>> with kms.  I don't think it would require much work to use KMS.  One
->>> thing we considered, but never ended up implementing was a generic
->>> overlay API for KMS.  Most PC hardware still has overlays, but we
->>> don't use them much any more on the desktop side.  It may be
->>> worthwhile to design an appropriate API for them for these type of
->>> hardware.
->>>        
->> Just fyi about a generic overlay api: I've looked a bit into this when
->> doing the intel overlay support and I think adding special overlay crtcs
->> that can be attached real crtcs gives a nice clean api. We could the reuse
->> the existing framebuffer/pageflipping api to get the buffers to the
->> overlay engine.
->>      
-> btw, has there been any further thought/discussion on this topic..
-> I've been experimenting with a drm driver interface on the OMAP SoC.
-> It is working well now for framebuffer type usage (mode setting,
-> virtual framebuffer spanning multiple diplays, and those types of
-> xrandr things)..  the next step that I've started thinking about is
-> overlay (or underlay.. the z-order is flexible) support..
->
-> I was thinking in a similar direction (ie. a special, or maybe not so
-> special, sort of crtc) and came across this thread, so I thought I'd
-> resurrect the topic.
->
-> In our case, most of the CRTCs in our driver could be used either with
-> (A)RGB buffers as a traditional framebuffer, or with a few different
-> formats of YUV as video under/overlays.  So if you had one display
-> attached, you might only use one CRTC for traditional GUI/gfx layer,
-> and the rest are available for video.  If you had two displays, then
-> you'd steal one of the video CRTCs and use it for the gfx layer on the
-> second display.  And so on.
->
->    
-We have similar HW and are also interested in finding some common ground 
-for overlays in KMS. Just as you describe, we have no hard connection 
-between a CRTC and output. Instead we only have overlays. Normal gfx use 
-case is then of course one of these overlays dedicated to one display. 
-And when adding video overlays, we also prefer YUV "underlays" with 
-fullscreen ARGB gfx on top.
+Every task_struct has timer_slack_ns value. This value uses to round up
+poll() and select() timeout values. This feature can be useful in
+mobile environment where combined wakeups are desired.
 
-The problem with mapping this to the CRTCs in KMS today, is that there 
-is no differentiation between framebuffer width/height and crt 
-width/height. And of course YUV formats and fb position etc are missing.
+Originally, prctl() was the only way to change timer slack value of
+a process. So you was not able change timer slack value of another
+process.
 
-One advantage of the set CRTC ioctl is that all information needed to 
-switch mode is contained in one atomic set mode ioctl. So we have to 
-think about if we want a new more advanced set crtc including overlay 
-config. Or if we want to split mode setup into several requests. And 
-then we must decide if multiple setup ioctls will need some type of 
-"commit" to get the atomic mode switch we have today. For example I 
-don't want to have to do a set_crtc enabling blending without overlay 
-being setup. It should be just as glitch free as KMS is today.
-> Rough thinking:
-> + add some 'caps' to the CRTC to indicate whether it can handle YUV,
-> ARGB, scaling
-> + add an x/y offset relative to the encoder (as opposed to the
-> existing x/y offset relative to the framebuffer)
-> + add a z-order parameter
->
->    
-Exactly what I would like to have. Especially the caps for scaling, 
-since we have one HW that can't do scaling.
-> Not sure about intel hw if it is supporting clip-rects.. if so, maybe
-> need to add something about that.  In our case we jut put the video
-> behind the gfx layer and use the alpha channel in the gfx framebuffer
-> to clip/blend rather than using clip-rects.
->
->    
-If this is common ground, I would like to have one clip rect per 
-CRTC/overlay to enable framebuffers larger than overlay viewport. That 
-makes it easier to reuse a large buffer for multiple 
-overlays/framebuffers without having to stress memory management driver. 
-But this is just a "nice to have" feature. Maybe this can be mapped to 
-stride/start address mappings on HW without clip rect. But that will 
-probably include alignment requirements on position and size.
->> The real pain starts when we want format discovery from userspace with all
->> the alignement/size/layout constrains. Add in tiling support and its
->> almost impossible to do in a generic way. But also for kms userspace needs
->> to know these constrains (implemented for generic use in libkms). I favor
->> such an approach for overlays, too (if it ever happens) - i.e. a few
->> helpers in libkms that allocate an appropriate buffer for a given format
->> and size and returns the buffer, strides and offsets for the different
->> planes.
->>      
-> hmm, I guess I know about the OMAP display subsystem, and it's overlay
-> formats/capabilities.. but not enough about other hw to say anything
-> intelligent here.  But I guess even if we ignore the format of the
-> data in the buffer, at least the APIs to setup/attach overlay CRTCs at
-> various positions could maybe be something we can start with as a
-> first step.  At least standardizing this part seems like a good first
-> step.  But I'm definitely interested if someone has some ideas.
->
->    
+cgroup subsys "timer_slack" implements timer slack controller. It
+provides a way to set minimal timer slack value for a group of tasks.
+If a task belongs to a cgroup with minimal timer slack value higher than
+task's value, cgroup's value will be applied.
 
-Yes, so we could try and find some common ground and add support for 
-that. But still enable drivers to extend that with the features where we 
-find no common ground. Just as GEM doesn't provide allocation ioctl, 
-only free.
+Timer slack controller allows to implement setting timer slack value of
+a process based on a policy. For example, you can create foreground and
+background cgroups and move tasks between them based on system state.
 
-And in the end we have to see if the common ground is enough to actually 
-build an application on. If not, there's not much use for a partial 
-common API. Maybe that's why there's no overlay API in KMS tiday?
+Idea-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ Documentation/cgroups/timer_slack.txt |   72 +++++++++++++++++++
+ include/linux/cgroup_subsys.h         |    6 ++
+ include/linux/sched.h                 |    4 +
+ init/Kconfig                          |    8 ++
+ kernel/Makefile                       |    1 +
+ kernel/cgroup_timer_slack.c           |  124 +++++++++++++++++++++++++++++++++
+ 6 files changed, 215 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/cgroups/timer_slack.txt
+ create mode 100644 kernel/cgroup_timer_slack.c
 
-Maybe vendor libkms can be used to fill in the gaps?
-
-/BR
-/Marcus
+diff --git a/Documentation/cgroups/timer_slack.txt b/Documentation/cgroups/timer_slack.txt
+new file mode 100644
+index 0000000..4006eab
+--- /dev/null
++++ b/Documentation/cgroups/timer_slack.txt
+@@ -0,0 +1,72 @@
++Timer Slack Controller
++======================
++
++Overview
++--------
++
++Every task_struct has timer_slack_ns value. This value uses to round up
++poll() and select() timeout values. This feature can be useful in
++mobile environment where combined wakeups are desired.
++
++Originally, prctl() was the only way to change timer slack value of
++a process. So you was not able change timer slack value of another
++process.
++
++cgroup subsys "timer_slack" implements timer slack controller. It
++provides a way to set minimal timer slack value for a group of tasks.
++If a task belongs to a cgroup with minimal timer slack value higher than
++task's value, cgroup's value will be applied.
++
++Timer slack controller allows to implement setting timer slack value of
++a process based on a policy. For example, you can create foreground and
++background cgroups and move tasks between them based on system state.
++
++User interface
++--------------
++
++To get timer slack controller functionality you need to enable it in
++kernel configuration:
++
++CONFIG_CGROUP_TIMER_SLACK=y
++
++The controller provides two files:
++
++# mount -t cgroup -o timer_slack none /sys/fs/cgroup
++# ls /sys/fs/cgroup/timer_slack.*
++/sys/fs/cgroup/timer_slack.effective_slack_ns
++/sys/fs/cgroup/timer_slack.min_slack_ns
++
++By default timer_slack.min_slack_ns is 0:
++
++# cat /sys/fs/cgroup/timer_slack.min_slack_ns
++0
++
++You can set it to some value:
++
++# echo 50000 > /sys/fs/cgroup/timer_slack.min_slack_ns
++# cat /sys/fs/cgroup/timer_slack.min_slack_ns
++50000
++
++Tasks still can set task's value below 50000 using prctl(), but in this
++case cgroup's value will be applied.
++
++Timer slack controller supports hierarchical groups.
++
++# mkdir /sys/fs/cgroup/a
++# cat /sys/fs/cgroup/a/timer_slack.min_slack_ns
++50000
++# echo 70000 > /sys/fs/cgroup/a/timer_slack.min_slack_ns
++# cat /sys/fs/cgroup/a/timer_slack.min_slack_ns
++70000
++
++You can set any value you want, but effective value will the highest value
++up by hierarchy. You can see effective timer slack value for the cgroup from
++timer_slack.effective_slack_ns file:
++
++# cat /sys/fs/cgroup/a/timer_slack.effective_slack_ns
++70000
++# echo 100000 > /sys/fs/cgroup/timer_slack.min_slack_ns
++# cat /sys/fs/cgroup/a/timer_slack.min_slack_ns
++70000
++# cat /sys/fs/cgroup/a/timer_slack.effective_slack_ns
++100000
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index ccefff0..e399228 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -66,3 +66,9 @@ SUBSYS(blkio)
+ #endif
+ 
+ /* */
++
++#ifdef CONFIG_CGROUP_TIMER_SLACK
++SUBSYS(timer_slack)
++#endif
++
++/* */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 44f6f55..c10da5d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2620,11 +2620,15 @@ static inline unsigned long rlimit_max(unsigned int limit)
+ 	return task_rlimit_max(current, limit);
+ }
+ 
++#ifdef CONFIG_CGROUP_TIMER_SLACK
++extern unsigned long task_get_effective_timer_slack(struct task_struct *tsk);
++#else
+ static inline unsigned long task_get_effective_timer_slack(
+ 		struct task_struct *tsk)
+ {
+ 	return tsk->timer_slack_ns;
+ }
++#endif
+ 
+ #endif /* __KERNEL__ */
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index be788c0..bbc4d9c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -596,6 +596,14 @@ config CGROUP_FREEZER
+ 	  Provides a way to freeze and unfreeze all tasks in a
+ 	  cgroup.
+ 
++config CGROUP_TIMER_SLACK
++	bool "Timer slack cgroup controller"
++	help
++	  Provides a way to set minimal timer slack value for tasks in
++	  a cgroup.
++	  It's useful in mobile devices where certain background apps
++	  are attached to a cgroup and combined wakeups are desired.
++
+ config CGROUP_DEVICE
+ 	bool "Device controller for cgroups"
+ 	help
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 353d3fe..0b60239 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
+ obj-$(CONFIG_COMPAT) += compat.o
+ obj-$(CONFIG_CGROUPS) += cgroup.o
+ obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
++obj-$(CONFIG_CGROUP_TIMER_SLACK) += cgroup_timer_slack.o
+ obj-$(CONFIG_CPUSETS) += cpuset.o
+ obj-$(CONFIG_CGROUP_NS) += ns_cgroup.o
+ obj-$(CONFIG_UTS_NS) += utsname.o
+diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
+new file mode 100644
+index 0000000..9824807
+--- /dev/null
++++ b/kernel/cgroup_timer_slack.c
+@@ -0,0 +1,124 @@
++/*
++ * cgroup_timer_slack.c - control group timer slack subsystem
++ *
++ * Copyright Nokia Corparation, 2011
++ * Author: Kirill A. Shutemov
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/cgroup.h>
++#include <linux/slab.h>
++
++struct cgroup_subsys timer_slack_subsys;
++struct tslack_cgroup {
++	struct cgroup_subsys_state css;
++	unsigned long min_slack_ns;
++};
++
++static struct tslack_cgroup *cgroup_to_tslack(struct cgroup *cgroup)
++{
++	struct cgroup_subsys_state *css;
++
++	css = cgroup_subsys_state(cgroup, timer_slack_subsys.subsys_id);
++	return container_of(css, struct tslack_cgroup, css);
++}
++
++static struct cgroup_subsys_state *tslack_create(struct cgroup_subsys *subsys,
++		struct cgroup *cgroup)
++{
++	struct tslack_cgroup *tslack_cgroup;
++
++	tslack_cgroup = kmalloc(sizeof(*tslack_cgroup), GFP_KERNEL);
++	if (!tslack_cgroup)
++		return ERR_PTR(-ENOMEM);
++
++	if (cgroup->parent) {
++		struct tslack_cgroup *parent;
++
++		parent = cgroup_to_tslack(cgroup->parent);
++		tslack_cgroup->min_slack_ns = parent->min_slack_ns;
++	} else
++		tslack_cgroup->min_slack_ns = 0UL;
++
++	return &tslack_cgroup->css;
++}
++
++static void tslack_destroy(struct cgroup_subsys *tslack_cgroup,
++		struct cgroup *cgroup)
++{
++	kfree(cgroup_to_tslack(cgroup));
++}
++
++static u64 tslack_read_min(struct cgroup *cgroup, struct cftype *cft)
++{
++	return cgroup_to_tslack(cgroup)->min_slack_ns;
++}
++
++static int tslack_write_min(struct cgroup *cgroup, struct cftype *cft, u64 val)
++{
++	if (val > ULONG_MAX)
++		return -EINVAL;
++
++	cgroup_to_tslack(cgroup)->min_slack_ns = val;
++
++	return 0;
++}
++
++static u64 tslack_read_effective(struct cgroup *cgroup, struct cftype *cft)
++{
++	unsigned long min;
++
++	min = cgroup_to_tslack(cgroup)->min_slack_ns;
++	while (cgroup->parent) {
++		cgroup = cgroup->parent;
++		min = max(cgroup_to_tslack(cgroup)->min_slack_ns, min);
++	}
++
++	return min;
++}
++
++static struct cftype files[] = {
++	{
++		.name = "min_slack_ns",
++		.read_u64 = tslack_read_min,
++		.write_u64 = tslack_write_min,
++	},
++	{
++		.name = "effective_slack_ns",
++		.read_u64 = tslack_read_effective,
++	},
++};
++
++static int tslack_populate(struct cgroup_subsys *subsys, struct cgroup *cgroup)
++{
++	return cgroup_add_files(cgroup, subsys, files, ARRAY_SIZE(files));
++}
++
++struct cgroup_subsys timer_slack_subsys = {
++	.name		= "timer_slack",
++	.subsys_id	= timer_slack_subsys_id,
++	.create		= tslack_create,
++	.destroy	= tslack_destroy,
++	.populate	= tslack_populate,
++};
++
++unsigned long task_get_effective_timer_slack(struct task_struct *tsk)
++{
++	struct cgroup *cgroup;
++	unsigned long slack;
++
++	rcu_read_lock();
++	cgroup = task_cgroup(tsk, timer_slack_subsys.subsys_id);
++	slack = tslack_read_effective(cgroup, NULL);
++	rcu_read_unlock();
++
++	return max(tsk->timer_slack_ns, slack);
++}
+-- 
+1.7.4.1
 
