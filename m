@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1CNTjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:39:23 -0400
-Received: from kroah.org ([198.145.64.141]:38753 "EHLO coco.kroah.org"
+	id S1753317Ab1CNTnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:43:50 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:40074 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab1CNTi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:38:58 -0400
-Date: Mon, 14 Mar 2011 12:34:52 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Mike Sterling <mike.sterling@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>
-Subject: Re: [PATCH 11/21] Staging: hv: Make vmbus driver a platform pci
- driver
-Message-ID: <20110314193452.GB18944@kroah.com>
-References: <1299794912-1233-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299794912-1233-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751517Ab1CNTnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 15:43:49 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Mar 2011 15:43:49 EDT
+From: Richard Weinberger <richard@nod.at>
+To: akpm@linux-foundation.org
+Cc: mingo@elte.hu, davem@davemloft.net, dzickus@redhat.com,
+        randy.dunlap@oracle.com, drosenberg@vsecurity.com,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] Restrict write access to dmesg_restrict
+Date: Mon, 14 Mar 2011 20:35:56 +0100
+Message-Id: <1300131356-24389-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 10, 2011 at 02:08:32PM -0800, K. Y. Srinivasan wrote:
-> Make vmbus driver a platform pci driver. This is
-> in preparation to cleaning up irq allocation for this
-> driver.
+When dmesg_restrict is set to 1 CAP_SYS_ADMIN is needed
+to read the kernel ring buffer.
+But a root user without CAP_SYS_ADMIN is able to reset
+dmesg_restrict to 0.
 
-Now wouldn't this be the "root" device that everything else hangs off
-of? 
+This is an issue when e.g. LXC (Linux Containers) are used
+and complete user space is running without CAP_SYS_ADMIN.
+A unprivileged and jailed root user can bypass the
+dmesg_restrict protection.
 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
-> Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> ---
->  drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++-----------------
->  1 files changed, 36 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-> index 8b9394a..e4855ac 100644
-> --- a/drivers/staging/hv/vmbus_drv.c
-> +++ b/drivers/staging/hv/vmbus_drv.c
-> @@ -43,6 +43,8 @@
->  
->  static struct device *root_dev; /* Root device */
->  
-> +struct pci_dev *hv_pci_dev;
+With this patch writing to dmesg_restrict is only allowed
+when root has CAP_SYS_ADMIN.
 
-Why do you have 2 different devices here?  Is the root_dev still needed
-now?
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ kernel/sysctl.c |   18 +++++++++++++++++-
+ 1 files changed, 17 insertions(+), 1 deletions(-)
 
-Still confused,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4eed0af..f90c8f6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -169,6 +169,11 @@ static int proc_taint(struct ctl_table *table, int write,
+ 			       void __user *buffer, size_t *lenp, loff_t *ppos);
+ #endif
+ 
++#ifdef CONFIG_PRINTK
++static int proc_dmesg_restrict(struct ctl_table *table, int write,
++				void __user *buffer, size_t *lenp, loff_t *ppos);
++#endif
++
+ #ifdef CONFIG_MAGIC_SYSRQ
+ /* Note: sysrq code uses it's own private copy */
+ static int __sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
+@@ -704,7 +709,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &dmesg_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
++		.proc_handler	= proc_dmesg_restrict,
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+@@ -2397,6 +2402,17 @@ static int proc_taint(struct ctl_table *table, int write,
+ 	return err;
+ }
+ 
++#ifdef CONFIG_PRINTK
++static int proc_dmesg_restrict(struct ctl_table *table, int write,
++				void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	if (write && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	return proc_dointvec_minmax(table, write, buffer, lenp, ppos);
++}
++#endif
++
+ struct do_proc_dointvec_minmax_conv_param {
+ 	int *min;
+ 	int *max;
+-- 
+1.6.6.1
 
-greg k-h
