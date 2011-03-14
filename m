@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab1CNGym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 02:54:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51787 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753755Ab1CNGyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 02:54:41 -0400
-Message-ID: <4D7DBBE3.1010104@cn.fujitsu.com>
-Date: Mon, 14 Mar 2011 14:55:31 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+	id S1754504Ab1CNG45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 02:56:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46127 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab1CNG4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 02:56:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=R6ueol3N+7uGp7Tk4BYFRvfAMgPXFBWGIoKS70TO7NQQdRFwHSJMCU1qEkOkh7gZKf
+         o5ENvTV66pvmjNQU9OLR4B7CqpVlK15+PEqhUjPpzCVz2Mjo3a79t5YIp6oEeFgGrnAs
+         2Bh6a0NFOm8RCem5+X6lba0nViFOEfJ375wWU=
+Message-ID: <4D7DBC35.90509@pobox.com>
+Date: Mon, 14 Mar 2011 02:56:53 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: hpa@zytor.com, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, tlb: small cleanup for native_flush_tlb_others
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-14 14:53:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-14 14:53:17,
-	Serialize complete at 2011-03-14 14:53:17
+To: Joe Perches <joe@perches.com>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] ata: pata: Convert pr_*(DRV_NAME ...) to pr_fmt/pr_<level>
+References: <201101310359.p0V3x41L010660@hera.kernel.org> <1296448498.4131.22.camel@Joe-Laptop>  <4D46DD95.3000006@ru.mvista.com> <1296491964.4131.86.camel@Joe-Laptop>
+In-Reply-To: <1296491964.4131.86.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use smp_processor_id instead of get_cpu and put_cpu since
-the caller has already disabled preemption
+On 01/31/2011 11:39 AM, Joe Perches wrote:
+> Commit 40d69ba029c8d5de51aaeb5358999266c482d00a
+> ("pata_hpt{37x|3x2n}: use pr_*(DRV_NAME ...) instead of printk(KERN_* ...)")
+> used pr_<level>.
+>
+> Add #define pr_fmt and remove DRV_NAME.
+> Increment driver version numbers.
+>
+> Signed-off-by: Joe Perches<joe@perches.com>
+> ---
+> On Mon, 2011-01-31 at 19:04 +0300, Sergei Shtylyov wrote:
+>>      Could you also increment the driver versions?
+>
+> At some point, the driver version is not very useful.
+> You might consider removing them altogether.
+>
+> cheers, Joe
+>
+>   drivers/ata/pata_hpt366.c  |    7 ++++---
+>   drivers/ata/pata_hpt37x.c  |   23 ++++++++++++-----------
+>   drivers/ata/pata_hpt3x2n.c |   13 +++++++------
+>   3 files changed, 23 insertions(+), 20 deletions(-)
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/mm/tlb.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+applied
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 6acc724..92849d0 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -211,11 +211,10 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
- 	if (is_uv_system()) {
- 		unsigned int cpu;
- 
--		cpu = get_cpu();
-+		cpu = smp_processor_id();
- 		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
- 		if (cpumask)
- 			flush_tlb_others_ipi(cpumask, mm, va);
--		put_cpu();
- 		return;
- 	}
- 	flush_tlb_others_ipi(cpumask, mm, va);
--- 
-1.7.4
+
