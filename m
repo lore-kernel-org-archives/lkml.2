@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab1CNIQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 04:16:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62115 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab1CNIQ1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 04:16:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=wZcspVFmMSHCdBhbtw1i44aiHiwJh1VnzFm6MkIhAd0oqQP2yeQQCFDUVhYpRB5stE
-         ogz85VDuWz6rf9luxVo6k4BmdL6ZL81fR0S8MYbOWmZ3/WakxlkQnlxpOM919Gbwf8WO
-         tVuX+Tt9OsXQj4HneyaPZ6D6qyseNxf0AKuKI=
+	id S1755253Ab1CNIUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 04:20:08 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:37675 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752279Ab1CNIUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 04:20:04 -0400
+X-ASG-Debug-ID: 1300090801-01de284cf859280001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D7DCFAD.3000704@fusionio.com>
+Date: Mon, 14 Mar 2011 09:19:57 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <1300048193.2761.55.camel@edumazet-laptop>
-References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
- <1300047388.2761.48.camel@edumazet-laptop> <1300048002.2761.53.camel@edumazet-laptop>
- <1300048193.2761.55.camel@edumazet-laptop>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Mon, 14 Mar 2011 16:16:06 +0800
-Message-ID: <AANLkTi=grwkfYpBFJEyQHXbFaTov5Tc+tAR2ebzw0Bht@mail.gmail.com>
-Subject: Re: [PATCH net-next-2.6] ftmac100: use GFP_ATOMIC allocations where needed
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: Re: [GIT PULL] Single important block patch for 2.6.38
+References: <4D7A33FF.80509@fusionio.com> <AANLkTi=NAeBWE28Vygx5Qf+OYgMW2Js180fptQnbbXmw@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] Single important block patch for 2.6.38
+In-Reply-To: <AANLkTi=NAeBWE28Vygx5Qf+OYgMW2Js180fptQnbbXmw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1300090801
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57852
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
-
-On Mon, Mar 14, 2011 at 4:29 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le dimanche 13 mars 2011 à 21:26 +0100, Eric Dumazet a écrit :
->> Le dimanche 13 mars 2011 à 21:16 +0100, Eric Dumazet a écrit :
+On 2011-03-13 23:51, Linus Torvalds wrote:
+> On Fri, Mar 11, 2011 at 6:38 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
 >>
->> > BTW, it seems I missed the fact that ftmac100_alloc_rx_page() used a
->> > GFP_KERNEL allocation, while its called from softirq context (from
->> > ftmac100_rx_packet())
->>
->> Here is a patch against ftmac100
->>
->
-> Oops, one typo in it sorry
->
->> -static int ftmac100_alloc_rx_page(struct ftmac100 *priv, struct ftmac100_rxdes *rxdes)
->> +static int ftmac100_alloc_rx_page(struct ftmac100 *priv,
->> +                               struct ftmac100_rxdes *rxdes, gtp_t gfp)
->
-> Should be :   gfp_t gfp
->
-> Please build and test the patch, I dont have an ARM testbed anyway.
+>> This fixes a regression introduced early in the 2.6.38 series, where
+>> blkdev_issue_zeroout() has a nasty race that causes a panic. Thanks to
+>> Lukas Czerner for finding and fixing this one. Please pull!
+> 
+> What about the "Null pointer OOPS in sync_inodes_sb" issue due to the
+> broken sb->s_bdi setting to NULL?
 
-Tested-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+Sent something out to George to test, hopefully we can close this one
+for 2.6.38 in a simple fashion.
 
-Thank you,
-Po-Yu Chuang
+-- 
+Jens Axboe
+
