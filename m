@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab1CNU1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 16:27:48 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:36940 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab1CNU1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 16:27:46 -0400
-Date: Mon, 14 Mar 2011 13:27:17 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, Arnd Bergmann <arnd@arndb.de>,
-        mems applications <mems.applications@st.com>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "carmine.iascone@st.com" <carmine.iascone@st.com>,
-        "matteo.dameno@st.com" <matteo.dameno@st.com>,
-        "rubini@ipvvis.unipv.it" <rubini@cvml.unipv.it>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device
- driver into misc
-Message-ID: <20110314202717.GA16461@ericsson.com>
-References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com>
- <4D7E6A38.7010801@cam.ac.uk>
- <201103142046.25393.arnd@arndb.de>
- <4D7E771B.1040804@cam.ac.uk>
- <20110314211809.29da8518@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110314211809.29da8518@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755965Ab1CNUaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 16:30:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54942 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1CNUaD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 16:30:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=g9t+jmDajL1cob51IliDNa83d0VmGblSDGqBdEwIzz16RTf1Rq8VAhzqxppnsfGHcx
+         B7B3AEny/3Esl3JV85WtIn7ZFrtJlCNIekWWeP6rcJW9jTNsP9dPshZaFzMBa0pzMzAB
+         NPFlaLtqA29JHEgEcZ0wcZsR/thugXdBu738E=
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+In-Reply-To: <20110314131042.5a7fb32f.akpm@linux-foundation.org>
+References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
+	 <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+	 <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+	 <201103111255.44979.arnd@arndb.de>
+	 <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+	 <20110311235607.GB15853@elie>
+	 <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+	 <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com>
+	 <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+	 <20110314131042.5a7fb32f.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Mar 2011 22:29:55 +0200
+Message-ID: <1300134595.2332.17.camel@koala>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 04:18:09PM -0400, Jean Delvare wrote:
-> On Mon, 14 Mar 2011 20:14:19 +0000, Jonathan Cameron wrote:
-> > On 03/14/11 19:46, Arnd Bergmann wrote:
-> > > On Monday 14 March 2011 20:19:20 Jonathan Cameron wrote:
-> > >> The big issue raised last time around is that this is not a conventional human
-> > >> input device.  Hence Dmitry isn't going to take it into input.  That doesn't
-> > >> just mean that you have to move it's physical location; it also means you have
-> > >> to not use the input interfaces at all.
-> > > 
-> > > How about making this a hwmon driver instead?
-> > > There are already a number of temperature sensor drivers in
-> > > driver/hwmon/, I think it would fit in well there.
-> > hwmon are fairly forceful about not taking things that aren't for monitoring
-> > hardware.  Even the humidity sensors in there are still controversial.
-> > As it has been suggested I've cc'd Guenter and Jean just in case I'm wrong on
-> > this.
-> 
-> Jonathan is correct. Pressure sensors are not hardware monitoring
-> devices, their drivers have nothing to do in drivers/hwmon. This is
-> something for drivers/misc or staging/iio.
-> 
+On Mon, 2011-03-14 at 13:10 -0700, Andrew Morton wrote:
+> There might one day be a requirement to be able to initiate a
+> resource-management-style writeback against a whole filesystem.  When
+> that happens, we'll regret not having added a "mode" argument to
+> sys_syncfs().
 
-Absolutely agree.
+I think Indan is right about an additional argument which could be used
+for future extensions, what is the problem adding it?
 
-Guenter
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
-> > > This would mean moving it to the other directory,
-> > > registering it to the common hwmon api (hwmon_device_register)
-> > > and rewriting the user API to blend in with the other
-> > > hwmon drivers.
-> 
-> -- 
-> Jean Delvare
