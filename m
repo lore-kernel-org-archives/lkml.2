@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab1CNMMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:12:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49961 "EHLO mx2.suse.de"
+	id S1755270Ab1CNMNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:13:47 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56267 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753050Ab1CNMM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:12:28 -0400
-Date: Mon, 14 Mar 2011 13:12:27 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Michal_Mal=FD?= <madcatxster@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Product ID for Logitech Driving Force Pro wheel
-In-Reply-To: <201103102153.44137.madcatxster@gmail.com>
-Message-ID: <alpine.LNX.2.00.1103141311410.19969@pobox.suse.cz>
-References: <201103102153.44137.madcatxster@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753050Ab1CNMNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 08:13:46 -0400
+Date: Mon, 14 Mar 2011 13:13:21 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Andreas Schwab <schwab@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Jan Beulich <JBeulich@novell.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, binutils@sourceware.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Modra <amodra@gmail.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+Message-ID: <20110314121321.GE23257@elte.hu>
+References: <20110311165802.GA3508@intel.com>
+ <4D7A64670200007800035F4C@vpn.id2.novell.com>
+ <AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
+ <4D7DE39302000078000362E6@vpn.id2.novell.com>
+ <20110314095534.GB18058@elte.hu>
+ <20110314104131.GG6275@bubble.grove.modra.org>
+ <AANLkTi=3AiLaw5Gnis8Ha4eRXirk0s-Cnk2zzN12YDpH__45869.1711457961$1300099861$gmane$org@mail.gmail.com>
+ <m3oc5eufrk.fsf@redhat.com>
+ <AANLkTikOX_9G-kFEOCHJbnTootY4n4EPSounwjDjPiZc@mail.gmail.com>
+ <m3fwqpvrjy.fsf@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m3fwqpvrjy.fsf@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Mar 2011, Michal Malý wrote:
 
-> This trivial fix adds correct product ID for Logitech Driving Force Pro wheel 
-> when it operates in native mode. This is needed to get force feedback working.
+* Andreas Schwab <schwab@redhat.com> wrote:
 
-Hi Michal,
+> Pekka Enberg <penberg@kernel.org> writes:
+> 
+> > Hi Andreas,
+> >
+> > Pekka Enberg <penberg@kernel.org> writes:
+> >>> So what do you suggest that testers who want to, say, build old Linux
+> >>> kernel versions with new binutils do?
+> >
+> > On Mon, Mar 14, 2011 at 1:02 PM, Andreas Schwab <schwab@redhat.com> wrote:
+> >> The same that testers have to do in order to build old Linux kernel
+> >> versions with current versions of make.
+> >
+> > Are you saying it's OK to screw over binutils users because GNU Make
+> > did that too?
+> 
+> I'm just telling you the facts.
 
-could you please fixup and re-post your patch, according to 
-Documentation/SubmittingPatches?
+And you are wrong - latest Make does not break reasonably old kernel builds such as 
+v2.6.30.
 
-Namely
+Latest binutils insta-breaks the build over 130,000 commits, including the latest 
+released kernel.
 
-- please add your Signed-off-by: line
-- please send a patch in 'condensed' form, i.e. we don't want separate 
-  diffs for separate files
+Please change that .size build error to a build warning, to avoid this unnecessary 
+collateral damage.
 
 Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+	Ingo
