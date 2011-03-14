@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab1CNPAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:00:07 -0400
-Received: from ebb06.tieto.com ([131.207.168.38]:43395 "EHLO ebb06.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391Ab1CNPAF convert rfc822-to-8bit (ORCPT
+	id S1756776Ab1CNPDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:03:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47947 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751391Ab1CNPDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:00:05 -0400
-X-AuditID: 83cfa826-b7c18ae00000543e-58-4d7e2d711402
-From: <Waldemar.Rymarkiewicz@tieto.com>
-To: <arnd@arndb.de>, <matti.j.aaltonen@nokia.com>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hthebaud@insidefr.com>
-Date: Mon, 14 Mar 2011 16:59:53 +0200
-Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Index: AcvfPyS7ttnLRyGCRXa8QB+sRnxvzQC+XASw
-Message-ID: <99B09243E1A5DA4898CDD8B7001114481082FAE10A@EXMB04.eu.tieto.com>
-References: <1299766808-2535-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <201103101452.54862.arnd@arndb.de>
- <99B09243E1A5DA4898CDD8B7001114481082EF2A65@EXMB04.eu.tieto.com>
- <201103101720.53782.arnd@arndb.de>
-In-Reply-To: <201103101720.53782.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Mar 2011 11:03:13 -0400
+Date: Mon, 14 Mar 2011 15:03:30 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH v3] Regulator: add suspend-finish API for regulator
+ core.
+Message-ID: <20110314150330.GE2626@opensource.wolfsonmicro.com>
+References: <1299806039-12698-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299806039-12698-1-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Fri, Mar 11, 2011 at 10:13:59AM +0900, MyungJoo Ham wrote:
+> The regulator core had suspend-prepare that turns off the regulators
+> when entering a system-wide suspend. However, it did not have
+> suspend-finish that pairs with suspend-prepare and the regulator core
+> has assumed that the regulator devices and their drivers support
+> autonomous recover at resume.
 
->Oh, I see you simply do
->
->       ret = i2c_master_send(client, info->buf, len);
->       usleep_range(1000, 10000);
->
->and assume that the buffer can always be written within a 
->milisecond, so you just slow down output enough to never have 
->to worry about it, right?
->
->A nicer solution would be to have an interrupt driven output 
->so you know when the i2c buffers have been flushed.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Well, I get the idea of interrupt driven output, but as I have little linux kernel experience I'm not sure how to implement this. 
-Can you extend you thoughts or if you know piont me a driver which uses that concept?
-
-I'm not sure who should rise an interrupt when data has been flushed. I2c core or the chip itself?
-What's more, I guess the i2c_master_send  is a synchronous call and when it returnes we know it flushed data. Right? 
-
-/Waldek
-
+We should be doing this automatically as part of the core but since
+we've not done that for suspend yet it seems reasonable to apply as-is
+then fix both the teardown and powerup paths together.  Since the code
+won't be called unless someone explicitly does so there's very little
+risk here.
