@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab1CNPDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:03:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45320 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab1CNPDj (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 14 Mar 2011 11:03:39 -0400
-Date: Mon, 14 Mar 2011 11:03:21 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
+	id S1756871Ab1CNPEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:04:52 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:43117 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab1CNPEv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 11:04:51 -0400
+X-IronPort-AV: E=Sophos;i="4.62,316,1297036800"; 
+   d="scan'208";a="4777541"
+Subject: Re: [PATCH R4 4/7] xen/balloon: Protect against CPU exhaust by
+ event/x process
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "andi.kleen@intel.com" <andi.kleen@intel.com>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Dan Magenheimer" <dan.magenheimer@oracle.com>,
+        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
+        "pasik@iki.fi" <pasik@iki.fi>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        "wdauchy@gmail.com" <wdauchy@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Olaf Hering <olaf@aepfle.de>
-Subject: Re: [PATCH] input/xen-fbfront: advertise either absolute or
- relative coordinates
-Message-ID: <20110314150321.GB11244@dumpdata.com>
-References: <alpine.DEB.2.00.1103111124400.2968@kaball-desktop>
- <20110313062411.GB31566@core.coreip.homeip.net>
- <alpine.DEB.2.00.1103141135170.3382@kaball-desktop>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <20110308214824.GE27331@router-fw-old.local.net-space.pl>
+References: <20110308214824.GE27331@router-fw-old.local.net-space.pl>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Mon, 14 Mar 2011 15:04:49 +0000
+Message-ID: <1300115089.17339.2183.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103141135170.3382@kaball-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D7E2E40.00F4,ss=1,fgs=0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > BTW, drivers/input is intended for core input and handlers stuff with
-> > drivers suppsed to be in drivers/input/<type>. Would you mind if I moved
-> > this driver to drivers/input/misc?
-> 
-> I am OK with it.
-> Konrad, any comments on this?
+On Tue, 2011-03-08 at 21:48 +0000, Daniel Kiper wrote:
+> Protect against CPU exhaust by event/x process during
+> errors by adding some delays in scheduling next event
+> and retry count limit.
 
-Go for it! Dmitry, were you thinking to do that for 2.6.39 or 2.6.40?
+The addition of a default retry count limit reverses the change made in
+bc2c0303226ec716854d3c208c7f84fe7aa35cd7. That change was made to allow
+system wide ballooning daemons to work as expected and I don't think a
+strong argument has been made for undoing it here.
 
-I've two more patches for xen-fbfront (and one for xen-kbdfront) that I was thinking
-could go for 2.6.39:
+I think the exponential back-off element of this patch is probably all
+that is needed to avoid using too much CPU.
 
-http://lists.colo.xensource.com/archives/html/xen-devel/2011-03/msg00383.html
+We are talking about polling at most once a second (backing off pretty
+quickly to once every 32s with this patch) -- is that really enough to
+"exhaust" the CPU running event/x?
 
-oh, and they seemed to have not been posted here. I stuck them 
-in
+Also this patch seems to make the driver quite chatty:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git #devel/fb_kb_front_use_page_gref
+> +	pr_info("xen_balloon: Retry count: %lu/%lu\n", balloon_stats.retry_count,
+> +			balloon_stats.max_retry_count);
 
-and was testing them. Do you want me to repost them on LKML with you
-on the CC?
+Not needed. The balloon driver is a best effort background thing, it
+doesn't need to be spamming the system logs each time something doesn't
+go quite right first time, it should just continue on silently in the
+background. It should only be logging if something goes catastrophically
+wrong (in which case pr_info isn't really sufficient).
+
+> +	if (rc <= 0) {
+> +		pr_info("xen_balloon: %s: Cannot allocate memory\n", __func__);
+
+Likewise.
+
+> +			pr_info("xen_balloon: %s: Cannot allocate memory\n", __func__);
+
+And again.
+
+Ian.
 
