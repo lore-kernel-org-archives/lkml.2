@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab1CNMhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:37:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36908 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab1CNMhw (ORCPT
+	id S1755590Ab1CNMiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:38:22 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55794 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab1CNMiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:37:52 -0400
+	Mon, 14 Mar 2011 08:38:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=edVpVcnx0emvvWtSVqSlVDPbCyRx7rIlv45ZN3aO3b5l4M1m/VzvzpknBi2Urr6Nmh
-         r/+bTRLrdjb8EQ+FqbWMy513bpZ8Urh0N15dago6xAQyr0coIGF7eXek5hVrIcWwD11r
-         +9g/Gfma5IR3DgBq5DnJkGK99Sg6InxGMSEkQ=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=W3zaLlEyysLQMsfVraklL4gvIlyfNwWRaF4leCczTsyU6WI1y3WC5q6tVPh01GH2jE
+         mszJOjOu3Xlz4Uu3/XHiuiEXXAB93lBGdyhy65FPvjwZcsCbHGKOWnHAHO0wZ5GVsOKm
+         UW47sRNwtMSBYRfSdRwIewHt1SvMMxzXs/Q8g=
 MIME-Version: 1.0
-In-Reply-To: <201103111700.17373.arnd@arndb.de>
-References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com>
-	<201103111615.01829.arnd@arndb.de>
-	<000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com>
-	<201103111700.17373.arnd@arndb.de>
-Date: Mon, 14 Mar 2011 21:37:51 +0900
-X-Google-Sender-Auth: LxjztE8xmRIW1a_UnMXxe_qaKPE
-Message-ID: <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
-Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU) driver
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        =?EUC-KR?B?tOvAzrHi?= <inki.dae@samsung.com>,
-        =?EUC-KR?B?sK25zrHU?= <mk7.kang@samsung.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <4D7E166C0200007800036451@vpn.id2.novell.com>
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
+	<4D7E095802000078000363D5@vpn.id2.novell.com>
+	<AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>
+	<AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>
+	<4D7E166C0200007800036451@vpn.id2.novell.com>
+Date: Mon, 14 Mar 2011 13:38:19 +0100
+Message-ID: <AANLkTikQ1BZr0Q5TSsFafxXf=YJrN0pdXpDaStB8doqn@mail.gmail.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        amodra@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        binutils <binutils@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/12 Arnd Bergmann <arnd@arndb.de>:
-> On Friday 11 March 2011, Marek Szyprowski wrote:
->> > > > does not support IOMMUs, but that could be changed by wrapping it
->> > > > using the include/asm-generic/dma-mapping-common.h infrastructure.
->> > >
->> > > ARM dma-mapping framework also requires some additional research for better DMA
->> > > support (there are still issues with multiple mappings to be resolved).
->> >
->> > You mean mapping the same memory into multiple devices, or a different problem?
->>
->> Mapping the same memory area multiple times with different cache settings is not
->> legal on ARMv7+ systems. Currently the problems might caused by the low-memory
->> kernel linear mapping and second mapping created for example by dma_alloc_coherent()
->> function.
->
-> Yes, I know this problem, but I don't think the case you describe is a serious
-> limitation (there are more interesting cases, though): dma_map_single() etc
-> will create additional *bus* addresses for a physical address, not additional
-> virtual addresses.
->
-> dma_alloc_coherent should allocate memory that is not also mapped cached,
-> which is what I thought we do correctly.
+Hi H.J.,
 
-I have also noticed that dma_map_single/page/sg() can map physical
-memory into an arbitrary device address region.
-But it is not enough solution for various kinds of IOMMUs.
-As Kukjin Kim addressed, we need to support larger page size than 4KB
-because we can reduce TLB miss when we have larger page size.
+against which binutils source-code is your patch?
+I tried binutils-from-git (last commit 83e680a: "daily update") and
+your binutils-2.21.51.0.7.
 
-Our IOMMU(system mmu) supports all page size of ARM architecture
-including 16MB, 1MB, 64KB and 4KB.
-Since the largest size supported by buddy system of 32-bit architecture is 4MB,
-our system support all page sizes except 16MB.
-We proved that larger page size is helpful for DMA performance
-significantly (more than 10%, approximately).
-Big page size is not a problem for peripheral devices
-because their address space is not suffer from external fragmentation.
+None of them have a gas/testsuite/gas/i386/bad-size.d file, so...
 
-Thanks to Arnd, I never knew about include/linux/iommu.h
+diff --git a/gas/testsuite/gas/i386/bad-size.d
+b/gas/testsuite/gas/i386/bad-size.d
+index be9655e..0bcf381 100644
+--- a/gas/testsuite/gas/i386/bad-size.d
++++ b/gas/testsuite/gas/i386/bad-size.d
+@@ -1,7 +1,7 @@
+ #as: --size-check=warning
+ #objdump: -dw
+ #name: Check bad size directive
+-#error-output: bad-size.err
++#error-output: bad-size.warn
 
-Similar to dma-mappings.h, however, It is not enough for our
-requirements even though it allows private data to be stored in
-iommu_domain for platform-specific requirements.
+ .*: +file format .*
 
-I think we can consider another solution for the various requirements.
-I think one of the most possible solutions is VCMM.
-Or we can enhance include/linux/iommu.h with reference of VCMM.
+... cannot be applied.
 
-You can find the most recent VCMM submitted at
-http://marc.info/?l=linux-kernel&m=129255948319341&w=2
+Also, there are no gas/ChangeLog.x86 and gas/testsuite/ChangeLog.x86
+files (but w/o *.x86).
 
-It looks somewhat complex but includes most of required features for
-various IOMMUs
-which will not be easily solved by include/linux/iommu.h
+Can you resend a proper patch against binutils-from-upstream?
+Thanks.
 
-You can find VCMM core in
-http://git.kernel.org/?p=linux/kernel/git/kki_ap/linux-2.6-samsung.git;a=blob;f=mm/vcm.c;h=9fff0106ec0078fad1488308305c8486adbed9c0;hb=refs/heads/2.6.36-samsung
-
-and platform specific implementation of VCMM in
-http://git.kernel.org/?p=linux/kernel/git/kki_ap/linux-2.6-samsung.git;a=blob;f=arch/arm/plat-s5p/s5p-vcm.c;h=7498c800aef8b01082e1b1c3ea0f66cefe3c85a1;hb=refs/heads/2.6.36-samsung
-
-Cho KyongHo.
+Regards,
+- Sedat -
