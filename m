@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab1CNTST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 15:18:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47006 "EHLO
+	id S1754953Ab1CNTSg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 15:18:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56486 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab1CNTSS (ORCPT
+	with ESMTP id S1757004Ab1CNTSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 15:18:18 -0400
+	Mon, 14 Mar 2011 15:18:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=r1gMB1WxxCMP/Is9gFv7Cz31QBSDxzoGl5e0kVJT5MdqrVL6Sa02VWShSXfsaNjEy3
-         oluEmpJHxqxyJfJ4wRO0V/Tn88hmWHA9brnWp+FoVtzGrXuh4Ji5z/sJl/ibIln0KTlY
-         JXwnVo7EVJxdipMuu3tOYbraJlEeaES7ot+Lk=
+        b=L2MhK3L3LFhHUnaVn140cWvIHsUHIhZ3apQ2c+2PSmAuKy0tSFdEwIdI68nYPAP3H6
+         djgOQkRW24/oVuW2s0LMQc1Q5quxX/26n4RnSiL3mHMPPac15VbKLtJBmUcuZ+5ASV8h
+         etJaW26QcHrxiCKLUCjuyoqD+AMvZP7QuBCNY=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: [RFC PATCH 4/4] perf: New --enable-on-starter option
-Date: Mon, 14 Mar 2011 20:18:03 +0100
-Message-Id: <1300130283-10466-5-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 1/4] perf: Starter and stopper events
+Date: Mon, 14 Mar 2011 20:18:00 +0100
+Message-Id: <1300130283-10466-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
 References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
@@ -35,55 +35,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new --enable-on-starter option can be used to perf record
-and perf stat in order to get the event that precedes to be
-started only once the starter fires. It won't count or sample
-before.
+Current event contexts are limited to the task and/or cpu scope.
+However perf has a bunch of meaningful events on top of which
+one could create his own custom contexts on top of the task
+and/or cpu ones.
 
-starter/stopper events without --enable-on-starter must be
-typically used to count everywhere but outside a pair of
-events boundaries whereas the use of --enable-on-starter
-should be rather used to count nowhere but inside the
-pair of events boundaries.
+Starter and stopper events provide this custom context granularity.
+One can create an event and attribute it a starter and a stopper. The
+starter, when it triggers an event, starts the target perf event
+(using the lightweight pmu->start() callback) and the stopper does the
+reverse. The target will then only count and sample inside the
+boundaries created by the starter and stopper when they overflow.
 
-Counting only outside softirqs:
+This creates two new ioctls:
 
-	perf stat -e irq:softirq_exit -e irq:softirq_entry \
-		-e instructions --starter 0 --stopper 1
+- PERF_EVENT_IOC_SET_STARTER
+- PERF_EVENT_IOC_SET_STOPPER
 
-Counting only inside softirqs:
+An event can have only one starter and one stopper which can't be
+changed once attributed.
 
-	perf stat -e irq:softirq_entry -e irq:softirq_exit \
-		-e instructions --starter 0 --stopper 1 --enable-on-starter
-
-The following example shows a more complicated example, have three
-instruction counters:
-
-* One that counts instructions only when we hold the runqueue lock
-* One that counts instructions only when we don't hold the
-  runqueue lock.
-* One that always count instructions
-
-	./perf stat -e lock:lock_acquire --filter "name==\"&rq->lock\"" \
-		-e lock:lock_release --filter "name==\"&rq->lock\"" \
-		-e instructions --starter 0 --stopper 1 --enable-on-starter \
-		-e instructions --starter 1 --stopper 0 -e instructions ./perf bench sched messaging
-
-	# Running sched/messaging benchmark...
-	# 20 sender and receiver processes per group
-	# 10 groups == 400 processes run
-
-	     Total time: 1.636 [sec]
-
-	 Performance counter stats for './perf bench sched messaging':
-
-	             2 274 lock:lock_acquire
-	             2 234 lock:lock_release
-	         9 601 767 instructions             #      0,000 IPC  <-- inside lock
-	       482 273 822 instructions             #      0,000 IPC  <-- outside lock
-	       490 646 837 instructions             #      0,000 IPC  <-- all
-
-	        1,787294881  seconds time elapsed
+But an event can be a starter or a stopper of as many events it
+wants as far as they belong to the same task and cpu context.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -96,80 +69,485 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 ---
- tools/perf/builtin-record.c    |    2 ++
- tools/perf/builtin-stat.c      |    2 ++
- tools/perf/util/parse-events.c |   20 ++++++++++++++++++++
- tools/perf/util/parse-events.h |    1 +
- 4 files changed, 25 insertions(+), 0 deletions(-)
+ include/linux/perf_event.h |   11 ++-
+ kernel/perf_event.c        |  295 +++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 288 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 7cc690e..272f0e4 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -745,6 +745,8 @@ const struct option record_options[] = {
- 		     "event starter", parse_starter),
- 	OPT_CALLBACK(0, "stopper", &evsel_list, "stopper",
- 		     "event stopper", parse_stopper),
-+	OPT_CALLBACK_NOOPT(0, "enable-on-starter", &evsel_list, "enable-on-starter",
-+		     "enable-on-starter", parse_enable_on_starter),
- 	OPT_INTEGER('p', "pid", &target_pid,
- 		    "record events on existing process id"),
- 	OPT_INTEGER('t', "tid", &target_tid,
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index ba89a4d..84f9e7f 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -658,6 +658,8 @@ static const struct option options[] = {
- 		     "event starter", parse_starter),
- 	OPT_CALLBACK(0, "stopper", &evsel_list, "stopper",
- 		     "event stopper", parse_stopper),
-+	OPT_CALLBACK_NOOPT(0, "enable-on-starter", &evsel_list, "enable-on-starter",
-+			   "enable-on-starter", parse_enable_on_starter),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
- 	OPT_INTEGER('p', "pid", &target_pid,
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 7dd494f..ce5cf10 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -845,6 +845,26 @@ int parse_filter(const struct option *opt, const char *str,
- 	return 0;
- }
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 614615b..3d33bb8 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -245,6 +245,8 @@ struct perf_event_attr {
+ #define PERF_EVENT_IOC_PERIOD		_IOW('$', 4, __u64)
+ #define PERF_EVENT_IOC_SET_OUTPUT	_IO ('$', 5)
+ #define PERF_EVENT_IOC_SET_FILTER	_IOW('$', 6, char *)
++#define PERF_EVENT_IOC_SET_STARTER	_IO('$', 7)
++#define PERF_EVENT_IOC_SET_STOPPER	_IO('$', 8)
  
-+int parse_enable_on_starter(const struct option *opt, const char __used *str,
-+			    int unset __used)
-+{
-+	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
-+	struct perf_evsel *last = NULL;
+ enum perf_event_ioc_flags {
+ 	PERF_IOC_FLAG_GROUP		= 1U << 0,
+@@ -863,7 +865,14 @@ struct perf_event {
+ 	struct perf_cgroup		*cgrp; /* cgroup event is attach to */
+ 	int				cgrp_defer_enabled;
+ #endif
+-
++	struct mutex			starter_stopper_mutex;
++	struct list_head		starter_entry;
++	struct list_head		stopper_entry;
++	struct list_head		starter_list;
++	struct list_head		stopper_list;
++	struct perf_event		*starter;
++	struct perf_event		*stopper;
++	int				paused;
+ #endif /* CONFIG_PERF_EVENTS */
+ };
+ 
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 533f715..c58ee74 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1299,6 +1299,7 @@ event_sched_in(struct perf_event *event,
+ 		 struct perf_event_context *ctx)
+ {
+ 	u64 tstamp = perf_event_time(event);
++	int add_flags = PERF_EF_START;
+ 
+ 	if (event->state <= PERF_EVENT_STATE_OFF)
+ 		return 0;
+@@ -1321,7 +1322,10 @@ event_sched_in(struct perf_event *event,
+ 	 */
+ 	smp_wmb();
+ 
+-	if (event->pmu->add(event, PERF_EF_START)) {
++	if (event->paused)
++		add_flags = 0;
 +
-+	if (evlist->nr_entries > 0)
-+		last = list_entry(evlist->entries.prev, struct perf_evsel, node);
-+
-+	if (last == NULL) {
-+		fprintf(stderr,
-+			"--enable-on-starter option should follow a -e tracepoint option\n");
-+		return -1;
++	if (event->pmu->add(event, add_flags)) {
+ 		event->state = PERF_EVENT_STATE_INACTIVE;
+ 		event->oncpu = -1;
+ 		return -EAGAIN;
+@@ -2918,6 +2922,7 @@ static void free_event(struct perf_event *event)
+ int perf_event_release_kernel(struct perf_event *event)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
++	struct perf_event *state_event;
+ 
+ 	/*
+ 	 * Remove from the PMU, can't get re-enabled since we got
+@@ -2945,6 +2950,20 @@ int perf_event_release_kernel(struct perf_event *event)
+ 	raw_spin_unlock_irq(&ctx->lock);
+ 	mutex_unlock(&ctx->mutex);
+ 
++	if (event->starter) {
++		state_event = event->starter;
++		mutex_lock(&state_event->starter_stopper_mutex);
++		list_del_rcu(&event->starter_entry);
++		mutex_unlock(&state_event->starter_stopper_mutex);
 +	}
 +
-+	last->attr.enable_on_starter = 1;
++	if (event->stopper) {
++		state_event = event->stopper;
++		mutex_lock(&state_event->starter_stopper_mutex);
++		list_del_rcu(&event->stopper_entry);
++		mutex_unlock(&state_event->starter_stopper_mutex);
++	}
 +
-+	return 0;
+ 	free_event(event);
+ 
+ 	return 0;
+@@ -3246,6 +3265,73 @@ static struct perf_event *perf_fget_light(int fd, int *fput_needed)
+ static int perf_event_set_output(struct perf_event *event,
+ 				 struct perf_event *output_event);
+ static int perf_event_set_filter(struct perf_event *event, void __user *arg);
++static void perf_event_pause_resume(struct perf_event *event, int nmi,
++				    struct perf_sample_data *data,
++				    struct pt_regs *regs);
++
++static int perf_event_set_starter(struct perf_event *event,
++				  struct perf_event *target)
++{
++	struct perf_event *iter;
++	int err = 0;
++
++	if (event->ctx->task != target->ctx->task ||
++	    event->cpu != target->cpu)
++		return -EINVAL;
++
++	mutex_lock(&event->starter_stopper_mutex);
++
++	list_for_each_entry_rcu(iter, &event->starter_list, starter_entry) {
++		if (iter == target) {
++			err = -EEXIST;
++			goto end;
++		}
++	}
++
++	if (cmpxchg(&target->starter, NULL, event) == NULL) {
++		list_add_rcu(&target->starter_entry, &event->starter_list);
++		event->overflow_handler = perf_event_pause_resume;
++	} else {
++		err = -EBUSY;
++	}
++
++ end:
++	mutex_unlock(&event->starter_stopper_mutex);
++
++	return err;
 +}
 +
- static int parse_starter_stopper(const struct option *opt,
- 				 const char *str, int starter)
- {
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 72d73b5..262ebc8 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -27,6 +27,7 @@ extern int parse_events(const struct option *opt, const char *str, int unset);
- extern int parse_filter(const struct option *opt, const char *str, int unset);
- extern int parse_starter(const struct option *opt, const char *str, int unset);
- extern int parse_stopper(const struct option *opt, const char *str, int unset);
-+extern int parse_enable_on_starter(const struct option *opt, const char *str, int unset);
++static int perf_event_set_stopper(struct perf_event *event,
++				  struct perf_event *target)
++{
++	struct perf_event *iter;
++	int err = 0;
++
++	if (event->ctx->task != target->ctx->task ||
++	    event->cpu != target->cpu)
++		return -EINVAL;
++
++	mutex_lock(&event->starter_stopper_mutex);
++
++	list_for_each_entry_rcu(iter, &event->stopper_list, stopper_entry) {
++		if (iter == target) {
++			err = -EEXIST;
++			goto end;
++		}
++	}
++
++	if (cmpxchg(&target->stopper, NULL, event) == NULL) {
++		list_add_rcu(&target->stopper_entry, &event->stopper_list);
++		event->overflow_handler = perf_event_pause_resume;
++	} else {
++		err = -EBUSY;
++	}
++
++ end:
++	mutex_unlock(&event->starter_stopper_mutex);
++
++	return err;
++}
  
- #define EVENTS_HELP_MAX (128*1024)
+ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+@@ -3292,6 +3378,44 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case PERF_EVENT_IOC_SET_FILTER:
+ 		return perf_event_set_filter(event, (void __user *)arg);
+ 
++	case PERF_EVENT_IOC_SET_STARTER:
++	{
++		struct perf_event *target = NULL;
++		int fput_needed = 0;
++		int ret;
++
++		if (arg != -1) {
++			target = perf_fget_light(arg, &fput_needed);
++			if (IS_ERR(target))
++				return PTR_ERR(target);
++		}
++
++		ret = perf_event_set_starter(event, target);
++		if (target)
++			fput_light(target->filp, fput_needed);
++
++		return ret;
++	}
++
++	case PERF_EVENT_IOC_SET_STOPPER:
++	{
++		struct perf_event *target = NULL;
++		int fput_needed = 0;
++		int ret;
++
++		if (arg != -1) {
++			target = perf_fget_light(arg, &fput_needed);
++			if (IS_ERR(target))
++				return PTR_ERR(target);
++		}
++
++		ret = perf_event_set_stopper(event, target);
++		if (target)
++			fput_light(target->filp, fput_needed);
++
++		return ret;
++	}
++
+ 	default:
+ 		return -ENOTTY;
+ 	}
+@@ -5017,12 +5141,62 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
+ }
+ 
+ int perf_event_overflow(struct perf_event *event, int nmi,
+-			  struct perf_sample_data *data,
+-			  struct pt_regs *regs)
++			struct perf_sample_data *data,
++			struct pt_regs *regs)
+ {
+ 	return __perf_event_overflow(event, nmi, 1, data, regs);
+ }
+ 
++static void perf_event_pause_resume(struct perf_event *event, int nmi,
++				    struct perf_sample_data *data,
++				    struct pt_regs *regs)
++{
++	struct perf_event *iter;
++	unsigned long flags;
++
++	/*
++	 * Ensure the targets can't be sched in/out concurrently.
++	 * Disabling irqs is sufficient for that because starters/stoppers
++	 * are on the same cpu/task.
++	 */
++	local_irq_save(flags);
++
++
++	/* Prevent the targets from being removed under us. */
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(iter, &event->starter_list, starter_entry) {
++		/*
++		 * There is a small race window here, between the state
++		 * gets set to active and the event is actually ->add().
++		 * We need to find a way to ensure the starter/stopper
++		 * can't trigger in between.
++		 */
++		if (iter->state == PERF_EVENT_STATE_ACTIVE) {
++			if (iter->paused) {
++				iter->pmu->start(iter, PERF_EF_RELOAD);
++				iter->paused = 0;
++			}
++		}
++	}
++
++	list_for_each_entry_rcu(iter, &event->stopper_list, stopper_entry) {
++		/* Similar race with ->del() */
++		if (iter->state == PERF_EVENT_STATE_ACTIVE) {
++			if (!iter->paused) {
++				iter->pmu->stop(iter, PERF_EF_UPDATE);
++				iter->paused = 1;
++			}
++		}
++	}
++
++	rcu_read_unlock();
++
++	local_irq_restore(flags);
++
++	perf_event_output(event, nmi, data, regs);
++}
++
+ /*
+  * Generic software event infrastructure
+  */
+@@ -6164,6 +6338,11 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	INIT_LIST_HEAD(&event->group_entry);
+ 	INIT_LIST_HEAD(&event->event_entry);
+ 	INIT_LIST_HEAD(&event->sibling_list);
++
++	mutex_init(&event->starter_stopper_mutex);
++	INIT_LIST_HEAD(&event->starter_list);
++	INIT_LIST_HEAD(&event->stopper_list);
++
+ 	init_waitqueue_head(&event->waitq);
+ 	init_irq_work(&event->pending, perf_pending_event);
+ 
+@@ -6916,7 +7095,8 @@ inherit_event(struct perf_event *parent_event,
+ 	      struct perf_event_context *parent_ctx,
+ 	      struct task_struct *child,
+ 	      struct perf_event *group_leader,
+-	      struct perf_event_context *child_ctx)
++	      struct perf_event_context *child_ctx,
++	      int *triggers)
+ {
+ 	struct perf_event *child_event;
+ 	unsigned long flags;
+@@ -6930,6 +7110,9 @@ inherit_event(struct perf_event *parent_event,
+ 	if (parent_event->parent)
+ 		parent_event = parent_event->parent;
+ 
++	if (parent_event->starter || parent_event->stopper)
++		*triggers = 1;
++
+ 	child_event = perf_event_alloc(&parent_event->attr,
+ 					   parent_event->cpu,
+ 					   child,
+@@ -6995,22 +7178,23 @@ inherit_event(struct perf_event *parent_event,
+ }
+ 
+ static int inherit_group(struct perf_event *parent_event,
+-	      struct task_struct *parent,
+-	      struct perf_event_context *parent_ctx,
+-	      struct task_struct *child,
+-	      struct perf_event_context *child_ctx)
++			 struct task_struct *parent,
++			 struct perf_event_context *parent_ctx,
++			 struct task_struct *child,
++			 struct perf_event_context *child_ctx,
++			 int *triggers)
+ {
+ 	struct perf_event *leader;
+ 	struct perf_event *sub;
+ 	struct perf_event *child_ctr;
+ 
+ 	leader = inherit_event(parent_event, parent, parent_ctx,
+-				 child, NULL, child_ctx);
++			       child, NULL, child_ctx, triggers);
+ 	if (IS_ERR(leader))
+ 		return PTR_ERR(leader);
+ 	list_for_each_entry(sub, &parent_event->sibling_list, group_entry) {
+ 		child_ctr = inherit_event(sub, parent, parent_ctx,
+-					    child, leader, child_ctx);
++					  child, leader, child_ctx, triggers);
+ 		if (IS_ERR(child_ctr))
+ 			return PTR_ERR(child_ctr);
+ 	}
+@@ -7021,7 +7205,7 @@ static int
+ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 		   struct perf_event_context *parent_ctx,
+ 		   struct task_struct *child, int ctxn,
+-		   int *inherited_all)
++		   int *inherited_all, int *triggers)
+ {
+ 	int ret;
+ 	struct perf_event_context *child_ctx;
+@@ -7048,7 +7232,7 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 	}
+ 
+ 	ret = inherit_group(event, parent, parent_ctx,
+-			    child, child_ctx);
++			    child, child_ctx, triggers);
+ 
+ 	if (ret)
+ 		*inherited_all = 0;
+@@ -7059,7 +7243,7 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ /*
+  * Initialize the perf_event context in task_struct
+  */
+-int perf_event_init_context(struct task_struct *child, int ctxn)
++int perf_event_init_context(struct task_struct *child, int ctxn, int *triggers)
+ {
+ 	struct perf_event_context *child_ctx, *parent_ctx;
+ 	struct perf_event_context *cloned_ctx;
+@@ -7097,7 +7281,8 @@ int perf_event_init_context(struct task_struct *child, int ctxn)
+ 	 */
+ 	list_for_each_entry(event, &parent_ctx->pinned_groups, group_entry) {
+ 		ret = inherit_task_group(event, parent, parent_ctx,
+-					 child, ctxn, &inherited_all);
++					 child, ctxn, &inherited_all,
++					 triggers);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -7113,7 +7298,8 @@ int perf_event_init_context(struct task_struct *child, int ctxn)
+ 
+ 	list_for_each_entry(event, &parent_ctx->flexible_groups, group_entry) {
+ 		ret = inherit_task_group(event, parent, parent_ctx,
+-					 child, ctxn, &inherited_all);
++					 child, ctxn, &inherited_all,
++					 triggers);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -7151,23 +7337,98 @@ int perf_event_init_context(struct task_struct *child, int ctxn)
+ 	return ret;
+ }
+ 
++static void
++perf_event_inherit_starter(struct task_struct *child,
++			   struct perf_event *event,
++			   struct perf_event *parent_starter)
++{
++	int ctxn;
++	struct perf_event *iter;
++	struct perf_event_context *ctx;
++
++	ctxn = parent_starter->pmu->task_ctx_nr;
++	ctx = child->perf_event_ctxp[ctxn];
++
++	if (WARN_ON_ONCE(!ctx))
++		return;
++
++	list_for_each_entry(iter, &ctx->event_list, event_entry) {
++		if (iter->parent == parent_starter) {
++			list_add_tail(&event->starter_entry, &iter->starter_list);
++			return;
++		}
++	}
++
++	WARN_ONCE(1, "inherited starter not found\n");
++}
++
++static void
++perf_event_inherit_stopper(struct task_struct *child,
++			   struct perf_event *event,
++			   struct perf_event *parent_stopper)
++{
++	int ctxn;
++	struct perf_event *iter;
++	struct perf_event_context *ctx;
++
++	ctxn = parent_stopper->pmu->task_ctx_nr;
++	ctx = child->perf_event_ctxp[ctxn];
++
++	if (WARN_ON_ONCE(!ctx))
++		return;
++
++	list_for_each_entry(iter, &ctx->event_list, event_entry) {
++		if (iter->parent == parent_stopper) {
++			list_add_tail(&event->stopper_entry, &iter->stopper_list);
++			return;
++		}
++	}
++
++	WARN_ONCE(1, "inherited stopper not found\n");
++}
++
++
++static void
++perf_event_inherit_triggers(struct task_struct *child, int ctxn)
++{
++	struct perf_event_context *ctx;
++	struct perf_event *event;
++
++	ctx = child->perf_event_ctxp[ctxn];
++	if (!ctx)
++		return;
++
++	list_for_each_entry(event, &ctx->event_list, event_entry) {
++		if (event->parent->starter)
++			perf_event_inherit_starter(child, event, event->parent->starter);
++		if (event->parent->stopper)
++			perf_event_inherit_stopper(child, event, event->parent->stopper);
++	}
++}
++
++
+ /*
+  * Initialize the perf_event context in task_struct
+  */
+ int perf_event_init_task(struct task_struct *child)
+ {
+-	int ctxn, ret;
++	int ctxn, ret, triggers = 0;
+ 
+ 	memset(child->perf_event_ctxp, 0, sizeof(child->perf_event_ctxp));
+ 	mutex_init(&child->perf_event_mutex);
+ 	INIT_LIST_HEAD(&child->perf_event_list);
+ 
+ 	for_each_task_context_nr(ctxn) {
+-		ret = perf_event_init_context(child, ctxn);
++		ret = perf_event_init_context(child, ctxn, &triggers);
+ 		if (ret)
+ 			return ret;
+ 	}
+ 
++	if (triggers) {
++		for_each_task_context_nr(ctxn)
++			perf_event_inherit_triggers(child, ctxn);
++	}
++
+ 	return 0;
+ }
  
 -- 
 1.7.3.2
