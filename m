@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1CNMeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:34:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33164 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031Ab1CNMeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:34:05 -0400
-Date: Mon, 14 Mar 2011 13:33:55 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: hpa@zytor.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, tlb: small cleanup for native_flush_tlb_others
-Message-ID: <20110314123355.GA27477@elte.hu>
-References: <4D7DBBE3.1010104@cn.fujitsu.com>
+	id S1755500Ab1CNMfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:35:09 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:58182 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752031Ab1CNMfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 08:35:06 -0400
+From: Haojian Zhuang <hzhuang1@marvell.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "dtor@mail.ru" <dtor@mail.ru>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Mar 2011 05:34:08 -0700
+Subject: RE: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM
+ chip
+Thread-Topic: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM
+ chip
+Thread-Index: AcviOvmQ6K5EANjdQ22g6tWEQIwe6gACLnrg
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05CEAFFB95@SC-VEXCH1.marvell.com>
+References: <1299512600-29047-3-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-4-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-5-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-6-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-7-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-8-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-9-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-10-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-11-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-12-git-send-email-haojian.zhuang@marvell.com>
+ <20110314112838.GK31153@sortiz-mobl>
+In-Reply-To: <20110314112838.GK31153@sortiz-mobl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: Al82 DSRo KWnQ RU0D eF9U hpm1 vZ6E ACyHUQ== AC1Rtw==
+ AD4q4Q== AIPBgQ== AJs3ZQ== AJ2GLg== AJ/MvQ== AKvNWw==
+ AL8kuQ==;9;YQAuAHoAdQBtAG0AbwBAAHQAbwB3AGUAcgB0AGUAYwBoAC4AaQB0ADsAYgByAG8AbwBuAGkAZQBAAG8AcABlAG4AcwBvAHUAcgBjAGUALgB3AG8AbABmAHMAbwBuAG0AaQBjAHIAbwAuAGMAbwBtADsAZABtAGkAdAByAHkALgB0AG8AcgBvAGsAaABvAHYAQABnAG0AYQBpAGwALgBjAG8AbQA7AGQAdABvAHIAQABtAGEAaQBsAC4AcgB1ADsAagBvAGgAbgBwAG8AbABAADIAawBhAC4AbQBpAHAAdAAuAHIAdQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAHIAZwBAAHMAbABpAG0AbABvAGcAaQBjAC4AYwBvAC4AdQBrADsAcgBwAHUAcgBkAGkAZQBAAHIAcABzAHkAcwAuAG4AZQB0ADsAcwBhAG0AZQBvAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0A;Sosha1_v1;7;{6976EA08-2F96-4CFE-A4EF-8EB6C5133491};aAB6AGgAdQBhAG4AZwAxAEAAbQBhAHIAdgBlAGwAbAAuAGMAbwBtAA==;Mon,
+ 14 Mar 2011 12:34:08
+ GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAbQBmAGQAOgAgAHAAeABhAC0AdwAxADoAIABNAEYARAAgAGQAcgBpAHYAZQByACAAZgBvAHIAIABQAFgAQQAgADEAdwBpAHIAZQAgAGMAbwBuAHQAcgBvAGwAIAArACAARABTADEAVwBNACAAYwBoAGkAcAA=
+x-cr-puzzleid: {6976EA08-2F96-4CFE-A4EF-8EB6C5133491}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7DBBE3.1010104@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2ECZIM8023055
 
 
-* Xiao Guangrong <xiaoguangrong@cn.fujitsu.com> wrote:
 
-> Use smp_processor_id instead of get_cpu and put_cpu since
-> the caller has already disabled preemption
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/mm/tlb.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-> index 6acc724..92849d0 100644
-> --- a/arch/x86/mm/tlb.c
-> +++ b/arch/x86/mm/tlb.c
-> @@ -211,11 +211,10 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
->  	if (is_uv_system()) {
->  		unsigned int cpu;
->  
-> -		cpu = get_cpu();
-> +		cpu = smp_processor_id();
->  		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
->  		if (cpumask)
->  			flush_tlb_others_ipi(cpumask, mm, va);
-> -		put_cpu();
->  		return;
+>-----Original Message-----
+>From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+>Sent: 2011ƒÍ3‘¬14»’ 7:29 PM
+>To: Haojian Zhuang
+>Cc: johnpol@2ka.mipt.ru; a.zummo@towertech.it; lrg@slimlogic.co.uk;
+>broonie@opensource.wolfsonmicro.com; dmitry.torokhov@gmail.com;
+>dtor@mail.ru; rpurdie@rpsys.net; linux-kernel@vger.kernel.org
+>Subject: Re: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control +
+>DS1WM chip
+>
+>Hi Haojian,
+>
+>On Mon, Mar 07, 2011 at 11:43:20PM +0800, Haojian Zhuang wrote:
+>> This driver provides registers and IRQ of PXA3xx chips to the ds1wm
+>driver.
+>Why is this an MFD driver ?
+>
+>Cheers,
+>Samuel.
+>
+>--
+>Intel Open Source Technology Centre
+>http://oss.intel.com/
 
-There's multiple callers. Could you please update the changelog with the list of 
-callers and a statement that all of them disable preemption already?
+Hi Samuel,
 
-Thanks,
+Because there's already a DS1WM driver in drivers/w1/masters/ds1wm.c. In PXA silicons, W1 controler is compatible with this driver. So we implement it as MFD driver, like htc-pasic3.c.
 
-	Ingo
+Best Regards
+Haojian
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
