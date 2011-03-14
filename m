@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab1CNME0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:04:26 -0400
-Received: from nm17.bullet.mail.bf1.yahoo.com ([98.139.212.176]:39676 "HELO
-	nm17.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754743Ab1CNMEJ (ORCPT
+	id S1755266Ab1CNMEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:04:50 -0400
+Received: from nm23.bullet.mail.ac4.yahoo.com ([98.139.52.220]:25998 "HELO
+	nm23.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754706Ab1CNMEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:04:09 -0400
-X-Yahoo-Newman-Id: 812768.32908.bm@omp1027.mail.bf1.yahoo.com
+	Mon, 14 Mar 2011 08:04:48 -0400
+X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Mar 2011 08:04:48 EDT
+X-Yahoo-Newman-Id: 185904.65710.bm@omp1063.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: sYjm_pcVM1mNr6kcNIhvo4BC7B1rBlLdCNmhDs1V1ox.Cng
- zTSt4v6DRfM_DUwjvWL4sIpHcbhguOWpwxwVqYwSXSTcroy7qLj2ZSkPcjHL
- 92k8wMGtuQepMK7jp3RyuB8budT1CnYG8LB27tSzCNYi.ObFggnjUsWfihU0
- wXrXsHV.izmu072CaC58lDmvOebD.HGldmbnqGW9dnP8dyEPNV2dyAxgCaRr
- riPPRrdGfmepU_XIubmkGmfCHnYo37dOWOdIufPpvEI6mAmv3h4mos6fvPpA
- BDjFFX9zM.ExSbkJv27QWTCfF0fhZlxDYlyOYSsIzqb3QHsPK7_BoBawADID
- 4Qnn.2g--
+X-YMail-OSG: Gh92VbIVM1mjw3H4Ti7.u2TirgrRGfKKp9YJKpYfNmbXTOl
+ lLIFaT3uOntNdsCaYvN9e9gDBrhEALc7M_2XJwCz5GziGVW5E1WCgJNMwTED
+ Yd67TncKCoNPAM085gsFvEU2WJtlWJIFswcBUcSavbTW2nOQNoPH7QQ9_Wml
+ Kp4bHgvmvgsral4BCg.hwSSIrOyPT5pX9UdK2sr73Jw2u8h8RknO1lQ1QRTT
+ la3J._TVfS_WVrEoV9FeZgexznPtQS.LdkscESR3lwC9K4k.0lLNzL8OF9RE
+ UTlxgg44ZDAi02dbhlvJDMzuHctTI5ViRAudKm9YD5q6xA2bQaX7Z17MY1Hl
+ okg--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -28,174 +29,967 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC-v2 00/12] iSCSI target v4.1.0-rc1 series for .39
-Date: Mon, 14 Mar 2011 04:56:57 -0700
-Message-Id: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC-v2 10/12] iscsi-target: Add support for task management operations
+Date: Mon, 14 Mar 2011 04:57:07 -0700
+Message-Id: <1300103829-10337-11-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
+References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Greetings folks,
-
-This is the second RFC series for the RisingTide Systems iSCSI target fabric
-module compatible with mainline TCM v4 -> for-39 target infrastructure code.
-The following commits been broken up into individual sections to make reviewing
-easier for those fimilar with the iSCSI protocol.  This series will be submitted
-as a single commit following mainline convention for an initial merge as the .39
-window opens later week.
-
-At this point the code has been fully converted to use include/scsi/iscsi_proto.h
-PDU struct request/response and flag/bit definitions, and the legacy internal
-iscsi_protocol.h definitions have been removed from this series.  There are
-some minor PDU namespace changes and a SNACK PDU definition fix to mainline
-include/scsi/iscsi_proto.h code, plus changing the handful of existing libiscsi
-based LLDs currently using the libiscsi SCSI Command / Response PDU definitions.
-These changes external to iSCSI target code have been included as patch #1.
-(mnc and hare please review)
-
->From there patches #2 -> #12 should be self explanatory for iscsi-target from
-individual high level commit messages.  This series includes a number of
-recent upstream improvements and cleanups to iscsi_target_mod.ko in
-lio-core-2.6.git/lio-4.1, and includes iscsi_target_stat.c using the new
-TCM v4 fabric dependent statistic groups.  Also note that all legacy ProcFS
-based code for iSCSI MIBs has been converted into ConfigFS based attributes
-or otherwise removed for mainline. (hch, boaz and tomo-san please review)
-
-Please note this code is intended to be applied against the latest 'for-39'
-target series posed here:
-
-[PATCH 00/21] target patches for .39 scsi-misc (v3)
-http://marc.info/?l=linux-scsi&m=130010108521141&w=2
-
-The changes from RFC-v1 -> RFC-v2 include:
-
-*) Drop extra crc32c_intel libcrypto magic from iscsi_login_setup_crypto()
-*) Fix padded login response payload breakage from initial iscsi_proto.h
-   conversion
-*) Cleanups for iscsi_target_core.h and conversion a number of definitions
-   to enums and inline defs
-*) Removal of '__' prefix around u32 and friends
-*) Other miscellanous checkpatch.pl cleanups
-
-The full RFC-v2 series with latest target 'for-39' code is available here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-iscsi-target-v2
-
-Please add your comments folks, and I will plan to respin an updated merge
-commit upon review.
-
-Thanks!
+This patch adds support for iSCSI task management operations called
+directly from iscsi_target.c TMR request/response PDU logic, and
+interfaces struct se_lun -> struct se_device for assoication
+of TMRs to TCM backend devices.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-
-Nicholas Bellinger (12):
-  iscsi: Resolve iscsi_proto.h naming conflicts with
-    drivers/target/iscsi
-  iscsi-target: Add primary iSCSI request/response state machine logic
-  iscsi-target: Add TCM v4 compatiable ConfigFS control plane
-  iscsi-target: Add configfs fabric dependent statistics
-  iscsi-target: Add TPG and Device logic
-  iscsi-target: Add iSCSI Login Negotiation and Parameter logic
-  iscsi-target: Add CHAP Authentication support using libcrypto
-  iscsi-target: Add Sequence/PDU list + DataIN response logic
-  iscsi-target: Add iSCSI Error Recovery Hierarchy support
-  iscsi-target: Add support for task management operations
-  iscsi-target: Add misc utility and debug logic
-  iscsi-target: Add Makefile/Kconfig and update TCM top level
-
- drivers/infiniband/ulp/iser/iser_initiator.c      |    2 +-
- drivers/scsi/be2iscsi/be_main.h                   |    4 +-
- drivers/scsi/bnx2i/bnx2i_hwi.c                    |    8 +-
- drivers/scsi/bnx2i/bnx2i_iscsi.c                  |    2 +-
- drivers/scsi/libiscsi.c                           |    6 +-
- drivers/target/Kconfig                            |    1 +
- drivers/target/Makefile                           |    1 +
- drivers/target/iscsi/Kconfig                      |   17 +
- drivers/target/iscsi/Makefile                     |   20 +
- drivers/target/iscsi/iscsi_auth_chap.c            |  502 ++
- drivers/target/iscsi/iscsi_auth_chap.h            |   33 +
- drivers/target/iscsi/iscsi_debug.h                |  113 +
- drivers/target/iscsi/iscsi_parameters.c           | 2054 ++++++++
- drivers/target/iscsi/iscsi_parameters.h           |  271 +
- drivers/target/iscsi/iscsi_seq_and_pdu_list.c     |  712 +++
- drivers/target/iscsi/iscsi_seq_and_pdu_list.h     |   88 +
- drivers/target/iscsi/iscsi_target.c               | 5844 +++++++++++++++++++++
- drivers/target/iscsi/iscsi_target.h               |   49 +
- drivers/target/iscsi/iscsi_target_configfs.c      | 1610 ++++++
- drivers/target/iscsi/iscsi_target_configfs.h      |    9 +
- drivers/target/iscsi/iscsi_target_core.h          |  962 ++++
- drivers/target/iscsi/iscsi_target_datain_values.c |  549 ++
- drivers/target/iscsi/iscsi_target_datain_values.h |   15 +
- drivers/target/iscsi/iscsi_target_device.c        |  128 +
- drivers/target/iscsi/iscsi_target_device.h        |    9 +
- drivers/target/iscsi/iscsi_target_erl0.c          | 1085 ++++
- drivers/target/iscsi/iscsi_target_erl0.h          |   19 +
- drivers/target/iscsi/iscsi_target_erl1.c          | 1381 +++++
- drivers/target/iscsi/iscsi_target_erl1.h          |   35 +
- drivers/target/iscsi/iscsi_target_erl2.c          |  534 ++
- drivers/target/iscsi/iscsi_target_erl2.h          |   20 +
- drivers/target/iscsi/iscsi_target_login.c         | 1381 +++++
- drivers/target/iscsi/iscsi_target_login.h         |   14 +
- drivers/target/iscsi/iscsi_target_nego.c          | 1113 ++++
- drivers/target/iscsi/iscsi_target_nego.h          |   19 +
- drivers/target/iscsi/iscsi_target_nodeattrib.c    |  300 ++
- drivers/target/iscsi/iscsi_target_nodeattrib.h    |   14 +
- drivers/target/iscsi/iscsi_target_stat.c          |  955 ++++
- drivers/target/iscsi/iscsi_target_stat.h          |   79 +
- drivers/target/iscsi/iscsi_target_tmr.c           |  908 ++++
- drivers/target/iscsi/iscsi_target_tmr.h           |   16 +
- drivers/target/iscsi/iscsi_target_tpg.c           | 1165 ++++
- drivers/target/iscsi/iscsi_target_tpg.h           |   70 +
- drivers/target/iscsi/iscsi_target_util.c          | 2852 ++++++++++
- drivers/target/iscsi/iscsi_target_util.h          |  128 +
- drivers/target/iscsi/iscsi_thread_queue.c         |  635 +++
- drivers/target/iscsi/iscsi_thread_queue.h         |  102 +
- include/scsi/iscsi_proto.h                        |   30 +-
- 48 files changed, 25845 insertions(+), 19 deletions(-)
- create mode 100644 drivers/target/iscsi/Kconfig
- create mode 100644 drivers/target/iscsi/Makefile
- create mode 100644 drivers/target/iscsi/iscsi_auth_chap.c
- create mode 100644 drivers/target/iscsi/iscsi_auth_chap.h
- create mode 100644 drivers/target/iscsi/iscsi_debug.h
- create mode 100644 drivers/target/iscsi/iscsi_parameters.c
- create mode 100644 drivers/target/iscsi/iscsi_parameters.h
- create mode 100644 drivers/target/iscsi/iscsi_seq_and_pdu_list.c
- create mode 100644 drivers/target/iscsi/iscsi_seq_and_pdu_list.h
- create mode 100644 drivers/target/iscsi/iscsi_target.c
- create mode 100644 drivers/target/iscsi/iscsi_target.h
- create mode 100644 drivers/target/iscsi/iscsi_target_configfs.c
- create mode 100644 drivers/target/iscsi/iscsi_target_configfs.h
- create mode 100644 drivers/target/iscsi/iscsi_target_core.h
- create mode 100644 drivers/target/iscsi/iscsi_target_datain_values.c
- create mode 100644 drivers/target/iscsi/iscsi_target_datain_values.h
- create mode 100644 drivers/target/iscsi/iscsi_target_device.c
- create mode 100644 drivers/target/iscsi/iscsi_target_device.h
- create mode 100644 drivers/target/iscsi/iscsi_target_erl0.c
- create mode 100644 drivers/target/iscsi/iscsi_target_erl0.h
- create mode 100644 drivers/target/iscsi/iscsi_target_erl1.c
- create mode 100644 drivers/target/iscsi/iscsi_target_erl1.h
- create mode 100644 drivers/target/iscsi/iscsi_target_erl2.c
- create mode 100644 drivers/target/iscsi/iscsi_target_erl2.h
- create mode 100644 drivers/target/iscsi/iscsi_target_login.c
- create mode 100644 drivers/target/iscsi/iscsi_target_login.h
- create mode 100644 drivers/target/iscsi/iscsi_target_nego.c
- create mode 100644 drivers/target/iscsi/iscsi_target_nego.h
- create mode 100644 drivers/target/iscsi/iscsi_target_nodeattrib.c
- create mode 100644 drivers/target/iscsi/iscsi_target_nodeattrib.h
- create mode 100644 drivers/target/iscsi/iscsi_target_stat.c
- create mode 100644 drivers/target/iscsi/iscsi_target_stat.h
+---
+ drivers/target/iscsi/iscsi_target_tmr.c |  908 +++++++++++++++++++++++++++++++
+ drivers/target/iscsi/iscsi_target_tmr.h |   16 +
+ 2 files changed, 924 insertions(+), 0 deletions(-)
  create mode 100644 drivers/target/iscsi/iscsi_target_tmr.c
  create mode 100644 drivers/target/iscsi/iscsi_target_tmr.h
- create mode 100644 drivers/target/iscsi/iscsi_target_tpg.c
- create mode 100644 drivers/target/iscsi/iscsi_target_tpg.h
- create mode 100644 drivers/target/iscsi/iscsi_target_util.c
- create mode 100644 drivers/target/iscsi/iscsi_target_util.h
- create mode 100644 drivers/target/iscsi/iscsi_thread_queue.c
- create mode 100644 drivers/target/iscsi/iscsi_thread_queue.h
 
+diff --git a/drivers/target/iscsi/iscsi_target_tmr.c b/drivers/target/iscsi/iscsi_target_tmr.c
+new file mode 100644
+index 0000000..a60218d
+--- /dev/null
++++ b/drivers/target/iscsi/iscsi_target_tmr.c
+@@ -0,0 +1,908 @@
++/*******************************************************************************
++ * This file contains the iSCSI Target specific Task Management functions.
++ *
++ * Copyright (c) 2002, 2003, 2004, 2005 PyX Technologies, Inc.
++ * Copyright (c) 2005, 2006, 2007 SBE, Inc.
++ * © Copyright 2007-2011 RisingTide Systems LLC.
++ *
++ * Licensed to the Linux Foundation under the General Public License (GPL) version 2.
++ *
++ * Author: Nicholas A. Bellinger <nab@linux-iscsi.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ ******************************************************************************/
++
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <asm/unaligned.h>
++#include <scsi/iscsi_proto.h>
++#include <target/target_core_base.h>
++#include <target/target_core_transport.h>
++
++#include "iscsi_debug.h"
++#include "iscsi_target_core.h"
++#include "iscsi_seq_and_pdu_list.h"
++#include "iscsi_target_datain_values.h"
++#include "iscsi_target_device.h"
++#include "iscsi_target_erl0.h"
++#include "iscsi_target_erl1.h"
++#include "iscsi_target_erl2.h"
++#include "iscsi_target_tmr.h"
++#include "iscsi_target_tpg.h"
++#include "iscsi_target_util.h"
++
++/*	iscsi_tmr_abort_task():
++ *
++ *	Called from iscsi_handle_task_mgt_cmd().
++ */
++u8 iscsi_tmr_abort_task(
++	struct iscsi_cmd *cmd,
++	unsigned char *buf)
++{
++	struct iscsi_cmd *ref_cmd;
++	struct iscsi_conn *conn = CONN(cmd);
++	struct iscsi_tmr_req *tmr_req = cmd->tmr_req;
++	struct se_tmr_req *se_tmr = SE_CMD(cmd)->se_tmr_req;
++	struct iscsi_tm *hdr = (struct iscsi_tm *) buf;
++
++	ref_cmd = iscsi_find_cmd_from_itt(conn, hdr->rtt);
++	if (!(ref_cmd)) {
++		printk(KERN_ERR "Unable to locate RefTaskTag: 0x%08x on CID:"
++			" %hu.\n", hdr->rtt, conn->cid);
++		return ((hdr->refcmdsn >= SESS(conn)->exp_cmd_sn) &&
++			(hdr->refcmdsn <= SESS(conn)->max_cmd_sn)) ?
++			ISCSI_TMF_RSP_COMPLETE : ISCSI_TMF_RSP_NO_TASK;
++	}
++	if (ref_cmd->cmd_sn != hdr->refcmdsn) {
++		printk(KERN_ERR "RefCmdSN 0x%08x does not equal"
++			" task's CmdSN 0x%08x. Rejecting ABORT_TASK.\n",
++			hdr->refcmdsn, ref_cmd->cmd_sn);
++		return ISCSI_TMF_RSP_REJECTED;
++	}
++
++	se_tmr->ref_task_tag		= hdr->rtt;
++	se_tmr->ref_cmd			= &ref_cmd->se_cmd;
++	se_tmr->ref_task_lun		= get_unaligned_le64(&hdr->lun[0]);
++	tmr_req->ref_cmd_sn		= hdr->refcmdsn;
++	tmr_req->exp_data_sn		= hdr->exp_datasn;
++
++	return ISCSI_TMF_RSP_COMPLETE;
++}
++
++/*	iscsi_tmr_task_warm_reset():
++ *
++ *	Called from iscsi_handle_task_mgt_cmd().
++ */
++int iscsi_tmr_task_warm_reset(
++	struct iscsi_conn *conn,
++	struct iscsi_tmr_req *tmr_req,
++	unsigned char *buf)
++{
++	struct iscsi_session *sess = SESS(conn);
++	struct iscsi_node_attrib *na = iscsi_tpg_get_node_attrib(sess);
++#if 0
++	struct iscsi_init_task_mgt_cmnd *hdr =
++		(struct iscsi_init_task_mgt_cmnd *) buf;
++#endif
++	if (!(na->tmr_warm_reset)) {
++		printk(KERN_ERR "TMR Opcode TARGET_WARM_RESET authorization"
++			" failed for Initiator Node: %s\n",
++			SESS_NODE_ACL(sess)->initiatorname);
++		 return -1;
++	}
++	/*
++	 * Do the real work in transport_generic_do_tmr().
++	 */
++	return 0;
++}
++
++/*	iscsi_tmr_task_cold_reset():
++ *
++ *	Called from iscsi_handle_task_mgt_cmd().
++ */
++int iscsi_tmr_task_cold_reset(
++	struct iscsi_conn *conn,
++	struct iscsi_tmr_req *tmr_req,
++	unsigned char *buf)
++{
++	struct iscsi_session *sess = SESS(conn);
++	struct iscsi_node_attrib *na = iscsi_tpg_get_node_attrib(sess);
++
++	if (!(na->tmr_cold_reset)) {
++		printk(KERN_ERR "TMR Opcode TARGET_COLD_RESET authorization"
++			" failed for Initiator Node: %s\n",
++			SESS_NODE_ACL(sess)->initiatorname);
++		return -1;
++	}
++	/*
++	 * Do the real work in transport_generic_do_tmr().
++	 */
++	return 0;
++}
++
++/*	iscsi_tmr_task_reassign():
++ *
++ *	Called from iscsi_handle_task_mgt_cmd().
++ */
++u8 iscsi_tmr_task_reassign(
++	struct iscsi_cmd *cmd,
++	unsigned char *buf)
++{
++	struct iscsi_cmd *ref_cmd = NULL;
++	struct iscsi_conn *conn = CONN(cmd);
++	struct iscsi_conn_recovery *cr = NULL;
++	struct iscsi_tmr_req *tmr_req = cmd->tmr_req;
++	struct se_tmr_req *se_tmr = SE_CMD(cmd)->se_tmr_req;
++	struct iscsi_tm *hdr = (struct iscsi_tm *) buf;
++	int ret;
++
++	TRACE(TRACE_ERL2, "Got TASK_REASSIGN TMR ITT: 0x%08x,"
++		" RefTaskTag: 0x%08x, ExpDataSN: 0x%08x, CID: %hu\n",
++		hdr->itt, hdr->rtt, hdr->exp_datasn, conn->cid);
++
++	if (SESS_OPS_C(conn)->ErrorRecoveryLevel != 2) {
++		printk(KERN_ERR "TMR TASK_REASSIGN not supported in ERL<2,"
++				" ignoring request.\n");
++		return ISCSI_TMF_RSP_NOT_SUPPORTED;
++	}
++
++	ret = iscsi_find_cmd_for_recovery(SESS(conn), &ref_cmd, &cr, hdr->rtt);
++	if (ret == -2) {
++		printk(KERN_ERR "Command ITT: 0x%08x is still alligent to CID:"
++			" %hu\n", ref_cmd->init_task_tag, cr->cid);
++		return ISCSI_TMF_RSP_TASK_ALLEGIANT;
++	} else if (ret == -1) {
++		printk(KERN_ERR "Unable to locate RefTaskTag: 0x%08x in"
++			" connection recovery command list.\n", hdr->rtt);
++		return ISCSI_TMF_RSP_NO_TASK;
++	}
++	/*
++	 * Temporary check to prevent connection recovery for
++	 * connections with a differing MaxRecvDataSegmentLength.
++	 */
++	if (cr->maxrecvdatasegmentlength !=
++	    CONN_OPS(conn)->MaxRecvDataSegmentLength) {
++		printk(KERN_ERR "Unable to perform connection recovery for"
++			" differing MaxRecvDataSegmentLength, rejecting"
++			" TMR TASK_REASSIGN.\n");
++		return ISCSI_TMF_RSP_REJECTED;
++	}
++
++	se_tmr->ref_task_tag		= hdr->rtt;
++	se_tmr->ref_cmd			= &ref_cmd->se_cmd;
++	se_tmr->ref_task_lun		= get_unaligned_le64(&hdr->lun[0]);
++	tmr_req->ref_cmd_sn		= hdr->refcmdsn;
++	tmr_req->exp_data_sn		= hdr->exp_datasn;
++	tmr_req->conn_recovery		= cr;
++	tmr_req->task_reassign		= 1;
++	/*
++	 * Command can now be reassigned to a new connection.
++	 * The task management response must be sent before the
++	 * reassignment actually happens.  See iscsi_tmr_post_handler().
++	 */
++	return ISCSI_TMF_RSP_COMPLETE;
++}
++
++/*      iscsi_task_reassign_remove_cmd():
++ *
++ *
++ */
++static void iscsi_task_reassign_remove_cmd(
++	struct iscsi_cmd *cmd,
++	struct iscsi_conn_recovery *cr,
++	struct iscsi_session *sess)
++{
++	int ret;
++
++	spin_lock(&cr->conn_recovery_cmd_lock);
++	ret = iscsi_remove_cmd_from_connection_recovery(cmd, sess);
++	spin_unlock(&cr->conn_recovery_cmd_lock);
++	if (!ret) {
++		printk(KERN_INFO "iSCSI connection recovery successful for CID:"
++			" %hu on SID: %u\n", cr->cid, sess->sid);
++		iscsi_remove_active_connection_recovery_entry(cr, sess);
++	}
++
++	return;
++}
++
++/*	iscsi_task_reassign_complete_nop_out():
++ *
++ *
++ */
++static int iscsi_task_reassign_complete_nop_out(
++	struct iscsi_tmr_req *tmr_req,
++	struct iscsi_conn *conn)
++{
++	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
++	struct se_cmd *se_cmd = se_tmr->ref_cmd;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++	struct iscsi_conn_recovery *cr;
++
++	if (!cmd->cr) {
++		printk(KERN_ERR "struct iscsi_conn_recovery pointer for ITT: 0x%08x"
++			" is NULL!\n", cmd->init_task_tag);
++		return -1;
++	}
++	cr = cmd->cr;
++
++	/*
++	 * Reset the StatSN so a new one for this commands new connection
++	 * will be assigned.
++	 * Reset the ExpStatSN as well so we may receive Status SNACKs.
++	 */
++	cmd->stat_sn = cmd->exp_stat_sn = 0;
++
++	iscsi_task_reassign_remove_cmd(cmd, cr, SESS(conn));
++
++	iscsi_attach_cmd_to_queue(conn, cmd);
++
++	cmd->i_state = ISTATE_SEND_NOPIN;
++	iscsi_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
++	return 0;
++}
++
++/*	iscsi_task_reassign_complete_write():
++ *
++ *
++ */
++static int iscsi_task_reassign_complete_write(
++	struct iscsi_cmd *cmd,
++	struct iscsi_tmr_req *tmr_req)
++{
++	int no_build_r2ts = 0;
++	u32 length = 0, offset = 0;
++	struct iscsi_conn *conn = CONN(cmd);
++	struct se_cmd *se_cmd = SE_CMD(cmd);
++	/*
++	 * The Initiator must not send a R2T SNACK with a Begrun less than
++	 * the TMR TASK_REASSIGN's ExpDataSN.
++	 */
++	if (!tmr_req->exp_data_sn) {
++		cmd->cmd_flags &= ~ICF_GOT_DATACK_SNACK;
++		cmd->acked_data_sn = 0;
++	} else {
++		cmd->cmd_flags |= ICF_GOT_DATACK_SNACK;
++		cmd->acked_data_sn = (tmr_req->exp_data_sn - 1);
++	}
++
++	/*
++	 * The TMR TASK_REASSIGN's ExpDataSN contains the next R2TSN the
++	 * Initiator is expecting.  The Target controls all WRITE operations
++	 * so if we have received all DataOUT we can safety ignore Initiator.
++	 */
++	if (cmd->cmd_flags & ICF_GOT_LAST_DATAOUT) {
++		if (!atomic_read(&cmd->transport_sent)) {
++			TRACE(TRACE_ERL2, "WRITE ITT: 0x%08x: t_state: %d"
++				" never sent to transport\n",
++				cmd->init_task_tag, cmd->se_cmd.t_state);
++			return transport_generic_handle_data(se_cmd);
++		}
++
++		cmd->i_state = ISTATE_SEND_STATUS;
++		iscsi_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
++		return 0;
++	}
++
++	/*
++	 * Special case to deal with DataSequenceInOrder=No and Non-Immeidate
++	 * Unsolicited DataOut.
++	 */
++	if (cmd->unsolicited_data) {
++		cmd->unsolicited_data = 0;
++
++		offset = cmd->next_burst_len = cmd->write_data_done;
++
++		if ((SESS_OPS_C(conn)->FirstBurstLength - offset) >=
++		     cmd->data_length) {
++			no_build_r2ts = 1;
++			length = (cmd->data_length - offset);
++		} else
++			length = (SESS_OPS_C(conn)->FirstBurstLength - offset);
++
++		spin_lock_bh(&cmd->r2t_lock);
++		if (iscsi_add_r2t_to_list(cmd, offset, length, 0, 0) < 0) {
++			spin_unlock_bh(&cmd->r2t_lock);
++			return -1;
++		}
++		cmd->outstanding_r2ts++;
++		spin_unlock_bh(&cmd->r2t_lock);
++
++		if (no_build_r2ts)
++			return 0;
++	}
++
++	/*
++	 * iscsi_build_r2ts_for_cmd() can handle the rest from here.
++	 */
++	return iscsi_build_r2ts_for_cmd(cmd, conn, 2);
++}
++
++/*	iscsi_task_reassign_complete_read():
++ *
++ *
++ */
++static int iscsi_task_reassign_complete_read(
++	struct iscsi_cmd *cmd,
++	struct iscsi_tmr_req *tmr_req)
++{
++	struct iscsi_conn *conn = CONN(cmd);
++	struct iscsi_datain_req *dr;
++	struct se_cmd *se_cmd = SE_CMD(cmd);
++
++	/*
++	 * The Initiator must not send a Data SNACK with a BegRun less than
++	 * the TMR TASK_REASSIGN's ExpDataSN.
++	 */
++	if (!tmr_req->exp_data_sn) {
++		cmd->cmd_flags &= ~ICF_GOT_DATACK_SNACK;
++		cmd->acked_data_sn = 0;
++	} else {
++		cmd->cmd_flags |= ICF_GOT_DATACK_SNACK;
++		cmd->acked_data_sn = (tmr_req->exp_data_sn - 1);
++	}
++
++	if (!atomic_read(&cmd->transport_sent)) {
++		printk(KERN_INFO "READ ITT: 0x%08x: t_state: %d never sent to"
++			" transport\n", cmd->init_task_tag,
++			SE_CMD(cmd)->t_state);
++		transport_generic_handle_cdb(se_cmd);
++		return 0;
++	}
++
++	if (!(atomic_read(&T_TASK(se_cmd)->t_transport_complete))) {
++		printk(KERN_ERR "READ ITT: 0x%08x: t_state: %d, never returned"
++			" from transport\n", cmd->init_task_tag,
++			SE_CMD(cmd)->t_state);
++		return -1;
++	}
++
++	dr = iscsi_allocate_datain_req();
++	if (!(dr))
++		return -1;
++
++	/*
++	 * The TMR TASK_REASSIGN's ExpDataSN contains the next DataSN the
++	 * Initiator is expecting.
++	 */
++	dr->data_sn = dr->begrun = tmr_req->exp_data_sn;
++	dr->runlength = 0;
++	dr->generate_recovery_values = 1;
++	dr->recovery = DATAIN_CONNECTION_RECOVERY;
++
++	iscsi_attach_datain_req(cmd, dr);
++
++	cmd->i_state = ISTATE_SEND_DATAIN;
++	iscsi_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
++	return 0;
++}
++
++/*	iscsi_task_reassign_complete_none():
++ *
++ *
++ */
++static int iscsi_task_reassign_complete_none(
++	struct iscsi_cmd *cmd,
++	struct iscsi_tmr_req *tmr_req)
++{
++	struct iscsi_conn *conn = CONN(cmd);
++
++	cmd->i_state = ISTATE_SEND_STATUS;
++	iscsi_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
++	return 0;
++}
++
++/*	iscsi_task_reassign_complete_scsi_cmnd():
++ *
++ *
++ */
++static int iscsi_task_reassign_complete_scsi_cmnd(
++	struct iscsi_tmr_req *tmr_req,
++	struct iscsi_conn *conn)
++{
++	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
++	struct se_cmd *se_cmd = se_tmr->ref_cmd;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++	struct iscsi_conn_recovery *cr;
++
++	if (!cmd->cr) {
++		printk(KERN_ERR "struct iscsi_conn_recovery pointer for ITT: 0x%08x"
++			" is NULL!\n", cmd->init_task_tag);
++		return -1;
++	}
++	cr = cmd->cr;
++
++	/*
++	 * Reset the StatSN so a new one for this commands new connection
++	 * will be assigned.
++	 * Reset the ExpStatSN as well so we may receive Status SNACKs.
++	 */
++	cmd->stat_sn = cmd->exp_stat_sn = 0;
++
++	iscsi_task_reassign_remove_cmd(cmd, cr, SESS(conn));
++	iscsi_attach_cmd_to_queue(conn, cmd);
++
++	if (se_cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION) {
++		cmd->i_state = ISTATE_SEND_STATUS;
++		iscsi_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
++		return 0;
++	}
++
++	switch (cmd->data_direction) {
++	case DMA_TO_DEVICE:
++		return iscsi_task_reassign_complete_write(cmd, tmr_req);
++	case DMA_FROM_DEVICE:
++		return iscsi_task_reassign_complete_read(cmd, tmr_req);
++	case DMA_NONE:
++		return iscsi_task_reassign_complete_none(cmd, tmr_req);
++	default:
++		printk(KERN_ERR "Unknown cmd->data_direction: 0x%02x\n",
++				cmd->data_direction);
++		return -1;
++	}
++
++	return 0;
++}
++
++/*	iscsi_task_reassign_complete():
++ *
++ *	Called from iscsi_tmr_post_handler().
++ */
++static int iscsi_task_reassign_complete(
++	struct iscsi_tmr_req *tmr_req,
++	struct iscsi_conn *conn)
++{
++	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
++	struct se_cmd *se_cmd;
++	struct iscsi_cmd *cmd;
++	int ret = 0;
++
++	if (!se_tmr->ref_cmd) {
++		printk(KERN_ERR "TMR Request is missing a RefCmd struct iscsi_cmd.\n");
++		return -1;
++	}
++	se_cmd = se_tmr->ref_cmd;
++	cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++
++	cmd->conn = conn;
++
++	switch (cmd->iscsi_opcode) {
++	case ISCSI_OP_NOOP_OUT:
++		ret = iscsi_task_reassign_complete_nop_out(tmr_req, conn);
++		break;
++	case ISCSI_OP_SCSI_CMD:
++		ret = iscsi_task_reassign_complete_scsi_cmnd(tmr_req, conn);
++		break;
++	default:
++		 printk(KERN_ERR "Illegal iSCSI Opcode 0x%02x during"
++			" command realligence\n", cmd->iscsi_opcode);
++		return -1;
++	}
++
++	if (ret != 0)
++		return ret;
++
++	TRACE(TRACE_ERL2, "Completed connection realligence for Opcode: 0x%02x,"
++		" ITT: 0x%08x to CID: %hu.\n", cmd->iscsi_opcode,
++			cmd->init_task_tag, conn->cid);
++
++	return 0;
++}
++
++/*	iscsi_tmr_post_handler():
++ *
++ *	Handles special after-the-fact actions related to TMRs.
++ *	Right now the only one that its really needed for is
++ *	connection recovery releated TASK_REASSIGN.
++ */
++extern int iscsi_tmr_post_handler(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
++{
++	struct iscsi_tmr_req *tmr_req = cmd->tmr_req;
++	struct se_tmr_req *se_tmr = SE_CMD(cmd)->se_tmr_req;
++
++	if (tmr_req->task_reassign &&
++	   (se_tmr->response == ISCSI_TMF_RSP_COMPLETE))
++		return iscsi_task_reassign_complete(tmr_req, conn);
++
++	return 0;
++}
++
++/*	iscsi_task_reassign_prepare_read():
++ *
++ *	Nothing to do here, but leave it for good measure. :-)
++ */
++int iscsi_task_reassign_prepare_read(
++	struct iscsi_tmr_req *tmr_req,
++	struct iscsi_conn *conn)
++{
++	return 0;
++}
++
++/*	iscsi_task_reassign_prepare_unsolicited_dataout():
++ *
++ *
++ */
++static void iscsi_task_reassign_prepare_unsolicited_dataout(
++	struct iscsi_cmd *cmd,
++	struct iscsi_conn *conn)
++{
++	int i, j;
++	struct iscsi_pdu *pdu = NULL;
++	struct iscsi_seq *seq = NULL;
++
++	if (SESS_OPS_C(conn)->DataSequenceInOrder) {
++		cmd->data_sn = 0;
++
++		if (cmd->immediate_data)
++			cmd->r2t_offset += (cmd->first_burst_len -
++				cmd->seq_start_offset);
++
++		if (SESS_OPS_C(conn)->DataPDUInOrder) {
++			cmd->write_data_done -= (cmd->immediate_data) ?
++						(cmd->first_burst_len -
++						 cmd->seq_start_offset) :
++						 cmd->first_burst_len;
++			cmd->first_burst_len = 0;
++			return;
++		}
++
++		for (i = 0; i < cmd->pdu_count; i++) {
++			pdu = &cmd->pdu_list[i];
++
++			if (pdu->status != ISCSI_PDU_RECEIVED_OK)
++				continue;
++
++			if ((pdu->offset >= cmd->seq_start_offset) &&
++			   ((pdu->offset + pdu->length) <=
++			     cmd->seq_end_offset)) {
++				cmd->first_burst_len -= pdu->length;
++				cmd->write_data_done -= pdu->length;
++				pdu->status = ISCSI_PDU_NOT_RECEIVED;
++			}
++		}
++	} else {
++		for (i = 0; i < cmd->seq_count; i++) {
++			seq = &cmd->seq_list[i];
++
++			if (seq->type != SEQTYPE_UNSOLICITED)
++				continue;
++
++			cmd->write_data_done -=
++					(seq->offset - seq->orig_offset);
++			cmd->first_burst_len = 0;
++			seq->data_sn = 0;
++			seq->offset = seq->orig_offset;
++			seq->next_burst_len = 0;
++			seq->status = DATAOUT_SEQUENCE_WITHIN_COMMAND_RECOVERY;
++
++			if (SESS_OPS_C(conn)->DataPDUInOrder)
++				continue;
++
++			for (j = 0; j < seq->pdu_count; j++) {
++				pdu = &cmd->pdu_list[j+seq->pdu_start];
++
++				if (pdu->status != ISCSI_PDU_RECEIVED_OK)
++					continue;
++
++				pdu->status = ISCSI_PDU_NOT_RECEIVED;
++			}
++		}
++	}
++
++	return;
++}
++
++/*	iscsi_task_reassign_prepare_write():
++ *
++ *
++ */
++int iscsi_task_reassign_prepare_write(
++	struct iscsi_tmr_req *tmr_req,
++	struct iscsi_conn *conn)
++{
++	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
++	struct se_cmd *se_cmd = se_tmr->ref_cmd;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++	struct iscsi_pdu *pdu = NULL;
++	struct iscsi_r2t *r2t = NULL, *r2t_tmp;
++	int first_incomplete_r2t = 1, i = 0;
++
++	/*
++	 * The command was in the process of receiving Unsolicited DataOUT when
++	 * the connection failed.
++	 */
++	if (cmd->unsolicited_data)
++		iscsi_task_reassign_prepare_unsolicited_dataout(cmd, conn);
++
++	/*
++	 * The Initiator is requesting R2Ts starting from zero,  skip
++	 * checking acknowledged R2Ts and start checking struct iscsi_r2ts
++	 * greater than zero.
++	 */
++	if (!tmr_req->exp_data_sn)
++		goto drop_unacknowledged_r2ts;
++
++	/*
++	 * We now check that the PDUs in DataOUT sequences below
++	 * the TMR TASK_REASSIGN ExpDataSN (R2TSN the Initiator is
++	 * expecting next) have all the DataOUT they require to complete
++	 * the DataOUT sequence.  First scan from R2TSN 0 to TMR
++	 * TASK_REASSIGN ExpDataSN-1.
++	 *
++	 * If we have not received all DataOUT in question,  we must
++	 * make sure to make the appropriate changes to values in
++	 * struct iscsi_cmd (and elsewhere depending on session parameters)
++	 * so iscsi_build_r2ts_for_cmd() in iscsi_task_reassign_complete_write()
++	 * will resend a new R2T for the DataOUT sequences in question.
++	 */
++	spin_lock_bh(&cmd->r2t_lock);
++	if (list_empty(&cmd->cmd_r2t_list)) {
++		spin_unlock_bh(&cmd->r2t_lock);
++		return -1;
++	}
++
++	list_for_each_entry(r2t, &cmd->cmd_r2t_list, r2t_list) {
++
++		if (r2t->r2t_sn >= tmr_req->exp_data_sn)
++			continue;
++		/*
++		 * Safely ignore Recovery R2Ts and R2Ts that have completed
++		 * DataOUT sequences.
++		 */
++		if (r2t->seq_complete)
++			continue;
++
++		if (r2t->recovery_r2t)
++			continue;
++
++		/*
++		 *                 DataSequenceInOrder=Yes:
++		 *
++		 * Taking into account the iSCSI implementation requirement of
++		 * MaxOutstandingR2T=1 while ErrorRecoveryLevel>0 and
++		 * DataSequenceInOrder=Yes, we must take into consideration
++		 * the following:
++		 *
++		 *                  DataSequenceInOrder=No:
++		 *
++		 * Taking into account that the Initiator controls the (possibly
++		 * random) PDU Order in (possibly random) Sequence Order of
++		 * DataOUT the target requests with R2Ts,  we must take into
++		 * consideration the following:
++		 *
++		 *      DataPDUInOrder=Yes for DataSequenceInOrder=[Yes,No]:
++		 *
++		 * While processing non-complete R2T DataOUT sequence requests
++		 * the Target will re-request only the total sequence length
++		 * minus current received offset.  This is because we must
++		 * assume the initiator will continue sending DataOUT from the
++		 * last PDU before the connection failed.
++		 *
++		 *      DataPDUInOrder=No for DataSequenceInOrder=[Yes,No]:
++		 *
++		 * While processing non-complete R2T DataOUT sequence requests
++		 * the Target will re-request the entire DataOUT sequence if
++		 * any single PDU is missing from the sequence.  This is because
++		 * we have no logical method to determine the next PDU offset,
++		 * and we must assume the Initiator will be sending any random
++		 * PDU offset in the current sequence after TASK_REASSIGN
++		 * has completed.
++		 */
++		if (SESS_OPS_C(conn)->DataSequenceInOrder) {
++			if (!first_incomplete_r2t) {
++				cmd->r2t_offset -= r2t->xfer_len;
++				goto next;
++			}
++
++			if (SESS_OPS_C(conn)->DataPDUInOrder) {
++				cmd->data_sn = 0;
++				cmd->r2t_offset -= (r2t->xfer_len -
++					cmd->next_burst_len);
++				first_incomplete_r2t = 0;
++				goto next;
++			}
++
++			cmd->data_sn = 0;
++			cmd->r2t_offset -= r2t->xfer_len;
++
++			for (i = 0; i < cmd->pdu_count; i++) {
++				pdu = &cmd->pdu_list[i];
++
++				if (pdu->status != ISCSI_PDU_RECEIVED_OK)
++					continue;
++
++				if ((pdu->offset >= r2t->offset) &&
++				    (pdu->offset < (r2t->offset +
++						r2t->xfer_len))) {
++					cmd->next_burst_len -= pdu->length;
++					cmd->write_data_done -= pdu->length;
++					pdu->status = ISCSI_PDU_NOT_RECEIVED;
++				}
++			}
++
++			first_incomplete_r2t = 0;
++		} else {
++			struct iscsi_seq *seq;
++
++			seq = iscsi_get_seq_holder(cmd, r2t->offset,
++					r2t->xfer_len);
++			if (!(seq)) {
++				spin_unlock_bh(&cmd->r2t_lock);
++				return -1;
++			}
++
++			cmd->write_data_done -=
++					(seq->offset - seq->orig_offset);
++			seq->data_sn = 0;
++			seq->offset = seq->orig_offset;
++			seq->next_burst_len = 0;
++			seq->status = DATAOUT_SEQUENCE_WITHIN_COMMAND_RECOVERY;
++
++			cmd->seq_send_order--;
++
++			if (SESS_OPS_C(conn)->DataPDUInOrder)
++				goto next;
++
++			for (i = 0; i < seq->pdu_count; i++) {
++				pdu = &cmd->pdu_list[i+seq->pdu_start];
++
++				if (pdu->status != ISCSI_PDU_RECEIVED_OK)
++					continue;
++
++				pdu->status = ISCSI_PDU_NOT_RECEIVED;
++			}
++		}
++
++next:
++		cmd->outstanding_r2ts--;
++	}
++	spin_unlock_bh(&cmd->r2t_lock);
++
++	/*
++	 * We now drop all unacknowledged R2Ts, ie: ExpDataSN from TMR
++	 * TASK_REASSIGN to the last R2T in the list..  We are also careful
++	 * to check that the Initiator is not requesting R2Ts for DataOUT
++	 * sequences it has already completed.
++	 *
++	 * Free each R2T in question and adjust values in struct iscsi_cmd
++	 * accordingly so iscsi_build_r2ts_for_cmd() do the rest of
++	 * the work after the TMR TASK_REASSIGN Response is sent.
++	 */
++drop_unacknowledged_r2ts:
++
++	cmd->cmd_flags &= ~ICF_SENT_LAST_R2T;
++	cmd->r2t_sn = tmr_req->exp_data_sn;
++
++	spin_lock_bh(&cmd->r2t_lock);
++	list_for_each_entry_safe(r2t, r2t_tmp, &cmd->cmd_r2t_list, r2t_list) {
++		/*
++		 * Skip up to the R2T Sequence number provided by the
++		 * iSCSI TASK_REASSIGN TMR
++		 */
++		if (r2t->r2t_sn < tmr_req->exp_data_sn)
++			continue;
++
++		if (r2t->seq_complete) {
++			printk(KERN_ERR "Initiator is requesting R2Ts from"
++				" R2TSN: 0x%08x, but R2TSN: 0x%08x, Offset: %u,"
++				" Length: %u is already complete."
++				"   BAD INITIATOR ERL=2 IMPLEMENTATION!\n",
++				tmr_req->exp_data_sn, r2t->r2t_sn,
++				r2t->offset, r2t->xfer_len);
++			spin_unlock_bh(&cmd->r2t_lock);
++			return -1;
++		}
++
++		if (r2t->recovery_r2t) {
++			iscsi_free_r2t(r2t, cmd);
++			continue;
++		}
++
++		/*		   DataSequenceInOrder=Yes:
++		 *
++		 * Taking into account the iSCSI implementation requirement of
++		 * MaxOutstandingR2T=1 while ErrorRecoveryLevel>0 and
++		 * DataSequenceInOrder=Yes, it's safe to subtract the R2Ts
++		 * entire transfer length from the commands R2T offset marker.
++		 *
++		 *		   DataSequenceInOrder=No:
++		 *
++		 * We subtract the difference from struct iscsi_seq between the
++		 * current offset and original offset from cmd->write_data_done
++		 * for account for DataOUT PDUs already received.  Then reset
++		 * the current offset to the original and zero out the current
++		 * burst length,  to make sure we re-request the entire DataOUT
++		 * sequence.
++		 */
++		if (SESS_OPS_C(conn)->DataSequenceInOrder)
++			cmd->r2t_offset -= r2t->xfer_len;
++		else
++			cmd->seq_send_order--;
++
++		cmd->outstanding_r2ts--;
++		iscsi_free_r2t(r2t, cmd);
++	}
++	spin_unlock_bh(&cmd->r2t_lock);
++
++	return 0;
++}
++
++/*	iscsi_check_task_reassign_expdatasn():
++ *
++ *	Performs sanity checks TMR TASK_REASSIGN's ExpDataSN for
++ *	a given struct iscsi_cmd.
++ */
++int iscsi_check_task_reassign_expdatasn(
++	struct iscsi_tmr_req *tmr_req,
++	struct iscsi_conn *conn)
++{
++	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
++	struct se_cmd *se_cmd = se_tmr->ref_cmd;
++	struct iscsi_cmd *ref_cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++
++	if (ref_cmd->iscsi_opcode != ISCSI_OP_SCSI_CMD)
++		return 0;
++
++	if (se_cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION)
++		return 0;
++
++	if (ref_cmd->data_direction == DMA_NONE)
++		return 0;
++
++	/*
++	 * For READs the TMR TASK_REASSIGNs ExpDataSN contains the next DataSN
++	 * of DataIN the Initiator is expecting.
++	 *
++	 * Also check that the Initiator is not re-requesting DataIN that has
++	 * already been acknowledged with a DataAck SNACK.
++	 */
++	if (ref_cmd->data_direction == DMA_FROM_DEVICE) {
++		if (tmr_req->exp_data_sn > ref_cmd->data_sn) {
++			printk(KERN_ERR "Received ExpDataSN: 0x%08x for READ"
++				" in TMR TASK_REASSIGN greater than command's"
++				" DataSN: 0x%08x.\n", tmr_req->exp_data_sn,
++				ref_cmd->data_sn);
++			return -1;
++		}
++		if ((ref_cmd->cmd_flags & ICF_GOT_DATACK_SNACK) &&
++		    (tmr_req->exp_data_sn <= ref_cmd->acked_data_sn)) {
++			printk(KERN_ERR "Received ExpDataSN: 0x%08x for READ"
++				" in TMR TASK_REASSIGN for previously"
++				" acknowledged DataIN: 0x%08x,"
++				" protocol error\n", tmr_req->exp_data_sn,
++				ref_cmd->acked_data_sn);
++			return -1;
++		}
++		return iscsi_task_reassign_prepare_read(tmr_req, conn);
++	}
++
++	/*
++	 * For WRITEs the TMR TASK_REASSIGNs ExpDataSN contains the next R2TSN
++	 * for R2Ts the Initiator is expecting.
++	 *
++	 * Do the magic in iscsi_task_reassign_prepare_write().
++	 */
++	if (ref_cmd->data_direction == DMA_TO_DEVICE) {
++		if (tmr_req->exp_data_sn > ref_cmd->r2t_sn) {
++			printk(KERN_ERR "Received ExpDataSN: 0x%08x for WRITE"
++				" in TMR TASK_REASSIGN greater than command's"
++				" R2TSN: 0x%08x.\n", tmr_req->exp_data_sn,
++					ref_cmd->r2t_sn);
++			return -1;
++		}
++		return iscsi_task_reassign_prepare_write(tmr_req, conn);
++	}
++
++	printk(KERN_ERR "Unknown iSCSI data_direction: 0x%02x\n",
++			ref_cmd->data_direction);
++
++	return -1;
++}
+diff --git a/drivers/target/iscsi/iscsi_target_tmr.h b/drivers/target/iscsi/iscsi_target_tmr.h
+new file mode 100644
+index 0000000..3d5fd92
+--- /dev/null
++++ b/drivers/target/iscsi/iscsi_target_tmr.h
+@@ -0,0 +1,16 @@
++#ifndef ISCSI_TARGET_TMR_H
++#define ISCSI_TARGET_TMR_H
++
++extern u8 iscsi_tmr_abort_task(struct iscsi_cmd *, unsigned char *);
++extern int iscsi_tmr_task_warm_reset(struct iscsi_conn *, struct iscsi_tmr_req *,
++			unsigned char *);
++extern int iscsi_tmr_task_cold_reset(struct iscsi_conn *, struct iscsi_tmr_req *,
++			unsigned char *);
++extern u8 iscsi_tmr_task_reassign(struct iscsi_cmd *, unsigned char *);
++extern int iscsi_tmr_post_handler(struct iscsi_cmd *, struct iscsi_conn *);
++extern int iscsi_check_task_reassign_expdatasn(struct iscsi_tmr_req *,
++			struct iscsi_conn *);
++
++extern int iscsi_build_r2ts_for_cmd(struct iscsi_cmd *, struct iscsi_conn *, int);
++
++#endif /* ISCSI_TARGET_TMR_H */
 -- 
 1.7.4.1
 
