@@ -1,234 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab1CNOQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 10:16:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46921 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab1CNOQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 10:16:39 -0400
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=OjXHl2S905kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=bYIB0FJmsJ72RWxWkMAA:9 a=F5YJ6hA8T9Jc_4BLJwUA:7 a=SRk_bhL4__Hovp8lCaAlkije7vIA:4 a=PUjeQqilurYA:10 a=BNKvsySwfXAwWLcd:21 a=mUgUU-Re_TKvVb9x:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 1/20]  1: mm: Move replace_page() to
- mm/memory.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110314133413.27435.67467.sendpatchset@localhost6.localdomain6>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314133413.27435.67467.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 14 Mar 2011 10:16:35 -0400
-Message-ID: <1300112195.9910.92.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756167Ab1CNOQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 10:16:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60768 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753677Ab1CNOQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 10:16:41 -0400
+Date: Mon, 14 Mar 2011 14:16:03 GMT
+From: tip-bot for Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        bigeasy@linutronix.de, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bigeasy@linutronix.de
+In-Reply-To: <20110314093340.GA21026@www.tglx.de>
+References: <20110314093340.GA21026@www.tglx.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: ce4100: Set pci ops via callback instead of module init
+Message-ID: <tip-03150171dcf9492a96f57cbb2aef088bafcfcd2e@git.kernel.org>
+Git-Commit-ID: 03150171dcf9492a96f57cbb2aef088bafcfcd2e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Mar 2011 14:16:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-14 at 19:04 +0530, Srikar Dronamraju wrote:
-> User bkpt will use background page replacement approach to insert/delete
-> breakpoints. Background page replacement approach is based on
-> replace_page. Hence replace_page() loses its static attribute.
-> 
+Commit-ID:  03150171dcf9492a96f57cbb2aef088bafcfcd2e
+Gitweb:     http://git.kernel.org/tip/03150171dcf9492a96f57cbb2aef088bafcfcd2e
+Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+AuthorDate: Mon, 14 Mar 2011 10:33:40 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 14 Mar 2011 15:13:23 +0100
 
-Just a nitpick, but since replace_page() is being moved, could you
-specify that in the change log. Something like:
+x86: ce4100: Set pci ops via callback instead of module init
 
-"Hence, replace_page() is moved from ksm.c into memory.c and its static
-attribute is removed."
+Setting the pci ops on subsys initcall unconditionally will break
+multi platform kernels on anything except ce4100.
 
-I like to see in the change log "move x to y" when that is actually
-done, because it is hard to see if anything actually changed when code
-is moved. Ideally it is best to move code in one patch and make the
-change in another. If you do cut another version of this patch set,
-could you do that. This alone is not enough to require a new release.
+Use x86_init.pci.init ops to call this only on real ce4100 platforms.
 
-Thanks,
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: sodaville@linutronix.de
+LKML-Reference: <20110314093340.GA21026@www.tglx.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/ce4100.h     |    6 ++++++
+ arch/x86/pci/ce4100.c             |    7 ++++---
+ arch/x86/platform/ce4100/ce4100.c |    2 ++
+ 3 files changed, 12 insertions(+), 3 deletions(-)
 
--- Steve
-
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> ---
->  include/linux/mm.h |    2 ++
->  mm/ksm.c           |   62 ----------------------------------------------------
->  mm/memory.c        |   62 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 64 insertions(+), 62 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 679300c..01a0740 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -984,6 +984,8 @@ void account_page_writeback(struct page *page);
->  int set_page_dirty(struct page *page);
->  int set_page_dirty_lock(struct page *page);
->  int clear_page_dirty_for_io(struct page *page);
-> +int replace_page(struct vm_area_struct *vma, struct page *page,
-> +					struct page *kpage, pte_t orig_pte);
->  
->  /* Is the vma a continuation of the stack vma above it? */
->  static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index c2b2a94..f46e20d 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -765,68 +765,6 @@ out:
->  	return err;
->  }
->  
-> -/**
-> - * replace_page - replace page in vma by new ksm page
-> - * @vma:      vma that holds the pte pointing to page
-> - * @page:     the page we are replacing by kpage
-> - * @kpage:    the ksm page we replace page by
-> - * @orig_pte: the original value of the pte
-> - *
-> - * Returns 0 on success, -EFAULT on failure.
-> - */
-> -static int replace_page(struct vm_area_struct *vma, struct page *page,
-> -			struct page *kpage, pte_t orig_pte)
-> -{
-> -	struct mm_struct *mm = vma->vm_mm;
-> -	pgd_t *pgd;
-> -	pud_t *pud;
-> -	pmd_t *pmd;
-> -	pte_t *ptep;
-> -	spinlock_t *ptl;
-> -	unsigned long addr;
-> -	int err = -EFAULT;
-> -
-> -	addr = page_address_in_vma(page, vma);
-> -	if (addr == -EFAULT)
-> -		goto out;
-> -
-> -	pgd = pgd_offset(mm, addr);
-> -	if (!pgd_present(*pgd))
-> -		goto out;
-> -
-> -	pud = pud_offset(pgd, addr);
-> -	if (!pud_present(*pud))
-> -		goto out;
-> -
-> -	pmd = pmd_offset(pud, addr);
-> -	BUG_ON(pmd_trans_huge(*pmd));
-> -	if (!pmd_present(*pmd))
-> -		goto out;
-> -
-> -	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> -	if (!pte_same(*ptep, orig_pte)) {
-> -		pte_unmap_unlock(ptep, ptl);
-> -		goto out;
-> -	}
-> -
-> -	get_page(kpage);
-> -	page_add_anon_rmap(kpage, vma, addr);
-> -
-> -	flush_cache_page(vma, addr, pte_pfn(*ptep));
-> -	ptep_clear_flush(vma, addr, ptep);
-> -	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-> -
-> -	page_remove_rmap(page);
-> -	if (!page_mapped(page))
-> -		try_to_free_swap(page);
-> -	put_page(page);
-> -
-> -	pte_unmap_unlock(ptep, ptl);
-> -	err = 0;
-> -out:
-> -	return err;
-> -}
-> -
->  static int page_trans_compound_anon_split(struct page *page)
->  {
->  	int ret = 0;
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 5823698..2a3021c 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2669,6 +2669,68 @@ void unmap_mapping_range(struct address_space *mapping,
->  }
->  EXPORT_SYMBOL(unmap_mapping_range);
->  
-> +/**
-> + * replace_page - replace page in vma by new ksm page
-> + * @vma:      vma that holds the pte pointing to page
-> + * @page:     the page we are replacing by kpage
-> + * @kpage:    the ksm page we replace page by
-> + * @orig_pte: the original value of the pte
-> + *
-> + * Returns 0 on success, -EFAULT on failure.
-> + */
-> +int replace_page(struct vm_area_struct *vma, struct page *page,
-> +			struct page *kpage, pte_t orig_pte)
-> +{
-> +	struct mm_struct *mm = vma->vm_mm;
-> +	pgd_t *pgd;
-> +	pud_t *pud;
-> +	pmd_t *pmd;
-> +	pte_t *ptep;
-> +	spinlock_t *ptl;
-> +	unsigned long addr;
-> +	int err = -EFAULT;
-> +
-> +	addr = page_address_in_vma(page, vma);
-> +	if (addr == -EFAULT)
-> +		goto out;
-> +
-> +	pgd = pgd_offset(mm, addr);
-> +	if (!pgd_present(*pgd))
-> +		goto out;
-> +
-> +	pud = pud_offset(pgd, addr);
-> +	if (!pud_present(*pud))
-> +		goto out;
-> +
-> +	pmd = pmd_offset(pud, addr);
-> +	BUG_ON(pmd_trans_huge(*pmd));
-> +	if (!pmd_present(*pmd))
-> +		goto out;
-> +
-> +	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> +	if (!pte_same(*ptep, orig_pte)) {
-> +		pte_unmap_unlock(ptep, ptl);
-> +		goto out;
-> +	}
-> +
-> +	get_page(kpage);
-> +	page_add_anon_rmap(kpage, vma, addr);
-> +
-> +	flush_cache_page(vma, addr, pte_pfn(*ptep));
-> +	ptep_clear_flush(vma, addr, ptep);
-> +	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-> +
-> +	page_remove_rmap(page);
-> +	if (!page_mapped(page))
-> +		try_to_free_swap(page);
-> +	put_page(page);
-> +
-> +	pte_unmap_unlock(ptep, ptl);
-> +	err = 0;
-> +out:
-> +	return err;
-> +}
-> +
->  int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
->  {
->  	struct address_space *mapping = inode->i_mapping;
-
-
+diff --git a/arch/x86/include/asm/ce4100.h b/arch/x86/include/asm/ce4100.h
+new file mode 100644
+index 0000000..e656ad8
+--- /dev/null
++++ b/arch/x86/include/asm/ce4100.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_CE4100_H_
++#define _ASM_CE4100_H_
++
++int ce4100_pci_init(void);
++
++#endif
+diff --git a/arch/x86/pci/ce4100.c b/arch/x86/pci/ce4100.c
+index 85b68ef..9260b3e 100644
+--- a/arch/x86/pci/ce4100.c
++++ b/arch/x86/pci/ce4100.c
+@@ -34,6 +34,7 @@
+ #include <linux/pci.h>
+ #include <linux/init.h>
+ 
++#include <asm/ce4100.h>
+ #include <asm/pci_x86.h>
+ 
+ struct sim_reg {
+@@ -306,10 +307,10 @@ struct pci_raw_ops ce4100_pci_conf = {
+ 	.write = ce4100_conf_write,
+ };
+ 
+-static int __init ce4100_pci_init(void)
++int __init ce4100_pci_init(void)
+ {
+ 	init_sim_regs();
+ 	raw_pci_ops = &ce4100_pci_conf;
+-	return 0;
++	/* Indicate caller that it should invoke pci_legacy_init() */
++	return 1;
+ }
+-subsys_initcall(ce4100_pci_init);
+diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+index d2c0d51..cd6f184 100644
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@ -15,6 +15,7 @@
+ #include <linux/serial_reg.h>
+ #include <linux/serial_8250.h>
+ 
++#include <asm/ce4100.h>
+ #include <asm/setup.h>
+ #include <asm/io.h>
+ 
+@@ -129,4 +130,5 @@ void __init x86_ce4100_early_setup(void)
+ 	x86_init.resources.probe_roms = x86_init_noop;
+ 	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+ 	x86_init.mpparse.find_smp_config = sdv_find_smp_config;
++	x86_init.pci.init = ce4100_pci_init;
+ }
