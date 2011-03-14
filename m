@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab1CNXFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 19:05:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40697 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab1CNXF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 19:05:28 -0400
-Message-ID: <4D7E9F0C.2010504@zytor.com>
-Date: Mon, 14 Mar 2011 16:04:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: matthieu castet <castet.matthieu@free.fr>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] x86 : Add NX protection for kernel data on 64 bit
-References: <4D7D0ED6.2050504@free.fr>
-In-Reply-To: <4D7D0ED6.2050504@free.fr>
-Content-Type: text/plain; charset=UTF-8
+	id S1757389Ab1CNXI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 19:08:29 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55477 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751499Ab1CNXI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 19:08:28 -0400
+Date: Mon, 14 Mar 2011 23:05:43 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Mike Waychison <mikew@google.com>, Matt Domsch <Matt_Domsch@dell.com>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
+Subject: Re: [PATCH v2 11/12] driver: Google EFI SMI
+Message-ID: <20110314230543.5b668ed2@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110314201346.GA1084@kroah.com>
+References: <20110312014254.6133.43079.stgit@mike.mtv.corp.google.com>
+	<20110312014353.6133.94204.stgit@mike.mtv.corp.google.com>
+	<20110314154713.GF31340@kroah.com>
+	<AANLkTikhhYv2=memo-Rkhh1pG3v4-edrUROTgLoc6cbd@mail.gmail.com>
+	<20110314201346.GA1084@kroah.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2011 11:37 AM, matthieu castet wrote:
-> Cpu hotplug code read data in head_64.S (phys_base) before enabling NX, so when
-> we enable NX on data, an triple fault happen because a reserved bit is set.
-> It was fixed by allocating dedicated page table for ident mapping in trampoline.
-> Now data can be protected by NX.
-> 
-> The Low kernel Mapping is also set to NX.
-> 
-> Finaly we preserve large page mapping by applying nx in free_init_pages only 
-> when we switch to NX mode
 
-The right way to do this is to have initial_page_table and keep it
-around, just as we already do on 32 bits... yet another thing that can
-be merged instead of coming up with a separate solution.
+> > I don't know if there is a good way to have this guy autoloaded, but
+> > that's probably fine. We will likely compile it in as a built-in or
+> > adjust our userland to have the module loaded.  We use it on all
+> > machines we've been building for the last 4-5 years, and a table of
+> > device IDs would just contain a list of a bunch of parts that aren't
+> > really google-specific.
+> 
+> What's wrong with using DMI strings?  Are there going to be that many
+> different ones of them here?
 
-	-hpa
+If you've got them in the ACPI tables that's as good as DMI if not better
+IMHO
