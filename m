@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab1CNSPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 14:15:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54491 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754711Ab1CNSPe (ORCPT
+	id S1755272Ab1CNSRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 14:17:16 -0400
+Received: from 3.26.mail-out.ovh.net ([46.105.60.9]:56917 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1753067Ab1CNSRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 14:15:34 -0400
-Date: Mon, 14 Mar 2011 18:15:31 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
-Message-ID: <20110314181531.GA32434@opensource.wolfsonmicro.com>
-References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
- <20110311153134.GO1760@opensource.wolfsonmicro.com>
- <AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
+	Mon, 14 Mar 2011 14:17:15 -0400
+X-Greylist: delayed 2793 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Mar 2011 14:17:15 EDT
+Message-ID: <4D7E42A6.70409@example.com>
+Date: Mon, 14 Mar 2011 17:30:30 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 4802807528527982872
+X-Ovh-Remote: 178.36.153.11 (178-36-153-11.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 05:42:28PM +0100, Linus Walleij wrote:
+Hello,
 
-> Mark can you pick this into the regulator tree? I have sent my ux500
-> tree upstream.
+I do no have it and my Debian package doesn't have it either. I cannot 
+build and test linux-next kernels, as a minute ago. It searches for 
+rtl_nic/rtl8105e-1.fw.
 
-No, I can't do that - mostly because Liam manages the regulator tree and
-not me :)
+Please help.
+
+Regards,
+
+Piotr Hosowicz
+
+-- 
+Janusz Korwin-Mikke:
+"Dyktatury dziel± siê na dobre i z³e. Demokracja jest zawsze g³upia."
+NP: Banda Do Sol - Praça Da Paz
+NB: 2.6.38-rc8-git4
