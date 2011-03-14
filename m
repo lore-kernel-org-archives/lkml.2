@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab1CNOHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 10:07:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:44410 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab1CNOHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 10:07:33 -0400
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=u2_5ZAQ68KIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=w1DaJl7zj12HNWzAuV0A:9 a=hAY4_PuGj8YHOQu6YyoA:7 a=rUD7nDIBCanixhGV-OET1-tXNOgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/2] tracing - putting cond_resched into tace_pipe loop
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, fweisbec@gmail.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110313145811.GA30558@redhat.com>
-References: <1299970786-8075-1-git-send-email-jolsa@redhat.com>
-	 <1299970786-8075-3-git-send-email-jolsa@redhat.com>
-	 <20110313145811.GA30558@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 14 Mar 2011 10:07:31 -0400
-Message-ID: <1300111651.9910.87.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755349Ab1CNOLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 10:11:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754544Ab1CNOLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 10:11:23 -0400
+From: Andreas Schwab <schwab@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Jan Beulich <JBeulich@novell.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, binutils@sourceware.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Modra <amodra@gmail.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+References: <AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
+	<4D7DE39302000078000362E6@vpn.id2.novell.com>
+	<20110314095534.GB18058@elte.hu>
+	<20110314104131.GG6275@bubble.grove.modra.org>
+	<AANLkTi=3AiLaw5Gnis8Ha4eRXirk0s-Cnk2zzN12YDpH__45869.1711457961$1300099861$gmane$org@mail.gmail.com>
+	<m3oc5eufrk.fsf@redhat.com>
+	<AANLkTikOX_9G-kFEOCHJbnTootY4n4EPSounwjDjPiZc@mail.gmail.com>
+	<m3fwqpvrjy.fsf@redhat.com> <20110314121321.GE23257@elte.hu>
+	<m3bp1dvp3l.fsf@redhat.com> <20110314131729.GB28851@elte.hu>
+X-Yow: Will it improve my CASH FLOW?
+Date: Mon, 14 Mar 2011 14:43:51 +0100
+In-Reply-To: <20110314131729.GB28851@elte.hu> (Ingo Molnar's message of "Mon,
+	14 Mar 2011 14:17:29 +0100")
+Message-ID: <m339mpvmug.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-13 at 15:58 +0100, Oleg Nesterov wrote:
-> On 03/12, Jiri Olsa wrote:
-> >
-> > --- a/kernel/trace/trace.c
-> > +++ b/kernel/trace/trace.c
-> > @@ -3237,10 +3237,23 @@ waitagain:
-> >  		 * One of the trace_seq_* functions is not used properly.
-> >  		 */
-> >  		WARN_ON(iter->seq.full);
-> > +
-> > +		/*
-> > +		 * There's a chance this loop might get quite tight,
-> > +		 * causing latency in non preemptive kernel.
-> > +		 */
-> > +		cond_resched();
-> > +		if (signal_pending(current)) {
-> > +			sret = -EINTR;
-> > +			break;
-> 
-> First of all: I do not pretend I understand this code ;) Still, a
-> couple of nits.
-> 
-> -EINTR doesn't look exactly right, I'd suggest -ERESTARTSYS. The same
-> for tracing_wait_pipe() btw, I think it should be fixed.
+Ingo Molnar <mingo@elte.hu> writes:
 
-Yeah, the tracing_wait_pipe() could be changed. I probably copied that
-from someplace else in the kernel ;)
+> * Andreas Schwab <schwab@redhat.com> wrote:
+>
+>> Ingo Molnar <mingo@elte.hu> writes:
+>> 
+>> > * Andreas Schwab <schwab@redhat.com> wrote:
+>> >
+>> >> Pekka Enberg <penberg@kernel.org> writes:
+>> >> 
+>> >> > Hi Andreas,
+>> >> >
+>> >> > Pekka Enberg <penberg@kernel.org> writes:
+>> >> >>> So what do you suggest that testers who want to, say, build old Linux
+>> >> >>> kernel versions with new binutils do?
+>> >> >
+>> >> > On Mon, Mar 14, 2011 at 1:02 PM, Andreas Schwab <schwab@redhat.com> wrote:
+>> >> >> The same that testers have to do in order to build old Linux kernel
+>> >> >> versions with current versions of make.
+>> >> >
+>> >> > Are you saying it's OK to screw over binutils users because GNU Make
+>> >> > did that too?
+>> >> 
+>> >> I'm just telling you the facts.
+>> >
+>> > And you are wrong - latest Make does not break reasonably old kernel builds such 
+>> > as v2.6.30.
+>> 
+>> This is just ridiculous.
+>> You are defining away facts just because they don't fit your view.
+>
+> No, i actually tried out the latest released Make version (3.82) and it still builds 
+> v2.6.30 fine:
 
-> 
-> 
-> 
-> I wonder if it makes sense to simply "break" if signal_pending(), it
-> is possible we already have something to report via trace_seq_to_user().
-> Then we could do
-> 
-> 	-	if (sret == -EBUSY)
-> 	-		goto waitagain;
-> 	+	if (sret == -EBUSY) {
-> 	+		if (!signal_pending())
-> 	+			goto waitagain;
-> 	+		sret = -ERESTARTSYS;
-> 	+	}
-> 
-> Or we can change tracing_wait_pipe() to check signal_pending()
-> uncondditionally, I dunno.
-> 
-> Up to you, but note that otherwise the logic looks a bit strange.
-> Suppose that signal_pending() is already true when we call
-> tracing_wait_pipe(). In this case we are going to do the "unnecessary"
-> work and then return EINTR/ERESTART. This is correct, the next
-> invocation does trace_seq_to_user() before anything else, just
-> looks a bit strange.
+That's a very convincing argument.
 
-I'm not sure that this needs the signal_pending() or the break, or even
-the cond_resched(). Perhaps the first patch fixes the bug. But that
-while loop does not block, and it should just spin enough to fill a
-page. If it is not filling the page then that's a bug.
+Andreas.
 
-Jiri,
-
-Can you reproduce the bug with just he first patch? Actually, I can
-reproduce it on vanilla, I'll apply your first patch and see if that
-fixes things. If not, then we need to find out why and fix those.
-
--- Steve
-
-
+-- 
+Andreas Schwab, schwab@redhat.com
+GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
+"And now for something completely different."
