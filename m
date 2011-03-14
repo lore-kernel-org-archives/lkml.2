@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab1CNSCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 14:02:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36672 "EHLO mga09.intel.com"
+	id S1757198Ab1CNSCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 14:02:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53928 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757082Ab1CNSCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 14:02:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,317,1297065600"; 
-   d="scan'208";a="720026952"
-Date: Mon, 14 Mar 2011 19:02:40 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jonas Aberg <jonas.aberg@stericsson.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH 1/3] mfd: add a core driver for TI TPS61050/TPS61052
- chips v2
-Message-ID: <20110314180239.GQ31153@sortiz-mobl>
-References: <1299672158-4711-1-git-send-email-linus.walleij@stericsson.com>
- <AANLkTi==Fj7g8ne9NxiAoPoWtKxEmJrd=Q4j--Y3A4cF@mail.gmail.com>
+	id S1757140Ab1CNSCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 14:02:47 -0400
+Message-ID: <4D7E580A.6000807@zytor.com>
+Date: Mon, 14 Mar 2011 11:01:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi==Fj7g8ne9NxiAoPoWtKxEmJrd=Q4j--Y3A4cF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ian Lance Taylor <iant@google.com>
+CC: Jan Beulich <JBeulich@novell.com>, sedat.dilek@gmail.com,
+        Ingo Molnar <mingo@elte.hu>, amodra@gmail.com,
+        "H.J. Lu" <hjl.tools@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        binutils <binutils@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>	<4D7E095802000078000363D5@vpn.id2.novell.com>	<AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>	<AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>	<4D7E166C0200007800036451@vpn.id2.novell.com> <mcrtyf53dci.fsf@google.com>
+In-Reply-To: <mcrtyf53dci.fsf@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On Mon, Mar 14, 2011 at 05:40:14PM +0100, Linus Walleij wrote:
-> On Wed, Mar 9, 2011 at 1:02 PM, Linus Walleij
-> <linus.walleij@stericsson.com> wrote:
+On 03/14/2011 08:56 AM, Ian Lance Taylor wrote:
+> "Jan Beulich" <JBeulich@novell.com> writes:
 > 
-> > From: Linus Walleij <linus.walleij@linaro.org>
-> >
-> > The TPS61050/TPS61052 are boost converters, LED drivers, LED flash
-> > drivers and a simple GPIO pin chips.
-> >
-> > Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-> > Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > Cc: Jonas Aberg <jonas.aberg@stericsson.com>
-> > Cc: Ola Lilja <ola.o.lilja@stericsson.com>
-> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>> No - $(AS) isn't being used to translate .S files, $(CC) is being used
+>> instead. That's why I pointed at the necessary -B option (so that
+>> the compiler would be able to locate the wrapper H.J. suggested).
 > 
-> Sam, if you're happy with this MFD driver, I'd request you to merge this and the
-> the regulator driver [2/3] into the MFD tree if possible. The ux500
-> platform data
-> will have to wait, since I have now sent that tree upstream.
-I will be looking at it sometime later this week.
+> You could also just put a -Wa option in your $(CC).  That seems simpler
+> than a -B option.
+> 
+> (I don't really care about this issue one way or another.)
+> 
 
-Cheers,
-Samuel.
+-Wa is definitely the sane way to do it.  The -B thing came in if you
+have to run a patched version of as, which is extremely painful.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+	-hpa
+
