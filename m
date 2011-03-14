@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1CNP11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 11:27:27 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:52312 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752459Ab1CNP1Z (ORCPT
+	id S1755577Ab1CNP1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 11:27:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56688 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab1CNP1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 11:27:25 -0400
-To: linux-kernel@vger.kernel.org, chirag.kantharia@hp.com,
-        iss_storagedev@hp.com
-Subject: [PATCH] cpqarray: use pci_dev->revision
-Content-Disposition: inline
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Organization: MontaVista Software Inc.
-Date: Mon, 14 Mar 2011 18:25:44 +0300
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103141825.44770.sshtylyov@ru.mvista.com>
+	Mon, 14 Mar 2011 11:27:43 -0400
+Message-Id: <20110314152226.445372590@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Mon, 14 Mar 2011 16:06:14 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 01/14] sched: Remove obsolete arch_ prefixes
+References: <20110314150613.749843433@chello.nl>
+Content-Disposition: inline; filename=sched-remove-arch-prefixes.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
-converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
-drivers to use pci_device->revision).
+Non weak static functions clearly are not arch specific, so remove the
+arch_ prefix.
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
 ---
-The patch is against the recent Linus' tree.
-
- drivers/block/cpqarray.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/block/cpqarray.c
+Index: linux-2.6/kernel/sched.c
 ===================================================================
---- linux-2.6.orig/drivers/block/cpqarray.c
-+++ linux-2.6/drivers/block/cpqarray.c
-@@ -620,6 +620,7 @@ static int cpqarray_pci_init(ctlr_info_t
- 	}
- 	vendor_id = pdev->vendor;
- 	device_id = pdev->device;
-+	revision  = pdev->revision;
- 	irq = pdev->irq;
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -232,7 +232,7 @@ static void destroy_rt_bandwidth(struct
+ #endif
  
- 	for(i=0; i<6; i++)
-@@ -632,7 +633,6 @@ static int cpqarray_pci_init(ctlr_info_t
- 	}
+ /*
+- * sched_domains_mutex serializes calls to arch_init_sched_domains,
++ * sched_domains_mutex serializes calls to init_sched_domains,
+  * detach_destroy_domains and partition_sched_domains.
+  */
+ static DEFINE_MUTEX(sched_domains_mutex);
+@@ -7646,7 +7646,7 @@ void free_sched_domains(cpumask_var_t do
+  * For now this just excludes isolated cpus, but could be used to
+  * exclude other special cases in the future.
+  */
+-static int arch_init_sched_domains(const struct cpumask *cpu_map)
++static int init_sched_domains(const struct cpumask *cpu_map)
+ {
+ 	int err;
  
- 	pci_read_config_word(pdev, PCI_COMMAND, &command);
--	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
- 	pci_read_config_byte(pdev, PCI_CACHE_LINE_SIZE, &cache_line_size);
- 	pci_read_config_byte(pdev, PCI_LATENCY_TIMER, &latency_timer);
+@@ -7663,7 +7663,7 @@ static int arch_init_sched_domains(const
+ 	return err;
+ }
  
+-static void arch_destroy_sched_domains(const struct cpumask *cpu_map,
++static void destroy_sched_domains(const struct cpumask *cpu_map,
+ 				       struct cpumask *tmpmask)
+ {
+ 	free_sched_groups(cpu_map, tmpmask);
+@@ -7682,7 +7682,7 @@ static void detach_destroy_domains(const
+ 	for_each_cpu(i, cpu_map)
+ 		cpu_attach_domain(NULL, &def_root_domain, i);
+ 	synchronize_sched();
+-	arch_destroy_sched_domains(cpu_map, to_cpumask(tmpmask));
++	destroy_sched_domains(cpu_map, to_cpumask(tmpmask));
+ }
+ 
+ /* handle null as "default" */
+@@ -7791,7 +7791,7 @@ void partition_sched_domains(int ndoms_n
+ }
+ 
+ #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
+-static void arch_reinit_sched_domains(void)
++static void reinit_sched_domains(void)
+ {
+ 	get_online_cpus();
+ 
+@@ -7824,7 +7824,7 @@ static ssize_t sched_power_savings_store
+ 	else
+ 		sched_mc_power_savings = level;
+ 
+-	arch_reinit_sched_domains();
++	reinit_sched_domains();
+ 
+ 	return count;
+ }
+@@ -7950,7 +7950,7 @@ void __init sched_init_smp(void)
+ #endif
+ 	get_online_cpus();
+ 	mutex_lock(&sched_domains_mutex);
+-	arch_init_sched_domains(cpu_active_mask);
++	init_sched_domains(cpu_active_mask);
+ 	cpumask_andnot(non_isolated_cpus, cpu_possible_mask, cpu_isolated_map);
+ 	if (cpumask_empty(non_isolated_cpus))
+ 		cpumask_set_cpu(smp_processor_id(), non_isolated_cpus);
+
+
