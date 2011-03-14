@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab1CNKQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 06:16:33 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60778 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab1CNKQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 06:16:32 -0400
-Date: Mon, 14 Mar 2011 11:16:12 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
-Message-ID: <20110314101612.GD28960@pengutronix.de>
-References: <201102011711.31258.jeremy.kerr@canonical.com>
- <1299134429.100626.661279191478.0.gpush@pororo>
+	id S1751877Ab1CNKVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 06:21:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59253 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751433Ab1CNKVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 06:21:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,314,1297065600"; 
+   d="scan'208";a="719855979"
+Date: Mon, 14 Mar 2011 11:21:11 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Willerud <daniel.willerud@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Karl Komierowski <karl.komierowski@stericsson.com>,
+        Johan Palsson <johan.palsson@stericsson.com>,
+        Arun Murthy <arun.murthy@stericsson.com>
+Subject: Re: [PATCH 0/5] ab8500 gpadc fixes
+Message-ID: <20110314102110.GC31153@sortiz-mobl>
+References: <1299321935-6727-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1299134429.100626.661279191478.0.gpush@pororo>
+In-Reply-To: <1299321935-6727-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 02:40:29PM +0800, Jeremy Kerr wrote:
-> Hi all,
-> 
-> These patches are an attempt to allow platforms to share clock code. At
-> present, the definitions of 'struct clk' are local to platform code,
-> which makes allocating and initialising cross-platform clock sources
-> difficult, and makes it impossible to compile a single image containing
-> support for two ARM platforms with different struct clks.
-> 
-> The three patches are for the architecture-independent kernel code,
-> introducing the common clk infrastructure. The changelog for the first
-> patch includes details about the new clock definitions.
-> 
-> Many thanks to the following for their input:
->  * Benjamin Herrenschmidt <benh@kernel.crashing.org>
->  * Ben Dooks <ben-linux@fluff.org>
->  * Baruch Siach <baruch@tkos.co.il>
->  * Russell King <linux@arm.linux.org.uk>
->  * Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->  * Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
->  * Vincent Guittot <vincent.guittot@linaro.org>
->  * Sascha Hauer <s.hauer@pengutronix.de>
->  * Ryan Mallon <ryan@bluewatersys.com>
->  * Colin Cross <ccross@google.com>
->  * Jassi Brar <jassisinghbrar@gmail.com>
->  * Saravana Kannan <skannan@codeaurora.org>
+Hi Linus,
 
-Tested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On Sat, Mar 05, 2011 at 11:45:35AM +0100, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> I have broken Daniels patch apart, fixed the GPADC fetch
+> interface as agreed with Sam, added the proper authorship of
+> the calibration patch to Johan and also put a new patch from
+> Karl Komierowski to fix proper charging ADC on top.
+Thanks a lot, all 5 patches applied now.
 
-who is responsible to take this patch?  Russell?
-
-Best regards
-Uwe
+Cheers,
+Samuel.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Intel Open Source Technology Centre
+http://oss.intel.com/
