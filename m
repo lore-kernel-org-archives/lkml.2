@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1CNLGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 07:06:36 -0400
-Received: from nm23-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.224]:28650 "HELO
-	nm23-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753273Ab1CNLGd (ORCPT
+	id S1753449Ab1CNLGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 07:06:46 -0400
+Received: from nm7.bullet.mail.sp2.yahoo.com ([98.139.91.77]:23503 "HELO
+	nm7.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753423Ab1CNLGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 07:06:33 -0400
-X-Yahoo-Newman-Id: 630551.74080.bm@omp1021.mail.sp2.yahoo.com
+	Mon, 14 Mar 2011 07:06:42 -0400
+X-Yahoo-Newman-Id: 376280.92293.bm@omp1056.mail.sp2.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: HJ0mGNAVM1mrYcy3VP4IxfQhQEOo20fEJylQAbDI1UEKlxU
- 5ZU1sHylxxn4gMQqf5T0ivgR7jjPG20SAVyaIeN3WOmOrRJPqdsPLgT9LYVY
- S8oybO5IScU574yka6Lcy4v9fbpLAWhW5KZl.N1eVrbV362uOEAvo.kvn4dQ
- 3Alj7Ps_pEBYc7qlkELi4tBRFV1ugZnf5KE9SLDVtWgOcqbCDjUUXjvx54eQ
- xaBvmhu1YkLPdx.Gp3JZylhrG12qW5aCi26egNCy_WnK.5p_q_KvhIxkJ9lW
- B9YAYurAZubAHPJ7FAJcvJxFsiriFzccVkq0z7cNrSBEHoMYDlgCUokqJnUD
- V2Gn1V7jGjY5Mz2HmpAIHGdhncbKBz8luF8xTl.JHuwsLDU267fkoebDDMFZ
- 8wpTbSdMZQQ--
+X-YMail-OSG: bNB07B0VM1lCfuqKOzKR4xTM8kiTU1b7NznXFFULy96b4sZ
+ WrUqbjnN7g_Bl1P4XjFx_t6u4mmOQhd0auDNnqmoSO4m3HCNnJsXNnfYAWER
+ xkgYz.wGMdotXaajuxOj_lHplRLqHfP2VYfznKBYXaUFx2jNdd3z2Ss_HVnQ
+ 1Pnyyxjt9h3QTaSYjnWBQDS8qMFPXC2o.5qqwGGFea_g9zFqGCvJZpTMOYzs
+ GoCgtW.vxnwkN1fyd0AGVjXJi5CVVvI9SsfCLSfftO64Mnn5YJaPJHLzAOpF
+ brly1GXelquWUnOca4r9wTPDmUPkapvDYmHru_EEVqwC.WH1SFbrMincMihZ
+ 4dIM8P.VfMSP52qQE.xmQgG3So7AGqbuZgMU7ixpKWTgVXDDm14QXDVwT4yR
+ 7Qj4z2yDalyE-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -28,11 +28,10 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Douglas Gilbert <dgilbert@interlog.com>,
-        Jesper Juhl <jj@chaosbits.net>,
         "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH 02/21] target: Fix match_strdup() memory leaks
-Date: Mon, 14 Mar 2011 04:05:56 -0700
-Message-Id: <1300100775-10012-3-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 04/21] target: remove EXTRA_CFLAGS
+Date: Mon, 14 Mar 2011 04:05:58 -0700
+Message-Id: <1300100775-10012-5-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
 References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
@@ -40,178 +39,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
+From: Christoph Hellwig <hch@lst.de>
 
-match_strdup() dynamically allocates memory and it is the responsabillity
-of the caller to free that memory. The following three cases:
+Add the current directory is superflous in general, and no includes in
+drivers/scsi are needed either.
 
-drivers/target/target_core_file.c:fd_set_configfs_dev_params()
-drivers/target/target_core_iblock.c:iblock_set_configfs_dev_params()
-drivers/target/target_core_configfs.c:target_core_dev_pr_store_attr_res_aptpl_metadata()
-
-should be kfree()'ing the allocated memory once it is no longer needed.
-It also makes sure to return -ENOMEM if the memory allocation in match_strdup()
-should fail.  For target_core_configfs.c, this patch adds kfree()'s around
-Opt_initiator_fabric, Opt_initiator_node, Opt_initiator_sid, Opt_sa_res_key,
-Opt_target_fabric, and Opt_target_node for the Persistent Reservations
-Activate Persistence across Target Power Loss (APTPL=1) token parsing.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_configfs.c |   33 +++++++++++++++++++++++++++++++--
- drivers/target/target_core_file.c     |   13 ++++++++++++-
- drivers/target/target_core_iblock.c   |   13 +++++++++----
- 3 files changed, 52 insertions(+), 7 deletions(-)
+ drivers/target/Makefile |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-index caf8dc1..c9254d7 100644
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -1451,8 +1451,8 @@ static ssize_t target_core_dev_pr_store_attr_res_aptpl_metadata(
- 	size_t count)
- {
- 	struct se_device *dev;
--	unsigned char *i_fabric, *t_fabric, *i_port = NULL, *t_port = NULL;
--	unsigned char *isid = NULL;
-+	unsigned char *i_fabric = NULL, *i_port = NULL, *isid = NULL;
-+	unsigned char *t_fabric = NULL, *t_port = NULL;
- 	char *orig, *ptr, *arg_p, *opts;
- 	substring_t args[MAX_OPT_ARGS];
- 	unsigned long long tmp_ll;
-@@ -1488,9 +1488,17 @@ static ssize_t target_core_dev_pr_store_attr_res_aptpl_metadata(
- 		switch (token) {
- 		case Opt_initiator_fabric:
- 			i_fabric = match_strdup(&args[0]);
-+			if (!i_fabric) {
-+				ret = -ENOMEM;
-+				goto out;
-+			}
- 			break;
- 		case Opt_initiator_node:
- 			i_port = match_strdup(&args[0]);
-+			if (!i_port) {
-+				ret = -ENOMEM;
-+				goto out;
-+			}
- 			if (strlen(i_port) > PR_APTPL_MAX_IPORT_LEN) {
- 				printk(KERN_ERR "APTPL metadata initiator_node="
- 					" exceeds PR_APTPL_MAX_IPORT_LEN: %d\n",
-@@ -1501,6 +1509,10 @@ static ssize_t target_core_dev_pr_store_attr_res_aptpl_metadata(
- 			break;
- 		case Opt_initiator_sid:
- 			isid = match_strdup(&args[0]);
-+			if (!isid) {
-+				ret = -ENOMEM;
-+				goto out;
-+			}
- 			if (strlen(isid) > PR_REG_ISID_LEN) {
- 				printk(KERN_ERR "APTPL metadata initiator_isid"
- 					"= exceeds PR_REG_ISID_LEN: %d\n",
-@@ -1511,6 +1523,10 @@ static ssize_t target_core_dev_pr_store_attr_res_aptpl_metadata(
- 			break;
- 		case Opt_sa_res_key:
- 			arg_p = match_strdup(&args[0]);
-+			if (!arg_p) {
-+				ret = -ENOMEM;
-+				goto out;
-+			}
- 			ret = strict_strtoull(arg_p, 0, &tmp_ll);
- 			if (ret < 0) {
- 				printk(KERN_ERR "strict_strtoull() failed for"
-@@ -1547,9 +1563,17 @@ static ssize_t target_core_dev_pr_store_attr_res_aptpl_metadata(
- 		 */
- 		case Opt_target_fabric:
- 			t_fabric = match_strdup(&args[0]);
-+			if (!t_fabric) {
-+				ret = -ENOMEM;
-+				goto out;
-+			}
- 			break;
- 		case Opt_target_node:
- 			t_port = match_strdup(&args[0]);
-+			if (!t_port) {
-+				ret = -ENOMEM;
-+				goto out;
-+			}
- 			if (strlen(t_port) > PR_APTPL_MAX_TPORT_LEN) {
- 				printk(KERN_ERR "APTPL metadata target_node="
- 					" exceeds PR_APTPL_MAX_TPORT_LEN: %d\n",
-@@ -1592,6 +1616,11 @@ static ssize_t target_core_dev_pr_store_attr_res_aptpl_metadata(
- 			i_port, isid, mapped_lun, t_port, tpgt, target_lun,
- 			res_holder, all_tg_pt, type);
- out:
-+	kfree(i_fabric);
-+	kfree(i_port);
-+	kfree(isid);
-+	kfree(t_fabric);
-+	kfree(t_port);
- 	kfree(orig);
- 	return (ret == 0) ? count : ret;
- }
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 0aaca88..676a010 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -537,15 +537,26 @@ static ssize_t fd_set_configfs_dev_params(
- 		token = match_token(ptr, tokens, args);
- 		switch (token) {
- 		case Opt_fd_dev_name:
-+			arg_p = match_strdup(&args[0]);
-+			if (!arg_p) {
-+				ret = -ENOMEM;
-+				break;
-+			}
- 			snprintf(fd_dev->fd_dev_name, FD_MAX_DEV_NAME,
--					"%s", match_strdup(&args[0]));
-+					"%s", arg_p);
-+			kfree(arg_p);
- 			printk(KERN_INFO "FILEIO: Referencing Path: %s\n",
- 					fd_dev->fd_dev_name);
- 			fd_dev->fbd_flags |= FBDF_HAS_PATH;
- 			break;
- 		case Opt_fd_dev_size:
- 			arg_p = match_strdup(&args[0]);
-+			if (!arg_p) {
-+				ret = -ENOMEM;
-+				break;
-+			}
- 			ret = strict_strtoull(arg_p, 0, &fd_dev->fd_dev_size);
-+			kfree(arg_p);
- 			if (ret < 0) {
- 				printk(KERN_ERR "strict_strtoull() failed for"
- 						" fd_dev_size=\n");
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index 67f0c09..422187b 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -469,7 +469,7 @@ static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
- 					       const char *page, ssize_t count)
- {
- 	struct iblock_dev *ib_dev = se_dev->se_dev_su_ptr;
--	char *orig, *ptr, *opts;
-+	char *orig, *ptr, *arg_p, *opts;
- 	substring_t args[MAX_OPT_ARGS];
- 	int ret = 0, arg, token;
+diff --git a/drivers/target/Makefile b/drivers/target/Makefile
+index 973bb19..050ee65 100644
+--- a/drivers/target/Makefile
++++ b/drivers/target/Makefile
+@@ -1,4 +1,3 @@
+-EXTRA_CFLAGS += -I$(srctree)/drivers/target/ -I$(srctree)/drivers/scsi/
  
-@@ -492,9 +492,14 @@ static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
- 				ret = -EEXIST;
- 				goto out;
- 			}
--
--			ret = snprintf(ib_dev->ibd_udev_path, SE_UDEV_PATH_LEN,
--				"%s", match_strdup(&args[0]));
-+			arg_p = match_strdup(&args[0]);
-+			if (!arg_p) {
-+				ret = -ENOMEM;
-+				break;
-+			}
-+			snprintf(ib_dev->ibd_udev_path, SE_UDEV_PATH_LEN,
-+					"%s", arg_p);
-+			kfree(arg_p);
- 			printk(KERN_INFO "IBLOCK: Referencing UDEV path: %s\n",
- 					ib_dev->ibd_udev_path);
- 			ib_dev->ibd_flags |= IBDF_HAS_UDEV_PATH;
+ target_core_mod-y		:= target_core_configfs.o \
+ 				   target_core_device.o \
 -- 
 1.7.4.1
 
