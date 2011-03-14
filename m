@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab1CNVV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 17:21:28 -0400
-Received: from fw.wantstofly.org ([80.101.37.227]:46006 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755631Ab1CNVV0 (ORCPT
+	id S1757320Ab1CNVVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 17:21:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44232 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757309Ab1CNVVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 17:21:26 -0400
-Date: Mon, 14 Mar 2011 22:21:25 +0100
-From: Lennert Buytenhek <buytenh@secretlab.ca>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: linux-next: build failure after merge of the final tree (powerpc tree related)
-Message-ID: <20110314212125.GA9616@mail.wantstofly.org>
-References: <20110314203827.4b61818e.sfr@canb.auug.org.au> <1300135074.22236.788.camel@pasglop>
+	Mon, 14 Mar 2011 17:21:41 -0400
+Date: Mon, 14 Mar 2011 14:20:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: G@thunk.org, Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-api@vger.kernel.org, mtk.manpages@gmail.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+Message-Id: <20110314142032.b9523309.akpm@linux-foundation.org>
+In-Reply-To: <20110314211119.GC8120@thunk.org>
+References: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+	<edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+	<201103111255.44979.arnd@arndb.de>
+	<ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+	<20110311235607.GB15853@elie>
+	<9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+	<20110312021001.GA16833@elie>
+	<20110312173217.GA24981@kroah.com>
+	<1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+	<20110314131042.5a7fb32f.akpm@linux-foundation.org>
+	<20110314211119.GC8120@thunk.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300135074.22236.788.camel@pasglop>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 07:37:54AM +1100, Benjamin Herrenschmidt wrote:
+On Mon, 14 Mar 2011 17:11:19 -0400
+"Ted Ts'o" <tytso@mit.edu> wrote:
 
-> > Hi all,
+> On Mon, Mar 14, 2011 at 01:10:42PM -0700, Andrew Morton wrote:
 > > 
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> > 
-> > drivers/gpio/langwell_gpio.c: In function 'lnw_irq_handler':
-> > drivers/gpio/langwell_gpio.c:210: error: 'struct irq_desc' has no member named 'chip'
-> > drivers/gpio/langwell_gpio.c:211: error: 'struct irq_desc' has no member named 'chip'
-> > 
-> > Caused by commit 17b9f9e2653a ("powerpc: Enable
-> > GENERIC_HARDIRQS_NO_DEPRECATED") enabling
-> > CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED for powerpc without previously
-> > fixing up the above driver.
-> > 
-> > I have reverted that commit for today.
+> > There might one day be a requirement to be able to initiate a
+> > resource-management-style writeback against a whole filesystem.  When
+> > that happens, we'll regret not having added a "mode" argument to
+> > sys_syncfs().
 > 
-> Except that the above driver has nothing to do with powerpc, it's some
-> Intel Moorestown stuff...
+> I'm a bit nervous about exposing WB_SYNC_NONE to userspace, because
+> its semantics are *definitely* hard to describe.  For example, at the
+> moment if you do a WB_SYNC_NONE writeback, the writeback code will
+> clamp the amount of data written back for each inode to
+> MAX_WRITEBACK_PAGES (1024) pages.
 
-I sent this this morning:
+Wha?  It does?  When did that get broken?
 
-	http://marc.info/?l=linux-kernel&m=130009963219374&w=2
+>  Do we want to document that?
+> Probably not!  But if we don't document it, what can userspace expect?
+> 
+> If you just issue a writeback_inodes_sb(), it's not the case that it
+> will start a process that will eventually write out everything (i.e.,
+> it's not the equivalent of a non-blocking data integrity sync).  It
+> just means, "write out some stuff".
+> 
+> I could imagine userspace wanting to start a non-blocking writeout of
+> all data blocking pages, and which doesn't cause queue flush / barrier
+> requests.  (i.e., a non-blocking-non-barrier-issuing-but-otherwise-a-
+> data-integrity writeback) But that's not something that the current
+> writeback machinery can do easily, at least not today.
+
+Well.  Current implementation shortcomings don't carry a lot of weight
+when designing a permanent interface.
+
+> It wouldn't hurt to have a "flags" field which we could expand later
+> --- but that can lead to portability headaches for userspace programs
+> that don't know whether a particular kernel is going to support a
+> particular flag or not.  So it's certainly not a panacea.
+
+I don't see a need to add an arg to syncfs() really.  But we should
+demonstrate that we've thought about it ;)
+
