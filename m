@@ -1,64 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab1CNWUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 18:20:06 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:37074 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab1CNWUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 18:20:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=sm7UUGTKlcMIO7MQ1XRgut+V1fc/wbvIdegfFy91nB/KE/jBLsJHZ4hr4ZEctYpLqV
-         xZDOvytt9lZEt69UNK1Pzp9nfFwl2ydVMb19vuDiPqsigLTI9s2HJOP0YQqXc8PNNiDL
-         O9fl52ZfX82YWSAxjmDhefav3ns/sDRT3Vzfg=
-Date: Mon, 14 Mar 2011 19:19:54 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-Message-ID: <20110314221954.GE2388@ghostprotocols.net>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
- <20110314204341.GC9388@ghostprotocols.net>
- <20110314205100.GG6139@nowhere>
- <20110314210315.GC2388@ghostprotocols.net>
- <20110314212050.GH6139@nowhere>
- <20110314215603.GD2388@ghostprotocols.net>
+	id S1757391Ab1CNWWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 18:22:36 -0400
+Received: from fieldses.org ([174.143.236.118]:34404 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752663Ab1CNWWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 18:22:35 -0400
+Date: Mon, 14 Mar 2011 18:22:29 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Cc: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: wrong index used in inner loop
+Message-ID: <20110314222229.GJ25442@fieldses.org>
+References: <4D76A06A.4090405@gmail.com>
+ <20110309004955.GD15814@fieldses.org>
+ <4D79A183.8090306@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110314215603.GD2388@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D79A183.8090306@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Mar 14, 2011 at 06:56:03PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Mon, Mar 14, 2011 at 10:20:53PM +0100, Frederic Weisbecker escreveu:
-> > On Mon, Mar 14, 2011 at 06:03:15PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > But I could think of this as a way to express filters:
-
-> > > $ perf record -e instructions@irq:irq:irq_handler_entry(irq=eth0)..irq:irq_handler_exit(\1) \
-> > > 	      -e instructions \
-> > > 	netperf
-
-> > > looks quite natural for someone used to git and sed, i.e. developers :)
-
-> > Yeah indeed, I like filters defined in parenthesis after the event!
+On Fri, Mar 11, 2011 at 12:13:55PM +0800, Mi Jinlong wrote:
 > 
-> :-)
+> 
+> J. Bruce Fields:
+> > On Tue, Mar 08, 2011 at 10:32:26PM +0100, roel wrote:
+> >> Index i was already used in the outer loop
+> >>
+> >> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> >> ---
+> >>  fs/nfsd/nfs4xdr.c |    4 ++--
+> >>  1 files changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> Not 100% sure this one is needed but it looks suspicious.
+> > 
+> > Looks bad to me, thanks.
+> > 
+> > nfsd4_decode_create_session should probably really be broken up a little
+> > bit; if it wasn't so long this would have been more obvious.
+> > 
+> > I'll see if I can slip this into 2.6.38 with a couple other last-minute
+> > patches....  Otherwise, it'll be in 2.6.39.
+> > 
+> > --b.
+> > 
+> >> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+> >> index 1275b86..615f0a9 100644
+> >> --- a/fs/nfsd/nfs4xdr.c
+> >> +++ b/fs/nfsd/nfs4xdr.c
+> >> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+> >>  
+> >>  	u32 dummy;
+> >>  	char *machine_name;
+> >> -	int i;
+> >> +	int i, j;
+> >>  	int nr_secflavs;
+> >>  
+> >>  	READ_BUF(16);
+> >> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+> >>  			READ_BUF(4);
+> >>  			READ32(dummy);
+> >>  			READ_BUF(dummy * 4);
+> >> -			for (i = 0; i < dummy; ++i)
+> >> +			for (j = 0; j < dummy; ++j)
+> >>  				READ32(dummy);
+> 
+>   We must not use dummy for index here.
+>   After the first index, READ32(dummy) will change dummy!!!!
 
-Also it would be good to look at 68baa43 and think about ways to share
-code/syntax in static and dynamic probes...
+Actually, wait, this is kind of silly.  I don't see why we couldn't just
+skip the loop and do
 
-- Arnaldo
+	p += dummy;
+
+Also, your new test is still failing with a BAD_XDR error.  Well, maybe
+the test should fail--we don't really implement this yet anyway--but it
+should at least be getting past the xdr decoding.  So something else is
+still wrong.
+
+--b.
+
+> 
+>   The following patch fix this problem.
+> 
+> --
+> thanks,
+> Mi Jinlong
+> ============================================================
+> 
+> We must not use dummy for index.
+> After the first index, READ32(dummy) will change dummy!!!!
+> 
+> Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+> ---
+>  fs/nfsd/nfs4xdr.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+> index 615f0a9..8dd70d0 100644
+> --- a/fs/nfsd/nfs4xdr.c
+> +++ b/fs/nfsd/nfs4xdr.c
+> @@ -1140,7 +1140,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>  {
+>  	DECODE_HEAD;
+>  
+> -	u32 dummy;
+> +	u32 dummy, tmp;
+>  	char *machine_name;
+>  	int i, j;
+>  	int nr_secflavs;
+> @@ -1216,7 +1216,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>  			READ32(dummy);
+>  			READ_BUF(dummy * 4);
+>  			for (j = 0; j < dummy; ++j)
+> -				READ32(dummy);
+> +				READ32(tmp);
+>  			break;
+>  		case RPC_AUTH_GSS:
+>  			dprintk("RPC_AUTH_GSS callback secflavor "
+> -- 
+> 1.7.4.1
+> 
+> 
