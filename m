@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab1CNR1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 13:27:33 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63467 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab1CNR1b (ORCPT
+	id S1754630Ab1CNR3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 13:29:44 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45705 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab1CNR3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 13:27:31 -0400
+	Mon, 14 Mar 2011 13:29:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:content-type;
-        b=v/Bw9JmRgqKtaHX6nmch5fdK7MPbbENSLRkABWGw+ApVOphZGpggGMeNCxqn7BEP4m
-         2juZjxFRrAB6dEQ6SRZL0SuX9S+BXvvEyQsYCdWScI2smIHqRIqxxr7eUDQzr99C1F3+
-         HbwPW5/ZGOlQdGsnSrFMkZHQ5pPzdcufhg+xQ=
+        b=QuRxNl6zeUUUpeJUd65aYfoI9XQXn1oduDMwOR5Eh12ERLz2lsx+2f48Xws3DCWGye
+         RiliHHiTS80raajlZOP73BRxP7qwFTtbM78tutl+ZHFwokYmpZexmlUigQ6qAYPtvHLD
+         k3fyvpbwzvskG7sFFVSH0mUoAqcixP512JLP4=
 MIME-Version: 1.0
-Date: Mon, 14 Mar 2011 17:27:10 +0000
-Message-ID: <AANLkTik3qn-RVUTZp5+gTk+wB9SO_MsxySHEwE8Yzi-e@mail.gmail.com>
-Subject: [RFC][PATCH v2 00/23] (alpha) __vmalloc: add gfp flags variant of pte
+Date: Mon, 14 Mar 2011 17:29:41 +0000
+Message-ID: <AANLkTikpM6RRNoT1nPk0Jws3SKff81wJRbJUnJAi3J=3@mail.gmail.com>
+Subject: [RFC][PATCH v2 02/23] (armho) __vmalloc: add gfp flags variant of pte
  and pmd allocation
 From: Prasad Joshi <prasadjoshi124@gmail.com>
-To: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,53 +31,51 @@ __vmalloc: propagating GFP allocation flag.
 
 - adds functions to allow caller to pass the GFP flag for memory allocation
 - helps in fixing the Bug 30702 (__vmalloc(GFP_NOFS) can callback
-  file system evict_inode).
+		  file system evict_inode).
 
 Signed-off-by: Anand Mitra <mitra@kqinfotech.com>
 Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
 ---
 Chnagelog:
-arch/alpha/include/asm/pgalloc.h |   18 ++++++++++++++----
-1 files changed, 14 insertions(+), 4 deletions(-)
+arch/arm/include/asm/pgalloc.h |   11 +++++++++--
+1 files changed, 9 insertions(+), 2 deletions(-)
 ---
-diff --git a/arch/alpha/include/asm/pgalloc.h b/arch/alpha/include/asm/pgalloc.h
-index bc2a0da..d05dfc2 100644
---- a/arch/alpha/include/asm/pgalloc.h
-+++ b/arch/alpha/include/asm/pgalloc.h
-@@ -38,10 +38,15 @@ pgd_free(struct mm_struct *mm, pgd_t *pgd)
- }
-
- static inline pmd_t *
-+__pmd_alloc_one(struct mm_struct *mm, unsigned long address, gfp_t gfp_mask)
-+{
-+	return (pmd_t *)__get_free_page(gfp_mask | __GFP_ZERO);
-+}
-+
-+static inline pmd_t *
- pmd_alloc_one(struct mm_struct *mm, unsigned long address)
- {
--	pmd_t *ret = (pmd_t *)__get_free_page(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO);
--	return ret;
-+	return __pmd_alloc_one(mm, address, GFP_KERNEL | __GFP_REPEAT);
- }
-
- static inline void
-@@ -51,10 +56,15 @@ pmd_free(struct mm_struct *mm, pmd_t *pmd)
- }
-
+diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
+index 22de005..0696068 100644
+--- a/arch/arm/include/asm/pgalloc.h
++++ b/arch/arm/include/asm/pgalloc.h
+@@ -28,6 +28,7 @@
+ /*
+  * Since we have only two-level page tables, these are trivial
+  */
++#define __pmd_alloc_one(mm,addr,mask)	({ BUG(); ((pmd_t *)2); })
+ #define pmd_alloc_one(mm,addr)		({ BUG(); ((pmd_t *)2); })
+ #define pmd_free(mm, pmd)		do { } while (0)
+ #define pgd_populate(mm,pmd,pte)	BUG()
+@@ -59,17 +60,23 @@ static inline void clean_pte_table(pte_t *pte)
+  *  +------------+
+  */
  static inline pte_t *
-+__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addressi,
+-pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr)
++__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr,
 gfp_t gfp_mask)
-+{
-+	return (pte_t *)__get_free_page(gfp_mask | __GFP_ZERO);
-+}
-+
-+static inline pte_t *
- pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
  {
--	pte_t *pte = (pte_t *)__get_free_page(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO);
--	return pte;
-+	return __pte_alloc_one_kernel(mm, address, GFP_KERNEL | __GFP_REPEAT);
+ 	pte_t *pte;
+
+-	pte = (pte_t *)__get_free_page(PGALLOC_GFP);
++	pte = (pte_t *)__get_free_page(gfp_mask | __GFP_NOTRACK | __GFP_ZERO);
+ 	if (pte)
+ 		clean_pte_table(pte);
+
+ 	return pte;
  }
 
- static inline void
++static inline pte_t *
++pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr)
++{
++	return __pte_alloc_one_kernel(mm, addr, GFP_KERNEL | __GFP_REPEAT);
++}
++
+ static inline pgtable_t
+ pte_alloc_one(struct mm_struct *mm, unsigned long addr)
+ {
