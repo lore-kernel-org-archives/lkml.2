@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1CNOyy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 10:54:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51138 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab1CNOyx (ORCPT
+	id S1756348Ab1CNO41 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 10:56:27 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:62988 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab1CNO4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 10:54:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: RFC: Platform data for onboard USB assets
-Date: Mon, 14 Mar 2011 15:54:28 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: andy.green@linaro.org, Andy Green <andy@warmcat.com>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <4D79F068.2080009@linaro.org> <AANLkTi=+6cp=F1ZDiH1vFwqvseU-Punwpq99P1j-U4Q1@mail.gmail.com>
-In-Reply-To: <AANLkTi=+6cp=F1ZDiH1vFwqvseU-Punwpq99P1j-U4Q1@mail.gmail.com>
+	Mon, 14 Mar 2011 10:56:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xtPM0kp1r+bHG4fbzmY545bXaoH5DLnsyh5qa/BYOzbFcotfuFJwXF7YgpnVgnboZh
+         LBWpfr2b+cJbF3XUJwM0Re747jAhvoB46nqs8XxOTNXxvMlvCsGj8kXQgwZwb6Pj+nhF
+         lfwxybU4GIM24UNbt8sGTd1a8bsItXdXF86zI=
+Date: Mon, 14 Mar 2011 23:56:01 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v6 3/9] memcg: add dirty page accounting infrastructure
+Message-ID: <20110314145601.GE11699@barrios-desktop>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <1299869011-26152-4-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103141554.28515.arnd@arndb.de>
-X-Provags-ID: V02:K0:1gg+RXoJfupa3BkwPHyi2gwrgS/GIZFH7FZOqLxaJ/0
- i8oxYp7dU+/FtCEjBhpwrDfnBaruefoOXU00pqMjoA3Ys1rf1C
- ZjSqrnb0qs/aPOsZPRgVwgftDlIxV7dZh2de3418hWB/XCTK2z
- qJnQzzjojs0c5N3/bY/1eoliSOMJdF0rL4CqbjNKfmFP1+otg/
- QmXIqrranu8XcsCdma5qA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299869011-26152-4-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 March 2011, Grant Likely wrote:
-> On Fri, Mar 11, 2011 at 2:50 AM, Andy Green <andy@warmcat.com> wrote:
-> > Hi -
-> >
-> > platform_data is a well established way in Linux to pass configuration data
-> > up to on-board assets from a machine file like mach-xyz.c.  It's also
-> > supported to pass platform_data up to devices that are probed asynchronously
-> > from busses like i2c as well, which is very handy.
-> >
-> > However AFAIK it's not possible to bind platform_data to probed USB devices
-> > as it stands.
+On Fri, Mar 11, 2011 at 10:43:25AM -0800, Greg Thelen wrote:
+> Add memcg routines to track dirty, writeback, and unstable_NFS pages.
+> These routines are not yet used by the kernel to count such pages.
+> A later change adds kernel calls to these new routines.
 > 
-> Oh, please no.
-> 
-> platform_data is an ugly non-type-checked anonymous pointer.  If you
-> need to pass data to a driver, use something better designed.  A
-> device tree fragment would work, or provide some kind of query api.
-> platform_data is definitely the wrong approach.
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-I'd still hope that we could do without either for hotpluggable
-devices, but a device tree object fits better here, because
-we already have ways to associate the data in the device node
-with any device, not just platform devices, and the key/value
-pairs make it much more flexible than platform data.
-
-	Arnd
+-- 
+Kind regards,
+Minchan Kim
