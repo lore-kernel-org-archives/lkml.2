@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab1CNJtR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 05:49:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30854 "EHLO mga11.intel.com"
+	id S1756520Ab1CNJos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 05:44:48 -0400
+Received: from www.tglx.de ([62.245.132.106]:41788 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753075Ab1CNJtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 05:49:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,314,1297065600"; 
-   d="scan'208";a="666975788"
-Date: Mon, 14 Mar 2011 10:49:12 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
-Subject: Re: [PATCH v2 0/2] MAX8997/8966 MFD (includig PMIC) Initial Release
-Message-ID: <20110314094911.GA31153@sortiz-mobl>
-References: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1754451Ab1CNJoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 05:44:46 -0400
+Date: Mon, 14 Mar 2011 10:44:15 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: David Miller <davem@davemloft.net>, bhutchings@solarflare.com,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+        peterz@infradead.org
+Subject: Re: linux-next: build failure after merge of the net tree
+In-Reply-To: <20110314170546.af552b4e.sfr@canb.auug.org.au>
+Message-ID: <alpine.LFD.2.00.1103141043460.2787@localhost6.localdomain6>
+References: <20110314152456.b49b2693.sfr@canb.auug.org.au> <1300078778.3962.22.camel@localhost> <20110314163135.f366742e.sfr@canb.auug.org.au> <20110313.225312.193696949.davem@davemloft.net> <20110314170546.af552b4e.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Myung,
-
-On Fri, Mar 04, 2011 at 03:50:25PM +0900, MyungJoo Ham wrote:
-> MAX8997/8966 has
-> - PMIC
-> - RTC
-> - MUIC (usb switch)
-> - Flash control
-> - Haptic control
-> - Fuel Gauge (MAX17042 compatible)
-> - Battery charger control
+On Mon, 14 Mar 2011, Stephen Rothwell wrote:
+> Hi Dave,
 > 
-> This patch adds an initial driver for Maxim Semiconductor 8997/8966's
-> PMIC function.
-I applied patch #1 from thsi serie, thanks a lot.
-Please address Mark's comments for patch #2 and I'll take it as well.
+> On Sun, 13 Mar 2011 22:53:12 -0700 (PDT) David Miller <davem@davemloft.net> wrote:
+> >
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Mon, 14 Mar 2011 16:31:35 +1100
+> > 
+> > > Maybe some config option changed ...
+> > 
+> > Perhaps GENERIC_HARDIRQS_NO_DEPRECATED?
+> 
+> Yep, that has been turned on for powerpc now.  I guess you will have the
+> same problem on sparc64 of you merge the net-next and sparc trees ...
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Hmm, the tip/irq/core has the fix for that. /me wonders
