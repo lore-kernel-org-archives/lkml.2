@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab1CNKW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 06:22:56 -0400
-Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:43108 "EHLO
-	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751433Ab1CNKWz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 06:22:55 -0400
-X-AuditID: 12074424-b7b0bae000000a05-b1-4d7dec7e8e3a
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-Mime-Version: 1.0 (Apple Message framework v1082)
+	id S1752223Ab1CNKXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 06:23:07 -0400
+Received: from mga14.intel.com ([143.182.124.37]:1987 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab1CNKXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 06:23:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,314,1297065600"; 
+   d="scan'208";a="402208949"
+Date: Mon, 14 Mar 2011 11:23:02 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH 1/3] mfd: twl4030-madc: add "platform:" prefix for
+ platform modalias
+Message-ID: <20110314102301.GD31153@sortiz-mobl>
+References: <1299466949.3879.0.camel@mola>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-X-Priority: 3 (Normal)
-In-Reply-To: <0b7ab4190f781632fdb9a247f458edc2.squirrel@webmail.greenhost.nl>
-Date: Mon, 14 Mar 2011 06:22:44 -0400
-Cc: "Sage Weil" <sage@newdream.net>, "Greg KH" <greg@kroah.com>,
-        "Jonathan Nieder" <jrnieder@gmail.com>,
-        "Arnd Bergmann" <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org,
-        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
-        l@jasper.es
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BA67B1FD-F3B2-463E-9E09-FAAB01BFE479@mit.edu>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net> <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net> <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl> <201103111255.44979.arnd@arndb.de> <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl> <20110311235607.GB15853@elie> <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl> <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com> <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl> <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net> <0b7ab4190f781632fdb9a247f458edc2.squirrel@webmail.greenhost.nl>
-To: Indan Zupancic <indan@nul.nu>
-X-Mailer: Apple Mail (2.1082)
-X-Brightmail-Tracker: AAAAAA==
+Content-Disposition: inline
+In-Reply-To: <1299466949.3879.0.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Axel,
 
-On Mar 14, 2011, at 5:27 AM, Indan Zupancic wrote:
+On Mon, Mar 07, 2011 at 11:02:29AM +0800, Axel Lin wrote:
+> Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+> with "platform:"), the platform modalias is prefixed with "platform:".
+Patch applied, thanks a bunch.
 
-> 
-> Your new syncfs also operates on files, it's only the name of sync_file_range
-> which is not very fitting. Other than that, syncing files in weird, nonstandard
-> ways is what it does and in that sense it's a good place for syncfs functionality.
+Cheers,
+Samuel.
 
-It operates on a file system.  It takes a file descriptor as an argument.  (Much
-like the statfs(2) system call.)  There's a difference. 
-
-- Ted
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
