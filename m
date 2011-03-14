@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1CNMrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 08:47:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39597 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791Ab1CNMrf convert rfc822-to-8bit (ORCPT
+	id S1755791Ab1CNMvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 08:51:10 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48362 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755639Ab1CNMvH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 08:47:35 -0400
-Subject: Re: [PATCH] SUNRPC: svc_register error overwritten in next iteration
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <4D7B74C7.7060506@gmail.com>
-Date: Mon, 14 Mar 2011 08:47:18 -0400
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
+	Mon, 14 Mar 2011 08:51:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=Y2ERvGDK1JxYgHUtjB0TeYVr90rM7yyulwtmU5KN937zdSpzpfn0A6Aw3M0N6AvxGO
+         nRpho1VCPFWaJeNPhoq0oVc4lX66VSoOKpztB6oFSwt6wX50Ilh5x1+ayEs5niEV4ndZ
+         VqZe/9ScupYDFCMWxEP9bb6GrYSj3PCLQ6Pno=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <4D7E166C0200007800036451@vpn.id2.novell.com>
+References: <AANLkTinDTyupNgZR-0izCWrpwOnE1wEcubn+M3o=Mgy2@mail.gmail.com>
+	<4D7E095802000078000363D5@vpn.id2.novell.com>
+	<AANLkTikUKE4xzf-NJtK3vMCQmNEYiAXZzi2vMZs9Zy4W@mail.gmail.com>
+	<AANLkTimmi7A6cXo8BCHWtBDmauZD4_-dNjThpn1J9DkW@mail.gmail.com>
+	<4D7E166C0200007800036451@vpn.id2.novell.com>
+Date: Mon, 14 Mar 2011 13:51:05 +0100
+Message-ID: <AANLkTikkWC47U_n--zWq+B-V0zPW+p85WLtPRczEdkNR@mail.gmail.com>
+Subject: Re: PATCH: Add --size-check=[error|warning]
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Ingo Molnar <mingo@elte.hu>, amodra@gmail.com,
+        "H.J. Lu" <hjl.tools@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        binutils <binutils@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <F864C699-63D9-46EB-998F-A783038A7356@oracle.com>
-References: <4D7B74C7.7060506@gmail.com>
-To: roel <roel.kluin@gmail.com>
-X-Mailer: Apple Mail (2.1082)
-X-Source-IP: acsmt357.oracle.com [141.146.40.157]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D7E0E59.012B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 14, 2011 at 1:21 PM, Jan Beulich <JBeulich@novell.com> wrote:
+>>>> On 14.03.11 at 12:52, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>> On Mon, Mar 14, 2011 at 12:38 PM, Sedat Dilek
+>> <sedat.dilek@googlemail.com> wrote:
+>>> [ Changing Alan's Email to valid <amodra@gmail.com> in CC ]
+>>>
+>>> On Mon, Mar 14, 2011 at 12:26 PM, Jan Beulich <JBeulich@novell.com> wrote:
+>>>>>>> On 14.03.11 at 12:02, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>>> [...]
+>>>>> [2] Where can someone set a "global behaviour" (hardcoded options) for
+>>>>> his/her assembler in the kernel's build-system (speaking of
+>>>>> "--size-check=[error|warning]")?
+>>>>
+>>>> Nowhere, selecting behavior is possible only via the command line.
+>>>>
+>>>
+>>> Via command-line, something like this would do it?
+>>>
+>>>     $ export AS="/usr/bin/as --size-check=warning
+>>> [...]
+>
+> No - $(AS) isn't being used to translate .S files, $(CC) is being used
+> instead. That's why I pointed at the necessary -B option (so that
+> the compiler would be able to locate the wrapper H.J. suggested).
+>
 
-On Mar 12, 2011, at 8:27 AM, roel wrote:
+OK, now I am enlightened in things of -B option.
+Anyway, can I see the correct command line to use?
+(OMG, I am glad this is not the $500.000 question @ "Who Wants to Be a
+Millionaire?" quiz show. Jan wanna be my telephone joker :-)?)
 
-> The break is in the inner loop, the svc_register() error is overwritten
-> in the next iteration. Only the error in the last iteration is returned.
-> 
-> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> ---
-> net/sunrpc/svc.c |    2 ++
-> 1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> Is this needed?
+>> By looking through the binutils source-code, I have seen ASFLAGS.
+>>
+>>      $ ASFLAGS="--size-check=warning" ; export ASFLAGS
+>
+> Where did you find that? All places where I see references to this
+> variable are in the testsuite.
+>
+> Jan
+>
 
-Maybe.  Did you encounter a problem here?
+WildWildWeb, IIRC I saw ASFLAGS used in a Gentoo package and AS in
+Cross-LFS/binutils build instructions.
 
-> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> index 08e05a8..5fd08c0 100644
-> --- a/net/sunrpc/svc.c
-> +++ b/net/sunrpc/svc.c
-> @@ -889,6 +889,8 @@ int svc_register(const struct svc_serv *serv, const int family,
-> 			if (error < 0)
-> 				break;
-> 		}
-> +		if (error < 0)
-> +			break;
-> 	}
-> 
-> 	return error;
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
-
+- Sedat -
