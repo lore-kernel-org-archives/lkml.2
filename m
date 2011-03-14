@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab1CNNOa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 09:14:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36686 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab1CNNO3 (ORCPT
+	id S1755201Ab1CNNQa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 09:16:30 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:34350 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753535Ab1CNNQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 09:14:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=erKRUZGBcGgtYJkjTbACz0pxyUyX8kdaM2VVErPV8BGwD7sXchaSG9X7d7U3LJ2lcK
-         vySKtQbxAuG12pmwh9QRSQDw6DDUnbObZ7yGW9ucwRKph1gN/dzDNgi6Sj0nywJRVhPt
-         ALA280ySWSxaNioX0Miv6omeuaryzEP+4BTGo=
-Subject: Re: kernel 2.6.37 : oops in cleanup_once
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yann Dupont <Yann.Dupont@univ-nantes.fr>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <4D7DF1A3.6020501@univ-nantes.fr>
-References: <4D491B8D.1000107@univ-nantes.fr>
-	 <1296643972.20445.9.camel@edumazet-laptop>
-	 <1296645887.20445.11.camel@edumazet-laptop>
-	 <4D495765.4090806@univ-nantes.fr>
-	 <1296658407.20445.19.camel@edumazet-laptop>
-	 <4D49726C.6020103@univ-nantes.fr>
-	 <1296659336.20445.22.camel@edumazet-laptop>
-	 <4D7DF1A3.6020501@univ-nantes.fr>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Mar 2011 14:14:24 +0100
-Message-ID: <1300108464.3423.1.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 14 Mar 2011 09:16:27 -0400
+Cc: Jan Beulich <JBeulich@novell.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        binutils@sourceware.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Date: Mon, 14 Mar 2011 14:16:23 +0100
+From: "Ralf Wildenhues" <Ralf.Wildenhues@gmx.de>
+In-Reply-To: <20110314122342.GA26825@elte.hu>
+Message-ID: <20110314131623.119020@gmx.net>
+MIME-Version: 1.0
+Organization: Institute for Numerical Simulation, University of Bonn
+References: <20110311165802.GA3508@intel.com>
+ <4D7A64670200007800035F4C@vpn.id2.novell.com>
+ <AANLkTikG8wa1Em0bEUddbYpYs2TzFFTDb95qWFJ3xSbv@mail.gmail.com>
+ <4D7DE39302000078000362E6@vpn.id2.novell.com>
+ <20110314095534.GB18058@elte.hu>
+ <20110314104131.GG6275@bubble.grove.modra.org> <20110314122342.GA26825@elte.hu>
+Subject: git bisect plus fixes (was: PATCH: Add --size-check=[error|warning])
+To: Ingo Molnar <mingo@elte.hu>, git@vger.kernel.org
+X-Authenticated: #13673931
+X-Flags: 0001
+X-Mailer: WWW-Mail 6100 (Global Message Exchange)
+X-Mutt-Fcc: =git
+X-Mutt-References: <20110314122342.GA26825@elte.hu>
+X-Priority: 3
+X-Provags-ID: V01U2FsdGVkX1+86LdEcsC83AfpL64lSuTjzb+WnFcD5/aFJg5ZfI
+ Tbw8HrecaezDupFW31Ot3CowzX5X5aYFk+/g== 
+X-GMX-UID: RnkVJTd7TlI8TqPAp2hrBBZOU2poZZne
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 14 mars 2011 à 11:44 +0100, Yann Dupont a écrit :
-> Le 02/02/2011 16:08, Eric Dumazet a écrit :
-> 
-> 
-> > I suspect a mem corruption from another layer (not inetpeer)
-> >
-> > Unfortunately many kmem caches share the "64 bytes" cache.
-> >
-> > Could you please add "slub_nomerge" on your boot command ?
-> >
-> ...
-> 
-> >
-> >> -Is there a very severe impact on performance ?
-> >>
-> > not at all
-> >
-> Maybe there is an impact after all : since then, we don't have problems 
-> anymore !
-> 
-> linkwood:~# uptime
->   11:42:03 up 39 days, 17:08,  3 users,  load average: 0.01, 0.03, 0.05
-> 
-> So... could slub_nomerge hide or simply avoid the problem ?
-> Or are we just lucky this time ?
-> 
-> 
+[ adding the git list; this is
+  http://thread.gmane.org/gmane.comp.gnu.binutils/52601/focus=1112779 ]
 
-I would say you are lucky ;)
+Hello,
 
-Not all memory corruptions are noticed. Sometimes it touch unused parts
-of memory, or some parts with no critical content.
+* Ingo Molnar wrote on Mon, Mar 14, 2011 at 01:23:42PM CET:
+> Also, i hope you are not suggesting to break projects just because
+> they are not important to you personally? The fix is exceedingly
+> simple to do for the binutils project - and impossible to do for the
+> kernel project (because during bisection - which is a very powerful
+> debugging tool - older versions of the source get checked out).
 
+FWIW, I don't have an opinion on this particular binutils issue, but
+it would be very helpful if 'git bisect' made it easy to denote
+"when going back, you might also need some of these changes".
+(I'd just use a patch -p1 with a here-file in the bisect script, but
+that might not be enough for all practical use cases.)
 
+This issue has come up several times with high-profile issues.
 
+Thanks,
+Ralf
