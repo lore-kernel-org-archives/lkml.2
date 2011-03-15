@@ -1,79 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758262Ab1COSVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 14:21:09 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:46274 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753210Ab1COSVF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 14:21:05 -0400
-Subject: [PATCH] Avoid indefinite wait in smp_call_function_many() if
- cpumask is modified
-To: linux-kernel@vger.kernel.org
-From: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Saeed Bishara <saeed.bishara@gmail.com>,
-        Jens Axboe <jens.axboe@oracle.com>
-Date: Tue, 15 Mar 2011 18:20:56 +0000
-Message-ID: <20110315181941.26948.65323.stgit@e102109-lin.cambridge.arm.com>
-User-Agent: StGit/0.15-106-g622f
+	id S1758306Ab1COSbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 14:31:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2790 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750734Ab1COSbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 14:31:46 -0400
+Date: Tue, 15 Mar 2011 14:31:25 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Justin TerAvest <teravest@google.com>
+Cc: m-ikeda@ds.jp.nec.com, jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        ryov@valinux.co.jp, taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+        righi.andrea@gmail.com, guijianfeng@cn.fujitsu.com,
+        balbir@linux.vnet.ibm.com, ctalbott@google.com, nauman@google.com,
+        mrubin@google.com
+Subject: Re: [RFC] [PATCH 0/6] Provide cgroup isolation for buffered writes.
+Message-ID: <20110315183125.GA5740@redhat.com>
+References: <1299619256-12661-1-git-send-email-teravest@google.com>
+ <20110308224325.GK27455@redhat.com>
+ <20110308225059.GL27455@redhat.com>
+ <AANLkTinpLiFM2yoMONQYekSd4L1BgzHSUa6F+QGbW8Gr@mail.gmail.com>
+ <20110311024732.GB11710@redhat.com>
+ <AANLkTimP38a7i2vvUGj6bf+vkw9904SA=buZAm+85-7=@mail.gmail.com>
+ <20110311163927.GA4104@redhat.com>
+ <AANLkTik74kLnp2x9wuU-e7n8W0GzYTS=0OtJNW2OCzP8@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 15 Mar 2011 18:20:57.0205 (UTC) FILETIME=[BA861250:01CBE33D]
-X-MC-Unique: 111031518205900801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik74kLnp2x9wuU-e7n8W0GzYTS=0OtJNW2OCzP8@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM processors (and not only) with software broadcasting of the TLB
-maintenance operations, smp_call_function_many() is given a
-mm_cpumask(mm) as argument. This cpumask may be modified (bits cleared)
-during the smp_call_function_many() execution as a result of other
-events like ASID roll-over.
+On Tue, Mar 15, 2011 at 09:41:50AM -0700, Justin TerAvest wrote:
+> On Fri, Mar 11, 2011 at 8:39 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Fri, Mar 11, 2011 at 08:07:17AM -0800, Justin TerAvest wrote:
+> >> On Thu, Mar 10, 2011 at 6:47 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> > On Wed, Mar 09, 2011 at 10:04:11AM -0800, Justin TerAvest wrote:
+> >> >> On Tue, Mar 8, 2011 at 2:50 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> >> > On Tue, Mar 08, 2011 at 05:43:25PM -0500, Vivek Goyal wrote:
+> >> >> >> On Tue, Mar 08, 2011 at 01:20:50PM -0800, Justin TerAvest wrote:
+> >> >> >> > This patchset adds tracking to the page_cgroup structure for which cgroup has
+> >> >> >> > dirtied a page, and uses that information to provide isolation between
+> >> >> >> > cgroups performing writeback.
+> >> >> >> >
+> >> >> >>
+> >> >> >> Justin,
+> >> >> >>
+> >> >> >> So if somebody is trying to isolate a workload which does bunch of READS
+> >> >> >> and lots of buffered WRITES, this patchset should help in the sense that
+> >> >> >> all the heavy WRITES can be put into a separate cgroup of low weight?
+> >> >> >>
+> >> >> >> Other application which are primarily doing READS, direct WRITES or little
+> >> >> >> bit of buffered WRITES should still get good latencies if heavy writer
+> >> >> >> is isolated in a separate group?
+> >> >> >>
+> >> >> >> If yes, then this piece standalone can make sense. And once the other
+> >> >> >> piece/patches of memory cgroup dirty ratio and cgroup aware buffered
+> >> >> >> writeout come in, then one will be able to differentiate buffered writes
+> >> >> >> of different groups.
+> >> >> >
+> >> >> > Thinking more about it, currently anyway SYNC preempts the ASYNC. So the
+> >> >> > question would be will it help me enable get better isolation latencies
+> >> >> > of READS agains buffered WRITES?
+> >> >>
+> >> >> Ah! Sorry, I left out a patch that disables cross-group preemption.
+> >> >> I'll add that to the patchset and email out v2 soon.
+> >> >
+> >> > Well, what I was referring to that even in current code sync preempts
+> >> > all async in CFQ. So it looks like this patchset will not help get
+> >> > better latencies in presence of WRITES?
+> >>
+> >> Hi Vivek,
+> >>
+> >> I should have been more clear. I forgot to include a patch that
+> >> changes the behavior of that preemption. I haven't mailed out v2 yet
+> >> because I was also writing a change to put the css_id in pc->flags
+> >> instead of its own field.
+> >>
+> >> The preemption change would look like:
+> >>
+> >>     Previously, a sync queue in can preempt an async queue in another
+> >>     cgroup. This changes that behavior to disallow such preemption.
+> >>
+> >> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> >> index ab7a216..0494c0c 100644
+> >> --- a/block/cfq-iosched.c
+> >> +++ b/block/cfq-iosched.c
+> >> @@ -3390,6 +3390,9 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue
+> >>         if (!cfqq)
+> >>                 return false;
+> >>
+> >> +       if (new_cfqq->cfqg != cfqq->cfqg)
+> >> +               return false;
+> >> +
+> >>         if (cfq_class_idle(new_cfqq))
+> >>                 return false;
+> >>
+> >> @@ -3409,9 +3412,6 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue
+> >>         if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
+> >>                 return true;
+> >>
+> >> -       if (new_cfqq->cfqg != cfqq->cfqg)
+> >> -               return false;
+> >>
+> >> I will include the test results that show that isolation is also
+> >> improved between a reader and a buffered writer.
+> >>
+> >
+> > Justin,
+> >
+> > Right now all the async queues go in one cgroup and that is root cgroup.
+> > So it is perfectly fine to let sync preempt async.
+> >
+> > I will be interested in seeing the results. But do you have a theoritical
+> > explanation also that why with this patch set we will get better isolation
+> > between READS and WRITES?
+> 
+> Hi Vivek,
+> 
+> Some of the change is probably because the patch set also changes
+> preemption semantics. Because now a group will be charged for the
+> buffered WRITES it is causing, it will give less time than before to a
+> task that is doing lots of buffered writes. I feel like I am still not
+> understanding something you are saying, but it will probably make more
+> sense once I have supporting data.
+> 
+> >
+> > Especially after following patch from Shaohua Li.
+> >
+> > commit f8ae6e3eb8251be32c6e913393d9f8d9e0609489
+> > Author: Shaohua Li <shaohua.li@intel.com>
+> > Date:   Fri Jan 14 08:41:02 2011 +0100
+> >
+> >    block cfq: make queue preempt work for queues from different workload
+> >
+> >
+> > This patch will make sure that sync always preempt async. So I am not
+> > able to understand that how this patch series provides better latencies
+> > for READS in presence of WRITES.
+> 
+> I have primarily been measuring isolation between READS and WRITES. Do
+> you have any tools you'd recommend for getting data on when latencies
+> are better?
 
-smp_call_function_many() checks the mask for CPUs to call but there is a
-small window between the last check and the mask copying to
-data->cpumask when the given mask may be modified. If the mask is reset
-to the current CPU only, csd_lock_wait() at the end of the function
-would wait indefinitely. Similar scenario could happen if a CPU goes
-offline in this window.
+I like fio. Just launch bunch of random readers and start few writebacks
+and notice max completion latency of reads. We can compare the results
+with Jen's tree vs your changes on top.
 
-This patch adds an additional check for data->refs in
-smp_call_function_many() to avoid waiting indefinitely if there are no
-CPUs to call.
+Keep all READS and WRITES in root group (without your patches). With your
+patches move WRITES in a separate cgroup and see if you can get better
+latencies for READS. So this is WRITES being root group vs WRITES being
+in a separate cgroup of low weight.
 
-Reported-by: Saeed Bishara <saeed.bishara@gmail.com>
-Tested-by: Saeed Bishara <saeed.bishara@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jens Axboe <jens.axboe@oracle.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
-
-An alternative to this patch would be to find the
-smp_call_function_many() calling sites and do a cpumask_copy() so that
-the mask passed is guaranteed to remain unmodified. But I prefer the
-current patch as it is much simpler.
-
- kernel/smp.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 9910744..a79454f 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -499,6 +499,10 @@ void smp_call_function_many(const struct cpumask *mask,
- 	smp_wmb();
- 
- 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
-+	if (unlikely(!atomic_read(&data->refs))) {
-+		csd_unlock(&data->csd);
-+		return;
-+	}
- 
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
-
-
+Thanks
+Vivek
