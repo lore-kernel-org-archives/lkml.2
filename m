@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147Ab1COQMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 12:12:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54211 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304Ab1COQMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 12:12:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UnV00RqWRn+l3dU4Cmp69y/tRp/NwFTDaU56sVL+hJu4Hwo8XSzm1HH2Cjw59SflDZ
-         O+InFSx8mSWJVdG25tsxmPZSlUCdTSkKfRmQFe6bKnG8s7z9Kh6eErHLxQg3aTEgWNuI
-         scLMYw0fSljzhzOIkfNdcrZEhltOEaOiXE+W4=
-Date: Tue, 15 Mar 2011 19:08:06 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Greg KH <greg@kroah.com>, security@kernel.org,
-        acpi4asus-user@lists.sourceforge.net, linux-scsi@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        open-iscsi@googlegroups.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [Security] [PATCH 00/20] world-writable files in sysfs and
- debugfs
-Message-ID: <20110315160804.GA3380@albatros>
-References: <cover.1296818921.git.segoon@openwall.com>
- <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
- <1300155965.5665.15.camel@mulgrave.site>
- <20110315030956.GA2234@kroah.com>
- <1300189828.4017.2.camel@mulgrave.site>
+	id S1758168Ab1COQNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:13:09 -0400
+Received: from fieldses.org ([174.143.236.118]:36745 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758140Ab1COQNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 12:13:08 -0400
+Date: Tue, 15 Mar 2011 12:13:01 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] SUNRPC: svc_register error overwritten in next
+ iteration
+Message-ID: <20110315161301.GA32635@fieldses.org>
+References: <4D7B74C7.7060506@gmail.com>
+ <20110314223645.GL25442@fieldses.org>
+ <13D041DB-A26D-4EC1-A585-7DBA266CF18A@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300189828.4017.2.camel@mulgrave.site>
+In-Reply-To: <13D041DB-A26D-4EC1-A585-7DBA266CF18A@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 07:50 -0400, James Bottomley wrote:
->      1. Did anyone actually check for capabilities before assuming world
->         writeable files were wrong?
+On Tue, Mar 15, 2011 at 11:43:32AM -0400, Chuck Lever wrote:
+> 
+> On Mar 14, 2011, at 6:36 PM, J. Bruce Fields wrote:
+> 
+> > On Sat, Mar 12, 2011 at 02:27:35PM +0100, roel wrote:
+> >> The break is in the inner loop, the svc_register() error is overwritten
+> >> in the next iteration. Only the error in the last iteration is returned.
+> >> 
+> >> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> >> ---
+> >> net/sunrpc/svc.c |    2 ++
+> >> 1 files changed, 2 insertions(+), 0 deletions(-)
+> >> 
+> >> Is this needed?
+> >> 
+> >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+> >> index 08e05a8..5fd08c0 100644
+> >> --- a/net/sunrpc/svc.c
+> >> +++ b/net/sunrpc/svc.c
+> >> @@ -889,6 +889,8 @@ int svc_register(const struct svc_serv *serv, const int family,
+> >> 			if (error < 0)
+> >> 				break;
+> > 
+> > May as well just "goto out" or "return error" here?
+> > 
+> > But: aren't we missing some cleanup?  If we succesfully register one
+> > program then fail at a second one, don't we need to unregister the
+> > first?
+> 
+> Right.  I don't understand what is the intended effect here (of the original code):  Best effort registration, or "all or none"?
 
-I didn't check all these files as I haven't got these hardware :-)  But
-as I can "chmod a+w" all sysfs files on my machine and they all become
-sensible to nonroot writes, I suppose there is nothing preventing
-nonroot users from writing to these buggy sysfs files.  As you can see,
-there are no capable() checks in these drivers in open() or write().
+The current code was failing iff the last registration returns an error.
+We list the nfs program before the acl program in this list, so nfsd
+registration was failing iff the acl program failed, which makes no
+sense whatsoever.
 
->      2. Even if there aren't any capabilities checks in the implementing
->         routines, should there be (are we going the separated
->         capabilities route vs the monolithic root route)?
+I think "all or none" would be cleanest.
 
-IMO, In any case old good DAC security model must not be obsoleted just
-because someone thinks that MAC or anything else is more convenient for
-him.  If sysfs is implemented via filesystem then it must support POSIX
-permissions semantic.  MAC is very good in _some_ cases, but not instead
-of DAC.
+If people start complaining that they don't want to run rpcbind/portmap
+then we could give them some way of requesting that instead of just
+depending on allowing the registration to fail.
 
-Thanks,
+For cleanup, we can just unregister everything, right?  (No harm in
+possibly unregistering something who's registration just failed?)
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+--b.
