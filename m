@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab1COWzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 18:55:49 -0400
-Received: from kroah.org ([198.145.64.141]:48548 "EHLO coco.kroah.org"
+	id S1756038Ab1COW4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 18:56:13 -0400
+Received: from shutemov.name ([188.40.19.243]:49807 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754653Ab1COWzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 18:55:43 -0400
-Date: Tue, 15 Mar 2011 15:51:09 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Mike Sterling <Mike.Sterling@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Subject: Re: [PATCH 05/12] Staging: hv: Get rid of the forward declaration
- for vmbus_uevent
-Message-ID: <20110315225109.GA16783@kroah.com>
-References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
- <1300226624-27004-1-git-send-email-kys@microsoft.com>
- <1300226624-27004-2-git-send-email-kys@microsoft.com>
- <1300226624-27004-3-git-send-email-kys@microsoft.com>
- <1300226624-27004-4-git-send-email-kys@microsoft.com>
- <1300226624-27004-5-git-send-email-kys@microsoft.com>
- <1300226624-27004-6-git-send-email-kys@microsoft.com>
- <20110315222246.GA2339@kroah.com>
- <6E21E5352C11B742B20C142EB499E048019AB1@TK5EX14MBXC128.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E048019AB1@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754648Ab1COWx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 18:53:29 -0400
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: linux-kernel@vger.kernel.org
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Tejun Heo <tj@kernel.org>,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH 07/13] vmlfb: use list_move() instead of list_del()/list_add() combination
+Date: Wed, 16 Mar 2011 00:53:19 +0200
+Message-Id: <1300229605-14499-7-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300229605-14499-1-git-send-email-kirill@shutemov.name>
+References: <1300229605-14499-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 10:39:07PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Tuesday, March 15, 2011 6:23 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Mike
-> > Sterling; Abhishek Kane (Mindtree Consulting PVT LTD)
-> > Subject: Re: [PATCH 05/12] Staging: hv: Get rid of the forward declaration for
-> > vmbus_uevent
-> > 
-> > On Tue, Mar 15, 2011 at 03:03:37PM -0700, K. Y. Srinivasan wrote:
-> > > Get rid of the forward declaration of vmbus_uevent by moving
-> > > the code around.
-> > 
-> > There are 2 05/12 patches and they are different.
-> Sorry about that Greg; I had an incorrect commit message that I fixed,
-> but forgot to delete that patch that was generated with the 
-> incorrect commit message. Loose the patch that has the subject line:
-> 
-> [PATCH 05/12] Get rid of the forward declaration for vmbus_uevent
-> 
-> You want to keep the one that has the following subject line:
-> 
-> [PATCH 05/12] Staging: hv: Get rid of the forward declaration for vmbus_uevent
-> 
-> I could resend, if you prefer.
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: linux-fbdev@vger.kernel.org
+---
+ drivers/video/vermilion/vermilion.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-No I got it, that's fine.
+diff --git a/drivers/video/vermilion/vermilion.c b/drivers/video/vermilion/vermilion.c
+index 931a567..970e43d 100644
+--- a/drivers/video/vermilion/vermilion.c
++++ b/drivers/video/vermilion/vermilion.c
+@@ -891,8 +891,7 @@ static int vmlfb_set_par(struct fb_info *info)
+ 	int ret;
+ 
+ 	mutex_lock(&vml_mutex);
+-	list_del(&vinfo->head);
+-	list_add(&vinfo->head, (subsys) ? &global_has_mode : &global_no_mode);
++	list_move(&vinfo->head, (subsys) ? &global_has_mode : &global_no_mode);
+ 	ret = vmlfb_set_par_locked(vinfo);
+ 
+ 	mutex_unlock(&vml_mutex);
+-- 
+1.7.4.1
 
-thanks,
-
-greg k-h
