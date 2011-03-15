@@ -1,33 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab1CONzj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 09:55:39 -0400
-Received: from lo.gmane.org ([80.91.229.12]:36441 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757384Ab1CONzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 09:55:38 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH][rfc] Use int as return type of main in
- arch/x86/boot/main.c
-Date: Tue, 15 Mar 2011 13:55:26 +0000 (UTC)
-Message-ID: <ilnr4d$rjj$3@dough.gmane.org>
-References: <alpine.LNX.2.00.1103132257430.9985@swampdragon.chaosbits.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 122.232.152.135
-User-Agent: Pan/0.133 (House of Butterflies)
+	id S1757897Ab1CON6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 09:58:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58763 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396Ab1CON6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 09:58:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device driver into misc
+Date: Tue, 15 Mar 2011 14:58:31 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        mems applications <mems.applications@st.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "carmine.iascone@st.com" <carmine.iascone@st.com>,
+        "matteo.dameno@st.com" <matteo.dameno@st.com>,
+        "rubini@ipvvis.unipv.it" <rubini@cvml.unipv.it>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com> <201103151024.26436.arnd@arndb.de> <4D7F4DBA.1060502@cam.ac.uk>
+In-Reply-To: <4D7F4DBA.1060502@cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103151458.31390.arnd@arndb.de>
+X-Provags-ID: V02:K0:51dIK852cQH4jIuTsdX8GNhGsX23/iWZH1IjqNUYnGi
+ H/HfJWse6I3Kn+4LqAV5Jyk1z65aYzK0lC6TMbRAA5khvBNSiD
+ IpPPvyAjQ7J4I9XCuUJfOmTFtLPxtOBvUb1r3X3t81JqoQt3P0
+ YYOFXVM4Z8tkCWC/mSOE7VDMSRmTuYbwir1rcvuAbTA/ijKzru
+ Efu5kcushLwgFzo1VB8PQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Mar 2011 23:00:09 +0100, Jesper Juhl wrote:
+On Tuesday 15 March 2011, Jonathan Cameron wrote:
+> Interfaces (well sysfs ones anyway) is an area we have hammered pretty hard.
+> Arnd, if I you do have time to look at anything, take a look at the abi docs
+> in drivers/staging/iio/Documentation/ (mainly sysfs-bus-iio).
+ 
+Ok, I'll have a look.
 
-> I believe the return type of main should always be 'int'.
-> 
-
-In user-space, yes, but this is not true in kernel space especially here.
-
+	Arnd
