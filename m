@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab1COQNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 12:13:09 -0400
-Received: from fieldses.org ([174.143.236.118]:36745 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758140Ab1COQNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 12:13:08 -0400
-Date: Tue, 15 Mar 2011 12:13:01 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] SUNRPC: svc_register error overwritten in next
- iteration
-Message-ID: <20110315161301.GA32635@fieldses.org>
-References: <4D7B74C7.7060506@gmail.com>
- <20110314223645.GL25442@fieldses.org>
- <13D041DB-A26D-4EC1-A585-7DBA266CF18A@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13D041DB-A26D-4EC1-A585-7DBA266CF18A@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758173Ab1COQOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:14:17 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:38495 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758140Ab1COQOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 12:14:16 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=EKHBZt3Z1EtuWiycwJscLix6fic9YeGcPy9WntCxJ/AWjK7mOmnKDwW7biQc8wmM8TdKzr/lNbCdAdYFttvmdAv0AOxqCDeyczV+NE8rrKNcb1fgnf8gH5Hq2ykC/C5M;
+Date: Tue, 15 Mar 2011 09:14:12 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Aneesh Bhasin <contact.aneesh@gmail.com>
+Cc: linux-newbie <linux-newbie@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: smap output - unnamed entries and heap
+Message-Id: <20110315091412.de6eb63c.rdunlap@xenotime.net>
+In-Reply-To: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com>
+References: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 11:43:32AM -0400, Chuck Lever wrote:
+On Tue, 15 Mar 2011 14:31:50 +0530 Aneesh Bhasin wrote:
+
+> Hi All,
 > 
-> On Mar 14, 2011, at 6:36 PM, J. Bruce Fields wrote:
+> My apologies if this is not the right place for these type of
+> questions - I do not know of a better place to ask this.
 > 
-> > On Sat, Mar 12, 2011 at 02:27:35PM +0100, roel wrote:
-> >> The break is in the inner loop, the svc_register() error is overwritten
-> >> in the next iteration. Only the error in the last iteration is returned.
-> >> 
-> >> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> >> ---
-> >> net/sunrpc/svc.c |    2 ++
-> >> 1 files changed, 2 insertions(+), 0 deletions(-)
-> >> 
-> >> Is this needed?
-> >> 
-> >> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> >> index 08e05a8..5fd08c0 100644
-> >> --- a/net/sunrpc/svc.c
-> >> +++ b/net/sunrpc/svc.c
-> >> @@ -889,6 +889,8 @@ int svc_register(const struct svc_serv *serv, const int family,
-> >> 			if (error < 0)
-> >> 				break;
-> > 
-> > May as well just "goto out" or "return error" here?
-> > 
-> > But: aren't we missing some cleanup?  If we succesfully register one
-> > program then fail at a second one, don't we need to unregister the
-> > first?
+> I am trying to take out some memory figures from the /proc/<pid>/smaps
+> interface (linux v2.6.35). However, I could not find what do the
+> entries that have no name associated to them (no library path or
+> binary path with these entries) mean. So, I wrote a test C program
+> that allocates 100MB of memory (using malloc) and then writes to it in
+> chunks of 10MB. I could see that the 'Size' and 'RSS' of one of the
+> unnamed entries was increasing in accordance with the code, but there
+> were several other such unnamed sections too - is there a way to know
+> what and where do they come from.
 > 
-> Right.  I don't understand what is the intended effect here (of the original code):  Best effort registration, or "all or none"?
+> Also, I could see that for some process the smap interface was showing
+> a '[heap]' entry but not for all - e.g. for my above test case, there
+> was no '[heap]' entry, although I assumed the malloc should have
+> reflected in the [heap]. Can someone please tell me (or point me in
+> the right direction) why is heap entry there only for some processes ?
+> 
+> Thanks in advance for any help..
 
-The current code was failing iff the last registration returns an error.
-We list the nfs program before the acl program in this list, so nfsd
-registration was failing iff the acl program failed, which makes no
-sense whatsoever.
+Did you look at Documentation/filesystems/proc.txt ?
+It has some info on smaps and maps.
 
-I think "all or none" would be cleanest.
-
-If people start complaining that they don't want to run rpcbind/portmap
-then we could give them some way of requesting that instead of just
-depending on allowing the registration to fail.
-
-For cleanup, we can just unregister everything, right?  (No harm in
-possibly unregistering something who's registration just failed?)
-
---b.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
