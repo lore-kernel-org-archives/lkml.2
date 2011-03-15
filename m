@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1COHs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 03:48:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60462 "EHLO smtps.tip.net.au"
+	id S1755056Ab1COHtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 03:49:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59751 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab1COHsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 03:48:53 -0400
-Date: Tue, 15 Mar 2011 18:48:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>, Boaz Harrosh <bharrosh@panasas.com>,
-        Dean Hildebrand <dhildeb@us.ibm.com>,
-        Fred Isaman <iisaman@citi.umich.edu>, Mike Sager <sager@netapp.com>,
-        Fred Isaman <iisaman@netapp.com>,
-        Mingyang Guo <guomingyang@nrchpc.ac.cn>,
-        Ricardo Labiaga <Ricardo.Labiaga@netapp.com>,
-        Tao Guo <guotao@nrchpc.ac.cn>, Andy Adamson <andros@netapp.com>,
-        Benny Halevy <bhalevy@panasas.com>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-Subject: linux-next: build failure after merge of the bkl-config tree
-Message-Id: <20110315184845.1a411e67.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751254Ab1COHth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 03:49:37 -0400
+Date: Tue, 15 Mar 2011 07:49:08 GMT
+From: tip-bot for Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
+        xiaoguangrong@cn.fujitsu.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        cpw@sgi.com, tglx@linutronix.de, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu
+In-Reply-To: <4D7EC791.4040003@cn.fujitsu.com>
+References: <4D7EC791.4040003@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, tlb, UV: Do small micro-optimization for native_flush_tlb_others()
+Message-ID: <tip-25542c646afbf14c43fa7d2b443055cadb73b07a@git.kernel.org>
+Git-Commit-ID: 25542c646afbf14c43fa7d2b443055cadb73b07a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 15 Mar 2011 07:49:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Commit-ID:  25542c646afbf14c43fa7d2b443055cadb73b07a
+Gitweb:     http://git.kernel.org/tip/25542c646afbf14c43fa7d2b443055cadb73b07a
+Author:     Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+AuthorDate: Tue, 15 Mar 2011 09:57:37 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 15 Mar 2011 08:30:34 +0100
 
-After merging the bkl-config tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+x86, tlb, UV: Do small micro-optimization for native_flush_tlb_others()
 
-fs/nfs/read.c:21:28: error: linux/smp_lock.h: No such file or directory
+native_flush_tlb_others() is called from:
 
-Caused by commit 64419a9b2093 ("NFSv4.1: generic read") from the nfs tree
-interacting with commit 4ba8216cd905 ("BKL: That's all, folks") from the
-bkl-config tree.
+ flush_tlb_current_task()
+ flush_tlb_mm()
+ flush_tlb_page()
 
-I couldn't see that this include file was needed, so I applied the patch
-below (which Trond could apply to his tree, I am pretty sure).  (I am not
-sure why module.h is included either.)
+All these functions disable preemption explicitly, so we can use
+smp_processor_id() instead of get_cpu() and put_cpu().
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 15 Mar 2011 18:37:09 +1100
-Subject: [PATCH] nfs: BKL is no longer needed, so remove the include
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Cliff Wickman <cpw@sgi.com>
+LKML-Reference: <4D7EC791.4040003@cn.fujitsu.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- fs/nfs/read.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/x86/mm/tlb.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfs/read.c b/fs/nfs/read.c
-index 4b764c6..7cded2b 100644
---- a/fs/nfs/read.c
-+++ b/fs/nfs/read.c
-@@ -18,7 +18,6 @@
- #include <linux/sunrpc/clnt.h>
- #include <linux/nfs_fs.h>
- #include <linux/nfs_page.h>
--#include <linux/smp_lock.h>
- #include <linux/module.h>
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 55272d7..d6c0418 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -208,11 +208,10 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
+ 	if (is_uv_system()) {
+ 		unsigned int cpu;
  
- #include <asm/system.h>
--- 
-1.7.4.1
-
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+-		cpu = get_cpu();
++		cpu = smp_processor_id();
+ 		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
+ 		if (cpumask)
+ 			flush_tlb_others_ipi(cpumask, mm, va);
+-		put_cpu();
+ 		return;
+ 	}
+ 	flush_tlb_others_ipi(cpumask, mm, va);
