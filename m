@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab1COPll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 11:41:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16776 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab1COPlk (ORCPT
+	id S1758084Ab1COPnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 11:43:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47304 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756429Ab1COPnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 11:41:40 -0400
-Date: Tue, 15 Mar 2011 08:41:17 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Zeng Zhaoming <zengzm.kernel@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Zeng Zhaoming <zhaoming.zeng@freescale.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH -next] soc: sgtl5000 uses regulator interfaces
-Message-Id: <20110315084117.1e3a3a61.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTikivW3+V4QYh9Nt9FGXTefZiN9WbpAvGVeBJHNN@mail.gmail.com>
-References: <20110304180027.20deb6c4.sfr@canb.auug.org.au>
-	<20110304173357.23d36116.randy.dunlap@oracle.com>
-	<20110305112936.GA30187@opensource.wolfsonmicro.com>
-	<AANLkTikivW3+V4QYh9Nt9FGXTefZiN9WbpAvGVeBJHNN@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D7F88A5.004F,ss=1,fgs=0
+	Tue, 15 Mar 2011 11:43:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
+References: <20110310.155556.48513201.davem@davemloft.net> <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com>
+ <20110311204823.GB7906@fieldses.org> <20110311.130128.71121155.davem@davemloft.net>
+ <1299878274.2814.8.camel@bwh-desktop> <20110311214209.GB9404@fieldses.org>
+ <20110312040941.GA15526@home.goodmis.org> <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 15 Mar 2011 08:43:10 -0700
+Message-ID: <AANLkTimbaHZtKGRmg16dy--nwsVzbZpHEuXAnBQ1RWYX@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: david@lang.hm
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Mar 2011 20:41:38 +0800 Zeng Zhaoming wrote:
+On Tue, Mar 15, 2011 at 12:20 AM,  <david@lang.hm> wrote:
+>
+> what effect would this have on bisecting? if this helped people avoid
+> bisecting in between the bad commit and the fix for it, it may be worth it.
 
-> On Sat, Mar 5, 2011 at 7:29 PM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
-> > On Fri, Mar 04, 2011 at 05:33:57PM -0800, Randy Dunlap wrote:
-> >> From: Randy Dunlap <randy.dunlap@oracle.com>
-> >>
-> >> sgtl5000 uses regulator interfaces, so make selecting it depend
-> >> on REGULATOR.
-> >>
-> >> sgtl5000.c:(.text+0x4ae33): undefined reference to `regulator_unregister'
-> >> sgtl5000.c:(.text+0x4af41): undefined reference to `rdev_get_drvdata'
-> >> sgtl5000.c:(.text+0x4b191): undefined reference to `regulator_register'
-> >
-> 
-> hi， Thanks for the report.
-> 
-> > Since the regulator on the device is optional this isn't the best fix,
-> > the code should be updated to support building without regulator.
-> 
-> I will fix the code. If regulator not enabled, and the optional
-> regulator not provided externally,
-> a warning message will print out, and internal regulator will set
-> directly by write register.
-> > --
+The biggest impact on bisecting would be to just make it slower due to
+extra merge commits. It's probably not a hugely noticeable thing,
+though - we have merges for lots of other reasons.
 
-ping.  This build error still happens in linux-next 2011.0315.
+Merges make bisecting a bit less efficient not only because they are
+an extra commit, but because merges - by not being linear - end up
+making it harder to find the "perfect" half-way point. IOW, the
+bisection algorithm may not be able to pick a commit exactly midway,
+because if it picks a merge it will obviously include both branches
+(which may be "too much"), but if it picks the last commit of either
+branch it may be too little.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+And not picking a good half-way point makes bisection less efficient
+(it's no longer "log2()", but maybe "log1.7()").
+
+In practice, though, I suspect it's not really a big issue.
+
+The other issue with bisecting merges is obviously that it can be
+really nasty to figure out a bug that is introduced by the merge
+itself (which is usually due to some interaction between the things
+being merged, rather than any real mis-merge itself, although
+mis-merges can obviously happen).
+
+Again, that's pretty rare, although it does happen (and is often quite
+"interesting" when it happens).
+
+But in practice, I think the biggest argument against trying to fix
+things as patches on top of the original bug and then merging it in is
+that it's just extra work for fairly small gain. In particular:
+
+ - not all bugs get bisected. In fact, it's the minority - most
+bug-fixes are "obvious", and no-one even bothers bisecting them
+
+ - not all bugs are as clearly the result of a single commit. Many are
+a commit series. Sure, you'd just make it the last one in the series,
+but it would kind of defeat the "parent introduced the bug" point of
+it all.
+
+ - putting the "commit xyz caused this problem" in the changelog (and
+then just follow the chain that way) isn't really all that much worse.
+The reason I talked about doing this for _merges_ is that I think
+developers should think a lot more about merging, but I don't think
+people need to think a lot about "let's fix this obvious bug".
+
+ - bugfixes are often sent out as emails etc. Just applying the
+bug-fix would be a _lot_ more work if it involved "create new branch
+at original bug, apply, merge" than just "apply". That's especially
+true for series of patches, like the ones I get from Andrew and Al.
+
+In particular, that last thing is a killer for me personally. It
+(together with the first point) would mean that it would be done only
+for a very small subset of bugs, which really defeats the whole
+purpose, and then makes that "merge it on top of its parent" thing be
+the unusual case rather than some general rule.
+
+And merges do end up being more complicated than plain patches. Not
+just in the "extra commit" sense, but also simply in the sense of
+making the history more complex.
+
+They do have advantages too. We could just merge the same branch into
+multiple branches, for example (-stable comes to mind). That said,
+once more, it would really complicate things for everybody (no longer
+can the stable people just apply a series of patches), so...
+
+So on the whole, I don't think it would be worth it. I don't think
+it's _wrong_, mind you, I just think that the way we work, it's more
+pain than gain.
+
+For doing a backwards merge, I think the "more pain" is a _good_ thing
+(it really shouldn't _ever_ be a mindless "let's merge whatever
+upstream is today" and I definitely made that mindless action too easy
+to do in git). For most bug-fixes, more pain is just that - more pain.
+
+                            Linus
