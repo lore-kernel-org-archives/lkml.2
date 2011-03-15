@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab1COBER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 21:04:17 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20445 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756339Ab1COBEN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 21:04:13 -0400
-Date: Tue, 15 Mar 2011 02:03:53 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [RFC-v2 12/12] iscsi-target: Add Makefile/Kconfig and update
- TCM top level
-In-Reply-To: <1300103829-10337-13-git-send-email-nab@linux-iscsi.org>
-Message-ID: <alpine.LNX.2.00.1103150201050.26293@swampdragon.chaosbits.net>
-References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org> <1300103829-10337-13-git-send-email-nab@linux-iscsi.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756977Ab1COBN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 21:13:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5138 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756493Ab1COBN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 21:13:56 -0400
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, int-list-linux-mm@kvack.org,
+        linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20]  0: Inode based uprobes
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	<20110314163028.a05cec49.akpm@linux-foundation.org>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Mon, 14 Mar 2011 21:13:25 -0400
+In-Reply-To: <20110314163028.a05cec49.akpm@linux-foundation.org> (Andrew Morton's message of "Mon, 14 Mar 2011 16:30:28 -0700")
+Message-ID: <y0maagxuqx6.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011, Nicholas A. Bellinger wrote:
 
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-[...]
-> diff --git a/drivers/target/Makefile b/drivers/target/Makefile
-> index 60028fe..b038b7d 100644
-> --- a/drivers/target/Makefile
-> +++ b/drivers/target/Makefile
-> @@ -24,3 +24,4 @@ obj-$(CONFIG_TCM_PSCSI)		+= target_core_pscsi.o
->  
->  # Fabric modules
->  obj-$(CONFIG_TCM_LOOP_FABRIC)	+= tcm_loop/
-> +obj-$(CONFIG_ISCSI_TARGET)	+= iscsi/
-> diff --git a/drivers/target/iscsi/Kconfig b/drivers/target/iscsi/Kconfig
-> new file mode 100644
-> index 0000000..cc34243
-> --- /dev/null
-> +++ b/drivers/target/iscsi/Kconfig
-> @@ -0,0 +1,17 @@
-> +config ISCSI_TARGET
-> +	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
-> +	select CRYPTO
-> +	select CRYPTO_CRC32C
-> +	select CRYPTO_CRC32C_INTEL if X86
-> +	help
-> +	Say Y here to enable the ConfigFS enabled Linux-iSCSI.org iSCSI
-> +	Target Mode Stack.
-> +
-> +if ISCSI_TARGET
-> +
-> +config ISCSI_TARGET_DEBUG
-> +	bool "LIO-Target iscsi_debug.h ring buffer messages"
-> +	help
-> +	Say Y here to enable the legacy DEBUG_ISCSI macros in iscsi_debug.h
-> +
-> +endif
-[...]
+akpm wrote:
 
-Perhaps this is a stupid question, but if these are "legacy" macros, why 
-not save our users from having to deal with a new config option that is 
-presumably going to go away again soon-ish and instead make those legacy 
-macros go away sooner rather than later?
+> [...]  How do you envisage these features actually get used?
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Patch #20/20 in the set includes an ftrace-flavoured debugfs frontend.
+Previous versions of the patchset included perf front-ends too, which
+are probably to be seen again.
 
+> For example, will gdb be modified?  Will other debuggers be modified
+> or written? [...]
+
+The code is not currently useful to gdb.  Perhaps ptrace or an
+improved userspace ABI can get access to it in the form of a
+breakpoint-management interface, though this inode+offset
+style of uprobe addressing would require adaptation to the
+process-virtual-address style used by debugging APIs.
+
+- FChE
