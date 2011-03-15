@@ -1,38 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab1COCwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 22:52:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53925 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab1COCww (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 22:52:52 -0400
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=g44M6J865IUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=x4XA6OWRMr1iQu6crRIA:9 a=3j4NpkOafuk_mgUJET1O_SNE57wA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20]  0: Inode based uprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110314163028.a05cec49.akpm@linux-foundation.org>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314163028.a05cec49.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 14 Mar 2011 22:52:47 -0400
-Message-ID: <1300157567.9910.252.camel@gandalf.stny.rr.com>
+	id S1752459Ab1COC5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:57:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53875 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750814Ab1COC5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 22:57:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,320,1297065600"; 
+   d="scan'208";a="667278765"
+Subject: [PATCH]cfq-iosched: removing unnecessary think time checking
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Mar 2011 10:57:31 +0800
+Message-ID: <1300157851.2337.78.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -40,19 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-14 at 16:30 -0700, Andrew Morton wrote:
-> 
-> How do you envisage these features actually get used?  For example,
-> will gdb be modified?  Will other debuggers be modified or written?
-> 
-> IOW, I'm trying to get an understanding of how you expect this feature
-> will actually become useful to end users - the kernel patch is only
-> part of the story.
+Removing think time checking. A high thinktime queue might means the queue
+dispatches several requests and then do away. Limitting such queue seems
+meaningless. And also this can simplify code. This is suggested by Vivek.
 
-I'm hoping it solves this question:
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-https://lkml.org/lkml/2011/3/10/347
+---
+ block/cfq-iosched.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
--- Steve
+Index: linux/block/cfq-iosched.c
+===================================================================
+--- linux.orig/block/cfq-iosched.c	2011-03-10 13:52:13.000000000 +0800
++++ linux/block/cfq-iosched.c	2011-03-10 13:53:08.000000000 +0800
+@@ -2418,19 +2418,14 @@ static bool cfq_may_dispatch(struct cfq_
+ 			return false;
+ 
+ 		/*
+-		 * If there is only one sync queue, and its think time is
+-		 * small, we can ignore async queue here and give the sync
++		 * If there is only one sync queue
++		 * we can ignore async queue here and give the sync
+ 		 * queue no dispatch limit. The reason is a sync queue can
+ 		 * preempt async queue, limiting the sync queue doesn't make
+ 		 * sense. This is useful for aiostress test.
+ 		 */
+-		if (cfq_cfqq_sync(cfqq) && cfqd->busy_sync_queues == 1) {
+-			struct cfq_io_context *cic = RQ_CIC(cfqq->next_rq);
+-
+-			if (sample_valid(cic->ttime_samples) &&
+-				cic->ttime_mean < cfqd->cfq_slice_idle)
+-				promote_sync = true;
+-		}
++		if (cfq_cfqq_sync(cfqq) && cfqd->busy_sync_queues == 1)
++			promote_sync = true;
+ 
+ 		/*
+ 		 * We have other queues, don't allow more IO from this one
 
 
