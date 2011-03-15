@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab1COLPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 07:15:08 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:35575 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757382Ab1COLPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 07:15:05 -0400
-Message-Id: <20110315111307.895085413@linux.vnet.ibm.com>
+	id S1757346Ab1COLOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 07:14:41 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:48111 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253Ab1COLOe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 07:14:34 -0400
+Message-Id: <20110315111425.977309317@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 15 Mar 2011 07:13:07 -0400
+Date: Tue, 15 Mar 2011 07:13:09 -0400
 From: Stefan Berger <stefanb@linux.vnet.ibm.com>
 To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com,
         tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: jirislaby@gmail.com, preining@logic.at
-Subject: [patch 0/8] tpm + tpm_tis : Various fixes
-X-Content-Scanned: Fidelis XPS MAILER
+Cc: jirislaby@gmail.com, preining@logic.at,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>
+Subject: [patch 2/8] tpm_tis: Re-enable interrupts upon (S3) resume
+References: <20110315111307.895085413@linux.vnet.ibm.com>
+Content-Disposition: inline; filename=tpm_irq_fix.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following is a series of patches that fix various issues in the general
-TPM driver and in the TPM TIS driver. I had posted some of the patches
-previously, but I am now reposting all of them again as part of this series.
-Some previously posted patches have seen further changes (also to conform
-to the coding style).
+v2:
+  - the patch was adapted to also work with a machine with a Intel iTPM
 
-All patches apply to the current tip of the main git tree.
+This patch makes sure that if the TPM TIS interface is run in interrupt mode
+(rather than polling mode) that all interrupts are enabled in the TPM's
+interrupt enable register after a resume from ACPI S3 suspend. The registers
+may either have been cleared by the TPM loosing its state during device sleep
+or by the BIOS leaving the TPM in polling mode (after sending a command to
+the TPM for starting it up again)
 
-Some of the changes are related to using timeouts that the TPM reports, others
-are related to fixing the interrupt mode in which the TPM TIS driver can be
-run.
+You may want to check if your TPM runs with interrupts by doing
 
-Another patch introduces the automatic probing for the Intel iTPM flaw. The
-probing is useful in combination with the 'force' module parameter that enables
-the interrupt mode on some machines but then ends up circumventing ACPI to
-determine whether an Intel iTPM is present to activate the work-around.
+cat /proc/interrupts | grep -i tpm
 
-I have tested these patches on four different types of machines. They worked
-fine there even though the TPM could not be used in interrupt mode on all of
-them (IRQ line not connected?).
+and see whether there is an entry or otherwise for it to use interrupts:
 
-The patches apply in the order they appear.
+modprobe tpm_tis interrupts=1 [add 'itpm=1' for Intel TPM ]
 
-  Regards,
-         Stefan
+Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+
+---
+ drivers/char/tpm/tpm_tis.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+Index: linux-2.6/drivers/char/tpm/tpm_tis.c
+===================================================================
+--- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
++++ linux-2.6/drivers/char/tpm/tpm_tis.c
+@@ -647,11 +647,36 @@ static int tpm_tis_pnp_suspend(struct pn
+ 	return tpm_pm_suspend(&dev->dev, msg);
+ }
+ 
++static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
++{
++	u32 intmask;
++
++	/* reenable interrupts that device may have lost or
++	   BIOS/firmware may have disabled */
++	iowrite8(chip->vendor.irq, chip->vendor.iobase +
++		 TPM_INT_VECTOR(chip->vendor.locality));
++
++	intmask =
++	    ioread32(chip->vendor.iobase +
++		     TPM_INT_ENABLE(chip->vendor.locality));
++
++	intmask |= TPM_INTF_CMD_READY_INT
++	    | TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_DATA_AVAIL_INT
++	    | TPM_INTF_STS_VALID_INT | TPM_GLOBAL_INT_ENABLE;
++
++	iowrite32(intmask,
++		  chip->vendor.iobase + TPM_INT_ENABLE(chip->vendor.locality));
++}
++
++
+ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
+ {
+ 	struct tpm_chip *chip = pnp_get_drvdata(dev);
+ 	int ret;
+ 
++	if (chip->vendor.irq)
++		tpm_tis_reenable_interrupts(chip);
++
+ 	ret = tpm_pm_resume(&dev->dev);
+ 	if (!ret)
+ 		tpm_continue_selftest(chip);
+@@ -704,6 +729,11 @@ static int tpm_tis_suspend(struct platfo
+ 
+ static int tpm_tis_resume(struct platform_device *dev)
+ {
++	struct tpm_chip *chip = dev_get_drvdata(&dev->dev);
++
++	if (chip->vendor.irq)
++		tpm_tis_reenable_interrupts(chip);
++
+ 	return tpm_pm_resume(&dev->dev);
+ }
+ static struct platform_driver tis_drv = {
 
