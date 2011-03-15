@@ -1,90 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab1COPxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 11:53:37 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56593 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab1COPxg convert rfc822-to-8bit (ORCPT
+	id S1758049Ab1COP4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 11:56:13 -0400
+Received: from shawmail.shawcable.com ([64.59.128.220]:13852 "EHLO
+	mail.shawcable.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755731Ab1COP4L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 11:53:36 -0400
-Subject: Re: [PATCH 1/4] drivers/serial/ucc_uart.c: Add of_node_put to avoid memory leak
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1283269738-14612-2-git-send-email-julia@diku.dk>
-Date: Tue, 15 Mar 2011 10:51:23 -0500
-Cc: Timur Tabi <timur@freescale.com>, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+	Tue, 15 Mar 2011 11:56:11 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=rhzBfl3TH6jSClqh7E8qe//hARbvbzCI0ETuu7/2kJU= c=1 sm=1
+ a=Z93SeKhvg7gA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=7-415B0cAAAA:8 a=VwQbUJbxAAAA:8
+ a=qZaiIvPDUuz-UxnyJjYA:9 a=9zkzyG7RN6wy1JXMkOUA:7
+ a=2OgMkkwlU-ZPHEsunU5bmxh-3IEA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10
+ a=FtYAf7_czLgA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+X-IronPort-AV: E=Sophos;i="4.62,322,1297062000"; 
+   d="scan'208";a="518840899"
+X-reinject: true
+References: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net> <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl> <201103111255.44979.arnd@arndb.de> <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl> <20110311235607.GB15853@elie> <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl> <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com> <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl> <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net> <20110315101155.GO15097@dastard>
+In-Reply-To: <20110315101155.GO15097@dastard>
+Mime-Version: 1.0 (iPhone Mail 8C148a)
 Content-Transfer-Encoding: 8BIT
-Message-Id: <2452483F-04B7-4B44-B59D-94A9D18F5DA4@kernel.crashing.org>
-References: <1283269738-14612-1-git-send-email-julia@diku.dk> <1283269738-14612-2-git-send-email-julia@diku.dk>
-To: Julia Lawall <julia@diku.dk>
-X-Mailer: Apple Mail (2.1082)
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <C79DDACF-9320-424D-84F5-3DB9C5325B1D@dilger.ca>
+Cc: Sage Weil <sage@newdream.net>, Indan Zupancic <indan@nul.nu>,
+        Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "hch@lst.de" <hch@lst.de>, "l@jasper.es" <l@jasper.es>
+X-Mailer: iPhone Mail (8C148a)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+Date: Tue, 15 Mar 2011 09:56:08 -0600
+To: Dave Chinner <david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Should there be a "wait" argument or flag that allows an app to start the syncfs(), do something, and then call again to wait for completion?
 
-On Aug 31, 2010, at 10:48 AM, Julia Lawall wrote:
+A more advanced implementation would have the "wait=0" call return an opaque wait handle (e.g. transaction ID) and then calling back with this handle as an argument would only wait if that handle hadn't committed yet. That allows userspace to do efficient batching without having to wait for the full sync to complete. 
 
-> Add a call to of_node_put in the error handling code following a call to
-> of_find_compatible_node or of_find_node_by_type.
-> 
-> This patch also substantially reorganizes the error handling code in the
-> function, to that it is possible first to jump to code that frees qe_port
-> and then to jump to code that also puts np.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> local idexpression x;
-> expression E,E1,E2;
-> statement S;
-> @@
-> 
-> *x = 
-> (of_find_node_by_path
-> |of_find_node_by_name
-> |of_find_node_by_phandle
-> |of_get_parent
-> |of_get_next_parent
-> |of_get_next_child
-> |of_find_compatible_node
-> |of_match_node
-> |of_find_node_by_type
-> |of_find_node_with_property
-> |of_find_matching_node
-> |of_parse_phandle
-> )(...);
-> ...
-> if (x == NULL) S
-> <... when != x = E
-> *if (...) {
->  ... when != of_node_put(x)
->      when != if (...) { ... of_node_put(x); ... }
-> (
->  return <+...x...+>;
-> |
-> *  return ...;
-> )
-> }
-> ...>
-> (
-> E2 = x;
-> |
-> of_node_put(x);
-> )
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> drivers/serial/ucc_uart.c |   67 ++++++++++++++++++++++++----------------------
-> 1 file changed, 35 insertions(+), 32 deletions(-)
+Cheers, Andreas
 
-applied
+On 2011-03-15, at 4:11, Dave Chinner <david@fromorbit.com> wrote:
 
-- k
+> On Sun, Mar 13, 2011 at 09:29:17PM -0700, Sage Weil wrote:
+>> On Mon, 14 Mar 2011, Indan Zupancic wrote:
+>>> Everyone seems to want to add this new syncfs, but it's not even defined 
+>>> what it does. "Same as sync, but only on one fs" is IMHO not good 
+>>> enough, because sync's behaviour is pretty badly documented, and that's 
+>>> a system call.
+>> 
+>> How about the man page below?  I tried to avoid the somewhat antiquated 
+>> implementation specific terminology in the sync(2) man page.
+>> 
+>> I think adding this functionality into sync_file_range(2) is forcing 
+>> unrelated functionality into an existing interface; sync_file_range 
+>> operates on _files_, not an entire file system.  With each API addition it 
+>> is more important to make the interface simple and intuitive than to 
+>> minimize the size of our patches.  IMO that's why a new syscall is 
+>> preferable to, say, an equivalent ioctl.
+>> 
+>> Thanks-
+>> sage
+>> 
+>> 
+>> .TH SYNCFS 2 2011-03-13 "Linux" "Linux Programmer's Manual"
+>> .SH NAME
+>> syncfs \- commit cached file system state to stable storage
+>> .SH SYNOPSIS
+>> .B #include <unistd.h>
+>> .sp
+>> .B void syncfs(int fd);
+>> .SH DESCRIPTION
+>> .BR syncfs ()
+>> flushes any cached data modifications to the file system containing the 
+>> file referenced by the file descriptor
+>> .I fd
+>> to stable storage (usually a disk).  This includes the results of any
+>> file modifications or other file system operations that have completed
+>> prior to the call to
+>> .BR syncfs(2).
+>> This is similar to 
+>> .BR sync(2),
+>> but will commit changes for only a single file system instead of all
+>> mounted file systems.
+>> .SH ERRORS
+>> This function is always successful.
+> 
+> Perhaps we should consider propagating errors out to the user
+> application rather than discarding them in kernel and pretending we
+> can't ever have a write error?
+> 
+> Cheers,
+> 
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
