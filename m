@@ -1,118 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab1COLOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 07:14:32 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:43930 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757187Ab1COLOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 07:14:31 -0400
-Message-Id: <20110315111425.620707275@linux.vnet.ibm.com>
+	id S1757312Ab1COLOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 07:14:39 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:37954 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757254Ab1COLOe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 07:14:34 -0400
+Message-Id: <20110315111427.497272632@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 15 Mar 2011 07:13:08 -0400
+Date: Tue, 15 Mar 2011 07:13:13 -0400
 From: Stefan Berger <stefanb@linux.vnet.ibm.com>
 To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com,
         tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Cc: jirislaby@gmail.com, preining@logic.at,
         Stefan Berger <stefanb@linux.vnet.ibm.com>
-Subject: [patch 1/8] tpm_tis: Use timeouts returned from TPM
+Subject: [patch 6/8] tpm + tpm_tis: Use interface timeouts returned from TPM
 References: <20110315111307.895085413@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=tpm_driver_fix_timeout_usage.patch
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Disposition: inline; filename=tpm_fix_iftimeouts.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3:
-- sysfs entry now called 'durations' to resemble TPM-speak (previously
-  was called 'timeouts')
+This patch fixes the check for whether the 4 interface  timeouts (a,b,c,d)
+reported by the TPM have been properly returned.
 
-v2:
-- adjusting all timeouts for TPM devices reporting timeouts in msec rather
-  than usec
-- also displaying in sysfs whether the timeouts are 'original' or 'adjusted'
+The current TPM TIS driver in git discards the interface timeout values
+returned from the TPM. The check of the response packet needs to consider that
+the return_code field is 0 on success and the size of the expected packet is
+equivalent to the header size + u32 length indicator for the
+TPM_GetCapability() result + 4 timeout indicators of type u32.
 
-The current TPM TIS driver in git discards the timeout values returned
-from the TPM. The check of the response packet needs to consider that
-the return_code field is 0 on success and the size of the expected
-packet is equivalent to the header size + u32 length indicator for the
-TPM_GetCapability() result + 3 timeout indicators of type u32.
+I anticipate that some TPMs will also report these timeouts in msec rather than
+usec and therefore scale them by a factor of 1000 if the timeout_a value is
+found to be below 1000 (usecs).
 
-Since some TPMs seem to return timeouts in msec rather than usec,
-I am now adjusting all the timeouts rather than just the one for short
-durations.
+I am also add a sysfs entry 'timeouts' that shows the 4 timeouts and reports
+them either as being either 'original' or 'adjusted' if they were scaled.
 
-I am also adding a sysfs entry 'durations' showing the timeouts that are
-being used.
-
-Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com> 
+Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
 
 ---
- drivers/char/tpm/tpm.c     |   38 ++++++++++++++++++++++++++++++--------
+ drivers/char/tpm/tpm.c     |   36 +++++++++++++++++++++++++++++-------
  drivers/char/tpm/tpm.h     |    3 +++
  drivers/char/tpm/tpm_tis.c |    4 +++-
- 3 files changed, 36 insertions(+), 9 deletions(-)
+ 3 files changed, 35 insertions(+), 8 deletions(-)
 
 Index: linux-2.6/drivers/char/tpm/tpm.c
 ===================================================================
 --- linux-2.6.orig/drivers/char/tpm/tpm.c
 +++ linux-2.6/drivers/char/tpm/tpm.c
-@@ -575,23 +575,31 @@ duration:
- 	if (rc)
- 		return;
+@@ -534,6 +534,7 @@ void tpm_get_timeouts(struct tpm_chip *c
+ 	struct duration_t *duration_cap;
+ 	ssize_t rc;
+ 	u32 timeout;
++	unsigned int scale = 1;
  
--	if (be32_to_cpu(tpm_cmd.header.out.return_code)
--	    != 3 * sizeof(u32))
+ 	tpm_cmd.header.in = tpm_getcap_header;
+ 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+@@ -545,24 +546,30 @@ void tpm_get_timeouts(struct tpm_chip *c
+ 	if (rc)
+ 		goto duration;
+ 
+-	if (be32_to_cpu(tpm_cmd.header.out.length)
+-	    != 4 * sizeof(u32))
+-		goto duration;
 +	if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
 +	    be32_to_cpu(tpm_cmd.header.out.length)
-+	    != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 * sizeof(u32))
- 		return;
-+
- 	duration_cap = &tpm_cmd.params.getcap_out.cap.duration;
- 	chip->vendor.duration[TPM_SHORT] =
- 	    usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
-+	chip->vendor.duration[TPM_MEDIUM] =
-+	    usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_medium));
-+	chip->vendor.duration[TPM_LONG] =
-+	    usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_long));
-+
- 	/* The Broadcom BCM0102 chipset in a Dell Latitude D820 gets the above
- 	 * value wrong and apparently reports msecs rather than usecs. So we
- 	 * fix up the resulting too-small TPM_SHORT value to make things work.
-+	 * We also scale the TPM_MEDIUM and -_LONG values by 1000.
- 	 */
--	if (chip->vendor.duration[TPM_SHORT] < (HZ/100))
-+	if (chip->vendor.duration[TPM_SHORT] < (HZ / 100)) {
- 		chip->vendor.duration[TPM_SHORT] = HZ;
--
--	chip->vendor.duration[TPM_MEDIUM] =
--	    usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_medium));
--	chip->vendor.duration[TPM_LONG] =
--	    usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_long));
-+		chip->vendor.duration[TPM_MEDIUM] *= 1000;
-+		chip->vendor.duration[TPM_LONG] *= 1000;
-+		chip->vendor.duration_adjusted = true;
-+		dev_info(chip->dev, "Adjusting TPM timeout parameters.");
++	    != sizeof(tpm_cmd.header.out) + sizeof(u32) + 4 * sizeof(u32))
++		return;
+ 
+ 	timeout_cap = &tpm_cmd.params.getcap_out.cap.timeout;
+ 	/* Don't overwrite default if value is 0 */
+ 	timeout = be32_to_cpu(timeout_cap->a);
++	if (timeout && timeout < 1000) {
++		/* timeouts in msec rather usec */
++		scale = 1000;
++		chip->vendor.timeout_adjusted = true;
 +	}
- }
- EXPORT_SYMBOL_GPL(tpm_get_timeouts);
+ 	if (timeout)
+-		chip->vendor.timeout_a = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_a = usecs_to_jiffies(timeout * scale);
+ 	timeout = be32_to_cpu(timeout_cap->b);
+ 	if (timeout)
+-		chip->vendor.timeout_b = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_b = usecs_to_jiffies(timeout * scale);
+ 	timeout = be32_to_cpu(timeout_cap->c);
+ 	if (timeout)
+-		chip->vendor.timeout_c = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_c = usecs_to_jiffies(timeout * scale);
+ 	timeout = be32_to_cpu(timeout_cap->d);
+ 	if (timeout)
+-		chip->vendor.timeout_d = usecs_to_jiffies(timeout);
++		chip->vendor.timeout_d = usecs_to_jiffies(timeout * scale);
  
-@@ -937,6 +945,20 @@ ssize_t tpm_show_caps_1_2(struct device 
+ duration:
+ 	tpm_cmd.header.in = tpm_getcap_header;
+@@ -965,6 +972,21 @@ ssize_t tpm_show_durations(struct device
  }
- EXPORT_SYMBOL_GPL(tpm_show_caps_1_2);
+ EXPORT_SYMBOL_GPL(tpm_show_durations);
  
-+ssize_t tpm_show_durations(struct device *dev, struct device_attribute *attr,
++ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
 +			  char *buf)
 +{
 +	struct tpm_chip *chip = dev_get_drvdata(dev);
 +
-+	return sprintf(buf, "%d %d %d [%s]\n",
-+		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
-+		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
-+		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
-+		       chip->vendor.duration_adjusted
++	return sprintf(buf, "%d %d %d %d [%s]\n",
++		       jiffies_to_usecs(chip->vendor.timeout_a),
++		       jiffies_to_usecs(chip->vendor.timeout_b),
++		       jiffies_to_usecs(chip->vendor.timeout_c),
++		       jiffies_to_usecs(chip->vendor.timeout_d),
++		       chip->vendor.timeout_adjusted
 +		       ? "adjusted" : "original");
 +}
-+EXPORT_SYMBOL_GPL(tpm_show_durations);
++EXPORT_SYMBOL_GPL(tpm_show_timeouts);
 +
  ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
  			const char *buf, size_t count)
@@ -121,42 +122,42 @@ Index: linux-2.6/drivers/char/tpm/tpm.h
 ===================================================================
 --- linux-2.6.orig/drivers/char/tpm/tpm.h
 +++ linux-2.6/drivers/char/tpm/tpm.h
-@@ -56,6 +56,8 @@ extern ssize_t tpm_show_owned(struct dev
- 				char *);
- extern ssize_t tpm_show_temp_deactivated(struct device *,
+@@ -58,6 +58,8 @@ extern ssize_t tpm_show_temp_deactivated
  					 struct device_attribute *attr, char *);
-+extern ssize_t tpm_show_durations(struct device *,
-+				  struct device_attribute *attr, char *);
+ extern ssize_t tpm_show_durations(struct device *,
+ 				  struct device_attribute *attr, char *);
++extern ssize_t tpm_show_timeouts(struct device *,
++				 struct device_attribute *attr, char *);
  
  struct tpm_chip;
  
-@@ -82,6 +84,7 @@ struct tpm_vendor_specific {
+@@ -84,6 +86,7 @@ struct tpm_vendor_specific {
+ 	struct list_head list;
  	int locality;
  	unsigned long timeout_a, timeout_b, timeout_c, timeout_d; /* jiffies */
++	bool timeout_adjusted;
  	unsigned long duration[3]; /* jiffies */
-+	bool duration_adjusted;
+ 	bool duration_adjusted;
  
- 	wait_queue_head_t read_queue;
- 	wait_queue_head_t int_queue;
 Index: linux-2.6/drivers/char/tpm/tpm_tis.c
 ===================================================================
 --- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
 +++ linux-2.6/drivers/char/tpm/tpm_tis.c
-@@ -376,6 +376,7 @@ static DEVICE_ATTR(temp_deactivated, S_I
- 		   NULL);
+@@ -395,6 +395,7 @@ static DEVICE_ATTR(temp_deactivated, S_I
  static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
  static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-+static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
+ static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
++static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
  
  static struct attribute *tis_attrs[] = {
  	&dev_attr_pubek.attr,
-@@ -385,7 +386,8 @@ static struct attribute *tis_attrs[] = {
- 	&dev_attr_owned.attr,
+@@ -405,7 +406,8 @@ static struct attribute *tis_attrs[] = {
  	&dev_attr_temp_deactivated.attr,
  	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr, NULL,
-+	&dev_attr_cancel.attr,
-+	&dev_attr_durations.attr, NULL,
+ 	&dev_attr_cancel.attr,
+-	&dev_attr_durations.attr, NULL,
++	&dev_attr_durations.attr,
++	&dev_attr_timeouts.attr, NULL,
  };
  
  static struct attribute_group tis_attr_grp = {
