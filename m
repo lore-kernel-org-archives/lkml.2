@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab1COXLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 19:11:46 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:51083 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754883Ab1COXLn (ORCPT
+	id S1755939Ab1COXL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 19:11:59 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:58165 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755844Ab1COXLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 19:11:43 -0400
+	Tue, 15 Mar 2011 19:11:54 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
 	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=A6Nk0tzWvYZJZ3RbW0gIfZBFQ9tyvBQ5aECff5GIfx9ecl9jSLNJWTWSR4DzhMJzM4BiTD5ugPYQzl64Vqn1irrX1YLO94Q1MEJ6OfKgOcLg/JOd8ScI76zB3c3Fu++K;
-Date: Tue, 15 Mar 2011 16:11:41 -0700
+	b=UO1WXSKMlyH6DgDtL8eUz6KGwhxSSHkTrhd5M7M8R4aTr5HuXoIUUWWuptQ4slReS4kcsTfpDMgF7pl2gen7jCAph6ivkBrYqqjif//SnpEuYkiVhiLMfnh73Kfyx6PA;
+Date: Tue, 15 Mar 2011 16:11:52 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: torvalds <torvalds@linux-foundation.org>,
-        Rob Landley <rlandley@parallels.com>, grant.likely@secretlab.ca
-Subject: [PATCH 2/6] Documentation: add devicetree docs index file
-Message-Id: <20110315161141.238991ab.rdunlap@xenotime.net>
+        Roland Kammerer <dev.rck@gmail.com>
+Subject: [PATCH 3/6] Documentation: update header filename in CodingStyle
+Message-Id: <20110315161152.4bee194f.rdunlap@xenotime.net>
 In-Reply-To: <20110315134316.465b6e2c.rdunlap@xenotime.net>
 References: <20110315134316.465b6e2c.rdunlap@xenotime.net>
 Organization: YPO4
@@ -29,49 +29,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Landley <rlandley@parallels.com>
+From: Roland Kammerer <dev.rck@gmail.com>
 
-The device tree infrastructure is being genericized so its documentation moved
-out of the PowerPC directory.
+pr_info() and pr_debug() are in linux/printk.h, not linux/kernel.h.
+Last updated is unnecessary, we have git for that.
 
-Signed-off-by: Rob Landley <rlandley@parallels.com>
+Signed-off-by: Roland Kammerer <dev.rck@gmail.com>
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
+ Documentation/CodingStyle |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
- Documentation/devicetree/00-INDEX |   10 ++++++++++
- Documentation/powerpc/00-INDEX    |    4 ----
- 2 files changed, 10 insertions(+), 4 deletions(-)
-
---- /dev/null
-+++ lnx-2638-rc8/Documentation/devicetree/00-INDEX
-@@ -0,0 +1,10 @@
-+Documentation for device trees, a data structure by which bootloaders pass
-+hardware layout to Linux in a device-independent manner, simplifying hardware
-+probing.  This subsystem is maintained by Grant Likely
-+<grant.likely@secretlab.ca> and has a mailing list at
-+https://lists.ozlabs.org/listinfo/devicetree-discuss
-+
-+00-INDEX
-+	- this file
-+booting-without-of.txt
-+	- Booting Linux without Open Firmware, describes history and format of device trees.
---- lnx-2638-rc8.orig/Documentation/powerpc/00-INDEX
-+++ lnx-2638-rc8/Documentation/powerpc/00-INDEX
-@@ -5,8 +5,6 @@ please mail me.
+--- lnx-2638-rc8.orig/Documentation/CodingStyle
++++ lnx-2638-rc8/Documentation/CodingStyle
+@@ -659,7 +659,7 @@ There are a number of driver model diagn
+ which you should use to make sure messages are matched to the right device
+ and driver, and are tagged with the right level:  dev_err(), dev_warn(),
+ dev_info(), and so forth.  For messages that aren't associated with a
+-particular device, <linux/kernel.h> defines pr_debug() and pr_info().
++particular device, <linux/printk.h> defines pr_debug() and pr_info().
  
- 00-INDEX
- 	- this file
--booting-without-of.txt
--	- Booting the Linux/ppc kernel without Open Firmware
- cpu_features.txt
- 	- info on how we support a variety of CPUs with minimal compile-time
- 	options.
-@@ -16,8 +14,6 @@ hvcs.txt
- 	- IBM "Hypervisor Virtual Console Server" Installation Guide
- mpc52xx.txt
- 	- Linux 2.6.x on MPC52xx family
--mpc52xx-device-tree-bindings.txt
--	- MPC5200 Device Tree Bindings
- sound.txt
- 	- info on sound support under Linux/PPC
- zImage_layout.txt
+ Coming up with good debugging messages can be quite a challenge; and once
+ you have them, they can be a huge help for remote troubleshooting.  Such
+@@ -819,6 +819,3 @@ language C, URL: http://www.open-std.org
+ Kernel CodingStyle, by greg@kroah.com at OLS 2002:
+ http://www.kroah.com/linux/talks/ols_2002_kernel_codingstyle_talk/html/
+ 
+---
+-Last updated on 2007-July-13.
+-
