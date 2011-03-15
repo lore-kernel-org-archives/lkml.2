@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab1COOZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:25:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41379 "EHLO mx1.suse.de"
+	id S1757886Ab1COO1s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:27:48 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:22779 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754964Ab1COOZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:25:56 -0400
-Subject: Re: [Security] [PATCH 00/20] world-writable files in sysfs and
- debugfs
-From: James Bottomley <James.Bottomley@suse.de>
-To: Greg KH <greg@kroah.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, security@kernel.org,
-        acpi4asus-user@lists.sourceforge.net, linux-scsi@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        open-iscsi@googlegroups.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-In-Reply-To: <20110315141859.GA19442@kroah.com>
-References: <cover.1296818921.git.segoon@openwall.com>
-	 <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
-	 <1300155965.5665.15.camel@mulgrave.site> <20110315030956.GA2234@kroah.com>
-	 <1300189828.4017.2.camel@mulgrave.site>  <20110315141859.GA19442@kroah.com>
+	id S1755263Ab1COO1r convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 10:27:47 -0400
+X-IronPort-AV: E=Sophos;i="4.62,322,1297065600"; 
+   d="scan'208";a="530467485"
+Subject: Re: [PATCH] RPC: return task->tk_status from
+ rpc_wait_for_completion_task() in case of successfull task completion
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        linux-kernel@vger.kernel.org, bfields@fieldses.org,
+        skinsbursky@openvz.org
+In-Reply-To: <20110315141951.16564.72417.stgit@localhost6.localdomain6>
+References: <20110315141951.16564.72417.stgit@localhost6.localdomain6>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Mar 2011 10:25:51 -0400
-Message-ID: <1300199151.7744.12.camel@mulgrave.site>
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Tue, 15 Mar 2011 10:26:55 -0400
+Message-ID: <1300199215.14093.1.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 15 Mar 2011 14:26:56.0455 (UTC) FILETIME=[0995A570:01CBE31D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 07:18 -0700, Greg KH wrote:
-> On Tue, Mar 15, 2011 at 07:50:28AM -0400, James Bottomley wrote:
-> > On Mon, 2011-03-14 at 20:09 -0700, Greg KH wrote:
-> > > There are no capability checks on sysfs files right now, so these all
-> > > need to be fixed.
-> > 
-> > That statement is true but irrelevant, isn't it?  There can't be
-> > capabilities within sysfs files because the system that does them has no
-> > idea what the capabilities would be.  If there were capabilities checks,
-> > they'd have to be in the implementing routines.
-> 
-> Ah, you are correct, sorry for the misunderstanding.
-> 
-> > I think the questions are twofold:
-> > 
-> >      1. Did anyone actually check for capabilities before assuming world
-> >         writeable files were wrong?
-> 
-> I do not think so as the majority (i.e. all the ones that I looked at)
-> did no such checks.
+On Tue, 2011-03-15 at 17:20 +0300, Stanislav Kinsbursky wrote:
+> Some NFS and NLM routines doesn't check RPC task tk_status if
+> rpc_wait_for_completion_task() returned 0 but have to.
 
-OK, as long as someone checked, I'm happy.
+Examples please. I'm not aware of any such cases.
 
-> >      2. Even if there aren't any capabilities checks in the implementing
-> >         routines, should there be (are we going the separated
-> >         capabilities route vs the monolithic root route)?
-> 
-> I think the general consensus is that we go the monolithic root route
-> for sysfs files in that we do not allow them to be world writable.
-> 
-> Do you have any exceptions that you know of that do these checks?
+Cheers
+   Trond
 
-Heh, I didn't call our security vacillations a dizzying ride for
-nothing.  I know the goal once was to try to run a distro without root
-daemons (which is what required the capabilities stuff).  I'm actually
-trying to avoid the issue ... I just want to make sure that people who
-care aren't all moving in different directions.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-James
-
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
