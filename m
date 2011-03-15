@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758297Ab1COSqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 14:46:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34448 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab1COSqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 14:46:39 -0400
-Date: Tue, 15 Mar 2011 18:46:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Saeed Bishara <saeed.bishara@gmail.com>,
-        Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH] Avoid indefinite wait in smp_call_function_many() if
-	cpumask is modified
-Message-ID: <20110315184629.GB3620@n2100.arm.linux.org.uk>
-References: <20110315181941.26948.65323.stgit@e102109-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315181941.26948.65323.stgit@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1758319Ab1COSsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 14:48:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22755 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750734Ab1COSso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 14:48:44 -0400
+Message-Id: <201103151848.p2FImgaN015020@int-mx09.intmail.prod.int.phx2.redhat.com>
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 15 Mar 2011 18:38:23 +0000
+Subject: [PATCH] Allow core_pattern to name block devices.
+Apparently-To: <rjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+To: unlisted-recipients:; (no To-header on input)
 
-On Tue, Mar 15, 2011 at 06:20:56PM +0000, Catalin Marinas wrote:
-> On ARM processors (and not only) with software broadcasting of the TLB
-> maintenance operations, smp_call_function_many() is given a
-> mm_cpumask(mm) as argument. This cpumask may be modified (bits cleared)
-> during the smp_call_function_many() execution as a result of other
-> events like ASID roll-over.
+Allow core dumps to block devices by allowing the user to name a block
+device in core_pattern.
 
-We shouldn't be modifying a mask which has been passed into one of these
-functions.  Having masks change beneath a function which is actively
-using it and can wait is an obvious recipe for problems and races.
+This is extremely useful when running the kernel in a "captive"
+appliance.  There is not necessarily a writable, mounted filesystem
+that can be used to catch a core dump, so instead we set aside a
+virtual disk for core dumps and allow the kernel to write a core to
+that.
+
+This patch was tested by running the modified kernel under qemu (using
+libguestfs) and forcing various core dumps to attached virtual disks.
+
+Signed-off-by: Richard W.M. Jones <rjones@redhat.com>
+---
+ fs/exec.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 52a447d..7aa4b19 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2047,10 +2047,11 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 		if (d_unhashed(cprm.file->f_path.dentry))
+ 			goto close_fail;
+ 		/*
+-		 * AK: actually i see no reason to not allow this for named
+-		 * pipes etc, but keep the previous behaviour for now.
++		 * Previously coredumps were only allowed to regular files.
++		 * Block devices are useful too for capturing errors in
++		 * captive appliances.
+ 		 */
+-		if (!S_ISREG(inode->i_mode))
++		if (!S_ISREG(inode->i_mode) && !S_ISBLK(inode->i_mode))
+ 			goto close_fail;
+ 		/*
+ 		 * Dont allow local users get cute and trick others to coredump
+-- 
+1.7.4
