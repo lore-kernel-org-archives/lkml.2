@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1CODIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 23:08:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62443 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab1CODIT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 23:08:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=yGeiOTjAMyUBCvYS8z4M1KzfIUZ8CXRZp4IcF6pY3VoCGmBs2IDc6ogtJPYBgDuFP8
-         ZgQiTvKrUYF9m4ZLesLNd6HG5PAG1uG9Rv21zIxtdvg5x0sKgWFffiYYhk76GQzWHlCM
-         /HQNoWU1Z2OpyDphc4acCQMwXirb5xzjSoVHs=
+	id S1752840Ab1CODJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 23:09:09 -0400
+Received: from kroah.org ([198.145.64.141]:50475 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807Ab1CODJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 23:09:04 -0400
+Date: Mon, 14 Mar 2011 20:09:56 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, security@kernel.org,
+        acpi4asus-user@lists.sourceforge.net, linux-scsi@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        open-iscsi@googlegroups.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [Security] [PATCH 00/20] world-writable files in sysfs and
+ debugfs
+Message-ID: <20110315030956.GA2234@kroah.com>
+References: <cover.1296818921.git.segoon@openwall.com>
+ <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
+ <1300155965.5665.15.camel@mulgrave.site>
 MIME-Version: 1.0
-In-Reply-To: <20110314104038.GB26085@n2100.arm.linux.org.uk>
-References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com> <20110314104038.GB26085@n2100.arm.linux.org.uk>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Tue, 15 Mar 2011 11:07:58 +0800
-Message-ID: <AANLkTinekDMZUJSyOqOuPPpuoq49wFTzc1ESGqEdezzs@mail.gmail.com>
-Subject: Re: [PATCH] arm: cmpxchg syscall should data abort if page not write
- or not young
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, nicolas.pitre@linaro.org, joe@perches.com,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300155965.5665.15.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Russell King,
+On Mon, Mar 14, 2011 at 10:26:05PM -0400, James Bottomley wrote:
+> On Sat, 2011-03-12 at 23:23 +0300, Vasiliy Kulikov wrote:
+> > > Vasiliy Kulikov (20):
+> > >  mach-ux500: mbox-db5500: world-writable sysfs fifo file
+> > >  leds: lp5521: world-writable sysfs engine* files
+> > >  leds: lp5523: world-writable engine* sysfs files
+> > >  misc: ep93xx_pwm: world-writable sysfs files
+> > >  rtc: rtc-ds1511: world-writable sysfs nvram file
+> > >  scsi: aic94xx: world-writable sysfs update_bios file
+> > >  scsi: iscsi: world-writable sysfs priv_sess file
+> > 
+> > These are still not merged :(
+> 
+> OK, so I've not been tracking where we are in the dizzying ride on
+> security systems.  However, I thought we landed up in the privilege
+> separation arena using capabilities.  That means that world writeable
+> files aren't necessarily a problem as long as the correct capabilities
+> checks are in place, right?
 
-On Mon, Mar 14, 2011 at 6:40 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Mar 14, 2011 at 06:28:36PM +0800, Po-Yu Chuang wrote:
->> From: Po-Yu Chuang <ratbert@faraday-tech.com>
->>
->> If the page to cmpxchg is user mode read only (not write)
->> or invalid (not young), we should simulate a data abort first.
->
-> No.  If it is not young then it should be made young.  Age is an effect
-> of accesses.  It's not a permission.
+There are no capability checks on sysfs files right now, so these all
+need to be fixed.
 
-OK, I will rethink about the not young part.
-Thanks for your pointer.
+thanks,
 
-I will resubmit a v2 which contains only the read only check.
-It fixes a problem we met with futex.
-
-best regards,
-Po-Yu Chuang
+greg k-h
