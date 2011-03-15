@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab1COMdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 08:33:51 -0400
-Received: from stinky.trash.net ([213.144.137.162]:42336 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757462Ab1COMdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 08:33:49 -0400
-Message-ID: <4D7F5CAC.6070006@trash.net>
-Date: Tue, 15 Mar 2011 13:33:48 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	id S1757599Ab1COMfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 08:35:13 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36751 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756395Ab1COMfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 08:35:12 -0400
+Message-ID: <4D7F5CFE.8000200@kernel.dk>
+Date: Tue, 15 Mar 2011 13:35:10 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Changli Gao <xiaosuo@gmail.com>
-CC: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        security@kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] ipv4: netfilter: ipt_CLUSTERIP: fix buffer overflow
-References: <1299780740-32652-1-git-send-email-segoon@openwall.com> <AANLkTimPZJoCzz386e-4m0Y4khWGZirZguGFmuFYCrry@mail.gmail.com>
-In-Reply-To: <AANLkTimPZJoCzz386e-4m0Y4khWGZirZguGFmuFYCrry@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+CC: Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Andreas_Bie=DFmann?= <biessmann@corscience.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] fs-writeback: fix NULL pointer dereference in, __mark_inode_dirty
+References: <fa.8ND6HoGS9dKYUuniFCAoNq+1TFY@ifi.uio.no> <4D78AA72.3060202@secunet.com> <4D7F3CD5.9030105@secunet.com> <99773600-FC41-41A9-8544-BF7E09065546@cam.ac.uk>
+In-Reply-To: <99773600-FC41-41A9-8544-BF7E09065546@cam.ac.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.03.2011 15:00, Changli Gao wrote:
-> On Fri, Mar 11, 2011 at 2:12 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->> buffer string is copied from userspace.  It is not checked whether it is
->> zero terminated.  This may lead to overflow inside of simple_strtoul().
->>
->> It was introduced before the git epoch.  Files "ipt_CLUSTERIP/*" are
->> root writable only by default, however, on some setups permissions might be
->> relaxed to e.g. network admin user.
->>
->> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
->> ---
->>  Compile tested.
->>
->>  net/ipv4/netfilter/ipt_CLUSTERIP.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
->> index 403ca57..7aabf9a 100644
->> --- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
->> +++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
->> @@ -666,6 +666,7 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
->>
->>        if (copy_from_user(buffer, input, PROC_WRITELEN))
+On 2011-03-15 13:11, Anton Altaparmakov wrote:
+> Hi,
 > 
-> I think size should be used instead of PROC_WRITELEN.
+> On 15 Mar 2011, at 10:17, Torsten Hilbrich wrote:
+>> On 10.03.2011 11:39, Torsten Hilbrich wrote:
+>>> I ran into the same problem and successfully applied your fix.
+>>>
+>>> I was able to reproduce this panic and bisected it to the following commit:
+>>>
+>>> commit aaead25b954879e1a708ff2f3602f494c18d20b5
+>>> Author: Christoph Hellwig <hch@lst.de>
+>>> Date:   Mon Oct 4 14:25:33 2010 +0200
+>>>
+>>>    writeback: always use sb->s_bdi for writeback purposes
+>>>
+>>> The steps to reproduce it on my test system (T60p with Intel Core Duo) were.
+>>
+>> Added Christoph to CC. I also open a bug report at https://bugzilla.kernel.org/show_bug.cgi?id=31112
 > 
-> if (size > PROC_WRITELEN)
->      return -EIO;
-> if (copy_from_user(buffer, input, size))
->     return -EFAULT;
-> buffer[size] = '\0';
+> This is already being handled.  It is the same as other bug reports,
+> i.e. the fact that sb->s_bdi is made NULL on device removal and if it
+> happens at the wrong time you then get a NULL pointer dereference.
+> 
+> Jens Axboe just only yesterday posted an initial patch for this.  Can
+> you please test it and report back if it does indeed cure the problem?
+> 
+> The patch can be found here for example:
+> 
+> 	https://lkml.org/lkml/2011/3/14/25
 
-I agree, otherwise we might have the situation that the userspace
-copy is crossing page boundaries into unmapped memory.
+Yes, any testing of that patch would be greatly appreciated.
 
-
+-- 
+Jens Axboe
 
