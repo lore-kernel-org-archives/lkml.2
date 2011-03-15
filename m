@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab1COObo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:31:44 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:34532 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757799Ab1COObn (ORCPT
+	id S1757963Ab1COObu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:31:50 -0400
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:9514
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757946Ab1COObr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:31:43 -0400
-Date: Tue, 15 Mar 2011 15:29:57 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
-        "pasik@iki.fi" <pasik@iki.fi>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH R4 0/7] xen/balloon: Memory hotplug support for Xen balloon driver
-Message-ID: <20110315142957.GB12730@router-fw-old.local.net-space.pl>
-References: <20110308214429.GA27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091359290.2968@kaball-desktop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 15 Mar 2011 10:31:47 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zz4015Lzz1202hzz8275eh8275bh8275dha1495iz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LI3SCP-02-BW9-02
+X-M-MSG: 
+Date: Tue, 15 Mar 2011 15:31:37 +0100
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+CC: <linux-kernel@vger.kernel.org>, Wang Lei <f3d27b@gmail.com>
+Subject: [PATCH] x86, quirk: Fix SB600 revision check
+Message-ID: <20110315143137.GD29499@alberich.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103091359290.2968@kaball-desktop>
-User-Agent: Mutt/1.3.28i
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 02:01:25PM +0000, Stefano Stabellini wrote:
-> On Tue, 8 Mar 2011, Daniel Kiper wrote:
-> > Hi,
-> >
-> > I am sending next version of memory hotplug
-> > support for Xen balloon driver patch. It applies
-> > to Linus' git tree, v2.6.38-rc8 tag. Most of
-> > suggestions were taken into account. Thanks for
-> > everybody who tested and/or sent suggestions
-> > to my work.
-> >
-> > There are a few prerequisite patches which fixes
-> > some problems found during work on memory hotplug
-> > patch or add some futures which are needed by
-> > memory hotplug patch.
-> >
-> > Full list of fixes/futures:
-> >   - xen/balloon: Removal of driver_pages,
-> >   - xen/balloon: HVM mode support,
-> >   - xen/balloon: Migration from mod_timer() to schedule_delayed_work(),
-> >   - xen/balloon: Protect against CPU exhaust by event/x process,
-> >   - xen/balloon: Minor notation fixes,
-> >   - mm: Extend memory hotplug API to allow memory hotplug in virtual guests,
-> >   - xen/balloon: Memory hotplug support for Xen balloon driver.
-> >
-> > Additionally, I suggest to apply patch prepared by Steffano Stabellini
-> > (https://lkml.org/lkml/2011/1/31/232) which fixes memory management
-> > issue in Xen guest. I was not able boot guest machine without
-> > above mentioned patch.
->
-> after some discussions we came up with a different approach to fix the
-> issue; I sent a couple of patches a little while ago:
->
-> https://lkml.org/lkml/2011/2/28/410
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-I tested git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-tip-fixes
-and it works on x86_64, however, it does not work on i386. Tested as
-unprivileged guest on Xen Ver. 4.1.0-rc2-pre. On i386 domain crashes
-silently at early boot stage :-(((.
+Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
+(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems)
+introduced a regression. It removed some SB600 specific code
+to determine the revision ID without adapting a corresponding
+revision ID check for SB600.
 
-Daniel
+See this mail thread
+http://marc.info/?l=linux-kernel&m=129980296006380&w=2
+
+This patch adapts the corresponding check to cover all SB600
+revisions.
+
+Cc: stable@kernel.org # 38.x, 37.x, 32.x
+Tested-by: Wang Lei <f3d27b@gmail.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/early-quirks.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+
+Mea culpa!
+A fix for a BIOS issue on some Lenovo systems introduced a regression
+on another set of boxes (older HP Laptops) that have other BIOS
+trouble.
+
+Sorry for introducing this regression in .38.
+
+Patch is on top of 2.6.38. Please apply.
+
+
+Thanks,
+
+Andreas
+
+
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 9efbdcc..3755ef4 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -159,7 +159,12 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ 	if (rev >= 0x40)
+ 		acpi_fix_pin2_polarity = 1;
+ 
+-	if (rev > 0x13)
++	/*
++	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
++	 * SB700: revisions 0x39, 0x3a, ...
++	 * SB800: revisions 0x40, 0x41, ...
++	 */
++	if (rev >= 0x39)
+ 		return;
+ 
+ 	if (acpi_use_timer_override)
+-- 
+1.7.4.1
+
+
