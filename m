@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab1COIWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 04:22:50 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:40191 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab1COIWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 04:22:47 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.07 with qID p2F8MalI015106, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: wwang <wei_wang@realsil.com.cn>
-Subject: [PATCH 2/2] staging: rts_pstor: set lun_mode in a different place
-Date: Tue, 15 Mar 2011 16:22:16 +0800
-X-BOX-Message-Id: p2F8MalI015106
-Message-ID: <1300177336-4486-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755504Ab1COIYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 04:24:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51266 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754699Ab1COIYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 04:24:47 -0400
+Date: Tue, 15 Mar 2011 19:24:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: linux-next: build failure after merge of the final tree
+ (jdelvare-hwmon tree related)
+Message-Id: <20110315192428.ce74a177.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__15_Mar_2011_19_24_28_+1100_IVD6P5ZWNyTxwMAC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wwang <wei_wang@realsil.com.cn>
+--Signature=_Tue__15_Mar_2011_19_24_28_+1100_IVD6P5ZWNyTxwMAC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In sony notebook, card reader will be configured as two-lun mode
-through EFUSE. In this situation, MS card can't be recognized
-properly because driver does only support single-lun mode in default.
-In this patch, lun_mode is set in a different place, so driver can
-detect the EFUSE configuation automatically.
+Hi all,
 
-Signed-off-by: wwang <wei_wang@realsil.com.cn>
----
- drivers/staging/rts_pstor/rtsx_chip.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-diff --git a/drivers/staging/rts_pstor/rtsx_chip.c b/drivers/staging/rts_pstor/rtsx_chip.c
-index f443d97..d2f1c71 100644
---- a/drivers/staging/rts_pstor/rtsx_chip.c
-+++ b/drivers/staging/rts_pstor/rtsx_chip.c
-@@ -684,6 +684,11 @@ static int rts5209_init(struct rtsx_chip *chip)
- 	RTSX_DEBUGP("dw in 0x724: 0x%x\n", lval);
- 	val = (u8)lval;
- 	if (!(val & 0x80)) {
-+		if (val & 0x08)
-+			chip->lun_mode = DEFAULT_SINGLE;
-+		else
-+			chip->lun_mode = SD_MS_2LUN;
-+
- 		if (val & 0x04) {
- 			SET_SDIO_EXIST(chip);
- 		} else {
-@@ -705,12 +710,6 @@ static int rts5209_init(struct rtsx_chip *chip)
- 
- 		chip->aspm_l0s_l1_en = (val >> 5) & 0x03;
- 
--		if (val & 0x08) {
--			chip->lun_mode = DEFAULT_SINGLE;
--		} else {
--			chip->lun_mode = SD_MS_2LUN;
--		}
--
- 		val = (u8)(lval >> 8);
- 
- 		clk = (val >> 5) & 0x07;
--- 
-1.7.4.1
+drivers/hwmon/sch5627.c: In function 'sch5627_read_virtual_reg':
+drivers/hwmon/sch5627.c:179: error: implicit declaration of function 'mslee=
+p'
 
+Caused by commit 19803daeb145 ("hwmon: New driver for SMSC SCH5627").
+See Rule 1 in Documentation/SubmitChecklist.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__15_Mar_2011_19_24_28_+1100_IVD6P5ZWNyTxwMAC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNfyI8AAoJEDMEi1NhKgbsamkH/3X58iz955srOssiHFEtZ0iD
+KYWIEpvOzMhBqpPA+3fKTo/aTiqFsy7CJ2TQ8cRt/tj9wGVFiNCUDQuqd+c6IFh0
+jPMBE1mkxD2hyle3MCNJvUyGZs/9uL2TfHJk6lsBTCaLoIgMiYqLums9CiNSvM2Z
+40cySuXLznLAeSnmxI8nby0je5CPOpHByPGiqMq3owcy4bjd1v36Srj9TFrn+nVa
+extxwRPAppsfh88LYoAovtlIyb+LD2CQIUkGRIBquGfthW2GjEpgCATGNGKKpfWZ
+8NyxOWBVJdHj7aJeuTxUCWfuURUpi3QehBDZIAjMHBHaUR+tnMQy9K8CJKOYeIs=
+=/FA6
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__15_Mar_2011_19_24_28_+1100_IVD6P5ZWNyTxwMAC--
