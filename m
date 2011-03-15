@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab1COG0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 02:26:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43578 "EHLO smtps.tip.net.au"
+	id S1753842Ab1COG2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 02:28:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36829 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078Ab1COG0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 02:26:11 -0400
-Date: Tue, 15 Mar 2011 17:25:58 +1100
+	id S1753469Ab1COG2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 02:28:35 -0400
+Date: Tue, 15 Mar 2011 17:28:33 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: tglx@linutronix.de, bhutchings@solarflare.com, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, hpa@zytor.com, peterz@infradead.org
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-Id: <20110315172558.a11642e7.sfr@canb.auug.org.au>
-In-Reply-To: <20110314.210712.226761233.davem@davemloft.net>
-References: <20110314170546.af552b4e.sfr@canb.auug.org.au>
-	<alpine.LFD.2.00.1103141053020.2787@localhost6.localdomain6>
-	<20110315113049.a6112494.sfr@canb.auug.org.au>
-	<20110314.210712.226761233.davem@davemloft.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: linux-next: manual merge of the xen-two tree with the tip tree
+Message-Id: <20110315172833.4fd17a0c.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__15_Mar_2011_17_25_58_+1100_A9q7I7Rrqzjfrpl8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__15_Mar_2011_17_25_58_+1100_A9q7I7Rrqzjfrpl8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Konrad,
 
-Hi Dave,
+Today's linux-next merge of the xen-two tree got a conflict in
+arch/x86/pci/xen.c between commit 2c778651f73d ("x86: Cleanup the genirq
+name space") from the tip tree and commit bf480d952bcf ("xen: events:
+separate MSI PIRQ allocation from PIRQ binding to IRQ") from the xen-two
+tree.  Commit f420e010edd8 ("xen: events: push set_irq_msi down into
+xen_create_msi_irq") then moved the code modified by the tip tree commit
+into drivers/xen/events.c.
 
-On Mon, 14 Mar 2011 21:07:12 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 15 Mar 2011 11:30:49 +1100
->=20
-> > So, if you merge the commit 1fb0ef31f428 ("genirq: Fix affinity notifier
-> > fallout") from the tip tree, you will get exactly one new commit and wi=
-ll
-> > fix your tree properly with no adverse effect on anyone else.
->=20
-> Thomas, how would you like me to do this?  Do you want to put that
-> commit on a branch for me to pull from or should I apply it
-> directly?
-
-That commit is already the head of the irq/numa branch in the tip tree
-(it is also on the irq/core branch).
-
-Please merge that rather than cherry-picking the commit as that will
-minimise the possibility of conflicts.  Pulling the irq/numa branch will
-get you just that one fixup commit (as you have already merged up to the
-immediately preceding commit).
-
-I assume this makes sense, Thomas?  I just did a merge of the actual
-fixup commit after merging the net tree.
---=20
+I fixed it up (I think - see below) and can carry the fix as necessary (I
+used the xen-two tree's version of arch/x86/pci/xen.c).
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__15_Mar_2011_17_25_58_+1100_A9q7I7Rrqzjfrpl8
-Content-Type: application/pgp-signature
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 62e5237..934a3b1 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -692,7 +692,7 @@ int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 				      handle_level_irq, name);
+ 
+ 	xen_irq_info_pirq_init(irq, 0, pirq, 0, vector, 0);
+-	ret = set_irq_msi(irq, msidesc);
++	ret = irq_set_msi_desc(irq, msidesc);
+ 	if (ret < 0)
+ 		goto error_irq;
+ out:
+-- 
+1.7.4.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNfwZ2AAoJEDMEi1NhKgbsBhUH/2Q0eutJOLr3TszlJVE8vbj+
-cc2EzZRR21k+DmXAp5Sj3jGTWN9/7VvWEn7qCHG70ikVvH14eqTlQ6EKfGQQjVUT
-qFte4eYolxUm3RSefXafAt2CeUMWTZPBngd5oGCGPDLVRxIr5iIJfnDLdSyxP+qV
-agfW1QlS8ixGF9hh/oTb7aAWkZxmOx3Gb19jZTSQiblGtVUC84YdCCJmpT179BOm
-zPs8mndSA1fMXyG0isA02tt0f1yUR11pPb4huR8fgAHPsRtCfFZPUbT57QbyKL6o
-4J6AdXU+IglXxoRHimsrTfH5dUcJxy+vVy9/9O0tqcgA+4DhscBuGxqtDpgYjbA=
-=xZOY
------END PGP SIGNATURE-----
-
---Signature=_Tue__15_Mar_2011_17_25_58_+1100_A9q7I7Rrqzjfrpl8--
