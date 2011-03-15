@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055Ab1COPcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 11:32:36 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:34973 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758022Ab1COPce (ORCPT
+	id S1758063Ab1COPhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 11:37:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20378 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758022Ab1COPhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 11:32:34 -0400
-Date: Tue, 15 Mar 2011 16:30:01 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
-        "pasik@iki.fi" <pasik@iki.fi>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Bootup fix for _brk_end being != _end
-Message-ID: <20110315153001.GD12730@router-fw-old.local.net-space.pl>
-References: <20110308214429.GA27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091359290.2968@kaball-desktop> <20110315142957.GB12730@router-fw-old.local.net-space.pl> <20110315144821.GA11586@dumpdata.com>
+	Tue, 15 Mar 2011 11:37:04 -0400
+Date: Tue, 15 Mar 2011 08:36:26 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oliver Neukum <oliver@neukum.org>, lud <linux-usb@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: linux-next: Tree for February 21 (usb/serial)
+Message-Id: <20110315083626.67d85f55.randy.dunlap@oracle.com>
+In-Reply-To: <Pine.LNX.4.44L0.1103040953380.1812-100000@iolanthe.rowland.org>
+References: <20110303135152.c4b53da1.randy.dunlap@oracle.com>
+	<Pine.LNX.4.44L0.1103040953380.1812-100000@iolanthe.rowland.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315144821.GA11586@dumpdata.com>
-User-Agent: Mutt/1.3.28i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D7F8781.00A7,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 10:48:21AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > Additionally, I suggest to apply patch prepared by Steffano Stabellini
-> > > > (https://lkml.org/lkml/2011/1/31/232) which fixes memory management
-> > > > issue in Xen guest. I was not able boot guest machine without
-> > > > above mentioned patch.
-> > >
-> > > after some discussions we came up with a different approach to fix the
-> > > issue; I sent a couple of patches a little while ago:
-> > >
-> > > https://lkml.org/lkml/2011/2/28/410
-> >
-> > I tested git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-tip-fixes
-> > and it works on x86_64, however, it does not work on i386. Tested as
-> > unprivileged guest on Xen Ver. 4.1.0-rc2-pre. On i386 domain crashes
-> > silently at early boot stage :-(((.
->
-> Details? Can you provide the 'xenctx' output of where it crashed?
+On Fri, 4 Mar 2011 10:04:38 -0500 (EST) Alan Stern wrote:
 
-As I wrote above domain is dying and I am not able to connect to it using
-xenctx after crash :-(((. I do not know how to do that in another way.
+> On Thu, 3 Mar 2011, Randy Dunlap wrote:
+> 
+> > On Mon, 21 Feb 2011 21:30:01 +0100 Rafael J. Wysocki wrote:
+> > 
+> > > On Monday, February 21, 2011, Randy Dunlap wrote:
+> > > > On Mon, 21 Feb 2011 18:21:34 +1100 Stephen Rothwell wrote:
+> > > > 
+> > > > > Hi all,
+> > > > > 
+> > > > > Changes since 20110218:
+> > > > 
+> > > > 
+> > > > When CONFIG_PM_RUNTIME is not enabled:
+> > > > 
+> > > > drivers/usb/serial/usb_wwan.c:702: error: 'struct dev_pm_info' has no member named 'usage_count'
+> > > 
+> > > This looks like a bug in the driver that shouldn't access this field directly.
+> > 
+> > 
+> > This build error is still with us in linux-next 2011.0303.
+> 
+> Since Oliver added this bug in commit
+> 16871dcac74c63227aa92e0012f3004a648c2062 (usb_wwan: error case of
+> resume), he should be the person to fix it.  The logic there is not 
+> clear to me; I don't know how it ought to be changed.  Would replacing 
+> it with a call to usb_autopm_put_interface_no_suspend() be good enough?
 
-Daniel
+Hi Oliver,
+
+This build problem still happens with linux-next 2011.0315.
+Please send a fix for it.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
