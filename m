@@ -1,80 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab1COWNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 18:13:19 -0400
-Received: from mail.atheros.com ([12.19.149.2]:48493 "EHLO mail.atheros.com"
+	id S1752078Ab1COWPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 18:15:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23992 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203Ab1COWNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 18:13:15 -0400
-Date: Tue, 15 Mar 2011 15:13:12 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nick Piggin <npiggin@kernel.dk>, Dave Chinner <dchinner@redhat.com>,
+	id S1751290Ab1COWPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 18:15:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,191,1299484800"; 
+   d="scan'208,223";a="720535257"
+Subject: Re: [PATCH] x86: introduce pci_map_biosrom()
+From: Dan Williams <dan.j.williams@intel.com>
+To: "hpa@zytor.com" <hpa@zytor.com>
+Cc: "dmilburn@redhat.com" <dmilburn@redhat.com>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: <IRQ> [<ffffffff810c9204>] ? __alloc_pages_nodemask+0x622/0x696
-Message-ID: <20110315221312.GR11878@tux>
-References: <AANLkTikaLb_xan2ePfo9JCZ1w7RZ76wF8NUT2tYr0ZD=@mail.gmail.com>
- <alpine.DEB.2.00.1103051847100.8779@chino.kir.corp.google.com>
- <4D770178.9070908@gmail.com>
- <alpine.DEB.2.00.1103091254540.13353@chino.kir.corp.google.com>
- <4D77EEB4.9090404@gmail.com>
- <alpine.DEB.2.00.1103091549020.16989@router.home>
- <20110310000502.GA13763@hash.localnet>
- <20110315205946.GL11878@tux>
- <4D7FDA14.7000904@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4D7FDA14.7000904@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        x86@kernel.org
+In-Reply-To: <20110308183226.6246.90354.stgit@localhost6.localdomain6>
+References: <20110308183226.6246.90354.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Mar 2011 15:17:47 -0700
+Message-ID: <1300227467.28000.10.camel@dwillia2-linux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 02:28:52PM -0700, Justin P. Mattock wrote:
-> On 03/15/2011 01:59 PM, Luis R. Rodriguez wrote:
-> > On Wed, Mar 09, 2011 at 04:05:02PM -0800, Bob Copeland wrote:
-> >> On Wed, Mar 09, 2011 at 03:54:24PM -0600, Christoph Lameter wrote:
-> >>> [ 7419.322770] wlan0: associated
-> >>> [ 7427.161366] ath: Failed to stop TX DMA in 100 msec after killing last frame
-> >>> [ 7427.161432] ath: Failed to stop TX DMA!
-> >>> [ 7434.492398] ath: Failed to stop TX DMA in 100 msec after killing last frame
-> >>> [ 7434.492462] ath: Failed to stop TX DMA!
-> >>> [ 7603.339047]
-> >>> =============================================================================
-> >>> [ 7603.339053] BUG radix_tree_node: Padding overwritten. 0xffff88000008fe00-0xffff88000008fe32
-> >>
-> >>> Could the ath driver corrupt memory if the TX DMA cannot be stopped?
-> >
-> > Yes, this is why we have had a series of patches to address this upstream,
-> > the latest one was for RX DMA failing to stop but Felix found a fix for that.
-> > Apart from that I am not aware of more issues. Can you please try with
-> > wireless-testing.git ?
-> >
-> >    Luis
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> sure..
-> 
-> as for seeing this issue. nothing really now on the current. only 
-> message I see is:
-> 
-> [   69.551295] ath: Failed to stop TX DMA in 100 msec after killing last 
-> frame
-> [   69.551336] ath: Failed to stop TX DMA!
+>From 2d9dae6870bbed75a94bc3b7478da7418e2a4d6a Mon Sep 17 00:00:00 2001
+From: Dan Williams <dan.j.williams@intel.com>
+Date: Mon, 14 Mar 2011 17:01:55 -0700
+Subject: [PATCH v2] x86: introduce pci_map_biosrom()
 
-Can you easily reproduce?
+The isci driver needs to retrieve its preboot orom image which contains
+necessary runtime parameters like platform specific sas addresses and
+phy configuration.  There is no rom bar associated with this area,
+instead we need to scan legacy expansion rom space.
 
-  Luis
+1/ Promote the probe_roms_32 implementation to x86-64
+2/ Add a facility to find and map an adapter rom by pci device (according to
+   PCI Firmware Specification Revision 3.0)
+
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+Here is an updated version rebased on tip/master.  Aside from fixing up
+the merge conflicts in Makefile and setup.h this is identical to the
+last release.
+
+--
+Dan
+
+ arch/x86/include/asm/probe_roms.h                 |    8 ++
+ arch/x86/include/asm/setup.h                      |    2 +-
+ arch/x86/kernel/Makefile                          |    2 +-
+ arch/x86/kernel/head32.c                          |    1 -
+ arch/x86/kernel/{probe_roms_32.c => probe_roms.c} |  101 +++++++++++++++++++++
+ arch/x86/kernel/x86_init.c                        |    2 +-
+ 6 files changed, 112 insertions(+), 4 deletions(-)
+ create mode 100644 arch/x86/include/asm/probe_roms.h
+ rename arch/x86/kernel/{probe_roms_32.c => probe_roms.c} (65%)
+
+diff --git a/arch/x86/include/asm/probe_roms.h b/arch/x86/include/asm/probe_roms.h
+new file mode 100644
+index 0000000..4950a0b
+--- /dev/null
++++ b/arch/x86/include/asm/probe_roms.h
+@@ -0,0 +1,8 @@
++#ifndef _PROBE_ROMS_H_
++#define _PROBE_ROMS_H_
++struct pci_dev;
++
++extern void __iomem *pci_map_biosrom(struct pci_dev *pdev);
++extern void pci_unmap_biosrom(void __iomem *rom);
++extern size_t pci_biosrom_size(struct pci_dev *pdev);
++#endif
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index db8aa19..03d3a32 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -104,10 +104,10 @@ void *extend_brk(size_t size, size_t align);
+ 	type *name;					\
+ 	RESERVE_BRK(name, sizeof(type) * entries)
+ 
++extern void probe_roms(void);
+ #ifdef __i386__
+ 
+ void __init i386_start_kernel(void);
+-extern void probe_roms(void);
+ 
+ #else
+ void __init x86_64_start_kernel(char *real_mode);
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 743642f..78eeffb 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -36,7 +36,7 @@ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+ obj-y			+= time.o ioport.o ldt.o dumpstack.o
+ obj-y			+= setup.o x86_init.o i8259.o irqinit.o jump_label.o
+ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
+-obj-$(CONFIG_X86_32)	+= probe_roms_32.o
++obj-y			+= probe_roms.o
+ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index d6d6bb3..3bb0850 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -23,7 +23,6 @@
+ static void __init i386_default_early_setup(void)
+ {
+ 	/* Initialize 32bit specific setup functions */
+-	x86_init.resources.probe_roms = probe_roms;
+ 	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+ 
+diff --git a/arch/x86/kernel/probe_roms_32.c b/arch/x86/kernel/probe_roms.c
+similarity index 65%
+rename from arch/x86/kernel/probe_roms_32.c
+rename to arch/x86/kernel/probe_roms.c
+index 071e7fe..ba0a4cc 100644
+--- a/arch/x86/kernel/probe_roms_32.c
++++ b/arch/x86/kernel/probe_roms.c
+@@ -73,6 +73,107 @@ static struct resource video_rom_resource = {
+ 	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+ };
+ 
++/* does this oprom support the given pci device, or any of the devices
++ * that the driver supports?
++ */
++static bool match_id(struct pci_dev *pdev, unsigned short vendor, unsigned short device)
++{
++	struct pci_driver *drv = pdev->driver;
++	const struct pci_device_id *id;
++
++	if (pdev->vendor == vendor && pdev->device == device)
++		return true;
++
++	for (id = drv ? drv->id_table : NULL; id && id->vendor; id++)
++		if (id->vendor == vendor && id->device == device)
++			break;
++
++	return id && id->vendor;
++}
++
++static bool probe_list(struct pci_dev *pdev, unsigned short vendor,
++		       const unsigned char *rom_list)
++{
++	unsigned short device;
++
++	do {
++		if (probe_kernel_address(rom_list, device) != 0)
++			device = 0;
++
++		if (device && match_id(pdev, vendor, device))
++			break;
++
++		rom_list += 2;
++	} while (device);
++
++	return !!device;
++}
++
++static struct resource *find_oprom(struct pci_dev *pdev)
++{
++	struct resource *oprom = NULL;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(adapter_rom_resources); i++) {
++		struct resource *res = &adapter_rom_resources[i];
++		unsigned short offset, vendor, device, list, rev;
++		const unsigned char *rom;
++
++		if (res->end == 0)
++			break;
++
++		rom = isa_bus_to_virt(res->start);
++		if (probe_kernel_address(rom + 0x18, offset) != 0)
++			continue;
++
++		if (probe_kernel_address(rom + offset + 0x4, vendor) != 0)
++			continue;
++
++		if (probe_kernel_address(rom + offset + 0x6, device) != 0)
++			continue;
++
++		if (match_id(pdev, vendor, device)) {
++			oprom = res;
++			break;
++		}
++
++		if (probe_kernel_address(rom + offset + 0x8, list) == 0 &&
++		    probe_kernel_address(rom + offset + 0xc, rev) == 0 &&
++		    rev >= 3 && list &&
++		    probe_list(pdev, vendor, rom + offset + list)) {
++			oprom = res;
++			break;
++		}
++	}
++
++	return oprom;
++}
++
++void *pci_map_biosrom(struct pci_dev *pdev)
++{
++	struct resource *oprom = find_oprom(pdev);
++
++	if (!oprom)
++		return NULL;
++
++	return ioremap(oprom->start, resource_size(oprom));
++}
++EXPORT_SYMBOL(pci_map_biosrom);
++
++void pci_unmap_biosrom(void __iomem *image)
++{
++	iounmap(image);
++}
++EXPORT_SYMBOL(pci_unmap_biosrom);
++
++size_t pci_biosrom_size(struct pci_dev *pdev)
++{
++	struct resource *oprom = find_oprom(pdev);
++
++	return oprom ? resource_size(oprom) : 0;
++}
++EXPORT_SYMBOL(pci_biosrom_size);
++
+ #define ROMSIGNATURE 0xaa55
+ 
+ static int __init romsignature(const unsigned char *rom)
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index c11514e..6eee082 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -35,7 +35,7 @@ void iommu_shutdown_noop(void) { }
+ struct x86_init_ops x86_init __initdata = {
+ 
+ 	.resources = {
+-		.probe_roms		= x86_init_noop,
++		.probe_roms		= probe_roms,
+ 		.reserve_resources	= reserve_standard_io_resources,
+ 		.memory_setup		= default_machine_specific_memory_setup,
+ 	},
+-- 
+1.7.3.4
+
+
+
