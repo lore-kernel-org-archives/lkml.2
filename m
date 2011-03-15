@@ -1,157 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab1COXMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 19:12:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35626 "EHLO mx1.suse.de"
+	id S1756350Ab1COX0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 19:26:20 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34566 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756626Ab1COXMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 19:12:37 -0400
-Date: Wed, 16 Mar 2011 00:12:30 +0100
-From: Jan Kara <jack@suse.cz>
-To: Greg Thelen <gthelen@google.com>
-Cc: Jan Kara <jack@suse.cz>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>
-Subject: Re: [PATCH v6 8/9] memcg: check memcg dirty limits in page
- writeback
-Message-ID: <20110315231230.GC4995@quack.suse.cz>
-References: <1299869011-26152-1-git-send-email-gthelen@google.com>
- <1299869011-26152-9-git-send-email-gthelen@google.com>
- <20110314175408.GE31120@redhat.com>
- <20110314211002.GD4998@quack.suse.cz>
- <AANLkTikCt90o2qRV=0cJijtnA_W44dcUCBOmZ53Biv07@mail.gmail.com>
+	id S1755416Ab1COX0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 19:26:16 -0400
+Date: Wed, 16 Mar 2011 10:26:11 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [GIT] Security subsystem changes for 2.6.39
+Message-ID: <alpine.LRH.2.00.1103161007330.19446@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikCt90o2qRV=0cJijtnA_W44dcUCBOmZ53Biv07@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-03-11 20:27:33, Greg Thelen wrote:
-> On Mon, Mar 14, 2011 at 2:10 PM, Jan Kara <jack@suse.cz> wrote:
-> > On Mon 14-03-11 13:54:08, Vivek Goyal wrote:
-> >> On Fri, Mar 11, 2011 at 10:43:30AM -0800, Greg Thelen wrote:
-> >> > If the current process is in a non-root memcg, then
-> >> > balance_dirty_pages() will consider the memcg dirty limits as well as
-> >> > the system-wide limits.  This allows different cgroups to have distinct
-> >> > dirty limits which trigger direct and background writeback at different
-> >> > levels.
-> >> >
-> >> > If called with a mem_cgroup, then throttle_vm_writeout() queries the
-> >> > given cgroup for its dirty memory usage limits.
-> >> >
-> >> > Signed-off-by: Andrea Righi <arighi@develer.com>
-> >> > Signed-off-by: Greg Thelen <gthelen@google.com>
-> >> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >> > Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-> >> > ---
-> >> > Changelog since v5:
-> >> > - Simplified this change by using mem_cgroup_balance_dirty_pages() rather than
-> >> >   cramming the somewhat different logic into balance_dirty_pages().  This means
-> >> >   the global (non-memcg) dirty limits are not passed around in the
-> >> >   struct dirty_info, so there's less change to existing code.
-> >>
-> >> Yes there is less change to existing code but now we also have a separate
-> >> throttlig logic for cgroups.
-> >>
-> >> I thought that we are moving in the direction of IO less throttling
-> >> where bdi threads always do the IO and Jan Kara also implemented the
-> >> logic to distribute the finished IO pages uniformly across the waiting
-> >> threads.
-> >  Yes, we'd like to avoid doing IO from balance_dirty_pages(). But if the
-> > logic in cgroups specific part won't get too fancy (which it doesn't seem
-> > to be the case currently), it shouldn't be too hard to convert it to the new
-> > approach.
-> 
-> Handling memcg hierarchy was something that was not trivial to implement in
-> mem_cgroup_balance_dirty_pages.
-> 
-> > We can talk about it at LSF but at least with my approach to IO-less
-> > balance_dirty_pages() it would be easy to convert cgroups throttling to
-> > the new way. With Fengguang's approach it might be a bit harder since he
-> > computes a throughput and from that necessary delay for a throttled task
-> > but with cgroups that is impossible to compute so he'd have to add some
-> > looping if we didn't write enough pages from the cgroup yet. But still it
-> > would be reasonable doable AFAICT.
-> 
-> I am definitely interested in finding a way to merge these feature
-> cleanly together.
-  What my patches do is that instead of calling writeback_inodes_wb() the
-process waits for IO on enough pages to get completed. Now if we can tell
-for each page against which cgroup it is accounted (and I believe we are
-able to do so), we can as well properly account amount of pages completed
-against a particular cgroup and thus wait for right amount of pages for
-that cgroup to get written. The only difficult part is that for BDI I can
-estimate throughput, set sleep time appropriately, and thus avoid
-unnecessary looping checking whether pages have already completed or not.
-With per-cgroup this is impossible (cgroups share the resource) so we'd have
-to check relatively often...
+Please pull the following changes for the 2.6.39 kernel.
 
-> >> Keeping it separate for cgroups, reduces the complexity but also forks
-> >> off the balancing logic for root and other cgroups. So if Jan Kara's
-> >> changes go in, it automatically does not get used for memory cgroups.
-> >>
-> >> Not sure how good a idea it is to use a separate throttling logic for
-> >> for non-root cgroups.
-> >  Yeah, it looks a bit odd. I'd think that we could just cap
-> > task_dirty_limit() by a value computed from a cgroup limit and be done
-> > with that but I probably miss something...
-> 
-> That is an interesting idea.  When looking at upstream balance_dirty_pages(),
-> the result of task_dirty_limit() is compared per bdi_nr_reclaimable and
-> bdi_nr_writeback.  I think we should be comparing memcg usage to memcg limits
-> to catch cases where memcg usage is above memcg limits.
-> Or am I missing something in your apporach?
-  Oh right. It was too late yesterday :).
- 
-> > Sure there is also a different
-> > background limit but that's broken anyway because a flusher thread will
-> > quickly stop doing writeback if global background limit is not exceeded.
-> > But that's a separate topic so I'll reply with this to a more appropriate
-> > email ;)
-> ;)  I am also interested in the this bg issue, but I should also try
-> to stay on topic.
-  I found out I've already deleted the relevant email and thus have no good
-way to reply to it. So in the end I'll write it here: As Vivek pointed out,
-you try to introduce background writeback that honors per-cgroup limits but
-the way you do it it doesn't quite work. To avoid livelocking of flusher
-thread, any essentially unbounded work (and background writeback of bdi or
-in your case a cgroup pages on the bdi is in principle unbounded) has to
-give way to other work items in the queue (like a work submitted by
-sync(1)). Thus wb_writeback() stops for_background works if there are other
-works to do with the rationale that as soon as that work is finished, we
-may happily return to background cleaning (and that other work works for
-background cleaning as well anyway).
+Notable enhancements: 
 
-But with your introduction of per-cgroup background writeback we are going
-to loose the information in which cgroup we have to get below background
-limit. And if we stored the context somewhere and tried to return to it
-later, we'd have the above problems with livelocking and we'd have to
-really carefully handle cases where more cgroups actually want their limits
-observed.
+- Improved mmap support for Smack
+- Pathname hooks for CacheFiles (previously unmediated for pathname security)
+- Improved management & error handling for keys
+- Pass the last pathname component to LSM when creating an inode, to 
+  allow it to be used in labeling decisions; implementation for SELinux
+- New sb_remount LSM hook; implementation for SELinux to refuse remounts
+  if mount labels change
+- Misc. fixes and cleanups for AppArmor, SELinux networking, IMA and 
+  TOMOYO
 
-I'm not decided what would be a good solution for this. It seems that
-a flusher thread should check all cgroups whether they are not exceeding
-their background limit and if yes, do writeback. I'm not sure how practical
-that would be but possibly we could have a list of cgroups with exceeded
-limits and flusher thread could check that?
 
-								Honza
+The following changes since commit 521cb40b0c44418a4fd36dc633f575813d59a43d:
+  Linus Torvalds (1):
+        Linux 2.6.38
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 for-linus
+
+Casey Schaufler (3):
+      Subject: [PATCH] Smack: mmap controls for library containment
+      Smack: correct behavior in the mmap hook
+      Smack: correct final mmap check comparison
+
+David Howells (5):
+      CacheFiles: Add calls to path-based security hooks
+      KEYS: Add an RCU payload dereference macro
+      KEYS: Add a key type op to permit the key description to be vetted
+      KEYS: Add a new keyctl op to reject a key with a specified error code
+      KEYS: Add an iovec version of KEYCTL_INSTANTIATE
+
+Eric Paris (6):
+      fs/vfs/security: pass last path component to LSM on inode creation
+      SELinux: Use dentry name in new object labeling
+      selinux: drop unused packet flow permissions
+      Revert "selinux: simplify ioctl checking"
+      LSM: Pass -o remount options to the LSM
+      SELinux: implement the new sb_remount LSM hook
+
+Harry Ciao (3):
+      SELinux: Auto-generate security_is_socket_class
+      SELinux: Socket retains creator role and MLS attribute
+      SELinux: Compute SID for the newly created socket
+
+James Morris (4):
+      Merge branch 'master'; commit 'v2.6.38-rc7' into next
+      Merge branch 'master' of git://git.infradead.org/users/eparis/selinux into next
+      Merge branch 'security-next' of git://git.kernel.org/.../jj/apparmor-dev into next
+      Merge branch 'next' into for-linus
+
+John Johansen (1):
+      AppArmor: Cleanup make file to remove cruft and make it easier to read
+
+Lucian Adrian Grijincu (2):
+      security/selinux: fix /proc/sys/ labeling
+      security: remove unused security_sysctl hook
+
+Michal Hocko (1):
+      AppArmor: cleanup generated files correctly
+
+Mimi Zohar (5):
+      IMA: convert i_readcount to atomic
+      IMA: define readcount functions
+      IMA: maintain i_readcount in the VFS layer
+      IMA: remove IMA imbalance checking
+      ima: remove unnecessary call to ima_must_measure
+
+Shan Wei (3):
+      security:selinux: kill unused MAX_AVTAB_HASH_MASK and ebitmap_startbit
+      security:smack: kill unused SMACK_LIST_MAX, MAY_ANY and MAY_ANYWRITE
+      AppArmor: kill unused macros in lsm.c
+
+Steffen Klassert (3):
+      selinux: Fix check for xfrm selinux context algorithm
+      selinux: Fix wrong checks for selinux_policycap_netpeer
+      selinux: Fix packet forwarding checks on postrouting
+
+Tetsuo Handa (1):
+      TOMOYO: Fix memory leak upon file open.
+
+ Documentation/keys-request-key.txt      |    9 +-
+ Documentation/keys.txt                  |   28 ++-
+ arch/x86/Kconfig                        |    5 +
+ fs/btrfs/inode.c                        |   13 +-
+ fs/btrfs/xattr.c                        |    6 +-
+ fs/btrfs/xattr.h                        |    3 +-
+ fs/cachefiles/namei.c                   |   52 ++++-
+ fs/ext2/ext2.h                          |    2 +-
+ fs/ext2/ialloc.c                        |    5 +-
+ fs/ext2/namei.c                         |    8 +-
+ fs/ext2/xattr.h                         |    6 +-
+ fs/ext2/xattr_security.c                |    5 +-
+ fs/ext3/ialloc.c                        |    5 +-
+ fs/ext3/namei.c                         |    8 +-
+ fs/ext3/xattr.h                         |    4 +-
+ fs/ext3/xattr_security.c                |    5 +-
+ fs/ext4/ialloc.c                        |    2 +-
+ fs/ext4/xattr.h                         |    4 +-
+ fs/ext4/xattr_security.c                |    5 +-
+ fs/file_table.c                         |    5 +-
+ fs/gfs2/inode.c                         |    7 +-
+ fs/jffs2/dir.c                          |    9 +-
+ fs/jffs2/nodelist.h                     |    2 +-
+ fs/jffs2/security.c                     |    5 +-
+ fs/jffs2/write.c                        |   18 +-
+ fs/jffs2/xattr.h                        |    5 +-
+ fs/jfs/jfs_xattr.h                      |    5 +-
+ fs/jfs/namei.c                          |    8 +-
+ fs/jfs/xattr.c                          |    6 +-
+ fs/namespace.c                          |    4 +
+ fs/ocfs2/namei.c                        |    4 +-
+ fs/ocfs2/refcounttree.c                 |    3 +-
+ fs/ocfs2/xattr.c                        |   10 +-
+ fs/ocfs2/xattr.h                        |    4 +-
+ fs/open.c                               |    3 +-
+ fs/proc/proc_sysctl.c                   |    1 -
+ fs/reiserfs/namei.c                     |    9 +-
+ fs/reiserfs/xattr_security.c            |    3 +-
+ fs/xfs/linux-2.6/xfs_iops.c             |    9 +-
+ include/linux/ext3_fs.h                 |    3 +-
+ include/linux/fs.h                      |   23 ++-
+ include/linux/ima.h                     |    6 -
+ include/linux/key-type.h                |   14 +-
+ include/linux/key.h                     |    5 +
+ include/linux/keyctl.h                  |    2 +
+ include/linux/reiserfs_xattr.h          |    2 +
+ include/linux/security.h                |   35 ++--
+ include/linux/xattr.h                   |    2 +
+ kernel/sysctl.c                         |    5 -
+ mm/shmem.c                              |    9 +-
+ net/rxrpc/ar-key.c                      |   19 ++
+ scripts/selinux/genheaders/genheaders.c |   20 ++
+ security/apparmor/Makefile              |   38 +++-
+ security/apparmor/lsm.c                 |    2 -
+ security/capability.c                   |   15 +-
+ security/integrity/ima/ima.h            |    3 +-
+ security/integrity/ima/ima_api.c        |   13 +-
+ security/integrity/ima/ima_iint.c       |    5 -
+ security/integrity/ima/ima_main.c       |  136 ++----------
+ security/keys/compat.c                  |   50 ++++
+ security/keys/encrypted.c               |    3 +-
+ security/keys/internal.h                |    8 +
+ security/keys/key.c                     |   27 ++-
+ security/keys/keyctl.c                  |  143 +++++++++++-
+ security/keys/keyring.c                 |    4 +-
+ security/keys/request_key.c             |    2 +-
+ security/keys/trusted.c                 |    3 +-
+ security/keys/user_defined.c            |    3 +-
+ security/security.c                     |   19 +-
+ security/selinux/hooks.c                |  350 ++++++++++++++++--------------
+ security/selinux/include/classmap.h     |    7 +-
+ security/selinux/include/security.h     |    8 +-
+ security/selinux/ss/avtab.h             |   23 +-
+ security/selinux/ss/ebitmap.h           |    1 -
+ security/selinux/ss/mls.c               |    5 +-
+ security/selinux/ss/mls.h               |    3 +-
+ security/selinux/ss/policydb.c          |  130 +++++++++++
+ security/selinux/ss/policydb.h          |   14 +-
+ security/selinux/ss/services.c          |   73 +++++--
+ security/selinux/xfrm.c                 |    2 +-
+ security/smack/smack.h                  |   17 +-
+ security/smack/smack_access.c           |   52 +++--
+ security/smack/smack_lsm.c              |  287 ++++++++++++++++++++----
+ security/smack/smackfs.c                |  370 +++++++++++++++++++++----------
+ security/tomoyo/file.c                  |    5 +-
+ 85 files changed, 1549 insertions(+), 712 deletions(-)
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+James Morris
+<jmorris@namei.org>
