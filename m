@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab1COPtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 11:49:09 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:38681 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab1COPtH (ORCPT
+	id S1758023Ab1COPxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 11:53:37 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56593 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750944Ab1COPxg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 11:49:07 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D7F8AB1.3080705@cam.ac.uk>
-Date: Tue, 15 Mar 2011 15:50:09 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: Moving staging:iio over to threaded interrupts.
-References: <4D6FCC99.6090202@cam.ac.uk> <alpine.LFD.2.00.1103081055160.2787@localhost6.localdomain6> <4D76119A.2030100@cam.ac.uk> <alpine.LFD.2.00.1103081304470.2787@localhost6.localdomain6> <4D762065.7030009@cam.ac.uk>
-In-Reply-To: <4D762065.7030009@cam.ac.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Mar 2011 11:53:36 -0400
+Subject: Re: [PATCH 1/4] drivers/serial/ucc_uart.c: Add of_node_put to avoid memory leak
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1283269738-14612-2-git-send-email-julia@diku.dk>
+Date: Tue, 15 Mar 2011 10:51:23 -0500
+Cc: Timur Tabi <timur@freescale.com>, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2452483F-04B7-4B44-B59D-94A9D18F5DA4@kernel.crashing.org>
+References: <1283269738-14612-1-git-send-email-julia@diku.dk> <1283269738-14612-2-git-send-email-julia@diku.dk>
+To: Julia Lawall <julia@diku.dk>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/11 12:26, Jonathan Cameron wrote:
-> On 03/08/11 12:12, Thomas Gleixner wrote:
->> On Tue, 8 Mar 2011, Jonathan Cameron wrote:
->>> On 03/08/11 10:30, Thomas Gleixner wrote:
->>>> So now you can request the interrupts for your subdevices with
->>>> request_irq or request_threaded_irq.
->>>>
->>>> You can also implement #1 this way, you just mark the sub device
->>>> interrupts as IRQ_NESTED_THREAD, and then call the handlers from the
->>>> main trigger irq thread.
->>> Hi Thomas,
->>>
->>> One issue here that I'm not quite sure how to overcome is that the trigger to
->>> device mapping tends to be dynamic.  That is we quite often switch around
->>> what device is triggered by which trigger at runtime.  All done via text label
->>> matching via sysfs.
->>
->> Was not aware of that.
->>  
->>> I guess we could maintain this by a spot of indirection and pool of interrupts per
->>> trigger (with compile time control on how many). Any other approaches come to mind?
->>
->> That should work. You just need a function in the trigger
->> implementation which hands back an unused irq number to the device
->> when a trigger is installed for a device. Then the device calls
->> request[_threaded]_irq() on that irq number and all should work
->> magically.
->>
-> Cool.  Actually thinking more on this we probably want to have a single pool for IIO
-> in general that then allocates sets to the individual drivers.  That way things
-> like dynamic trigger creation (which is needed for the bridge to the input subsystem
-> but not currently implemented) become possible.
+
+On Aug 31, 2010, at 10:48 AM, Julia Lawall wrote:
+
+> Add a call to of_node_put in the error handling code following a call to
+> of_find_compatible_node or of_find_node_by_type.
 > 
-Hi Thomas,
+> This patch also substantially reorganizes the error handling code in the
+> function, to that it is possible first to jump to code that frees qe_port
+> and then to jump to code that also puts np.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r exists@
+> local idexpression x;
+> expression E,E1,E2;
+> statement S;
+> @@
+> 
+> *x = 
+> (of_find_node_by_path
+> |of_find_node_by_name
+> |of_find_node_by_phandle
+> |of_get_parent
+> |of_get_next_parent
+> |of_get_next_child
+> |of_find_compatible_node
+> |of_match_node
+> |of_find_node_by_type
+> |of_find_node_with_property
+> |of_find_matching_node
+> |of_parse_phandle
+> )(...);
+> ...
+> if (x == NULL) S
+> <... when != x = E
+> *if (...) {
+>  ... when != of_node_put(x)
+>      when != if (...) { ... of_node_put(x); ... }
+> (
+>  return <+...x...+>;
+> |
+> *  return ...;
+> )
+> }
+> ...>
+> (
+> E2 = x;
+> |
+> of_node_put(x);
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> drivers/serial/ucc_uart.c |   67 ++++++++++++++++++++++++----------------------
+> 1 file changed, 35 insertions(+), 32 deletions(-)
 
-One question that I gather comes up from time to time but google isn't furnishing me
-with an answer. I'd imagine it something to do with having to know where interrupts should
-go early in boot, but best ask anyway.
+applied
 
-I'm getting undefined errors for irq_to_desc, set_irq_chip_and_handler, handle_simple_irq
-and set_irq_flags.
-
-Why are irq_to_desc etc not usable from a module? I really would rather avoid building
-the core of IIO in. I suppose I could move this corner out on it's own so that it alone
-is built in.
-
-I'm guessing the approach I have right now were my trigger allocate function (which can easily
-be called from a module) creates and connects up the irq_chip on demand is a very bad idea?
-
-Is the right way to do this to handle all my 'virtual' interrupts as a single chip in some built
-in function then make their handler play some games underneath?
-
-Thanks again for your help.
-
-Too many years of just assuming this underlying interrupt stuff worked ;)
-
-Jonathan
+- k
