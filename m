@@ -1,183 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758391Ab1COTYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 15:24:34 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53462 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758344Ab1COTYb (ORCPT
+	id S932419Ab1COT1W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 15:27:22 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:51076 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516Ab1COT1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 15:24:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=QbRz2oTHIuXgzPn6dfkr4gOVv2+/ew7YrkHc4taNs2J5pXrJ+kwmmr1q6BEMBSqUSV
-         7ohSx1qA/vJGvy0XYpPXxjUaauuFX0MPPAI7yxfLLMbTobfLqsPiza7FshqBziWgsVwU
-         i/BtFQGmp5a+p3Jfo+JMUZKnofRGPsVn92mds=
-Date: Tue, 15 Mar 2011 16:24:22 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-Message-ID: <20110315192422.GF7011@ghostprotocols.net>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
- <20110314204341.GC9388@ghostprotocols.net>
- <20110314205100.GG6139@nowhere>
- <20110314210315.GC2388@ghostprotocols.net>
- <20110314212050.GH6139@nowhere>
- <20110314215603.GD2388@ghostprotocols.net>
- <20110314224344.GA11443@nowhere>
- <20110314230211.GG2388@ghostprotocols.net>
- <20110315185812.GB6605@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315185812.GB6605@nowhere>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Mar 2011 15:27:17 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+Subject: [PATCH 2/4 v3] call_function_many: add missing ordering
+From: Milton Miller <miltonm@bga.com>
+To: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org
+Cc: Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
+        rusty@rustcorp.com.au, efault@gmx.de,
+        Jan Beulich <JBeulich@novell.com>, Dimitri Sivanich <sivanich@sgi.com>,
+        Tony Luck <tony.luck@intel.com>, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+References: <20110112150740.77dde58c@kryten>
+	 <1295288253.30950.280.camel@laptop>
+	 <smp-call-function-peter-reply@mdm.bga.com>
+	 <smp-call-function-move-writes@mdm.bga.com>
+	 <1296145360.15234.234.camel@laptop> 
+	 <smp-call-function-list-race@mdm.bga.com>
+	 <smp-call-function-list-race-fix@mdm.bga.com>
+	 <ipi-list-reply@mdm.bga.com>
+In-Reply-To: <ipi-list-reply@mdm.bga.com>
+Message-ID: <smp-call-function-barriers-v3@mdm.bga.com>
+Date: Tue, 15 Mar 2011 13:27:16 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 15, 2011 at 07:58:16PM +0100, Frederic Weisbecker escreveu:
-> On Mon, Mar 14, 2011 at 08:02:11PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Mar 14, 2011 at 11:43:46PM +0100, Frederic Weisbecker escreveu:
-> > > On Mon, Mar 14, 2011 at 06:56:03PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > Em Mon, Mar 14, 2011 at 10:20:53PM +0100, Frederic Weisbecker escreveu:
-> > > > > On Mon, Mar 14, 2011 at 06:03:15PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > Using wildcards that matches just the things we want to make it a bit
-> > > > more compact:
-> > > > 
-> > > > $ perf record -e inst*@(irq:*entry(irq=eth0) && lock:*acquired(A) && \
-> > > > 			lock:*acquired(B))..(lock:*release(A) || lock:*release(B)) \
-> > > > 	./my_workload
-> > > > 
-> > > > Parenthesis don't have to be used just for filters :) Just like in C,
-> > > > they can be used to express the list of parameters for a function or for
-> > > > expressions, etc.
-> > > 
-> > > The && make sense. But the || ?
-> > > 
-> > > What about:
-> > > 
-> > > -e inst*@(lock:*acquire(A)..lock:*release(A))@(lock:*acquire(B)..lock:*release(B))@(irq:*entry(irq=eth0)..irq:*exit(irq=eth0))
-> > > 
-> > > That looks to me less confusing.
-> > 
-> > Now it seems its me that needs to have some sleep :-) I find the above
-> > confusing, but I'm in a hurry right now, will try to comment more
-> > tomorrow.
-> 
-> Hehe :)
-> 
-> -e inst*@(lock:*acquire(A)..lock:*release(A))@(lock:*acquire(B)..lock:*release(B))
-> 
-> means we want to count instructions when we hold A and B, with A held
-> inside a section where we hold B.
-> 
-> Right?
+Paul McKenney's review pointed out two problems with the barriers
+in the 2.6.38 update to the smp call function many code.
 
-Understood, see below about the &&, I think we're improving the syntax
-for expressing these narrowing ranges where events should be active.
+First, a barrier that would force the func and info members of data
+to be visible before their consumption in the interrupt handler
+was missing.  This can be solved by adding a smp_wmb between
+setting the func and info members and setting setting the cpumask;
+this will pair with the existing and required smp_rmb ordering
+the cpumask read before the read of refs.  This placement avoids
+the need a second smp_rmb in the interrupt handler which would
+be executed on each of the N cpus executing the call request.
+(I was thinking this barrier was present but was not).
+
+Second, the previous write to refs (establishing the zero that
+we the interrupt handler was testing from all cpus) was performed
+by a third party cpu.  This would invoke transitivity which, as
+a recient or concurrent addition to memory-barriers.txt now
+explicitly states, would require a full smp_mb().
+
+However, we know the cpumask will only be set by one cpu (the
+data owner) and any preivous iteration of the mask would have
+cleared by the reading cpu.  By redundantly writing refs to 0 on
+the owning cpu before the smp_wmb, the write to refs will follow
+the same path as the writes that set the cpumask, which in turn
+allows us to keep the barrier in the interrupt handler a smp_rmb
+instead of promoting it to a smp_mb (which will be be executed
+by N cpus for each of the possible M elements on the list).
+
+I moved and expanded the comment about our (ab)use of the rcu list
+primitives for the concurrent walk earlier into this function.
+I considered moving the first two paragraphs to the queue list
+head and lock, but felt it would have been too disconected from
+the code.
+
+Cc: Paul McKinney <paulmck@linux.vnet.ibm.com>
+Cc: stable (2.6.32 and later)
+Signed-off-by: Milton Miller <miltonm@bga.com>
+
+Paul, please review this alternative to your patch at either of
+
+http://marc.info/?l=linux-kernel&m=129662029916241&w=2
+https://patchwork.kernel.org/patch/525891/
+
+In contrast to your patch, this proposal keeps the additional
+barriers in the (interrupt enabled) requester instead of the
+execution interrupt, where they would be executed by all N cpus
+in the system triggered concurrently for each of the N possible
+elements in the list.
+
+Index: common/kernel/smp.c
+===================================================================
+--- common.orig/kernel/smp.c	2011-03-15 05:21:41.000000000 -0500
++++ common/kernel/smp.c	2011-03-15 05:22:26.000000000 -0500
+@@ -483,23 +483,42 @@ void smp_call_function_many(const struct
  
-> But that's limited. We should express it that way:
-> 
-> 	-e inst*@((lock:*acquire(B)..lock:*release(B) && (lock:*acquire(A)..lock:*release(A)))
-> 
-> Which means we first define a state where B is held. Inside that state we define
-> another one where A is held.
-> 
-> If we want to have an event always running, from the beginning, until we
-> acquire B:
-> 
-> 	-e inst*@(..lock:*acquire(B))
-> or:
-> 	-e inst*@..lock:*acquire(B)
-
-Yeah, extra parenthesis, like in a C expression, are just ellided away.
-And agreed on the above, record instructions until that event takes
-place.
-
-> If we want to only count once we hold B:
-> 
-> 	-e inst*@lock:*acquire(B)..
-
-agreed
+ 	data = &__get_cpu_var(cfd_data);
+ 	csd_lock(&data->csd);
+-	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
  
-> If we want to count everywhere but when we hold B:
-> 
-> 	-e inst*@(..lock:*acquire(B) && lock:*release(B)..)
-
-Makes sense but looks confusing at first sight, how to translate that to
-events starter/stoppers?
-
-its an event: instructions, it starts in what state? Enabled, i.e. the
-first part of the expression has precedence: ..lock:*acquire(B), then,
-after it is disabled, because we acquired B, the second part gets armed,
-i.e. when the release(B) event takes place, the first part gets armed
-again.
-
-That is why I felt '&&' to be confusing, its not that both are in
-effect, its that one is only armed when the previous was disarmed.
-
-Perhaps we could find some other operator that was more natural, or just
-agree that && in this context works this way, almost like what we do in
-shell scripting with && and || (the cycle to rearm the first range after
-the last one is disarmed is the part that doesn't matches the shell
-use).
-
-Also:
-
- 	-e inst*@(lock:*release(B)..lock:*acquire(B))
-
-Wouldn't be simpler? Not equivalent tho if one is interested in
-everything that happens till the first time the lock is acquired in some
-specific thread that is started from the tool, etc.
+-	data->csd.func = func;
+-	data->csd.info = info;
+-	cpumask_and(data->cpumask, mask, cpu_online_mask);
+-	cpumask_clear_cpu(this_cpu, data->cpumask);
++	/* This BUG_ON verifies our reuse assertions and can be removed */
++	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
  
-> This covers about everything. Now if in the future we want to support having
-> multiple starters or stoppers for a single target, in order to union custom
-> contexts, we can use the ||.
-> 
-> Like only count when we hold B or when we hold A:
-> 
-> 	-e inst*@(lock:*acquire(A)..lock:*release(A) || lock:*acquire(B)..lock:*release(B))
-
-> Right?
-
-Yeah, this one is natural at first sight. As is:
-
- 	-e (inst*,cycles,dTLB*misses)@(lock:*acquire(A)..lock:*release(A) || lock:*acquire(B)..lock:*release(B))
-
-I.e. we're expressing an evlist (list of event selectors) to be counted
-when the 'at' expression allows.
-
-> > > > > Event range define a state, and anytime you need to profile/trace a
-> > > > > desired stacked state, starters on starters can be a good solution,
-> > > > > thus even a common practice.
-> > > > 
-> > > > See above, is that what you're thinking about?
-> > > 
-> > > I'm not sure. I can find the meaning of && in your expressions. But not
-> > > the meaning of ||. I lack some sleep though :)
-> > > 
-> > > But still, I'm all for trying to make a better and smarter way to
-> > > express these events, following your suggestions, but I'm not sure I have
-> > > the motivation to write a full parser capable of evaluating near C expressions.
-> > 
-> > See the other message, the start of it is there, thanks to Masami.
-> 
-> Indeed. I just had a look and it provides a basic parsing. Now it's tied to string
-> glob comparison and it needs to be generalized to support some custom set of
-> operation. Notwithstanding the final intepretation that is not trivial.
-> 
-> So that's a lot of work. I'd rather suggest to do this as a separate work. And
-> may be start with the raw --starter/--stopper things or alike to start. We can
-> still remove that, with the --filter thing, once we have the event comprehension
-> well settled.
+ 	/*
++	 * The global call function queue list add and delete are protected
++	 * by a lock, but the list is traversed without any lock, relying
++	 * on the rcu list add and delete to allow safe concurrent traversal.
+ 	 * We reuse the call function data without waiting for any grace
+ 	 * period after some other cpu removes it from the global queue.
+-	 * This means a cpu might find our data block as it is writen.
+-	 * The interrupt handler waits until it sees refs filled out
+-	 * while its cpu mask bit is set; here we may only clear our
+-	 * own cpu mask bit, and must wait to set refs until we are sure
+-	 * previous writes are complete and we have obtained the lock to
+-	 * add the element to the queue.
++	 * This means a cpu might find our data block as it is being
++	 * filled out.
++	 *
++	 * We hold off the interrupt handler on the other cpu by
++	 * ordering our writes to the cpu mask vs our setting of the
++	 * refs counter.  We assert only the cpu owning the data block
++	 * will set a bit in cpumask, and each bit will only be cleared
++	 * by the subject cpu.  Each cpu must first find its bit is
++	 * set and then check that refs is set indicating the element is
++	 * ready to be processed, otherwise it must skip the entry.
++	 *
++	 * On the previous iteration refs was set to 0 by another cpu.
++	 * To avoid the use of transitivity, set the counter to 0 here
++	 * so the wmb will pair with the rmb in the interrupt handler.
+ 	 */
++	atomic_set(&data->refs, 0);	/* convert 3rd to 1st party write */
++
++	data->csd.func = func;
++	data->csd.info = info;
++
++	/* Ensure 0 refs is visible before mask.  Also orders func and info */
++	smp_wmb();
++
++	/* We rely on the "and" being processed before the store */
++	cpumask_and(data->cpumask, mask, cpu_online_mask);
++	cpumask_clear_cpu(this_cpu, data->cpumask);
+ 
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+@@ -509,8 +528,9 @@ void smp_call_function_many(const struct
+ 	 */
+ 	list_add_rcu(&data->csd.list, &call_function.queue);
+ 	/*
+-	 * We rely on the wmb() in list_add_rcu to order the writes
+-	 * to func, data, and cpumask before this write to refs.
++	 * We rely on the wmb() in list_add_rcu to complete our writes
++	 * to the cpumask before this write to refs, which indicates
++	 * data is on the list and is ready to be processed.
+ 	 */
+ 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
