@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab1CONsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 09:48:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40912 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304Ab1CONsC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 09:48:02 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=Dpgx0ZSdzJoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=lIPM80yYOjFTmlQ0L8sA:9 a=Hdpj5k0-GVdXtPSH1cNUbgLzJroA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 7/20]  7: uprobes: store/restore
- original instruction.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Stephen Wilson <wilsons@start.ca>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110315092247.GW24254@linux.vnet.ibm.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314133522.27435.45121.sendpatchset@localhost6.localdomain6>
-	 <20110314180914.GA18855@fibrous.localdomain>
-	 <20110315092247.GW24254@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 15 Mar 2011 09:47:59 -0400
-Message-ID: <1300196879.9910.271.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757511Ab1CONvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 09:51:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47416 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757395Ab1CONu7 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 15 Mar 2011 09:50:59 -0400
+Date: Tue, 15 Mar 2011 09:50:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: linux-next: manual merge of the xen-two tree with the tip tree
+Message-ID: <20110315135004.GB3432@dumpdata.com>
+References: <20110315172833.4fd17a0c.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110315172833.4fd17a0c.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D7F6E91.0129,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 14:52 +0530, Srikar Dronamraju wrote:
-> * Stephen Wilson <wilsons@start.ca> [2011-03-14 14:09:14]:
+On Tue, Mar 15, 2011 at 05:28:33PM +1100, Stephen Rothwell wrote:
+> Hi Konrad,
 > 
-
-Nitpick:
-
-> Guess checking for tsk != NULL would only help if and only if we are doing
-> within rcu.  i.e we have to change to something like this
+> Today's linux-next merge of the xen-two tree got a conflict in
+> arch/x86/pci/xen.c between commit 2c778651f73d ("x86: Cleanup the genirq
+> name space") from the tip tree and commit bf480d952bcf ("xen: events:
+> separate MSI PIRQ allocation from PIRQ binding to IRQ") from the xen-two
+> tree.  Commit f420e010edd8 ("xen: events: push set_irq_msi down into
+> xen_create_msi_irq") then moved the code modified by the tip tree commit
+> into drivers/xen/events.c.
 > 
+> I fixed it up (I think - see below) and can carry the fix as necessary (I
+> used the xen-two tree's version of arch/x86/pci/xen.c).
 
-	tsk = NULL;
+Looks good. Thank you for following the trail down the patch changes.
 
-> 	rcu_read_lock()
-> 	if (mm->owner) {
-> 		get_task_struct(mm->owner)
-> 		tsk = mm->owner;
-> 	}
-> 	rcu_read_unlock()
-> 	if (!tsk)
-> 		return ret;
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> Agree?
-
-Or:
-
-	rcu_read_lock();
-	tsk = mm->owner;
-	if (tsk)
-		get_task_struct(tsk);
-	rcu_read_unlock();
-	if (!tsk)
-		return ret;
-
-Probably looks cleaner.
-
--- Steve
-
-
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 62e5237..934a3b1 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -692,7 +692,7 @@ int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+>  				      handle_level_irq, name);
+>  
+>  	xen_irq_info_pirq_init(irq, 0, pirq, 0, vector, 0);
+> -	ret = set_irq_msi(irq, msidesc);
+> +	ret = irq_set_msi_desc(irq, msidesc);
+>  	if (ret < 0)
+>  		goto error_irq;
+>  out:
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
