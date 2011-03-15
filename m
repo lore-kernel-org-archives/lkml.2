@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab1COOBK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:01:10 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:43524 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280Ab1COOBJ (ORCPT
+	id S1757928Ab1COOBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:01:44 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55285 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757888Ab1COOBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:01:09 -0400
-Message-ID: <4D7F7121.5040009@librato.com>
-Date: Tue, 15 Mar 2011 10:01:05 -0400
-From: Mike Heffner <mike@librato.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.21) Gecko/20090320 Fedora/2.0.0.21-1.fc9 Lightning/0.9 Thunderbird/2.0.0.21 Mnenhy/0.7.6.666
+	Tue, 15 Mar 2011 10:01:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexey Mikhailov <karma@galois.botik.ru>
+Subject: Re: lseek() on debugfs entries in 2.6.37
+Date: Tue, 15 Mar 2011 15:01:41 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <874o74ilxl.wl%karma@galois.botik.ru>
+In-Reply-To: <874o74ilxl.wl%karma@galois.botik.ru>
 MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>,
-        Andrea Righi <arighi@develer.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH v6 6/9] memcg: add cgroupfs interface to memcg dirty limits
-References: <1299869011-26152-1-git-send-email-gthelen@google.com> <1299869011-26152-7-git-send-email-gthelen@google.com>
-In-Reply-To: <1299869011-26152-7-git-send-email-gthelen@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103151501.42105.arnd@arndb.de>
+X-Provags-ID: V02:K0:s3/iMRjoahync6wp2I6Dtj31iX3xGtzZXkwGI/3JR1J
+ xcWpYQ0f2BDLzstN48jON97io+CzROKPRcC5mo0tsGtkyLHPZE
+ O81yYCzLByZ0GR+bEfoKISXgmE44RAeyYp2YARtzPsiKNVr+s3
+ nglOz2Jh+ySQohvwDqLFQKZsXXR7tW44T+eVUuNDv6oJMHAsg7
+ /t5si+y7CaJeLhH9MlYgA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 01:43 PM, Greg Thelen wrote:
-> Add cgroupfs interface to memcg dirty page limits:
->    Direct write-out is controlled with:
->    - memory.dirty_ratio
->    - memory.dirty_limit_in_bytes
->
->    Background write-out is controlled with:
->    - memory.dirty_background_ratio
->    - memory.dirty_background_limit_bytes
+On Tuesday 15 March 2011, Alexey Mikhailov wrote:
+> I use simple debugfs entries for user-space <-> kernel-space
+> interaction. Basically I read unsigned integers from debugfs
+> files like this:
+> 
+>    ...
+>    char buf[64];
+>    lseek(timesync_fd, 0, SEEK_SET);
+>    read(timesync_fd, buf, sizeof(buf));
+>    ...
+> 
+> It works perfectly with 2.6.32 kernel. But with 2.6.37 kernel,
+> lseek() fails with errno=29(Illegal seek). So second read()
+> call just fails or returns garbage. Can someone please shed
+> some light on it?
 
+This is probably a result of the changes I made as part of the
+BKL removal. Which file specifically are you talking about?
 
-What's the overlap, if any, with the current memory limits controlled by 
-`memory.limit_in_bytes` and the above `memory.dirty_limit_in_bytes`? If 
-I want to fairly balance memory between two cgroups be one a dirty page 
-antagonist (dd) and the other an anonymous page (memcache), do I just 
-set `memory.limit_in_bytes`? Does this patch simply provide a more 
-granular level of control of the dirty limits?
+In older kernels, having no .llseek function meant that you
+implicitly get default_llseek. New kernels now require 
+that the driver explicitly chooses one llseek variant.
 
+I did a patch to automatically convert all drivers, but
+this patch may have missed some that got moved around
+while I was patching them.
 
-Thanks,
-
-Mike
+	Arnd
