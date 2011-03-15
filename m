@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab1COA20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 20:28:26 -0400
-Received: from leopard.mail.utk.edu ([160.36.0.85]:52932 "EHLO
-	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab1COA2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 20:28:25 -0400
-Date: Mon, 14 Mar 2011 20:27:59 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: perf: kernel memory leak when inherit enabled
-In-Reply-To: <20110314223224.GD9388@ghostprotocols.net>
-Message-ID: <alpine.DEB.2.00.1103142026350.16076@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1103111745070.15818@cl320.eecs.utk.edu> <alpine.DEB.2.00.1103141824190.13179@cl320.eecs.utk.edu> <20110314223224.GD9388@ghostprotocols.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756773Ab1COAa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 20:30:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55086 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753820Ab1COAa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 20:30:58 -0400
+Date: Tue, 15 Mar 2011 11:30:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>, bhutchings@solarflare.com,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+        peterz@infradead.org
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-Id: <20110315113049.a6112494.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.00.1103141053020.2787@localhost6.localdomain6>
+References: <20110314152456.b49b2693.sfr@canb.auug.org.au>
+	<1300078778.3962.22.camel@localhost>
+	<20110314163135.f366742e.sfr@canb.auug.org.au>
+	<20110313.225312.193696949.davem@davemloft.net>
+	<20110314170546.af552b4e.sfr@canb.auug.org.au>
+	<alpine.LFD.2.00.1103141053020.2787@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011, Arnaldo Carvalho de Melo wrote:
+--Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Em Mon, Mar 14, 2011 at 06:27:19PM -0400, Vince Weaver escreveu:
-> > On Fri, 11 Mar 2011, Vince Weaver wrote:
-> > > 
-> > > While trying to use perf events with inherit enabled to profile some 
-> > > multi-threaded BLAS routines (using PAPI) I ended up out-of-memorying my 
-> > > machine.  It turns out you can quickly leak gigabytes of kernel memory
-> > > that isn't freed when the process exits.
-> > 
-> > I've bisected this.  There's a whole day I'll never see again. binutils 
-> > 2.21 and gcc-4.5 for the lose :(
-> > 
-> > Anyway this memory leak with inherit was introduced in 
-> >   4fd38e4595e
-> 
-> 
-> commit 4fd38e4595e2f6c9d27732c042a0e16b2753049c
-> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date:   Thu May 6 17:31:38 2010 +0200
-> 
->     perf: Fix exit() vs PERF_FORMAT_GROUP
+Hi Dave,
 
-This changeset was reverted already in 
-e3174cfd2a1e28fff774681f00a0eef3d31da970
-yet somehow that didn't fix the inherit mem-leak.
+On Mon, 14 Mar 2011 10:56:12 +0100 (CET) Thomas Gleixner <tglx@linutronix.d=
+e> wrote:
+>
+> On Mon, 14 Mar 2011, Stephen Rothwell wrote:
+>=20
+> > On Sun, 13 Mar 2011 22:53:12 -0700 (PDT) David Miller <davem@davemloft.=
+net> wrote:
+> > >
+> > > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > > Date: Mon, 14 Mar 2011 16:31:35 +1100
+> > >=20
+> > > > Maybe some config option changed ...
+> > >=20
+> > > Perhaps GENERIC_HARDIRQS_NO_DEPRECATED?
+> >=20
+> > Yep, that has been turned on for powerpc now.  I guess you will have the
+> > same problem on sparc64 of you merge the net-next and sparc trees ...
+>=20
+> Yeah, powerpc alone compiles with GENERIC_HARDIRQS_NO_DEPRECATED as it
+> does not have that notify commit.
+>=20
+> If you add net which has that notify commit, but not the fix it
+> breaks. I wonder whether Dave should pick that fix into net.
 
-Vince
-vweaver1@eecs.utk.edu
+So, if you merge the commit 1fb0ef31f428 ("genirq: Fix affinity notifier
+fallout") from the tip tree, you will get exactly one new commit and will
+fix your tree properly with no adverse effect on anyone else.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNfrM5AAoJEDMEi1NhKgbs1hIH/R2B+1tFMRMT1S+inCilrv2Z
+A89FIHGU4aWQBhgQgCLc7ks1xw49XVJyamysDlnagwhK+z3ouQxiahepHyUIkHWq
+/eUqPAaEiFiECeHpLWBd8l3tTe1bUHt87RbYiDj/ocXUvsW07cTlxHjBd6/dgFIM
+dblnofbn2Ao0qCbDUSsoR+3F6zvruvyDKQ0+1XWbxZffFQpWEYQa4IyZDRSEkNdW
+gNtpZ27883FzzZZuwWupDzPMSNnAFe+eV1w6fwVYTz1Pr+vpoYe3QiTdKrKrgFJ/
+Icka/zV6bwnoVzQgFtyX6O/pu1hpjCt8HtLg1C4SXVMq92W2ACV8ekytoxeSyCU=
+=GaG+
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j--
