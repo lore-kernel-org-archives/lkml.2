@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1COXCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 19:02:50 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48075 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab1COXCt (ORCPT
+	id S1755432Ab1COXDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 19:03:42 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39376 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab1COXDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 19:02:49 -0400
-Date: Tue, 15 Mar 2011 23:02:48 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] VFS - the first pile
-Message-ID: <20110315230248.GO22723@ZenIV.linux.org.uk>
-References: <20110315213248.GL22723@ZenIV.linux.org.uk>
- <20110315221818.GN22723@ZenIV.linux.org.uk>
- <AANLkTi=BgLcfw-XyJRw52eiUSf9=oF6oUQKEVTtWB51K@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=BgLcfw-XyJRw52eiUSf9=oF6oUQKEVTtWB51K@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Mar 2011 19:03:41 -0400
+Subject: Re: [RFC-v2 07/12] iscsi-target: Add CHAP Authentication support
+	using libcrypto
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <20110315102404.GB24496@lst.de>
+References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
+	 <1300103829-10337-8-git-send-email-nab@linux-iscsi.org>
+	 <20110315102404.GB24496@lst.de>
+Content-Type: text/plain
+Date: Tue, 15 Mar 2011 15:56:37 -0700
+Message-Id: <1300229797.28255.317.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 03:47:55PM -0700, Linus Torvalds wrote:
-> On Tue, Mar 15, 2011 at 3:18 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > BTW, a question about rebases: is that kind of situation worth doing
-> > a rebase of the queue/backmerge/etc.?
+On Tue, 2011-03-15 at 11:24 +0100, Christoph Hellwig wrote:
+> On Mon, Mar 14, 2011 at 04:57:04AM -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch adds support for libcrypto md5 based iSCSI CHAP authentication
+> > support for iscsi_target_mod.  This includes support for mutual and one-way
+> > NodeACL authentication for SessionType=Normal and SessionType=Discovery
+> > via /sys/kernel/config/target/iscsi.
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/target/iscsi/iscsi_auth_chap.c |  502 ++++++++++++++++++++++++++++++++
+> >  drivers/target/iscsi/iscsi_auth_chap.h |   33 ++
+> >  2 files changed, 535 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/target/iscsi/iscsi_auth_chap.c
+> >  create mode 100644 drivers/target/iscsi/iscsi_auth_chap.h
 > 
-> No. If it's the same patch I already applied, it will generally merge
-> cleanly, it's better to leave in the history than to rewrite things
-> just to avoid some trivial duplication.
+> Why aren't these files named iscsi_target_* like most others?  If you prefix
+> all files in a module please do it consistently, or alternatively just
+> drop the prefix altogether.
+> 
 
-It is and it does.  OK, then...
+This where shared amounst initiator code at one point..  Renaming to
+iscsi_target_auth now.
+
+Thanks,
+
+--nab
+
