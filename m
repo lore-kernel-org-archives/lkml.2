@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab1COC0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 22:26:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46153 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab1COC0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 22:26:13 -0400
-Subject: Re: [PATCH 00/20] world-writable files in sysfs and debugfs
-From: James Bottomley <James.Bottomley@suse.de>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-media@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        acpi4asus-user@lists.sourceforge.net, rtc-linux@googlegroups.com,
-        linux-scsi@vger.kernel.org, open-iscsi@googlegroups.com,
-        security@kernel.org
-In-Reply-To: <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
-References: <cover.1296818921.git.segoon@openwall.com>
-	 <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Mar 2011 22:26:05 -0400
-Message-ID: <1300155965.5665.15.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1752346Ab1COC0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:26:46 -0400
+Received: from jaguar.mail.utk.edu ([160.36.0.84]:48846 "EHLO
+	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab1COC0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 22:26:44 -0400
+Date: Mon, 14 Mar 2011 22:26:17 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: perf: kernel memory leak when inherit enabled
+In-Reply-To: <alpine.DEB.2.00.1103142026350.16076@cl320.eecs.utk.edu>
+Message-ID: <alpine.DEB.2.00.1103142224150.20209@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1103111745070.15818@cl320.eecs.utk.edu> <alpine.DEB.2.00.1103141824190.13179@cl320.eecs.utk.edu> <20110314223224.GD9388@ghostprotocols.net> <alpine.DEB.2.00.1103142026350.16076@cl320.eecs.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-03-12 at 23:23 +0300, Vasiliy Kulikov wrote:
-> > Vasiliy Kulikov (20):
-> >  mach-ux500: mbox-db5500: world-writable sysfs fifo file
-> >  leds: lp5521: world-writable sysfs engine* files
-> >  leds: lp5523: world-writable engine* sysfs files
-> >  misc: ep93xx_pwm: world-writable sysfs files
-> >  rtc: rtc-ds1511: world-writable sysfs nvram file
-> >  scsi: aic94xx: world-writable sysfs update_bios file
-> >  scsi: iscsi: world-writable sysfs priv_sess file
+On Mon, 14 Mar 2011, Vince Weaver wrote:
+
+> On Mon, 14 Mar 2011, Arnaldo Carvalho de Melo wrote:
 > 
-> These are still not merged :(
+> > Em Mon, Mar 14, 2011 at 06:27:19PM -0400, Vince Weaver escreveu:
+> > > On Fri, 11 Mar 2011, Vince Weaver wrote:
+> > > > 
+> > > > While trying to use perf events with inherit enabled to profile some 
+> > > > multi-threaded BLAS routines (using PAPI) I ended up out-of-memorying my 
+> > > > machine.  It turns out you can quickly leak gigabytes of kernel memory
+> > > > that isn't freed when the process exits.
+> > > 
+> > > I've bisected this.  There's a whole day I'll never see again. binutils 
+> > > 2.21 and gcc-4.5 for the lose :(
+> > > 
+> > > Anyway this memory leak with inherit was introduced in 
+> > >   4fd38e4595e
+> 
+> This changeset was reverted already in 
+> e3174cfd2a1e28fff774681f00a0eef3d31da970
+> yet somehow that didn't fix the inherit mem-leak.
 
-OK, so I've not been tracking where we are in the dizzying ride on
-security systems.  However, I thought we landed up in the privilege
-separation arena using capabilities.  That means that world writeable
-files aren't necessarily a problem as long as the correct capabilities
-checks are in place, right?
+I see, a new fix was made immediately after the revert, 
+   050735b08ca8a016bbace4445fa025b88fee770b
+which probably immediately re-introduced the problem, which is why
+git bisect didn't catch this.  I'm away from my test machine so I'll
+have to wait until tomorrow before I can investigate more.
 
-James
-
-
+Vince
+vweaver1@eecs.utk.edu
