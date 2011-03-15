@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751161Ab1COEGg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 00:06:36 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37699
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750736Ab1COEGf (ORCPT
+	id S1750869Ab1COENz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 00:13:55 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:18496 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab1COENy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 00:06:35 -0400
-Date: Mon, 14 Mar 2011 21:07:12 -0700 (PDT)
-Message-Id: <20110314.210712.226761233.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: tglx@linutronix.de, bhutchings@solarflare.com, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, hpa@zytor.com, peterz@infradead.org
-Subject: Re: linux-next: build failure after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110315113049.a6112494.sfr@canb.auug.org.au>
-References: <20110314170546.af552b4e.sfr@canb.auug.org.au>
-	<alpine.LFD.2.00.1103141053020.2787@localhost6.localdomain6>
-	<20110315113049.a6112494.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Mar 2011 00:13:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=N2CgcRCh+hRxDXtO5JTq61s3JVDCYk9fS1co1LX751qVggeatXPSUBbrcSw+N8sDl2
+         gL9U8LF+U+F+89eJU0hg==
+MIME-Version: 1.0
+In-Reply-To: <1300156794.9910.249.camel@gandalf.stny.rr.com>
+References: <1300143236-23233-1-git-send-email-slavapestov@google.com> <1300156794.9910.249.camel@gandalf.stny.rr.com>
+From: David Sharp <dhsharp@google.com>
+Date: Mon, 14 Mar 2011 21:13:31 -0700
+Message-ID: <AANLkTi=wNWceCfm=_jdfHFSr9SO5uLwBShH0h0Rjh0VU@mail.gmail.com>
+Subject: Re: [PATCH] ftrace: add a new 'tail drops' counter for overflow events
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Slava Pestov <slavapestov@google.com>, linux-kernel@vger.kernel.org,
+        mrubin@google.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 15 Mar 2011 11:30:49 +1100
+On Mon, Mar 14, 2011 at 7:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2011-03-14 at 15:53 -0700, Slava Pestov wrote:
+>> The existing 'overrun' counter is incremented when the ring
+>> buffer wraps around, with overflow on (the default). We wanted
+>> a way to count requests lost from the buffer filling up with
+>> overflow off, too. I decided to add a new counter instead
+>> of retro-fitting the existing one because it seems like a
+>> different statistic to count conceptually, and also because
+>> of how the code was structured.
+>
+> So this is when we are in producer/consumer mode and the ring buffer
+> fills up and events are dropped.
+>
+> For this we could just add a new ring buffer type. We could use the
+> RINGBUF_TYPE_TIME_STAMP as and call it RINGBUF_TYPE_LOST_EVENTS instead.
+> I never implemented the TIME_STAMP as I never found a need to ;)
+>
+> As we currently have a TIME_EXTEND that is still relative from the last
+> event but has a total of 59 bits for time. That being nanoseconds we can
+> handle events that are 18 years apart. That far apart and never being
+> read.
+>
+> The LOST_EVENTS could store the number of events lost when it starts
+> reading again. This way raw readers will know that events were lost and
+> how many.
 
-> On Mon, 14 Mar 2011 10:56:12 +0100 (CET) Thomas Gleixner <tglx@linutronix.de> wrote:
->> Yeah, powerpc alone compiles with GENERIC_HARDIRQS_NO_DEPRECATED as it
->> does not have that notify commit.
->> 
->> If you add net which has that notify commit, but not the fix it
->> breaks. I wonder whether Dave should pick that fix into net.
-> 
-> So, if you merge the commit 1fb0ef31f428 ("genirq: Fix affinity notifier
-> fallout") from the tip tree, you will get exactly one new commit and will
-> fix your tree properly with no adverse effect on anyone else.
+s/reading/writing ? ie, the next time enough space is available, it
+would first write a LOST_EVENTS event before returning space for the
+next event?
 
-Thomas, how would you like me to do this?  Do you want to put that
-commit on a branch for me to pull from or should I apply it
-directly?
+Regardless of whether or not you want to put this info in the trace
+itself (I agree it would be very useful to know where events were
+dropped), I think it's useful for a user to be able to quickly see the
+total number of events that were lost without grepping the trace.
+
+
+>
+> -- Steve
+>
+>
+>>
+>> Signed-Off-By: Slava Pestov <slavapestov@google.com>
+>
+>
+>
