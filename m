@@ -1,219 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab1COVwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:52:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55638 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758677Ab1COVwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:52:21 -0400
-Date: Tue, 15 Mar 2011 21:52:01 GMT
-From: tip-bot for Daniel Drake <dsd@laptop.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, hpa@zytor.com,
-        mingo@redhat.com, dsd@laptop.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, dsd@laptop.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20110313151017.C255F9D401E@zog.reactivated.net>
-References: <20110313151017.C255F9D401E@zog.reactivated.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, olpc: Use device tree for platform identification
-Message-ID: <tip-45bb1674b976ef81429c1e42de05844b49d45dea@git.kernel.org>
-Git-Commit-ID: 45bb1674b976ef81429c1e42de05844b49d45dea
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 15 Mar 2011 21:52:03 +0000 (UTC)
+	id S1758820Ab1COVxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:53:54 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:51028
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758695Ab1COVxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:53:48 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Mike Sterling <mike.sterling@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 01/12] Staging: hv: Make vmbus driver a  pci driver
+Date: Tue, 15 Mar 2011 15:03:32 -0700
+Message-Id: <1300226624-27004-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
+In-Reply-To: <1300226527-26933-1-git-send-email-kys@microsoft.com>
+References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  45bb1674b976ef81429c1e42de05844b49d45dea
-Gitweb:     http://git.kernel.org/tip/45bb1674b976ef81429c1e42de05844b49d45dea
-Author:     Daniel Drake <dsd@laptop.org>
-AuthorDate: Sun, 13 Mar 2011 15:10:17 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 15 Mar 2011 14:17:23 -0700
+Make vmbus driver a pci driver. This is
+in preparation to cleaning up the root device
+management as well as the  irq allocation for this
+driver.
 
-x86, olpc: Use device tree for platform identification
-
-Make OLPC fully depend on device tree, and use it to identify the OLPC
-platform details. Some nodes are exposed as platform devices where we
-plan to use device tree for device probing.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-LKML-Reference: <20110313151017.C255F9D401E@zog.reactivated.net>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- arch/x86/Kconfig                 |    2 +-
- arch/x86/include/asm/olpc_ofw.h  |    9 ++----
- arch/x86/platform/olpc/Makefile  |    4 +--
- arch/x86/platform/olpc/olpc.c    |   51 ++++++++++++++++++++------------------
- arch/x86/platform/olpc/olpc_dt.c |   19 ++++++++++++++
- 5 files changed, 51 insertions(+), 34 deletions(-)
+ drivers/staging/hv/vmbus_drv.c |   63 +++++++++++++++++++++++-----------------
+ 1 files changed, 36 insertions(+), 27 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b4c2e9c..471221b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2071,7 +2071,7 @@ config OLPC
- 	depends on !X86_PAE
- 	select GPIOLIB
- 	select OF
--	select OF_PROMTREE if PROC_DEVICETREE
-+	select OF_PROMTREE
- 	---help---
- 	  Add support for detecting the unique features of the OLPC
- 	  XO hardware.
-diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
-index c5d3a5a..2448771 100644
---- a/arch/x86/include/asm/olpc_ofw.h
-+++ b/arch/x86/include/asm/olpc_ofw.h
-@@ -26,15 +26,12 @@ extern void setup_olpc_ofw_pgd(void);
- /* check if OFW was detected during boot */
- extern bool olpc_ofw_present(void);
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index b473f46..1ef2f0f 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -40,6 +40,8 @@
+ #define VMBUS_IRQ		0x5
+ #define VMBUS_IRQ_VECTOR	IRQ5_VECTOR
  
-+extern void olpc_dt_build_devicetree(void);
++struct pci_dev *hv_pci_dev;
 +
- #else /* !CONFIG_OLPC */
- static inline void olpc_ofw_detect(void) { }
- static inline void setup_olpc_ofw_pgd(void) { }
--#endif /* !CONFIG_OLPC */
--
--#ifdef CONFIG_OF_PROMTREE
--extern void olpc_dt_build_devicetree(void);
--#else
- static inline void olpc_dt_build_devicetree(void) { }
--#endif
-+#endif /* !CONFIG_OLPC */
+ /* Main vmbus driver data structure */
+ struct vmbus_driver_context {
  
- #endif /* _ASM_X86_OLPC_OFW_H */
-diff --git a/arch/x86/platform/olpc/Makefile b/arch/x86/platform/olpc/Makefile
-index c2a8cab..81c5e21 100644
---- a/arch/x86/platform/olpc/Makefile
-+++ b/arch/x86/platform/olpc/Makefile
-@@ -1,4 +1,2 @@
--obj-$(CONFIG_OLPC)		+= olpc.o
-+obj-$(CONFIG_OLPC)		+= olpc.o olpc_ofw.o olpc_dt.o
- obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o
--obj-$(CONFIG_OLPC)		+= olpc_ofw.o
--obj-$(CONFIG_OF_PROMTREE)	+= olpc_dt.o
-diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
-index edaf3fe..0060fd5 100644
---- a/arch/x86/platform/olpc/olpc.c
-+++ b/arch/x86/platform/olpc/olpc.c
-@@ -18,6 +18,7 @@
- #include <linux/io.h>
- #include <linux/string.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
- 
- #include <asm/geode.h>
- #include <asm/setup.h>
-@@ -187,41 +188,43 @@ err:
+@@ -977,36 +979,24 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
+ 	}
  }
- EXPORT_SYMBOL_GPL(olpc_ec_cmd);
  
--static bool __init check_ofw_architecture(void)
-+static bool __init check_ofw_architecture(struct device_node *root)
+-static struct dmi_system_id __initdata microsoft_hv_dmi_table[] = {
+-	{
+-		.ident = "Hyper-V",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+-			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
+-		},
+-	},
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(dmi, microsoft_hv_dmi_table);
+ 
+-static int __init vmbus_init(void)
++
++static int __devinit hv_pci_probe(struct pci_dev *pdev,
++				const struct pci_device_id *ent)
  {
--	size_t propsize;
--	char olpc_arch[5];
--	const void *args[] = { NULL, "architecture", olpc_arch, (void *)5 };
--	void *res[] = { &propsize };
-+	const char *olpc_arch;
-+	int propsize;
+-	DPRINT_INFO(VMBUS_DRV,
+-		"Vmbus initializing.... current log level 0x%x (%x,%x)",
+-		vmbus_loglevel, HIWORD(vmbus_loglevel), LOWORD(vmbus_loglevel));
+-	/* Todo: it is used for loglevel, to be ported to new kernel. */
++	int err;
  
--	if (olpc_ofw("getprop", args, res)) {
--		printk(KERN_ERR "ofw: getprop call failed!\n");
--		return false;
--	}
-+	olpc_arch = of_get_property(root, "architecture", &propsize);
- 	return propsize == 5 && strncmp("OLPC", olpc_arch, 5) == 0;
+-	if (!dmi_check_system(microsoft_hv_dmi_table))
+-		return -ENODEV;
++	hv_pci_dev = pdev;
+ 
+-	return vmbus_bus_init();
+-}
++	err = pci_enable_device(pdev);
++	if (err)
++		return err;
+ 
+-static void __exit vmbus_exit(void)
+-{
+-	vmbus_bus_exit();
+-	/* Todo: it is used for loglevel, to be ported to new kernel. */
++	err = vmbus_bus_init();
++	if (err)
++		pci_disable_device(pdev);
++
++	return err;
  }
  
--static u32 __init get_board_revision(void)
-+static u32 __init get_board_revision(struct device_node *root)
- {
--	size_t propsize;
--	__be32 rev;
--	const void *args[] = { NULL, "board-revision-int", &rev, (void *)4 };
--	void *res[] = { &propsize };
--
--	if (olpc_ofw("getprop", args, res) || propsize != 4) {
--		printk(KERN_ERR "ofw: getprop call failed!\n");
--		return cpu_to_be32(0);
--	}
--	return be32_to_cpu(rev);
-+	int propsize;
-+	const __be32 *rev;
-+
-+	rev = of_get_property(root, "board-revision-int", &propsize);
-+	if (propsize != 4)
-+		return 0;
-+
-+	return be32_to_cpu(*rev);
- }
+ /*
+@@ -1021,10 +1011,29 @@ static const struct pci_device_id microsoft_hv_pci_table[] = {
+ };
+ MODULE_DEVICE_TABLE(pci, microsoft_hv_pci_table);
  
- static bool __init platform_detect(void)
- {
--	if (!check_ofw_architecture())
-+	struct device_node *root = of_find_node_by_path("/");
-+	bool success;
-+
-+	if (!root)
- 		return false;
--	olpc_platform_info.flags |= OLPC_F_PRESENT;
--	olpc_platform_info.boardrev = get_board_revision();
--	return true;
-+
-+	success = check_ofw_architecture(root);
-+	if (success) {
-+		olpc_platform_info.boardrev = get_board_revision(root);
-+		olpc_platform_info.flags |= OLPC_F_PRESENT;
-+	}
-+
-+	of_node_put(root);
-+	return success;
- }
- 
- static int __init add_xo1_platform_devices(void)
-diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
-index dab8746..4ce208f 100644
---- a/arch/x86/platform/olpc/olpc_dt.c
-+++ b/arch/x86/platform/olpc/olpc_dt.c
-@@ -19,7 +19,9 @@
- #include <linux/kernel.h>
- #include <linux/bootmem.h>
- #include <linux/of.h>
-+#include <linux/of_platform.h>
- #include <linux/of_pdt.h>
-+#include <asm/olpc.h>
- #include <asm/olpc_ofw.h>
- 
- static phandle __init olpc_dt_getsibling(phandle node)
-@@ -181,3 +183,20 @@ void __init olpc_dt_build_devicetree(void)
- 	pr_info("PROM DT: Built device tree with %u bytes of memory.\n",
- 			prom_early_allocated);
- }
-+
-+/* A list of DT node/bus matches that we want to expose as platform devices */
-+static struct of_device_id __initdata of_ids[] = {
-+	{ .compatible = "olpc,xo1-battery" },
-+	{ .compatible = "olpc,xo1-dcon" },
-+	{ .compatible = "olpc,xo1-rtc" },
-+	{},
++static struct pci_driver hv_bus_driver = {
++	.name =           "hv_bus",
++	.probe =          hv_pci_probe,
++	.id_table =       microsoft_hv_pci_table,
 +};
 +
-+static int __init olpc_create_platform_devices(void)
++static int __init hv_pci_init(void)
 +{
-+	if (machine_is_olpc())
-+		return of_platform_bus_probe(NULL, of_ids, NULL);
-+	else
-+		return 0;
++	return pci_register_driver(&hv_bus_driver);
 +}
-+device_initcall(olpc_create_platform_devices);
++
++static void __exit hv_pci_exit(void)
++{
++	vmbus_bus_exit();
++	pci_unregister_driver(&hv_bus_driver);
++}
++
++
++
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(HV_DRV_VERSION);
+ module_param(vmbus_irq, int, S_IRUGO);
+ module_param(vmbus_loglevel, int, S_IRUGO);
+ 
+-module_init(vmbus_init);
+-module_exit(vmbus_exit);
++module_init(hv_pci_init);
++module_exit(hv_pci_exit);
+-- 
+1.5.5.6
+
