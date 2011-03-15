@@ -1,49 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886Ab1COO1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:27:48 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:22779 "EHLO mx2.netapp.com"
+	id S1757925Ab1COOaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:30:06 -0400
+Received: from www.tglx.de ([62.245.132.106]:34295 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755263Ab1COO1r convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:27:47 -0400
-X-IronPort-AV: E=Sophos;i="4.62,322,1297065600"; 
-   d="scan'208";a="530467485"
-Subject: Re: [PATCH] RPC: return task->tk_status from
- rpc_wait_for_completion_task() in case of successfull task completion
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        linux-kernel@vger.kernel.org, bfields@fieldses.org,
-        skinsbursky@openvz.org
-In-Reply-To: <20110315141951.16564.72417.stgit@localhost6.localdomain6>
-References: <20110315141951.16564.72417.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Tue, 15 Mar 2011 10:26:55 -0400
-Message-ID: <1300199215.14093.1.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 15 Mar 2011 14:26:56.0455 (UTC) FILETIME=[0995A570:01CBE31D]
+	id S1757848Ab1COOaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 10:30:00 -0400
+Date: Tue, 15 Mar 2011 15:28:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 5/20] 5: Uprobes: register/unregister
+ probes.
+In-Reply-To: <20110314133454.27435.81020.sendpatchset@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1103151439400.2787@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314133454.27435.81020.sendpatchset@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 17:20 +0300, Stanislav Kinsbursky wrote:
-> Some NFS and NLM routines doesn't check RPC task tk_status if
-> rpc_wait_for_completion_task() returned 0 but have to.
+On Mon, 14 Mar 2011, Srikar Dronamraju wrote:
+> +/* Returns 0 if it can install one probe */
+> +int register_uprobe(struct inode *inode, loff_t offset,
+> +				struct uprobe_consumer *consumer)
+> +{
+> +	struct prio_tree_iter iter;
+> +	struct list_head tmp_list;
+> +	struct address_space *mapping;
+> +	struct mm_struct *mm, *tmpmm;
+> +	struct vm_area_struct *vma;
+> +	struct uprobe *uprobe;
+> +	int ret = -1;
+> +
+> +	if (!inode || !consumer || consumer->next)
+> +		return -EINVAL;
+> +	uprobe = uprobes_add(inode, offset);
 
-Examples please. I'm not aware of any such cases.
+Does uprobes_add() always succeed ?
 
-Cheers
-   Trond
+> +	INIT_LIST_HEAD(&tmp_list);
+> +	mapping = inode->i_mapping;
+> +
+> +	mutex_lock(&uprobes_mutex);
+> +	if (uprobe->consumers) {
+> +		ret = 0;
+> +		goto consumers_add;
+> +	}
+> +
+> +	spin_lock(&mapping->i_mmap_lock);
+> +	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, 0, 0) {
+> +		loff_t vaddr;
+> +
+> +		if (!atomic_inc_not_zero(&vma->vm_mm->mm_users))
+> +			continue;
+> +
+> +		mm = vma->vm_mm;
+> +		if (!valid_vma(vma)) {
+> +			mmput(mm);
+> +			continue;
+> +		}
+> +
+> +		vaddr = vma->vm_start + offset;
+> +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> +		if (vaddr > ULONG_MAX) {
+> +			/*
+> +			 * We cannot have a virtual address that is
+> +			 * greater than ULONG_MAX
+> +			 */
+> +			mmput(mm);
+> +			continue;
+> +		}
+> +		mm->uprobes_vaddr = (unsigned long) vaddr;
+> +		list_add(&mm->uprobes_list, &tmp_list);
+> +	}
+> +	spin_unlock(&mapping->i_mmap_lock);
+> +
+> +	if (list_empty(&tmp_list)) {
+> +		ret = 0;
+> +		goto consumers_add;
+> +	}
+> +	list_for_each_entry_safe(mm, tmpmm, &tmp_list, uprobes_list) {
+> +		down_read(&mm->mmap_sem);
+> +		if (!install_uprobe(mm, uprobe))
+> +			ret = 0;
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Installing it once is success ?
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+> +		list_del(&mm->uprobes_list);
 
+Also the locking rules for mm->uprobes_list want to be
+documented. They are completely non obvious.
+
+> +		up_read(&mm->mmap_sem);
+> +		mmput(mm);
+> +	}
+> +
+> +consumers_add:
+> +	add_consumer(uprobe, consumer);
+> +	mutex_unlock(&uprobes_mutex);
+> +	put_uprobe(uprobe);
+
+Why do we drop the refcount here?
+
+> +	return ret;
+> +}
+
+> +	/*
+> +	 * There could be other threads that could be spinning on
+> +	 * treelock; some of these threads could be interested in this
+> +	 * uprobe.  Give these threads a chance to run.
+> +	 */
+> +	synchronize_sched();
+
+This makes no sense at all. We are not holding treelock, we are about
+to acquire it. Also what does it matter when they spin on treelock and
+are interested in this uprobe. Either they find it before we remove it
+or not. So why synchronize_sched()? I find the lifetime rules of
+uprobe utterly confusing. Could you explain please ?
+
+> +	spin_lock_irqsave(&treelock, flags);
+> +	rb_erase(&uprobe->rb_node, &uprobes_tree);
+> +	spin_unlock_irqrestore(&treelock, flags);
+> +	iput(uprobe->inode);
+> +
+> +put_unlock:
+> +	mutex_unlock(&uprobes_mutex);
+> +	put_uprobe(uprobe);
+> +}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
