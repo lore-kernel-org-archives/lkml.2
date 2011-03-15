@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab1COWSY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 18:18:24 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36474
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1753405Ab1COWSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 18:18:32 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:43429
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750863Ab1COWSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 18:18:22 -0400
+	id S1752539Ab1COWSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 18:18:23 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -15,23 +15,29 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Mike Sterling <mike.sterling@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 05/12] Staging: hv: Get rid of the forward declaration for vmbus_uevent
-Date: Tue, 15 Mar 2011 15:03:37 -0700
-Message-Id: <1300226624-27004-6-git-send-email-kys@microsoft.com>
+Subject: [PATCH 03/12] Staging: hv: Cleanup irq management
+Date: Tue, 15 Mar 2011 15:03:34 -0700
+Message-Id: <1300226624-27004-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <1300226624-27004-5-git-send-email-kys@microsoft.com>
+In-Reply-To: <1300226624-27004-2-git-send-email-kys@microsoft.com>
 References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
  <1300226624-27004-1-git-send-email-kys@microsoft.com>
  <1300226624-27004-2-git-send-email-kys@microsoft.com>
- <1300226624-27004-3-git-send-email-kys@microsoft.com>
- <1300226624-27004-4-git-send-email-kys@microsoft.com>
- <1300226624-27004-5-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of vmbus_uevent by moving
-the code around.
+Now that vmbus_driver is a  pci driver,
+cleanup the irq allocation mess by using the standard
+irq allocation mechanisms.
+
+Note that this patch generates an error when the checkpatch
+script is run because of the IRQF_SAMPLE_RANDOM flag used in
+request_irq() function. This interrupt may be the only
+external event this VM will get and consequently if this
+flag (IRQF_SAMPLE_RANDOM) is not  specified, experimentally
+we have shown that the entropy in the VM will very very low.
+
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
@@ -39,185 +45,114 @@ Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/vmbus_drv.c |  151 ++++++++++++++++++++--------------------
- 1 files changed, 75 insertions(+), 76 deletions(-)
+ drivers/staging/hv/vmbus_drv.c |   28 +++++++++++++---------------
+ 1 files changed, 13 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index f292b03..5243d98 100644
+index 3d2789b..239b91c 100644
 --- a/drivers/staging/hv/vmbus_drv.c
 +++ b/drivers/staging/hv/vmbus_drv.c
-@@ -51,7 +51,6 @@ static int vmbus_match(struct device *device, struct device_driver *driver);
- static int vmbus_probe(struct device *device);
- static int vmbus_remove(struct device *device);
- static void vmbus_shutdown(struct device *device);
--static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env);
- 
- static irqreturn_t vmbus_isr(int irq, void *dev_id);
- 
-@@ -98,6 +97,81 @@ static struct device_attribute vmbus_device_attrs[] = {
- 	__ATTR_NULL
- };
- 
-+/*
-+ * vmbus_uevent - add uevent for our device
+@@ -17,6 +17,8 @@
+  * Authors:
+  *   Haiyang Zhang <haiyangz@microsoft.com>
+  *   Hank Janssen  <hjanssen@microsoft.com>
 + *
-+ * This routine is invoked when a device is added or removed on the vmbus to
-+ * generate a uevent to udev in the userspace. The udev will then look at its
-+ * rule and the uevent generated here to load the appropriate driver
-+ */
-+static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
-+{
-+	struct hv_device *dev = device_to_hv_device(device);
-+	int ret;
-+
-+	DPRINT_INFO(VMBUS_DRV, "generating uevent - VMBUS_DEVICE_CLASS_GUID={"
-+		    "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-+		    "%02x%02x%02x%02x%02x%02x%02x%02x}",
-+		    dev->dev_type.data[3], dev->dev_type.data[2],
-+		    dev->dev_type.data[1], dev->dev_type.data[0],
-+		    dev->dev_type.data[5], dev->dev_type.data[4],
-+		    dev->dev_type.data[7], dev->dev_type.data[6],
-+		    dev->dev_type.data[8], dev->dev_type.data[9],
-+		    dev->dev_type.data[10],
-+		    dev->dev_type.data[11],
-+		    dev->dev_type.data[12],
-+		    dev->dev_type.data[13],
-+		    dev->dev_type.data[14],
-+		    dev->dev_type.data[15]);
-+
-+	ret = add_uevent_var(env, "VMBUS_DEVICE_CLASS_GUID={"
-+			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-+			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
-+			     dev->dev_type.data[3],
-+			     dev->dev_type.data[2],
-+			     dev->dev_type.data[1],
-+			     dev->dev_type.data[0],
-+			     dev->dev_type.data[5],
-+			     dev->dev_type.data[4],
-+			     dev->dev_type.data[7],
-+			     dev->dev_type.data[6],
-+			     dev->dev_type.data[8],
-+			     dev->dev_type.data[9],
-+			     dev->dev_type.data[10],
-+			     dev->dev_type.data[11],
-+			     dev->dev_type.data[12],
-+			     dev->dev_type.data[13],
-+			     dev->dev_type.data[14],
-+			     dev->dev_type.data[15]);
-+
-+	if (ret)
-+		return ret;
-+
-+	ret = add_uevent_var(env, "VMBUS_DEVICE_DEVICE_GUID={"
-+			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-+			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
-+			     dev->dev_instance.data[3],
-+			     dev->dev_instance.data[2],
-+			     dev->dev_instance.data[1],
-+			     dev->dev_instance.data[0],
-+			     dev->dev_instance.data[5],
-+			     dev->dev_instance.data[4],
-+			     dev->dev_instance.data[7],
-+			     dev->dev_instance.data[6],
-+			     dev->dev_instance.data[8],
-+			     dev->dev_instance.data[9],
-+			     dev->dev_instance.data[10],
-+			     dev->dev_instance.data[11],
-+			     dev->dev_instance.data[12],
-+			     dev->dev_instance.data[13],
-+			     dev->dev_instance.data[14],
-+			     dev->dev_instance.data[15]);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
- /* The one and only one */
- static struct hv_bus  hv_bus = {
- 	.bus.name =		"vmbus",
-@@ -627,81 +701,6 @@ void vmbus_child_device_unregister(struct hv_device *device_obj)
- }
- 
- /*
-- * vmbus_uevent - add uevent for our device
-- *
-- * This routine is invoked when a device is added or removed on the vmbus to
-- * generate a uevent to udev in the userspace. The udev will then look at its
-- * rule and the uevent generated here to load the appropriate driver
-- */
--static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
--{
--	struct hv_device *dev = device_to_hv_device(device);
--	int ret;
--
--	DPRINT_INFO(VMBUS_DRV, "generating uevent - VMBUS_DEVICE_CLASS_GUID={"
--		    "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
--		    "%02x%02x%02x%02x%02x%02x%02x%02x}",
--		    dev->dev_type.data[3], dev->dev_type.data[2],
--		    dev->dev_type.data[1], dev->dev_type.data[0],
--		    dev->dev_type.data[5], dev->dev_type.data[4],
--		    dev->dev_type.data[7], dev->dev_type.data[6],
--		    dev->dev_type.data[8], dev->dev_type.data[9],
--		    dev->dev_type.data[10],
--		    dev->dev_type.data[11],
--		    dev->dev_type.data[12],
--		    dev->dev_type.data[13],
--		    dev->dev_type.data[14],
--		    dev->dev_type.data[15]);
--
--	ret = add_uevent_var(env, "VMBUS_DEVICE_CLASS_GUID={"
--			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
--			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
--			     dev->dev_type.data[3],
--			     dev->dev_type.data[2],
--			     dev->dev_type.data[1],
--			     dev->dev_type.data[0],
--			     dev->dev_type.data[5],
--			     dev->dev_type.data[4],
--			     dev->dev_type.data[7],
--			     dev->dev_type.data[6],
--			     dev->dev_type.data[8],
--			     dev->dev_type.data[9],
--			     dev->dev_type.data[10],
--			     dev->dev_type.data[11],
--			     dev->dev_type.data[12],
--			     dev->dev_type.data[13],
--			     dev->dev_type.data[14],
--			     dev->dev_type.data[15]);
--
--	if (ret)
--		return ret;
--
--	ret = add_uevent_var(env, "VMBUS_DEVICE_DEVICE_GUID={"
--			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
--			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
--			     dev->dev_instance.data[3],
--			     dev->dev_instance.data[2],
--			     dev->dev_instance.data[1],
--			     dev->dev_instance.data[0],
--			     dev->dev_instance.data[5],
--			     dev->dev_instance.data[4],
--			     dev->dev_instance.data[7],
--			     dev->dev_instance.data[6],
--			     dev->dev_instance.data[8],
--			     dev->dev_instance.data[9],
--			     dev->dev_instance.data[10],
--			     dev->dev_instance.data[11],
--			     dev->dev_instance.data[12],
--			     dev->dev_instance.data[13],
--			     dev->dev_instance.data[14],
--			     dev->dev_instance.data[15]);
--	if (ret)
--		return ret;
--
--	return 0;
--}
--
--/*
-  * vmbus_match - Attempt to match the specified device to the specified driver
++ * 3/9/2011: K. Y. Srinivasan	- Significant restructuring and cleanup
   */
- static int vmbus_match(struct device *device, struct device_driver *driver)
+ #include <linux/init.h>
+ #include <linux/module.h>
+@@ -36,10 +38,6 @@
+ #include "vmbus_private.h"
+ 
+ 
+-/* FIXME! We need to do this dynamically for PIC and APIC system */
+-#define VMBUS_IRQ		0x5
+-#define VMBUS_IRQ_VECTOR	IRQ5_VECTOR
+-
+ struct pci_dev *hv_pci_dev;
+ 
+ /* Main vmbus driver data structure */
+@@ -69,7 +67,6 @@ EXPORT_SYMBOL(vmbus_loglevel);
+ 	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
+ 	/* (((VMBUS | VMBUS_DRV)<<16) | DEBUG_LVL_ENTEREXIT); */
+ 
+-static int vmbus_irq = VMBUS_IRQ;
+ 
+ /* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
+ static struct device_attribute vmbus_device_attrs[] = {
+@@ -369,7 +366,7 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
+  *	- get the irq resource
+  *	- retrieve the channel offers
+  */
+-static int vmbus_bus_init(void)
++static int vmbus_bus_init(struct pci_dev *pdev)
+ {
+ 	struct vmbus_driver_context *vmbus_drv_ctx = &vmbus_drv;
+ 	int ret;
+@@ -412,21 +409,23 @@ static int vmbus_bus_init(void)
+ 	}
+ 
+ 	/* Get the interrupt resource */
+-	ret = request_irq(vmbus_irq, vmbus_isr, IRQF_SAMPLE_RANDOM,
+-			  driver_name, NULL);
++	ret = request_irq(pdev->irq, vmbus_isr,
++			  IRQF_SHARED | IRQF_SAMPLE_RANDOM,
++			  driver_name, pdev);
+ 
+ 	if (ret != 0) {
+ 		DPRINT_ERR(VMBUS_DRV, "ERROR - Unable to request IRQ %d",
+-			   vmbus_irq);
++			   pdev->irq);
+ 
+ 		bus_unregister(&vmbus_drv_ctx->bus);
+ 
+ 		ret = -1;
+ 		goto cleanup;
+ 	}
+-	vector = VMBUS_IRQ_VECTOR;
+ 
+-	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", vmbus_irq, vector);
++	vector = IRQ0_VECTOR + pdev->irq;
++	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", pdev->irq,
++			vector);
+ 
+ 	/*
+ 	 * Notify the hypervisor of our irq and
+@@ -435,7 +434,7 @@ static int vmbus_bus_init(void)
+ 	on_each_cpu(hv_synic_init, (void *)&vector, 1);
+ 	ret = vmbus_connect();
+ 	if (ret) {
+-		free_irq(vmbus_irq, NULL);
++		free_irq(pdev->irq, pdev);
+ 		bus_unregister(&vmbus_drv_ctx->bus);
+ 		goto cleanup;
+ 	}
+@@ -466,7 +465,7 @@ static void vmbus_bus_exit(void)
+ 
+ 	bus_unregister(&vmbus_drv_ctx->bus);
+ 
+-	free_irq(vmbus_irq, NULL);
++	free_irq(hv_pci_dev->irq, hv_pci_dev);
+ 
+ 	tasklet_kill(&vmbus_drv_ctx->msg_dpc);
+ 	tasklet_kill(&vmbus_drv_ctx->event_dpc);
+@@ -878,7 +877,7 @@ static int __devinit hv_pci_probe(struct pci_dev *pdev,
+ 	if (err)
+ 		return err;
+ 
+-	err = vmbus_bus_init();
++	err = vmbus_bus_init(pdev);
+ 	if (err)
+ 		pci_disable_device(pdev);
+ 
+@@ -918,7 +917,6 @@ static void __exit hv_pci_exit(void)
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(HV_DRV_VERSION);
+-module_param(vmbus_irq, int, S_IRUGO);
+ module_param(vmbus_loglevel, int, S_IRUGO);
+ 
+ module_init(hv_pci_init);
 -- 
 1.5.5.6
 
