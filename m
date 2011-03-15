@@ -1,119 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab1COF1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 01:27:33 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:58715 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841Ab1COF1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 01:27:30 -0400
-Date: Tue, 15 Mar 2011 10:51:33 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, int-list-linux-mm@kvack.org,
-        linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
-Message-ID: <20110315052133.GT24254@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
- <20110314163028.a05cec49.akpm@linux-foundation.org>
- <y0maagxuqx6.fsf@fche.csb>
- <alpine.LFD.2.00.1103150224260.2787@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103150224260.2787@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752136Ab1COGOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 02:14:30 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34543 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab1COGO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 02:14:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=iKL9R0ZuihaROyKsLpiM1VO6IZ+o0oYNUQCSwT1fUN/mYHMhM5SHyPIs0rdHU2ES4v
+         qoegztPHqvwxTKv9zsWm+dKniP439HQH/pamyNho9ZYLnZOhPBjIq6Bj8fn4Cv79BG/g
+         kCBqmRpqZD+9Day3Id28CbaMeHzZDsKoNcoVk=
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, tony@atomide.com,
+        nicolas.pitre@linaro.org, joe@perches.com,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Subject: [PATCH v2] arm: cmpxchg syscall should data abort if page not write
+Date: Tue, 15 Mar 2011 14:13:57 +0800
+Message-Id: <1300169637-1628-1-git-send-email-ratbert.chuang@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com>
+References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+From: Po-Yu Chuang <ratbert@faraday-tech.com>
 
-> > 
-> > > [...]  How do you envisage these features actually get used?
-> > 
-> > Patch #20/20 in the set includes an ftrace-flavoured debugfs frontend.
-> 
-> And you really think that:
-> 
-> # cd /sys/kernel/debug/tracing/
-> 
-> # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
-> 00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
-> 
-> # objdump -T /bin/zsh | grep -w zfree
-> 0000000000446420 g    DF .text  0000000000000012  Base        zfree
-> 
-> # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
-> 
-> # cat uprobe_events
-> p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
-> 
-> > TODO: Documentation/trace/uprobetrace.txt
-> 
-> without a reasonable documentation how to use that is a brilliant
-> argument?
+If the page to cmpxchg is user mode read only (not write),
+we should simulate a data abort first.
 
-We had a fairly decent documentation for uprobes and
-uprobetracer. But that had to be changed with  the change in
-underlying design of uprobes infrastructure. Since uprobetrace is one
-the user interface, I plan to document it soon. However it would be
-great if we had inputs on how we should be designing the syscall.
+Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+---
+v2:
+remove !pte_young() check
 
-> 
-> > Previous versions of the patchset included perf front-ends too, which
-> > are probably to be seen again.
-> 
-> Ahh, probably. What does that mean?
-> 
->      And if that probably happens, what interface is that supposed to
->      use?
-> 
-> 	The above magic wrapped into perf ?
+ arch/arm/kernel/traps.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-For the initial perf probe thing, yes it would be a wrapper over
-uprobe_tracer.  That is because we can reuse most of the current perf
-probe and we could prototype and show users what all can be
-achieved. However we plan to make perf probe depend on the syscall when
-the syscall takes shape.  
-
-> 
-> 	Or some sensible implementation ?
-
-Would syscall based perf probe implementation count as a sensible
-implementation? My current plan was to code up the perf probe for
-uprobes and then draft a proposal for how the syscall should look. 
-There are still some areas on how we should be allowing the
-filter, and what restrictions we should place on the syscall
-defined handler. I would like to hear from you and others on your
-ideas for the same. If you have ideas on doing it other than using a
-syscall then please do let me know about the same.
-
-I know that getting the user interface right is very important.
-However I think it kind of depends on what the infrastructure can
-provide too. So if we can decide on the kernel ABI and the
-underlying design (i.e can we use replace_page() based background page
-replacement, Are there issues with the Xol slot based mechanism that
-we are using, etc), we can work towards providing a stable User ABI that
-even normal users can use. For now I am concentrating on getting the
-underlying infrastructure correct.
-
-
-Please let me know your thoughts.
-
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 446aee9..eac7c05 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -563,7 +563,7 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+ 		if (!pmd_present(*pmd))
+ 			goto bad_access;
+ 		pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-		if (!pte_present(*pte) || !pte_dirty(*pte)) {
++		if (!pte_present(*pte) || !pte_write(*pte) || !pte_dirty(*pte)) {
+ 			pte_unmap_unlock(pte, ptl);
+ 			goto bad_access;
+ 		}
 -- 
-Thanks and Regards
-Srikar
+1.6.3.3
+
