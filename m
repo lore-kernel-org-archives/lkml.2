@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab1COWa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 18:30:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45999 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab1COWa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 18:30:58 -0400
-Date: Tue, 15 Mar 2011 15:30:32 -0700
-From: Greg KH <gregkh@suse.de>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 00/12] Staging: hv: Cleanup vmbus driver - Phase II
-Message-ID: <20110315223032.GA9046@suse.de>
-References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
- <20110315220454.GC30390@suse.de>
- <6E21E5352C11B742B20C142EB499E048019A87@TK5EX14MBXC128.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E048019A87@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754144Ab1COWbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 18:31:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55621 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab1COWbJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 18:31:09 -0400
+Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+In-Reply-To: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Mar 2011 23:32:54 +0100
+Message-ID: <1300228374.2250.42.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 10:24:41PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@suse.de]
-> > Sent: Tuesday, March 15, 2011 6:05 PM
-> > To: KY Srinivasan
-> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > virtualization@lists.osdl.org
-> > Subject: Re: [PATCH 00/12] Staging: hv: Cleanup vmbus driver - Phase II
-> > 
-> > On Tue, Mar 15, 2011 at 03:02:07PM -0700, K. Y. Srinivasan wrote:
-> > > This patch-set fixes the following issues in the vmbus driver (vmbus_drv.c):
-> > 
-> > <snip>
-> > 
-> > Thanks for the patches, but as the .39 merge window is closed, I'll be
-> > holding on to these until after .39-rc1 is out before I can do anything
-> > with them.
-> > 
-> > So don't be surprised if I don't respond to them for a few weeks.  Don't
-> > worry, they aren't lost. :)
-> 
-> If possible, I would love to get your feedback even if you cannot check 
-> in these patches. Also, if you can give me feedback as to what else
-> would need to be fixed to exit staging  as far as the vmbus driver is 
-> concerned, I can work on those over the next couple of weeks
-> until the tree opens up.
+Right, so I don't much like the interface, two new ioctl()s and a flag
+of dubious use.
 
-As I'm going to be very busy with the merge window issues, coupled with
-spring break and the LF Collab summit, I doubt I'll be able to do this,
-sorry.  Give me a few weeks please.
+How important is this recursive nature of the thing to you:
 
-> If it is ok with you we will send the DPRINT cleanup patches in the
-> next couple of days.
+> It's supposed to support infinite combinations with starter having starters
+> themselves, plus filters, etc...
 
-That's fine, they can sit in the same "to-apply" mbox next to these :)
+We've so far avoided recursion like that, we only have single level
+groups etc.
 
-greg k-h
+
+
