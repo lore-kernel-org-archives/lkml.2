@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab1COVy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:54:26 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:53218
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1758918Ab1COVyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:54:36 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33815
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758793Ab1COVxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:53:49 -0400
+	id S1758792Ab1COVxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:53:48 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -15,11 +15,11 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Mike Sterling <mike.sterling@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 09/12] Staging: hv: Get rid of the forward declaration for vmbus_shutdown
-Date: Tue, 15 Mar 2011 15:03:41 -0700
-Message-Id: <1300226624-27004-10-git-send-email-kys@microsoft.com>
+Subject: [PATCH 10/12] Staging: hv: Get rid of the forward declaration for vmbus_device_release
+Date: Tue, 15 Mar 2011 15:03:42 -0700
+Message-Id: <1300226624-27004-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <1300226624-27004-9-git-send-email-kys@microsoft.com>
+In-Reply-To: <1300226624-27004-10-git-send-email-kys@microsoft.com>
 References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
  <1300226624-27004-1-git-send-email-kys@microsoft.com>
  <1300226624-27004-2-git-send-email-kys@microsoft.com>
@@ -30,11 +30,12 @@ References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
  <1300226624-27004-7-git-send-email-kys@microsoft.com>
  <1300226624-27004-8-git-send-email-kys@microsoft.com>
  <1300226624-27004-9-git-send-email-kys@microsoft.com>
+ <1300226624-27004-10-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the forward declaration of vmbus_shutdown by moving
+Get rid of the forward declaration of vmbus_device_release by moving
 the code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
@@ -43,78 +44,61 @@ Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/vmbus_drv.c |   44 ++++++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/staging/hv/vmbus_drv.c |   27 ++++++++++++---------------
+ 1 files changed, 12 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 3feed10..671632c 100644
+index 671632c..976175b 100644
 --- a/drivers/staging/hv/vmbus_drv.c
 +++ b/drivers/staging/hv/vmbus_drv.c
-@@ -47,7 +47,6 @@ struct hv_bus {
- 	struct tasklet_struct event_dpc;
- };
- 
--static void vmbus_shutdown(struct device *device);
+@@ -50,8 +50,6 @@ struct hv_bus {
  
  static irqreturn_t vmbus_isr(int irq, void *dev_id);
  
-@@ -276,6 +275,28 @@ static int vmbus_remove(struct device *child_device)
- 	return 0;
+-static void vmbus_device_release(struct device *device);
+-
+ static ssize_t vmbus_show_device_attr(struct device *dev,
+ 				      struct device_attribute *dev_attr,
+ 				      char *buf);
+@@ -297,6 +295,18 @@ static void vmbus_shutdown(struct device *child_device)
+ 	return;
  }
  
 +
 +/*
-+ * vmbus_shutdown - Shutdown a vmbus device
++ * vmbus_device_release - Final callback release of the vmbus child device
 + */
-+static void vmbus_shutdown(struct device *child_device)
++static void vmbus_device_release(struct device *device)
 +{
-+	struct hv_driver *drv;
++	struct hv_device *device_ctx = device_to_hv_device(device);
 +
++	kfree(device_ctx);
 +
-+	/* The device may not be attached yet */
-+	if (!child_device->driver)
-+		return;
-+
-+	drv = drv_to_hv_drv(child_device->driver);
-+
-+	/* Let the specific open-source driver handles the removal if it can */
-+	if (drv->driver.shutdown)
-+		drv->driver.shutdown(child_device);
-+
-+	return;
 +}
 +
  /* The one and only one */
  static struct hv_bus  hv_bus = {
  	.bus.name =		"vmbus",
-@@ -804,27 +825,6 @@ void vmbus_child_device_unregister(struct hv_device *device_obj)
- 		    &device_obj->device);
+@@ -826,19 +836,6 @@ void vmbus_child_device_unregister(struct hv_device *device_obj)
  }
  
+ 
 -/*
-- * vmbus_shutdown - Shutdown a vmbus device
+- * vmbus_device_release - Final callback release of the vmbus child device
 - */
--static void vmbus_shutdown(struct device *child_device)
+-static void vmbus_device_release(struct device *device)
 -{
--	struct hv_driver *drv;
+-	struct hv_device *device_ctx = device_to_hv_device(device);
 -
+-	kfree(device_ctx);
 -
--	/* The device may not be attached yet */
--	if (!child_device->driver)
--		return;
--
--	drv = drv_to_hv_drv(child_device->driver);
--
--	/* Let the specific open-source driver handles the removal if it can */
--	if (drv->driver.shutdown)
--		drv->driver.shutdown(child_device);
--
--	return;
+-	/* !!DO NOT REFERENCE device_ctx anymore at this point!! */
 -}
 -
+-
  
- /*
-  * vmbus_device_release - Final callback release of the vmbus child device
+ static irqreturn_t vmbus_isr(int irq, void *dev_id)
+ {
 -- 
 1.5.5.6
 
