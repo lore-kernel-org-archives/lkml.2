@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758241Ab1CORyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 13:54:25 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:65205 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758215Ab1CORyY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 13:54:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=EwdeH9JIV5rwqZaDjfMd3/gjPB66qJvo8BMcDjvjmkVvk6gman9wY5rBczWHmVS0W8
-         MCFmQigV84+kVRpoKTPhg6DoR82SR2wvHLl2TI07HgauiwCm6vgqcVSyH2AS7/9nGtSm
-         Nkkc7cVlk8qB8jYgzMUCTptXWbFjJpDmKpF5U=
-Date: Tue, 15 Mar 2011 18:54:19 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lin Ming <minggr@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 1/4] perf: Starter and stopper events
-Message-ID: <20110315175415.GA6605@nowhere>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
- <1300130283-10466-2-git-send-email-fweisbec@gmail.com>
- <AANLkTim4gFdxn3pHZuxXe-AwTCYrnUHHeFkEK6wisYiL@mail.gmail.com>
+	id S1758237Ab1CORzU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 13:55:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3472 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757762Ab1CORzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 13:55:18 -0400
+Date: Tue, 15 Mar 2011 13:54:56 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Cc: Lina Lu <lulina_nuaa@foxmail.com>
+Subject: [PATCH] blk-throttle: Reset group slice when limits are changed
+Message-ID: <20110315175456.GC2587@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim4gFdxn3pHZuxXe-AwTCYrnUHHeFkEK6wisYiL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 10:36:18PM +0800, Lin Ming wrote:
-> On Tue, Mar 15, 2011 at 3:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> >
-> > +static void perf_event_pause_resume(struct perf_event *event, int nmi,
-> > +                                   struct perf_sample_data *data,
-> > +                                   struct pt_regs *regs)
-> > +{
-> > +       struct perf_event *iter;
-> > +       unsigned long flags;
-> > +
-> > +       /*
-> > +        * Ensure the targets can't be sched in/out concurrently.
-> > +        * Disabling irqs is sufficient for that because starters/stoppers
-> > +        * are on the same cpu/task.
-> > +        */
-> > +       local_irq_save(flags);
-> 
-> Could you explain this more detail?
+Lina reported that if throttle limits are initially very high and then
+dropped, then no new bio might be dispatched for a long time. And the
+reason being that after dropping the limits we don't reset the existing
+slice and do the rate calculation with new low rate and account the bios
+dispatched at high rate. To fix it, reset the slice upon rate change.
 
-Yeah, I should have detailed that more.
+https://lkml.org/lkml/2011/3/10/298
 
-So, I put a constraint in starters and stoppers: those must be attached
-to the same task and cpu than the target. That allows us to do this
-pause/resume lockless if we can ensure that:
+Another problem with very high limit is that we never queued the
+bio on throtl service tree. That means we kept on extending the
+group slice but never trimmed it. Fix that also by regulary
+trimming the slice even if bio is not being queued up.
 
-- target sched in/out can't interrupt perf_event_pause_resume()
-- perf_event_pause_resume() can interrupt the target in the middle of
-event_sched_in()
+Reported-by: Lina Lu <lulina_nuaa@foxmail.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-throttle.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-So that both are strictly serialized.
-
-We need to ensure that the target event can not be concurrently scheduled
-in (->add()) or scheduled out (->del() ), so that when we check
-PERF_EVENT_STATE_ACTIVE, we know that the event is currently running
-and is not going to move while we do our checks and we call start() and
-stop().
-
-So the rationale is that the target can not be in the middle of
-event_sched_in() or event_sched_out() when the starter/stopper
-trigger. We have no guarantee of that currently, especially because
-of events that trigger in NMIs, but also for other corner cases may
-be, so I'll need to think about it later. Why not by using pmu_disable_all()
-on the starter/stopper when the target is about to schedule in/out, until
-we know the event->state really reflects the hardware and logical states.
-
-Now event_sched_in() and event_sched_out() can still be called from an
-IPI to enable/disable an event. Hence the interrupts disabled to prevent
-from that.
+Index: linux-2.6-block/block/blk-throttle.c
+===================================================================
+--- linux-2.6-block.orig/block/blk-throttle.c	2011-03-15 13:37:04.122389034 -0400
++++ linux-2.6-block/block/blk-throttle.c	2011-03-15 13:37:26.328370086 -0400
+@@ -756,6 +756,15 @@ static void throtl_process_limit_change(
+ 			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
+ 			tg->iops[READ], tg->iops[WRITE]);
  
-> > +
-> > +
-> > +       /* Prevent the targets from being removed under us. */
-> > +       rcu_read_lock();
-> > +
-> > +       list_for_each_entry_rcu(iter, &event->starter_list, starter_entry) {
-> > +               /*
-> > +                * There is a small race window here, between the state
-> > +                * gets set to active and the event is actually ->add().
-> > +                * We need to find a way to ensure the starter/stopper
-> > +                * can't trigger in between.
-> 
-> Can we set the state to active after the event is actually ->add()?
-
-If we do so, the event may trigger before its state gets updated and that state
-can be checked from event fast paths. As is the case from hrtimer for example.
-
-Or perf_event_update_userpage().
-
-Not sure how we deal with that with del() called after we update the state.
++		/*
++		 * Restart the slices for both READ and WRITES. It
++		 * might happen that a group's limit are dropped
++		 * suddenly and we don't want to account recently
++		 * dispatched IO with new low rate
++		 */
++		throtl_start_new_slice(td, tg, 0);
++		throtl_start_new_slice(td, tg, 1);
++
+ 		if (throtl_tg_on_rr(tg))
+ 			tg_update_disptime(td, tg);
+ 	}
+@@ -821,7 +830,8 @@ throtl_schedule_delayed_work(struct thro
+ 
+ 	struct delayed_work *dwork = &td->throtl_work;
+ 
+-	if (total_nr_queued(td) > 0) {
++	/* schedule work if limits changed even if no bio is queued */
++	if (total_nr_queued(td) > 0 || td->limits_changed) {
+ 		/*
+ 		 * We might have a work scheduled to be executed in future.
+ 		 * Cancel that and schedule a new one.
+@@ -1002,6 +1012,19 @@ int blk_throtl_bio(struct request_queue 
+ 	/* Bio is with-in rate limit of group */
+ 	if (tg_may_dispatch(td, tg, bio, NULL)) {
+ 		throtl_charge_bio(tg, bio);
++
++		/*
++		 * We need to trim slice even when bios are not being queued
++		 * otherwise it might happen that a bio is not queued for
++		 * a long time and slice keeps on extending and trim is not
++		 * called for a long time. Now if limits are reduced suddenly
++		 * we take into account all the IO dispatched so far at new
++		 * low rate and * newly queued IO gets a really long dispatch
++		 * time.
++		 *
++		 * So keep on trimming slice even if bio is not queued.
++		 */
++		throtl_trim_slice(td, tg, rw);
+ 		goto out;
+ 	}
+ 
