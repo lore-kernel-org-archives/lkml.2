@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757690Ab1COMwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 08:52:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43957 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757659Ab1COMwn (ORCPT
+	id S1757696Ab1COM5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 08:57:52 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:36162 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757480Ab1COM5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 08:52:43 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BOWQLXdHDTadG2slJK8A:9 a=Be-3daMwsjd2Kji8mtwA:7 a=YN0TgvpO6v0UB0co-XpyUhpEoZYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [GIT] Networking
-From: Steven Rostedt <rostedt@goodmis.org>
-To: david@lang.hm
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
-References: <20110310.155556.48513201.davem@davemloft.net>
-	 <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com>
-	 <20110311204823.GB7906@fieldses.org>
-	 <20110311.130128.71121155.davem@davemloft.net>
-	 <1299878274.2814.8.camel@bwh-desktop> <20110311214209.GB9404@fieldses.org>
-	 <20110312040941.GA15526@home.goodmis.org>
-	 <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 15 Mar 2011 08:52:40 -0400
-Message-ID: <1300193560.9910.265.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Mar 2011 08:57:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=1ZTUiOihQYIwvopch9/uQ6Jb9
+	SXzAduwSQ4H5GVJe3fHZzn6HSgfyNwOEbb0tDT1qMc+nQ5AdoQOyMtda/sR2vcuE
+	jubQEwYmehQ1ed3byRm/A7xUGqwLVcc3otkoqsGqWzPkXVdpWddjEac2J0d95ngC
+	KTnriYjIsQohyT2wqU=
+Date: Tue, 15 Mar 2011 06:00:13 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Dave Chinner <david@fromorbit.com>
+cc: Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org,
+        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
+        l@jasper.es
+Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
+In-Reply-To: <20110315101155.GO15097@dastard>
+Message-ID: <Pine.LNX.4.64.1103150555250.29212@cobra.newdream.net>
+References: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
+ <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
+ <201103111255.44979.arnd@arndb.de> <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
+ <20110311235607.GB15853@elie> <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
+ <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com>
+ <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
+ <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net> <20110315101155.GO15097@dastard>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 00:20 -0700, david@lang.hm wrote:
-
-> > It really is meaningless to do so, as all you are doing is documenting
-> > what commit caused this bug, and producing more problems by branching
-> > off of the broken commit. It wont matter till it is merged, but then if
-> > there are a lot of simple bug fixes, then you will have a lot of single
-> > merges of branches that fix those bugs.
+On Tue, 15 Mar 2011, Dave Chinner wrote:
+> On Sun, Mar 13, 2011 at 09:29:17PM -0700, Sage Weil wrote:
+> > On Mon, 14 Mar 2011, Indan Zupancic wrote:
+> > > Everyone seems to want to add this new syncfs, but it's not even defined 
+> > > what it does. "Same as sync, but only on one fs" is IMHO not good 
+> > > enough, because sync's behaviour is pretty badly documented, and that's 
+> > > a system call.
+> > 
+> > How about the man page below?  I tried to avoid the somewhat antiquated 
+> > implementation specific terminology in the sync(2) man page.
+> > 
+> > I think adding this functionality into sync_file_range(2) is forcing 
+> > unrelated functionality into an existing interface; sync_file_range 
+> > operates on _files_, not an entire file system.  With each API addition it 
+> > is more important to make the interface simple and intuitive than to 
+> > minimize the size of our patches.  IMO that's why a new syscall is 
+> > preferable to, say, an equivalent ioctl.
+> > 
+> > Thanks-
+> > sage
+> > 
+> > 
+> > .TH SYNCFS 2 2011-03-13 "Linux" "Linux Programmer's Manual"
+> > .SH NAME
+> > syncfs \- commit cached file system state to stable storage
+> > .SH SYNOPSIS
+> > .B #include <unistd.h>
+> > .sp
+> > .B void syncfs(int fd);
+> > .SH DESCRIPTION
+> > .BR syncfs ()
+> > flushes any cached data modifications to the file system containing the 
+> > file referenced by the file descriptor
+> > .I fd
+> > to stable storage (usually a disk).  This includes the results of any
+> > file modifications or other file system operations that have completed
+> > prior to the call to
+> > .BR syncfs(2).
+> > This is similar to 
+> > .BR sync(2),
+> > but will commit changes for only a single file system instead of all
+> > mounted file systems.
+> > .SH ERRORS
+> > This function is always successful.
 > 
-> what effect would this have on bisecting? if this helped people avoid 
-> bisecting in between the bad commit and the fix for it, it may be worth 
-> it.
-> 
+> Perhaps we should consider propagating errors out to the user
+> application rather than discarding them in kernel and pretending we
+> can't ever have a write error?
 
-But it wont, as the fix will still be brought in at a later time. It has
-nothing to do with being based off of the broken commit.
+Yeah.  It also occurred to me shortly after sending this that, at the very 
+least, we should return an error so that users can get ENOSYS on older 
+kernels.
 
-         A  +
-            +   merged in fix
-         B  + \
-            |  |
-            |  |
-            |  |
-Lots of     |  |
-  stuff     |  |
-            |  |
-            |  |
-            |  + - fix for bug
-            | /
- Bug commit +
-            |
-
-A bisect will still be testing lots of stuff without that fix. And if it
-goes into the branch with the fix, we just brought the kernel way back
-in time from point A. Then if it goes back to point B, then we zoom back
-to the future and bounce the kernel all over the place.
-
-I see no gain for having a fixed based off of the bug that it fixes.
-
-Pros of doing this:
-
-1) documents the point that things broke (can be done by commenting it
-in the change log too)
-
-2) probably good for back porting (but Con 3 may out weigh this)
-
-Cons:
-
-1) Adds many more branches and merges for no real good reason
-
-2) Makes bisects even less linear than it already is
-
-3) May cause more conflicts at the merge point as the broken code may
-have changed.
-
-
-
-Who will be doing the conflict resolutions? Linus? I doubt he would be
-happy with that, but he can speak for himself.
-
--- Steve
-
-
+sage
