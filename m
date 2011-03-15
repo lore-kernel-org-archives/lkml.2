@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab1COUm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 16:42:26 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41387 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757839Ab1COUmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 16:42:25 -0400
-Date: Tue, 15 Mar 2011 21:42:12 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/debug for v2.6.39
-Message-ID: <20110315204212.GA1437@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1758622Ab1COUoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 16:44:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62472 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758414Ab1COUoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 16:44:20 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=DpMNfemkRQYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=p5VEmyIGDiDygRvd1UYA:9 a=4efMWQ40mkxfBx7r7XpLUlH63QgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	 <20110314163028.a05cec49.akpm@linux-foundation.org>
+	 <20110314234754.GP2499@one.firstfloor.org>
+	 <alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
+	 <20110315180639.GQ2499@one.firstfloor.org>
+	 <alpine.LFD.2.00.1103152038280.2787@localhost6.localdomain6>
+	 <1300219261.9910.300.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 15 Mar 2011 16:44:16 -0400
+Message-ID: <1300221856.9910.305.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 2011-03-15 at 21:09 +0100, Thomas Gleixner wrote:
+> On Tue, 15 Mar 2011, Steven Rostedt wrote:
 
-Please pull the latest x86-debug-for-linus git tree from:
+> I didn't say that ptrace rocks.
+> 
+> All I'm saying is that we want a better argument than a single user
+> which is - and yes i tried it more than once - assbackwards beyond all
+> imagination.
+> 
+> If gdb, perf, trace can and will make use of it then we have sensible
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-debug-for-linus
+I'm more interested in the perf/trace than gdb, as the way gdb is mostly
+used (at least now) to debug problems in the code with a big hammer
+(single step, look at registers/variables). That is, gdb is usually very
+interactive and its best to "stop the code" from running to examine what
+has happened. gdb is not something you will run on an application that
+is being used by others.
 
- Thanks,
+With perf/trace things are different, as you want the task to be as
+little affected by the tracer as it runs, perhaps even in a production
+environment. This is a completely different paradigm.
 
-	Ingo
+If gdb uses it, great, but I don't think we should bend over backwards
+to make it usable by gdb. Debugging and tracing are different, with
+different requirements and needs.
 
------------------->
-Jan Beulich (2):
-      x86: Don't call dump_stack() from arch_trigger_all_cpu_backtrace_handler()
-      x86: Combine printk()s in show_regs_common()
+> arguments enough to go there. If systemtap can use it as well then I
+> have no problem with that..
+
+Fair enough.
+
+-- Steve
 
 
- arch/x86/kernel/apic/hw_nmi.c |    1 -
- arch/x86/kernel/process.c     |    9 +++------
- 2 files changed, 3 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 79fd43c..c4e557a 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -83,7 +83,6 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
- 		arch_spin_lock(&lock);
- 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
- 		show_regs(regs);
--		dump_stack();
- 		arch_spin_unlock(&lock);
- 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
- 		return NOTIFY_STOP;
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index ff45541..99fa3ad 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -110,12 +110,9 @@ void show_regs_common(void)
- 		init_utsname()->release,
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
--	printk(KERN_CONT " ");
--	printk(KERN_CONT "%s %s", vendor, product);
--	if (board) {
--		printk(KERN_CONT "/");
--		printk(KERN_CONT "%s", board);
--	}
-+	printk(KERN_CONT " %s %s", vendor, product);
-+	if (board)
-+		printk(KERN_CONT "/%s", board);
- 	printk(KERN_CONT "\n");
- }
- 
