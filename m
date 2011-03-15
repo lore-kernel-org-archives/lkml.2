@@ -1,227 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342Ab1COVnQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:43:16 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36101 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab1COVnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:43:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [Update, v2] Re: [PATCH 7/8] cpufreq: Use syscore_ops for boot CPU suspend/resume
-Date: Tue, 15 Mar 2011 22:43:02 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, Greg KH <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
-        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Avi Kivity <avi@redhat.com>
-References: <201103100131.58206.rjw@sisk.pl> <201103122212.40828.rjw@sisk.pl> <201103122220.30173.rjw@sisk.pl>
-In-Reply-To: <201103122220.30173.rjw@sisk.pl>
+	id S1758640Ab1COVq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:46:27 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48756 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756163Ab1COVqY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:46:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sMg02X1slU0ke9VLhP1Jquu9oXfv2cTZvILlRl3SYaerVoPJQJaYmlJijCnVOMEPCP
+         5SodzC+8Rn6/g0oRYbK9WnG3NHWIgBmB2tGElR/qR1b3emTfuZQFAQPCVPBfu2c3oR/B
+         OH3vqsdDDwQaSYfQqXSENxVqrqnd0M84c9LdM=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103152243.02809.rjw@sisk.pl>
+In-Reply-To: <4D7FD2FB.9090505@fastmail.fm>
+References: <4D7CCFC3.7030906@fastmail.fm>
+	<AANLkTinug=6d6BKrZvA1HGZWNqgUNJKOBC3f8J5B_5oJ@mail.gmail.com>
+	<AANLkTik0nXX+WEwa2xZ9VV+yHwrWnx+tYNdZXPEjk=SO@mail.gmail.com>
+	<4D7FD2FB.9090505@fastmail.fm>
+Date: Tue, 15 Mar 2011 17:46:23 -0400
+Message-ID: <AANLkTimboMAFkqTUOwP9m2z361TM_EgthQO07T5Y_az1@mail.gmail.com>
+Subject: Re: Radeon jittery post 2.6.35
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Anders Eriksson <aeriksson@fastmail.fm>
+Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, xorg-driver-ati@lists.x.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 12, 2011, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> The cpufreq subsystem uses sysdev suspend and resume for
-> executing cpufreq_suspend() and cpufreq_resume(), respectively,
-> during system suspend, after interrupts have been switched off on the
-> boot CPU, and during system resume, while interrupts are still off on
-> the boot CPU.  In both cases the other CPUs are off-line at the
-> relevant point (either they have been switched off via CPU hotplug
-> during suspend, or they haven't been switched on yet during resume).
-> For this reason, although it may seem that cpufreq_suspend() and
-> cpufreq_resume() are executed for all CPUs in the system, they are
-> only called for the boot CPU in fact, which is quite confusing.
-> 
-> To remove the confusion and to prepare for elimiating sysdev
-> suspend and resume operations from the kernel enirely, convernt
-> cpufreq to using a struct syscore_ops object for the boot CPU
-> suspend and resume and rename the callbacks so that their names
-> reflect their purpose.  In addition, put some explanatory remarks
-> into their kerneldoc comments.
+On Tue, Mar 15, 2011 at 4:58 PM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
+>  On 03/14/11 23:22, Alex Deucher wrote:
+>> On Mon, Mar 14, 2011 at 6:20 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>> > On Sun, Mar 13, 2011 at 10:08 AM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
+>> >>  Hi,
+>> >>
+>> >> I've found what I guess is a radeon (or drm/kms) regression post 2.6.35.
+>> >> I've got my TV conneced to my RS690G over HDMI, and the display has
+>> >> always been jittery after POST and at the GRUB screen. Pre-KMS, the X
+>> >> server (or driver got it sorted), and when KMS started, the display
+>> >> stabilized right after the kernel driver was initiated. However, post
+>> >> 2.6.35, I see the jitter is back.
+>> >>
+>> >> I've spent the last month trying to bisect it, but pretty much failed.
+>> >> It appears that versions closer to 2.6.38-rcX are more prone to display
+>> >> jitter, while 2.6.36 or so can have many successful runs. It also
+>> >> appears to be related to device power-on order, or so I've come to
+>> >> believe; A stable display can turn jittery, just by power cycling the TV.
+>> >>
+>
+> Some further testing on a clean rc8 suggests that the jitter seen
+> there can  reliably be removed by power cycling the TV while in X,
+> or starting X with the TV off.
+>
+> I'm tempted to think that something makes too much out of bad
+> info collected from the TV, and falls backs to saner defaults if
+> the TV has nothing to say.
+>
+> I've seen in the logs that the EDID is disliked:
+> [drm:radeon_dvi_detect] *ERROR* HDMI-A-1: probed a monitor but
+> no|invalid EDID
+> Not sure if that is related though (cannot seem to be able to provoke
+> that error message right now)
 
-I had to modify this patch, because the previous version had problems with
-systems that don't support cpufreq.  The updated patch (which is appended)
-also simplifies the code even further.
+Try booting with radeon.audio=0 on 2.6.38rc, some TVs have problems
+with the hdmi packets we send by default.  disabling audio will treat
+the hdmi like dvi.
 
-Thanks,
-Rafael
+Alex
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: cpufreq: Use syscore_ops for boot CPU suspend/resume (v2)
-
-The cpufreq subsystem uses sysdev suspend and resume for
-executing cpufreq_suspend() and cpufreq_resume(), respectively,
-during system suspend, after interrupts have been switched off on the
-boot CPU, and during system resume, while interrupts are still off on
-the boot CPU.  In both cases the other CPUs are off-line at the
-relevant point (either they have been switched off via CPU hotplug
-during suspend, or they haven't been switched on yet during resume).
-For this reason, although it may seem that cpufreq_suspend() and
-cpufreq_resume() are executed for all CPUs in the system, they are
-only called for the boot CPU in fact, which is quite confusing.
-
-To remove the confusion and to prepare for elimiating sysdev
-suspend and resume operations from the kernel enirely, convernt
-cpufreq to using a struct syscore_ops object for the boot CPU
-suspend and resume and rename the callbacks so that their names
-reflect their purpose.  In addition, put some explanatory remarks
-into their kerneldoc comments.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/cpufreq/cpufreq.c |   66 ++++++++++++++++++----------------------------
- 1 file changed, 26 insertions(+), 40 deletions(-)
-
-Index: linux-2.6/drivers/cpufreq/cpufreq.c
-===================================================================
---- linux-2.6.orig/drivers/cpufreq/cpufreq.c
-+++ linux-2.6/drivers/cpufreq/cpufreq.c
-@@ -28,6 +28,7 @@
- #include <linux/cpu.h>
- #include <linux/completion.h>
- #include <linux/mutex.h>
-+#include <linux/syscore_ops.h>
- 
- #include <trace/events/power.h>
- 
-@@ -1340,35 +1341,31 @@ out:
- }
- EXPORT_SYMBOL(cpufreq_get);
- 
-+static struct sysdev_driver cpufreq_sysdev_driver = {
-+	.add		= cpufreq_add_dev,
-+	.remove		= cpufreq_remove_dev,
-+};
-+
- 
- /**
-- *	cpufreq_suspend - let the low level driver prepare for suspend
-+ * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
-+ *
-+ * This function is only executed for the boot processor.  The other CPUs
-+ * have been put offline by means of CPU hotplug.
-  */
--
--static int cpufreq_suspend(struct sys_device *sysdev, pm_message_t pmsg)
-+static int cpufreq_bp_suspend(void)
- {
- 	int ret = 0;
- 
--	int cpu = sysdev->id;
-+	int cpu = smp_processor_id();
- 	struct cpufreq_policy *cpu_policy;
- 
- 	dprintk("suspending cpu %u\n", cpu);
- 
--	if (!cpu_online(cpu))
--		return 0;
--
--	/* we may be lax here as interrupts are off. Nonetheless
--	 * we need to grab the correct cpu policy, as to check
--	 * whether we really run on this CPU.
--	 */
--
-+	/* If there's no policy for the boot CPU, we have nothing to do. */
- 	cpu_policy = cpufreq_cpu_get(cpu);
- 	if (!cpu_policy)
--		return -EINVAL;
--
--	/* only handle each CPU group once */
--	if (unlikely(cpu_policy->cpu != cpu))
--		goto out;
-+		return 0;
- 
- 	if (cpufreq_driver->suspend) {
- 		ret = cpufreq_driver->suspend(cpu_policy);
-@@ -1377,13 +1374,12 @@ static int cpufreq_suspend(struct sys_de
- 					"step on CPU %u\n", cpu_policy->cpu);
- 	}
- 
--out:
- 	cpufreq_cpu_put(cpu_policy);
- 	return ret;
- }
- 
- /**
-- *	cpufreq_resume -  restore proper CPU frequency handling after resume
-+ * cpufreq_bp_resume - Restore proper frequency handling of the boot CPU.
-  *
-  *	1.) resume CPUfreq hardware support (cpufreq_driver->resume())
-  *	2.) schedule call cpufreq_update_policy() ASAP as interrupts are
-@@ -1391,31 +1387,23 @@ out:
-  *	    what we believe it to be. This is a bit later than when it
-  *	    should be, but nonethteless it's better than calling
-  *	    cpufreq_driver->get() here which might re-enable interrupts...
-+ *
-+ * This function is only executed for the boot CPU.  The other CPUs have not
-+ * been turned on yet.
-  */
--static int cpufreq_resume(struct sys_device *sysdev)
-+static void cpufreq_bp_resume(void)
- {
- 	int ret = 0;
- 
--	int cpu = sysdev->id;
-+	int cpu = smp_processor_id();
- 	struct cpufreq_policy *cpu_policy;
- 
- 	dprintk("resuming cpu %u\n", cpu);
- 
--	if (!cpu_online(cpu))
--		return 0;
--
--	/* we may be lax here as interrupts are off. Nonetheless
--	 * we need to grab the correct cpu policy, as to check
--	 * whether we really run on this CPU.
--	 */
--
-+	/* If there's no policy for the boot CPU, we have nothing to do. */
- 	cpu_policy = cpufreq_cpu_get(cpu);
- 	if (!cpu_policy)
--		return -EINVAL;
--
--	/* only handle each CPU group once */
--	if (unlikely(cpu_policy->cpu != cpu))
--		goto fail;
-+		return;
- 
- 	if (cpufreq_driver->resume) {
- 		ret = cpufreq_driver->resume(cpu_policy);
-@@ -1430,14 +1418,11 @@ static int cpufreq_resume(struct sys_dev
- 
- fail:
- 	cpufreq_cpu_put(cpu_policy);
--	return ret;
- }
- 
--static struct sysdev_driver cpufreq_sysdev_driver = {
--	.add		= cpufreq_add_dev,
--	.remove		= cpufreq_remove_dev,
--	.suspend	= cpufreq_suspend,
--	.resume		= cpufreq_resume,
-+static struct syscore_ops cpufreq_syscore_ops = {
-+	.suspend	= cpufreq_bp_suspend,
-+	.resume		= cpufreq_bp_resume,
- };
- 
- 
-@@ -2002,6 +1987,7 @@ static int __init cpufreq_core_init(void
- 	cpufreq_global_kobject = kobject_create_and_add("cpufreq",
- 						&cpu_sysdev_class.kset.kobj);
- 	BUG_ON(!cpufreq_global_kobject);
-+	register_syscore_ops(&cpufreq_syscore_ops);
- 
- 	return 0;
- }
+>
+> -A
+>
+>
+>
+>
