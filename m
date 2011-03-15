@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab1COOgU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:36:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35678 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757917Ab1COOgT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:36:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WJRWEV+OxfFid4NaMoVb+7Q8sK6oFvFyIFHpS8esR+nxmoOQbt3si8ByLNK9ri8CYg
-         8/i97e1o7aHZcgZyLinRqlFg4+6UYXWlm/ijIvIBxtPYLuvf8EyaI8zVmW5F0k2s0Rhh
-         yj+lzzkJM9/0QD2BY/mZ9fxYO1LOCpZREEvtk=
+	id S1757980Ab1COOhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:37:16 -0400
+Received: from fieldses.org ([174.143.236.118]:46830 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757404Ab1COOhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 10:37:14 -0400
+Date: Tue, 15 Mar 2011 10:37:08 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: david@lang.hm, Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20110315143708.GB31746@fieldses.org>
+References: <20110310.155556.48513201.davem@davemloft.net>
+ <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com>
+ <20110311204823.GB7906@fieldses.org>
+ <20110311.130128.71121155.davem@davemloft.net>
+ <1299878274.2814.8.camel@bwh-desktop>
+ <20110311214209.GB9404@fieldses.org>
+ <20110312040941.GA15526@home.goodmis.org>
+ <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
+ <1300193560.9910.265.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <1300130283-10466-2-git-send-email-fweisbec@gmail.com>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
-	<1300130283-10466-2-git-send-email-fweisbec@gmail.com>
-Date: Tue, 15 Mar 2011 22:36:18 +0800
-Message-ID: <AANLkTim4gFdxn3pHZuxXe-AwTCYrnUHHeFkEK6wisYiL@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/4] perf: Starter and stopper events
-From: Lin Ming <minggr@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300193560.9910.265.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 3:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Tue, Mar 15, 2011 at 08:52:40AM -0400, Steven Rostedt wrote:
+> But it wont, as the fix will still be brought in at a later time. It has
+> nothing to do with being based off of the broken commit.
+> 
+>          A  +
+>             +   merged in fix
+>          B  + \
+>             |  |
+>             |  |
+>             |  |
+> Lots of     |  |
+>   stuff     |  |
+>             |  |
+>             |  |
+>             |  + - fix for bug
+>             | /
+>  Bug commit +
+>             |
+> 
+> A bisect will still be testing lots of stuff without that fix. And if it
+> goes into the branch with the fix, we just brought the kernel way back
+> in time from point A. Then if it goes back to point B, then we zoom back
+> to the future and bounce the kernel all over the place.
+> 
+> I see no gain for having a fixed based off of the bug that it fixes.
 
->
-> +static void perf_event_pause_resume(struct perf_event *event, int nmi,
-> +                                   struct perf_sample_data *data,
-> +                                   struct pt_regs *regs)
-> +{
-> +       struct perf_event *iter;
-> +       unsigned long flags;
-> +
-> +       /*
-> +        * Ensure the targets can't be sched in/out concurrently.
-> +        * Disabling irqs is sufficient for that because starters/stoppers
-> +        * are on the same cpu/task.
-> +        */
-> +       local_irq_save(flags);
+I suppose you'd test the intermediate ("bad") area by merging in "fix
+for bug" instead of cherry-picking it.  In theory perhaps that would
+give the bisect algorithm a little more information.  (Since it's seeing
+the same "fix for bug" commit each time.)
 
-Could you explain this more detail?
+> Pros of doing this:
+> 
+> 1) documents the point that things broke (can be done by commenting it
+> in the change log too)
+> 
+> 2) probably good for back porting (but Con 3 may out weigh this)
+> 
+> Cons:
+> 
+> 1) Adds many more branches and merges for no real good reason
+> 
+> 2) Makes bisects even less linear than it already is
+> 
+> 3) May cause more conflicts at the merge point as the broken code may
+> have changed.
+> 
+> 
+> 
+> Who will be doing the conflict resolutions? Linus? I doubt he would be
+> happy with that, but he can speak for himself.
 
-> +
-> +
-> +       /* Prevent the targets from being removed under us. */
-> +       rcu_read_lock();
-> +
-> +       list_for_each_entry_rcu(iter, &event->starter_list, starter_entry) {
-> +               /*
-> +                * There is a small race window here, between the state
-> +                * gets set to active and the event is actually ->add().
-> +                * We need to find a way to ensure the starter/stopper
-> +                * can't trigger in between.
+No real change there: you still won't want to send in a pull request
+every time you fix a bug, so you'd pull a bunch together, merge them
+(and maybe a test merge with upstream to make sure it's reasonable),
+then send a pull request for the result.
 
-Can we set the state to active after the event is actually ->add()?
+I dunno, I have no strong opinions here, just curiosity.
 
-> +                */
-> +               if (iter->state == PERF_EVENT_STATE_ACTIVE) {
-> +                       if (iter->paused) {
-> +                               iter->pmu->start(iter, PERF_EF_RELOAD);
-> +                               iter->paused = 0;
-> +                       }
-> +               }
-> +       }
-> +
-
-Thanks,
-Lin Ming
+--b.
