@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab1COHYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 03:24:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36319 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab1COHYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 03:24:12 -0400
-Message-ID: <4D7F1418.1070802@suse.cz>
-Date: Tue, 15 Mar 2011 08:24:08 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Alexander Beregalov <a.beregalov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] kbuild: Fix computing srcversion for modules
-References: <20110311092811.GA2079@polaris.bitmath.org>	<1299879287-30889-1-git-send-email-mmarek@suse.cz>	<20110311230601.GA1559@polaris.bitmath.org> <AANLkTinX=KODGLx5X+k-XD6FHQQU8VJhq+nX1_MTMCzs@mail.gmail.com>
-In-Reply-To: <AANLkTinX=KODGLx5X+k-XD6FHQQU8VJhq+nX1_MTMCzs@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754877Ab1COH0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 03:26:50 -0400
+Received: from b.relay.invitel.net ([62.77.203.4]:35429 "EHLO
+	b.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932Ab1COH0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 03:26:47 -0400
+Date: Tue, 15 Mar 2011 08:26:40 +0100
+From: Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH 3/4 v5] video, sm501: add OF binding to support SM501
+In-reply-to: <1296026490-14665-1-git-send-email-hs@denx.de>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
+        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Paul Mundt <lethal@linux-sh.org>,
+        Wolfgang Denk <wd@denx.de>
+Reply-to: hs@denx.de
+Message-id: <4D7F14B0.1030008@denx.de>
+Organization: DENX Software Engineering
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-15
+Content-transfer-encoding: 7BIT
+References: <1291451028-22532-1-git-send-email-hs@denx.de>
+ <1296026490-14665-1-git-send-email-hs@denx.de>
+User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.3.2011 06:04, Alexander Beregalov wrote:
-> On 12 March 2011 02:06, Henrik Rydberg <rydberg@euromail.se> wrote:
->> On Fri, Mar 11, 2011 at 10:34:47PM +0100, Michal Marek wrote:
->>> Recent change to fixdep:
->>>
->>>     commit b7bd182176960fdd139486cadb9962b39f8a2b50
->>>     Author: Michal Marek <mmarek@suse.cz>
->>>     Date:   Thu Feb 17 15:13:54 2011 +0100
->>>
->>>     fixdep: Do not record dependency on the source file itself
->>>
->>> changed the format of the *.cmd files without realizing that it is also
->>> used by modpost. Put the path to the source file to the file back, in a
->>> special variable, so that modpost sees all source files when calculating
->>> srcversion for modules.
->>>
-> 
-> Hi Michal,
-> 
-> There is something wrong with the patch,
-> I can't compile 2.6.38 neither linux-next on sparc64:
-> 
-> $ make CROSS_COMPILE=sparc64-unknown-linux-gnu-
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   UPD     include/generated/utsrelease.h
->   CC      kernel/bounds.s
->   GEN     include/generated/bounds.h
->   CC      arch/sparc/kernel/asm-offsets.s
->   GEN     include/generated/asm-offsets.h
->   CALL    scripts/checksyscalls.sh
->   CC      scripts/mod/empty.o
->   MKELF   scripts/mod/elfconfig.h
->   HOSTCC  scripts/mod/file2alias.o
->   HOSTCC  scripts/mod/modpost.o
->   HOSTCC  scripts/mod/sumversion.o
->   HOSTLD  scripts/mod/modpost
-> /usr/lib/gcc/sparc-unknown-linux-gnu/4.5.2/../../../../sparc-unknown-linux-gnu/bin/ld:
-> scripts/mod/sumversion.o: Relocations in generic ELF (EM: 3)
-> scripts/mod/sumversion.o: could not read symbols: File in wrong format
-> collect2: ld returned 1 exit status
-> 
-> $ file scripts/mod/sumversion.o
-> scripts/mod/sumversion.o: ELF 32-bit LSB relocatable, Intel 80386,
-> version 1 (SYSV), not stripped
-> 
-> Why 386?
+Hello
 
-I don't know. If you are building on x86 for sparc, then the host
-executables have to be x86. Please provide details. But I'm quite sure
-that the above patch is not the cause.
+Heiko Schocher wrote:
+> - add binding to OF, compatible name "smi,sm501"
+> 
+> Signed-off-by: Heiko Schocher <hs@denx.de>
+> cc: linux-fbdev@vger.kernel.org
+> cc: devicetree-discuss@ozlabs.org
+> cc: Ben Dooks <ben@simtec.co.uk>
+> cc: Vincent Sanders <vince@simtec.co.uk>
+> cc: Samuel Ortiz <sameo@linux.intel.com>
+> cc: linux-kernel@vger.kernel.org
+> cc: Randy Dunlap <rdunlap@xenotime.net>
+> cc: Paul Mundt <lethal@linux-sh.org>
+> 
+> ---
+> - changes since v1:
+>   add Ben Dooks, Vincent Sanders and Samuel Ortiz to cc, as suggested from
+>   Paul Mundt.
+> - changes since v2:
+>   add comments from Randy Dunlap:
+>   - move parameter documentation to Documentation/fb/sm501.txt
+> - changes since v3:
+>   - rebased against v2.6.38-rc2
+>   - split in 3 patches
+>     - of support patch
+>       - get rid of "#if defined(CONFIG_PPC_MPC52xx)" usage
+>         hide this in DTS, as Paul suggested.
+>     - i/o routine patch
+>     - edid support patch
+> - changes since v4
+>   replace remaining CONFIG_PPC_MPC52xx with CONFIG_OF, as
+>   it is no longer MPC52xx only.
+> - changes since v5
+>   free edid_data after its usage, as it is no longer needed,
+>   suggested from Paul Mundt. Also fall back to default if
+>   kmemdup(edid_data) fails.
+> 
+> ./scripts/checkpatch.pl 0003-video-sm501-add-OF-binding-to-support-SM501.patch
+> total: 0 errors, 0 warnings, 132 lines checked
+> 
+> 0003-video-sm501-add-OF-binding-to-support-SM501.patch has no obvious style problems and is ready for submission.
+> 
+>  Documentation/powerpc/dts-bindings/sm501.txt |   34 +++++++++++++++++++++
+>  drivers/mfd/sm501.c                          |    9 +++++-
+>  drivers/video/sm501fb.c                      |   42 ++++++++++++++++++++++++--
+>  3 files changed, 81 insertions(+), 4 deletions(-)
+>  create mode 100644 Documentation/powerpc/dts-bindings/sm501.txt
 
-Michal
+This patchset is pending know for a while. I got Acked by from
+
+Samuel Ortiz for the mfd part, see here:
+
+http://www.spinics.net/lists/linux-fbdev/msg02550.html
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
+
+and for the DTS part from Benjamin Herrenschmidt:
+
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
+
+Are there some more issues?
+
+bye,
+Heiko
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
