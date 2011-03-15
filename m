@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab1COMv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 08:51:59 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38228 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757548Ab1COMv6 (ORCPT
+	id S1757690Ab1COMwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 08:52:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43957 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757659Ab1COMwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 08:51:58 -0400
-Date: Tue, 15 Mar 2011 12:51:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jean Delvare <khali@linux-fr.org>,
-        mems applications <mems.applications@st.com>, rdunlap@xenotime.net,
-        carmine.iascone@st.com, matteo.dameno@st.com, rubini@cvml.unipv.it,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <guenter.roeck@ericsson.com>, Greg KH <greg@kroah.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device
-	driver into misc
-Message-ID: <20110315125149.GC17277@sirena.org.uk>
-References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com> <20110314224244.3d6d23ba@endymion.delvare> <4D7EA38F.5070002@cam.ac.uk> <201103151038.40559.arnd@arndb.de> <4D7F4944.4070507@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7F4944.4070507@cam.ac.uk>
-X-Cookie: Do, or do not
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Tue, 15 Mar 2011 08:52:43 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BOWQLXdHDTadG2slJK8A:9 a=Be-3daMwsjd2Kji8mtwA:7 a=YN0TgvpO6v0UB0co-XpyUhpEoZYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [GIT] Networking
+From: Steven Rostedt <rostedt@goodmis.org>
+To: david@lang.hm
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
+References: <20110310.155556.48513201.davem@davemloft.net>
+	 <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com>
+	 <20110311204823.GB7906@fieldses.org>
+	 <20110311.130128.71121155.davem@davemloft.net>
+	 <1299878274.2814.8.camel@bwh-desktop> <20110311214209.GB9404@fieldses.org>
+	 <20110312040941.GA15526@home.goodmis.org>
+	 <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 15 Mar 2011 08:52:40 -0400
+Message-ID: <1300193560.9910.265.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 11:11:00AM +0000, Jonathan Cameron wrote:
-> On 03/15/11 09:38, Arnd Bergmann wrote:
+On Tue, 2011-03-15 at 00:20 -0700, david@lang.hm wrote:
 
-[Reflowed Jonathan's text into 80 columns for legibility.]
+> > It really is meaningless to do so, as all you are doing is documenting
+> > what commit caused this bug, and producing more problems by branching
+> > off of the broken commit. It wont matter till it is merged, but then if
+> > there are a lot of simple bug fixes, then you will have a lot of single
+> > merges of branches that fix those bugs.
+> 
+> what effect would this have on bisecting? if this helped people avoid 
+> bisecting in between the bad commit and the fix for it, it may be worth 
+> it.
+> 
 
-> > Do you think it would help to split the iio codebase into a smaller part
-> > for the relatively clean drivers that can be put into shape for
-> > drivers/iio, and the bulk of the code that stays in staging for a bit
-> > longer, until it gets converted to the new one in small chunks?
+But it wont, as the fix will still be brought in at a later time. It has
+nothing to do with being based off of the broken commit.
 
-> 1) Spit functionality out in staging. This would give a core set that
-> is basically the sysfs only stuff.  To do that we'd have to define a
-> struct iio_dev_basic and make it an element of the iio_dev.  Prior to
-> that we'd probably need to make pretty much all accesses into iio_dev
-> via macros / inline functions which would not be a trivial
-> undertaking.
+         A  +
+            +   merged in fix
+         B  + \
+            |  |
+            |  |
+            |  |
+Lots of     |  |
+  stuff     |  |
+            |  |
+            |  |
+            |  + - fix for bug
+            | /
+ Bug commit +
+            |
 
-> Then we could switch those drivers doing the minimum to the _basic
-> form.  At that point we could perhaps attempt to move a couple of
-> drivers and the abi docs out of staging.
+A bisect will still be testing lots of stuff without that fix. And if it
+goes into the branch with the fix, we just brought the kernel way back
+in time from point A. Then if it goes back to point B, then we zoom back
+to the future and bounce the kernel all over the place.
 
-> The disadvantages of this that come to mind are: * Makes the path to
-> driver addition that I'd prefer trickier.  You write a basic sysfs
-> only driver first, then add on stuff like events and buffering as
-> separate patches. We could go the other way around like v4l2-subdev
-> and have a base structure with the option of pointers to structures
-> offering different combinations of features.  * Not many of the
-> drivers I'd consider to be ready to go at the moment are actually in
-> this _basic class. 
+I see no gain for having a fixed based off of the bug that it fixes.
 
-For what it's worth I have a few drivers I'd like to do which fall into
-this category.  I've been put off working on them by the fact that I'm
-not seeing a route out of staging for the subsystem.
+Pros of doing this:
 
-> 2) Basically make a copy.  This would look like the original patch set did when we went
+1) documents the point that things broke (can be done by commenting it
+in the change log too)
 
-A third option is just to lift everything out of staging roughly as it
-is now with anything that definitely needs redoing dropped, addressing
-any review comments for mainline but not doing much else, and then
-resume working on adding additional stuff.  It sounds like the userspace
-interfaces that are there at present are mostly OK and most of the
-issues are in-kernel?
+2) probably good for back porting (but Con 3 may out weigh this)
 
-You could perhaps have a Kconfig control for disabling any experimental
-features in the API if you want to give people hints about areas that
-are likely to churn.
+Cons:
+
+1) Adds many more branches and merges for no real good reason
+
+2) Makes bisects even less linear than it already is
+
+3) May cause more conflicts at the merge point as the broken code may
+have changed.
+
+
+
+Who will be doing the conflict resolutions? Linus? I doubt he would be
+happy with that, but he can speak for himself.
+
+-- Steve
+
+
