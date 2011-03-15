@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1COCDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 22:03:35 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:42778 "EHLO e2.ny.us.ibm.com"
+	id S1752032Ab1COC0R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:26:17 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46153 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab1COCDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 22:03:33 -0400
-Date: Tue, 15 Mar 2011 07:27:40 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20]  0: Inode based uprobes
-Message-ID: <20110315015739.GS24254@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
- <20110314163028.a05cec49.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110314163028.a05cec49.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1750874Ab1COC0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 22:26:13 -0400
+Subject: Re: [PATCH 00/20] world-writable files in sysfs and debugfs
+From: James Bottomley <James.Bottomley@suse.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        acpi4asus-user@lists.sourceforge.net, rtc-linux@googlegroups.com,
+        linux-scsi@vger.kernel.org, open-iscsi@googlegroups.com,
+        security@kernel.org
+In-Reply-To: <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
+References: <cover.1296818921.git.segoon@openwall.com>
+	 <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Mar 2011 22:26:05 -0400
+Message-ID: <1300155965.5665.15.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > 4. Corelating events from kernels and userspace.
-> > Uprobes could be used with other tools like kprobes, tracepoints or as
-> > part of higher level tools like perf to give a consolidated set of
-> > events from kernel and userspace.  In future we could look at a single
-> > backtrace showing application, library and kernel calls.
+On Sat, 2011-03-12 at 23:23 +0300, Vasiliy Kulikov wrote:
+> > Vasiliy Kulikov (20):
+> >  mach-ux500: mbox-db5500: world-writable sysfs fifo file
+> >  leds: lp5521: world-writable sysfs engine* files
+> >  leds: lp5523: world-writable engine* sysfs files
+> >  misc: ep93xx_pwm: world-writable sysfs files
+> >  rtc: rtc-ds1511: world-writable sysfs nvram file
+> >  scsi: aic94xx: world-writable sysfs update_bios file
+> >  scsi: iscsi: world-writable sysfs priv_sess file
 > 
-> How do you envisage these features actually get used?  For example,
-> will gdb be modified?  Will other debuggers be modified or written?
-> 
-> IOW, I'm trying to get an understanding of how you expect this feature
-> will actually become useful to end users - the kernel patch is only
-> part of the story.
-> 
+> These are still not merged :(
 
-Right, So I am looking at having perf probe for uprobes and also at
-having a syscall so that perf probe and other ptrace users can use this
-infrastructure. Ingo has already asked for a syscall for the same in
-one of his replies to my previous patchset. From whatever
-discussions I had with ptrace users, they have shown interest in
-using this breakpoint infrastructure.
+OK, so I've not been tracking where we are in the dizzying ride on
+security systems.  However, I thought we landed up in the privilege
+separation arena using capabilities.  That means that world writeable
+files aren't necessarily a problem as long as the correct capabilities
+checks are in place, right?
 
-I am still not sure if this feature should be exposed thro a new
-operation to ptrace syscall (something like SET_BP) or a completely new
-syscall or both. I would be happy if people here could give inputs on
-which route to go forward.
+James
 
-We had perf probe for uprobes implemented in few of the previous
-patchset. When the underlying implementation changed from a
-pid:vaddr to a file:offset, the way we invoke perf probe changed.
 
-Previously we would do 
-"perf probe -p 3692 zfree@zsh"
-
-Now we would be doing 
-"perf probe -u zfree@zsh"
-
-The perf probe for uprobes is still WIP. Will post the patches when it
-is in usable fashion. This should be pretty soon.
-
-If you have suggestions on how this infrastructure could be used
-above perf probe and syscall, then please do let me know.
-
--- 
-Thanks and Regards
-Srikar
