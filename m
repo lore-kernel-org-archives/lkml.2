@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724Ab1CONLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 09:11:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56503 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757553Ab1CONLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 09:11:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=YYgx4QXKTtOXTJrDSu3soATpkeZlP/djs0V/zPnt8kpoqjU+Fb1D2xrnfExOYjrGaM
-         e+YkdW9DTb1AU1YPSaq63pJ3ZMCUVSCGtTbJWe/mOcyyCAhi8cs66YS4RfJZLEI3Fs02
-         Vb825r/F6mpD5zVGLTnq8GTLt3lghNhrexJiU=
-Subject: Re: [PATCH V4 1/1] rcu: introduce kfree_rcu()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Manfred Spraul <manfred@colorfullife.com>
-In-Reply-To: <4D7F356C.8020903@cn.fujitsu.com>
-References: <4D7F356C.8020903@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Mar 2011 14:11:33 +0100
-Message-ID: <1300194693.10062.15.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1757742Ab1CONOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 09:14:19 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:31448 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757677Ab1CONOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 09:14:18 -0400
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: menage@google.com, lizf@cn.fujitsu.com
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, ext-phil.2.carmody@nokia.com
+Subject: [PATCH 2/2] cgroup: if you list_empty() a head then don't list_del() it
+Date: Tue, 15 Mar 2011 15:08:43 +0200
+Message-Id: <1300194523-19325-3-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
+In-Reply-To: <1300194523-19325-2-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1300194523-19325-1-git-send-email-ext-phil.2.carmody@nokia.com>
+ <1300194523-19325-2-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 15 mars 2011 à 17:46 +0800, Lai Jiangshan a écrit :
+list_del() leaves poison in the prev and next pointers. The next
+list_empty() will compare those poisons, and say the list isn't empty.
+Any list operations that assume the node is on a list because of such a
+check will be fooled into dereferencing poison. One needs to INIT the
+node after the del, and fortunately there's already a wrapper for that -
+list_del_init().
 
+Some of the dels are followed by deallocations, so can be ignored,
+and one can be merged with an add to make a move. Apart from that, I
+erred on the side of caution in making nodes list_empty()-queriable.
 
-> --- a/kernel/rcutiny.c
-> +++ b/kernel/rcutiny.c
-> @@ -167,7 +167,7 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
->  		prefetch(next);
->  		debug_rcu_head_unqueue(list);
->  		local_bh_disable();
-> -		list->func(list);
-> +		__rcu_reclaim(list);
->  		local_bh_enable();
->  		list = next;
->  		RCU_TRACE(cb_count++);
+Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+---
+ kernel/cgroup.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
-Paul, I am just wondering why we disable BH before calling list->func()
-
-This should be done in callbacks that really need it ?
-
-At least the disable/enable pair is not necessary before calling kfree()
-
-
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b24d702..bcc7336 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1813,10 +1813,8 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ 
+ 	/* Update the css_set linked lists if we're using them */
+ 	write_lock(&css_set_lock);
+-	if (!list_empty(&tsk->cg_list)) {
+-		list_del(&tsk->cg_list);
+-		list_add(&tsk->cg_list, &newcg->tasks);
+-	}
++	if (!list_empty(&tsk->cg_list))
++		list_move(&tsk->cg_list, &newcg->tasks);
+ 	write_unlock(&css_set_lock);
+ 
+ 	for_each_subsys(root, ss) {
+@@ -3655,12 +3653,12 @@ again:
+ 	spin_lock(&release_list_lock);
+ 	set_bit(CGRP_REMOVED, &cgrp->flags);
+ 	if (!list_empty(&cgrp->release_list))
+-		list_del(&cgrp->release_list);
++		list_del_init(&cgrp->release_list);
+ 	spin_unlock(&release_list_lock);
+ 
+ 	cgroup_lock_hierarchy(cgrp->root);
+ 	/* delete this cgroup from parent->children */
+-	list_del(&cgrp->sibling);
++	list_del_init(&cgrp->sibling);
+ 	cgroup_unlock_hierarchy(cgrp->root);
+ 
+ 	d = dget(cgrp->dentry);
+@@ -3879,7 +3877,7 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ 	subsys[ss->subsys_id] = NULL;
+ 
+ 	/* remove subsystem from rootnode's list of subsystems */
+-	list_del(&ss->sibling);
++	list_del_init(&ss->sibling);
+ 
+ 	/*
+ 	 * disentangle the css from all css_sets attached to the dummytop. as
+@@ -4253,7 +4251,7 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ 	if (!list_empty(&tsk->cg_list)) {
+ 		write_lock(&css_set_lock);
+ 		if (!list_empty(&tsk->cg_list))
+-			list_del(&tsk->cg_list);
++			list_del_init(&tsk->cg_list);
+ 		write_unlock(&css_set_lock);
+ 	}
+ 
+-- 
+1.7.2.rc1.37.gf8c40
 
