@@ -1,124 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab1CORos (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 13:44:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5521 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758160Ab1CORoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 13:44:46 -0400
-Subject: Re: PATCH [1/1]: audit: acquire creds selectively to reduce atomic
- op overhead
-From: Eric Paris <eparis@redhat.com>
-To: Tony Jones <tonyj@suse.de>
-Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, Al Viro <viro@zeniv.linux.org.uk>
-Date: Tue, 15 Mar 2011 13:44:36 -0400
-In-Reply-To: <20110315173810.GA12775@suse.de>
-References: <20110310202516.GA16122@suse.de> <20110307210656.GA1750@suse.de>
-	 <18893.1299607373@redhat.com> <29980.1299861232@redhat.com>
-	 <20110315173810.GA12775@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1300211077.3748.2.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1758225Ab1CORp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 13:45:27 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:43399 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758215Ab1CORpZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 13:45:25 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: ynKCa7UVM1ncNfGMO6L0vnOy0_Nh51BYI4hJqOL5_ySAMu0
+ PffSObIZbrJcXxj8g2.9HhP.oCYw0BqB6opwkm_JYV8PXb20Gxjbc4ZLLP4N
+ .BpjwaqXqAhwcmMvnLPHMMe2d8H0_Hp5FmN4ta8Fisjf7xpZ1zK5Jz1tT7o5
+ 5pxicvPXHA1KuJFVarzF3OAKwXLdP6vDMNMSz26tAyjO7nWOSzECzmEAggfd
+ uyJnbV.WOmufMga5yox.HGmW2orgy8zPApSsfxU0OmnxbhAVsZ6fPt5qekgL
+ gMzzdifsBcQnVP.m7S7GY43iLzsJyoD5HWwlAZsrhmzBddNfB
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 15 Mar 2011 12:45:21 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the slab tree
+In-Reply-To: <20110314200247.92ae2bd7.sfr@canb.auug.org.au>
+Message-ID: <alpine.DEB.2.00.1103151119200.5754@router.home>
+References: <20110314200247.92ae2bd7.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 10:38 -0700, Tony Jones wrote:
-> On Fri, Mar 11, 2011 at 04:33:52PM +0000, David Howells wrote:
-> > get_task_cred() and task_cred_xxxx() call __task_cred() which uses
-> 
-> Sorry, I thought you were referring to the remainder of auditsc.c
-> 
-> > It's possible that the credentials being used in audit_filter_rules() are
-> > incorrect under most circumstances and should be task->cred, not
-> > task->real_cred.
-> 
-> Agree. Also I believe it is safe to use tsk->cred directly as tsk == current 
-> or tsk is being created by copy_process.
+On Mon, 14 Mar 2011, Stephen Rothwell wrote:
 
-Is there any way we can enforce this condition in the code?
-WARN_ON(cred != current->cred && cred->refcnt != 1) or something like
-that (I just made that conditional up off the top of my head, but it
-explains what I'm talking about)?  Who knows what somebody else might do
-with this code someday.....
+> mm/slub.c: In function 'slab_free':
+> mm/slub.c:2124: warning: label 'redo' defined but not used
+>
+> Introduced by commit 8a5ec0ba42c4 ("Lockless (and preemptless) fastpaths
+> for slub").
+---
 
-> Eric, can you ACK/NACK?
-> 
-> The following patch corresponds to the above.
-> 
-> Tony
-> ---
-> 
-> 
-> Commit c69e8d9c01db added calls to get_task_cred and put_cred in
-> audit_filter_rules.  Profiling with a large number of audit rules active on the
-> exit chain shows that we are spending upto 48% in this routine for syscall 
-> intensive tests, most of which is in the atomic ops.
-> 
-> The code should be accessing tsk->cred rather than tsk->real_cred.  Also, since
-> tsk is current (or tsk is being created by copy_process) direct access to 
-> tsk->cred is possible.
-> 
-> Signed-off-by: Tony Jones <tonyj@suse.de>
+Subject: slub: Dont define useless label in the !CONFIG_CMPXCHG_LOCAL case
 
-Acked-by: Eric Paris <eparis@redhat.com>
+The redo label needs #ifdeffery.
 
-> ---
-> 
->  kernel/auditsc.c |   18 ++++++++++--------
->  1 files changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index f49a031..750c08ef 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -441,16 +441,21 @@ static int match_tree_refs(struct audit_context *ctx, struct audit_tree *tree)
->  	return 0;
->  }
->  
-> -/* Determine if any context name data matches a rule's watch data */
-> -/* Compare a task_struct with an audit_rule.  Return 1 on match, 0
-> - * otherwise. */
-> +/*
-> + * Determine if any context name data matches a rule's watch data
-> + * Compare a task_struct with an audit_rule.  Return 1 on match, 0
-> + * otherwise.
-> + *
-> + * Note: tsk==current or we are being indirectly called from copy_process()
-> + * so direct access to tsk->cred is allowed.
-> + */
->  static int audit_filter_rules(struct task_struct *tsk,
->  			      struct audit_krule *rule,
->  			      struct audit_context *ctx,
->  			      struct audit_names *name,
->  			      enum audit_state *state)
->  {
-> -	const struct cred *cred = get_task_cred(tsk);
-> +	const struct cred *cred = tsk->cred;
->  	int i, j, need_sid = 1;
->  	u32 sid;
->  
-> @@ -637,10 +642,8 @@ static int audit_filter_rules(struct task_struct *tsk,
->  			break;
->  		}
->  
-> -		if (!result) {
-> -			put_cred(cred);
-> +		if (!result)
->  			return 0;
-> -		}
->  	}
->  
->  	if (ctx) {
-> @@ -656,7 +659,6 @@ static int audit_filter_rules(struct task_struct *tsk,
->  	case AUDIT_NEVER:    *state = AUDIT_DISABLED;	    break;
->  	case AUDIT_ALWAYS:   *state = AUDIT_RECORD_CONTEXT; break;
->  	}
-> -	put_cred(cred);
->  	return 1;
->  }
->  
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
+ mm/slub.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+Index: linux-next/mm/slub.c
+===================================================================
+--- linux-next.orig/mm/slub.c	2011-03-15 12:41:41.000000000 -0500
++++ linux-next/mm/slub.c	2011-03-15 12:43:06.000000000 -0500
+@@ -2119,9 +2119,11 @@ static __always_inline void slab_free(st
+
+ #ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
+-#endif
+
++#else
+ redo:
++#endif
++
+ 	/*
+ 	 * Determine the currently cpus per cpu slab.
+ 	 * The cpu may change afterward. However that does not matter since
