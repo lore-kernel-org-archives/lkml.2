@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab1COIqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 04:46:50 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47086 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab1COIqq (ORCPT
+	id S1755778Ab1COIsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 04:48:04 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:37855 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1COIsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 04:46:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=xGIjeTKMb1W2ggToGvFc0aD2ReTcFzg70vhhLxXZEQoOmL4LIkln2St0JgBEdm52Wf
-         xY63HCArtwtRzY/q69vhpzQuVKi3fjUqXnJKYEoc1F0NGCeMmZWoxbVnefV+JKJngmVI
-         JZ5CrBm92Lj3XFc8n6NLkwhNF196x2qrMTvGY=
-Date: Tue, 15 Mar 2011 11:46:25 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: wei_wang@realsil.com.cn
-Cc: gregkh@suse.de, devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: rts_pstor: set lun_mode in a different
- place
-Message-ID: <20110315084625.GU2008@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	wei_wang@realsil.com.cn, gregkh@suse.de,
-	devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-References: <1300177336-4486-1-git-send-email-wei_wang@realsil.com.cn>
+	Tue, 15 Mar 2011 04:48:00 -0400
+From: Andreas Gruenbacher <agruen@linbit.com>
+Organization: LINBIT
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl interoperability
+Date: Tue, 15 Mar 2011 09:46:41 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.4-desktop; KDE/4.4.4; x86_64; ; )
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, "Ted Ts'o" <tytso@mit.edu>,
+        sfrench@us.ibm.com, dilger.kernel@dilger.ca, sandeen@redhat.com,
+        jlayton@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110305003214.GF21260@fieldses.org> <87pqq5a1qj.fsf@linux.vnet.ibm.com>
+In-Reply-To: <87pqq5a1qj.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300177336-4486-1-git-send-email-wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103150946.41554.agruen@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 04:22:16PM +0800, wei_wang@realsil.com.cn wrote:
-> From: wwang <wei_wang@realsil.com.cn>
-> 
-> In sony notebook, card reader will be configured as two-lun mode
-> through EFUSE. In this situation, MS card can't be recognized
-> properly because driver does only support single-lun mode in default.
-> In this patch, lun_mode is set in a different place, so driver can
-> detect the EFUSE configuation automatically.
-> 
+Aneesh,
 
-Hm...  The auto detect code is never run because chip->use_hw_setting is
-always 0.  Are you sure the right fix isn't to set chip->use_hw_setting
-to 1?
+On Saturday 05 March 2011 18:58:12 Aneesh Kumar K. V wrote:
+> Andreas didn't like the compat feature flag patch. I don't remember why
+> though. Andreas can you comment on why you didn't want the compat
+> feature flag ?
 
-regards,
-dan carpenter
+The mount option made developing and testing of the patch set easier because
+it didn't require a modification to e2fsprogs.  For upstream, the feature flag
+(*) makes a lot more sense, though.
 
+(*) http://git.kernel.org/?p=linux/kernel/git/kvaneesh/linux-richacl.git;h=fb5c519
 
+Thanks,
+Andreas
