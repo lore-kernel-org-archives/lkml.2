@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab1COIeU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 04:34:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54592 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429Ab1COIeQ (ORCPT
+	id S1755475Ab1COIfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 04:35:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34762 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755391Ab1COIfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 04:34:16 -0400
-Date: Tue, 15 Mar 2011 09:33:58 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Andres Salomon <dilinger@queued.net>, Sascha Hauer <kernel@pengutronix.de>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] ARM: mx51_efika: update platform data for new mfd
- changes
-Message-ID: <20110315083358.GI29521@pengutronix.de>
-References: <20110304080653.3f2c3f19@debxo>
- <20110307085358.GM29521@pengutronix.de>
- <20110311204405.GE20247@sortiz-mobl>
+	Tue, 15 Mar 2011 04:35:50 -0400
+Date: Tue, 15 Mar 2011 08:35:15 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: InKi Dae <daeinki@gmail.com>
+Cc: KyongHo Cho <pullip.cho@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        =?utf-8?B?6rCV66+86rec?= <mk7.kang@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        =?utf-8?B?64yA7J246riw?= <inki.dae@samsung.com>,
+        kyungmin.park@samsung.com, kgene.kim@samsung.com,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU
+	(IOMMU) driver
+Message-ID: <20110315083515.GA3921@n2100.arm.linux.org.uk>
+References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111615.01829.arnd@arndb.de> <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com> <201103111700.17373.arnd@arndb.de> <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com> <20110314124652.GF26085@n2100.arm.linux.org.uk> <AANLkTinzBvkcB111UZd2rJ9raaXkh2TqmTw5Y+4WFd48@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110311204405.GE20247@sortiz-mobl>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:32:38 up 26 days, 20:29, 33 users,  load average: 0.36, 0.80,
- 0.51
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinzBvkcB111UZd2rJ9raaXkh2TqmTw5Y+4WFd48@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi samuel,
-
-On Fri, Mar 11, 2011 at 09:44:05PM +0100, Samuel Ortiz wrote:
-> Hi Sascha,
+On Tue, Mar 15, 2011 at 10:45:50AM +0900, InKi Dae wrote:
+> 2011/3/14 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> > On Mon, Mar 14, 2011 at 09:37:51PM +0900, KyongHo Cho wrote:
+> >> I have also noticed that dma_map_single/page/sg() can map physical
+> >> memory into an arbitrary device address region.
+> >> But it is not enough solution for various kinds of IOMMUs.
+> >> As Kukjin Kim addressed, we need to support larger page size than 4KB
+> >> because we can reduce TLB miss when we have larger page size.
+> >>
+> >> Our IOMMU(system mmu) supports all page size of ARM architecture
+> >> including 16MB, 1MB, 64KB and 4KB.
+> >> Since the largest size supported by buddy system of 32-bit architecture is 4MB,
+> >> our system support all page sizes except 16MB.
+> >> We proved that larger page size is helpful for DMA performance
+> >> significantly (more than 10%, approximately).
+> >> Big page size is not a problem for peripheral devices
+> >> because their address space is not suffer from external fragmentation.
+> >
+> > 1. dma_map_single() et.al. is used for mapping *system* *RAM* for devices
+> >   using whatever is necessary.  It must not be used for trying to setup
+> >   arbitary other mappings.
+> >
+> > 2. It doesn't matter where the memory for dma_map_single() et.al. comes
+> >   from provided the virtual address is a valid system RAM address or
+> >   the struct page * is a valid struct page in the memory map (iow, you
+> >   can't create this yourself.)
 > 
-> On Mon, Mar 07, 2011 at 09:53:58AM +0100, Sascha Hauer wrote:
-> > On Fri, Mar 04, 2011 at 08:06:53AM -0800, Andres Salomon wrote:
-> > > Note that this relies on stuff currently in mfd's next tree, but this
-> > > is also a newer driver.  I'm not sure which tree it should go through,
-> > > as it's a problem that shows up in next.
-> > 
-> > Please ping me again when the mfd tree is in Linus master. I see no
-> > other chance fixing this on my side other than removing regulator
-> > support for efika completely for now. So I guess you have to live with
-> > the compile breakage for some time.
-> It would probably make sense for me to carry this driver then. Sascha, would
-> you be ok with it ? If that's so, could you please point me at a git commit
-> from your tree ?
+> You mean that we cannot have arbitrary virtual address mapping for
+> iommu based device?
 
-The file which is changed only got created in my tree, so no way for you
-to apply it.
+No.  I mean exactly what I said - I'm talking about the DMA API in the
+above two points.  The implication is that you can not create arbitary
+mappings of non-system RAM with the DMA API.
 
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> actually, we have memory mapping to arbitrary device virtual address
+> space, not kernel virtual address space.
+> 
+> >
+> > 3. In the case of an IOMMU, the DMA API does not limit you to only using
+> >   4K pages to setup the IOMMU mappings.  You can use whatever you like
+> >   provided the hardware can cope with it.  You can coalesce several
+> >   existing entries together provided you track what you're doing and can
+> >   undo what's been done when the mapping is no longer required.
+> >
+> > So really there's no reason not to use 64K, 1M and 16M IOMMU entries if
+> > that's the size of buffer which has been passed to the DMA API.
+> >
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> >
