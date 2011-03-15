@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1COJiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 05:38:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49492 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab1COJir (ORCPT
+	id S1755548Ab1COJnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 05:43:32 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30064 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233Ab1COJn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 05:38:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device driver into misc
-Date: Tue, 15 Mar 2011 10:38:40 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
-Cc: Jean Delvare <khali@linux-fr.org>,
-        mems applications <mems.applications@st.com>, rdunlap@xenotime.net,
-        carmine.iascone@st.com, matteo.dameno@st.com, rubini@cvml.unipv.it,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <guenter.roeck@ericsson.com>, Greg KH <greg@kroah.com>
-References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com> <20110314224244.3d6d23ba@endymion.delvare> <4D7EA38F.5070002@cam.ac.uk>
-In-Reply-To: <4D7EA38F.5070002@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103151038.40559.arnd@arndb.de>
-X-Provags-ID: V02:K0:cQHLGk/Y37x3dGuXww7adnKPFjx9ICaPXgxEwOmBi1f
- RLUE3wz94S1AV76b54w0zD20xgG+1VmgsxzJK9z8NI8s9nlj4a
- jMNMU9nB0ylDQ9qWFu6Cr7dGu0QtWa+F/yGo9JfgT4aTWLVCXJ
- MojqxcPzQUtXqTFcuvkvnmf8YzNjwDMIdNPBYPbq8OP12AtG2y
- xruYlr/kuqjYhTmpIcr3A==
+	Tue, 15 Mar 2011 05:43:29 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Date: Tue, 15 Mar 2011 18:34:42 +0900
+From: daeinki <inki.dae@samsung.com>
+Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU	(IOMMU)
+ driver
+In-reply-to: <20110315083515.GA3921@n2100.arm.linux.org.uk>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: InKi Dae <daeinki@gmail.com>, KyongHo Cho <pullip.cho@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        =?UTF-8?B?6rCV66+86rec?= <mk7.kang@samsung.com>,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        kgene.kim@samsung.com, Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <4D7F32B2.6020905@samsung.com>
+Content-transfer-encoding: 8BIT
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com>
+ <201103111615.01829.arnd@arndb.de>
+ <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com>
+ <201103111700.17373.arnd@arndb.de>
+ <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
+ <20110314124652.GF26085@n2100.arm.linux.org.uk>
+ <AANLkTinzBvkcB111UZd2rJ9raaXkh2TqmTw5Y+4WFd48@mail.gmail.com>
+ <20110315083515.GA3921@n2100.arm.linux.org.uk>
+X-OriginalArrivalTime: 15 Mar 2011 09:34:43.0136 (UTC)
+ FILETIME=[36E97C00:01CBE2F4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 March 2011 00:23:59 Jonathan Cameron wrote:
-> > 
-> > This is indeed the major disadvantage. IIO seems to take a lot of time
-> > to move out of staging, although I don't know what the current ETA is.
-> > 
-> Whilst I'd like to say soon there are a couple more big changes to make
-> (such as the ongoing changes to allow threaded interrupts for the triggers
-> - basically implementing what Thomas Gleixner suggested and having virtual
-> interrupt chips) and some of these will take a fair bit of bedding down. In the
-> original write I got quite a few things wrong :( Mind you quite a lot of
-> evolution of requirements has taken place as well.
+Russell King - ARM Linux 쓴 글:
+> On Tue, Mar 15, 2011 at 10:45:50AM +0900, InKi Dae wrote:
+>> 2011/3/14 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>>> On Mon, Mar 14, 2011 at 09:37:51PM +0900, KyongHo Cho wrote:
+>>>> I have also noticed that dma_map_single/page/sg() can map physical
+>>>> memory into an arbitrary device address region.
+>>>> But it is not enough solution for various kinds of IOMMUs.
+>>>> As Kukjin Kim addressed, we need to support larger page size than 4KB
+>>>> because we can reduce TLB miss when we have larger page size.
+>>>>
+>>>> Our IOMMU(system mmu) supports all page size of ARM architecture
+>>>> including 16MB, 1MB, 64KB and 4KB.
+>>>> Since the largest size supported by buddy system of 32-bit architecture is 4MB,
+>>>> our system support all page sizes except 16MB.
+>>>> We proved that larger page size is helpful for DMA performance
+>>>> significantly (more than 10%, approximately).
+>>>> Big page size is not a problem for peripheral devices
+>>>> because their address space is not suffer from external fragmentation.
+>>> 1. dma_map_single() et.al. is used for mapping *system* *RAM* for devices
+>>>   using whatever is necessary.  It must not be used for trying to setup
+>>>   arbitary other mappings.
+>>>
+>>> 2. It doesn't matter where the memory for dma_map_single() et.al. comes
+>>>   from provided the virtual address is a valid system RAM address or
+>>>   the struct page * is a valid struct page in the memory map (iow, you
+>>>   can't create this yourself.)
+>> You mean that we cannot have arbitrary virtual address mapping for
+>> iommu based device?
 > 
-> Usual sob story (50+ drivers of mixed quality to avoid breaking,
-> little manpower, steady stream of new drivers keeping people busy reviewing
-> etc etc)
+> No.  I mean exactly what I said - I'm talking about the DMA API in the
+> above two points.  The implication is that you can not create arbitary
+> mappings of non-system RAM with the DMA API.
 > 
-> Having said that, for the simple drivers the interfaces are mostly fixed
-> and nothing much has changed for quite a few months. (e.g. anything that
-> is slow and only uses hwmon style sysfs interfaces).
+sorry but I couldn't understand exactly what you said. could you give me 
+your answer one more time?
+does non-system RAM mean reserved memory regions? if not, is it 
+arbitrary virtual address space that isn't kernel or user virtual 
+address space and is the space for iommu based deivce?
+
+
+>> actually, we have memory mapping to arbitrary device virtual address
+>> space, not kernel virtual address space.
+>>
+>>> 3. In the case of an IOMMU, the DMA API does not limit you to only using
+>>>   4K pages to setup the IOMMU mappings.  You can use whatever you like
+>>>   provided the hardware can cope with it.  You can coalesce several
+>>>   existing entries together provided you track what you're doing and can
+>>>   undo what's been done when the mapping is no longer required.
+>>>
+>>> So really there's no reason not to use 64K, 1M and 16M IOMMU entries if
+>>> that's the size of buffer which has been passed to the DMA API.
+>>>
+>>> _______________________________________________
+>>> linux-arm-kernel mailing list
+>>> linux-arm-kernel@lists.infradead.org
+>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>
 > 
-> Of course, if anyone does have any time (looks around hopefully...)
-> Particularly helpful are people pointing out what really needs fixing
-> before attempting to move out of staging.   Much better if we get that
-> sort of feedback in plenty of time rather than on sending a pull request
-> to Linus. I like to spread my arguments out ;)
 
-Do you think it would help to split the iio codebase into a smaller part
-for the relatively clean drivers that can be put into shape for
-drivers/iio, and the bulk of the code that stays in staging for a bit
-longer, until it gets converted to the new one in small chunks?
-
-That may be less frustrating than trying to do it all at once. In particular,
-you could do major internal rewrites much faster if you don't have
-to immediately worry about breaking dozens of drivers in the process.
-
-	Arnd
