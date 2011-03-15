@@ -1,95 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1COTKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 15:10:24 -0400
-Received: from tex.lwn.net ([70.33.254.29]:60950 "EHLO vena.lwn.net"
+	id S1758368Ab1COTTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 15:19:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39688 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342Ab1COTKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 15:10:23 -0400
-Date: Tue, 15 Mar 2011 13:10:20 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 11/20] 11: uprobes: slot allocation
- for uprobes
-Message-ID: <20110315131020.36477a1c@bike.lwn.net>
-In-Reply-To: <20110314133610.27435.93666.sendpatchset@localhost6.localdomain6>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	<20110314133610.27435.93666.sendpatchset@localhost6.localdomain6>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1758353Ab1COTTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 15:19:46 -0400
+Subject: Re: [PATCH] powerpc: sysdev: fix signedness bug
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1287327102-9068-1-git-send-email-segooon@gmail.com>
+Date: Tue, 15 Mar 2011 14:19:23 -0500
+Cc: kernel-janitors@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Vivek Mahajan <vivek.mahajan@freescale.com>,
+        Harninder Rai <harninder.rai@freescale.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <EA2A84CF-6A11-4CEC-B4FD-96F1262ED9AF@kernel.crashing.org>
+References: <1287327102-9068-1-git-send-email-segooon@gmail.com>
+To: Vasiliy Kulikov <segooon@gmail.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a couple of minor notes while I was looking at this code...
 
-> +static struct uprobes_xol_area *xol_alloc_area(void)
-> +{
-> +	struct uprobes_xol_area *area = NULL;
-> +
-> +	area = kzalloc(sizeof(*area), GFP_USER);
-> +	if (unlikely(!area))
-> +		return NULL;
-> +
-> +	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
-> +								GFP_USER);
+On Oct 17, 2010, at 9:51 AM, Vasiliy Kulikov wrote:
 
-Why GFP_USER?  That causes extra allocation limits to be enforced.  Given
-that in part 14 you have:
+> sram_params.sram_size and sram_params.sram_offset were unsigned.
+> If get_cache_sram_size() or get_cache_sram_offset() returns error code
+> then it is not seen to the caller.  Made sram_size and sram_offset signed.
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+> arch/powerpc/sysdev/fsl_85xx_l2ctlr.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
 
-+/* Prepare to single-step probed instruction out of line. */
-+static int pre_ssout(struct uprobe *uprobe, struct pt_regs *regs,
-+				unsigned long vaddr)
-+{
-+	xol_get_insn_slot(uprobe, vaddr);
-+	BUG_ON(!current->utask->xol_vaddr);
+applied
 
-It seems to me that you really don't want those allocations to fail.
-
-back to xol_alloc_area():
-
-> +	if (!area->bitmap)
-> +		goto fail;
-> +
-> +	spin_lock_init(&area->slot_lock);
-> +	if (!xol_add_vma(area) && !current->mm->uprobes_xol_area) {
-> +		task_lock(current);
-> +		if (!current->mm->uprobes_xol_area) {
-> +			current->mm->uprobes_xol_area = area;
-> +			task_unlock(current);
-> +			return area;
-> +		}
-> +		task_unlock(current);
-> +	}
-> +
-> +fail:
-> +	if (area) {
-> +		if (area->bitmap)
-> +			kfree(area->bitmap);
-> +		kfree(area);
-> +	}
-
-You've already checked area against NULL, and kfree() can handle null
-pointers, so both of those tests are unneeded.
-
-> +	return current->mm->uprobes_xol_area;
-> +}
-
-jon
+- k
