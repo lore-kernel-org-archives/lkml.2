@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab1COJKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 05:10:22 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35642 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab1COJKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 05:10:19 -0400
+	id S1753049Ab1COJLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 05:11:04 -0400
+Received: from shutemov.name ([188.40.19.243]:55030 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751659Ab1COJLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 05:11:02 -0400
+Date: Tue, 15 Mar 2011 11:11:00 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org
+Subject: Re: [PATCH, v9 3/3] cgroups: introduce timer slack controller
+Message-ID: <20110315091100.GA10165@shutemov.name>
+References: <1300111524-5666-1-git-send-email-kirill@shutemov.name>
+ <1300111524-5666-4-git-send-email-kirill@shutemov.name>
+ <20110314164652.5b44fb9e.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=o8CbHjJHZETokQP8bz5SyLnyLLadM4UMyZc=6@mail.gmail.com>
-References: <1297827283-22860-1-git-send-email-bibek.basu@stericsson.com>
-	<1297827283-22860-2-git-send-email-bibek.basu@stericsson.com>
-	<AANLkTi=Yv1fHVTC-BVBJ3WRPGOmOC3fCJ13G-dCegLYo@mail.gmail.com>
-	<AANLkTi=qN=i3VW=VXPQ1PAFTXFgo3O_jqykTkc7A7JLF@mail.gmail.com>
-	<AANLkTi=o8CbHjJHZETokQP8bz5SyLnyLLadM4UMyZc=6@mail.gmail.com>
-Date: Tue, 15 Mar 2011 10:10:18 +0100
-Message-ID: <AANLkTinU7g4qLVwLwFXyt_j6tmGq-5MC9a-wy_cGvC9Y@mail.gmail.com>
-Subject: Re: [PATCH] AB8500 GPIO : Driver for 42 AB8500 GPIO pins
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Bibek BASU <bibek.basu@stericsson.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314164652.5b44fb9e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 5:46 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Mon, Mar 14, 2011 at 10:37 AM, Linus Walleij
-> <linus.walleij@linaro.org> wrote:
->> On Mon, Mar 7, 2011 at 3:32 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->>
->>> Grant can you have a look at this GPIO driver from a while back?
->>>
->>> Bibek can probably repost it if you don't have it in your archive...
->>>
->>> It'd be great if you could take this through the GPIO tree if/when
->>> it's OK with you.
->>
->> Ping on this, the ux500-core tree is now sent to Russell for merging
->> into 2.6.39 so if possible I'd like to have this merged into the
->> GPIO tree (unless there are still review comments...) note
->> Samuel's ACK if you pick it.
->
-> I'm fine with it, but it looks like it needs to go via Russell's tree
-> if it depends on the rest of the ux500-core patches.
->
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+On Mon, Mar 14, 2011 at 04:46:52PM -0700, Andrew Morton wrote:
+> On Mon, 14 Mar 2011 16:05:24 +0200
+> Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+> 
+> > +Overview
+> > +--------
+> > +
+> > +Every task_struct has timer_slack_ns value. This value uses to round up
+> > +poll() and select() timeout values. This feature can be useful in
+> > +mobile environment where combined wakeups are desired.
+> > +
+> > +Originally, prctl() was the only way to change timer slack value of
+> > +a process. So you was not able change timer slack value of another
+> > +process.
+> > +
+> > +cgroup subsys "timer_slack" implements timer slack controller. It
+> > +provides a way to set minimal timer slack value for a group of tasks.
+> > +If a task belongs to a cgroup with minimal timer slack value higher than
+> > +task's value, cgroup's value will be applied.
+> > +
+> > +Timer slack controller allows to implement setting timer slack value of
+> > +a process based on a policy. For example, you can create foreground and
+> > +background cgroups and move tasks between them based on system state.
+> 
+> (quoting myself from last time)
+> 
+> Why do we need a cgroup for this as opposed to (say) inheritance over
+> fork(), or a system-wide knob, or a per-process/threadgroup knob, or
+> just leaving the existing code as-is?  Presumably you felt that a
+> cgroup approach is better for manageability, but you didn't tell us
+> about this and you didn't explore alternative ways of solving the
+> problem-which-you-didn't-describe.
 
-I won't get any more platform data in to Russells tree for this merge
-Window, so it'd be great if you could take this patch (the bulk of the driver)
-into the GPIO tree.
+The main goal is reducing wakeups without affecting user experience.
+Only userspace knows which tasks are important for UX. So we needed a
+mechanism to define a policy in userspace.
 
-I will submit platform data for the next merge Window, or maybe to
-Torvalds once he has Russell and yours merged. if I feel ambitious...
+Currently timer slack value inheritance over fork().
 
-Thanks,
-Linus Walleij
+System-wide/threadgroup knob doesn't allow to change timer slack value of
+a particular process. It's needed for foreground/background use-case.
+
+With per-process know we have to reinvent grouping of tasks in userspace.
+
+cgroups is a good solution for it, from my point of view.
+
+> 
+> I'm still having trouble seeing why we should merge this.  Who will use
+> it, and for what reason and what benefits will they see?  Quantified
+> benefits, if possible!
+> 
+
+-- 
+ Kirill A. Shutemov
