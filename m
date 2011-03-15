@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab1COK3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 06:29:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42923 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab1COK33 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 06:29:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=n+PixGqWVkk8nhc+B8y5XgkoHoOMu8zXnVvajSbznE0y4AEVJJTZ7vk6MNkA9dtXHz
-         HnKgAy74lTMSQFVV1rdB93bRbpcaNtVevMrypxiJONruImo0Rw4JRriV28s324PnBVh2
-         3oq/MEXWxAr2uSfhMksDZaR3pSIJ0UEZQq+Xc=
-Date: Tue, 15 Mar 2011 11:29:25 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
-Subject: [GIT PULL] percpu: changes for 2.6.39-rc1
-Message-ID: <20110315102925.GH8635@htj.dyndns.org>
+	id S1757150Ab1COKaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 06:30:17 -0400
+Received: from www.tglx.de ([62.245.132.106]:44060 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755412Ab1COKaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 06:30:15 -0400
+Date: Tue, 15 Mar 2011 11:29:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: David Miller <davem@davemloft.net>, bhutchings@solarflare.com,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+        peterz@infradead.org
+Subject: Re: linux-next: build failure after merge of the net tree
+In-Reply-To: <20110315172558.a11642e7.sfr@canb.auug.org.au>
+Message-ID: <alpine.LFD.2.00.1103151128070.2787@localhost6.localdomain6>
+References: <20110314170546.af552b4e.sfr@canb.auug.org.au> <alpine.LFD.2.00.1103141053020.2787@localhost6.localdomain6> <20110315113049.a6112494.sfr@canb.auug.org.au> <20110314.210712.226761233.davem@davemloft.net>
+ <20110315172558.a11642e7.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Tue, 15 Mar 2011, Stephen Rothwell wrote:
 
-Please pull from the following git branch to receive percpu changes
-for 2.6.39-rc1.
+> Hi Dave,
+> 
+> On Mon, 14 Mar 2011 21:07:12 -0700 (PDT) David Miller <davem@davemloft.net> wrote:
+> >
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Tue, 15 Mar 2011 11:30:49 +1100
+> > 
+> > > So, if you merge the commit 1fb0ef31f428 ("genirq: Fix affinity notifier
+> > > fallout") from the tip tree, you will get exactly one new commit and will
+> > > fix your tree properly with no adverse effect on anyone else.
+> > 
+> > Thomas, how would you like me to do this?  Do you want to put that
+> > commit on a branch for me to pull from or should I apply it
+> > directly?
+> 
+> That commit is already the head of the irq/numa branch in the tip tree
+> (it is also on the irq/core branch).
+> 
+> Please merge that rather than cherry-picking the commit as that will
+> minimise the possibility of conflicts.  Pulling the irq/numa branch will
+> get you just that one fixup commit (as you have already merged up to the
+> immediately preceding commit).
+> 
+> I assume this makes sense, Thomas?  I just did a merge of the actual
+> fixup commit after merging the net tree.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-2.6.39
+Yes. irq/numa should do the trick.
 
-Only four commits.  Two for aligning percpu readmostly subsection to
-cacheline to avoid sharing a cacheline with rw data.  The other two
-from Christoph implement this_cpu_cmpxchg_double() which is a rather
-nasty operation which does cmpxchg on two long's, which x86 supports
-with cmpxchg{8,16}b instructions.  This is used by sl?b allocators to
-implement lockless operation and shows measurable performance
-improvements in hot paths.
+Thanks,
 
-Thanks.
-
-Christoph Lameter (2):
-      percpu: Generic support for this_cpu_cmpxchg_double()
-      percpu, x86: Add arch-specific this_cpu_cmpxchg_double() support
-
-Tejun Heo (2):
-      percpu: align percpu readmostly subsection to cacheline
-      alpha: use L1_CACHE_BYTES for cacheline size in the linker script
-
- arch/alpha/kernel/vmlinux.lds.S    |    5 +-
- arch/arm/kernel/vmlinux.lds.S      |    2 +-
- arch/blackfin/kernel/vmlinux.lds.S |    2 +-
- arch/cris/kernel/vmlinux.lds.S     |    2 +-
- arch/frv/kernel/vmlinux.lds.S      |    2 +-
- arch/ia64/kernel/vmlinux.lds.S     |    2 +-
- arch/m32r/kernel/vmlinux.lds.S     |    2 +-
- arch/mips/kernel/vmlinux.lds.S     |    2 +-
- arch/mn10300/kernel/vmlinux.lds.S  |    2 +-
- arch/parisc/kernel/vmlinux.lds.S   |    2 +-
- arch/powerpc/kernel/vmlinux.lds.S  |    2 +-
- arch/s390/kernel/vmlinux.lds.S     |    2 +-
- arch/sh/kernel/vmlinux.lds.S       |    2 +-
- arch/sparc/kernel/vmlinux.lds.S    |    2 +-
- arch/tile/kernel/vmlinux.lds.S     |    2 +-
- arch/um/include/asm/common.lds.S   |    2 +-
- arch/x86/include/asm/percpu.h      |   48 +++++++++++++
- arch/x86/kernel/vmlinux.lds.S      |    4 +-
- arch/x86/lib/Makefile              |    1 +
- arch/x86/lib/cmpxchg16b_emu.S      |   59 ++++++++++++++++
- arch/xtensa/kernel/vmlinux.lds.S   |    2 +-
- include/asm-generic/vmlinux.lds.h  |   35 ++++++----
- include/linux/percpu.h             |  128 ++++++++++++++++++++++++++++++++++++
- 23 files changed, 279 insertions(+), 33 deletions(-)
- create mode 100644 arch/x86/lib/cmpxchg16b_emu.S
-
--- 
-tejun
+	tglx
