@@ -1,110 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab1COAq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 20:46:59 -0400
-Received: from fieldses.org ([174.143.236.118]:52850 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab1COAq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 20:46:57 -0400
-Date: Mon, 14 Mar 2011 20:46:56 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Simon Kirby <sim@hostway.ca>
-Cc: Mark Moseley <moseleymark@gmail.com>, linux-nfs@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] more vfs fixes for final
-Message-ID: <20110315004655.GM25442@fieldses.org>
-References: <20110310110931.GF22723@ZenIV.linux.org.uk>
- <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com>
- <20110310115856.GG22723@ZenIV.linux.org.uk>
- <20110311210938.GB8211@hostway.ca>
- <20110311213519.GA9404@fieldses.org>
- <20110312010930.GD8211@hostway.ca>
+	id S1756894Ab1COAy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 20:54:27 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20294 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754104Ab1COAyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 20:54:25 -0400
+Date: Tue, 15 Mar 2011 01:54:04 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [RFC-v2 03/12] iscsi-target: Add TCM v4 compatiable ConfigFS
+ control plane
+In-Reply-To: <1300103829-10337-4-git-send-email-nab@linux-iscsi.org>
+Message-ID: <alpine.LNX.2.00.1103150130390.26293@swampdragon.chaosbits.net>
+References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org> <1300103829-10337-4-git-send-email-nab@linux-iscsi.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110312010930.GD8211@hostway.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 05:09:30PM -0800, Simon Kirby wrote:
-> On Fri, Mar 11, 2011 at 04:35:19PM -0500, J. Bruce Fields wrote:
+On Mon, 14 Mar 2011, Nicholas A. Bellinger wrote:
+
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> > On Fri, Mar 11, 2011 at 01:09:38PM -0800, Simon Kirby wrote:
-> > > On Thu, Mar 10, 2011 at 11:58:56AM +0000, Al Viro wrote:
-> > > 
-> > > > commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
-> > > > Author: J. Bruce Fields <bfields@fieldses.org>
-> > > > Date:   Tue Jan 18 15:45:09 2011 -0500
-> > > > 
-> > > >     fs/dcache: allow d_obtain_alias() to return unhashed dentries
-> > > 
-> > > Hmm, I was hoping this or something recently would fix nfs_inode_cache
-> > > growing forever and flush processes taking lots of system time since
-> > > 2.6.36. For example:
-> > > 
-> > >   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-> > > 3457486 3454365  99%    0.95K 105601       33   3379232K nfs_inode_cache
-> > > 469638 248761  52%    0.10K  12042       39     48168K buffer_head
-> > > 243712 216348  88%    0.02K    952      256      3808K kmalloc-16
-> > > 232785 202185  86%    0.19K  11085       21     44340K dentry
-> > > 149696  54633  36%    0.06K   2339       64      9356K kmalloc-64
-> > > 115976 106806  92%    0.55K   4142       28     66272K radix_tree_node
-> > >  76064  45680  60%    0.12K   2377       32      9508K kmalloc-128
-> > >  62336  53427  85%    0.03K    487      128      1948K kmalloc-32
-> > >  41958  41250  98%    0.75K   1998       21     31968K ext3_inode_cache
-> > > 
-> > > This clears them all, similar to what you posted:
-> > > 
-> > > echo 2 > /proc/sys/vm/drop_caches
-> > > sync
-> > > echo 2 > /proc/sys/vm/drop_caches
-> > > 
-> > > ...but 2.6.38-rc8 still doesn't seem to fix it.
-> > > 
-> > > http://0x.ca/sim/ref/2.6.37/cpu3_nfs.png
-> > > http://www.spinics.net/lists/linux-nfs/msg18212.html
-> > > 
-> > > Any ideas?  This started with 2.6.36.
-> > 
-> > Do you have NFSv4 clients that are doing locking?  Then it's probably
-> > 0997b17360 and 529d7b2a7f on the for-2.6.39 branch at:
-> > 
-> > 	git://linux-nfs.org/~bfields/linux.git for-2.6.39
-> > 
-> > Let me know if not.
-
-Pfft, I'm blind, sorry, I didn't pay attention to the slab name;
-nfs_inode_cache is client-side, not server-side, so nothing I've done 
-should affect it one way or the other.
-
-Of course it's not necessarily a bug for the client to cache a lot of
-inodes, but millions sounds like a lot for your case?
-
-Are you actually seeing this cause you problems?
-
---b.
-
-> Yes, but when this started, it was all NFSv3. I tried NFSv4 to see if
-> it made any different (no, other than more I/O wait due to idmapd and
-> flock(LOCK_EX) breaking on a file opened O_RDONLY, which works locally
-> and on NFSv3 -- fixed by changing to open(O_RDWR) in my code), but
-> otherwise NFSv3 and NFSv4 look pretty much the same and "leak" at the
-> same rate.
+> This patch adds support for /sys/kernel/config/target/iscsi using
+> TCM v4.0 compatiable calls following target_core_fabric_configfs.c
 > 
-> Actually, I only changed the mount where it writes the log results, and
-> not where it reads them from (a bunch of NFSv3 mounts that will take a
-> lot more work to make NFSv4 since they currently run without libnss-mysql
-> set up), so I haven't actually tested to see if it happens with purely
-> NFSv4 mounts.
+> This includes a number of iSCSI fabric dependent attributes upon
+> target_core_fabric_configfs.c provided struct config_item_types from
+> include/target/target_core_configfs.hstruct target_fabric_configfs_template
 > 
-> Anyway, it's locking on one file only, and it was purely for reducing
-> writeback thrashing, so I could try without it if you think it might be
-> related, but it all started without NFSv4. All this thing does is read a
-> bunch of log files, crunch them into reports, and write them to another
-> mount point, all run from xargs -P. Pretty basic readdir, read, write,
-> unlink...not anything exotic.
+> It also includes iscsi_target_nodeattrib.[c,h] for handling the
+> lio_target_nacl_attrib_attrs[] store/show for iSCSI fabric dependent
+> attributes.
 > 
-> Simon-
+[...]
+
+A few minor comments below. Not a thorough review by any stretch of the 
+imagination, just a quick glance and then pointing out a few things that 
+caught my eye.
+
+
+> +	op = simple_strtoul(page, &endptr, 0);
+> +	 if ((op != 1) && (op != 0)) {
+
+Indentation is <tab><space> here, should just be <tab>.
+
+
+> +		printk(KERN_ERR "Illegal value for tpg_enable: %u\n", op);
+> +		return -EINVAL;
+> +	}
+> +	np = tpg_np->tpg_np;
+> +	if (!(np)) {
+
+if (!np) {
+
+
+> +		printk(KERN_ERR "Unable to locate struct iscsi_np from"
+> +				" struct iscsi_tpg_np\n");
+
+Perhaps put the entire log message text on one line. Makes it easier to 
+grep for.
+
+
+> +	char buf[MAX_PORTAL_LEN];
+> +
+> +	if (strlen(name) > MAX_PORTAL_LEN) {
+> +		printk(KERN_ERR "strlen(name): %d exceeds MAX_PORTAL_LEN: %d\n",
+> +			(int)strlen(name), MAX_PORTAL_LEN);
+
+Shouldn't this be 
+
+     char buf[MAX_PORTAL_LEN + 1];
+     
+     if (strlen(name) > MAX_PORTAL_LEN) {
+             printk(KERN_ERR "strlen(name): %d exceeds MAX_PORTAL_LEN: %d\n",
+                     (int)strlen(name), MAX_PORTAL_LEN);
+
+so that there is room for the terminating \0 ?
+
+
+> +	snprintf(buf, MAX_PORTAL_LEN, "%s", name);
+> +
+> +	memset((void *)&np_addr, 0, sizeof(struct iscsi_np_addr));
+
+Unneeded cast?
+
+
+> +
+> +	str = strstr(buf, "[");
+> +	if ((str)) {
+
+if (str) {
+
+
+> +		str2 = strstr(str, "]");
+> +		if (!(str2)) {
+
+if (!str2) {
+
+
+> +			printk(KERN_ERR "Unable to locate trailing \"]\""
+> +				" in IPv6 iSCSI network portal address\n");
+> +			return ERR_PTR(-EINVAL);
+> +		}
+> +		str++; /* Skip over leading "[" */
+> +		*str2 = '\0'; /* Terminate the IPv6 address */
+> +		str2 += 1; /* Skip over the "]" */
+
+why "str++" vs "str2 += 1" and not "str++" & "str2++" ?
+
+
+> +		port_str = strstr(str2, ":");
+> +		if (!(port_str)) {
+
+if (!port_str) {
+
+> +			printk(KERN_ERR "Unable to locate \":port\""
+> +				" in IPv6 iSCSI network portal address\n");
+> +			return ERR_PTR(-EINVAL);
+> +		}
+> +		*port_str = '\0'; /* Terminate string for IP */
+> +		port_str += 1; /* Skip over ":" */
+
+port_str++;
+
+
+> +		np_addr.np_port = simple_strtoul(port_str, &end_ptr, 0);
+> +
+> +		snprintf(np_addr.np_ipv6, IPV6_ADDRESS_SPACE, "%s", str);
+> +		np_addr.np_flags |= NPF_NET_IPV6;
+> +	} else {
+> +		ip_str = &buf[0];
+> +		port_str = strstr(ip_str, ":");
+> +		if (!(port_str)) {
+
+if (!port_str) {
+
+> +			printk(KERN_ERR "Unable to locate \":port\""
+> +				" in IPv4 iSCSI network portal address\n");
+> +			return ERR_PTR(-EINVAL);
+> +		}
+> +		*port_str = '\0'; /* Terminate string for IP */
+> +		port_str += 1; /* Skip over ":" */
+
+port_str++;
+
+
+> +static void lio_target_call_delnpfromtpg(
+> +	struct se_tpg_np *se_tpg_np)
+> +{
+> +	struct iscsi_portal_group *tpg;
+> +	struct iscsi_tpg_np *tpg_np;
+> +	struct se_portal_group *se_tpg;
+> +	int ret = 0;
+> +
+
+pointless initialization of 'ret' to 0
+
+> +	tpg_np = container_of(se_tpg_np, struct iscsi_tpg_np, se_tpg_np);
+> +	tpg = tpg_np->tpg;
+> +	ret = iscsi_get_tpg(tpg);
+
+'ret' is assigned to here before it's used.
+
+
+> +#define DEF_NACL_PARAM(name)						\
+> +static ssize_t iscsi_nacl_param_show_##name(				\
+> +	struct se_node_acl *se_nacl,					\
+> +	char *page)							\
+> +{									\
+> +	struct iscsi_session *sess;						\
+> +	struct se_session *se_sess;						\
+> +	ssize_t rb;							\
+> +									\
+> +	spin_lock_bh(&se_nacl->nacl_sess_lock);				\
+> +	se_sess = se_nacl->nacl_sess;					\
+> +	if (!(se_sess)) {						\
+
+if (!se_sess) {
+
+
+> +static ssize_t lio_target_nacl_show_info(
+> +	struct se_node_acl *se_nacl,
+> +	char *page)
+> +{
+> +	struct iscsi_session *sess;
+> +	struct iscsi_conn *conn;
+> +	struct se_session *se_sess;
+> +	unsigned char *ip, buf_ipv4[IPV4_BUF_SIZE];
+> +	ssize_t rb = 0;
+> +
+> +	spin_lock_bh(&se_nacl->nacl_sess_lock);
+> +	se_sess = se_nacl->nacl_sess;
+> +	if (!(se_sess))
+
+if (!se_sess)
+
+(not pointing out any more of these)
+
+
+> +		rb += sprintf(page+rb, "No active iSCSI Session for Initiator"
+> +			" Endpoint: %s\n", se_nacl->initiatorname);
+> +	else {
+
+when one branch has {}, please use them for the other as well.
+
+
+> +			if (conn->net_size == IPV6_ADDRESS_SPACE)
+> +				ip = &conn->ipv6_login_ip[0];
+> +			else {
+
+if () {
+} else {
+}
+
+
+> +	u32 cmdsn_depth = 0;
+> +	int ret = 0;
+
+pointless default init of 'ret' to 0.
+
+> +
+> +	cmdsn_depth = simple_strtoul(page, &endptr, 0);
+> +	if (cmdsn_depth > TA_DEFAULT_CMDSN_DEPTH_MAX) {
+> +		printk(KERN_ERR "Passed cmdsn_depth: %u exceeds"
+> +			" TA_DEFAULT_CMDSN_DEPTH_MAX: %u\n", cmdsn_depth,
+> +			TA_DEFAULT_CMDSN_DEPTH_MAX);
+> +		return -EINVAL;
+> +	}
+> +	acl_ci = &se_nacl->acl_group.cg_item;
+> +	if (!(acl_ci)) {
+> +		printk(KERN_ERR "Unable to locatel acl_ci\n");
+> +		return -EINVAL;
+> +	}
+> +	tpg_ci = &acl_ci->ci_parent->ci_group->cg_item;
+> +	if (!(tpg_ci)) {
+> +		printk(KERN_ERR "Unable to locate tpg_ci\n");
+> +		return -EINVAL;
+> +	}
+> +	wwn_ci = &tpg_ci->ci_group->cg_item;
+> +	if (!(wwn_ci)) {
+> +		printk(KERN_ERR "Unable to locate config_item wwn_ci\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (iscsi_get_tpg(tpg) < 0)
+> +		return -EINVAL;
+> +	/*
+> +	 * iscsi_tpg_set_initiator_node_queue_depth() assumes force=1
+> +	 */
+> +	ret = iscsi_tpg_set_initiator_node_queue_depth(tpg,
+> +				config_item_name(acl_ci), cmdsn_depth, 1);
+
+'ret' is initialized nicely here before it is used.
+
+
+
+> +	ssize_t len = 0;
+> +
+
+no need to initialize 'len' to 0 here - 
+
+> +	spin_lock(&tpg->tpg_state_lock);
+> +	len = sprintf(page, "%d\n",
+> +			(tpg->tpg_state == TPG_STATE_ACTIVE) ? 1 : 0);
+
+        it's initialized here.
+
+
+> +static ssize_t lio_target_tpg_store_enable(
+> +	struct se_portal_group *se_tpg,
+> +	const char *page,
+> +	size_t count)
+> +{
+> +	struct iscsi_portal_group *tpg = container_of(se_tpg,
+> +			struct iscsi_portal_group, tpg_se_tpg);
+> +	char *endptr;
+> +	u32 op;
+> +	int ret = 0;
+> +
+
+pointless init of 'ret'.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
