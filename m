@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab1COROA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 13:14:00 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34255 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932357Ab1CORN7 (ORCPT
+	id S1758104Ab1CORV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 13:21:29 -0400
+Received: from 3.26.mail-out.ovh.net ([46.105.60.9]:55091 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1754516Ab1CORV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 13:13:59 -0400
-From: Boris Ostrovsky <ostr@amd64.org>
-To: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de
-Cc: borislav.petkov@amd.com, andreas.herrmann3@amd.com, mark.langsdorf@amd.com,
-        linux-kernel@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>
-Subject: [PATCH RESEND] x86, AMD: Set ARAT feature on AMD processors
-Date: Tue, 15 Mar 2011 12:13:44 -0400
-Message-Id: <1300205624-4813-1-git-send-email-ostr@amd64.org>
-X-Mailer: git-send-email 1.7.1
+	Tue, 15 Mar 2011 13:21:28 -0400
+Message-ID: <4D7F9E84.50703@example.com>
+Date: Tue, 15 Mar 2011 18:14:44 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+MIME-Version: 1.0
+To: piotr@hosowicz.com
+CC: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
+References: <4D7E42A6.70409@example.com> <1300163659.8209.11.camel@marge.simson.net> <4D7F2B4A.2000102@example.com>
+In-Reply-To: <4D7F2B4A.2000102@example.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 11422536031497515378
+X-Ovh-Remote: 178.36.153.11 (178-36-153-11.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+On 15.03.2011 10:03, Piotr Hosowicz wrote:
 
-Support for Always Running APIC timer (ARAT) was introduced in commit
-db954b5898dd3ef3ef93f4144158ea8f97deb058. This feature allows us to
-avoid switching timers from LAPIC to something else (e.g. HPET) and
-go into timer broadcasts when entering deep C-states.
+>> Having spent a half hour trying to do that,
+>> I couldn't get there from here, so.. dunno.
 
-AMD processors don't provide a CPUID bit for that feature but they also
-keep APIC timers running in deep C-states (except for cases when the
-processor is affected by erratum 400). Therefore we should set ARAT
-feature bit on AMD CPUs.
+And thanks for your efforts.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Tested-by: Borislav Petkov <borislav.petkov@amd.com>
-Acked-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Acked-by: Mark Langsdorf <mark.langsdorf@amd.com>
----
- arch/x86/kernel/cpu/amd.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+Regards,
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 7c7bedb..48eaa1b 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -594,6 +594,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		}
- 	}
- #endif
-+
-+	/* As a rule processors have APIC timer running in deep C states */
-+	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
-+		set_cpu_cap(c, X86_FEATURE_ARAT);
- }
- 
- #ifdef CONFIG_X86_32
+Piotr Hosowicz
+
 -- 
-1.7.1
-
+Siedzi wyfiokowana Jola i gada. Przez 15 minut czy wiêcej uczy
+obywateli,  jak je¶æ bezê.  ¯e bezy  nie mo¿na  kroiæ  no¿em i
+widelcem, bo mo¿e trysn±æ.  ¯e trzeba zdj±æ kapelusik od bezy.
+I to jest kurwa program pierwszej damy!
+NP: Banda Do Sol - Yes Blues
+NB: 2.6.38-rc8-git5
