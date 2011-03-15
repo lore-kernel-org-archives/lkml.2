@@ -1,56 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319Ab1COSsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 14:48:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22755 "EHLO mx1.redhat.com"
+	id S1758331Ab1COSuD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 14:50:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16663 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734Ab1COSso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 14:48:44 -0400
-Message-Id: <201103151848.p2FImgaN015020@int-mx09.intmail.prod.int.phx2.redhat.com>
-From: "Richard W.M. Jones" <rjones@redhat.com>
-Date: Tue, 15 Mar 2011 18:38:23 +0000
-Subject: [PATCH] Allow core_pattern to name block devices.
-Apparently-To: <rjones@redhat.com>
+	id S1757649Ab1COSuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 14:50:00 -0400
+Date: Tue, 15 Mar 2011 14:48:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-ID: <20110315184839.GB5740@redhat.com>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <20110311171006.ec0d9c37.akpm@linux-foundation.org>
+ <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+ <20110314202324.GG31120@redhat.com>
+ <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-To: unlisted-recipients:; (no To-header on input)
 
-Allow core dumps to block devices by allowing the user to name a block
-device in core_pattern.
+On Mon, Mar 14, 2011 at 07:41:13PM -0700, Greg Thelen wrote:
+> On Mon, Mar 14, 2011 at 1:23 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Mon, Mar 14, 2011 at 11:29:17AM -0700, Greg Thelen wrote:
+> >
+> > [..]
+> >> > We could just crawl the memcg's page LRU and bring things under control
+> >> > that way, couldn't we?  That would fix it.  What were the reasons for
+> >> > not doing this?
+> >>
+> >> My rational for pursuing bdi writeback was I/O locality.  I have heard that
+> >> per-page I/O has bad locality.  Per inode bdi-style writeback should have better
+> >> locality.
+> >>
+> >> My hunch is the best solution is a hybrid which uses a) bdi writeback with a
+> >> target memcg filter and b) using the memcg lru as a fallback to identify the bdi
+> >> that needed writeback.  I think the part a) memcg filtering is likely something
+> >> like:
+> >>  http://marc.info/?l=linux-kernel&m=129910424431837
+> >>
+> >> The part b) bdi selection should not be too hard assuming that page-to-mapping
+> >> locking is doable.
+> >
+> > Greg,
+> >
+> > IIUC, option b) seems to be going through pages of particular memcg and
+> > mapping page to inode and start writeback on particular inode?
+> 
+> Yes.
+> 
+> > If yes, this might be reasonably good. In the case when cgroups are not
+> > sharing inodes then it automatically maps one inode to one cgroup and
+> > once cgroup is over limit, it starts writebacks of its own inode.
+> >
+> > In case inode is shared, then we get the case of one cgroup writting
+> > back the pages of other cgroup. Well I guess that also can be handeled
+> > by flusher thread where a bunch or group of pages can be compared with
+> > the cgroup passed in writeback structure. I guess that might hurt us
+> > more than benefit us.
+> 
+> Agreed.  For now just writing the entire inode is probably fine.
+> 
+> > IIUC how option b) works then we don't even need option a) where an N level
+> > deep cache is maintained?
+> 
+> Originally I was thinking that bdi-wide writeback with memcg filter
+> was a good idea.  But this may be unnecessarily complex.  Now I am
+> agreeing with you that option (a) may not be needed.  Memcg could
+> queue per-inode writeback using the memcg lru to locate inodes
+> (lru->page->inode) with something like this in
+> [mem_cgroup_]balance_dirty_pages():
+> 
+>   while (memcg_usage() >= memcg_fg_limit) {
+>     inode = memcg_dirty_inode(cg);  /* scan lru for a dirty page, then
+> grab mapping & inode */
+>     sync_inode(inode, &wbc);
+>   }
+> 
+>   if (memcg_usage() >= memcg_bg_limit) {
+>     queue per-memcg bg flush work item
+>   }
 
-This is extremely useful when running the kernel in a "captive"
-appliance.  There is not necessarily a writable, mounted filesystem
-that can be used to catch a core dump, so instead we set aside a
-virtual disk for core dumps and allow the kernel to write a core to
-that.
+I think even for background we shall have to implement some kind of logic
+where inodes are selected by traversing memcg->lru list so that for
+background write we don't end up writting too many inodes from other
+root group in an attempt to meet the low background ratio of memcg.
 
-This patch was tested by running the modified kernel under qemu (using
-libguestfs) and forcing various core dumps to attached virtual disks.
+So to me it boils down to coming up a new inode selection logic for
+memcg which can be used both for background as well as foreground
+writes. This will make sure we don't end up writting pages from the
+inodes we don't want to.
 
-Signed-off-by: Richard W.M. Jones <rjones@redhat.com>
----
- fs/exec.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Though we also shall have to come up with some approximation so that
+if there are multiple inodes in the cgroup, we don't end up writting
+same inodes all the time and some inodes don't get written back at
+all. May be skipping random amount of pages from the beginning of list
+before we select an inode.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 52a447d..7aa4b19 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -2047,10 +2047,11 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		if (d_unhashed(cprm.file->f_path.dentry))
- 			goto close_fail;
- 		/*
--		 * AK: actually i see no reason to not allow this for named
--		 * pipes etc, but keep the previous behaviour for now.
-+		 * Previously coredumps were only allowed to regular files.
-+		 * Block devices are useful too for capturing errors in
-+		 * captive appliances.
- 		 */
--		if (!S_ISREG(inode->i_mode))
-+		if (!S_ISREG(inode->i_mode) && !S_ISBLK(inode->i_mode))
- 			goto close_fail;
- 		/*
- 		 * Dont allow local users get cute and trick others to coredump
--- 
-1.7.4
+This has the disadvantage that we are using a different logic for non
+root cgroup but until we figure out how to retrieve inodes belonging
+to a memory cgroup, it might not be a bad idea.
+
+Thanks
+Vivek
