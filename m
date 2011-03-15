@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab1CNX7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 19:59:41 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:38452 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab1CNX7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 19:59:40 -0400
-Subject: Re: [RFC-v2 01/12] iscsi: Resolve iscsi_proto.h naming conflicts
-	with drivers/target/iscsi
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Christoph Hellwig <hch@lst.de>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Open iSCSI <open-iscsi@googlegroups.com>
-In-Reply-To: <4D7E930A.1010503@cs.wisc.edu>
-References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
-	 <1300103829-10337-2-git-send-email-nab@linux-iscsi.org>
-	 <20110314145930.GB28480@lst.de>
-	 <1300138856.28255.133.camel@haakon2.linux-iscsi.org>
-	 <4D7E930A.1010503@cs.wisc.edu>
-Content-Type: text/plain
-Date: Mon, 14 Mar 2011 16:52:36 -0700
-Message-Id: <1300146756.28255.211.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1756305Ab1COAAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 20:00:15 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59961 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755719Ab1COAAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 20:00:13 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: [RFT][PATCH] PCI / ACPI: Do not require MSI support for PCIe native features
+Date: Tue, 15 Mar 2011 01:00:17 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+References: <201103052254.48515.rjw@sisk.pl> <201103142137.41607.rjw@sisk.pl> <20110314234725.GA4145@xanatos>
+In-Reply-To: <20110314234725.GA4145@xanatos>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103150100.17501.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-14 at 17:13 -0500, Mike Christie wrote:
-> On 03/14/2011 04:40 PM, Nicholas A. Bellinger wrote:
-> > On Mon, 2011-03-14 at 15:59 +0100, Christoph Hellwig wrote:
-> >> On Mon, Mar 14, 2011 at 04:56:58AM -0700, Nicholas A. Bellinger wrote:
-> >>> From: Nicholas Bellinger<nab@linux-iscsi.org>
-> >>>
-> >>> This patch renames the following iscsi_proto.h structures to avoid
-> >>> namespace issues with drivers/target/iscsi/iscsi_target_core.h:
-> >>>
-> >>> *) struct iscsi_cmd ->  struct iscsi_scsi_cmd
-> >>
-> >> This name is not overly descriptive.  Using _req/_rsp uniformly would make a
-> >> lot more sense.
-> >>
-> >
-> > Mmmm, fair point here..  I don't have a strong preference so I will
-> > defer to Mike and Hannes on this (open-iscsi CC'ed).  Guys is this OK
-> > with you..?
-> >
+On Tuesday, March 15, 2011, Sarah Sharp wrote:
+> On Mon, Mar 14, 2011 at 09:37:41PM +0100, Rafael J. Wysocki wrote:
+> > On Monday, March 14, 2011, Sarah Sharp wrote:
+> > > On Mon, Mar 14, 2011 at 09:02:11PM +0100, Rafael J. Wysocki wrote:
+> > > > On Monday, March 14, 2011, Sarah Sharp wrote:
+> > > > > Hi Rafael,
+> > > > > 
+> > > > > I applied this patch, on top of this patch:
+> > > > > PCI/ACPI: Report ASPM support to BIOS if not disabled from command line
+> > > > > 
+> > > > > Unfortunately, the Express Card still doesn't show up.  The trace looks
+> > > > > slightly different, but the irq still gets disabled.  dmesg is attached.
+> > > > 
+> > > > Hmm.  It looks like, for some reason, the check against
+> > > > pcie_aspm_support_enabled() returns false on your system.  Do you have
+> > > > ASPM enabled in .config?
+> > > 
+> > > My .config is attached.  Looks like CONFIG_PCIEASPM=y.
+> > 
+> > Does it help if you replace "pcie_aspm_support_enabled()" with "true" in
+> > drivers/acpi/pci_root.c:acpi_pci_root_add() ?
 > 
-> Ok with me.
+> No, it doesn't.  dmesg is attached.
 
-OK, I will go ahead and convert these libiscsi PDU definitions to
-iscsi_scsi_req and iscsi_scsi_rsp and update patch #1 of the series for
-RFC-v3.
+Well, I must admit I have no idea what the problem is.  OK, in addition to the
+above changes, please replace the "pci_ext_cfg_avail(root->bus->self)" in the
+same file with "true" and see if _that_ helps.
 
-Thanks Mike!
+If it doesn't, please send me your drivers/acpi/pci_root.c after all of the
+above changes.
 
---nab
-
+Rafael
