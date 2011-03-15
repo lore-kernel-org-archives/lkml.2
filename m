@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab1COAa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 20:30:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55086 "EHLO smtps.tip.net.au"
+	id S1756794Ab1COAq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 20:46:59 -0400
+Received: from fieldses.org ([174.143.236.118]:52850 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753820Ab1COAa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 20:30:58 -0400
-Date: Tue, 15 Mar 2011 11:30:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, bhutchings@solarflare.com,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
-        peterz@infradead.org
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-Id: <20110315113049.a6112494.sfr@canb.auug.org.au>
-In-Reply-To: <alpine.LFD.2.00.1103141053020.2787@localhost6.localdomain6>
-References: <20110314152456.b49b2693.sfr@canb.auug.org.au>
-	<1300078778.3962.22.camel@localhost>
-	<20110314163135.f366742e.sfr@canb.auug.org.au>
-	<20110313.225312.193696949.davem@davemloft.net>
-	<20110314170546.af552b4e.sfr@canb.auug.org.au>
-	<alpine.LFD.2.00.1103141053020.2787@localhost6.localdomain6>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j"
+	id S1754103Ab1COAq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 20:46:57 -0400
+Date: Mon, 14 Mar 2011 20:46:56 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Mark Moseley <moseleymark@gmail.com>, linux-nfs@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] more vfs fixes for final
+Message-ID: <20110315004655.GM25442@fieldses.org>
+References: <20110310110931.GF22723@ZenIV.linux.org.uk>
+ <AANLkTi=gv+iT6Lc_ADoBu9_P78ivhmOwLh-+Oki7WmD1@mail.gmail.com>
+ <20110310115856.GG22723@ZenIV.linux.org.uk>
+ <20110311210938.GB8211@hostway.ca>
+ <20110311213519.GA9404@fieldses.org>
+ <20110312010930.GD8211@hostway.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110312010930.GD8211@hostway.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 11, 2011 at 05:09:30PM -0800, Simon Kirby wrote:
+> On Fri, Mar 11, 2011 at 04:35:19PM -0500, J. Bruce Fields wrote:
+> 
+> > On Fri, Mar 11, 2011 at 01:09:38PM -0800, Simon Kirby wrote:
+> > > On Thu, Mar 10, 2011 at 11:58:56AM +0000, Al Viro wrote:
+> > > 
+> > > > commit d891eedbc3b1b0fade8a9ce60cc0eba1cccb59e5
+> > > > Author: J. Bruce Fields <bfields@fieldses.org>
+> > > > Date:   Tue Jan 18 15:45:09 2011 -0500
+> > > > 
+> > > >     fs/dcache: allow d_obtain_alias() to return unhashed dentries
+> > > 
+> > > Hmm, I was hoping this or something recently would fix nfs_inode_cache
+> > > growing forever and flush processes taking lots of system time since
+> > > 2.6.36. For example:
+> > > 
+> > >   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+> > > 3457486 3454365  99%    0.95K 105601       33   3379232K nfs_inode_cache
+> > > 469638 248761  52%    0.10K  12042       39     48168K buffer_head
+> > > 243712 216348  88%    0.02K    952      256      3808K kmalloc-16
+> > > 232785 202185  86%    0.19K  11085       21     44340K dentry
+> > > 149696  54633  36%    0.06K   2339       64      9356K kmalloc-64
+> > > 115976 106806  92%    0.55K   4142       28     66272K radix_tree_node
+> > >  76064  45680  60%    0.12K   2377       32      9508K kmalloc-128
+> > >  62336  53427  85%    0.03K    487      128      1948K kmalloc-32
+> > >  41958  41250  98%    0.75K   1998       21     31968K ext3_inode_cache
+> > > 
+> > > This clears them all, similar to what you posted:
+> > > 
+> > > echo 2 > /proc/sys/vm/drop_caches
+> > > sync
+> > > echo 2 > /proc/sys/vm/drop_caches
+> > > 
+> > > ...but 2.6.38-rc8 still doesn't seem to fix it.
+> > > 
+> > > http://0x.ca/sim/ref/2.6.37/cpu3_nfs.png
+> > > http://www.spinics.net/lists/linux-nfs/msg18212.html
+> > > 
+> > > Any ideas?  This started with 2.6.36.
+> > 
+> > Do you have NFSv4 clients that are doing locking?  Then it's probably
+> > 0997b17360 and 529d7b2a7f on the for-2.6.39 branch at:
+> > 
+> > 	git://linux-nfs.org/~bfields/linux.git for-2.6.39
+> > 
+> > Let me know if not.
 
-Hi Dave,
+Pfft, I'm blind, sorry, I didn't pay attention to the slab name;
+nfs_inode_cache is client-side, not server-side, so nothing I've done 
+should affect it one way or the other.
 
-On Mon, 14 Mar 2011 10:56:12 +0100 (CET) Thomas Gleixner <tglx@linutronix.d=
-e> wrote:
->
-> On Mon, 14 Mar 2011, Stephen Rothwell wrote:
->=20
-> > On Sun, 13 Mar 2011 22:53:12 -0700 (PDT) David Miller <davem@davemloft.=
-net> wrote:
-> > >
-> > > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > Date: Mon, 14 Mar 2011 16:31:35 +1100
-> > >=20
-> > > > Maybe some config option changed ...
-> > >=20
-> > > Perhaps GENERIC_HARDIRQS_NO_DEPRECATED?
-> >=20
-> > Yep, that has been turned on for powerpc now.  I guess you will have the
-> > same problem on sparc64 of you merge the net-next and sparc trees ...
->=20
-> Yeah, powerpc alone compiles with GENERIC_HARDIRQS_NO_DEPRECATED as it
-> does not have that notify commit.
->=20
-> If you add net which has that notify commit, but not the fix it
-> breaks. I wonder whether Dave should pick that fix into net.
+Of course it's not necessarily a bug for the client to cache a lot of
+inodes, but millions sounds like a lot for your case?
 
-So, if you merge the commit 1fb0ef31f428 ("genirq: Fix affinity notifier
-fallout") from the tip tree, you will get exactly one new commit and will
-fix your tree properly with no adverse effect on anyone else.
+Are you actually seeing this cause you problems?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+--b.
 
---Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNfrM5AAoJEDMEi1NhKgbs1hIH/R2B+1tFMRMT1S+inCilrv2Z
-A89FIHGU4aWQBhgQgCLc7ks1xw49XVJyamysDlnagwhK+z3ouQxiahepHyUIkHWq
-/eUqPAaEiFiECeHpLWBd8l3tTe1bUHt87RbYiDj/ocXUvsW07cTlxHjBd6/dgFIM
-dblnofbn2Ao0qCbDUSsoR+3F6zvruvyDKQ0+1XWbxZffFQpWEYQa4IyZDRSEkNdW
-gNtpZ27883FzzZZuwWupDzPMSNnAFe+eV1w6fwVYTz1Pr+vpoYe3QiTdKrKrgFJ/
-Icka/zV6bwnoVzQgFtyX6O/pu1hpjCt8HtLg1C4SXVMq92W2ACV8ekytoxeSyCU=
-=GaG+
------END PGP SIGNATURE-----
-
---Signature=_Tue__15_Mar_2011_11_30_49_+1100_edbgPSVLqaAkCy/j--
+> Yes, but when this started, it was all NFSv3. I tried NFSv4 to see if
+> it made any different (no, other than more I/O wait due to idmapd and
+> flock(LOCK_EX) breaking on a file opened O_RDONLY, which works locally
+> and on NFSv3 -- fixed by changing to open(O_RDWR) in my code), but
+> otherwise NFSv3 and NFSv4 look pretty much the same and "leak" at the
+> same rate.
+> 
+> Actually, I only changed the mount where it writes the log results, and
+> not where it reads them from (a bunch of NFSv3 mounts that will take a
+> lot more work to make NFSv4 since they currently run without libnss-mysql
+> set up), so I haven't actually tested to see if it happens with purely
+> NFSv4 mounts.
+> 
+> Anyway, it's locking on one file only, and it was purely for reducing
+> writeback thrashing, so I could try without it if you think it might be
+> related, but it all started without NFSv4. All this thing does is read a
+> bunch of log files, crunch them into reports, and write them to another
+> mount point, all run from xargs -P. Pretty basic readdir, read, write,
+> unlink...not anything exotic.
+> 
+> Simon-
