@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683Ab1COVI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:08:28 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50629 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab1COVI0 convert rfc822-to-8bit (ORCPT
+	id S1758685Ab1COVN4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:13:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46305 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab1COVNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:08:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hwb5wz/pJQDu17G6r0GoEeaq3jfZUVDzErmiEwiFv+d/bPsaNTuVwk5sPvGHDSjqkG
-         8huHwoN2Hm4cEWPBmbfjuJ83njg0ymq130gU7+NONxPeXYRDl+KoiampUVqlhLP5ZgKX
-         HX2P84pHMKJn506x0fDcmvRdTTdfQ1CO5T7D4=
-MIME-Version: 1.0
-In-Reply-To: <4D7FD2FB.9090505@fastmail.fm>
-References: <4D7CCFC3.7030906@fastmail.fm>
-	<AANLkTinug=6d6BKrZvA1HGZWNqgUNJKOBC3f8J5B_5oJ@mail.gmail.com>
-	<AANLkTik0nXX+WEwa2xZ9VV+yHwrWnx+tYNdZXPEjk=SO@mail.gmail.com>
-	<4D7FD2FB.9090505@fastmail.fm>
-Date: Tue, 15 Mar 2011 17:08:25 -0400
-Message-ID: <AANLkTikpBh2+OU2MUFo63oq9kBte7MK7rgwcuDKSwA_j@mail.gmail.com>
-Subject: Re: Radeon jittery post 2.6.35
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Anders Eriksson <aeriksson@fastmail.fm>
-Cc: Alex Deucher <alexdeucher@gmail.com>, airlied@redhat.com,
-        xorg-driver-ati@lists.x.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Mar 2011 17:13:54 -0400
+Date: Tue, 15 Mar 2011 14:13:47 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-kbuild@vger.kernel.org
+Cc: lkml <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] modpost: fix trailing comma
+Message-Id: <20110315141347.d4ee75d3.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4D7FD68E.00DF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 4:58 PM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
->  On 03/14/11 23:22, Alex Deucher wrote:
->> On Mon, Mar 14, 2011 at 6:20 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
->> > On Sun, Mar 13, 2011 at 10:08 AM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
->> >>  Hi,
->> >>
->> >> I've found what I guess is a radeon (or drm/kms) regression post 2.6.35.
->> >> I've got my TV conneced to my RS690G over HDMI, and the display has
->> >> always been jittery after POST and at the GRUB screen. Pre-KMS, the X
->> >> server (or driver got it sorted), and when KMS started, the display
->> >> stabilized right after the kernel driver was initiated. However, post
->> >> 2.6.35, I see the jitter is back.
->> >>
->> >> I've spent the last month trying to bisect it, but pretty much failed.
->> >> It appears that versions closer to 2.6.38-rcX are more prone to display
->> >> jitter, while 2.6.36 or so can have many successful runs. It also
->> >> appears to be related to device power-on order, or so I've come to
->> >> believe; A stable display can turn jittery, just by power cycling the TV.
->> >>
->
-> Some further testing on a clean rc8 suggests that the jitter seen
-> there can  reliably be removed by power cycling the TV while in X,
-> or starting X with the TV off.
->
-> I'm tempted to think that something makes too much out of bad
-> info collected from the TV, and falls backs to saner defaults if
-> the TV has nothing to say.
->
-> I've seen in the logs that the EDID is disliked:
-> [drm:radeon_dvi_detect] *ERROR* HDMI-A-1: probed a monitor but
-> no|invalid EDID
-> Not sure if that is related though (cannot seem to be able to provoke
-> that error message right now)
->
-> -A
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-EDID failure could very well explain it, EDID retrieval seems to fails
-on some GPU under some circonstance (when there is CPU load that
-interfer with i2c timing i guess). Does the log have the edid failure
-message when the tv is jittering ? Or is it the otherway around ?
+Consolidate locations that print a section whitelist into
+calls to print_section_list().
 
-Cheers,
-Jerome
+Fix print_section_list() so that it does not print a trailing
+comma & space:
+
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console, 
+
+becomes:
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ scripts/mod/modpost.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
+
+--- linux-next-20110315.orig/scripts/mod/modpost.c
++++ linux-next-20110315/scripts/mod/modpost.c
+@@ -1248,6 +1248,19 @@ static int is_function(Elf_Sym *sym)
+ 		return -1;
+ }
+ 
++static void print_section_list(const char * const list[20])
++{
++	const char *const *s = list;
++
++	while (*s) {
++		fprintf(stderr, "%s", *s);
++		s++;
++		if (*s)
++			fprintf(stderr, ", ");
++	}
++	fprintf(stderr, "\n");
++}
++
+ /*
+  * Print a warning about a section mismatch.
+  * Try to find symbols near it so user can find it.
+@@ -1304,7 +1317,6 @@ static void report_sec_mismatch(const ch
+ 		break;
+ 	case DATA_TO_ANY_INIT: {
+ 		prl_to = sec2annotation(tosec);
+-		const char *const *s = mismatch->symbol_white_list;
+ 		fprintf(stderr,
+ 		"The variable %s references\n"
+ 		"the %s %s%s%s\n"
+@@ -1312,9 +1324,7 @@ static void report_sec_mismatch(const ch
+ 		"variable with __init* or __refdata (see linux/init.h) "
+ 		"or name the variable:\n",
+ 		fromsym, to, prl_to, tosym, to_p);
+-		while (*s)
+-			fprintf(stderr, "%s, ", *s++);
+-		fprintf(stderr, "\n");
++		print_section_list(mismatch->symbol_white_list);
+ 		free(prl_to);
+ 		break;
+ 	}
+@@ -1329,7 +1339,6 @@ static void report_sec_mismatch(const ch
+ 		break;
+ 	case DATA_TO_ANY_EXIT: {
+ 		prl_to = sec2annotation(tosec);
+-		const char *const *s = mismatch->symbol_white_list;
+ 		fprintf(stderr,
+ 		"The variable %s references\n"
+ 		"the %s %s%s%s\n"
+@@ -1337,9 +1346,7 @@ static void report_sec_mismatch(const ch
+ 		"variable with __exit* (see linux/init.h) or "
+ 		"name the variable:\n",
+ 		fromsym, to, prl_to, tosym, to_p);
+-		while (*s)
+-			fprintf(stderr, "%s, ", *s++);
+-		fprintf(stderr, "\n");
++		print_section_list(mismatch->symbol_white_list);
+ 		free(prl_to);
+ 		break;
+ 	}
