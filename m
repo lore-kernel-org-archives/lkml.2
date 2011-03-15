@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab1COOBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:01:44 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55285 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757888Ab1COOBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:01:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexey Mikhailov <karma@galois.botik.ru>
-Subject: Re: lseek() on debugfs entries in 2.6.37
-Date: Tue, 15 Mar 2011 15:01:41 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <874o74ilxl.wl%karma@galois.botik.ru>
-In-Reply-To: <874o74ilxl.wl%karma@galois.botik.ru>
+	id S1757904Ab1COOHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:07:46 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:19175 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751280Ab1COOHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 10:07:45 -0400
+Date: Tue, 15 Mar 2011 16:01:53 +0200
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Christoph Hellwig <hch@infradead.org>
+Cc: menage@google.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 0/2] suck some poison out of cgroups' linked lists
+Message-ID: <20110315140153.GD18664@esdhcp04044.research.nokia.com>
+References: <1300194523-19325-1-git-send-email-ext-phil.2.carmody@nokia.com> <20110315135137.GA27545@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103151501.42105.arnd@arndb.de>
-X-Provags-ID: V02:K0:s3/iMRjoahync6wp2I6Dtj31iX3xGtzZXkwGI/3JR1J
- xcWpYQ0f2BDLzstN48jON97io+CzROKPRcC5mo0tsGtkyLHPZE
- O81yYCzLByZ0GR+bEfoKISXgmE44RAeyYp2YARtzPsiKNVr+s3
- nglOz2Jh+ySQohvwDqLFQKZsXXR7tW44T+eVUuNDv6oJMHAsg7
- /t5si+y7CaJeLhH9MlYgA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110315135137.GA27545@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 March 2011, Alexey Mikhailov wrote:
-> I use simple debugfs entries for user-space <-> kernel-space
-> interaction. Basically I read unsigned integers from debugfs
-> files like this:
+On 15/03/11 09:51 -0400, ext Christoph Hellwig wrote:
+> On Tue, Mar 15, 2011 at 03:08:41PM +0200, Phil Carmody wrote:
+> > Apparently, whether nodes are on a list is being checked with list_empty(),
+> > and if they're on a list, they're list_del()ed. According to a subsequent 
+> > list_empty() check, they're still on a list, as list_del() doesn't turn
+> > the nodes into singleton lists, it simply poisons both its pointers, and
+> > merry poison dereferencing may ensue. Oops.
+> > 
+> > There are at least 2 to address this matter, I've gone for the latter:
+> > 
+> > 1) Do not use list_empty() to check if a node is on a list or not. Have
+> > an additional new function that checks to see whether the node is either
+> > a singleton or is poisoned. Something like list_node_{on,off}_list()?
+> > 
+> > 2) Ensure that you never leave poison anywhere where you might want
+> > to use list_empty().
 > 
->    ...
->    char buf[64];
->    lseek(timesync_fd, 0, SEEK_SET);
->    read(timesync_fd, buf, sizeof(buf));
->    ...
-> 
-> It works perfectly with 2.6.32 kernel. But with 2.6.37 kernel,
-> lseek() fails with errno=29(Illegal seek). So second read()
-> call just fails or returns garbage. Can someone please shed
-> some light on it?
+> The correct way is to use list_del_init() if you want to do list_empty
+> checks later on.
 
-This is probably a result of the changes I made as part of the
-BKL removal. Which file specifically are you talking about?
+I.e. (2). Glad I chose that one.
 
-In older kernels, having no .llseek function meant that you
-implicitly get default_llseek. New kernels now require 
-that the driver explicitly chooses one llseek variant.
-
-I did a patch to automatically convert all drivers, but
-this patch may have missed some that got moved around
-while I was patching them.
-
-	Arnd
+Phil
