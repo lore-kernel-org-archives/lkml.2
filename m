@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab1COBxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 21:53:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37208 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab1COBxJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 21:53:09 -0400
+	id S1751885Ab1COB4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 21:56:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63309 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053Ab1COB4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 21:56:42 -0400
+Message-ID: <4D7EC791.4040003@cn.fujitsu.com>
+Date: Tue, 15 Mar 2011 09:57:37 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-X-Originating-IP: [76.195.161.19]
-In-Reply-To: <alpine.LFD.2.00.1103112054540.2787@localhost6.localdomain6>
-References: <1299681411-9227-1-git-send-email-virtuoso@slind.org>
-	<20110309162513.5058c824.akpm@linux-foundation.org>
-	<AANLkTin7=rK2Sc2D7aMhPnPWU9LJq7KMSvwxv_PHERcK@mail.gmail.com>
-	<20110310002534.f984f8b2.akpm@linux-foundation.org>
-	<AANLkTi=_DG8uYLxDnXF=so5daUE=w-pxL67mYaFAGkkL@mail.gmail.com>
-	<alpine.LFD.2.00.1103112054540.2787@localhost6.localdomain6>
-Date: Mon, 14 Mar 2011 18:53:08 -0700
-Message-ID: <AANLkTim9HhzE3wL+C3JVbU38sfrJrYMc0o2TMae_8ciK@mail.gmail.com>
-Subject: Re: [RFCv4] timerfd: add TFD_NOTIFY_CLOCK_SET to watch for clock changes
-From: Scott James Remnant <scott@netsplit.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org,
-        Ken MacLeod <ken@bitsko.slc.ut.us>,
-        Shaun Reich <predator106@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Feng Tang <feng.tang@intel.com>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: hpa@zytor.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, tlb: small cleanup for native_flush_tlb_others
+References: <4D7DBBE3.1010104@cn.fujitsu.com> <20110314123355.GA27477@elte.hu>
+In-Reply-To: <20110314123355.GA27477@elte.hu>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-15 09:55:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-15 09:55:22,
+	Serialize complete at 2011-03-15 09:55:22
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 11:56 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 11 Mar 2011, Scott James Remnant wrote:
->> On Thu, Mar 10, 2011 at 12:25 AM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->> > On Wed, 9 Mar 2011 18:01:09 -0800 Scott James Remnant <scott@netsplit.com> wrote:
->> >
->> >> > It would be helpful to know if the identified users of this feature
->> >> > actually find it useful and adequate. __I guess the most common
->> >> > application is the 1,001 desktop clock widgets. __Do you have any
->> >> > feedback from any of the owners of those?
->> >> >
->> >> cron is another obvious one (or init systems attempting to replace
->> >> cron). Having to wakeup and check the time every minute can be
->> >> non-conducive to power savings, it would be better if we could just
->> >> sleep until the next alarm and be woken up if the time changes in
->> >> between.
->> >>
->> >> (That being said, we also need to poll for and/or check for timezone
->> >> changes - but those are entirely userspace, so we can deal with that
->> >> separately)
->> >
->> > Sure, there will be lots of applications.
->> >
->> > But what I'm asking isn't "it is a good feature".  I'm asking "is the
->> > feature implemented well".  Ideally someone would get down and modify
->> > cron to use the interface in this patch.
->> >
->> So I've just been thinking today - and I'm actually not sure whether
->> this is needed at all for this case.
+On 03/14/2011 08:33 PM, Ingo Molnar wrote:
+> 
+> * Xiao Guangrong <xiaoguangrong@cn.fujitsu.com> wrote:
+> 
+>> Use smp_processor_id instead of get_cpu and put_cpu since
+>> the caller has already disabled preemption
 >>
->> A good cron implementation is going to set timers according to
->> CLOCK_REALTIME; in the case where the clock changes forwards, those
->> timers will fire as part of the clock changing already no? And in the
->> case where the clock changes backwards, you don't want to re-run old
->> ones anyway.
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+>> ---
+>>  arch/x86/mm/tlb.c |    3 +--
+>>  1 files changed, 1 insertions(+), 2 deletions(-)
 >>
->> Even the hourly/daily cases are actually at a fixed time, so would be
->> triggered - and a decent implementation wouldn't trigger a given
->> script more than once.
->
-> Yeah, I was wondering about today as well. Though when you set back
-> your clock several days, stuff might be surprised if it's not woken up
-> for several days :)
->
-I've checked the code, and more importantly, tested the
-setting-forward example - timers do indeed fire at the point the clock
-is wound forwards. This means there doesn't appear to be a utility for
-this patch in the cron case.
+>> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+>> index 6acc724..92849d0 100644
+>> --- a/arch/x86/mm/tlb.c
+>> +++ b/arch/x86/mm/tlb.c
+>> @@ -211,11 +211,10 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
+>>  	if (is_uv_system()) {
+>>  		unsigned int cpu;
+>>  
+>> -		cpu = get_cpu();
+>> +		cpu = smp_processor_id();
+>>  		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
+>>  		if (cpumask)
+>>  			flush_tlb_others_ipi(cpumask, mm, va);
+>> -		put_cpu();
+>>  		return;
+> 
+> There's multiple callers. Could you please update the changelog with the list of 
+> callers and a statement that all of them disable preemption already?
+> 
 
-In the wound back case, I believe that even current cron goes to some
-effort to avoid firing events that have already happened?
+Thanks Ingo, there is the new version.
 
-Scott
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: [PATCH] x86, tlb: small micro-optimization for native_flush_tlb_others
+
+native_flush_tlb_others is called from:
+flush_tlb_current_task
+flush_tlb_mm
+flush_tlb_page
+
+All these functions disable preemption explicitly, so we can use smp_processor_id
+instead of get_cpu and put_cpu
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/mm/tlb.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 6acc724..92849d0 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -211,11 +211,10 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
+ 	if (is_uv_system()) {
+ 		unsigned int cpu;
+ 
+-		cpu = get_cpu();
++		cpu = smp_processor_id();
+ 		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
+ 		if (cpumask)
+ 			flush_tlb_others_ipi(cpumask, mm, va);
+-		put_cpu();
+ 		return;
+ 	}
+ 	flush_tlb_others_ipi(cpumask, mm, va);
+-- 
+1.7.4
+
