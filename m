@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758508Ab1COUhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 16:37:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42225 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab1COUhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 16:37:45 -0400
-Subject: Re: [PATCH 0/4 v3] smp_call_function_many issues from review
-From: Peter Zijlstra <peterz@infradead.org>
-To: Milton Miller <miltonm@bga.com>
-Cc: akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
-        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
-        npiggin@gmail.com, rusty@rustcorp.com.au, efault@gmx.de,
-        Jan Beulich <JBeulich@novell.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Tony Luck <tony.luck@intel.com>, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <smp-call-function-intro-v3@mdm.bga.com>
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com> <ipi-list-reply@mdm.bga.com>
-	 <smp-cfm-list-comment@mdm.bga.com>
-	 <smp-call-function-list-race-fix-v2@mdm.bga.com>
-	 <20110201220026.GD2142@linux.vnet.ibm.com> <ipi-paul-reply@mdm.bga.com>
-	 <20110202041740.GB2129@linux.vnet.ibm.com>
-	 <20110206235136.GA23658@linux.vnet.ibm.com>
-	 <smp-call-function-intro-v3@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Mar 2011 21:39:29 +0100
-Message-ID: <1300221569.2250.15.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758587Ab1COUm0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 16:42:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41387 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757839Ab1COUmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 16:42:25 -0400
+Date: Tue, 15 Mar 2011 21:42:12 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/debug for v2.6.39
+Message-ID: <20110315204212.GA1437@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 13:27 -0600, Milton Miller wrote:
-> Picking up this thread from the beginning of Feburary,  I updated
-> the comments in 3 and 4 based on Paul's review.  I have inserted
-> my proposed alternative to Paul's additional patch as patch 2,
-> and tweaked the changelog on 1.
-> 
-> [PATCH 1/4 v3] call_function_many: fix list delete vs add race
-> [PATCH 2/4 v3] call_function_many: add missing ordering
-> [PATCH 3/4 v3] smp_call_function_many: handle concurrent clearing of mask
-> [PATCH 4/4 v3] smp_call_function_interrupt: use typedef and %pf
-> 
-> Peter Z acked a prior version of patch 1, and Mike Galbraith has
-> done some stress testing on the combinaton of 1,3,4, and Paul's patch.
-> 
-> The prior posting of this series is available here:
-> https://patchwork.kernel.org/patch/522021/
-> https://patchwork.kernel.org/patch/522031/
-> http://marc.info/?l=linux-kernel&m=129654439817236&w=2
-> 
-> And Paul's additional patch from review was here
-> https://patchwork.kernel.org/patch/525891/
-> 
-> Looking forward, I would suggest 1 and 2 are required for stable, 3 may
-> be suitable as it fixes races that otherwise requires cpumask copies
-> as in 75c1c91cb92806f960fcd6e53d2a0c21f343081c ([IA64] eliminate race
-> condition in smp_flush_tlb_mm).  By contrast 4 is just comments except
-> for the %pS to %pf change.
+Linus,
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Please pull the latest x86-debug-for-linus git tree from:
 
-Very interesting that patch #2.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-debug-for-linus
 
+ Thanks,
+
+	Ingo
+
+------------------>
+Jan Beulich (2):
+      x86: Don't call dump_stack() from arch_trigger_all_cpu_backtrace_handler()
+      x86: Combine printk()s in show_regs_common()
+
+
+ arch/x86/kernel/apic/hw_nmi.c |    1 -
+ arch/x86/kernel/process.c     |    9 +++------
+ 2 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 79fd43c..c4e557a 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -83,7 +83,6 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
+ 		arch_spin_lock(&lock);
+ 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+ 		show_regs(regs);
+-		dump_stack();
+ 		arch_spin_unlock(&lock);
+ 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+ 		return NOTIFY_STOP;
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index ff45541..99fa3ad 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -110,12 +110,9 @@ void show_regs_common(void)
+ 		init_utsname()->release,
+ 		(int)strcspn(init_utsname()->version, " "),
+ 		init_utsname()->version);
+-	printk(KERN_CONT " ");
+-	printk(KERN_CONT "%s %s", vendor, product);
+-	if (board) {
+-		printk(KERN_CONT "/");
+-		printk(KERN_CONT "%s", board);
+-	}
++	printk(KERN_CONT " %s %s", vendor, product);
++	if (board)
++		printk(KERN_CONT "/%s", board);
+ 	printk(KERN_CONT "\n");
+ }
+ 
