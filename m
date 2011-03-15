@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758451Ab1COT2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 15:28:50 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33658 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758386Ab1COT2r (ORCPT
+	id S932491Ab1COTbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 15:31:20 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:60432 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932212Ab1COTbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 15:28:47 -0400
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 7/20]  7: uprobes: store/restore
- original instruction.
-From: Peter Zijlstra <peterz@infradead.org>
-To: balbir@linux.vnet.ibm.com
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110315185841.GH3410@balbir.in.ibm.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314133522.27435.45121.sendpatchset@localhost6.localdomain6>
-	 <20110314180914.GA18855@fibrous.localdomain>
-	 <20110315092247.GW24254@linux.vnet.ibm.com>
-	 <1300211862.2203.302.camel@twins> <20110315185841.GH3410@balbir.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Mar 2011 20:30:32 +0100
-Message-ID: <1300217432.2250.0.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Mar 2011 15:31:16 -0400
+Date: Tue, 15 Mar 2011 20:31:06 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: matthieu castet <castet.matthieu@free.fr>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] merge 32 and 64 realmode wakeup code
+Message-ID: <20110315193106.GA2379@ucw.cz>
+References: <4D7D3F4B.2070801@free.fr>
+ <201103132331.57536.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103132331.57536.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 00:28 +0530, Balbir Singh wrote:
-> 
-> mm->owner should be under rcu_read_lock, unless the task is exiting
-> and mm_count is 1. mm->owner is updated under task_lock().
-> 
-> > Also, the assignments in kernel/fork.c and kernel/exit.c don't use
-> > rcu_assign_pointer() and therefore lack the needed write barrier.
-> >
-> 
-> Those are paths when the only context using the mm->owner is single
->  
-> > Git blames Balbir for this.
-> 
-> I accept the blame and am willing to fix anything incorrect found in
-> the code. 
+Hi!
 
-:-), ok sounds right, just wasn't entirely obvious when having a quick
-look.
+> > -#ifdef CONFIG_SMP
+> > -
+> >  	.section ".x86_trampoline","a"
+> >  	.balign PAGE_SIZE
+> >  	.code16
+> > @@ -79,5 +77,3 @@ ENTRY(trampoline_status)
+> >  
+> >  .globl trampoline_end
+> >  trampoline_end:
+> > -
+> > -#endif /* CONFIG_SMP */
+> 
+> Apart from the remarks above it looks good.
 
+Looks ok to me, too...
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
