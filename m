@@ -1,113 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758454Ab1COT17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 15:27:59 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:28374 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab1COT1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 15:27:17 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-Subject: [PATCH 3/4 v3] smp_call_function_many: handle concurrent clearing of mask
-To: akpm@linux-foundation.org, Mike Galbraith <efault@gmx.de>,
-        Dimitri Sivanich <sivanich@sgi.com>, Tony Luck <tony.luck@intel.com>,
-        Jan Beulich <JBeulich@novell.com>
-From: Milton Miller <miltonm@bga.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Anton Blanchard <anton@samba.org>,
-        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
-        npiggin@gmail.com, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org
-Message-ID: <smp-ipi-mask-clear-race-v3@mdm.bga.com>
-In-Reply-To: <ipi-list-reply@mdm.bga.com>
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com>
-	 <1296458482.7889.175.camel@marge.simson.net>
-	 <ipi-list-reply@mdm.bga.com>
-Date: Tue, 15 Mar 2011 13:27:17 -0600
-X-Originating-IP: 71.22.127.106
+	id S1758394Ab1COT2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 15:28:13 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45224 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758364Ab1COT2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 15:28:09 -0400
+Date: Tue, 15 Mar 2011 20:27:56 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] core/debugobjects changes for v2.6.39
+Message-ID: <20110315192756.GA27149@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Galbraith reported finding a lockup ("perma-spin bug") where the
-cpumask passed to smp_call_function_many was cleared by other cpu(s)
-while a cpu was preparing its call_data block, resulting in no cpu to
-clear the last ref and unlock the block.
+Linus,
 
-Having cpus clear their bit asynchronously could be useful on a mask of
-cpus that might have a translation context, or cpus that need a push to
-complete an rcu window.
+Please pull the latest core-debugobjects-for-linus git tree from:
 
-Instead of adding a BUG_ON and requiring yet another cpumask copy, just
-detect the race and handle it.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-debugobjects-for-linus
 
-Note: arch_send_call_function_ipi_mask must still handle an empty
-cpumask because the data block is globally visible before the that
-arch callback is made.  And (obviously) there are no guarantees to
-which cpus are notified if the mask is changed during the call;
-only cpus that were online and had their mask bit set during the
-whole call are guaranteed to be called.
+ Thanks,
 
-Reported-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Jan Beulich <JBeulich@novell.com>
-Signed-off-by: Milton Miller <miltonm@bga.com>
----
-v3: try to clarify which mask in comment
-v2: rediff for v2 of call_function_many: fix list delete vs add race
+	Ingo
 
-The arch code not expecting the race to empty the mask is the cause
-of https://bugzilla.kernel.org/show_bug.cgi?id=23042 that Andrew pointed
-out.
+------------------>
+Stanislaw Gruszka (1):
+      debugobjects: Add hint for better object identification
 
 
-Index: common/kernel/smp.c
-===================================================================
---- common.orig/kernel/smp.c	2011-03-15 05:22:26.000000000 -0500
-+++ common/kernel/smp.c	2011-03-15 06:22:26.000000000 -0500
-@@ -450,7 +450,7 @@ void smp_call_function_many(const struct
- {
- 	struct call_function_data *data;
- 	unsigned long flags;
--	int cpu, next_cpu, this_cpu = smp_processor_id();
-+	int refs, cpu, next_cpu, this_cpu = smp_processor_id();
+ include/linux/debugobjects.h |    5 ++++-
+ kernel/hrtimer.c             |    6 ++++++
+ kernel/timer.c               |    6 ++++++
+ kernel/workqueue.c           |    6 ++++++
+ lib/debugobjects.c           |    9 ++++++---
+ 5 files changed, 28 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/debugobjects.h b/include/linux/debugobjects.h
+index 597692f..65970b8 100644
+--- a/include/linux/debugobjects.h
++++ b/include/linux/debugobjects.h
+@@ -34,7 +34,10 @@ struct debug_obj {
  
- 	/*
- 	 * Can deadlock when called with interrupts disabled.
-@@ -461,7 +461,7 @@ void smp_call_function_many(const struct
- 	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
- 		     && !oops_in_progress && !early_boot_irqs_disabled);
+ /**
+  * struct debug_obj_descr - object type specific debug description structure
++ *
+  * @name:		name of the object typee
++ * @debug_hint:		function returning address, which have associated
++ *			kernel symbol, to allow identify the object
+  * @fixup_init:		fixup function, which is called when the init check
+  *			fails
+  * @fixup_activate:	fixup function, which is called when the activate check
+@@ -46,7 +49,7 @@ struct debug_obj {
+  */
+ struct debug_obj_descr {
+ 	const char		*name;
+-
++	void *(*debug_hint)	(void *addr);
+ 	int (*fixup_init)	(void *addr, enum debug_obj_state state);
+ 	int (*fixup_activate)	(void *addr, enum debug_obj_state state);
+ 	int (*fixup_destroy)	(void *addr, enum debug_obj_state state);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 0c8d7c0..e38f5a0 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -334,6 +334,11 @@ EXPORT_SYMBOL_GPL(ktime_add_safe);
  
--	/* So, what's a CPU they want? Ignoring this one. */
-+	/* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
- 	cpu = cpumask_first_and(mask, cpu_online_mask);
- 	if (cpu == this_cpu)
- 		cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
-@@ -519,6 +519,13 @@ void smp_call_function_many(const struct
- 	/* We rely on the "and" being processed before the store */
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
-+	refs = cpumask_weight(data->cpumask);
+ static struct debug_obj_descr hrtimer_debug_descr;
+ 
++static void *hrtimer_debug_hint(void *addr)
++{
++	return ((struct hrtimer *) addr)->function;
++}
 +
-+	/* Some callers race with other cpus changing the passed mask */
-+	if (unlikely(!refs)) {
-+		csd_unlock(&data->csd);
-+		return;
-+	}
+ /*
+  * fixup_init is called when:
+  * - an active object is initialized
+@@ -393,6 +398,7 @@ static int hrtimer_fixup_free(void *addr, enum debug_obj_state state)
  
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
-@@ -532,7 +539,7 @@ void smp_call_function_many(const struct
- 	 * to the cpumask before this write to refs, which indicates
- 	 * data is on the list and is ready to be processed.
- 	 */
--	atomic_set(&data->refs, cpumask_weight(data->cpumask));
-+	atomic_set(&data->refs, refs);
- 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
+ static struct debug_obj_descr hrtimer_debug_descr = {
+ 	.name		= "hrtimer",
++	.debug_hint	= hrtimer_debug_hint,
+ 	.fixup_init	= hrtimer_fixup_init,
+ 	.fixup_activate	= hrtimer_fixup_activate,
+ 	.fixup_free	= hrtimer_fixup_free,
+diff --git a/kernel/timer.c b/kernel/timer.c
+index d645992..33a6792 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -404,6 +404,11 @@ static void timer_stats_account_timer(struct timer_list *timer) {}
  
- 	/*
+ static struct debug_obj_descr timer_debug_descr;
+ 
++static void *timer_debug_hint(void *addr)
++{
++	return ((struct timer_list *) addr)->function;
++}
++
+ /*
+  * fixup_init is called when:
+  * - an active object is initialized
+@@ -477,6 +482,7 @@ static int timer_fixup_free(void *addr, enum debug_obj_state state)
+ 
+ static struct debug_obj_descr timer_debug_descr = {
+ 	.name		= "timer_list",
++	.debug_hint	= timer_debug_hint,
+ 	.fixup_init	= timer_fixup_init,
+ 	.fixup_activate	= timer_fixup_activate,
+ 	.fixup_free	= timer_fixup_free,
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index ee6578b..b5fe4c0 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -316,6 +316,11 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
+ 
+ static struct debug_obj_descr work_debug_descr;
+ 
++static void *work_debug_hint(void *addr)
++{
++	return ((struct work_struct *) addr)->func;
++}
++
+ /*
+  * fixup_init is called when:
+  * - an active object is initialized
+@@ -387,6 +392,7 @@ static int work_fixup_free(void *addr, enum debug_obj_state state)
+ 
+ static struct debug_obj_descr work_debug_descr = {
+ 	.name		= "work_struct",
++	.debug_hint	= work_debug_hint,
+ 	.fixup_init	= work_fixup_init,
+ 	.fixup_activate	= work_fixup_activate,
+ 	.fixup_free	= work_fixup_free,
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index deebcc5..9d86e45 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -249,14 +249,17 @@ static struct debug_bucket *get_bucket(unsigned long addr)
+ 
+ static void debug_print_object(struct debug_obj *obj, char *msg)
+ {
++	struct debug_obj_descr *descr = obj->descr;
+ 	static int limit;
+ 
+-	if (limit < 5 && obj->descr != descr_test) {
++	if (limit < 5 && descr != descr_test) {
++		void *hint = descr->debug_hint ?
++			descr->debug_hint(obj->object) : NULL;
+ 		limit++;
+ 		WARN(1, KERN_ERR "ODEBUG: %s %s (active state %u) "
+-				 "object type: %s\n",
++				 "object type: %s hint: %pS\n",
+ 			msg, obj_states[obj->state], obj->astate,
+-			obj->descr->name);
++			descr->name, hint);
+ 	}
+ 	debug_objects_warnings++;
+ }
