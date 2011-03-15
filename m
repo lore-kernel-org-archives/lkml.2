@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab1COL1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 07:27:32 -0400
-Received: from foo.stuge.se ([213.88.146.6]:45297 "HELO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757264Ab1COL13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 07:27:29 -0400
-Message-ID: <20110315112724.6729.qmail@stuge.se>
-Date: Tue, 15 Mar 2011 12:27:24 +0100
-From: Peter Stuge <peter@stuge.se>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] ACPI/Intel: Rework Opregion support
-Mail-Followup-To: Indan Zupancic <indan@nul.nu>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, Matthew Garrett <mjg@redhat.com>,
-	Len Brown <lenb@kernel.org>, Alan Cox <alan@linux.intel.com>
-References: <1298404994-2907-1-git-send-email-mjg@redhat.com> <1300125566-29648-1-git-send-email-chris@chris-wilson.co.uk> <cb03c0cd31393b476e63c4e699247c91.squirrel@webmail.greenhost.nl> <b7da2f$qnp1ps@fmsmga001.fm.intel.com> <5060ae708cceef8df998d3f59be5d246.squirrel@webmail.greenhost.nl>
+	id S1757492Ab1COL1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 07:27:46 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57914 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757353Ab1COL1k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 07:27:40 -0400
+Date: Tue, 15 Mar 2011 04:27:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH V4 1/1] rcu: introduce kfree_rcu()
+Message-ID: <20110315112734.GA2167@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D7F356C.8020903@cn.fujitsu.com>
+ <201103151115.54426.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5060ae708cceef8df998d3f59be5d246.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201103151115.54426.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Indan Zupancic wrote:
-> Everything would be a lot simpler if the BIOSes were open source.
+On Tue, Mar 15, 2011 at 11:15:54AM +0100, Arnd Bergmann wrote:
+> On Tuesday 15 March 2011 10:46:20 Lai Jiangshan wrote:
+> > +static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
+> > +{
+> > +       return offset < 4096;
+> > +}
+> 
+> So this relies on the assumptions that 
+> 
+> a) the rcu_head is within the first 4 KB of the data structure to be freed
+> b) no callback ever gets called in the first 4 KB of virtual address space
+> 
+> It's probably a reasonable assumption, but I think it should be documented
+> more explicitly, especially the first one. It's entirely possible that
+> an RCU managed data structure is larger than 4 KB.
 
-coreboot has existed for about eleven years and some 250 mainboards of
-varying shapes and sizes (from laptop to server) are supported, but it's
-only just recently that things are really taking off, with the code
-release from AMD to initialize their most recent Fusion platform.
+Good catch, this does indeed need to be explicitly documented, for
+example in the docbook header.
 
-http://www.coreboot.org/Welcome_to_coreboot
-http://blogs.amd.com/work/2011/02/28/amd-coreboot/
-http://news.slashdot.org/story/11/03/04/1736241/AMD-Provides-Fusion-Support-For-Coreboot
+> Another alternative might be to encode the difference between a
+> function pointer and an offset in one of the lower bits of the address.
 
+We discussed this some time back, and it turned out that there were
+CPUs that could legitimately have any combination of low-order bits
+set -- functions could start at any byte address.
 
-//Peter
+If this has changed, I would prefer to use the low-order bits, but
+if it has not, we can't.  :-(
+
+							Thanx, Paul
