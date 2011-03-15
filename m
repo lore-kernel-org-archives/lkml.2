@@ -1,48 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab1CONcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 09:32:55 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:48588 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757817Ab1CONcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 09:32:54 -0400
-Date: Tue, 15 Mar 2011 13:32:40 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Olivier Galibert <galibert@pobox.com>
-Cc: Indan Zupancic <indan@nul.nu>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Len Brown <lenb@kernel.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [Intel-gfx] [PATCH] ACPI/Intel: Rework Opregion support
-Message-ID: <20110315133240.GA5471@srcf.ucam.org>
-References: <1298404994-2907-1-git-send-email-mjg@redhat.com> <1300125566-29648-1-git-send-email-chris@chris-wilson.co.uk> <cb03c0cd31393b476e63c4e699247c91.squirrel@webmail.greenhost.nl> <20110315015226.GA26454@srcf.ucam.org> <20110315133055.GA33193@dspnet.fr>
+	id S1757870Ab1CONkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 09:40:16 -0400
+Received: from www.tglx.de ([62.245.132.106]:57160 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757832Ab1CONkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 09:40:14 -0400
+Date: Tue, 15 Mar 2011 14:38:33 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 4/20] 4: uprobes: Adding and remove a
+ uprobe in a rb tree.
+In-Reply-To: <20110314133444.27435.50684.sendpatchset@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1103151425060.2787@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314133444.27435.50684.sendpatchset@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315133055.GA33193@dspnet.fr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 02:30:55PM +0100, Olivier Galibert wrote:
-> On Tue, Mar 15, 2011 at 01:52:26AM +0000, Matthew Garrett wrote:
-> > Now that we've got multiple consumers it's probably not helpful to move 
-> > the (potentially chip-specific) VBT handling to general code. We've got 
-> > zero documentation on how GMA500 handles VBT, and not a great deal more 
-> > for i915.
-> 
-> I'm not sure what you mean by "handles".  If you mean find it, the
-> gma500 driver code reads a 32-bit pointer to the opregion at offset
-> 0xfc in the pci configuration space.  If you mean parse it, I haven't
-> seen anything that looked different to what the current kernel code
-> parses.
+On Mon, 14 Mar 2011, Srikar Dronamraju wrote:
+>  
+> +static int valid_vma(struct vm_area_struct *vma)
 
-Opregion is one mechanism to provide VBT - it doesn't define it.
+  bool perpaps ?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> +{
+> +	if (!vma->vm_file)
+> +		return 0;
+> +
+> +	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
+> +						(VM_READ|VM_EXEC))
+
+Looks more correct than the code it replaces :)
+
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+
+> +static struct rb_root uprobes_tree = RB_ROOT;
+> +static DEFINE_MUTEX(uprobes_mutex);
+> +static DEFINE_SPINLOCK(treelock);
+
+Why do you need a mutex and a spinlock ? Also the mutex is not
+referenced.
+
+> +static int match_inode(struct uprobe *uprobe, struct inode *inode,
+> +						struct rb_node **p)
+> +{
+> +	struct rb_node *n = *p;
+> +
+> +	if (inode < uprobe->inode)
+> +		*p = n->rb_left;
+> +	else if (inode > uprobe->inode)
+> +		*p = n->rb_right;
+> +	else
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +static int match_offset(struct uprobe *uprobe, loff_t offset,
+> +						struct rb_node **p)
+> +{
+> +	struct rb_node *n = *p;
+> +
+> +	if (offset < uprobe->offset)
+> +		*p = n->rb_left;
+> +	else if (offset > uprobe->offset)
+> +		*p = n->rb_right;
+> +	else
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +
+> +/* Called with treelock held */
+> +static struct uprobe *__find_uprobe(struct inode * inode,
+> +			 loff_t offset, struct rb_node **near_match)
+> +{
+> +	struct rb_node *n = uprobes_tree.rb_node;
+> +	struct uprobe *uprobe, *u = NULL;
+> +
+> +	while (n) {
+> +		uprobe = rb_entry(n, struct uprobe, rb_node);
+> +		if (match_inode(uprobe, inode, &n)) {
+> +			if (near_match)
+> +				*near_match = n;
+> +			if (match_offset(uprobe, offset, &n)) {
+> +				atomic_inc(&uprobe->ref);
+> +				u = uprobe;
+> +				break;
+> +			}
+> +		}
+> +	}
+> +	return u;
+> +}
+> +
+> +/*
+> + * Find a uprobe corresponding to a given inode:offset
+> + * Acquires treelock
+> + */
+> +static struct uprobe *find_uprobe(struct inode * inode, loff_t offset)
+> +{
+> +	struct uprobe *uprobe;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&treelock, flags);
+> +	uprobe = __find_uprobe(inode, offset, NULL);
+> +	spin_unlock_irqrestore(&treelock, flags);
+
+What's the calling context ? Do we really need a spinlock here for
+walking the rb tree ?
+
+> +
+> +/* Should be called lock-less */
+
+-ENOPARSE
+
+> +static void put_uprobe(struct uprobe *uprobe)
+> +{
+> +	if (atomic_dec_and_test(&uprobe->ref))
+> +		kfree(uprobe);
+> +}
+> +
+> +static struct uprobe *uprobes_add(struct inode *inode, loff_t offset)
+> +{
+> +	struct uprobe *uprobe, *cur_uprobe;
+> +
+> +	__iget(inode);
+> +	uprobe = kzalloc(sizeof(struct uprobe), GFP_KERNEL);
+> +
+> +	if (!uprobe) {
+> +		iput(inode);
+> +		return NULL;
+> +	}
+
+Please move the __iget() after the kzalloc()
+
+> +	uprobe->inode = inode;
+> +	uprobe->offset = offset;
+> +
+> +	/* add to uprobes_tree, sorted on inode:offset */
+> +	cur_uprobe = insert_uprobe(uprobe);
+> +
+> +	/* a uprobe exists for this inode:offset combination*/
+> +	if (cur_uprobe) {
+> +		kfree(uprobe);
+> +		uprobe = cur_uprobe;
+> +		iput(inode);
+> +	} else
+> +		init_rwsem(&uprobe->consumer_rwsem);
+
+Please init stuff _before_ inserting not afterwards.
+
+> +
+> +	return uprobe;
+> +}
+> +
+> +/* Acquires uprobe->consumer_rwsem */
+> +static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+> +{
+> +	struct uprobe_consumer *consumer;
+> +
+> +	down_read(&uprobe->consumer_rwsem);
+> +	consumer = uprobe->consumers;
+> +	while (consumer) {
+> +		if (!consumer->filter || consumer->filter(consumer, current))
+> +			consumer->handler(consumer, regs);
+> +
+> +		consumer = consumer->next;
+> +	}
+> +	up_read(&uprobe->consumer_rwsem);
+> +}
+> +
+> +/* Acquires uprobe->consumer_rwsem */
+> +static void add_consumer(struct uprobe *uprobe,
+> +				struct uprobe_consumer *consumer)
+> +{
+> +	down_write(&uprobe->consumer_rwsem);
+> +	consumer->next = uprobe->consumers;
+> +	uprobe->consumers = consumer;
+> +	up_write(&uprobe->consumer_rwsem);
+> +	return;
+
+  pointless return
+
+> +}
+> +
+> +/* Acquires uprobe->consumer_rwsem */
+
+I'd prefer a comment about the return code over this redundant
+information.
+
+> +static int del_consumer(struct uprobe *uprobe,
+> +				struct uprobe_consumer *consumer)
+> +{
