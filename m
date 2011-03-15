@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748Ab1COVEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:04:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52672 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757232Ab1COVEn (ORCPT
+	id S1758683Ab1COVI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:08:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50629 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243Ab1COVI0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:04:43 -0400
-Date: Tue, 15 Mar 2011 14:04:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, oakad@yahoo.com
-Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
-Message-Id: <20110315140402.334cc55c.akpm@linux-foundation.org>
-In-Reply-To: <1300219210.13493.0.camel@MAIN>
-References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
-	<1299947013.17988.0.camel@maxim-laptop>
-	<1300219210.13493.0.camel@MAIN>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Mar 2011 17:08:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hwb5wz/pJQDu17G6r0GoEeaq3jfZUVDzErmiEwiFv+d/bPsaNTuVwk5sPvGHDSjqkG
+         8huHwoN2Hm4cEWPBmbfjuJ83njg0ymq130gU7+NONxPeXYRDl+KoiampUVqlhLP5ZgKX
+         HX2P84pHMKJn506x0fDcmvRdTTdfQ1CO5T7D4=
+MIME-Version: 1.0
+In-Reply-To: <4D7FD2FB.9090505@fastmail.fm>
+References: <4D7CCFC3.7030906@fastmail.fm>
+	<AANLkTinug=6d6BKrZvA1HGZWNqgUNJKOBC3f8J5B_5oJ@mail.gmail.com>
+	<AANLkTik0nXX+WEwa2xZ9VV+yHwrWnx+tYNdZXPEjk=SO@mail.gmail.com>
+	<4D7FD2FB.9090505@fastmail.fm>
+Date: Tue, 15 Mar 2011 17:08:25 -0400
+Message-ID: <AANLkTikpBh2+OU2MUFo63oq9kBte7MK7rgwcuDKSwA_j@mail.gmail.com>
+Subject: Re: Radeon jittery post 2.6.35
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Anders Eriksson <aeriksson@fastmail.fm>
+Cc: Alex Deucher <alexdeucher@gmail.com>, airlied@redhat.com,
+        xorg-driver-ati@lists.x.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 22:00:10 +0200
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+On Tue, Mar 15, 2011 at 4:58 PM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
+>  On 03/14/11 23:22, Alex Deucher wrote:
+>> On Mon, Mar 14, 2011 at 6:20 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>> > On Sun, Mar 13, 2011 at 10:08 AM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
+>> >>  Hi,
+>> >>
+>> >> I've found what I guess is a radeon (or drm/kms) regression post 2.6.35.
+>> >> I've got my TV conneced to my RS690G over HDMI, and the display has
+>> >> always been jittery after POST and at the GRUB screen. Pre-KMS, the X
+>> >> server (or driver got it sorted), and when KMS started, the display
+>> >> stabilized right after the kernel driver was initiated. However, post
+>> >> 2.6.35, I see the jitter is back.
+>> >>
+>> >> I've spent the last month trying to bisect it, but pretty much failed.
+>> >> It appears that versions closer to 2.6.38-rcX are more prone to display
+>> >> jitter, while 2.6.36 or so can have many successful runs. It also
+>> >> appears to be related to device power-on order, or so I've come to
+>> >> believe; A stable display can turn jittery, just by power cycling the TV.
+>> >>
+>
+> Some further testing on a clean rc8 suggests that the jitter seen
+> there can  reliably be removed by power cycling the TV while in X,
+> or starting X with the TV off.
+>
+> I'm tempted to think that something makes too much out of bad
+> info collected from the TV, and falls backs to saner defaults if
+> the TV has nothing to say.
+>
+> I've seen in the logs that the EDID is disliked:
+> [drm:radeon_dvi_detect] *ERROR* HDMI-A-1: probed a monitor but
+> no|invalid EDID
+> Not sure if that is related though (cannot seem to be able to provoke
+> that error message right now)
+>
+> -A
 
-> On Sat, 2011-03-12 at 18:23 +0200, Maxim Levitsky wrote:
-> > On Fri, 2011-03-04 at 06:16 +0200, Maxim Levitsky wrote:
-> > > Hi,
-> > > 
-> > > This is a repost of my patches for 2.6.39 inclusion, which I hope not to
-> > > miss this time.
-> > > 
-> > > I addressed the comments on the scatterlist issues.
-> > > 
-> > > Andrew, please note that my richoh memstick driver is standalone, unchanged from previos versions
-> > > has many users which use the version I posted at ubuntu's Launchpad and happy with it.
-> > > Please include it regardless of other patches.
-> > > 
-> > > The other half of my work is support for legacy memorysticks which consists of 2 patches,
-> > > first that adds few functions to scatterlist.c, and the other patch that adds the driver.
-> > > Driver is also stable and tested.
-> > > 
-> > > Best regards,
-> > > 	Maxim Levitsky
-> > 
-> > 
-> > Any update?
-> 
-> Any update?
-> 
+EDID failure could very well explain it, EDID retrieval seems to fails
+on some GPU under some circonstance (when there is CPU load that
+interfer with i2c timing i guess). Does the log have the edid failure
+message when the tv is jittering ? Or is it the otherway around ?
 
-I'm hoping that Alex will soon have time to (re)review these patches.
+Cheers,
+Jerome
