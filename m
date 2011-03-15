@@ -1,131 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab1COL3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 07:29:07 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:56157 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757367Ab1COL3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 07:29:04 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D7F4DBA.1060502@cam.ac.uk>
-Date: Tue, 15 Mar 2011 11:30:02 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1757424Ab1COLaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 07:30:46 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:43722 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757233Ab1COLan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 07:30:43 -0400
+Date: Tue, 15 Mar 2011 04:30:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH V4 1/1] rcu: introduce kfree_rcu()
+Message-ID: <20110315113038.GB2167@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D7F356C.8020903@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        mems applications <mems.applications@st.com>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "carmine.iascone@st.com" <carmine.iascone@st.com>,
-        "matteo.dameno@st.com" <matteo.dameno@st.com>,
-        "rubini@ipvvis.unipv.it" <rubini@cvml.unipv.it>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device
- driver into misc
-References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com> <20110314224244.3d6d23ba@endymion.delvare> <20110314224859.GA16970@ericsson.com> <201103151024.26436.arnd@arndb.de>
-In-Reply-To: <201103151024.26436.arnd@arndb.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7F356C.8020903@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/11 09:24, Arnd Bergmann wrote:
-> On Monday 14 March 2011 23:48:59 Guenter Roeck wrote:
->> On Mon, Mar 14, 2011 at 05:42:44PM -0400, Jean Delvare wrote:
->>> On Mon, 14 Mar 2011 21:36:43 +0100, Arnd Bergmann wrote:
->>>> On Monday 14 March 2011 21:18:09 Jean Delvare wrote:
->>>>> Jonathan is correct. Pressure sensors are not hardware monitoring
->>>>> devices, their drivers have nothing to do in drivers/hwmon. This is
->>>>> something for drivers/misc or staging/iio.
->>>>
->>>> I generally try to prevent people from adding more ad-hoc interfaces
->>>> to drivers/misc. Anything that is called a drivers/misc driver to me
->>>> must qualify as "there can't possibly be a second driver with the
->>>> same semantics", otherwise it should be part of another subsystem
->>>> with clear rules, or be put into its own file system.
->>>
->>> I see drivers/misc differently. I see it as "not enough drivers of the
->>> same type to justify a new subsystem". So I encourage people to put
->>> things there in the absence of any suitable subsystem, until someone
->>> gets enough motivation to start such a subsystem. This is more
->>> pragmatic than requesting subsystems to be created upfront.
->>>
->> Agreed.
->>
->> Note that there is already a pressure sensor in drivers/misc - bmp085.c.
->> That chip also includes a temperature sensor.
+On Tue, Mar 15, 2011 at 05:46:20PM +0800, Lai Jiangshan wrote:
+> kfree_rcu() which was original proposed by Lai 2.5 years ago is one of
+> the most important RCU TODO list entries, Lai and Manfred have worked on
+> patches for this. This V4 patch is based on the Manfred's patch and
+> the V1 of Lai's patch. (These two patches are almost the same
+> in implementation, and this patch is mainly based on the Manfred's).
 > 
-> That driver proves exactly what I was trying to say about drivers/misc.
-> Even though bmp085 has done everything correctly according to the
-> rules (its interface is documented and it has gone into drivers/misc
-> instead of another subsystem), we're now stuck with an interface that
-> was written for a specific chip without widespread review, and need
-> to apply it to all other similar drivers, or risk breaking applications.
+> Lai's V1 patch: http://lkml.org/lkml/2008/9/18/1
+> Manfred's patch: http://lkml.org/lkml/2009/1/2/115
+> RCU TODO list: http://www.kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
 > 
-> The interface used in bmp085 has no way of finding out which devices
-> are actually pressure/temparature sensors, other than by looking
-> at the name of the attributes in every i2c device. There are probably
-> ways to retrofit this without breaking compatibility, but the options
-> are now fairly limited.
-Agreed entirely, though that particular device actually has a reasonable
-interface which bares a startling resemblence to hwmon / iio.
-(I pushed back on that during review and Christoph was happy to
-make merging later easy).
+> This new introduced API kfree_rcu() primitive kfree()s the specified memory
+> after a RCU grace period elapses.
+> 
+> It replaces many simple "call_rcu(head, simple_kfree_callback)";
+> These many simple_kfree_callback() instances just does
+> 
+> 	kfree(containerof(head,struct whatever_struct,rcu_member));
+> 
+> These simple_kfree_callback() instances are just duplicate code, we need
+> a generic function for them.
+> 
+> And kfree_rcu() is also help for unloadable modules, kfree_rcu() does not
+> queue any function which belong to the module, so a rcu_barrier() can
+> be avoid when module exit. (If we queue any other function by call_rcu(),
+> rcu_barrier() is still needed.)
 
-As an aside IIO very deliberately only makes type of sensor apparent in
-via naming of sysfs attributes, as does hwmon. Obviously you'll
-be looking in roughly the right place though so not quite so bad as
-searching all possible buses though!
-Any subgrouping doesn't really work as so many devices have fairly
-random sets of sensors on them. (not sure if you were suggesting that
-though!)
-> 
->>> That being said, staging is another option nowadays.
->>>
->>>> While it seems that right now everyone is just trying to keep move
->>>> the driver to some other subsystem, I think it's worth noting that
->>>> it is indeed a useful thing to have the driver, I'm optimistic
->>>> that we can find some place for it. ;-)
->>>>
->>>> Now how about the IIO stuff? This is the first time I've even
->>>> heard about it. Does it have any major disadvantages besides
->>>> being staging-quality?
->>>
->>> This is indeed the major disadvantage. IIO seems to take a lot of time
->>> to move out of staging, although I don't know what the current ETA is.
->>>
->> In general it would be nice to have a "sensors" subsystem. iio is going into
->> that direction, so creating another one might not make much sense at this point.
-> 
-> It depends on the quality of the iio code base, which I have not looked
-> at. If it's good enough, we could use that, and ideally find a way to
-> be backwards-compatible with bmp085. Otherwise, creating a new subsystem
-> could work as well, but only if the people behind iio support that move.
-> A new subsystem of that sort would need to start out with a well-designed
-> user interface, and allow moving over drivers from staging/iio without
-> too much pain.
-Interfaces (well sysfs ones anyway) is an area we have hammered pretty hard.
-Arnd, if I you do have time to look at anything, take a look at the abi docs
-in drivers/staging/iio/Documentation/ (mainly sysfs-bus-iio).  I've been
-pushing others introducing similar drivers into misc/input to use these
-unless they can come up with a good argument of why not.  Some fight back
-on the basis we are only in staging so why should they take any notice.
-Moves to agree these agreed across the kernel (mainly directed at
-accelerometers as some of these make sense in input whereas others
-definitely don't) didn't get very far sadly.  Right now Dmitry is
-pretty much blocking any accelerometer sysfs interface purely because
-he hasn't seen a consensus yet.
+Thank you for putting this together!  It does represent a nice
+reduction in code size.
 
-It took a lot of time to pin those interfaces down, so whilst we welcome
-suggestions for changes/additions, they must keep generality if at all
-possible.
+Once it settles out a bit, I intend to queue this patch.  It would be
+best if the subsystems queue their own patches using kfree_rcu() once
+this patch reaches mainline.
 
-Jonathan
+Seem reasonable?
+
+							Thanx, Paul
+
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+> ---
+>  include/linux/rcupdate.h |   40 ++++++++++++++++++++++++++++++++++++++++
+>  kernel/rcutiny.c         |    2 +-
+>  kernel/rcutree.c         |    2 +-
+>  3 files changed, 42 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 7d62909..18f7ade 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -777,4 +777,44 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+>  }
+>  #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+> 
+> +static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
+> +{
+> +	return offset < 4096;
+> +}
+> +
+> +static __always_inline
+> +void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+> +{
+> +	typedef void (*rcu_callback)(struct rcu_head *);
+> +
+> +	BUILD_BUG_ON(!__builtin_constant_p(offset));
+> +	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
+> +
+> +	call_rcu(head, (rcu_callback)offset);
+> +}
+> +
+> +extern void kfree(const void *);
+> +
+> +static inline void __rcu_reclaim(struct rcu_head *head)
+> +{
+> +	unsigned long offset = (unsigned long)head->func;
+> +
+> +	if (__is_kfree_rcu_offset(offset))
+> +		kfree((void *)head - offset);
+> +	else
+> +		head->func(head);
+> +}
+> +
+> +/**
+> + * kfree_rcu() - kfree an object after a grace period.
+> + * @ptr:	pointer to kfree
+> + * @rcu_head:	the name of the struct rcu_head within the type of @ptr.
+> + *
+> + * Many rcu callbacks just call kfree() on the base structure. This helper
+> + * function calls kfree internally. The rcu_head structure must be embedded
+> + * in the to be freed structure.
+> + */
+> +#define kfree_rcu(ptr, rcu_head)					\
+> +	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+> +
+>  #endif /* __LINUX_RCUPDATE_H */
+> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+> index 0c343b9..4d60fbc 100644
+> --- a/kernel/rcutiny.c
+> +++ b/kernel/rcutiny.c
+> @@ -167,7 +167,7 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+>  		prefetch(next);
+>  		debug_rcu_head_unqueue(list);
+>  		local_bh_disable();
+> -		list->func(list);
+> +		__rcu_reclaim(list);
+>  		local_bh_enable();
+>  		list = next;
+>  		RCU_TRACE(cb_count++);
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index dd4aea8..b3c1aed 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1143,7 +1143,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+>  		next = list->next;
+>  		prefetch(next);
+>  		debug_rcu_head_unqueue(list);
+> -		list->func(list);
+> +		__rcu_reclaim(list);
+>  		list = next;
+>  		if (++count >= rdp->blimit)
+>  			break;
+> -- 
+> 1.7.4
