@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab1COUoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 16:44:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62472 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758414Ab1COUoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 16:44:20 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=DpMNfemkRQYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=p5VEmyIGDiDygRvd1UYA:9 a=4efMWQ40mkxfBx7r7XpLUlH63QgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
+	id S932314Ab1COUpW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 16:45:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37901 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758414Ab1COUpU (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 15 Mar 2011 16:45:20 -0400
+Date: Tue, 15 Mar 2011 16:45:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314163028.a05cec49.akpm@linux-foundation.org>
-	 <20110314234754.GP2499@one.firstfloor.org>
-	 <alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
-	 <20110315180639.GQ2499@one.firstfloor.org>
-	 <alpine.LFD.2.00.1103152038280.2787@localhost6.localdomain6>
-	 <1300219261.9910.300.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 15 Mar 2011 16:44:16 -0400
-Message-ID: <1300221856.9910.305.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: linux-next: Tree for March 15 (xen/events.c)
+Message-ID: <20110315204507.GA11472@dumpdata.com>
+References: <20110315194543.a5d56c0c.sfr@canb.auug.org.au>
+ <20110315084429.465cea61.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110315084429.465cea61.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D7FCFD7.0143,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 21:09 +0100, Thomas Gleixner wrote:
-> On Tue, 15 Mar 2011, Steven Rostedt wrote:
-
-> I didn't say that ptrace rocks.
+On Tue, Mar 15, 2011 at 08:44:29AM -0700, Randy Dunlap wrote:
+> On Tue, 15 Mar 2011 19:45:43 +1100 Stephen Rothwell wrote:
 > 
-> All I'm saying is that we want a better argument than a single user
-> which is - and yes i tried it more than once - assbackwards beyond all
-> imagination.
+> > Hi all,
+> > 
+> > Changes since 20110314:
+> > 
+> > Dropped tree: xen
 > 
-> If gdb, perf, trace can and will make use of it then we have sensible
+> 
+> Hm, maybe this is already fixed in the dropped tree?
 
-I'm more interested in the perf/trace than gdb, as the way gdb is mostly
-used (at least now) to debug problems in the code with a big hammer
-(single step, look at registers/variables). That is, gdb is usually very
-interactive and its best to "stop the code" from running to examine what
-has happened. gdb is not something you will run on an application that
-is being used by others.
+Nope..
+> 
+> linux-next-20110315/drivers/xen/events.c:396: error: 'struct irq_data' has no member named 'affinity'
+> 
+> when CONFIG_SMP is not enabled.
 
-With perf/trace things are different, as you want the task to be as
-little affected by the tracer as it runs, perhaps even in a production
-environment. This is a completely different paradigm.
-
-If gdb uses it, great, but I don't think we should bend over backwards
-to make it usable by gdb. Debugging and tracing are different, with
-different requirements and needs.
-
-> arguments enough to go there. If systemtap can use it as well then I
-> have no problem with that..
-
-Fair enough.
-
--- Steve
-
-
+but I got a fixed queue up in xen-two. Thanks for pointing this out!
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
