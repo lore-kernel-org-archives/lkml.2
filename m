@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab1CODBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 23:01:30 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:32845 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab1CODB2 (ORCPT
+	id S1752677Ab1CODIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 23:08:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62443 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab1CODIT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 23:01:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 15 Mar 2011 11:54:51 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
-Message-Id: <20110315115451.7a7d3605.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTineM7M1R6fVFJe0ax-DN=_Rnb+7Cmk5HTH0D+Na@mail.gmail.com>
-References: <1299869011-26152-1-git-send-email-gthelen@google.com>
-	<20110311171006.ec0d9c37.akpm@linux-foundation.org>
-	<AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
-	<20110315105612.f600a659.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTineM7M1R6fVFJe0ax-DN=_Rnb+7Cmk5HTH0D+Na@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Mar 2011 23:08:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=yGeiOTjAMyUBCvYS8z4M1KzfIUZ8CXRZp4IcF6pY3VoCGmBs2IDc6ogtJPYBgDuFP8
+         ZgQiTvKrUYF9m4ZLesLNd6HG5PAG1uG9Rv21zIxtdvg5x0sKgWFffiYYhk76GQzWHlCM
+         /HQNoWU1Z2OpyDphc4acCQMwXirb5xzjSoVHs=
+MIME-Version: 1.0
+In-Reply-To: <20110314104038.GB26085@n2100.arm.linux.org.uk>
+References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com> <20110314104038.GB26085@n2100.arm.linux.org.uk>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Tue, 15 Mar 2011 11:07:58 +0800
+Message-ID: <AANLkTinekDMZUJSyOqOuPPpuoq49wFTzc1ESGqEdezzs@mail.gmail.com>
+Subject: Re: [PATCH] arm: cmpxchg syscall should data abort if page not write
+ or not young
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, nicolas.pitre@linaro.org, joe@perches.com,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 19:51:22 -0700
-Greg Thelen <gthelen@google.com> wrote:
+Dear Russell King,
 
-> On Mon, Mar 14, 2011 at 6:56 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Mon, 14 Mar 2011 11:29:17 -0700
-> > Greg Thelen <gthelen@google.com> wrote:
-> >
-> >> On Fri, Mar 11, 2011 at 5:10 PM, Andrew Morton
-> The foreign dirtier issue is all about identifying the memcg (or
-> possibly multiple bdi) that need balancing.    If the foreign dirtier
-> issue is not important then we can focus on identifying inodes to
-> writeback that will lower the current's memcg dirty usage.  I am fine
-> ignoring the foreign dirtier issue for now and breaking the problem
-> into smaller pieces.
-> 
-ok.
+On Mon, Mar 14, 2011 at 6:40 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Mar 14, 2011 at 06:28:36PM +0800, Po-Yu Chuang wrote:
+>> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+>>
+>> If the page to cmpxchg is user mode read only (not write)
+>> or invalid (not young), we should simulate a data abort first.
+>
+> No.  If it is not young then it should be made young.  Age is an effect
+> of accesses.  It's not a permission.
 
-> I think this can be done with out any additional state.  Can just scan
-> the memcg lru to find dirty file pages and thus inodes to pass to
-> sync_inode(), or some other per-inode writeback routine?
-> 
+OK, I will rethink about the not young part.
+Thanks for your pointer.
 
-I think it works, finding inodes to be cleaned by LRU scanning.
+I will resubmit a v2 which contains only the read only check.
+It fixes a problem we met with futex.
 
-Thanks,
--Kame
-
+best regards,
+Po-Yu Chuang
