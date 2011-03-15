@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab1COCbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 22:31:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53716 "EHLO
+	id S1752295Ab1COCcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:32:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:41487 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab1COCbM (ORCPT
+	with ESMTP id S1751169Ab1COCcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 22:31:12 -0400
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=LVe1Hbu2v80A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=C3Vb3aNdgF9WuPIj8HgA:9 a=uxSiT6090-pzFZCPE2kA:7 a=9jndyH3-Q43kr_XIrJW1WyyXcQIA:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Mon, 14 Mar 2011 22:32:00 -0400
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=iMvQkSxJFt0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Zfj8Z6T3O8nDHP5mvgEA:9 a=D54Z0RRAqWySaSZLaPeTf-jU_PQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] ftrace: add 'version' special file for ring buffer
- format
+Subject: Re: [PATCH][rfc] Use int as return type of main in
+ arch/x86/boot/main.c
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Slava Pestov <slavapestov@google.com>
-Cc: linux-kernel@vger.kernel.org, mrubin@google.com, dhsharp@google.com
-In-Reply-To: <1300142528-4918-1-git-send-email-slavapestov@google.com>
-References: <1300142528-4918-1-git-send-email-slavapestov@google.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jesper Juhl <jj@chaosbits.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <4D7E9BCC.5070204@zytor.com>
+References: <alpine.LNX.2.00.1103132257430.9985@swampdragon.chaosbits.net>
+	 <20110314190317.GA20259@home.goodmis.org>  <4D7E9BCC.5070204@zytor.com>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 14 Mar 2011 22:31:08 -0400
-Message-ID: <1300156268.9910.242.camel@gandalf.stny.rr.com>
+Date: Mon, 14 Mar 2011 22:31:58 -0400
+Message-ID: <1300156318.9910.243.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -27,24 +30,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-14 at 15:42 -0700, Slava Pestov wrote:
-> The intention here is that if the ftrace ring buffer format changes
-> in the future like it did in the past with ktrace, we can increment
-> the version number and update clients appropriately.
+On Mon, 2011-03-14 at 15:50 -0700, H. Peter Anvin wrote:
+> 
+> Yes, but some versions of gcc complains about a nonstandard signature to
+> main().  At least that's what I assume Jesper's issue was. 
 
-I purposely avoided "versions", and instead use the
-tracing/events/header_page and .../header_event to describe how the ring
-buffer format is laid out. If the format changes, then so should those
-files.
+OK, but I prefer the solution you suggested. Let's just rename it.
 
 -- Steve
-
-> 
-> Tested: Verified that special file contains correct content
-> 
-> This patch is against 2.6.38-rc8 but should apply to any version
-> from at least 2.6.34 onwards.
-> 
-> Signed-Off-By: Slava Pestov <slavapestov@google.com>
 
 
