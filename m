@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab1COHUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 03:20:54 -0400
-Received: from mail.lang.hm ([64.81.33.126]:39038 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839Ab1COHUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 03:20:53 -0400
-Date: Tue, 15 Mar 2011 00:20:14 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-In-Reply-To: <20110312040941.GA15526@home.goodmis.org>
-Message-ID: <alpine.DEB.2.00.1103150019060.5340@asgard.lang.hm>
-References: <20110310.155556.48513201.davem@davemloft.net> <AANLkTik3AyFTNoytebmOOZ=JSFMkt0bw7au-CSncUHJu@mail.gmail.com> <20110311204823.GB7906@fieldses.org> <20110311.130128.71121155.davem@davemloft.net> <1299878274.2814.8.camel@bwh-desktop>
- <20110311214209.GB9404@fieldses.org> <20110312040941.GA15526@home.goodmis.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754790Ab1COHVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 03:21:47 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55615 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab1COHVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 03:21:46 -0400
+Message-ID: <99FA4F65346D4615AC7C8CFEF72133E7@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Randy Dunlap" <randy.dunlap@oracle.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
+        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
+        "maintainer:TTY LAYER <gregkh@suse.de>, commit_signer:2/4=50%,
+	commit_signer:1/2=50%" <Greg.Kroah-Hartman@rcsinet15.oracle.com>,
+        "Andrew Morton \(commit_signer:1/4=25%\)" <akpm@linux-foundation.org>,
+        "Randy Dunlap \(commit_signer:1/4=25%\)" <randy.dunlap@oracle.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com><1299592667-21367-8-git-send-email-subhasish@mistralsolutions.com> <20110308104757.0f75409b.randy.dunlap@oracle.com>
+In-Reply-To: <20110308104757.0f75409b.randy.dunlap@oracle.com>
+Subject: Re: [PATCH v3 7/7] tty: add pruss SUART driver
+Date: Tue, 15 Mar 2011 12:53:47 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Steven Rostedt wrote:
+Hello,
 
-> On Fri, Mar 11, 2011 at 04:42:09PM -0500, J. Bruce Fields wrote:
->>
->> But assume you only did this in cases where the merge was trivial.
->> Would it be worth it, or would people be annoyed by the additional
->> branching?
->>
->
-> I would be annoyed by it ;)
->
-> It really is meaningless to do so, as all you are doing is documenting
-> what commit caused this bug, and producing more problems by branching
-> off of the broken commit. It wont matter till it is merged, but then if
-> there are a lot of simple bug fixes, then you will have a lot of single
-> merges of branches that fix those bugs.
+Thank you for your comments.
+Would really appreciate more comments and ways to fix this patch and bring 
+it
+up to Linux Standards.
+If I have missed something/misunderstood then please let me know.
 
-what effect would this have on bisecting? if this helped people avoid 
-bisecting in between the bad commit and the fix for it, it may be worth 
-it.
 
-David Lang
+>> +config SERIAL_PRUSS_SUART
+>> + depends on ARCH_DAVINCI && ARCH_DAVINCI_DA850
+>> + select SERIAL_CORE
+>> + tristate "PRUSS based SoftUART emulation on DA8XX"
+>> + ---help---
+>> + This driver emulates upto eight different UARTs on the PRUSS.
+>
+>                      up to
+>
+SG -- Ok Will do.
 
-> It's just better to say in the change log of the fix:
+
+>> + You may modify the NR_SUARTS macro in the driver to emulate
+>> + less number of UARTS as per your requirement.
+>> + If not sure, mark N
 >
-> "commit abcdef1234 foo: add bar"
+>              mark N.
 >
-> Broke this, and this fixes it.
+SG -- Ok Will do.
+
+
+>> +    Enter the McASP number to use with SUART (0, 1 or 2).
+>> + You will need to recompile the kernel if this is changed.
 >
-> Having the broken commit SHA1 and description in the change log is just
-> as helpful as having the bug commit being its parent.
+> The 2 help text lines should be indented the same.
 >
-> -- Steve
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+SG - Ok will do.
+ 
+
