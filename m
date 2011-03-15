@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab1COIxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 04:53:52 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:47671 "EHLO mx01.d-labs.de"
+	id S1756844Ab1COIzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 04:55:00 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:47639 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755856Ab1COIx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 04:53:28 -0400
+	id S1755716Ab1COIx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 04:53:27 -0400
 From: Florian Mickler <florian@mickler.org>
 To: mchehab@infradead.org
 Cc: oliver@neukum.org, jwjstone@fastmail.fm,
         Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
         linux-media@vger.kernel.org
-Subject: [PATCH 05/16] [media] ec168: get rid of on stack dma buffers
-Date: Tue, 15 Mar 2011 09:43:37 +0100
-Message-Id: <1300178655-24832-5-git-send-email-florian@mickler.org>
+Subject: [PATCH 04/16] [media] vp7045: get rid of on-stack dma buffers
+Date: Tue, 15 Mar 2011 09:43:36 +0100
+Message-Id: <1300178655-24832-4-git-send-email-florian@mickler.org>
 X-Mailer: git-send-email 1.7.4.rc3
 In-Reply-To: <1300178655-24832-1-git-send-email-florian@mickler.org>
 References: <20110315093632.5fc9fb77@schatten.dmk.lab>
@@ -34,65 +34,114 @@ Note: This change is tested to compile only, as I don't have the hardware.
 
 Signed-off-by: Florian Mickler <florian@mickler.org>
 ---
- drivers/media/dvb/dvb-usb/ec168.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+ drivers/media/dvb/dvb-usb/vp7045.c |   41 ++++++++++++++++++++++++++---------
+ 1 files changed, 30 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-usb/ec168.c b/drivers/media/dvb/dvb-usb/ec168.c
-index 52f5d4f..1ba3e5d 100644
---- a/drivers/media/dvb/dvb-usb/ec168.c
-+++ b/drivers/media/dvb/dvb-usb/ec168.c
-@@ -36,7 +36,9 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
- 	int ret;
- 	unsigned int pipe;
- 	u8 request, requesttype;
--	u8 buf[req->size];
-+	u8 *buf;
-+
-+
+diff --git a/drivers/media/dvb/dvb-usb/vp7045.c b/drivers/media/dvb/dvb-usb/vp7045.c
+index ab0ab3c..17478ec 100644
+--- a/drivers/media/dvb/dvb-usb/vp7045.c
++++ b/drivers/media/dvb/dvb-usb/vp7045.c
+@@ -28,9 +28,9 @@ DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
+ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in, int inlen, int msec)
+ {
+ 	int ret = 0;
+-	u8 inbuf[12] = { 0 }, outbuf[20] = { 0 };
++	u8 *buf = d->priv;
  
- 	switch (req->cmd) {
- 	case DOWNLOAD_FIRMWARE:
-@@ -72,6 +74,12 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
- 		goto error;
+-	outbuf[0] = cmd;
++	buf[0] = cmd;
+ 
+ 	if (outlen > 19)
+ 		outlen = 19;
+@@ -39,10 +39,10 @@ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in,
+ 		inlen = 11;
+ 
+ 	if (out != NULL && outlen > 0)
+-		memcpy(&outbuf[1], out, outlen);
++		memcpy(&buf[1], out, outlen);
+ 
+ 	deb_xfer("out buffer: ");
+-	debug_dump(outbuf,outlen+1,deb_xfer);
++	debug_dump(buf, outlen+1, deb_xfer);
+ 
+ 	if ((ret = mutex_lock_interruptible(&d->usb_mutex)))
+ 		return ret;
+@@ -50,7 +50,7 @@ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in,
+ 	if (usb_control_msg(d->udev,
+ 			usb_sndctrlpipe(d->udev,0),
+ 			TH_COMMAND_OUT, USB_TYPE_VENDOR | USB_DIR_OUT, 0, 0,
+-			outbuf, 20, 2000) != 20) {
++			buf, 20, 2000) != 20) {
+ 		err("USB control message 'out' went wrong.");
+ 		ret = -EIO;
+ 		goto unlock;
+@@ -61,17 +61,17 @@ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in,
+ 	if (usb_control_msg(d->udev,
+ 			usb_rcvctrlpipe(d->udev,0),
+ 			TH_COMMAND_IN, USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
+-			inbuf, 12, 2000) != 12) {
++			buf, 12, 2000) != 12) {
+ 		err("USB control message 'in' went wrong.");
+ 		ret = -EIO;
+ 		goto unlock;
  	}
  
-+	buf = kmalloc(req->size, GFP_KERNEL);
-+	if (!buf) {
-+		ret = -ENOMEM;
-+		goto error;
+ 	deb_xfer("in buffer: ");
+-	debug_dump(inbuf,12,deb_xfer);
++	debug_dump(buf, 12, deb_xfer);
+ 
+ 	if (in != NULL && inlen > 0)
+-		memcpy(in,&inbuf[1],inlen);
++		memcpy(in, &buf[1], inlen);
+ 
+ unlock:
+ 	mutex_unlock(&d->usb_mutex);
+@@ -222,8 +222,26 @@ static struct dvb_usb_device_properties vp7045_properties;
+ static int vp7045_usb_probe(struct usb_interface *intf,
+ 		const struct usb_device_id *id)
+ {
+-	return dvb_usb_device_init(intf, &vp7045_properties,
+-				   THIS_MODULE, NULL, adapter_nr);
++	struct dvb_usb_device *d;
++	int ret = dvb_usb_device_init(intf, &vp7045_properties,
++				   THIS_MODULE, &d, adapter_nr);
++	if (ret)
++		return ret;
++
++	d->priv = kmalloc(20, GFP_KERNEL);
++	if (!d->priv) {
++		dvb_usb_device_exit(intf);
++		return -ENOMEM;
 +	}
 +
- 	if (requesttype == (USB_TYPE_VENDOR | USB_DIR_OUT)) {
- 		/* write */
- 		memcpy(buf, req->data, req->size);
-@@ -84,13 +92,13 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
- 	msleep(1); /* avoid I2C errors */
- 
- 	ret = usb_control_msg(udev, pipe, request, requesttype, req->value,
--		req->index, buf, sizeof(buf), EC168_USB_TIMEOUT);
-+		req->index, buf, req->size, EC168_USB_TIMEOUT);
- 
- 	ec168_debug_dump(request, requesttype, req->value, req->index, buf,
- 		req->size, deb_xfer);
- 
- 	if (ret < 0)
--		goto error;
-+		goto err_dealloc;
- 	else
- 		ret = 0;
- 
-@@ -98,7 +106,11 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
- 	if (!ret && requesttype == (USB_TYPE_VENDOR | USB_DIR_IN))
- 		memcpy(req->data, buf, req->size);
- 
-+	kfree(buf);
- 	return ret;
++	return ret;
++}
 +
-+err_dealloc:
-+	kfree(buf);
- error:
- 	deb_info("%s: failed:%d\n", __func__, ret);
- 	return ret;
++static void vp7045_usb_disconnect(struct usb_interface *intf)
++{
++	struct dvb_usb_device *d = usb_get_intfdata(intf);
++	kfree(d->priv);
++	dvb_usb_device_exit(intf);
+ }
+ 
+ static struct usb_device_id vp7045_usb_table [] = {
+@@ -238,6 +256,7 @@ MODULE_DEVICE_TABLE(usb, vp7045_usb_table);
+ static struct dvb_usb_device_properties vp7045_properties = {
+ 	.usb_ctrl = CYPRESS_FX2,
+ 	.firmware = "dvb-usb-vp7045-01.fw",
++	.size_of_priv = sizeof(u8 *),
+ 
+ 	.num_adapters = 1,
+ 	.adapter = {
+@@ -284,7 +303,7 @@ static struct dvb_usb_device_properties vp7045_properties = {
+ static struct usb_driver vp7045_usb_driver = {
+ 	.name		= "dvb_usb_vp7045",
+ 	.probe		= vp7045_usb_probe,
+-	.disconnect = dvb_usb_device_exit,
++	.disconnect	= vp7045_usb_disconnect,
+ 	.id_table	= vp7045_usb_table,
+ };
+ 
 -- 
 1.7.4.rc3
 
