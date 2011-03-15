@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab1COGec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 02:34:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:42676 "EHLO
+	id S1754520Ab1COG7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 02:59:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:48220 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab1COGe3 (ORCPT
+	with ESMTP id S1754134Ab1COG7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 02:34:29 -0400
+	Tue, 15 Mar 2011 02:59:08 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=odJPH44AIuO7O3p4zxZAyMNsYe31jCkAXEPbNPVO2c7WRGYGXTDDvQDqV4x9LF/G0
-	969qj36KrCuZUPfbm5kSA==
-Subject: [PATCH] KBuild: silence "'scripts/unifdef' is up to date."
-To: Michal Marek <mmarek@suse.cz>
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=tTeRdA5mOeSMOZPb3rzQuBL0FCRasIfKmiw0FRHxiqf8TmZMCNPVZnvNMXkbIQ7F/
+	ers7pNe0xNXQQ+2FD9X7w==
+Subject: [PATCH v3 1/5] x86: get_bios_ebda_length()
+To: Greg KH <greg@kroah.com>, Matt Domsch <Matt_Domsch@dell.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
 From: Mike Waychison <mikew@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Mon, 14 Mar 2011 23:34:25 -0700
-Message-ID: <20110315063425.9538.11565.stgit@mike.mtv.corp.google.com>
+Cc: Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, San Mehat <san@google.com>
+Date: Mon, 14 Mar 2011 23:58:45 -0700
+Message-ID: <20110315065844.12047.54555.stgit@mike.mtv.corp.google.com>
+In-Reply-To: <20110315065839.12047.70666.stgit@mike.mtv.corp.google.com>
+References: <20110315065839.12047.70666.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,57 +33,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch applies to 2.6.38-rc8.
-
-While changing our build system over to use the headers_install target
-as part of our klibc build, the following message started showing up in
-our logs:
-
-make[2]: `scripts/unifdef' is up to date.
-
-It turns out that the build blindly invokes a recursive make on this
-target, which causes make to emit this message when the target is
-already up to date.  This isn't seen for most targets as the rest of the
-build relies primarily on the default target and on PHONY targets when
-invoking make recursively.
-
-Silence the above message when building unifdef as part of
-headers_install by hiding it behind a new PHONY target called
-"build_unifdef" that has an empty recipe.
+Add a wrapper routine that tells us the length of the EBDA if it is
+present.  This guy also ensures that the returned length doesn't let the
+EBDA run past the 640KiB mark.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- Makefile         |    2 +-
- scripts/Makefile |    5 +++++
- 2 files changed, 6 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/bios_ebda.h |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 504f788..5d7e0b2 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1018,7 +1018,7 @@ hdr-dst = $(if $(KBUILD_HEADERS), dst=include/asm-$(hdr-arch), dst=include/asm)
+diff --git a/arch/x86/include/asm/bios_ebda.h b/arch/x86/include/asm/bios_ebda.h
+index 3c75210..5174cf0 100644
+--- a/arch/x86/include/asm/bios_ebda.h
++++ b/arch/x86/include/asm/bios_ebda.h
+@@ -14,6 +14,27 @@ static inline unsigned int get_bios_ebda(void)
+ 	return address;	/* 0 means none */
+ }
  
- PHONY += __headers
- __headers: include/linux/version.h scripts_basic FORCE
--	$(Q)$(MAKE) $(build)=scripts scripts/unifdef
-+	$(Q)$(MAKE) $(build)=scripts build_unifdef
- 
- PHONY += headers_install_all
- headers_install_all:
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 2e08810..fcea261 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -18,6 +18,11 @@ always		:= $(hostprogs-y) $(hostprogs-m)
- # The following hostprogs-y programs are only build on demand
- hostprogs-y += unifdef
- 
-+# This target is used internally to avoid "is up to date" messages
-+PHONY += build_unifdef
-+build_unifdef: scripts/unifdef FORCE
-+	@:
++/*
++ * Return the sanitized length of the EBDA in bytes, if it exists.
++ */
++static inline unsigned int get_bios_ebda_length(void)
++{
++	unsigned int address;
++	unsigned int length;
 +
- subdir-$(CONFIG_MODVERSIONS) += genksyms
- subdir-y                     += mod
- subdir-$(CONFIG_SECURITY_SELINUX) += selinux
++	address = get_bios_ebda();
++	if (!address)
++		return 0;
++
++	/* EBDA length is byte 0 of the EBDA (stored in KiB) */
++	length = *(unsigned char *)phys_to_virt(address);
++	length <<= 10;
++
++	/* Trim the length if it extends beyond 640KiB */
++	length = min_t(unsigned int, (640 * 1024) - address, length);
++	return length;
++}
++
+ void reserve_ebda_region(void);
+ 
+ #ifdef CONFIG_X86_CHECK_BIOS_CORRUPTION
 
