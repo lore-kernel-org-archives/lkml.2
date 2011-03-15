@@ -1,140 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab1COU4P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 16:56:15 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59523 "EHLO mx3.mail.elte.hu"
+	id S1758630Ab1COU7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 16:59:50 -0400
+Received: from mail.atheros.com ([12.19.149.2]:37184 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757521Ab1COU4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 16:56:14 -0400
-Date: Tue, 15 Mar 2011 21:56:09 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] irq/um changes for v2.6.39
-Message-ID: <20110315205609.GA6559@elte.hu>
+	id S1758289Ab1COU7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 16:59:49 -0400
+Date: Tue, 15 Mar 2011 13:59:46 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Bob Copeland <me@bobcopeland.com>
+CC: Christoph Lameter <cl@linux.com>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Nick Piggin <npiggin@kernel.dk>, "Dave Chinner" <dchinner@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Jiri Slaby" <jirislaby@gmail.com>,
+        Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis Rodriguez" <Luis.Rodriguez@atheros.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: Re: <IRQ> [<ffffffff810c9204>] ? __alloc_pages_nodemask+0x622/0x696
+Message-ID: <20110315205946.GL11878@tux>
+References: <AANLkTikaLb_xan2ePfo9JCZ1w7RZ76wF8NUT2tYr0ZD=@mail.gmail.com>
+ <alpine.DEB.2.00.1103051847100.8779@chino.kir.corp.google.com>
+ <4D770178.9070908@gmail.com>
+ <alpine.DEB.2.00.1103091254540.13353@chino.kir.corp.google.com>
+ <4D77EEB4.9090404@gmail.com>
+ <alpine.DEB.2.00.1103091549020.16989@router.home>
+ <20110310000502.GA13763@hash.localnet>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110310000502.GA13763@hash.localnet>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Mar 09, 2011 at 04:05:02PM -0800, Bob Copeland wrote:
+> On Wed, Mar 09, 2011 at 03:54:24PM -0600, Christoph Lameter wrote:
+> > [ 7419.322770] wlan0: associated
+> > [ 7427.161366] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> > [ 7427.161432] ath: Failed to stop TX DMA!
+> > [ 7434.492398] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> > [ 7434.492462] ath: Failed to stop TX DMA!
+> > [ 7603.339047]
+> > =============================================================================
+> > [ 7603.339053] BUG radix_tree_node: Padding overwritten. 0xffff88000008fe00-0xffff88000008fe32
+> 
+> > Could the ath driver corrupt memory if the TX DMA cannot be stopped?
 
-Please pull the latest um-irq-for-linus git tree from:
+Yes, this is why we have had a series of patches to address this upstream,
+the latest one was for RX DMA failing to stop but Felix found a fix for that.
+Apart from that I am not aware of more issues. Can you please try with
+wireless-testing.git ?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git um-irq-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Thomas Gleixner (4):
-      um: Remove stale irq_chip.end
-      um: Convert irq_chips to new functions
-      um: Use proper accessors in show_interrupts()
-      um: Select GENERIC_HARDIRQS_NO_DEPRECATED
-
-
- arch/um/Kconfig.common |    1 +
- arch/um/kernel/irq.c   |   31 +++++++++++++++----------------
- 2 files changed, 16 insertions(+), 16 deletions(-)
-
-diff --git a/arch/um/Kconfig.common b/arch/um/Kconfig.common
-index e351e14..1e78940 100644
---- a/arch/um/Kconfig.common
-+++ b/arch/um/Kconfig.common
-@@ -7,6 +7,7 @@ config UML
- 	bool
- 	default y
- 	select HAVE_GENERIC_HARDIRQS
-+	select GENERIC_HARDIRQS_NO_DEPRECATED
- 
- config MMU
- 	bool
-diff --git a/arch/um/kernel/irq.c b/arch/um/kernel/irq.c
-index 3f0ac9e..64cfea8 100644
---- a/arch/um/kernel/irq.c
-+++ b/arch/um/kernel/irq.c
-@@ -35,8 +35,10 @@ int show_interrupts(struct seq_file *p, void *v)
- 	}
- 
- 	if (i < NR_IRQS) {
--		raw_spin_lock_irqsave(&irq_desc[i].lock, flags);
--		action = irq_desc[i].action;
-+		struct irq_desc *desc = irq_to_desc(i);
-+
-+		raw_spin_lock_irqsave(&desc->lock, flags);
-+		action = desc->action;
- 		if (!action)
- 			goto skip;
- 		seq_printf(p, "%3d: ",i);
-@@ -46,7 +48,7 @@ int show_interrupts(struct seq_file *p, void *v)
- 		for_each_online_cpu(j)
- 			seq_printf(p, "%10u ", kstat_irqs_cpu(i, j));
- #endif
--		seq_printf(p, " %14s", irq_desc[i].chip->name);
-+		seq_printf(p, " %14s", get_irq_desc_chip(desc)->name);
- 		seq_printf(p, "  %s", action->name);
- 
- 		for (action=action->next; action; action = action->next)
-@@ -54,7 +56,7 @@ int show_interrupts(struct seq_file *p, void *v)
- 
- 		seq_putc(p, '\n');
- skip:
--		raw_spin_unlock_irqrestore(&irq_desc[i].lock, flags);
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	} else if (i == NR_IRQS)
- 		seq_putc(p, '\n');
- 
-@@ -360,10 +362,10 @@ EXPORT_SYMBOL(um_request_irq);
- EXPORT_SYMBOL(reactivate_fd);
- 
- /*
-- * irq_chip must define (startup || enable) &&
-- * (shutdown || disable) && end
-+ * irq_chip must define at least enable/disable and ack when
-+ * the edge handler is used.
-  */
--static void dummy(unsigned int irq)
-+static void dummy(struct irq_data *d)
- {
- }
- 
-@@ -371,20 +373,17 @@ static void dummy(unsigned int irq)
- static struct irq_chip normal_irq_type = {
- 	.name = "SIGIO",
- 	.release = free_irq_by_irq_and_dev,
--	.disable = dummy,
--	.enable = dummy,
--	.ack = dummy,
--	.end = dummy
-+	.irq_disable = dummy,
-+	.irq_enable = dummy,
-+	.irq_ack = dummy,
- };
- 
- static struct irq_chip SIGVTALRM_irq_type = {
- 	.name = "SIGVTALRM",
- 	.release = free_irq_by_irq_and_dev,
--	.shutdown = dummy, /* never called */
--	.disable = dummy,
--	.enable = dummy,
--	.ack = dummy,
--	.end = dummy
-+	.irq_disable = dummy,
-+	.irq_enable = dummy,
-+	.irq_ack = dummy,
- };
- 
- void __init init_IRQ(void)
+  Luis
