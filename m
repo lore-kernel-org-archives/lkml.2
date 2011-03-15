@@ -1,176 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab1COCCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 22:02:51 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58482 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab1COCCs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 22:02:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 15 Mar 2011 10:56:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
-Message-Id: <20110315105612.f600a659.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
-References: <1299869011-26152-1-git-send-email-gthelen@google.com>
-	<20110311171006.ec0d9c37.akpm@linux-foundation.org>
-	<AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752155Ab1COCDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:03:35 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:42778 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab1COCDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 22:03:33 -0400
+Date: Tue, 15 Mar 2011 07:27:40 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20]  0: Inode based uprobes
+Message-ID: <20110315015739.GS24254@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+ <20110314163028.a05cec49.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110314163028.a05cec49.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 11:29:17 -0700
-Greg Thelen <gthelen@google.com> wrote:
-
-> On Fri, Mar 11, 2011 at 5:10 PM, Andrew Morton
-
-> My rational for pursuing bdi writeback was I/O locality.  I have heard that
-> per-page I/O has bad locality.  Per inode bdi-style writeback should have better
-> locality.
+> > 
+> > 4. Corelating events from kernels and userspace.
+> > Uprobes could be used with other tools like kprobes, tracepoints or as
+> > part of higher level tools like perf to give a consolidated set of
+> > events from kernel and userspace.  In future we could look at a single
+> > backtrace showing application, library and kernel calls.
 > 
-> My hunch is the best solution is a hybrid which uses a) bdi writeback with a
-> target memcg filter and b) using the memcg lru as a fallback to identify the bdi
-> that needed writeback.  I think the part a) memcg filtering is likely something
-> like:
->  http://marc.info/?l=linux-kernel&m=129910424431837
+> How do you envisage these features actually get used?  For example,
+> will gdb be modified?  Will other debuggers be modified or written?
 > 
-> The part b) bdi selection should not be too hard assuming that page-to-mapping
-> locking is doable.
+> IOW, I'm trying to get an understanding of how you expect this feature
+> will actually become useful to end users - the kernel patch is only
+> part of the story.
 > 
 
-For now, I like b). 
+Right, So I am looking at having perf probe for uprobes and also at
+having a syscall so that perf probe and other ptrace users can use this
+infrastructure. Ingo has already asked for a syscall for the same in
+one of his replies to my previous patchset. From whatever
+discussions I had with ptrace users, they have shown interest in
+using this breakpoint infrastructure.
 
-> An alternative approach is to bind each inode to exactly one cgroup (possibly
-> the root cgroup).  Both the cache page allocations and dirtying charges would be
-> accounted to the i_cgroup.  With this approach there is no foreign dirtier issue
-> because all pages are in a single cgroup.  I find this undesirable because the
-> first memcg to touch an inode is charged for all pages later cached even by
-> other memcg.
-> 
+I am still not sure if this feature should be exposed thro a new
+operation to ptrace syscall (something like SET_BP) or a completely new
+syscall or both. I would be happy if people here could give inputs on
+which route to go forward.
 
-I don't think 'foreign dirtier' is a big problem. When program does write(),
-the file to be written is tend to be under control of the application in
-the cgroup. I don't think 'written file' is shared between several cgroups, 
-typically. But /var/log/messages is a shared one ;)
+We had perf probe for uprobes implemented in few of the previous
+patchset. When the underlying implementation changed from a
+pid:vaddr to a file:offset, the way we invoke perf probe changed.
 
-But I know some other OSs has 'group for file cache'. I'll not nack if you
-propose such patch. Maybe there are some guys who want to limit the amount of
-file cache.
+Previously we would do 
+"perf probe -p 3692 zfree@zsh"
 
+Now we would be doing 
+"perf probe -u zfree@zsh"
 
+The perf probe for uprobes is still WIP. Will post the patches when it
+is in usable fashion. This should be pretty soon.
 
-> When a page is allocated it is charged to the current task's memcg.  When a
-> memcg page is later marked dirty the dirty charge is billed to the memcg from
-> the original page allocation.  The billed memcg may be different than the
-> dirtying task's memcg.
-> 
-yes.
+If you have suggestions on how this infrastructure could be used
+above perf probe and syscall, then please do let me know.
 
-> After a rate limited number of file backed pages have been dirtied,
-> balance_dirty_pages() is called to enforce dirty limits by a) throttling
-> production of more dirty pages by current and b) queuing background writeback to
-> the current bdi.
-> 
-> balance_dirty_pages() receives a mapping and page count, which indicate what may
-> have been dirtied and the max number of pages that may have been dirtied.  Due
-> to per cpu rate limiting and batching (when nr_pages_dirtied > 0),
-> balance_dirty_pages() does not know which memcg were charged for recently dirty
-> pages.
-> 
-> I think both bdi and system limits have the same issue in that a bdi may be
-> pushed over its dirty limit but not immediately checked due to rate limits.  If
-> future dirtied pages are backed by different bdi, then future
-> balance_dirty_page() calls will check the second, compliant bdi ignoring the
-> first, over-limit bdi.  The safety net is that the system wide limits are also
-> checked in balance_dirty_pages.  However, per bdi writeback is employed in this
-> situation.
-> 
-> Note: This memcg foreign dirtier issue does not make it any more likely that a
-> memcg is pushed above its usage limit (limit_in_bytes).  The only limit with
-> this weak contract is the dirty limit.
-> 
-> For reference, this issue was touch on in
-> http://marc.info/?l=linux-mm&m=128840780125261
-> 
-> There are ways to handle this issue (my preferred option is option #1).
-> 
-> 1) keep a (global?) foreign_dirtied_memcg list of memcg that were recently
->   charged for dirty pages by tasks outside of memcg.  When a memcg dirty page
->   count is elevated, the page's memcg would be queued to the list if current's
->   memcg does not match the pages cgroup.  mem_cgroup_balance_dirty_pages()
->   would balance the current memcg and each memcg it dequeues from this list.
->   This should be a straightforward fix.
-> 
-
-Can you implement this in an efficient way ? (without taking any locks ?)
-It seems cost > benefit.
-
-
-
-> 2) When pages are dirtied, migrate them to the current task's memcg.
->   mem_cgroup_balance_dirty_pages would then have a better chance at seeing all
->   pages dirtied by the current operation.  This is still not perfect solution
->   due to rate limiting.  This also is bad because such a migration would
->   involve charging and possibly memcg direct reclaim because the destination
->   memcg may be at its memory usage limit.  Doing all of this in
->   account_page_dirtied() seems like trouble, so I do not like this approach.
-> 
-
-I think this cannot be implemented in an efficnent way.
-
-
-
-> 3) Pass in some context which is represents a set of pages recently dirtied into
->   [mem_cgroup]_balance_dirty_pages.  What would be a good context to collect
->   the set of memcg that should be balanced?
->   - an extra passed in parameter - yuck.
->   - address_space extension - does not feel quite right because address space
->     is not a io context object, I presume it can be shared by concurrent
->     threads.
->   - something hanging on current.  Are there cases where pages become dirty
->     that are not followed by a call to balance dirty pages Note: this option
->     (3) is not a good idea because rate limiting make dirty limit enforcement
->     an inexact science.  There is no guarantee that a caller will have context
->     describing the pages (or bdis) recently dirtied.
-> 
-
-I'd like to have an option  'cgroup only for file cache' rather than adding more
-hooks and complicated operations.
-
-But, if we need to record 'who dirtied ?' information, record it in page_cgroup
-or radix-tree and do filtering is what I can consider, now.
-In this case, some tracking information will be required to be stored into
-struct inode, too.
-
-
-How about this ?
-
- 1. record 'who dirtied memcg' into page_cgroup or radix-tree.
-   I prefer recording in radix-tree rather than using more field in page_cgroup.
- 2. bdi-writeback does some extra queueing operation per memcg.
-   find a page, check 'who dirtied', enqueue it(using page_cgroup or list of pagevec)
- 3. writeback it's own queue.(This can be done before 2. if cgroup has queue, already)
- 4. Some GC may be required...
-
-Thanks,
--Kame
-
+-- 
+Thanks and Regards
+Srikar
