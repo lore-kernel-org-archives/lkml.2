@@ -1,57 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab1COC0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 22:26:46 -0400
-Received: from jaguar.mail.utk.edu ([160.36.0.84]:48846 "EHLO
-	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab1COC0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 22:26:44 -0400
-Date: Mon, 14 Mar 2011 22:26:17 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: perf: kernel memory leak when inherit enabled
-In-Reply-To: <alpine.DEB.2.00.1103142026350.16076@cl320.eecs.utk.edu>
-Message-ID: <alpine.DEB.2.00.1103142224150.20209@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1103111745070.15818@cl320.eecs.utk.edu> <alpine.DEB.2.00.1103141824190.13179@cl320.eecs.utk.edu> <20110314223224.GD9388@ghostprotocols.net> <alpine.DEB.2.00.1103142026350.16076@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752200Ab1COCax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:30:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63312 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169Ab1COCav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 22:30:51 -0400
+Message-ID: <4D7ECF91.2030308@cn.fujitsu.com>
+Date: Tue, 15 Mar 2011 10:31:45 +0800
+From: Mi Jinlong <mijinlong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: wrong index used in inner loop
+References: <4D76A06A.4090405@gmail.com> <20110309004955.GD15814@fieldses.org> <4D79A183.8090306@cn.fujitsu.com> <20110314222229.GJ25442@fieldses.org>
+In-Reply-To: <20110314222229.GJ25442@fieldses.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-15 10:29:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-15 10:29:32,
+	Serialize complete at 2011-03-15 10:29:32
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011, Vince Weaver wrote:
 
-> On Mon, 14 Mar 2011, Arnaldo Carvalho de Melo wrote:
+
+J. Bruce Fields:
+> On Fri, Mar 11, 2011 at 12:13:55PM +0800, Mi Jinlong wrote:
+>>
+>> J. Bruce Fields:
+>>> On Tue, Mar 08, 2011 at 10:32:26PM +0100, roel wrote:
+>>>> Index i was already used in the outer loop
+>>>>
+>>>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+>>>> ---
+>>>>  fs/nfsd/nfs4xdr.c |    4 ++--
+>>>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>>>
+>>>> Not 100% sure this one is needed but it looks suspicious.
+>>> Looks bad to me, thanks.
+>>>
+>>> nfsd4_decode_create_session should probably really be broken up a little
+>>> bit; if it wasn't so long this would have been more obvious.
+>>>
+>>> I'll see if I can slip this into 2.6.38 with a couple other last-minute
+>>> patches....  Otherwise, it'll be in 2.6.39.
+>>>
+>>> --b.
+>>>
+>>>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+>>>> index 1275b86..615f0a9 100644
+>>>> --- a/fs/nfsd/nfs4xdr.c
+>>>> +++ b/fs/nfsd/nfs4xdr.c
+>>>> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>>>  
+>>>>  	u32 dummy;
+>>>>  	char *machine_name;
+>>>> -	int i;
+>>>> +	int i, j;
+>>>>  	int nr_secflavs;
+>>>>  
+>>>>  	READ_BUF(16);
+>>>> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>>>  			READ_BUF(4);
+>>>>  			READ32(dummy);
+>>>>  			READ_BUF(dummy * 4);
+>>>> -			for (i = 0; i < dummy; ++i)
+>>>> +			for (j = 0; j < dummy; ++j)
+>>>>  				READ32(dummy);
+>>   We must not use dummy for index here.
+>>   After the first index, READ32(dummy) will change dummy!!!!
 > 
-> > Em Mon, Mar 14, 2011 at 06:27:19PM -0400, Vince Weaver escreveu:
-> > > On Fri, 11 Mar 2011, Vince Weaver wrote:
-> > > > 
-> > > > While trying to use perf events with inherit enabled to profile some 
-> > > > multi-threaded BLAS routines (using PAPI) I ended up out-of-memorying my 
-> > > > machine.  It turns out you can quickly leak gigabytes of kernel memory
-> > > > that isn't freed when the process exits.
-> > > 
-> > > I've bisected this.  There's a whole day I'll never see again. binutils 
-> > > 2.21 and gcc-4.5 for the lose :(
-> > > 
-> > > Anyway this memory leak with inherit was introduced in 
-> > >   4fd38e4595e
+> Actually, wait, this is kind of silly.  I don't see why we couldn't just
+> skip the loop and do
 > 
-> This changeset was reverted already in 
-> e3174cfd2a1e28fff774681f00a0eef3d31da970
-> yet somehow that didn't fix the inherit mem-leak.
+> 	p += dummy;
+> 
+> Also, your new test is still failing with a BAD_XDR error.  Well, maybe
+> the test should fail--we don't really implement this yet anyway--but it
+> should at least be getting past the xdr decoding.  So something else is
+> still wrong.
 
-I see, a new fix was made immediately after the revert, 
-   050735b08ca8a016bbace4445fa025b88fee770b
-which probably immediately re-introduced the problem, which is why
-git bisect didn't catch this.  I'm away from my test machine so I'll
-have to wait until tomorrow before I can investigate more.
+  How did you modify it??
 
-Vince
-vweaver1@eecs.utk.edu
+  When testing it, I modify as 
+ 
+    -                       for (j = 0; j < dummy; ++j)
+    -                               READ32(dummy);
+    +                       p += dummy;
+
+  or
+    
+    -                       for (j = 0; j < dummy; ++j)
+    -                               READ32(dummy);
+
+  Test case CSESS16 and CSESS16a are PASS, 
+  I can't get BAD_XDR error as you said.
+
+--
+thanks,
+Mi Jinlong
+
+> 
+> --b.
+> 
+>>   The following patch fix this problem.
+>>
+>> --
+>> thanks,
+>> Mi Jinlong
+>> ============================================================
+>>
+>> We must not use dummy for index.
+>> After the first index, READ32(dummy) will change dummy!!!!
+>>
+>> Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+>> ---
+>>  fs/nfsd/nfs4xdr.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+>> index 615f0a9..8dd70d0 100644
+>> --- a/fs/nfsd/nfs4xdr.c
+>> +++ b/fs/nfsd/nfs4xdr.c
+>> @@ -1140,7 +1140,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>  {
+>>  	DECODE_HEAD;
+>>  
+>> -	u32 dummy;
+>> +	u32 dummy, tmp;
+>>  	char *machine_name;
+>>  	int i, j;
+>>  	int nr_secflavs;
+>> @@ -1216,7 +1216,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+>>  			READ32(dummy);
+>>  			READ_BUF(dummy * 4);
+>>  			for (j = 0; j < dummy; ++j)
+>> -				READ32(dummy);
+>> +				READ32(tmp);
+>>  			break;
+>>  		case RPC_AUTH_GSS:
+>>  			dprintk("RPC_AUTH_GSS callback secflavor "
+>> -- 
+>> 1.7.4.1
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+----
+thanks
+Mi Jinlong
+
