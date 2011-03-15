@@ -1,39 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758663Ab1COVwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:52:12 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:48582
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758352Ab1COVwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:52:11 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 00/12] Staging: hv: Cleanup vmbus driver - Phase II 
-Date: Tue, 15 Mar 2011 15:02:07 -0700
-Message-Id: <1300226527-26933-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1758724Ab1COVwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:52:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55638 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758677Ab1COVwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:52:21 -0400
+Date: Tue, 15 Mar 2011 21:52:01 GMT
+From: tip-bot for Daniel Drake <dsd@laptop.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, hpa@zytor.com,
+        mingo@redhat.com, dsd@laptop.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, dsd@laptop.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20110313151017.C255F9D401E@zog.reactivated.net>
+References: <20110313151017.C255F9D401E@zog.reactivated.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, olpc: Use device tree for platform identification
+Message-ID: <tip-45bb1674b976ef81429c1e42de05844b49d45dea@git.kernel.org>
+Git-Commit-ID: 45bb1674b976ef81429c1e42de05844b49d45dea
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 15 Mar 2011 21:52:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set fixes the following issues in the vmbus driver (vmbus_drv.c):
+Commit-ID:  45bb1674b976ef81429c1e42de05844b49d45dea
+Gitweb:     http://git.kernel.org/tip/45bb1674b976ef81429c1e42de05844b49d45dea
+Author:     Daniel Drake <dsd@laptop.org>
+AuthorDate: Sun, 13 Mar 2011 15:10:17 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 15 Mar 2011 14:17:23 -0700
 
-Make vmbus driver a platform pci device and cleanup
-root device management and  irq allocation
-(patches 1/12 through 3/12):
-	1) Make vmbus driver a platform pci driver.
-	2) Cleanup root device management.
-	3) Leverage the pci model for allocating irq.
+x86, olpc: Use device tree for platform identification
 
-General cleanup of vmbus driver (patches 4/12 though  12/12):
-	1) Rename vmbus_driver_context structure and do
-	   related cleanup.
-	2) Get rid of forward declarations by moving code.
+Make OLPC fully depend on device tree, and use it to identify the OLPC
+platform details. Some nodes are exposed as platform devices where we
+plan to use device tree for device probing.
 
-Regards,
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+LKML-Reference: <20110313151017.C255F9D401E@zog.reactivated.net>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig                 |    2 +-
+ arch/x86/include/asm/olpc_ofw.h  |    9 ++----
+ arch/x86/platform/olpc/Makefile  |    4 +--
+ arch/x86/platform/olpc/olpc.c    |   51 ++++++++++++++++++++------------------
+ arch/x86/platform/olpc/olpc_dt.c |   19 ++++++++++++++
+ 5 files changed, 51 insertions(+), 34 deletions(-)
 
-K. Y
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b4c2e9c..471221b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2071,7 +2071,7 @@ config OLPC
+ 	depends on !X86_PAE
+ 	select GPIOLIB
+ 	select OF
+-	select OF_PROMTREE if PROC_DEVICETREE
++	select OF_PROMTREE
+ 	---help---
+ 	  Add support for detecting the unique features of the OLPC
+ 	  XO hardware.
+diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
+index c5d3a5a..2448771 100644
+--- a/arch/x86/include/asm/olpc_ofw.h
++++ b/arch/x86/include/asm/olpc_ofw.h
+@@ -26,15 +26,12 @@ extern void setup_olpc_ofw_pgd(void);
+ /* check if OFW was detected during boot */
+ extern bool olpc_ofw_present(void);
  
++extern void olpc_dt_build_devicetree(void);
++
+ #else /* !CONFIG_OLPC */
+ static inline void olpc_ofw_detect(void) { }
+ static inline void setup_olpc_ofw_pgd(void) { }
+-#endif /* !CONFIG_OLPC */
+-
+-#ifdef CONFIG_OF_PROMTREE
+-extern void olpc_dt_build_devicetree(void);
+-#else
+ static inline void olpc_dt_build_devicetree(void) { }
+-#endif
++#endif /* !CONFIG_OLPC */
+ 
+ #endif /* _ASM_X86_OLPC_OFW_H */
+diff --git a/arch/x86/platform/olpc/Makefile b/arch/x86/platform/olpc/Makefile
+index c2a8cab..81c5e21 100644
+--- a/arch/x86/platform/olpc/Makefile
++++ b/arch/x86/platform/olpc/Makefile
+@@ -1,4 +1,2 @@
+-obj-$(CONFIG_OLPC)		+= olpc.o
++obj-$(CONFIG_OLPC)		+= olpc.o olpc_ofw.o olpc_dt.o
+ obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o
+-obj-$(CONFIG_OLPC)		+= olpc_ofw.o
+-obj-$(CONFIG_OF_PROMTREE)	+= olpc_dt.o
+diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
+index edaf3fe..0060fd5 100644
+--- a/arch/x86/platform/olpc/olpc.c
++++ b/arch/x86/platform/olpc/olpc.c
+@@ -18,6 +18,7 @@
+ #include <linux/io.h>
+ #include <linux/string.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
+ 
+ #include <asm/geode.h>
+ #include <asm/setup.h>
+@@ -187,41 +188,43 @@ err:
+ }
+ EXPORT_SYMBOL_GPL(olpc_ec_cmd);
+ 
+-static bool __init check_ofw_architecture(void)
++static bool __init check_ofw_architecture(struct device_node *root)
+ {
+-	size_t propsize;
+-	char olpc_arch[5];
+-	const void *args[] = { NULL, "architecture", olpc_arch, (void *)5 };
+-	void *res[] = { &propsize };
++	const char *olpc_arch;
++	int propsize;
+ 
+-	if (olpc_ofw("getprop", args, res)) {
+-		printk(KERN_ERR "ofw: getprop call failed!\n");
+-		return false;
+-	}
++	olpc_arch = of_get_property(root, "architecture", &propsize);
+ 	return propsize == 5 && strncmp("OLPC", olpc_arch, 5) == 0;
+ }
+ 
+-static u32 __init get_board_revision(void)
++static u32 __init get_board_revision(struct device_node *root)
+ {
+-	size_t propsize;
+-	__be32 rev;
+-	const void *args[] = { NULL, "board-revision-int", &rev, (void *)4 };
+-	void *res[] = { &propsize };
+-
+-	if (olpc_ofw("getprop", args, res) || propsize != 4) {
+-		printk(KERN_ERR "ofw: getprop call failed!\n");
+-		return cpu_to_be32(0);
+-	}
+-	return be32_to_cpu(rev);
++	int propsize;
++	const __be32 *rev;
++
++	rev = of_get_property(root, "board-revision-int", &propsize);
++	if (propsize != 4)
++		return 0;
++
++	return be32_to_cpu(*rev);
+ }
+ 
+ static bool __init platform_detect(void)
+ {
+-	if (!check_ofw_architecture())
++	struct device_node *root = of_find_node_by_path("/");
++	bool success;
++
++	if (!root)
+ 		return false;
+-	olpc_platform_info.flags |= OLPC_F_PRESENT;
+-	olpc_platform_info.boardrev = get_board_revision();
+-	return true;
++
++	success = check_ofw_architecture(root);
++	if (success) {
++		olpc_platform_info.boardrev = get_board_revision(root);
++		olpc_platform_info.flags |= OLPC_F_PRESENT;
++	}
++
++	of_node_put(root);
++	return success;
+ }
+ 
+ static int __init add_xo1_platform_devices(void)
+diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
+index dab8746..4ce208f 100644
+--- a/arch/x86/platform/olpc/olpc_dt.c
++++ b/arch/x86/platform/olpc/olpc_dt.c
+@@ -19,7 +19,9 @@
+ #include <linux/kernel.h>
+ #include <linux/bootmem.h>
+ #include <linux/of.h>
++#include <linux/of_platform.h>
+ #include <linux/of_pdt.h>
++#include <asm/olpc.h>
+ #include <asm/olpc_ofw.h>
+ 
+ static phandle __init olpc_dt_getsibling(phandle node)
+@@ -181,3 +183,20 @@ void __init olpc_dt_build_devicetree(void)
+ 	pr_info("PROM DT: Built device tree with %u bytes of memory.\n",
+ 			prom_early_allocated);
+ }
++
++/* A list of DT node/bus matches that we want to expose as platform devices */
++static struct of_device_id __initdata of_ids[] = {
++	{ .compatible = "olpc,xo1-battery" },
++	{ .compatible = "olpc,xo1-dcon" },
++	{ .compatible = "olpc,xo1-rtc" },
++	{},
++};
++
++static int __init olpc_create_platform_devices(void)
++{
++	if (machine_is_olpc())
++		return of_platform_bus_probe(NULL, of_ids, NULL);
++	else
++		return 0;
++}
++device_initcall(olpc_create_platform_devices);
