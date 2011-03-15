@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab1COF0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 01:26:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41120 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab1COF0H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 01:26:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wOFcVim0j59pn1G0hAo8ZakMDq72NYBAWsjIWN9AFlJAY8/il53Ub4Pq3bOuHfM6IC
-         Z6+kgG+mulOQluTjBx7zgHulckHEDd50HaQsf4YOhvaVnnKGzQorCFrlqbzsjP/RtlNw
-         1UMwB+AHZVOaS+wtCW6y6Col5u0UeTYhiovxg=
+	id S1753242Ab1COF1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 01:27:33 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:58715 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751841Ab1COF1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 01:27:30 -0400
+Date: Tue, 15 Mar 2011 10:51:33 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, int-list-linux-mm@kvack.org,
+        linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
+Message-ID: <20110315052133.GT24254@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+ <20110314163028.a05cec49.akpm@linux-foundation.org>
+ <y0maagxuqx6.fsf@fche.csb>
+ <alpine.LFD.2.00.1103150224260.2787@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinX=KODGLx5X+k-XD6FHQQU8VJhq+nX1_MTMCzs@mail.gmail.com>
-References: <20110311092811.GA2079@polaris.bitmath.org>
-	<1299879287-30889-1-git-send-email-mmarek@suse.cz>
-	<20110311230601.GA1559@polaris.bitmath.org>
-	<AANLkTinX=KODGLx5X+k-XD6FHQQU8VJhq+nX1_MTMCzs@mail.gmail.com>
-Date: Tue, 15 Mar 2011 08:26:05 +0300
-Message-ID: <AANLkTik2WLrt4D5cKMmnbRMCB63TJrjvRdtkSJ=6mLf+@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: Fix computing srcversion for modules
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103150224260.2787@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 March 2011 08:04, Alexander Beregalov <a.beregalov@gmail.com> wrote:
-> On 12 March 2011 02:06, Henrik Rydberg <rydberg@euromail.se> wrote:
->> On Fri, Mar 11, 2011 at 10:34:47PM +0100, Michal Marek wrote:
->>> Recent change to fixdep:
->>>
->>>     commit b7bd182176960fdd139486cadb9962b39f8a2b50
->>>     Author: Michal Marek <mmarek@suse.cz>
->>>     Date:   Thu Feb 17 15:13:54 2011 +0100
->>>
->>>     fixdep: Do not record dependency on the source file itself
->>>
->>> changed the format of the *.cmd files without realizing that it is also
->>> used by modpost. Put the path to the source file to the file back, in a
->>> special variable, so that modpost sees all source files when calculating
->>> srcversion for modules.
->>>
->
-> Hi Michal,
->
-> There is something wrong with the patch,
-> I can't compile 2.6.38 neither linux-next on sparc64:
->
-> $ make CROSS_COMPILE=sparc64-unknown-linux-gnu-
->  CHK     include/linux/version.h
->  CHK     include/generated/utsrelease.h
->  UPD     include/generated/utsrelease.h
->  CC      kernel/bounds.s
->  GEN     include/generated/bounds.h
->  CC      arch/sparc/kernel/asm-offsets.s
->  GEN     include/generated/asm-offsets.h
->  CALL    scripts/checksyscalls.sh
->  CC      scripts/mod/empty.o
->  MKELF   scripts/mod/elfconfig.h
->  HOSTCC  scripts/mod/file2alias.o
->  HOSTCC  scripts/mod/modpost.o
->  HOSTCC  scripts/mod/sumversion.o
->  HOSTLD  scripts/mod/modpost
-> /usr/lib/gcc/sparc-unknown-linux-gnu/4.5.2/../../../../sparc-unknown-linux-gnu/bin/ld:
-> scripts/mod/sumversion.o: Relocations in generic ELF (EM: 3)
-> scripts/mod/sumversion.o: could not read symbols: File in wrong format
-> collect2: ld returned 1 exit status
->
-> $ file scripts/mod/sumversion.o
-> scripts/mod/sumversion.o: ELF 32-bit LSB relocatable, Intel 80386,
-> version 1 (SYSV), not stripped
->
-> Why 386?
->
-> gcc both sparc and sparc64 are 4.5.2, ld/binutils is 2.21
->
+Hi Thomas,
 
-Sorry for the noise, it's my fault.
+> > 
+> > > [...]  How do you envisage these features actually get used?
+> > 
+> > Patch #20/20 in the set includes an ftrace-flavoured debugfs frontend.
+> 
+> And you really think that:
+> 
+> # cd /sys/kernel/debug/tracing/
+> 
+> # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
+> 00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
+> 
+> # objdump -T /bin/zsh | grep -w zfree
+> 0000000000446420 g    DF .text  0000000000000012  Base        zfree
+> 
+> # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
+> 
+> # cat uprobe_events
+> p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
+> 
+> > TODO: Documentation/trace/uprobetrace.txt
+> 
+> without a reasonable documentation how to use that is a brilliant
+> argument?
 
-I use distcc for distributing sparc64-unknown-linux-gnu-gcc calls to x86 host.
-I should not distribute plain 'gcc' calls.
+We had a fairly decent documentation for uprobes and
+uprobetracer. But that had to be changed with  the change in
+underlying design of uprobes infrastructure. Since uprobetrace is one
+the user interface, I plan to document it soon. However it would be
+great if we had inputs on how we should be designing the syscall.
+
+> 
+> > Previous versions of the patchset included perf front-ends too, which
+> > are probably to be seen again.
+> 
+> Ahh, probably. What does that mean?
+> 
+>      And if that probably happens, what interface is that supposed to
+>      use?
+> 
+> 	The above magic wrapped into perf ?
+
+For the initial perf probe thing, yes it would be a wrapper over
+uprobe_tracer.  That is because we can reuse most of the current perf
+probe and we could prototype and show users what all can be
+achieved. However we plan to make perf probe depend on the syscall when
+the syscall takes shape.  
+
+> 
+> 	Or some sensible implementation ?
+
+Would syscall based perf probe implementation count as a sensible
+implementation? My current plan was to code up the perf probe for
+uprobes and then draft a proposal for how the syscall should look. 
+There are still some areas on how we should be allowing the
+filter, and what restrictions we should place on the syscall
+defined handler. I would like to hear from you and others on your
+ideas for the same. If you have ideas on doing it other than using a
+syscall then please do let me know about the same.
+
+I know that getting the user interface right is very important.
+However I think it kind of depends on what the infrastructure can
+provide too. So if we can decide on the kernel ABI and the
+underlying design (i.e can we use replace_page() based background page
+replacement, Are there issues with the Xol slot based mechanism that
+we are using, etc), we can work towards providing a stable User ABI that
+even normal users can use. For now I am concentrating on getting the
+underlying infrastructure correct.
+
+
+Please let me know your thoughts.
+
+-- 
+Thanks and Regards
+Srikar
