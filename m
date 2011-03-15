@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab1COQwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 12:52:31 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39857 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932333Ab1COQw3 (ORCPT
+	id S932449Ab1COQys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:54:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18011 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932357Ab1COQyq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 12:52:29 -0400
-Date: Tue, 15 Mar 2011 22:22:19 +0530
-From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>
-Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
- overridden
-Message-ID: <20110315165219.GA22509@in.ibm.com>
-Reply-To: mahesh@linux.vnet.ibm.com
-References: <20100825002258.GD28360@kryten>
- <m139u37cii.fsf@fess.ebiederm.org>
- <4D771EE6.5050404@linux.vnet.ibm.com>
- <20110309122046.GC16951@cr0.redhat.com>
- <20110309234657.264d3080@kryten>
- <20110309142108.GD16951@cr0.redhat.com>
- <20110314181315.GA16075@in.ibm.com>
- <AANLkTi=aDzCaa7_=5XTrnJCzmZPrDy3omXwDarEF8XmH@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=aDzCaa7_=5XTrnJCzmZPrDy3omXwDarEF8XmH@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 15 Mar 2011 12:54:46 -0400
+Subject: Re: [PATCH] SUNRPC: svc_register error overwritten in next iteration
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20110315161301.GA32635@fieldses.org>
+Date: Tue, 15 Mar 2011 12:54:01 -0400
+Cc: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C9DC5C29-0641-4B34-A6CD-1BD148ACB26D@oracle.com>
+References: <4D7B74C7.7060506@gmail.com> <20110314223645.GL25442@fieldses.org> <13D041DB-A26D-4EC1-A585-7DBA266CF18A@oracle.com> <20110315161301.GA32635@fieldses.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+X-Mailer: Apple Mail (2.1082)
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D7F99AD.0278,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 03:52:38PM +0800, Américo Wang wrote:
-> On Tue, Mar 15, 2011 at 2:13 AM, Mahesh J Salgaonkar
-> <mahesh@linux.vnet.ibm.com> wrote:
-> >
-> > During free we do free all of them including RMO region. But since the rtas
-> > region is always on top of RMO, crashkernel memory overlaps rtas region and
-> > we endup freeing that even, which is causing the crash.
-> >
-> 
-> Okay, but with this patch applied, we will just ignore rtas region, right?
-Correct.
-> Thus, when I echo 0 to free all the 128M crashkernel memory, the final
-> result will be 32M left, which means crash_size will still show 32M.
-> This looks odd.
-> 
-> How about skipping the 32M as a whole? I mean once the region being freed
-> has overlap with this rtas region, skip the whole rtas region, and let
-> crash_size
-> show 0?
-The existing code from crash_shrink_memory() function reduces the crash
-size to 0 when echo'ed 0. I did test this patchset and verified that
-/sys/kernel/kexec_crash_size show 0 value.
 
-Thanks,
--Mahesh.
+On Mar 15, 2011, at 12:13 PM, J. Bruce Fields wrote:
+
+> On Tue, Mar 15, 2011 at 11:43:32AM -0400, Chuck Lever wrote:
+>> 
+>> On Mar 14, 2011, at 6:36 PM, J. Bruce Fields wrote:
+>> 
+>>> On Sat, Mar 12, 2011 at 02:27:35PM +0100, roel wrote:
+>>>> The break is in the inner loop, the svc_register() error is overwritten
+>>>> in the next iteration. Only the error in the last iteration is returned.
+>>>> 
+>>>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+>>>> ---
+>>>> net/sunrpc/svc.c |    2 ++
+>>>> 1 files changed, 2 insertions(+), 0 deletions(-)
+>>>> 
+>>>> Is this needed?
+>>>> 
+>>>> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+>>>> index 08e05a8..5fd08c0 100644
+>>>> --- a/net/sunrpc/svc.c
+>>>> +++ b/net/sunrpc/svc.c
+>>>> @@ -889,6 +889,8 @@ int svc_register(const struct svc_serv *serv, const int family,
+>>>> 			if (error < 0)
+>>>> 				break;
+>>> 
+>>> May as well just "goto out" or "return error" here?
+>>> 
+>>> But: aren't we missing some cleanup?  If we succesfully register one
+>>> program then fail at a second one, don't we need to unregister the
+>>> first?
+>> 
+>> Right.  I don't understand what is the intended effect here (of the original code):  Best effort registration, or "all or none"?
 > 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+> The current code was failing iff the last registration returns an error.
+> We list the nfs program before the acl program in this list, so nfsd
+> registration was failing iff the acl program failed, which makes no
+> sense whatsoever.
+> 
+> I think "all or none" would be cleanest.
+> 
+> If people start complaining that they don't want to run rpcbind/portmap
+> then we could give them some way of requesting that instead of just
+> depending on allowing the registration to fail.
+
+I thought vs_hidden was set for NFSACL... but maybe I was wrong about that.
+
+> For cleanup, we can just unregister everything, right?  (No harm in
+> possibly unregistering something who's registration just failed?)
+
+Yes.  As a simple hard-headed approach, probably you should walk the passed-in sv_program list again and unregister each item in the list.  The downside to this is if the upcall is taking a long time (for instance, if networking is not available).  It would double the amount of time for svc_register() to return a failure.
+
+However, be prepared: I bet such a change could expose bugs in the NFSD start up stack.  :-(  Maybe it deserves some soak-time in linux-next.
 
 -- 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
+
