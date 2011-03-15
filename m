@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757963Ab1COObu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:31:50 -0400
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:9514
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757946Ab1COObr (ORCPT
+	id S1757957Ab1COOd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:33:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60777 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757849Ab1COOd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:31:47 -0400
-X-SpamScore: -2
-X-BigFish: VPS-2(zz4015Lzz1202hzz8275eh8275bh8275dha1495iz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LI3SCP-02-BW9-02
-X-M-MSG: 
-Date: Tue, 15 Mar 2011 15:31:37 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-CC: <linux-kernel@vger.kernel.org>, Wang Lei <f3d27b@gmail.com>
-Subject: [PATCH] x86, quirk: Fix SB600 revision check
-Message-ID: <20110315143137.GD29499@alberich.amd.com>
+	Tue, 15 Mar 2011 10:33:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <AANLkTinU7g4qLVwLwFXyt_j6tmGq-5MC9a-wy_cGvC9Y@mail.gmail.com>
+References: <1297827283-22860-1-git-send-email-bibek.basu@stericsson.com>
+ <1297827283-22860-2-git-send-email-bibek.basu@stericsson.com>
+ <AANLkTi=Yv1fHVTC-BVBJ3WRPGOmOC3fCJ13G-dCegLYo@mail.gmail.com>
+ <AANLkTi=qN=i3VW=VXPQ1PAFTXFgo3O_jqykTkc7A7JLF@mail.gmail.com>
+ <AANLkTi=o8CbHjJHZETokQP8bz5SyLnyLLadM4UMyZc=6@mail.gmail.com> <AANLkTinU7g4qLVwLwFXyt_j6tmGq-5MC9a-wy_cGvC9Y@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 15 Mar 2011 08:33:06 -0600
+X-Google-Sender-Auth: VwOBXyk6kJ7Iy8ijP7MBcmVQfu8
+Message-ID: <AANLkTikwjRgCB8nnkTeZq+AbjQ+ugQz_WMshEFMSFo=_@mail.gmail.com>
+Subject: Re: [PATCH] AB8500 GPIO : Driver for 42 AB8500 GPIO pins
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Bibek BASU <bibek.basu@stericsson.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+On Tue, Mar 15, 2011 at 3:10 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Mar 14, 2011 at 5:46 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Mon, Mar 14, 2011 at 10:37 AM, Linus Walleij
+>> <linus.walleij@linaro.org> wrote:
+>>> On Mon, Mar 7, 2011 at 3:32 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>
+>>>> Grant can you have a look at this GPIO driver from a while back?
+>>>>
+>>>> Bibek can probably repost it if you don't have it in your archive...
+>>>>
+>>>> It'd be great if you could take this through the GPIO tree if/when
+>>>> it's OK with you.
+>>>
+>>> Ping on this, the ux500-core tree is now sent to Russell for merging
+>>> into 2.6.39 so if possible I'd like to have this merged into the
+>>> GPIO tree (unless there are still review comments...) note
+>>> Samuel's ACK if you pick it.
+>>
+>> I'm fine with it, but it looks like it needs to go via Russell's tree
+>> if it depends on the rest of the ux500-core patches.
+>>
+>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>
+> I won't get any more platform data in to Russells tree for this merge
+> Window, so it'd be great if you could take this patch (the bulk of the driver)
+> into the GPIO tree.
+>
+> I will submit platform data for the next merge Window, or maybe to
+> Torvalds once he has Russell and yours merged. if I feel ambitious...
 
-Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
-(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems)
-introduced a regression. It removed some SB600 specific code
-to determine the revision ID without adapting a corresponding
-revision ID check for SB600.
+Ping me *after* Russell's tree gets merged and I'll pick it up.  I
+don't want to mess about with apply-order breakage.
 
-See this mail thread
-http://marc.info/?l=linux-kernel&m=129980296006380&w=2
-
-This patch adapts the corresponding check to cover all SB600
-revisions.
-
-Cc: stable@kernel.org # 38.x, 37.x, 32.x
-Tested-by: Wang Lei <f3d27b@gmail.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/early-quirks.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-
-Mea culpa!
-A fix for a BIOS issue on some Lenovo systems introduced a regression
-on another set of boxes (older HP Laptops) that have other BIOS
-trouble.
-
-Sorry for introducing this regression in .38.
-
-Patch is on top of 2.6.38. Please apply.
-
-
-Thanks,
-
-Andreas
-
-
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 9efbdcc..3755ef4 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -159,7 +159,12 @@ static void __init ati_bugs_contd(int num, int slot, int func)
- 	if (rev >= 0x40)
- 		acpi_fix_pin2_polarity = 1;
- 
--	if (rev > 0x13)
-+	/*
-+	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
-+	 * SB700: revisions 0x39, 0x3a, ...
-+	 * SB800: revisions 0x40, 0x41, ...
-+	 */
-+	if (rev >= 0x39)
- 		return;
- 
- 	if (acpi_use_timer_override)
--- 
-1.7.4.1
-
-
+g.
