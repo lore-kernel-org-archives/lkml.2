@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab1COJIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 05:08:19 -0400
-Received: from uranus.manitu.net ([217.11.48.8]:36187 "EHLO uranus.manitu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab1COJIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 05:08:10 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Mar 2011 05:08:10 EDT
-To: David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] can: wrong index used in inner loop
+	id S1752577Ab1COJKW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 05:10:22 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35642 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab1COJKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 05:10:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Tue, 15 Mar 2011 10:02:25 +0100
-From: wg <wg@grandegger.com>
-Cc: <roel.kluin@gmail.com>, <socketcan-core@lists.berlios.de>,
-        <netdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110314.144743.232749141.davem@davemloft.net>
-References: <4D768917.9040605@gmail.com>
- <20110314.144743.232749141.davem@davemloft.net>
-Message-ID: <edb90b03bb533480b6a5cea0e0c0822d@grandegger.com>
-User-Agent: RoundCube Webmail/0.2-beta
+In-Reply-To: <AANLkTi=o8CbHjJHZETokQP8bz5SyLnyLLadM4UMyZc=6@mail.gmail.com>
+References: <1297827283-22860-1-git-send-email-bibek.basu@stericsson.com>
+	<1297827283-22860-2-git-send-email-bibek.basu@stericsson.com>
+	<AANLkTi=Yv1fHVTC-BVBJ3WRPGOmOC3fCJ13G-dCegLYo@mail.gmail.com>
+	<AANLkTi=qN=i3VW=VXPQ1PAFTXFgo3O_jqykTkc7A7JLF@mail.gmail.com>
+	<AANLkTi=o8CbHjJHZETokQP8bz5SyLnyLLadM4UMyZc=6@mail.gmail.com>
+Date: Tue, 15 Mar 2011 10:10:18 +0100
+Message-ID: <AANLkTinU7g4qLVwLwFXyt_j6tmGq-5MC9a-wy_cGvC9Y@mail.gmail.com>
+Subject: Re: [PATCH] AB8500 GPIO : Driver for 42 AB8500 GPIO pins
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Bibek BASU <bibek.basu@stericsson.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 14:47:43 -0700 (PDT), David Miller
-<davem@davemloft.net> wrote:
-> From: roel <roel.kluin@gmail.com>
-> Date: Tue, 08 Mar 2011 20:52:55 +0100
-> 
->> Index i was already used in the outer loop.
->> 
->> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> 
-> CAN maintainers, could you please review and ACK patches in a timely
-> manner,
-> especially utterly trivial bug fixes like this one here?
-> 
-> That's largely what I've been waiting for, a simple sign of life from
-the
-> listed maintainers for these files.
+On Mon, Mar 14, 2011 at 5:46 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon, Mar 14, 2011 at 10:37 AM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+>> On Mon, Mar 7, 2011 at 3:32 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>
+>>> Grant can you have a look at this GPIO driver from a while back?
+>>>
+>>> Bibek can probably repost it if you don't have it in your archive...
+>>>
+>>> It'd be great if you could take this through the GPIO tree if/when
+>>> it's OK with you.
+>>
+>> Ping on this, the ux500-core tree is now sent to Russell for merging
+>> into 2.6.39 so if possible I'd like to have this merged into the
+>> GPIO tree (unless there are still review comments...) note
+>> Samuel's ACK if you pick it.
+>
+> I'm fine with it, but it looks like it needs to go via Russell's tree
+> if it depends on the rest of the ux500-core patches.
+>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-OK, will try to react fast next time.
+I won't get any more platform data in to Russells tree for this merge
+Window, so it'd be great if you could take this patch (the bulk of the driver)
+into the GPIO tree.
 
-> Anyways, no use waiting any longer, applied, thanks Roel.
+I will submit platform data for the next merge Window, or maybe to
+Torvalds once he has Russell and yours merged. if I feel ambitious...
 
 Thanks,
-
-Wolfgang.
-
+Linus Walleij
