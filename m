@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab1COPlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 11:41:16 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:35043 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758036Ab1COPlO (ORCPT
+	id S932161Ab1COPll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 11:41:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16776 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755984Ab1COPlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 11:41:14 -0400
-Date: Tue, 15 Mar 2011 16:40:24 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
-        "pasik@iki.fi" <pasik@iki.fi>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Bootup fix for _brk_end being != _end
-Message-ID: <20110315154024.GA14100@router-fw-old.local.net-space.pl>
-References: <20110308214429.GA27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091359290.2968@kaball-desktop> <20110315142957.GB12730@router-fw-old.local.net-space.pl> <20110315144821.GA11586@dumpdata.com> <20110315153001.GD12730@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103151530290.3382@kaball-desktop>
+	Tue, 15 Mar 2011 11:41:40 -0400
+Date: Tue, 15 Mar 2011 08:41:17 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Zeng Zhaoming <zengzm.kernel@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Zeng Zhaoming <zhaoming.zeng@freescale.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH -next] soc: sgtl5000 uses regulator interfaces
+Message-Id: <20110315084117.1e3a3a61.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTikivW3+V4QYh9Nt9FGXTefZiN9WbpAvGVeBJHNN@mail.gmail.com>
+References: <20110304180027.20deb6c4.sfr@canb.auug.org.au>
+	<20110304173357.23d36116.randy.dunlap@oracle.com>
+	<20110305112936.GA30187@opensource.wolfsonmicro.com>
+	<AANLkTikivW3+V4QYh9Nt9FGXTefZiN9WbpAvGVeBJHNN@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103151530290.3382@kaball-desktop>
-User-Agent: Mutt/1.3.28i
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D7F88A5.004F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 03:31:47PM +0000, Stefano Stabellini wrote:
-> On Tue, 15 Mar 2011, Daniel Kiper wrote:
-> > On Tue, Mar 15, 2011 at 10:48:21AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > > > Additionally, I suggest to apply patch prepared by Steffano Stabellini
-> > > > > > (https://lkml.org/lkml/2011/1/31/232) which fixes memory management
-> > > > > > issue in Xen guest. I was not able boot guest machine without
-> > > > > > above mentioned patch.
-> > > > >
-> > > > > after some discussions we came up with a different approach to fix the
-> > > > > issue; I sent a couple of patches a little while ago:
-> > > > >
-> > > > > https://lkml.org/lkml/2011/2/28/410
-> > > >
-> > > > I tested git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-tip-fixes
-> > > > and it works on x86_64, however, it does not work on i386. Tested as
-> > > > unprivileged guest on Xen Ver. 4.1.0-rc2-pre. On i386 domain crashes
-> > > > silently at early boot stage :-(((.
-> > >
-> > > Details? Can you provide the 'xenctx' output of where it crashed?
+On Sat, 5 Mar 2011 20:41:38 +0800 Zeng Zhaoming wrote:
+
+> On Sat, Mar 5, 2011 at 7:29 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+> > On Fri, Mar 04, 2011 at 05:33:57PM -0800, Randy Dunlap wrote:
+> >> From: Randy Dunlap <randy.dunlap@oracle.com>
+> >>
+> >> sgtl5000 uses regulator interfaces, so make selecting it depend
+> >> on REGULATOR.
+> >>
+> >> sgtl5000.c:(.text+0x4ae33): undefined reference to `regulator_unregister'
+> >> sgtl5000.c:(.text+0x4af41): undefined reference to `rdev_get_drvdata'
+> >> sgtl5000.c:(.text+0x4b191): undefined reference to `regulator_register'
 > >
-> > As I wrote above domain is dying and I am not able to connect to it using
-> > xenctx after crash :-(((. I do not know how to do that in another way.
->
-> try adding:
->
-> extra = "loglevel=9 debug earlyprintk=xenboot"
+> 
+> hi， Thanks for the report.
+> 
+> > Since the regulator on the device is optional this isn't the best fix,
+> > the code should be updated to support building without regulator.
+> 
+> I will fix the code. If regulator not enabled, and the optional
+> regulator not provided externally,
+> a warning message will print out, and internal regulator will set
+> directly by write register.
+> > --
 
-(XEN) d55:v0: unhandled page fault (ec=0002)
-(XEN) Pagetable walk from 000000000000000c:
-(XEN)  L4[0x000] = 000000010bebc027 0000000000024d28
-(XEN)  L3[0x000] = 0000000000000000 ffffffffffffffff
-(XEN) domain_crash_sync called from entry.S
-(XEN) Domain 55 (vcpu#0) crashed on cpu#3:
-(XEN) ----[ Xen-4.1.0-rc2-pre  x86_64  debug=y  Not tainted ]----
-(XEN) CPU:    3
-(XEN) RIP:    e019:[<00000000c1001180>]
-(XEN) RFLAGS: 0000000000000282   EM: 1   CONTEXT: pv guest
-(XEN) rax: 000000000000000c   rbx: 000000000000000c   rcx: 00000000c1371fd0
-(XEN) rdx: 00000000c1371fd0   rsi: 00000000c1742000   rdi: 00000000a5c03d70
-(XEN) rbp: 00000000c1371fc8   rsp: 00000000c1371fa8   r8: 0000000000000000
-(XEN) r9:  0000000000000000   r10: 0000000000000000   r11: 0000000000000000
-(XEN) r12: 0000000000000000   r13: 0000000000000000   r14: 0000000000000000
-(XEN) r15: 0000000000000000   cr0: 000000008005003b   cr4: 00000000000026f4
-(XEN) cr3: 0000000129b6e000   cr2: 000000000000000c
-(XEN) ds: e021   es: e021   fs: e021   gs: e021   ss: e021   cs: e019
-(XEN) Guest stack trace from esp=c1371fa8:
-(XEN)   00000002 c1001180 0001e019 00010082 c10037af deadbeef c1742000 a5c03d70
-(XEN)   c1371fdc c13a4aa8 00000000 00000000 00000000 c1371ffc c13a3ff2 00000000
-(XEN)   00000000 00000000 00000000 00000000 deadbeef c1753000 013fe001 00000000
-(XEN)   00000000 00000000 00000000 00000000 013fe001 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-(XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+ping.  This build error still happens in linux-next 2011.0315.
 
-Daniel
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
