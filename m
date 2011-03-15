@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877Ab1COVy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:54:28 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:53210
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1758893Ab1COVyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:54:31 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:51050
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758129Ab1COVxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:53:49 -0400
+	id S1758794Ab1COVxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:53:48 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -15,22 +15,30 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Mike Sterling <mike.sterling@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 04/12] Staging: hv: Rename vmbus_driver_context structure
-Date: Tue, 15 Mar 2011 15:03:35 -0700
-Message-Id: <1300226624-27004-4-git-send-email-kys@microsoft.com>
+Subject: [PATCH 12/12] Staging: hv: Get rid of the forward declaration for vmbus_show_device_attr
+Date: Tue, 15 Mar 2011 15:03:44 -0700
+Message-Id: <1300226624-27004-13-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <1300226624-27004-3-git-send-email-kys@microsoft.com>
+In-Reply-To: <1300226624-27004-12-git-send-email-kys@microsoft.com>
 References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
  <1300226624-27004-1-git-send-email-kys@microsoft.com>
  <1300226624-27004-2-git-send-email-kys@microsoft.com>
  <1300226624-27004-3-git-send-email-kys@microsoft.com>
+ <1300226624-27004-4-git-send-email-kys@microsoft.com>
+ <1300226624-27004-5-git-send-email-kys@microsoft.com>
+ <1300226624-27004-6-git-send-email-kys@microsoft.com>
+ <1300226624-27004-7-git-send-email-kys@microsoft.com>
+ <1300226624-27004-8-git-send-email-kys@microsoft.com>
+ <1300226624-27004-9-git-send-email-kys@microsoft.com>
+ <1300226624-27004-10-git-send-email-kys@microsoft.com>
+ <1300226624-27004-11-git-send-email-kys@microsoft.com>
+ <1300226624-27004-12-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that struct vmbus_driver_context is properly
-cleaned up, rename this structure appropriately and
-cleanup the code.
+Get rid of the forward declaration of vmbus_show_device_attr by moving
+the code around.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
@@ -38,133 +46,336 @@ Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/vmbus_drv.c |   32 +++++++++++++++-----------------
- 1 files changed, 15 insertions(+), 17 deletions(-)
+ drivers/staging/hv/vmbus_drv.c |  302 +++++++++++++++++++--------------------
+ 1 files changed, 147 insertions(+), 155 deletions(-)
 
 diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 239b91c..f292b03 100644
+index 194926c..3263fc8 100644
 --- a/drivers/staging/hv/vmbus_drv.c
 +++ b/drivers/staging/hv/vmbus_drv.c
-@@ -41,7 +41,7 @@
- struct pci_dev *hv_pci_dev;
- 
- /* Main vmbus driver data structure */
--struct vmbus_driver_context {
-+struct hv_bus {
- 	struct bus_type bus;
- 	struct tasklet_struct msg_dpc;
+@@ -47,18 +47,160 @@ struct hv_bus {
  	struct tasklet_struct event_dpc;
-@@ -99,7 +99,7 @@ static struct device_attribute vmbus_device_attrs[] = {
  };
  
- /* The one and only one */
--static struct vmbus_driver_context vmbus_drv = {
-+static struct hv_bus  hv_bus = {
- 	.bus.name =		"vmbus",
- 	.bus.match =		vmbus_match,
- 	.bus.shutdown =		vmbus_shutdown,
-@@ -368,7 +368,6 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
-  */
- static int vmbus_bus_init(struct pci_dev *pdev)
- {
--	struct vmbus_driver_context *vmbus_drv_ctx = &vmbus_drv;
- 	int ret;
- 	unsigned int vector;
++unsigned int vmbus_loglevel = (ALL_MODULES << 16 | INFO_LVL);
++EXPORT_SYMBOL(vmbus_loglevel);
++	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
++	/* (((VMBUS | VMBUS_DRV)<<16) | DEBUG_LVL_ENTEREXIT); */
++
++
++static void get_channel_info(struct hv_device *device,
++			     struct hv_device_info *info)
++{
++	struct vmbus_channel_debug_info debug_info;
++
++	if (!device->channel)
++		return;
++
++	vmbus_get_debug_info(device->channel, &debug_info);
++
++	info->chn_id = debug_info.relid;
++	info->chn_state = debug_info.state;
++	memcpy(&info->chn_type, &debug_info.interfacetype,
++	       sizeof(struct hv_guid));
++	memcpy(&info->chn_instance, &debug_info.interface_instance,
++	       sizeof(struct hv_guid));
++
++	info->monitor_id = debug_info.monitorid;
++
++	info->server_monitor_pending = debug_info.servermonitor_pending;
++	info->server_monitor_latency = debug_info.servermonitor_latency;
++	info->server_monitor_conn_id = debug_info.servermonitor_connectionid;
++
++	info->client_monitor_pending = debug_info.clientmonitor_pending;
++	info->client_monitor_latency = debug_info.clientmonitor_latency;
++	info->client_monitor_conn_id = debug_info.clientmonitor_connectionid;
++
++	info->inbound.int_mask = debug_info.inbound.current_interrupt_mask;
++	info->inbound.read_idx = debug_info.inbound.current_read_index;
++	info->inbound.write_idx = debug_info.inbound.current_write_index;
++	info->inbound.bytes_avail_toread =
++		debug_info.inbound.bytes_avail_toread;
++	info->inbound.bytes_avail_towrite =
++		debug_info.inbound.bytes_avail_towrite;
  
-@@ -393,16 +392,16 @@ static int vmbus_bus_init(struct pci_dev *pdev)
++	info->outbound.int_mask =
++		debug_info.outbound.current_interrupt_mask;
++	info->outbound.read_idx = debug_info.outbound.current_read_index;
++	info->outbound.write_idx = debug_info.outbound.current_write_index;
++	info->outbound.bytes_avail_toread =
++		debug_info.outbound.bytes_avail_toread;
++	info->outbound.bytes_avail_towrite =
++		debug_info.outbound.bytes_avail_towrite;
++}
+ 
++/*
++ * vmbus_show_device_attr - Show the device attribute in sysfs.
++ *
++ * This is invoked when user does a
++ * "cat /sys/bus/vmbus/devices/<busdevice>/<attr name>"
++ */
+ static ssize_t vmbus_show_device_attr(struct device *dev,
+ 				      struct device_attribute *dev_attr,
+-				      char *buf);
++				      char *buf)
++{
++	struct hv_device *device_ctx = device_to_hv_device(dev);
++	struct hv_device_info device_info;
+ 
++	memset(&device_info, 0, sizeof(struct hv_device_info));
+ 
+-unsigned int vmbus_loglevel = (ALL_MODULES << 16 | INFO_LVL);
+-EXPORT_SYMBOL(vmbus_loglevel);
+-	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
+-	/* (((VMBUS | VMBUS_DRV)<<16) | DEBUG_LVL_ENTEREXIT); */
++	get_channel_info(device_ctx, &device_info);
+ 
++	if (!strcmp(dev_attr->attr.name, "class_id")) {
++		return sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
++			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
++			       device_info.chn_type.data[3],
++			       device_info.chn_type.data[2],
++			       device_info.chn_type.data[1],
++			       device_info.chn_type.data[0],
++			       device_info.chn_type.data[5],
++			       device_info.chn_type.data[4],
++			       device_info.chn_type.data[7],
++			       device_info.chn_type.data[6],
++			       device_info.chn_type.data[8],
++			       device_info.chn_type.data[9],
++			       device_info.chn_type.data[10],
++			       device_info.chn_type.data[11],
++			       device_info.chn_type.data[12],
++			       device_info.chn_type.data[13],
++			       device_info.chn_type.data[14],
++			       device_info.chn_type.data[15]);
++	} else if (!strcmp(dev_attr->attr.name, "device_id")) {
++		return sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
++			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
++			       device_info.chn_instance.data[3],
++			       device_info.chn_instance.data[2],
++			       device_info.chn_instance.data[1],
++			       device_info.chn_instance.data[0],
++			       device_info.chn_instance.data[5],
++			       device_info.chn_instance.data[4],
++			       device_info.chn_instance.data[7],
++			       device_info.chn_instance.data[6],
++			       device_info.chn_instance.data[8],
++			       device_info.chn_instance.data[9],
++			       device_info.chn_instance.data[10],
++			       device_info.chn_instance.data[11],
++			       device_info.chn_instance.data[12],
++			       device_info.chn_instance.data[13],
++			       device_info.chn_instance.data[14],
++			       device_info.chn_instance.data[15]);
++	} else if (!strcmp(dev_attr->attr.name, "state")) {
++		return sprintf(buf, "%d\n", device_info.chn_state);
++	} else if (!strcmp(dev_attr->attr.name, "id")) {
++		return sprintf(buf, "%d\n", device_info.chn_id);
++	} else if (!strcmp(dev_attr->attr.name, "out_intr_mask")) {
++		return sprintf(buf, "%d\n", device_info.outbound.int_mask);
++	} else if (!strcmp(dev_attr->attr.name, "out_read_index")) {
++		return sprintf(buf, "%d\n", device_info.outbound.read_idx);
++	} else if (!strcmp(dev_attr->attr.name, "out_write_index")) {
++		return sprintf(buf, "%d\n", device_info.outbound.write_idx);
++	} else if (!strcmp(dev_attr->attr.name, "out_read_bytes_avail")) {
++		return sprintf(buf, "%d\n",
++			       device_info.outbound.bytes_avail_toread);
++	} else if (!strcmp(dev_attr->attr.name, "out_write_bytes_avail")) {
++		return sprintf(buf, "%d\n",
++			       device_info.outbound.bytes_avail_towrite);
++	} else if (!strcmp(dev_attr->attr.name, "in_intr_mask")) {
++		return sprintf(buf, "%d\n", device_info.inbound.int_mask);
++	} else if (!strcmp(dev_attr->attr.name, "in_read_index")) {
++		return sprintf(buf, "%d\n", device_info.inbound.read_idx);
++	} else if (!strcmp(dev_attr->attr.name, "in_write_index")) {
++		return sprintf(buf, "%d\n", device_info.inbound.write_idx);
++	} else if (!strcmp(dev_attr->attr.name, "in_read_bytes_avail")) {
++		return sprintf(buf, "%d\n",
++			       device_info.inbound.bytes_avail_toread);
++	} else if (!strcmp(dev_attr->attr.name, "in_write_bytes_avail")) {
++		return sprintf(buf, "%d\n",
++			       device_info.inbound.bytes_avail_towrite);
++	} else if (!strcmp(dev_attr->attr.name, "monitor_id")) {
++		return sprintf(buf, "%d\n", device_info.monitor_id);
++	} else if (!strcmp(dev_attr->attr.name, "server_monitor_pending")) {
++		return sprintf(buf, "%d\n", device_info.server_monitor_pending);
++	} else if (!strcmp(dev_attr->attr.name, "server_monitor_latency")) {
++		return sprintf(buf, "%d\n", device_info.server_monitor_latency);
++	} else if (!strcmp(dev_attr->attr.name, "server_monitor_conn_id")) {
++		return sprintf(buf, "%d\n",
++			       device_info.server_monitor_conn_id);
++	} else if (!strcmp(dev_attr->attr.name, "client_monitor_pending")) {
++		return sprintf(buf, "%d\n", device_info.client_monitor_pending);
++	} else if (!strcmp(dev_attr->attr.name, "client_monitor_latency")) {
++		return sprintf(buf, "%d\n", device_info.client_monitor_latency);
++	} else if (!strcmp(dev_attr->attr.name, "client_monitor_conn_id")) {
++		return sprintf(buf, "%d\n",
++			       device_info.client_monitor_conn_id);
++	} else {
++		return 0;
++	}
++}
+ 
+ /* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
+ static struct device_attribute vmbus_device_attrs[] = {
+@@ -438,156 +580,6 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
  	}
- 
- 
--	vmbus_drv_ctx->bus.name = driver_name;
-+	hv_bus.bus.name = driver_name;
- 
- 	/* Initialize the bus context */
--	tasklet_init(&vmbus_drv_ctx->msg_dpc, vmbus_on_msg_dpc,
-+	tasklet_init(&hv_bus.msg_dpc, vmbus_on_msg_dpc,
- 		     (unsigned long)NULL);
--	tasklet_init(&vmbus_drv_ctx->event_dpc, vmbus_on_event,
-+	tasklet_init(&hv_bus.event_dpc, vmbus_on_event,
- 		     (unsigned long)NULL);
- 
- 	/* Now, register the bus  with LDM */
--	ret = bus_register(&vmbus_drv_ctx->bus);
-+	ret = bus_register(&hv_bus.bus);
- 	if (ret) {
- 		ret = -1;
- 		goto cleanup;
-@@ -417,7 +416,7 @@ static int vmbus_bus_init(struct pci_dev *pdev)
- 		DPRINT_ERR(VMBUS_DRV, "ERROR - Unable to request IRQ %d",
- 			   pdev->irq);
- 
--		bus_unregister(&vmbus_drv_ctx->bus);
-+		bus_unregister(&hv_bus.bus);
- 
- 		ret = -1;
- 		goto cleanup;
-@@ -435,7 +434,7 @@ static int vmbus_bus_init(struct pci_dev *pdev)
- 	ret = vmbus_connect();
- 	if (ret) {
- 		free_irq(pdev->irq, pdev);
--		bus_unregister(&vmbus_drv_ctx->bus);
-+		bus_unregister(&hv_bus.bus);
- 		goto cleanup;
- 	}
- 
-@@ -454,7 +453,6 @@ cleanup:
-  */
- static void vmbus_bus_exit(void)
- {
--	struct vmbus_driver_context *vmbus_drv_ctx = &vmbus_drv;
- 
- 
- 	vmbus_release_unattached_channels();
-@@ -463,12 +461,12 @@ static void vmbus_bus_exit(void)
- 
- 	hv_cleanup();
- 
--	bus_unregister(&vmbus_drv_ctx->bus);
-+	bus_unregister(&hv_bus.bus);
- 
- 	free_irq(hv_pci_dev->irq, hv_pci_dev);
- 
--	tasklet_kill(&vmbus_drv_ctx->msg_dpc);
--	tasklet_kill(&vmbus_drv_ctx->event_dpc);
-+	tasklet_kill(&hv_bus.msg_dpc);
-+	tasklet_kill(&hv_bus.event_dpc);
  }
  
- 
-@@ -491,7 +489,7 @@ int vmbus_child_driver_register(struct device_driver *drv)
- 		    drv, drv->name);
- 
- 	/* The child driver on this vmbus */
--	drv->bus = &vmbus_drv.bus;
-+	drv->bus = &hv_bus.bus;
- 
- 	ret = driver_register(drv);
- 
-@@ -585,7 +583,7 @@ int vmbus_child_device_register(struct hv_device *child_device_obj)
- 		     atomic_inc_return(&device_num));
- 
- 	/* The new device belongs to this bus */
--	child_device_obj->device.bus = &vmbus_drv.bus; /* device->dev.bus; */
-+	child_device_obj->device.bus = &hv_bus.bus; /* device->dev.bus; */
- 	child_device_obj->device.parent = &hv_pci_dev->dev;
- 	child_device_obj->device.release = vmbus_device_release;
- 
-@@ -853,10 +851,10 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
- 	/* Schedules a dpc if necessary */
- 	if (ret > 0) {
- 		if (test_bit(0, (unsigned long *)&ret))
--			tasklet_schedule(&vmbus_drv.msg_dpc);
-+			tasklet_schedule(&hv_bus.msg_dpc);
- 
- 		if (test_bit(1, (unsigned long *)&ret))
--			tasklet_schedule(&vmbus_drv.event_dpc);
-+			tasklet_schedule(&hv_bus.event_dpc);
- 
- 		return IRQ_HANDLED;
- 	} else {
+-
+-static void get_channel_info(struct hv_device *device,
+-			     struct hv_device_info *info)
+-{
+-	struct vmbus_channel_debug_info debug_info;
+-
+-	if (!device->channel)
+-		return;
+-
+-	vmbus_get_debug_info(device->channel, &debug_info);
+-
+-	info->chn_id = debug_info.relid;
+-	info->chn_state = debug_info.state;
+-	memcpy(&info->chn_type, &debug_info.interfacetype,
+-	       sizeof(struct hv_guid));
+-	memcpy(&info->chn_instance, &debug_info.interface_instance,
+-	       sizeof(struct hv_guid));
+-
+-	info->monitor_id = debug_info.monitorid;
+-
+-	info->server_monitor_pending = debug_info.servermonitor_pending;
+-	info->server_monitor_latency = debug_info.servermonitor_latency;
+-	info->server_monitor_conn_id = debug_info.servermonitor_connectionid;
+-
+-	info->client_monitor_pending = debug_info.clientmonitor_pending;
+-	info->client_monitor_latency = debug_info.clientmonitor_latency;
+-	info->client_monitor_conn_id = debug_info.clientmonitor_connectionid;
+-
+-	info->inbound.int_mask = debug_info.inbound.current_interrupt_mask;
+-	info->inbound.read_idx = debug_info.inbound.current_read_index;
+-	info->inbound.write_idx = debug_info.inbound.current_write_index;
+-	info->inbound.bytes_avail_toread =
+-		debug_info.inbound.bytes_avail_toread;
+-	info->inbound.bytes_avail_towrite =
+-		debug_info.inbound.bytes_avail_towrite;
+-
+-	info->outbound.int_mask =
+-		debug_info.outbound.current_interrupt_mask;
+-	info->outbound.read_idx = debug_info.outbound.current_read_index;
+-	info->outbound.write_idx = debug_info.outbound.current_write_index;
+-	info->outbound.bytes_avail_toread =
+-		debug_info.outbound.bytes_avail_toread;
+-	info->outbound.bytes_avail_towrite =
+-		debug_info.outbound.bytes_avail_towrite;
+-}
+-
+-/*
+- * vmbus_show_device_attr - Show the device attribute in sysfs.
+- *
+- * This is invoked when user does a
+- * "cat /sys/bus/vmbus/devices/<busdevice>/<attr name>"
+- */
+-static ssize_t vmbus_show_device_attr(struct device *dev,
+-				      struct device_attribute *dev_attr,
+-				      char *buf)
+-{
+-	struct hv_device *device_ctx = device_to_hv_device(dev);
+-	struct hv_device_info device_info;
+-
+-	memset(&device_info, 0, sizeof(struct hv_device_info));
+-
+-	get_channel_info(device_ctx, &device_info);
+-
+-	if (!strcmp(dev_attr->attr.name, "class_id")) {
+-		return sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+-			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
+-			       device_info.chn_type.data[3],
+-			       device_info.chn_type.data[2],
+-			       device_info.chn_type.data[1],
+-			       device_info.chn_type.data[0],
+-			       device_info.chn_type.data[5],
+-			       device_info.chn_type.data[4],
+-			       device_info.chn_type.data[7],
+-			       device_info.chn_type.data[6],
+-			       device_info.chn_type.data[8],
+-			       device_info.chn_type.data[9],
+-			       device_info.chn_type.data[10],
+-			       device_info.chn_type.data[11],
+-			       device_info.chn_type.data[12],
+-			       device_info.chn_type.data[13],
+-			       device_info.chn_type.data[14],
+-			       device_info.chn_type.data[15]);
+-	} else if (!strcmp(dev_attr->attr.name, "device_id")) {
+-		return sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+-			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
+-			       device_info.chn_instance.data[3],
+-			       device_info.chn_instance.data[2],
+-			       device_info.chn_instance.data[1],
+-			       device_info.chn_instance.data[0],
+-			       device_info.chn_instance.data[5],
+-			       device_info.chn_instance.data[4],
+-			       device_info.chn_instance.data[7],
+-			       device_info.chn_instance.data[6],
+-			       device_info.chn_instance.data[8],
+-			       device_info.chn_instance.data[9],
+-			       device_info.chn_instance.data[10],
+-			       device_info.chn_instance.data[11],
+-			       device_info.chn_instance.data[12],
+-			       device_info.chn_instance.data[13],
+-			       device_info.chn_instance.data[14],
+-			       device_info.chn_instance.data[15]);
+-	} else if (!strcmp(dev_attr->attr.name, "state")) {
+-		return sprintf(buf, "%d\n", device_info.chn_state);
+-	} else if (!strcmp(dev_attr->attr.name, "id")) {
+-		return sprintf(buf, "%d\n", device_info.chn_id);
+-	} else if (!strcmp(dev_attr->attr.name, "out_intr_mask")) {
+-		return sprintf(buf, "%d\n", device_info.outbound.int_mask);
+-	} else if (!strcmp(dev_attr->attr.name, "out_read_index")) {
+-		return sprintf(buf, "%d\n", device_info.outbound.read_idx);
+-	} else if (!strcmp(dev_attr->attr.name, "out_write_index")) {
+-		return sprintf(buf, "%d\n", device_info.outbound.write_idx);
+-	} else if (!strcmp(dev_attr->attr.name, "out_read_bytes_avail")) {
+-		return sprintf(buf, "%d\n",
+-			       device_info.outbound.bytes_avail_toread);
+-	} else if (!strcmp(dev_attr->attr.name, "out_write_bytes_avail")) {
+-		return sprintf(buf, "%d\n",
+-			       device_info.outbound.bytes_avail_towrite);
+-	} else if (!strcmp(dev_attr->attr.name, "in_intr_mask")) {
+-		return sprintf(buf, "%d\n", device_info.inbound.int_mask);
+-	} else if (!strcmp(dev_attr->attr.name, "in_read_index")) {
+-		return sprintf(buf, "%d\n", device_info.inbound.read_idx);
+-	} else if (!strcmp(dev_attr->attr.name, "in_write_index")) {
+-		return sprintf(buf, "%d\n", device_info.inbound.write_idx);
+-	} else if (!strcmp(dev_attr->attr.name, "in_read_bytes_avail")) {
+-		return sprintf(buf, "%d\n",
+-			       device_info.inbound.bytes_avail_toread);
+-	} else if (!strcmp(dev_attr->attr.name, "in_write_bytes_avail")) {
+-		return sprintf(buf, "%d\n",
+-			       device_info.inbound.bytes_avail_towrite);
+-	} else if (!strcmp(dev_attr->attr.name, "monitor_id")) {
+-		return sprintf(buf, "%d\n", device_info.monitor_id);
+-	} else if (!strcmp(dev_attr->attr.name, "server_monitor_pending")) {
+-		return sprintf(buf, "%d\n", device_info.server_monitor_pending);
+-	} else if (!strcmp(dev_attr->attr.name, "server_monitor_latency")) {
+-		return sprintf(buf, "%d\n", device_info.server_monitor_latency);
+-	} else if (!strcmp(dev_attr->attr.name, "server_monitor_conn_id")) {
+-		return sprintf(buf, "%d\n",
+-			       device_info.server_monitor_conn_id);
+-	} else if (!strcmp(dev_attr->attr.name, "client_monitor_pending")) {
+-		return sprintf(buf, "%d\n", device_info.client_monitor_pending);
+-	} else if (!strcmp(dev_attr->attr.name, "client_monitor_latency")) {
+-		return sprintf(buf, "%d\n", device_info.client_monitor_latency);
+-	} else if (!strcmp(dev_attr->attr.name, "client_monitor_conn_id")) {
+-		return sprintf(buf, "%d\n",
+-			       device_info.client_monitor_conn_id);
+-	} else {
+-		return 0;
+-	}
+-}
+-
+ /*
+  * vmbus_bus_init -Main vmbus driver initialization routine.
+  *
 -- 
 1.5.5.6
 
