@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab1COKMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 06:12:03 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:27007 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750879Ab1COKL7 (ORCPT
+	id S1756494Ab1COKNN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 06:13:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37142 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab1COKNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 06:11:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUEAF7Xfk15LK5JgWdsb2JhbACmDRUBARYmJcJqDYVVBJJW
-Date: Tue, 15 Mar 2011 21:11:55 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Sage Weil <sage@newdream.net>
-Cc: Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org,
-        mtk.manpages@gmail.com, viro@zeniv.linux.org.uk, hch@lst.de,
-        l@jasper.es
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-Message-ID: <20110315101155.GO15097@dastard>
-References: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
- <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
- <201103111255.44979.arnd@arndb.de>
- <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
- <20110311235607.GB15853@elie>
- <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
- <20110312021001.GA16833@elie>
- <20110312173217.GA24981@kroah.com>
- <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
- <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net>
+	Tue, 15 Mar 2011 06:13:09 -0400
+Date: Tue, 15 Mar 2011 09:53:41 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: daeinki <inki.dae@samsung.com>
+Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        =?utf-8?B?6rCV66+86rec?= <mk7.kang@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        kgene.kim@samsung.com, Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        InKi Dae <daeinki@gmail.com>, KyongHo Cho <pullip.cho@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU)
+	driver
+Message-ID: <20110315095341.GD3921@n2100.arm.linux.org.uk>
+References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111615.01829.arnd@arndb.de> <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com> <201103111700.17373.arnd@arndb.de> <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com> <20110314124652.GF26085@n2100.arm.linux.org.uk> <AANLkTinzBvkcB111UZd2rJ9raaXkh2TqmTw5Y+4WFd48@mail.gmail.com> <20110315083515.GA3921@n2100.arm.linux.org.uk> <4D7F32B2.6020905@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D7F32B2.6020905@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 13, 2011 at 09:29:17PM -0700, Sage Weil wrote:
-> On Mon, 14 Mar 2011, Indan Zupancic wrote:
-> > Everyone seems to want to add this new syncfs, but it's not even defined 
-> > what it does. "Same as sync, but only on one fs" is IMHO not good 
-> > enough, because sync's behaviour is pretty badly documented, and that's 
-> > a system call.
-> 
-> How about the man page below?  I tried to avoid the somewhat antiquated 
-> implementation specific terminology in the sync(2) man page.
-> 
-> I think adding this functionality into sync_file_range(2) is forcing 
-> unrelated functionality into an existing interface; sync_file_range 
-> operates on _files_, not an entire file system.  With each API addition it 
-> is more important to make the interface simple and intuitive than to 
-> minimize the size of our patches.  IMO that's why a new syscall is 
-> preferable to, say, an equivalent ioctl.
-> 
-> Thanks-
-> sage
-> 
-> 
-> .TH SYNCFS 2 2011-03-13 "Linux" "Linux Programmer's Manual"
-> .SH NAME
-> syncfs \- commit cached file system state to stable storage
-> .SH SYNOPSIS
-> .B #include <unistd.h>
-> .sp
-> .B void syncfs(int fd);
-> .SH DESCRIPTION
-> .BR syncfs ()
-> flushes any cached data modifications to the file system containing the 
-> file referenced by the file descriptor
-> .I fd
-> to stable storage (usually a disk).  This includes the results of any
-> file modifications or other file system operations that have completed
-> prior to the call to
-> .BR syncfs(2).
-> This is similar to 
-> .BR sync(2),
-> but will commit changes for only a single file system instead of all
-> mounted file systems.
-> .SH ERRORS
-> This function is always successful.
+On Tue, Mar 15, 2011 at 06:34:42PM +0900, daeinki wrote:
+> Russell King - ARM Linux 쓴 글:
+>> On Tue, Mar 15, 2011 at 10:45:50AM +0900, InKi Dae wrote:
+>>> 2011/3/14 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>>>> On Mon, Mar 14, 2011 at 09:37:51PM +0900, KyongHo Cho wrote:
+>>>>> I have also noticed that dma_map_single/page/sg() can map physical
+>>>>> memory into an arbitrary device address region.
+>>>>> But it is not enough solution for various kinds of IOMMUs.
+>>>>> As Kukjin Kim addressed, we need to support larger page size than 4KB
+>>>>> because we can reduce TLB miss when we have larger page size.
+>>>>>
+>>>>> Our IOMMU(system mmu) supports all page size of ARM architecture
+>>>>> including 16MB, 1MB, 64KB and 4KB.
+>>>>> Since the largest size supported by buddy system of 32-bit architecture is 4MB,
+>>>>> our system support all page sizes except 16MB.
+>>>>> We proved that larger page size is helpful for DMA performance
+>>>>> significantly (more than 10%, approximately).
+>>>>> Big page size is not a problem for peripheral devices
+>>>>> because their address space is not suffer from external fragmentation.
+>>>> 1. dma_map_single() et.al. is used for mapping *system* *RAM* for devices
+>>>>   using whatever is necessary.  It must not be used for trying to setup
+>>>>   arbitary other mappings.
+>>>>
+>>>> 2. It doesn't matter where the memory for dma_map_single() et.al. comes
+>>>>   from provided the virtual address is a valid system RAM address or
+>>>>   the struct page * is a valid struct page in the memory map (iow, you
+>>>>   can't create this yourself.)
+>>> You mean that we cannot have arbitrary virtual address mapping for
+>>> iommu based device?
+>>
+>> No.  I mean exactly what I said - I'm talking about the DMA API in the
+>> above two points.  The implication is that you can not create arbitary
+>> mappings of non-system RAM with the DMA API.
+>>
+> sorry but I couldn't understand exactly what you said. could you give me  
+> your answer one more time?
+> does non-system RAM mean reserved memory regions? if not, is it  
+> arbitrary virtual address space that isn't kernel or user virtual  
+> address space and is the space for iommu based deivce?
 
-Perhaps we should consider propagating errors out to the user
-application rather than discarding them in kernel and pretending we
-can't ever have a write error?
+For dma_map_single(dev, addr, size, dir), basically:
 
-Cheers,
+	for (a = addr; a < addr + size; a += PAGE_SIZE)
+		BUG_ON(!virt_addr_valid(a));
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+For dma_map_page(dev, page, offset, size, dir), 'page' must be something
+obtained from one of the page-based kernel allocators (so either refering
+to a page in the *existing* lowmem or highmem memory) _and_ you must not
+use offset/size to then point at something outside that.
+
+So, if you take something out of the kernel's knowledge of what is memory,
+you can't then use the DMA API with it.
