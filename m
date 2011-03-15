@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab1COUFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 16:05:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38964 "EHLO
+	id S1757952Ab1COUFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 16:05:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38965 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757649Ab1COUFL (ORCPT
+	with ESMTP id S1757677Ab1COUFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Mar 2011 16:05:11 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 04/12] perf symbol: Move sym_entry->skip to symbol->ignore
-Date: Tue, 15 Mar 2011 17:04:53 -0300
-Message-Id: <1300219501-15085-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/12] perf top: Remove redundant perf_top->sym_counter
+Date: Tue, 15 Mar 2011 17:04:50 -0300
+Message-Id: <1300219501-15085-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1300219501-15085-1-git-send-email-acme@infradead.org>
 References: <1300219501-15085-1-git-send-email-acme@infradead.org>
@@ -29,12 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-While going thru each of the sym_entry fields looking to reduce it to
-the set of entries needed when in an active symbols list, 'skip' should
-really be in symbol, as we set it when loading the symtab.
-
-And the space used by the basic symbol allocation remains the same as
-we had 5 bytes of padding.
+We can get that counter index from perf_top->sym_evsel->idx instead.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -46,67 +41,72 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c |    4 ++--
- tools/perf/util/symbol.h |    5 +++++
- tools/perf/util/top.h    |    1 -
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ tools/perf/builtin-top.c |   11 ++++++-----
+ tools/perf/util/top.c    |    2 +-
+ tools/perf/util/top.h    |    2 +-
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 31ea7a6..70f1075 100644
+index 80c9e06..4bf6e02 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -676,7 +676,7 @@ static int symbol_filter(struct map *map, struct symbol *sym)
- 
- 	for (i = 0; skip_symbols[i]; i++) {
- 		if (!strcmp(skip_symbols[i], name)) {
--			syme->skip = 1;
-+			sym->ignore = true;
+@@ -515,24 +515,25 @@ static void handle_keypress(struct perf_session *session, int c)
  			break;
- 		}
- 	}
-@@ -779,7 +779,7 @@ static void perf_event__process_sample(const union perf_event *event,
- 	}
+ 		case 'E':
+ 			if (top.evlist->nr_entries > 1) {
++				int counter;
+ 				fprintf(stderr, "\nAvailable events:");
  
- 	syme = symbol__priv(al.sym);
--	if (!syme->skip) {
-+	if (!al.sym->ignore) {
- 		struct perf_evsel *evsel;
+ 				list_for_each_entry(top.sym_evsel, &top.evlist->entries, node)
+ 					fprintf(stderr, "\n\t%d %s", top.sym_evsel->idx, event_name(top.sym_evsel));
  
- 		evsel = perf_evlist__id2evsel(top.evlist, sample->id);
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index db39c0c..713b0b4 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -48,12 +48,17 @@ char *strxfrchar(char *s, char from, char to);
+-				prompt_integer(&top.sym_counter, "Enter details event counter");
++				prompt_integer(&counter, "Enter details event counter");
  
- #define BUILD_ID_SIZE 20
+-				if (top.sym_counter >= top.evlist->nr_entries) {
++				if (counter >= top.evlist->nr_entries) {
+ 					top.sym_evsel = list_entry(top.evlist->entries.next, struct perf_evsel, node);
+-					top.sym_counter = 0;
+ 					fprintf(stderr, "Sorry, no such event, using %s.\n", event_name(top.sym_evsel));
+ 					sleep(1);
+ 					break;
+ 				}
+ 				list_for_each_entry(top.sym_evsel, &top.evlist->entries, node)
+-					if (top.sym_evsel->idx == top.sym_counter)
++					if (top.sym_evsel->idx == counter)
+ 						break;
+-			} else top.sym_counter = 0;
++			} else
++				top.sym_evsel = list_entry(top.evlist->entries.next, struct perf_evsel, node);
+ 			break;
+ 		case 'f':
+ 			prompt_integer(&top.count_filter, "Enter display event count filter");
+diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
+index 75cfe4d..fcfb777 100644
+--- a/tools/perf/util/top.c
++++ b/tools/perf/util/top.c
+@@ -171,7 +171,7 @@ float perf_top__decay_samples(struct perf_top *top, struct rb_root *root)
+ {
+ 	struct sym_entry *syme, *n;
+ 	float sum_ksamples = 0.0;
+-	int snap = !top->display_weighted ? top->sym_counter : 0, j;
++	int snap = !top->display_weighted ? top->sym_evsel->idx : 0, j;
  
-+/** struct symbol - symtab entry
-+ *
-+ * @ignore - resolvable but tools ignore it (e.g. idle routines)
-+ */
- struct symbol {
- 	struct rb_node	rb_node;
- 	u64		start;
- 	u64		end;
- 	u16		namelen;
- 	u8		binding;
-+	bool		ignore;
- 	char		name[0];
- };
- 
+ 	/* Sort the active symbols */
+ 	pthread_mutex_lock(&top->active_symbols_lock);
 diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index ba111b2..bfbf95b 100644
+index 96d1cb7..96a7831 100644
 --- a/tools/perf/util/top.h
 +++ b/tools/perf/util/top.h
-@@ -16,7 +16,6 @@ struct sym_entry {
- 	struct list_head	node;
- 	unsigned long		snap_count;
- 	double			weight;
--	int			skip;
- 	struct map		*map;
- 	unsigned long		count[0];
- };
+@@ -41,7 +41,7 @@ struct perf_top {
+ 	u64		   exact_samples;
+ 	u64		   guest_us_samples, guest_kernel_samples;
+ 	int		   print_entries, count_filter, delay_secs;
+-	int		   display_weighted, freq, rb_entries, sym_counter;
++	int		   display_weighted, freq, rb_entries;
+ 	pid_t		   target_pid, target_tid;
+ 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
+ 	const char	   *cpu_list;
 -- 
 1.6.2.5
 
