@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758825Ab1COVPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:15:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49599 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758688Ab1COVPa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:15:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-iio@vger.kernel.org
-Subject: IIO comments
-Date: Tue, 15 Mar 2011 22:15:20 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>
+	id S932423Ab1COVTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:19:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932335Ab1COVTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:19:11 -0400
+Date: Tue, 15 Mar 2011 22:08:55 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Linux 2.6.38
+Message-ID: <20110315210855.GI21640@redhat.com>
+References: <AANLkTi=_cZRNPU29+MJkt9u6zDSLo153CKqLqg1+t7O6@mail.gmail.com> <alpine.DEB.2.00.1103142011550.16032@chino.kir.corp.google.com> <20110314213331.24229139.akpm@linux-foundation.org> <alpine.DEB.2.00.1103142137020.13734@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103152215.20059.arnd@arndb.de>
-X-Provags-ID: V02:K0:yOO5p0+yQz/Nw6OL/ybuKrVUv/06HMYrhdu3iPbONy0
- nocmKb8FUoTe/JeaMX+2fpfQWGS3V+17O/qvoTGqTrSrujoj/p
- MRWLLqovUUVgelqX/3vckW4iJLFQf5iBYS0GXO307b5alkuWdh
- 1s4UGe/DXQpR/wnuG+NIejIYb8irgcVNICYKyhtv3OmMWL2o9D
- iiQWPrG3CEtdQHtPU6lHw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1103142137020.13734@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've started looking at the current code base in staging,
-this is basically a log of what I'm finding there that
-may get improved:
+On 03/14, David Rientjes wrote:
+>
+> He also presented a test case on linux-mm that caused the oom killer to 
+> avoid acting if a thread is ptracing a thread in the exit path with 
+> PTRACE_O_TRACEEXIT.  That should be fixed with
+>
+> 	http://marc.info/?l=linux-mm&m=129997893430351
 
-* Your bus_type is not really a bus in the sense we normally
-use it, because it does not have any driver/device matching.
-You only register devices from the same files that drive
-the hardware. This is normally done using a class, not
-a bus.
+I don't think it can fix this. I didn't verify this, but the slightly
+different test-case below should have the same effect.
 
-* Since you specify the sysfs attributes globally in the
-documentation, it would be nice if drivers did not have
-to implement them as attribute show function, but as
-a function that simply returns a value that is then
-printed by common code. You can do this using a structure
-of function pointers that each driver fills with the
-relevant ones, like file_operations, replacing the
-attribute groups.
+But this doesn't matter. We can fix this particular case, and we have
+the problems with the coredump anyway.
 
-* iio_allocate_device() could get a size argument and
-allocate the dev_data together with the iio_dev in 
-a single allocation, like netdev_alloc does. In addition,
-you can pass a structure with all constant data, such
-as THIS_MODULE, and the operations and/or attribute groups,
-instead of having to set them individually for each dev.
+What I can't understand is what exactly the first patch tries to fix.
+When I ask you, you tell me that for_each_process() can miss the group
+leader because it can exit before sub-threads. This must not happen,
+or we have some serious bug triggered by your workload.
 
-* It's not clear to me why you need one additional device
-and one chardev for each interrupt line of a device, my
-feeling is that this could be simplified a lot if you find
-a way to represent an iio_dev with a single chardev to
-user space. This may have been an attempt to avoid ioctl()
-calls, but I think in this case an ioctl interface would
-be cleaner than a complex hierarchy of devices.
-Another alternative would be for the device driver to
-register multiple iio_devs in case it needs multiple
-interfaces.
+So, once again. Could you please explain the original problem and how
+this patch helps?
 
-* Neither of your two file operations supports poll(), only
-read. Having poll() support is essential if you want to
-wait for multiple devices in user space. Maybe it's
-possible to convert the code to use eventfd instead of
-rolling your own event interface?
+Oleg.
 
-* The name rip_lots doesn't really mean anything to me
-as a non-native speaker. Maybe think of a better word for
-this. Also, there is only one driver providing such a function,
-so this is probably a good candidate for deferring to a later
-stage, along with all the the entire ring file code that seems
-rather pointless otherwise.
+#include <unistd.h>
+#include <signal.h>
+#include <pthread.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <assert.h>
+#include <stdio.h>
 
-* The exported symbols should probably become EXPORT_SYMBOL_GPL
+void *tfunc(void* arg)
+{
+	if (arg) {
+		ptrace(PTRACE_TRACEME, 0,0,0);
+		raise(SIGSTOP);
+		pthread_kill(*(pthread_t*)arg, SIGQUIT);
+	}
+	pause();
+}
 
-* iio-trig-sysfs should not be a platform driver
+int main(void)
+{
+	int pid;
 
-That's probably enough for today, to start some discussion
-about the core. Overall, I'm pleasantly surprised by the
-quality of the code, it's much better than I was expecting
-after having looked at drivers from hardware vendors a lot
-recently.
+	if (!fork()) {
+		pthread_t thread1, thread2;
+		pthread_create(&thread1, NULL, tfunc, NULL);
+		pthread_create(&thread2, NULL, tfunc, &thread1);
+		pause();
+		return 0;
+	}
 
-	Arnd
+	assert((pid = waitpid(-1, NULL, __WALL)) > 0);
+	assert(ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEEXIT) == 0);
+	assert(ptrace(PTRACE_CONT, pid, 0, 0) == 0);
+	wait(NULL);
+
+	pause();
+	return 0;
+}
+
