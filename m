@@ -1,92 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758237Ab1CORzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 13:55:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3472 "EHLO mx1.redhat.com"
+	id S1758235Ab1COR5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 13:57:14 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:33450 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757762Ab1CORzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 13:55:18 -0400
-Date: Tue, 15 Mar 2011 13:54:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Cc: Lina Lu <lulina_nuaa@foxmail.com>
-Subject: [PATCH] blk-throttle: Reset group slice when limits are changed
-Message-ID: <20110315175456.GC2587@redhat.com>
+	id S1756212Ab1COR5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 13:57:11 -0400
+Date: Tue, 15 Mar 2011 23:21:01 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 3/20] 3: uprobes: Breakground page
+ replacement.
+Message-ID: <20110315175048.GC24254@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+ <20110314133433.27435.49566.sendpatchset@localhost6.localdomain6>
+ <alpine.LFD.2.00.1103151206430.2787@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.00.1103151206430.2787@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lina reported that if throttle limits are initially very high and then
-dropped, then no new bio might be dispatched for a long time. And the
-reason being that after dropping the limits we don't reset the existing
-slice and do the rate calculation with new low rate and account the bios
-dispatched at high rate. To fix it, reset the slice upon rate change.
+* Thomas Gleixner <tglx@linutronix.de> [2011-03-15 14:22:09]:
 
-https://lkml.org/lkml/2011/3/10/298
+> On Mon, 14 Mar 2011, Srikar Dronamraju wrote:
+> > +/*
+> > + * Called with tsk->mm->mmap_sem held (either for read or write and
+> > + * with a reference to tsk->mm
+> 
+> Hmm, why is holding it for read sufficient?
 
-Another problem with very high limit is that we never queued the
-bio on throtl service tree. That means we kept on extending the
-group slice but never trimmed it. Fix that also by regulary
-trimming the slice even if bio is not being queued up.
+We are not adding a new vma to the mm; but just replacing a page with
+another after holding the locks for the pages. Existing routines
+doing close to similar things like the
+access_process_vm/get_user_pages seem to be taking the read_lock. Do
+you see a resaon why readlock wouldnt suffice?
 
-Reported-by: Lina Lu <lulina_nuaa@foxmail.com>
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-throttle.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+> .
+> > + */
+> > +static int write_opcode(struct task_struct *tsk, struct uprobe * uprobe,
+> > +			unsigned long vaddr, uprobe_opcode_t opcode)
+> > +{
+> > +	struct page *old_page, *new_page;
+> > +	void *vaddr_old, *vaddr_new;
+> > +	struct vm_area_struct *vma;
+> > +	spinlock_t *ptl;
+> > +	pte_t *orig_pte;
+> > +	unsigned long addr;
+> > +	int ret = -EINVAL;
+> 
+> That initialization is pointless.
+Okay, 
 
-Index: linux-2.6-block/block/blk-throttle.c
-===================================================================
---- linux-2.6-block.orig/block/blk-throttle.c	2011-03-15 13:37:04.122389034 -0400
-+++ linux-2.6-block/block/blk-throttle.c	2011-03-15 13:37:26.328370086 -0400
-@@ -756,6 +756,15 @@ static void throtl_process_limit_change(
- 			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
- 			tg->iops[READ], tg->iops[WRITE]);
- 
-+		/*
-+		 * Restart the slices for both READ and WRITES. It
-+		 * might happen that a group's limit are dropped
-+		 * suddenly and we don't want to account recently
-+		 * dispatched IO with new low rate
-+		 */
-+		throtl_start_new_slice(td, tg, 0);
-+		throtl_start_new_slice(td, tg, 1);
-+
- 		if (throtl_tg_on_rr(tg))
- 			tg_update_disptime(td, tg);
- 	}
-@@ -821,7 +830,8 @@ throtl_schedule_delayed_work(struct thro
- 
- 	struct delayed_work *dwork = &td->throtl_work;
- 
--	if (total_nr_queued(td) > 0) {
-+	/* schedule work if limits changed even if no bio is queued */
-+	if (total_nr_queued(td) > 0 || td->limits_changed) {
- 		/*
- 		 * We might have a work scheduled to be executed in future.
- 		 * Cancel that and schedule a new one.
-@@ -1002,6 +1012,19 @@ int blk_throtl_bio(struct request_queue 
- 	/* Bio is with-in rate limit of group */
- 	if (tg_may_dispatch(td, tg, bio, NULL)) {
- 		throtl_charge_bio(tg, bio);
-+
-+		/*
-+		 * We need to trim slice even when bios are not being queued
-+		 * otherwise it might happen that a bio is not queued for
-+		 * a long time and slice keeps on extending and trim is not
-+		 * called for a long time. Now if limits are reduced suddenly
-+		 * we take into account all the IO dispatched so far at new
-+		 * low rate and * newly queued IO gets a really long dispatch
-+		 * time.
-+		 *
-+		 * So keep on trimming slice even if bio is not queued.
-+		 */
-+		throtl_trim_slice(td, tg, rw);
- 		goto out;
- 	}
- 
+> 
+> > +	/* Read the page with vaddr into memory */
+> > +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 1, 1, &old_page, &vma);
+> > +	if (ret <= 0)
+> > +		return -EINVAL;
+> > +	ret = -EINVAL;
+> > +
+> > +	/*
+> > +	 * check if the page we are interested is read-only mapped
+> > +	 * Since we are interested in text pages, Our pages of interest
+> > +	 * should be mapped read-only.
+> > +	 */
+> > +	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
+> > +						(VM_READ|VM_EXEC))
+> > +		goto put_out;
+> 
+> IIRC then text pages are (VM_READ|VM_EXEC)
+
+Steven Rostedt already pointed this out.
+
+
+> 
+> > +	/* Allocate a page */
+> > +	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
+> > +	if (!new_page) {
+> > +		ret = -ENOMEM;
+> > +		goto put_out;
+> > +	}
+> > +
+> > +	/*
+> > +	 * lock page will serialize against do_wp_page()'s
+> > +	 * PageAnon() handling
+> > +	 */
+> > +	lock_page(old_page);
+> > +	/* copy the page now that we've got it stable */
+> > +	vaddr_old = kmap_atomic(old_page, KM_USER0);
+> > +	vaddr_new = kmap_atomic(new_page, KM_USER1);
+> > +
+> > +	memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
+> > +	/* poke the new insn in, ASSUMES we don't cross page boundary */
+> 
+> And what makes sure that we don't ?
+
+We are expecting the breakpoint instruction to be the minimum size
+instruction for that architecture. This wouldnt be a problem for
+architectures that have fixed length instructions.
+For architectures which have variable size instructions, I am
+hoping that the opcode size will be small enuf that it will always not
+cross boundary. Something like 0xCC on x86. If and when we support
+architectures that have variable length instructions whose
+breakpoint instruction can span across page boundary, we have to add
+more meat to take care of the case.
+
+> 
+> > +	addr = vaddr;
+> > +	vaddr &= ~PAGE_MASK;
+> > +	memcpy(vaddr_new + vaddr, &opcode, uprobe_opcode_sz);
+> > +
+> > +	kunmap_atomic(vaddr_new, KM_USER1);
+> > +	kunmap_atomic(vaddr_old, KM_USER0);
+> > +
+> > +	orig_pte = page_check_address(old_page, tsk->mm, addr, &ptl, 0);
+> > +	if (!orig_pte)
+> > +		goto unlock_out;
+> > +	pte_unmap_unlock(orig_pte, ptl);
+> > +
+> > +	lock_page(new_page);
+> > +	if (!anon_vma_prepare(vma))
+> 
+> Why don't you get the error code of anon_vma_prepare()?
+
+Okay, will capture the error_code of anon_vma_prepare.
+
+> 
+> > +		/* flip pages, do_wp_page() will fail pte_same() and bail */
+> 
+> -ENOPARSE
+> 
+> > +		ret = replace_page(vma, old_page, new_page, *orig_pte);
+> > +
+> > +	unlock_page(new_page);
+> > +	if (ret != 0)
+> > +		page_cache_release(new_page);
+> > +unlock_out:
+> > +	unlock_page(old_page);
+> > +
+> > +put_out:
+> > +	put_page(old_page); /* we did a get_page in the beginning */
+> > +	return ret;
+> > +}
+> > +
+> > +/**
+> > + * read_opcode - read the opcode at a given virtual address.
+> > + * @tsk: the probed task.
+> > + * @vaddr: the virtual address to store the opcode.
+> > + * @opcode: location to store the read opcode.
+> > + *
+> > + * For task @tsk, read the opcode at @vaddr and store it in @opcode.
+> > + * Return 0 (success) or a negative errno.
+> 
+> Wants to called with mmap_sem held as well, right ?
+
+Yes, will document.
+
+> 
+> > + */
+> > +int __weak read_opcode(struct task_struct *tsk, unsigned long vaddr,
+> > +						uprobe_opcode_t *opcode)
+> > +{
+> > +	struct vm_area_struct *vma;
+> > +	struct page *page;
+> > +	void *vaddr_new;
+> > +	int ret;
+> > +
+> > +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 0, 0, &page, &vma);
+> > +	if (ret <= 0)
+> > +		return -EFAULT;
+> > +	ret = -EFAULT;
+> > +
+> > +	/*
+> > +	 * check if the page we are interested is read-only mapped
+> > +	 * Since we are interested in text pages, Our pages of interest
+> > +	 * should be mapped read-only.
+> > +	 */
+> > +	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
+> > +						(VM_READ|VM_EXEC))
+> > +		goto put_out;
+> 
+> Same as above
+> 
+> > +	lock_page(page);
+> > +	vaddr_new = kmap_atomic(page, KM_USER0);
+> > +	vaddr &= ~PAGE_MASK;
+> > +	memcpy(&opcode, vaddr_new + vaddr, uprobe_opcode_sz);
+> > +	kunmap_atomic(vaddr_new, KM_USER0);
+> > +	unlock_page(page);
+> > +	ret =  uprobe_opcode_sz;
+> 
+>   ret = 0 ?? At least, that's what the comment above says.
+
+Has been already been pointed out by Stephen Wilson.
+setting ret = 0 here.
+
+> 
+> > +
+> > +put_out:
+> > +	put_page(page); /* we did a get_page in the beginning */
+> > +	return ret;
+> > +}
+> > +
