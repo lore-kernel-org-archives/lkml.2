@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab1COP6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 11:58:55 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53215 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1COP6y (ORCPT
+	id S1758089Ab1COQCT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:02:19 -0400
+Received: from dd8000.kasserver.com ([85.13.132.92]:38929 "EHLO
+	dd8000.kasserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758016Ab1COQCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 11:58:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6285"; a="80064449"
-Message-ID: <cabe5c85f32b7eb41504225acfcc87df.squirrel@www.codeaurora.org>
-In-Reply-To: <4D7EC274.4020407@codeaurora.org>
-References: <1299608733-28514-1-git-send-email-sheetals@codeaurora.org>
-    <1299691007-13470-1-git-send-email-sheetals@codeaurora.org>
-    <4D7EC274.4020407@codeaurora.org>
-Date: Tue, 15 Mar 2011 08:58:31 -0700 (PDT)
-Subject: Re: [PATCH v4 2/3] [ARM] perfevents: Add support for Scorpion 
-     performance monitors
-From: "Sheetal Sahasrabudhe" <sheetals@codeaurora.org>
-To: will.deacon@arm.com, jean.pihet@newoldbits.com,
-        "Bryan Huntsman" <bryanh@codeaurora.org>
-Cc: "Sheetal Sahasrabudhe" <sheetals@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, jamie.iles@picochip.com,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Tue, 15 Mar 2011 12:02:18 -0400
+Message-ID: <4D7F8C53.7000705@gmx.net>
+Date: Tue, 15 Mar 2011 16:57:07 +0100
+From: Otto Meier <gf435@gmx.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [regression]2.6.38-rc6 with XFS still does consume all free space
+References: <4D63A9E7.3000803@gmx.net> <20110301035101.GH3087@dastard>
+In-Reply-To: <20110301035101.GH3087@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will/Jean,
-
-On Mon, March 14, 2011 6:35 pm, Bryan Huntsman wrote:
-> On 03/09/2011 09:16 AM, Sheetal Sahasrabudhe wrote:
->> This commit adds support for performance monitors provided by
->> Qualcomm Scorpion and ScorpionMP processor to perfevents.
+Am 01.03.2011 04:51, schrieb Dave Chinner:
+> On Tue, Feb 22, 2011 at 01:19:51PM +0100, Otto Meier wrote:
+>> Hello,
+>> on my System a "make modules_install" with kernel 2.6.38-rc6 has eaten up
+>> all free Space on a XFS partition.
+> Are you building the 2.6.38-rc6 kernel on some other kernel or are
+> you running 2.6..38-rc6?
+>
+I did build a new newer Kernel and was running 2.6.38-rc6.
+>> The free Space is
 >>
->> Signed-off-by: Sheetal Sahasrabudhe <sheetals@codeaurora.org>
->> Reviewed-by: Jean Pihet <j-pihet@ti.com>
->> Reviewed-by: Will Deacon <will.deacon@arm.com>
->> ---
->>  arch/arm/include/asm/perf_event.h |    2 +
->>  arch/arm/kernel/perf_event.c      |   11 +
->>  arch/arm/kernel/perf_event_msm.c  |  679 +++++++++++++++++++++++++++++++++++++
->>  3 files changed, 692 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/arm/kernel/perf_event_msm.c
+>> /dev/sda6             56472984  43613692  12859292  78% /
 >>
+>> after make modules_install i get
+>>
+>> /dev/sda6             56472984  56472964        20 100% /
+> Had you already built the kernel, or did the make command build the
+> kernel and all the modules before installing them?  Can you check
+> how much space the modules directory is actually using (i.e. using
+> du)?
 >
-> ...
+> Also, did you get an ENOSPC error?
 >
->> diff --git a/arch/arm/kernel/perf_event_msm.c b/arch/arm/kernel/perf_event_msm.c
->> new file mode 100644
->> index 0000000..4e42f27
->> --- /dev/null
->> +++ b/arch/arm/kernel/perf_event_msm.c
-[...]
-
->> +#include <asm/vfp.h>
->> +#include <asm/system.h>
->> +#include "../vfp/vfpinstr.h"
+I had already build the kernel.
+>> with kernel 2.6.37.1 everything runs fine and df shows
+>>
+>> /dev/sda6             56472984  43262256  13210728  77% /
+>>
+>> any idea what is going on here?
+> No, all the known preallocation regressions have been fixed. can you
+> confirm that the kernel you are running has this commit in it?
 >
-> Sorry I didn't see this earlier.  Is there another way to get the info
-> you need that wouldn't use a relative include path?  If the info from
-> vfpinstr.h is now needed outside of the vfp directory, can it be moved
-> to a common header instead?  Thanks.
+> b8fc826 xfs: speculative delayed allocation uses rounddown_power_of_2 badly
 >
-> - Bryan
+Yes the kernel I was running had this commit.
+> Cheers,
+>
+> Dave.
+Sorry for not answering earlier,  I added my comments to your questions above.
 
-I see other files under vfp that include this header.
-So if we were to implement Bryan's suggestion, I think a separate patch that moves the header and updates all the depdendencies would be more appropriate.
-Are you okay with the relative include path for vfpinstr.h in this patch for now or would you want to see an update to move vfpinstr.h to include/asm?.
-
-Thanks,
-Sheetal
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
-
+Bye Otto
 
