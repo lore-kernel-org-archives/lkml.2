@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680Ab1COVCZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:02:25 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41142
+	id S1758691Ab1COVCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:02:47 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41176
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758636Ab1COVCW (ORCPT
+	by vger.kernel.org with ESMTP id S1758560Ab1COVCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:02:22 -0400
-Date: Tue, 15 Mar 2011 14:02:59 -0700 (PDT)
-Message-Id: <20110315.140259.104074771.davem@davemloft.net>
+	Tue, 15 Mar 2011 17:02:44 -0400
+Date: Tue, 15 Mar 2011 14:03:21 -0700 (PDT)
+Message-Id: <20110315.140321.189689408.davem@davemloft.net>
 To: laijs@cn.fujitsu.com
 Cc: mingo@elte.hu, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
         Trond.Myklebust@netapp.com, vladislav.yasevich@hp.com, sri@us.ibm.com,
@@ -24,12 +24,12 @@ Cc: mingo@elte.hu, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
         containers@lists.linux-foundation.org,
         linux-decnet-user@lists.sourceforge.net,
         linux-wireless@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 05/17] net,rcu: convert call_rcu(tcf_police_free_rcu)
- to kfree_rcu()
+Subject: Re: [PATCH 06/17] net,rcu: convert
+ call_rcu(in6_dev_finish_destroy_rcu) to kfree_rcu()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D7F3828.4040403@cn.fujitsu.com>
+In-Reply-To: <4D7F3872.6090305@cn.fujitsu.com>
 References: <4D7F3610.6000809@cn.fujitsu.com>
-	<4D7F3828.4040403@cn.fujitsu.com>
+	<4D7F3872.6090305@cn.fujitsu.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -39,12 +39,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Tue, 15 Mar 2011 17:58:00 +0800
+Date: Tue, 15 Mar 2011 17:59:14 +0800
 
-> [PATCH 05/17] net,rcu: convert call_rcu(tcf_police_free_rcu) to kfree_rcu()
 > 
-> The rcu callback tcf_police_free_rcu() just calls a kfree(),
-> so we use kfree_rcu() instead of the call_rcu(tcf_police_free_rcu).
+> 
+> The rcu callback in6_dev_finish_destroy_rcu() just calls a kfree(),
+> so we use kfree_rcu() instead of the call_rcu(in6_dev_finish_destroy_rcu).
 > 
 > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
