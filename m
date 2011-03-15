@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab1CONqm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 09:46:42 -0400
-Received: from lo.gmane.org ([80.91.229.12]:52853 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab1CONql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 09:46:41 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] Restrict write access to dmesg_restrict
-Date: Tue, 15 Mar 2011 13:46:28 +0000 (UTC)
-Message-ID: <ilnqjj$rjj$2@dough.gmane.org>
-References: <1300131356-24389-1-git-send-email-richard@nod.at>
+	id S1757364Ab1CONsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 09:48:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40912 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab1CONsC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 09:48:02 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=Dpgx0ZSdzJoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=lIPM80yYOjFTmlQ0L8sA:9 a=Hdpj5k0-GVdXtPSH1cNUbgLzJroA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 7/20]  7: uprobes: store/restore
+ original instruction.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Stephen Wilson <wilsons@start.ca>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20110315092247.GW24254@linux.vnet.ibm.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	 <20110314133522.27435.45121.sendpatchset@localhost6.localdomain6>
+	 <20110314180914.GA18855@fibrous.localdomain>
+	 <20110315092247.GW24254@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 15 Mar 2011 09:47:59 -0400
+Message-ID: <1300196879.9910.271.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 122.232.152.135
-User-Agent: Pan/0.133 (House of Butterflies)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 20:35:56 +0100, Richard Weinberger wrote:
-
-> When dmesg_restrict is set to 1 CAP_SYS_ADMIN is needed to read the
-> kernel ring buffer.
-> But a root user without CAP_SYS_ADMIN is able to reset dmesg_restrict to
-> 0.
+On Tue, 2011-03-15 at 14:52 +0530, Srikar Dronamraju wrote:
+> * Stephen Wilson <wilsons@start.ca> [2011-03-14 14:09:14]:
 > 
-> This is an issue when e.g. LXC (Linux Containers) are used and complete
-> user space is running without CAP_SYS_ADMIN. A unprivileged and jailed
-> root user can bypass the dmesg_restrict protection.
+
+Nitpick:
+
+> Guess checking for tsk != NULL would only help if and only if we are doing
+> within rcu.  i.e we have to change to something like this
 > 
-> With this patch writing to dmesg_restrict is only allowed when root has
-> CAP_SYS_ADMIN.
+
+	tsk = NULL;
+
+> 	rcu_read_lock()
+> 	if (mm->owner) {
+> 		get_task_struct(mm->owner)
+> 		tsk = mm->owner;
+> 	}
+> 	rcu_read_unlock()
+> 	if (!tsk)
+> 		return ret;
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Agree?
 
-Makes sense.
+Or:
 
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+	rcu_read_lock();
+	tsk = mm->owner;
+	if (tsk)
+		get_task_struct(tsk);
+	rcu_read_unlock();
+	if (!tsk)
+		return ret;
 
-Thanks.
+Probably looks cleaner.
+
+-- Steve
+
 
