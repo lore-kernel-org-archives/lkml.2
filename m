@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab1COTqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 15:46:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59734 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab1COTqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 15:46:30 -0400
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 4/20] 4: uprobes: Adding and remove a
- uprobe in a rb tree.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+	id S1758496Ab1COTvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 15:51:31 -0400
+Received: from mout.perfora.net ([74.208.4.194]:55226 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758093Ab1COTva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 15:51:30 -0400
+Date: Tue, 15 Mar 2011 15:49:14 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <alpine.LFD.2.00.1103151916120.2787@localhost6.localdomain6>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314133444.27435.50684.sendpatchset@localhost6.localdomain6>
-	 <alpine.LFD.2.00.1103151425060.2787@localhost6.localdomain6>
-	 <20110315173041.GB24254@linux.vnet.ibm.com>
-	 <alpine.LFD.2.00.1103151916120.2787@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Mar 2011 20:48:19 +0100
-Message-ID: <1300218499.2250.12.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 17/20] 17: uprobes: filter chain
+Message-ID: <20110315194914.GA24972@fibrous.localdomain>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314133722.27435.55663.sendpatchset@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110314133722.27435.55663.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Provags-ID: V02:K0:pLgE5bChquLW7LOM+pNbqUTfcU1mZPoV9dNFNQ2CGgu
+ z07ChtZt8QzFmNWYbdrgmC8KLDoUdcUrfslZGjQEVeb9F7volw
+ qKyAYHlqyAF/PE0OHM7qNAeDBOitRYw58RSkCiybnD89uZN7PP
+ +e1jkNjby0IgIPTRDnr39tod798vmZPg+rt+eOhxUCM8xNFJBe
+ sZZwi0yUk4t3rnqCgBGLQ8EaJvIyMt/wMAgtxrSIkQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 20:22 +0100, Thomas Gleixner wrote:
-> I am not sure if its a good idea to walk the tree
-> > as and when the tree is changing either because of a insertion or
-> > deletion of a probe.
+
+
+
+On Mon, Mar 14, 2011 at 07:07:22PM +0530, Srikar Dronamraju wrote:
 > 
-> I know that you cannot walk the tree lockless except you would use
-> some rcu based container for your probes. 
+> Loops through the filters callbacks of currently registered
+> consumers to see if any consumer is interested in tracing this task.
 
-You can in fact combine a seqlock, rb-trees and RCU to do lockless
-walks.
+Should this be part of the series?  It is not currently used.
 
-  https://lkml.org/lkml/2010/10/20/160
+>  /* Acquires uprobe->consumer_rwsem */
+> +static bool filter_chain(struct uprobe *uprobe, struct task_struct *t)
+> +{
+> +	struct uprobe_consumer *consumer;
+> +	bool ret = false;
+> +
+> +	down_read(&uprobe->consumer_rwsem);
+> +	for (consumer = uprobe->consumers; consumer;
+> +					consumer = consumer->next) {
+> +		if (!consumer->filter || consumer->filter(consumer, t)) {
 
-and
+The implementation does not seem to match the changelog description.
+Should this not be:
 
-  https://lkml.org/lkml/2010/10/20/437
+                if (consumer->filter && consumer->filter(consumer, t))
 
-But doing that would be an optimization best done once we get all this
-working nicely.
+  ?
+
+> +			ret = true;
+> +			break;
+> +		}
+> +	}
+> +	up_read(&uprobe->consumer_rwsem);
+> +	return ret;
+> +}
+> +
+
+-- 
+steve
 
