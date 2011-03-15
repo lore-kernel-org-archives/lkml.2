@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab1COQun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 12:50:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64597 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932348Ab1COQum (ORCPT
+	id S932443Ab1COQwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:52:31 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39857 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932333Ab1COQw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 12:50:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH] Add STMicroelectronics LPS001WP pressure sensor device driver into misc
-Date: Tue, 15 Mar 2011 17:50:33 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Jean Delvare <khali@linux-fr.org>,
-        mems applications <mems.applications@st.com>, rdunlap@xenotime.net,
-        carmine.iascone@st.com, matteo.dameno@st.com, rubini@cvml.unipv.it,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <guenter.roeck@ericsson.com>, Greg KH <greg@kroah.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-References: <1300128906-1066-1-git-send-email-matteo.dameno@st.com> <201103151429.29460.arnd@arndb.de> <4D7F7C04.50909@cam.ac.uk>
-In-Reply-To: <4D7F7C04.50909@cam.ac.uk>
+	Tue, 15 Mar 2011 12:52:29 -0400
+Date: Tue, 15 Mar 2011 22:22:19 +0530
+From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH 1/2] kdump: Allow shrinking of kdump region to be
+ overridden
+Message-ID: <20110315165219.GA22509@in.ibm.com>
+Reply-To: mahesh@linux.vnet.ibm.com
+References: <20100825002258.GD28360@kryten>
+ <m139u37cii.fsf@fess.ebiederm.org>
+ <4D771EE6.5050404@linux.vnet.ibm.com>
+ <20110309122046.GC16951@cr0.redhat.com>
+ <20110309234657.264d3080@kryten>
+ <20110309142108.GD16951@cr0.redhat.com>
+ <20110314181315.GA16075@in.ibm.com>
+ <AANLkTi=aDzCaa7_=5XTrnJCzmZPrDy3omXwDarEF8XmH@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103151750.33179.arnd@arndb.de>
-X-Provags-ID: V02:K0:1aaEf1mGCeE60FRPdv50LgnVsKZ2SNkMTeUlMV29v3H
- 9yI8X1aH6weLB2ekyfYMUi0afePlLnZJcHhKhpyqdCxpd2v6bJ
- D6m9vB+E314wuYbwAhP26qG2IP+jfO60xH3V/f6GNvHeOrSRrJ
- VOas2CU0D003ZRMcO6JWHDhuDQMv0ozh+4d1lFRFAH2Ush74tj
- BagzQwwfD2OdMlIM+i+zg==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=aDzCaa7_=5XTrnJCzmZPrDy3omXwDarEF8XmH@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 March 2011, Jonathan Cameron wrote:
-> On 03/15/11 13:29, Arnd Bergmann wrote:
-> > On Tuesday 15 March 2011, Jonathan Cameron wrote:
-> >> An interesting idea though I'm not entirely sure how it would
-> >> work in practice.
-> >> Two options occurred whilst cycling in this morning.
-> >> 1) Spit functionality out in staging. This would give a core
-> >> set that is basically the sysfs only stuff.  To do that we'd
-> >> have to define a struct iio_dev_basic and make it an element
-> >> of the iio_dev.  Prior to that we'd probably need to make pretty
-> >> much all accesses into iio_dev via macros / inline functions 
-> >> which would not be a trivial undertaking.
-> > 
-> > I think if you try to maintain compatibility between the
-> > basic drivers and the complex stuff in the same tree, you
-> > won't be able to gain much. Any major changes to address the TODO
-> > items would still potentially impact all drivers.
->
-> True though the todo's I know about shouldn't cause trouble for
-> the simple drivers.
+On Tue, Mar 15, 2011 at 03:52:38PM +0800, Américo Wang wrote:
+> On Tue, Mar 15, 2011 at 2:13 AM, Mahesh J Salgaonkar
+> <mahesh@linux.vnet.ibm.com> wrote:
+> >
+> > During free we do free all of them including RMO region. But since the rtas
+> > region is always on top of RMO, crashkernel memory overlaps rtas region and
+> > we endup freeing that even, which is causing the crash.
+> >
+> 
+> Okay, but with this patch applied, we will just ignore rtas region, right?
+Correct.
+> Thus, when I echo 0 to free all the 128M crashkernel memory, the final
+> result will be 32M left, which means crash_size will still show 32M.
+> This looks odd.
+> 
+> How about skipping the 32M as a whole? I mean once the region being freed
+> has overlap with this rtas region, skip the whole rtas region, and let
+> crash_size
+> show 0?
+The existing code from crash_shrink_memory() function reduces the crash
+size to 0 when echo'ed 0. I did test this patchset and verified that
+/sys/kernel/kexec_crash_size show 0 value.
 
-Ok. If that's the case, it may be simpler to just get the
-core into shape for merging, and then do one driver at a
-time, but leave all other drivers in staging.
+Thanks,
+-Mahesh.
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
 
-However, without having looked at the code, I would still
-assume that it's not that easy and you will actually break
-drivers by fixing the core.
-
-> >> That would leave the ugly drivers in staging to pull over
-> >> as they get fixed up.
-> > 
-> > Yes. Or, with my variant, leave a copy of the core as well.
->
-> Sure, depending on what is left there.  If we have moved all of the
-> above across then there the non staging version should do everything
-> the staging version does..
-
-Yes. If they still have a compatible in-kernel API.
- 
-> > Then leave the complex drivers until you have the infrastructure
-> > for them in the new core version.
-> Then the key thing is going to be convincing people that there is
-> a reason for a lot of what will go in early on, but they'll need to
-> look at staging to see why... I guess the version going into mainline
-> may need a lot of comments in the code.  Note for some whole classes
-> of devices there are only 'complex' drivers.
-
-Well, all the code is in the kernel in the staging drivers, so
-any reviewer can look there to see how it's used. You can always
-point to a specific driver in the changelog as an example when
-a core component gets posted for review in order to have it
-in the mainline tree.
-
-	Arnd
+-- 
+Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
