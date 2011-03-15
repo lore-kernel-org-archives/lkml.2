@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab1CORvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 13:51:13 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52322 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757819Ab1CORvJ convert rfc822-to-8bit (ORCPT
+	id S1758241Ab1CORyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 13:54:25 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65205 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758215Ab1CORyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 13:51:09 -0400
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 5/20] 5: Uprobes: register/unregister
- probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
+	Tue, 15 Mar 2011 13:54:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=EwdeH9JIV5rwqZaDjfMd3/gjPB66qJvo8BMcDjvjmkVvk6gman9wY5rBczWHmVS0W8
+         MCFmQigV84+kVRpoKTPhg6DoR82SR2wvHLl2TI07HgauiwCm6vgqcVSyH2AS7/9nGtSm
+         Nkkc7cVlk8qB8jYgzMUCTptXWbFjJpDmKpF5U=
+Date: Tue, 15 Mar 2011 18:54:19 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Lin Ming <minggr@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1300211262.9910.295.camel@gandalf.stny.rr.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314133454.27435.81020.sendpatchset@localhost6.localdomain6>
-	 <alpine.LFD.2.00.1103151439400.2787@localhost6.localdomain6>
-	 <20110315171536.GA24254@linux.vnet.ibm.com>
-	 <1300211262.9910.295.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 15 Mar 2011 18:50:11 +0100
-Message-ID: <1300211411.2203.290.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Subject: Re: [RFC PATCH 1/4] perf: Starter and stopper events
+Message-ID: <20110315175415.GA6605@nowhere>
+References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+ <1300130283-10466-2-git-send-email-fweisbec@gmail.com>
+ <AANLkTim4gFdxn3pHZuxXe-AwTCYrnUHHeFkEK6wisYiL@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim4gFdxn3pHZuxXe-AwTCYrnUHHeFkEK6wisYiL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 13:47 -0400, Steven Rostedt wrote:
-> On Tue, 2011-03-15 at 22:45 +0530, Srikar Dronamraju wrote:
-> > > > +   }
-> > > > +   list_for_each_entry_safe(mm, tmpmm, &tmp_list, uprobes_list) {
-> > > > +           down_read(&mm->mmap_sem);
-> > > > +           if (!install_uprobe(mm, uprobe))
-> > > > +                   ret = 0;
-> > > 
-> > > Installing it once is success ?
-> > 
-> > This is a little tricky. My intention was to return success even if one
-> > install is successful. If we return error, then the caller can go
-> > ahead and free the consumer. Since we return success if there are
-> > currently no processes that have mapped this inode, I was tempted to
-> > return success on atleast one successful install.
+On Tue, Mar 15, 2011 at 10:36:18PM +0800, Lin Ming wrote:
+> On Tue, Mar 15, 2011 at 3:18 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> What about an all or nothing approach. If one fails, remove all that
-> were installed, and give up.
+> >
+> > +static void perf_event_pause_resume(struct perf_event *event, int nmi,
+> > +                                   struct perf_sample_data *data,
+> > +                                   struct pt_regs *regs)
+> > +{
+> > +       struct perf_event *iter;
+> > +       unsigned long flags;
+> > +
+> > +       /*
+> > +        * Ensure the targets can't be sched in/out concurrently.
+> > +        * Disabling irqs is sufficient for that because starters/stoppers
+> > +        * are on the same cpu/task.
+> > +        */
+> > +       local_irq_save(flags);
+> 
+> Could you explain this more detail?
 
-That sounds like a much saner semantic and is what we generally do in
-the kernel.
+Yeah, I should have detailed that more.
+
+So, I put a constraint in starters and stoppers: those must be attached
+to the same task and cpu than the target. That allows us to do this
+pause/resume lockless if we can ensure that:
+
+- target sched in/out can't interrupt perf_event_pause_resume()
+- perf_event_pause_resume() can interrupt the target in the middle of
+event_sched_in()
+
+So that both are strictly serialized.
+
+We need to ensure that the target event can not be concurrently scheduled
+in (->add()) or scheduled out (->del() ), so that when we check
+PERF_EVENT_STATE_ACTIVE, we know that the event is currently running
+and is not going to move while we do our checks and we call start() and
+stop().
+
+So the rationale is that the target can not be in the middle of
+event_sched_in() or event_sched_out() when the starter/stopper
+trigger. We have no guarantee of that currently, especially because
+of events that trigger in NMIs, but also for other corner cases may
+be, so I'll need to think about it later. Why not by using pmu_disable_all()
+on the starter/stopper when the target is about to schedule in/out, until
+we know the event->state really reflects the hardware and logical states.
+
+Now event_sched_in() and event_sched_out() can still be called from an
+IPI to enable/disable an event. Hence the interrupts disabled to prevent
+from that.
+ 
+> > +
+> > +
+> > +       /* Prevent the targets from being removed under us. */
+> > +       rcu_read_lock();
+> > +
+> > +       list_for_each_entry_rcu(iter, &event->starter_list, starter_entry) {
+> > +               /*
+> > +                * There is a small race window here, between the state
+> > +                * gets set to active and the event is actually ->add().
+> > +                * We need to find a way to ensure the starter/stopper
+> > +                * can't trigger in between.
+> 
+> Can we set the state to active after the event is actually ->add()?
+
+If we do so, the event may trigger before its state gets updated and that state
+can be checked from event fast paths. As is the case from hrtimer for example.
+
+Or perf_event_update_userpage().
+
+Not sure how we deal with that with del() called after we update the state.
