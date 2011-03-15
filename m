@@ -1,136 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab1COQFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 12:05:48 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:42793 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab1COQFq (ORCPT
+	id S1758131Ab1COQGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:06:09 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40306 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758113Ab1COQGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 12:05:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=JCBs3W1teVr8dKEkWcQn16dSX
-	FPJrX48jRSMr+2nUJYYEikdMT2Kiwd3mqekCmre8Lep7dAlyV3JJFm1Njd20NXGU
-	oLYIiZ7kaiuyEQG3tIcDeGHAiLYjZ4y/Miy8+QUoSxI4S+wCcHfaQVvo9NVGkz8e
-	ntZEEPL5RtsfU+nFkA=
-Date: Tue, 15 Mar 2011 09:08:09 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Andreas Dilger <adilger@dilger.ca>
-cc: Dave Chinner <david@fromorbit.com>, Indan Zupancic <indan@nul.nu>,
-        Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "hch@lst.de" <hch@lst.de>, "l@jasper.es" <l@jasper.es>
-Subject: Re: [PATCH v3] introduce sys_syncfs to sync a single file system
-In-Reply-To: <C79DDACF-9320-424D-84F5-3DB9C5325B1D@dilger.ca>
-Message-ID: <Pine.LNX.4.64.1103150901420.21727@cobra.newdream.net>
-References: <Pine.LNX.4.64.1103101125150.4190@cobra.newdream.net>
- <edfa4cf081249734807e582c14253fca.squirrel@webmail.greenhost.nl>
- <201103111255.44979.arnd@arndb.de> <ffafd3ccb3fd1be7c40348c9cee84aef.squirrel@webmail.greenhost.nl>
- <20110311235607.GB15853@elie> <9446ab1a2315c0d2476c30f8315a0503.squirrel@webmail.greenhost.nl>
- <20110312021001.GA16833@elie> <20110312173217.GA24981@kroah.com>
- <1e597aedd3d7825dcc0630b1cf2399fa.squirrel@webmail.greenhost.nl>
- <Pine.LNX.4.64.1103132114380.5145@cobra.newdream.net> <20110315101155.GO15097@dastard>
- <C79DDACF-9320-424D-84F5-3DB9C5325B1D@dilger.ca>
+	Tue, 15 Mar 2011 12:06:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=N8CNe2Tra9oHUXHgjnDmxyF5htyJtzuIJYsJo2lNK3JZ1cdeqWvaXnqy2RUfb+Dc5x
+         7Ohd4usHbsrjZHcCuUR+VYAuAt4E/jS5cQSvT+mZQwMECqSVa2fHc36NnaluD49dRC20
+         myyuiA4hMg2TPGZiADJayGrU+EbKmlauyN+vM=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <24fd59c964cf67c5ec048caa512afcd6.squirrel@webmail.greenhost.nl>
+References: <1298404994-2907-1-git-send-email-mjg@redhat.com>
+	<1300125566-29648-1-git-send-email-chris@chris-wilson.co.uk>
+	<cb03c0cd31393b476e63c4e699247c91.squirrel@webmail.greenhost.nl>
+	<b7da2f$qnp1ps@fmsmga001.fm.intel.com>
+	<5060ae708cceef8df998d3f59be5d246.squirrel@webmail.greenhost.nl>
+	<20110315112724.6729.qmail@stuge.se>
+	<24fd59c964cf67c5ec048caa512afcd6.squirrel@webmail.greenhost.nl>
+Date: Tue, 15 Mar 2011 12:06:04 -0400
+Message-ID: <AANLkTim6H3UCCsT1iAR2O=PL=5K4ypkT7UqcjqbAf3Vp@mail.gmail.com>
+Subject: Re: [PATCH] ACPI/Intel: Rework Opregion support
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
+        Alan Cox <alan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011, Andreas Dilger wrote:
-> Should there be a "wait" argument or flag that allows an app to start 
-> the syncfs(), do something, and then call again to wait for completion?
-> 
-> A more advanced implementation would have the "wait=0" call return an 
-> opaque wait handle (e.g. transaction ID) and then calling back with this 
-> handle as an argument would only wait if that handle hadn't committed 
-> yet. That allows userspace to do efficient batching without having to 
-> wait for the full sync to complete.
+On Tue, Mar 15, 2011 at 7:46 AM, Indan Zupancic <indan@nul.nu> wrote:
+> On Tue, March 15, 2011 12:27, Peter Stuge wrote:
+>> coreboot has existed for about eleven years and some 250 mainboards of
+>> varying shapes and sizes (from laptop to server) are supported, but it's
+>
+> I've been wanting to get rid of BIOSes and use Coreboot for ages,
+> but the amount of hassle needed to get it working for my hardware
+> and the lack of features (suspend), as well the chance of bricking
+> the system always put me off.
+>
+>> only just recently that things are really taking off, with the code
+>> release from AMD to initialize their most recent Fusion platform.
+>
+> They don't give their Linux devs any Fusion hardware, nor do they
+> open the UVD spec, but at least they release info like this.
+>
 
-FWIW this is what the btrfs {START,WAIT}_SYNC ioctls do.  Because it ties 
-into btrfs' transactions, there's an additional semantic that operations 
-after the START_SYNC are not included in the committed state (this time 
-around, at least).  Absent that (which I'm not sure maps cleanly onto many 
-other file systems currently, and is of limited value when not used in 
-concert with btrfs snapshots), I'm not sure a wait flag is helpful.  Is it 
-any different than an application doing the syncfs() in a separate thread?
+They do give us fusion hw; before launch even.  That's why we had
+Linux support before hw was available publicly.  My board just
+happened to get bricked recently during a failed bios upgrade.  A new
+one is on the way.  Also we are looking into a potential release of
+UVD, but unfortunately, our decode hw is intimately tied in with our
+drm implementation and if someone managed to use the released
+information to compromise the drm in our windows driver it would very
+negatively impact our ability to sell into the windows market and
+would probably get the open source graphics initiative shut down.
 
-sage
+Alex
 
-
-> 
-> Cheers, Andreas
-> 
-> On 2011-03-15, at 4:11, Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > On Sun, Mar 13, 2011 at 09:29:17PM -0700, Sage Weil wrote:
-> >> On Mon, 14 Mar 2011, Indan Zupancic wrote:
-> >>> Everyone seems to want to add this new syncfs, but it's not even defined 
-> >>> what it does. "Same as sync, but only on one fs" is IMHO not good 
-> >>> enough, because sync's behaviour is pretty badly documented, and that's 
-> >>> a system call.
-> >> 
-> >> How about the man page below?  I tried to avoid the somewhat antiquated 
-> >> implementation specific terminology in the sync(2) man page.
-> >> 
-> >> I think adding this functionality into sync_file_range(2) is forcing 
-> >> unrelated functionality into an existing interface; sync_file_range 
-> >> operates on _files_, not an entire file system.  With each API addition it 
-> >> is more important to make the interface simple and intuitive than to 
-> >> minimize the size of our patches.  IMO that's why a new syscall is 
-> >> preferable to, say, an equivalent ioctl.
-> >> 
-> >> Thanks-
-> >> sage
-> >> 
-> >> 
-> >> .TH SYNCFS 2 2011-03-13 "Linux" "Linux Programmer's Manual"
-> >> .SH NAME
-> >> syncfs \- commit cached file system state to stable storage
-> >> .SH SYNOPSIS
-> >> .B #include <unistd.h>
-> >> .sp
-> >> .B void syncfs(int fd);
-> >> .SH DESCRIPTION
-> >> .BR syncfs ()
-> >> flushes any cached data modifications to the file system containing the 
-> >> file referenced by the file descriptor
-> >> .I fd
-> >> to stable storage (usually a disk).  This includes the results of any
-> >> file modifications or other file system operations that have completed
-> >> prior to the call to
-> >> .BR syncfs(2).
-> >> This is similar to 
-> >> .BR sync(2),
-> >> but will commit changes for only a single file system instead of all
-> >> mounted file systems.
-> >> .SH ERRORS
-> >> This function is always successful.
-> > 
-> > Perhaps we should consider propagating errors out to the user
-> > application rather than discarding them in kernel and pretending we
-> > can't ever have a write error?
-> > 
-> > Cheers,
-> > 
-> > Dave.
-> > -- 
-> > Dave Chinner
-> > david@fromorbit.com
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+> Greetings,
+>
+> Indan
+>
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
