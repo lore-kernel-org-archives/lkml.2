@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab1COH0u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 03:26:50 -0400
-Received: from b.relay.invitel.net ([62.77.203.4]:35429 "EHLO
-	b.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932Ab1COH0r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 03:26:47 -0400
-Date: Tue, 15 Mar 2011 08:26:40 +0100
-From: Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH 3/4 v5] video, sm501: add OF binding to support SM501
-In-reply-to: <1296026490-14665-1-git-send-email-hs@denx.de>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-fbdev@vger.kernel.org, devicetree-discuss@ozlabs.org,
-        Ben Dooks <ben@simtec.co.uk>, Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Paul Mundt <lethal@linux-sh.org>,
-        Wolfgang Denk <wd@denx.de>
-Reply-to: hs@denx.de
-Message-id: <4D7F14B0.1030008@denx.de>
-Organization: DENX Software Engineering
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-15
-Content-transfer-encoding: 7BIT
-References: <1291451028-22532-1-git-send-email-hs@denx.de>
- <1296026490-14665-1-git-send-email-hs@denx.de>
-User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
+	id S1754856Ab1COHs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 03:48:56 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60462 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836Ab1COHsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 03:48:53 -0400
+Date: Tue, 15 Mar 2011 18:48:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Adamson <andros@netapp.com>, Boaz Harrosh <bharrosh@panasas.com>,
+        Dean Hildebrand <dhildeb@us.ibm.com>,
+        Fred Isaman <iisaman@citi.umich.edu>, Mike Sager <sager@netapp.com>,
+        Fred Isaman <iisaman@netapp.com>,
+        Mingyang Guo <guomingyang@nrchpc.ac.cn>,
+        Ricardo Labiaga <Ricardo.Labiaga@netapp.com>,
+        Tao Guo <guotao@nrchpc.ac.cn>, Andy Adamson <andros@netapp.com>,
+        Benny Halevy <bhalevy@panasas.com>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>
+Subject: linux-next: build failure after merge of the bkl-config tree
+Message-Id: <20110315184845.1a411e67.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Hi Arnd,
 
-Heiko Schocher wrote:
-> - add binding to OF, compatible name "smi,sm501"
-> 
-> Signed-off-by: Heiko Schocher <hs@denx.de>
-> cc: linux-fbdev@vger.kernel.org
-> cc: devicetree-discuss@ozlabs.org
-> cc: Ben Dooks <ben@simtec.co.uk>
-> cc: Vincent Sanders <vince@simtec.co.uk>
-> cc: Samuel Ortiz <sameo@linux.intel.com>
-> cc: linux-kernel@vger.kernel.org
-> cc: Randy Dunlap <rdunlap@xenotime.net>
-> cc: Paul Mundt <lethal@linux-sh.org>
-> 
-> ---
-> - changes since v1:
->   add Ben Dooks, Vincent Sanders and Samuel Ortiz to cc, as suggested from
->   Paul Mundt.
-> - changes since v2:
->   add comments from Randy Dunlap:
->   - move parameter documentation to Documentation/fb/sm501.txt
-> - changes since v3:
->   - rebased against v2.6.38-rc2
->   - split in 3 patches
->     - of support patch
->       - get rid of "#if defined(CONFIG_PPC_MPC52xx)" usage
->         hide this in DTS, as Paul suggested.
->     - i/o routine patch
->     - edid support patch
-> - changes since v4
->   replace remaining CONFIG_PPC_MPC52xx with CONFIG_OF, as
->   it is no longer MPC52xx only.
-> - changes since v5
->   free edid_data after its usage, as it is no longer needed,
->   suggested from Paul Mundt. Also fall back to default if
->   kmemdup(edid_data) fails.
-> 
-> ./scripts/checkpatch.pl 0003-video-sm501-add-OF-binding-to-support-SM501.patch
-> total: 0 errors, 0 warnings, 132 lines checked
-> 
-> 0003-video-sm501-add-OF-binding-to-support-SM501.patch has no obvious style problems and is ready for submission.
-> 
->  Documentation/powerpc/dts-bindings/sm501.txt |   34 +++++++++++++++++++++
->  drivers/mfd/sm501.c                          |    9 +++++-
->  drivers/video/sm501fb.c                      |   42 ++++++++++++++++++++++++--
->  3 files changed, 81 insertions(+), 4 deletions(-)
->  create mode 100644 Documentation/powerpc/dts-bindings/sm501.txt
+After merging the bkl-config tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-This patchset is pending know for a while. I got Acked by from
+fs/nfs/read.c:21:28: error: linux/smp_lock.h: No such file or directory
 
-Samuel Ortiz for the mfd part, see here:
+Caused by commit 64419a9b2093 ("NFSv4.1: generic read") from the nfs tree
+interacting with commit 4ba8216cd905 ("BKL: That's all, folks") from the
+bkl-config tree.
 
-http://www.spinics.net/lists/linux-fbdev/msg02550.html
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
+I couldn't see that this include file was needed, so I applied the patch
+below (which Trond could apply to his tree, I am pretty sure).  (I am not
+sure why module.h is included either.)
 
-and for the DTS part from Benjamin Herrenschmidt:
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 15 Mar 2011 18:37:09 +1100
+Subject: [PATCH] nfs: BKL is no longer needed, so remove the include
 
-http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/nfs/read.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Are there some more issues?
-
-bye,
-Heiko
+diff --git a/fs/nfs/read.c b/fs/nfs/read.c
+index 4b764c6..7cded2b 100644
+--- a/fs/nfs/read.c
++++ b/fs/nfs/read.c
+@@ -18,7 +18,6 @@
+ #include <linux/sunrpc/clnt.h>
+ #include <linux/nfs_fs.h>
+ #include <linux/nfs_page.h>
+-#include <linux/smp_lock.h>
+ #include <linux/module.h>
+ 
+ #include <asm/system.h>
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+1.7.4.1
+
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
