@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab1COSEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 14:04:42 -0400
-Received: from www.tglx.de ([62.245.132.106]:52486 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758259Ab1COSEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 14:04:37 -0400
-Date: Tue, 15 Mar 2011 19:03:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	id S1758221Ab1COSGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 14:06:44 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58003 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478Ab1COSGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 14:06:43 -0400
+Date: Tue, 15 Mar 2011 19:06:39 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
         SystemTap <systemtap@sources.redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 3/20] 3: uprobes: Breakground page
- replacement.
-In-Reply-To: <20110315175048.GC24254@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.00.1103151902020.2787@localhost6.localdomain6>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314133433.27435.49566.sendpatchset@localhost6.localdomain6> <alpine.LFD.2.00.1103151206430.2787@localhost6.localdomain6> <20110315175048.GC24254@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
+Message-ID: <20110315180639.GQ2499@one.firstfloor.org>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314163028.a05cec49.akpm@linux-foundation.org> <20110314234754.GP2499@one.firstfloor.org> <alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011, Srikar Dronamraju wrote:
+Hi Thomas,
 
-> * Thomas Gleixner <tglx@linutronix.de> [2011-03-15 14:22:09]:
+> That's a brilliant reason to drop it right away. systemtap is the
+> least of our worries.
+
+Feeling defensive about something?
+
 > 
-> > On Mon, 14 Mar 2011, Srikar Dronamraju wrote:
-> > > +/*
-> > > + * Called with tsk->mm->mmap_sem held (either for read or write and
-> > > + * with a reference to tsk->mm
-> > 
-> > Hmm, why is holding it for read sufficient?
+> > How do you envisage these features actually get used?  For example,
+> > will gdb be modified?  Will other debuggers be modified or written?
 > 
-> We are not adding a new vma to the mm; but just replacing a page with
-> another after holding the locks for the pages. Existing routines
-> doing close to similar things like the
-> access_process_vm/get_user_pages seem to be taking the read_lock. Do
-> you see a resaon why readlock wouldnt suffice?
+> How about answering this question first _BEFORE_ advertising
+> systemtap?
 
-No, I just was confused by the comment. Probably should have asked why
-you want to call it write locked.
- 
-Thanks,
+I thought this was obvious.  systemtap is essentially a script driven 
+debugger. 
 
-	tglx
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
