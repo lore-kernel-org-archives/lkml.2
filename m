@@ -1,164 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab1COCax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 22:30:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63312 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169Ab1COCav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 22:30:51 -0400
-Message-ID: <4D7ECF91.2030308@cn.fujitsu.com>
-Date: Tue, 15 Mar 2011 10:31:45 +0800
-From: Mi Jinlong <mijinlong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: wrong index used in inner loop
-References: <4D76A06A.4090405@gmail.com> <20110309004955.GD15814@fieldses.org> <4D79A183.8090306@cn.fujitsu.com> <20110314222229.GJ25442@fieldses.org>
-In-Reply-To: <20110314222229.GJ25442@fieldses.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-15 10:29:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-15 10:29:32,
-	Serialize complete at 2011-03-15 10:29:32
+	id S1752500Ab1COCbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:31:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53716 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1COCbM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 22:31:12 -0400
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=LVe1Hbu2v80A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=C3Vb3aNdgF9WuPIj8HgA:9 a=uxSiT6090-pzFZCPE2kA:7 a=9jndyH3-Q43kr_XIrJW1WyyXcQIA:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] ftrace: add 'version' special file for ring buffer
+ format
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Slava Pestov <slavapestov@google.com>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com, dhsharp@google.com
+In-Reply-To: <1300142528-4918-1-git-send-email-slavapestov@google.com>
+References: <1300142528-4918-1-git-send-email-slavapestov@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 14 Mar 2011 22:31:08 -0400
+Message-ID: <1300156268.9910.242.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-03-14 at 15:42 -0700, Slava Pestov wrote:
+> The intention here is that if the ftrace ring buffer format changes
+> in the future like it did in the past with ktrace, we can increment
+> the version number and update clients appropriately.
 
+I purposely avoided "versions", and instead use the
+tracing/events/header_page and .../header_event to describe how the ring
+buffer format is laid out. If the format changes, then so should those
+files.
 
-J. Bruce Fields:
-> On Fri, Mar 11, 2011 at 12:13:55PM +0800, Mi Jinlong wrote:
->>
->> J. Bruce Fields:
->>> On Tue, Mar 08, 2011 at 10:32:26PM +0100, roel wrote:
->>>> Index i was already used in the outer loop
->>>>
->>>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
->>>> ---
->>>>  fs/nfsd/nfs4xdr.c |    4 ++--
->>>>  1 files changed, 2 insertions(+), 2 deletions(-)
->>>>
->>>> Not 100% sure this one is needed but it looks suspicious.
->>> Looks bad to me, thanks.
->>>
->>> nfsd4_decode_create_session should probably really be broken up a little
->>> bit; if it wasn't so long this would have been more obvious.
->>>
->>> I'll see if I can slip this into 2.6.38 with a couple other last-minute
->>> patches....  Otherwise, it'll be in 2.6.39.
->>>
->>> --b.
->>>
->>>> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
->>>> index 1275b86..615f0a9 100644
->>>> --- a/fs/nfsd/nfs4xdr.c
->>>> +++ b/fs/nfsd/nfs4xdr.c
->>>> @@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>>>  
->>>>  	u32 dummy;
->>>>  	char *machine_name;
->>>> -	int i;
->>>> +	int i, j;
->>>>  	int nr_secflavs;
->>>>  
->>>>  	READ_BUF(16);
->>>> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>>>  			READ_BUF(4);
->>>>  			READ32(dummy);
->>>>  			READ_BUF(dummy * 4);
->>>> -			for (i = 0; i < dummy; ++i)
->>>> +			for (j = 0; j < dummy; ++j)
->>>>  				READ32(dummy);
->>   We must not use dummy for index here.
->>   After the first index, READ32(dummy) will change dummy!!!!
-> 
-> Actually, wait, this is kind of silly.  I don't see why we couldn't just
-> skip the loop and do
-> 
-> 	p += dummy;
-> 
-> Also, your new test is still failing with a BAD_XDR error.  Well, maybe
-> the test should fail--we don't really implement this yet anyway--but it
-> should at least be getting past the xdr decoding.  So something else is
-> still wrong.
-
-  How did you modify it??
-
-  When testing it, I modify as 
- 
-    -                       for (j = 0; j < dummy; ++j)
-    -                               READ32(dummy);
-    +                       p += dummy;
-
-  or
-    
-    -                       for (j = 0; j < dummy; ++j)
-    -                               READ32(dummy);
-
-  Test case CSESS16 and CSESS16a are PASS, 
-  I can't get BAD_XDR error as you said.
-
---
-thanks,
-Mi Jinlong
+-- Steve
 
 > 
-> --b.
+> Tested: Verified that special file contains correct content
 > 
->>   The following patch fix this problem.
->>
->> --
->> thanks,
->> Mi Jinlong
->> ============================================================
->>
->> We must not use dummy for index.
->> After the first index, READ32(dummy) will change dummy!!!!
->>
->> Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
->> ---
->>  fs/nfsd/nfs4xdr.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
->> index 615f0a9..8dd70d0 100644
->> --- a/fs/nfsd/nfs4xdr.c
->> +++ b/fs/nfsd/nfs4xdr.c
->> @@ -1140,7 +1140,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>  {
->>  	DECODE_HEAD;
->>  
->> -	u32 dummy;
->> +	u32 dummy, tmp;
->>  	char *machine_name;
->>  	int i, j;
->>  	int nr_secflavs;
->> @@ -1216,7 +1216,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
->>  			READ32(dummy);
->>  			READ_BUF(dummy * 4);
->>  			for (j = 0; j < dummy; ++j)
->> -				READ32(dummy);
->> +				READ32(tmp);
->>  			break;
->>  		case RPC_AUTH_GSS:
->>  			dprintk("RPC_AUTH_GSS callback secflavor "
->> -- 
->> 1.7.4.1
->>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> This patch is against 2.6.38-rc8 but should apply to any version
+> from at least 2.6.34 onwards.
 > 
+> Signed-Off-By: Slava Pestov <slavapestov@google.com>
 
--- 
-----
-thanks
-Mi Jinlong
 
