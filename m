@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab1COQOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 12:14:17 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:38495 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758140Ab1COQOQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 12:14:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=EKHBZt3Z1EtuWiycwJscLix6fic9YeGcPy9WntCxJ/AWjK7mOmnKDwW7biQc8wmM8TdKzr/lNbCdAdYFttvmdAv0AOxqCDeyczV+NE8rrKNcb1fgnf8gH5Hq2ykC/C5M;
-Date: Tue, 15 Mar 2011 09:14:12 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Aneesh Bhasin <contact.aneesh@gmail.com>
-Cc: linux-newbie <linux-newbie@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: smap output - unnamed entries and heap
-Message-Id: <20110315091412.de6eb63c.rdunlap@xenotime.net>
-In-Reply-To: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com>
-References: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
+	id S1758159Ab1COQPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:15:54 -0400
+Received: from mout.perfora.net ([74.208.4.195]:49443 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758122Ab1COQPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 12:15:53 -0400
+Date: Tue, 15 Mar 2011 12:15:30 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 7/20]  7: uprobes: store/restore
+	original instruction.
+Message-ID: <20110315161530.GA23862@fibrous.localdomain>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314133522.27435.45121.sendpatchset@localhost6.localdomain6> <20110314180914.GA18855@fibrous.localdomain> <20110315092247.GW24254@linux.vnet.ibm.com> <1300196879.9910.271.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300196879.9910.271.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Provags-ID: V02:K0:Kcg2Ogwc2AB4qoXN9gnBlWgwJT0Azl2elvGXsNnYCPn
+ 7qEbflrS08Kh8zvGNo7+F9Y4Pr7NI0xdQdlAUboM7/KGRtKVa6
+ p6tCNgSK7+lQrUOMzhvjS/HpzPNh5dwfkjhlRwd/4J8ttjGxyY
+ vrPDQc0X5j2Ep3482KTAAI82+9pt+LDfC09gfKEykkZcGGtTuD
+ EnT2Yur279PuSDNlVHt9A1hyqOX6CNb3Icyxce90Ls=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 14:31:50 +0530 Aneesh Bhasin wrote:
+On Tue, Mar 15, 2011 at 09:47:59AM -0400, Steven Rostedt wrote:
+> > 	rcu_read_lock()
+> > 	if (mm->owner) {
+> > 		get_task_struct(mm->owner)
+> > 		tsk = mm->owner;
+> > 	}
+> > 	rcu_read_unlock()
+> > 	if (!tsk)
+> > 		return ret;
+> > 
+> > Agree?
+> 
+> Or:
+> 
+> 	rcu_read_lock();
+> 	tsk = mm->owner;
+> 	if (tsk)
+> 		get_task_struct(tsk);
+> 	rcu_read_unlock();
+> 	if (!tsk)
+> 		return ret;
+> 
+> Probably looks cleaner.
 
-> Hi All,
-> 
-> My apologies if this is not the right place for these type of
-> questions - I do not know of a better place to ask this.
-> 
-> I am trying to take out some memory figures from the /proc/<pid>/smaps
-> interface (linux v2.6.35). However, I could not find what do the
-> entries that have no name associated to them (no library path or
-> binary path with these entries) mean. So, I wrote a test C program
-> that allocates 100MB of memory (using malloc) and then writes to it in
-> chunks of 10MB. I could see that the 'Size' and 'RSS' of one of the
-> unnamed entries was increasing in accordance with the code, but there
-> were several other such unnamed sections too - is there a way to know
-> what and where do they come from.
-> 
-> Also, I could see that for some process the smap interface was showing
-> a '[heap]' entry but not for all - e.g. for my above test case, there
-> was no '[heap]' entry, although I assumed the malloc should have
-> reflected in the [heap]. Can someone please tell me (or point me in
-> the right direction) why is heap entry there only for some processes ?
-> 
-> Thanks in advance for any help..
+Yes, plus we should do "tsk = rcu_dereference(mm->owner);" and wrap the
+whole thing in a static uprobes_get_mm_owner() or similar.
 
-Did you look at Documentation/filesystems/proc.txt ?
-It has some info on smaps and maps.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+steve
+
