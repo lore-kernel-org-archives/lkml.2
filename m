@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab1COKfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 06:35:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44376 "EHLO mx2.suse.de"
+	id S1757210Ab1COLEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 07:04:14 -0400
+Received: from www.tglx.de ([62.245.132.106]:51443 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756162Ab1COKfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 06:35:17 -0400
-From: Ludwig Nussel <ludwig.nussel@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net> (maintainer:DOCUMENTATION),
-        Chris Wright <chrisw@sous-sol.org> (commit_signer:1/2=50%),
-        Greg Kroah-Hartman <gregkh@suse.de> (commit_signer:1/2=50%),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH] kernel/ksysfs.c: expose file_caps_enabled in sysfs (try4)
-Date: Tue, 15 Mar 2011 11:35:01 +0100
-Message-Id: <1300185301-21361-1-git-send-email-ludwig.nussel@suse.de>
-X-Mailer: git-send-email 1.7.3.4
+	id S1757175Ab1COLEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 07:04:13 -0400
+Date: Tue, 15 Mar 2011 12:02:45 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+cc: "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, int-list-linux-mm@kvack.org,
+        linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
+In-Reply-To: <20110315052133.GT24254@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.00.1103151158220.2787@localhost6.localdomain6>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314163028.a05cec49.akpm@linux-foundation.org> <y0maagxuqx6.fsf@fche.csb> <alpine.LFD.2.00.1103150224260.2787@localhost6.localdomain6>
+ <20110315052133.GT24254@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A kernel booted with no_file_caps allows to install fscaps on a binary
-but doesn't actually honor the fscaps when running the binary. Userspace
-currently has no sane way to determine whether installing fscaps
-actually has any effect. Since parsing /proc/cmdline is fragile this
-patch exposes the current setting (1 or 0) via /sys/kernel/fscaps
+On Tue, 15 Mar 2011, Srikar Dronamraju wrote:
+> > > TODO: Documentation/trace/uprobetrace.txt
+> > 
+> > without a reasonable documentation how to use that is a brilliant
+> > argument?
+> 
+> We had a fairly decent documentation for uprobes and
+> uprobetracer. But that had to be changed with  the change in
+> underlying design of uprobes infrastructure. Since uprobetrace is one
+> the user interface, I plan to document it soon. However it would be
+> great if we had inputs on how we should be designing the syscall.
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
----
- Documentation/ABI/testing/sysfs-kernel-fscaps |    8 ++++++++
- kernel/ksysfs.c                               |   10 ++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-fscaps
+Ok.
+ 
+> > 	Or some sensible implementation ?
+> 
+> Would syscall based perf probe implementation count as a sensible
+> implementation? My current plan was to code up the perf probe for
 
-diff --git a/Documentation/ABI/testing/sysfs-kernel-fscaps b/Documentation/ABI/testing/sysfs-kernel-fscaps
-new file mode 100644
-index 0000000..aef9dc7
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-kernel-fscaps
-@@ -0,0 +1,8 @@
-+What:		/sys/kernel/fscaps
-+Date:		March 2011
-+KernelVersion:	2.6.39
-+Contact:	Ludwig Nussel <ludwig.nussel@suse.de>
-+Description
-+		Shows whether file system capabilities are honored
-+		when executing a binary
-+
-diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-index 0b624e7..3b053c0 100644
---- a/kernel/ksysfs.c
-+++ b/kernel/ksysfs.c
-@@ -16,6 +16,7 @@
- #include <linux/kexec.h>
- #include <linux/profile.h>
- #include <linux/sched.h>
-+#include <linux/capability.h>
- 
- #define KERNEL_ATTR_RO(_name) \
- static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
-@@ -131,6 +132,14 @@ KERNEL_ATTR_RO(vmcoreinfo);
- 
- #endif /* CONFIG_KEXEC */
- 
-+/* whether file capabilities are enabled */
-+static ssize_t fscaps_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%d\n", file_caps_enabled);
-+}
-+KERNEL_ATTR_RO(fscaps);
-+
- /*
-  * Make /sys/kernel/notes give the raw contents of our kernel .notes section.
-  */
-@@ -158,6 +167,7 @@ struct kobject *kernel_kobj;
- EXPORT_SYMBOL_GPL(kernel_kobj);
- 
- static struct attribute * kernel_attrs[] = {
-+	&fscaps_attr.attr,
- #if defined(CONFIG_HOTPLUG)
- 	&uevent_seqnum_attr.attr,
- 	&uevent_helper_attr.attr,
--- 
-1.7.3.4
+Yes.
 
+> uprobes and then draft a proposal for how the syscall should look. 
+> There are still some areas on how we should be allowing the
+> filter, and what restrictions we should place on the syscall
+> defined handler. I would like to hear from you and others on your
+> ideas for the same. If you have ideas on doing it other than using a
+> syscall then please do let me know about the same.
+
+I don't think that anything else than a proper syscall interface is
+going to work out.
+
+> I know that getting the user interface right is very important.
+> However I think it kind of depends on what the infrastructure can
+> provide too. So if we can decide on the kernel ABI and the
+> underlying design (i.e can we use replace_page() based background page
+> replacement, Are there issues with the Xol slot based mechanism that
+> we are using, etc), we can work towards providing a stable User ABI that
+> even normal users can use. For now I am concentrating on getting the
+> underlying infrastructure correct.
+
+Fair enough. I'll go through the existing patchset and comment there.
+
+Thanks,
+
+	tglx
