@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab1COOVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 10:21:24 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:34459 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731Ab1COOVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 10:21:22 -0400
-Date: Tue, 15 Mar 2011 15:18:37 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
-        "pasik@iki.fi" <pasik@iki.fi>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH R4 2/7] xen/balloon: HVM mode support
-Message-ID: <20110315141837.GA12730@router-fw-old.local.net-space.pl>
-References: <20110308214636.GC27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091356370.2968@kaball-desktop>
-Mime-Version: 1.0
+	id S932134Ab1COOWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 10:22:19 -0400
+Received: from kroah.org ([198.145.64.141]:44555 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754917Ab1COOWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 10:22:18 -0400
+Date: Tue, 15 Mar 2011 07:18:59 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, security@kernel.org,
+        acpi4asus-user@lists.sourceforge.net, linux-scsi@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        open-iscsi@googlegroups.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [Security] [PATCH 00/20] world-writable files in sysfs and
+ debugfs
+Message-ID: <20110315141859.GA19442@kroah.com>
+References: <cover.1296818921.git.segoon@openwall.com>
+ <AANLkTikE-A=Fe-yRrN0opWwJGQ0f4uOzkyB3XCcEUrFE@mail.gmail.com>
+ <1300155965.5665.15.camel@mulgrave.site>
+ <20110315030956.GA2234@kroah.com>
+ <1300189828.4017.2.camel@mulgrave.site>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103091356370.2968@kaball-desktop>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <1300189828.4017.2.camel@mulgrave.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 09, 2011 at 01:58:30PM +0000, Stefano Stabellini wrote:
-> On Tue, 8 Mar 2011, Daniel Kiper wrote:
-> > HVM mode support.
->
-> I have already a patch in linux-next to do this, please give a look at
-> "xen: make the ballon driver work for hvm domains":
->
-> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git linux-next
+On Tue, Mar 15, 2011 at 07:50:28AM -0400, James Bottomley wrote:
+> On Mon, 2011-03-14 at 20:09 -0700, Greg KH wrote:
+> > On Mon, Mar 14, 2011 at 10:26:05PM -0400, James Bottomley wrote:
+> > > On Sat, 2011-03-12 at 23:23 +0300, Vasiliy Kulikov wrote:
+> > > > > Vasiliy Kulikov (20):
+> > > > >  mach-ux500: mbox-db5500: world-writable sysfs fifo file
+> > > > >  leds: lp5521: world-writable sysfs engine* files
+> > > > >  leds: lp5523: world-writable engine* sysfs files
+> > > > >  misc: ep93xx_pwm: world-writable sysfs files
+> > > > >  rtc: rtc-ds1511: world-writable sysfs nvram file
+> > > > >  scsi: aic94xx: world-writable sysfs update_bios file
+> > > > >  scsi: iscsi: world-writable sysfs priv_sess file
+> > > > 
+> > > > These are still not merged :(
+> > > 
+> > > OK, so I've not been tracking where we are in the dizzying ride on
+> > > security systems.  However, I thought we landed up in the privilege
+> > > separation arena using capabilities.  That means that world writeable
+> > > files aren't necessarily a problem as long as the correct capabilities
+> > > checks are in place, right?
+> > 
+> > There are no capability checks on sysfs files right now, so these all
+> > need to be fixed.
+> 
+> That statement is true but irrelevant, isn't it?  There can't be
+> capabilities within sysfs files because the system that does them has no
+> idea what the capabilities would be.  If there were capabilities checks,
+> they'd have to be in the implementing routines.
 
-OK, I will remove this patch from memory hotplug patchset, however:
+Ah, you are correct, sorry for the misunderstanding.
 
-@@ -232,7 +232,7 @@ static int increase_reservation(unsigned long nr_pages)
- 		set_phys_to_machine(pfn, frame_list[i]);
- 
- 		/* Link back into the page tables if not highmem. */
--		if (pfn < max_low_pfn) {
-+		if (!xen_hvm_domain() && pfn < max_low_pfn) {
+> I think the questions are twofold:
+> 
+>      1. Did anyone actually check for capabilities before assuming world
+>         writeable files were wrong?
 
-Why do not write it as:
+I do not think so as the majority (i.e. all the ones that I looked at)
+did no such checks.
 
-if (xen_pv_domain() && !PageHighMem(page)) ...
+>      2. Even if there aren't any capabilities checks in the implementing
+>         routines, should there be (are we going the separated
+>         capabilities route vs the monolithic root route)?
 
-For me it is simpler to read (xen_pv_domain()) and make it similar
-to relevant part in decrease_reservation() (!PageHighMem(page)).
+I think the general consensus is that we go the monolithic root route
+for sysfs files in that we do not allow them to be world writable.
 
-@@ -280,7 +280,7 @@ static int decrease_reservation(unsigned long nr_pages)
- 
- 		scrub_page(page);
- 
--		if (!PageHighMem(page)) {
-+		if (!xen_hvm_domain() && !PageHighMem(page)) {
+Do you have any exceptions that you know of that do these checks?
 
-As above.
+thanks,
 
-@@ -392,15 +392,19 @@ static struct notifier_block xenstore_notifier;
- 
- static int __init balloon_init(void)
- {
--	unsigned long pfn, extra_pfn_end;
-+ 	unsigned long pfn, nr_pages, extra_pfn_end;
- 	struct page *page;
- 
--	if (!xen_pv_domain())
-+	if (!xen_domain())
- 		return -ENODEV;
- 
- 	pr_info("xen_balloon: Initialising balloon driver.\n");
- 
--	balloon_stats.current_pages = min(xen_start_info->nr_pages, max_pfn);
-+ 	if (xen_pv_domain())
-+ 		nr_pages = xen_start_info->nr_pages;
-+ 	else
-+ 		nr_pages = max_pfn;
-+ 	balloon_stats.current_pages = min(nr_pages, max_pfn);
-
-It could be simplified:
-
-balloon_stats.current_pages = xen_pv_domain() ? min(xen_start_info->nr_pages, max_pfn) : max_pfn;
-
-Daniel
+greg k-h
