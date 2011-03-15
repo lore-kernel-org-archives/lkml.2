@@ -1,99 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab1COB4o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Mar 2011 21:56:44 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63309 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab1COB4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Mar 2011 21:56:42 -0400
-Message-ID: <4D7EC791.4040003@cn.fujitsu.com>
-Date: Tue, 15 Mar 2011 09:57:37 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: hpa@zytor.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, tlb: small cleanup for native_flush_tlb_others
-References: <4D7DBBE3.1010104@cn.fujitsu.com> <20110314123355.GA27477@elte.hu>
-In-Reply-To: <20110314123355.GA27477@elte.hu>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-15 09:55:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-15 09:55:22,
-	Serialize complete at 2011-03-15 09:55:22
+	id S1751904Ab1COCCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Mar 2011 22:02:51 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58482 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab1COCCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Mar 2011 22:02:48 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 15 Mar 2011 10:56:12 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-Id: <20110315105612.f600a659.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+	<20110311171006.ec0d9c37.akpm@linux-foundation.org>
+	<AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2011 08:33 PM, Ingo Molnar wrote:
+On Mon, 14 Mar 2011 11:29:17 -0700
+Greg Thelen <gthelen@google.com> wrote:
+
+> On Fri, Mar 11, 2011 at 5:10 PM, Andrew Morton
+
+> My rational for pursuing bdi writeback was I/O locality.  I have heard that
+> per-page I/O has bad locality.  Per inode bdi-style writeback should have better
+> locality.
 > 
-> * Xiao Guangrong <xiaoguangrong@cn.fujitsu.com> wrote:
+> My hunch is the best solution is a hybrid which uses a) bdi writeback with a
+> target memcg filter and b) using the memcg lru as a fallback to identify the bdi
+> that needed writeback.  I think the part a) memcg filtering is likely something
+> like:
+>  http://marc.info/?l=linux-kernel&m=129910424431837
 > 
->> Use smp_processor_id instead of get_cpu and put_cpu since
->> the caller has already disabled preemption
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
->> ---
->>  arch/x86/mm/tlb.c |    3 +--
->>  1 files changed, 1 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
->> index 6acc724..92849d0 100644
->> --- a/arch/x86/mm/tlb.c
->> +++ b/arch/x86/mm/tlb.c
->> @@ -211,11 +211,10 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
->>  	if (is_uv_system()) {
->>  		unsigned int cpu;
->>  
->> -		cpu = get_cpu();
->> +		cpu = smp_processor_id();
->>  		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
->>  		if (cpumask)
->>  			flush_tlb_others_ipi(cpumask, mm, va);
->> -		put_cpu();
->>  		return;
-> 
-> There's multiple callers. Could you please update the changelog with the list of 
-> callers and a statement that all of them disable preemption already?
+> The part b) bdi selection should not be too hard assuming that page-to-mapping
+> locking is doable.
 > 
 
-Thanks Ingo, there is the new version.
+For now, I like b). 
 
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: [PATCH] x86, tlb: small micro-optimization for native_flush_tlb_others
+> An alternative approach is to bind each inode to exactly one cgroup (possibly
+> the root cgroup).  Both the cache page allocations and dirtying charges would be
+> accounted to the i_cgroup.  With this approach there is no foreign dirtier issue
+> because all pages are in a single cgroup.  I find this undesirable because the
+> first memcg to touch an inode is charged for all pages later cached even by
+> other memcg.
+> 
 
-native_flush_tlb_others is called from:
-flush_tlb_current_task
-flush_tlb_mm
-flush_tlb_page
+I don't think 'foreign dirtier' is a big problem. When program does write(),
+the file to be written is tend to be under control of the application in
+the cgroup. I don't think 'written file' is shared between several cgroups, 
+typically. But /var/log/messages is a shared one ;)
 
-All these functions disable preemption explicitly, so we can use smp_processor_id
-instead of get_cpu and put_cpu
+But I know some other OSs has 'group for file cache'. I'll not nack if you
+propose such patch. Maybe there are some guys who want to limit the amount of
+file cache.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/mm/tlb.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 6acc724..92849d0 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -211,11 +211,10 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
- 	if (is_uv_system()) {
- 		unsigned int cpu;
- 
--		cpu = get_cpu();
-+		cpu = smp_processor_id();
- 		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
- 		if (cpumask)
- 			flush_tlb_others_ipi(cpumask, mm, va);
--		put_cpu();
- 		return;
- 	}
- 	flush_tlb_others_ipi(cpumask, mm, va);
--- 
-1.7.4
+
+> When a page is allocated it is charged to the current task's memcg.  When a
+> memcg page is later marked dirty the dirty charge is billed to the memcg from
+> the original page allocation.  The billed memcg may be different than the
+> dirtying task's memcg.
+> 
+yes.
+
+> After a rate limited number of file backed pages have been dirtied,
+> balance_dirty_pages() is called to enforce dirty limits by a) throttling
+> production of more dirty pages by current and b) queuing background writeback to
+> the current bdi.
+> 
+> balance_dirty_pages() receives a mapping and page count, which indicate what may
+> have been dirtied and the max number of pages that may have been dirtied.  Due
+> to per cpu rate limiting and batching (when nr_pages_dirtied > 0),
+> balance_dirty_pages() does not know which memcg were charged for recently dirty
+> pages.
+> 
+> I think both bdi and system limits have the same issue in that a bdi may be
+> pushed over its dirty limit but not immediately checked due to rate limits.  If
+> future dirtied pages are backed by different bdi, then future
+> balance_dirty_page() calls will check the second, compliant bdi ignoring the
+> first, over-limit bdi.  The safety net is that the system wide limits are also
+> checked in balance_dirty_pages.  However, per bdi writeback is employed in this
+> situation.
+> 
+> Note: This memcg foreign dirtier issue does not make it any more likely that a
+> memcg is pushed above its usage limit (limit_in_bytes).  The only limit with
+> this weak contract is the dirty limit.
+> 
+> For reference, this issue was touch on in
+> http://marc.info/?l=linux-mm&m=128840780125261
+> 
+> There are ways to handle this issue (my preferred option is option #1).
+> 
+> 1) keep a (global?) foreign_dirtied_memcg list of memcg that were recently
+>   charged for dirty pages by tasks outside of memcg.  When a memcg dirty page
+>   count is elevated, the page's memcg would be queued to the list if current's
+>   memcg does not match the pages cgroup.  mem_cgroup_balance_dirty_pages()
+>   would balance the current memcg and each memcg it dequeues from this list.
+>   This should be a straightforward fix.
+> 
+
+Can you implement this in an efficient way ? (without taking any locks ?)
+It seems cost > benefit.
+
+
+
+> 2) When pages are dirtied, migrate them to the current task's memcg.
+>   mem_cgroup_balance_dirty_pages would then have a better chance at seeing all
+>   pages dirtied by the current operation.  This is still not perfect solution
+>   due to rate limiting.  This also is bad because such a migration would
+>   involve charging and possibly memcg direct reclaim because the destination
+>   memcg may be at its memory usage limit.  Doing all of this in
+>   account_page_dirtied() seems like trouble, so I do not like this approach.
+> 
+
+I think this cannot be implemented in an efficnent way.
+
+
+
+> 3) Pass in some context which is represents a set of pages recently dirtied into
+>   [mem_cgroup]_balance_dirty_pages.  What would be a good context to collect
+>   the set of memcg that should be balanced?
+>   - an extra passed in parameter - yuck.
+>   - address_space extension - does not feel quite right because address space
+>     is not a io context object, I presume it can be shared by concurrent
+>     threads.
+>   - something hanging on current.  Are there cases where pages become dirty
+>     that are not followed by a call to balance dirty pages Note: this option
+>     (3) is not a good idea because rate limiting make dirty limit enforcement
+>     an inexact science.  There is no guarantee that a caller will have context
+>     describing the pages (or bdis) recently dirtied.
+> 
+
+I'd like to have an option  'cgroup only for file cache' rather than adding more
+hooks and complicated operations.
+
+But, if we need to record 'who dirtied ?' information, record it in page_cgroup
+or radix-tree and do filtering is what I can consider, now.
+In this case, some tracking information will be required to be stored into
+struct inode, too.
+
+
+How about this ?
+
+ 1. record 'who dirtied memcg' into page_cgroup or radix-tree.
+   I prefer recording in radix-tree rather than using more field in page_cgroup.
+ 2. bdi-writeback does some extra queueing operation per memcg.
+   find a page, check 'who dirtied', enqueue it(using page_cgroup or list of pagevec)
+ 3. writeback it's own queue.(This can be done before 2. if cgroup has queue, already)
+ 4. Some GC may be required...
+
+Thanks,
+-Kame
 
