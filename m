@@ -1,123 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab1COJfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 05:35:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45129 "EHLO mx1.redhat.com"
+	id S1756551Ab1COJgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 05:36:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11210 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756141Ab1COJeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 05:34:13 -0400
+	id S1755238Ab1COJeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 05:34:09 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 08/15] GFS2: Fix glock deallocation race
-Date: Tue, 15 Mar 2011 09:11:38 +0000
-Message-Id: <1300180305-5993-9-git-send-email-swhiteho@redhat.com>
+Cc: Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 06/15] GFS2: deallocation performance patch
+Date: Tue, 15 Mar 2011 09:11:36 +0000
+Message-Id: <1300180305-5993-7-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1300180305-5993-1-git-send-email-swhiteho@redhat.com>
 References: <1300180305-5993-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a race in deallocating glocks which was introduced
-in the RCU glock patch. We need to ensure that the glock count is
-kept correct even in the case that there is a race to add a new
-glock into the hash table. Also, to avoid having to wait for an
-RCU grace period, the glock counter can be decremented before
-call_rcu() is called.
+From: Bob Peterson <rpeterso@redhat.com>
 
+This patch is a performance improvement to GFS2's dealloc code.
+Rather than update the quota file and statfs file for every
+single block that's stripped off in unlink function do_strip,
+this patch keeps track and updates them once for every layer
+that's stripped.  This is done entirely inside the existing
+transaction, so there should be no risk of corruption.
+The other functions that deallocate blocks will be unaffected
+because they are using wrapper functions that do the same
+thing that they do today.
+
+I tested this code on my roth cluster by creating 200
+files in a directory, each of which is 100MB, then on
+four nodes, I simultaneously deleted the files, thus competing
+for GFS2 resources (but different files).  The commands
+I used were:
+
+[root@roth-01]# time for i in `seq 1 4 200` ; do rm /mnt/gfs2/bigdir/gfs2.$i; done
+[root@roth-02]# time for i in `seq 2 4 200` ; do rm /mnt/gfs2/bigdir/gfs2.$i; done
+[root@roth-03]# time for i in `seq 3 4 200` ; do rm /mnt/gfs2/bigdir/gfs2.$i; done
+[root@roth-05]# time for i in `seq 4 4 200` ; do rm /mnt/gfs2/bigdir/gfs2.$i; done
+
+The performance increase was significant:
+
+             roth-01     roth-02     roth-03     roth-05
+             ---------   ---------   ---------   ---------
+old: real    0m34.027    0m25.021s   0m23.906s   0m35.646s
+new: real    0m22.379s   0m24.362s   0m24.133s   0m18.562s
+
+Total time spent deleting:
+old: 118.6s
+new:  89.4
+
+For this particular case, this showed a 25% performance increase for
+GFS2 unlinks.
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index ddc3e1e..3f45a14 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -103,16 +103,21 @@ static inline void spin_unlock_bucket(unsigned int hash)
- 	__bit_spin_unlock(0, (unsigned long *)bl);
- }
+diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
+index 3c4039d..ef3dc4b 100644
+--- a/fs/gfs2/bmap.c
++++ b/fs/gfs2/bmap.c
+@@ -21,6 +21,7 @@
+ #include "meta_io.h"
+ #include "quota.h"
+ #include "rgrp.h"
++#include "super.h"
+ #include "trans.h"
+ #include "dir.h"
+ #include "util.h"
+@@ -757,7 +758,7 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 	struct gfs2_rgrp_list rlist;
+ 	u64 bn, bstart;
+-	u32 blen;
++	u32 blen, btotal;
+ 	__be64 *p;
+ 	unsigned int rg_blocks = 0;
+ 	int metadata;
+@@ -839,6 +840,7 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
  
--void gfs2_glock_free(struct rcu_head *rcu)
-+static void gfs2_glock_dealloc(struct rcu_head *rcu)
- {
- 	struct gfs2_glock *gl = container_of(rcu, struct gfs2_glock, gl_rcu);
--	struct gfs2_sbd *sdp = gl->gl_sbd;
+ 	bstart = 0;
+ 	blen = 0;
++	btotal = 0;
  
- 	if (gl->gl_ops->go_flags & GLOF_ASPACE)
- 		kmem_cache_free(gfs2_glock_aspace_cachep, gl);
- 	else
- 		kmem_cache_free(gfs2_glock_cachep, gl);
-+}
+ 	for (p = top; p < bottom; p++) {
+ 		if (!*p)
+@@ -851,9 +853,11 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 		else {
+ 			if (bstart) {
+ 				if (metadata)
+-					gfs2_free_meta(ip, bstart, blen);
++					__gfs2_free_meta(ip, bstart, blen);
+ 				else
+-					gfs2_free_data(ip, bstart, blen);
++					__gfs2_free_data(ip, bstart, blen);
 +
-+void gfs2_glock_free(struct gfs2_glock *gl)
-+{
-+	struct gfs2_sbd *sdp = gl->gl_sbd;
++				btotal += blen;
+ 			}
  
-+	call_rcu(&gl->gl_rcu, gfs2_glock_dealloc);
- 	if (atomic_dec_and_test(&sdp->sd_glock_disposal))
- 		wake_up(&sdp->sd_glock_wait);
- }
-@@ -760,6 +765,7 @@ int gfs2_glock_get(struct gfs2_sbd *sdp, u64 number,
- 	if (tmp) {
- 		spin_unlock_bucket(hash);
- 		kmem_cache_free(cachep, gl);
-+		atomic_dec(&sdp->sd_glock_disposal);
- 		gl = tmp;
- 	} else {
- 		hlist_bl_add_head_rcu(&gl->gl_list, &gl_hash_table[hash]);
-diff --git a/fs/gfs2/glock.h b/fs/gfs2/glock.h
-index afa8bfe..aea1606 100644
---- a/fs/gfs2/glock.h
-+++ b/fs/gfs2/glock.h
-@@ -230,7 +230,7 @@ extern void gfs2_gl_hash_clear(struct gfs2_sbd *sdp);
- extern void gfs2_glock_finish_truncate(struct gfs2_inode *ip);
- extern void gfs2_glock_thaw(struct gfs2_sbd *sdp);
- extern void gfs2_glock_schedule_for_reclaim(struct gfs2_glock *gl);
--extern void gfs2_glock_free(struct rcu_head *rcu);
-+extern void gfs2_glock_free(struct gfs2_glock *gl);
- 
- extern int __init gfs2_glock_init(void);
- extern void gfs2_glock_exit(void);
-diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
-index c80485c..98c80d8 100644
---- a/fs/gfs2/lock_dlm.c
-+++ b/fs/gfs2/lock_dlm.c
-@@ -30,7 +30,7 @@ static void gdlm_ast(void *arg)
- 
- 	switch (gl->gl_lksb.sb_status) {
- 	case -DLM_EUNLOCK: /* Unlocked, so glock can be freed */
--		call_rcu(&gl->gl_rcu, gfs2_glock_free);
-+		gfs2_glock_free(gl);
- 		return;
- 	case -DLM_ECANCEL: /* Cancel while getting lock */
- 		ret |= LM_OUT_CANCELED;
-@@ -165,7 +165,7 @@ static void gdlm_put_lock(struct gfs2_glock *gl)
- 	int error;
- 
- 	if (gl->gl_lksb.sb_lkid == 0) {
--		call_rcu(&gl->gl_rcu, gfs2_glock_free);
-+		gfs2_glock_free(gl);
- 		return;
+ 			bstart = bn;
+@@ -865,11 +869,17 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 	}
+ 	if (bstart) {
+ 		if (metadata)
+-			gfs2_free_meta(ip, bstart, blen);
++			__gfs2_free_meta(ip, bstart, blen);
+ 		else
+-			gfs2_free_data(ip, bstart, blen);
++			__gfs2_free_data(ip, bstart, blen);
++
++		btotal += blen;
  	}
  
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index a39c103..67654d0 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -928,14 +928,9 @@ static const match_table_t nolock_tokens = {
- 	{ Opt_err, NULL },
- };
++	gfs2_statfs_change(sdp, 0, +btotal, 0);
++	gfs2_quota_change(ip, -(s64)btotal, ip->i_inode.i_uid,
++			  ip->i_inode.i_gid);
++
+ 	ip->i_inode.i_mtime = ip->i_inode.i_ctime = CURRENT_TIME;
  
--static void nolock_put_lock(struct gfs2_glock *gl)
--{
--	call_rcu(&gl->gl_rcu, gfs2_glock_free);
--}
--
- static const struct lm_lockops nolock_ops = {
- 	.lm_proto_name = "lock_nolock",
--	.lm_put_lock = nolock_put_lock,
-+	.lm_put_lock = gfs2_glock_free,
- 	.lm_tokens = &nolock_tokens,
- };
+ 	gfs2_dinode_out(ip, dibh->b_data);
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index 7293ea2..cf930cd 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -1602,7 +1602,7 @@ rgrp_error:
+  *
+  */
  
+-void gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
++void __gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
+ {
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 	struct gfs2_rgrpd *rgd;
+@@ -1617,7 +1617,21 @@ void gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
+ 	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
+ 
+ 	gfs2_trans_add_rg(rgd);
++}
+ 
++/**
++ * gfs2_free_data - free a contiguous run of data block(s)
++ * @ip: the inode these blocks are being freed from
++ * @bstart: first block of a run of contiguous blocks
++ * @blen: the length of the block run
++ *
++ */
++
++void gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
++{
++	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
++
++	__gfs2_free_data(ip, bstart, blen);
+ 	gfs2_statfs_change(sdp, 0, +blen, 0);
+ 	gfs2_quota_change(ip, -(s64)blen, ip->i_inode.i_uid, ip->i_inode.i_gid);
+ }
+@@ -1630,7 +1644,7 @@ void gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen)
+  *
+  */
+ 
+-void gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen)
++void __gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen)
+ {
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 	struct gfs2_rgrpd *rgd;
+@@ -1645,10 +1659,24 @@ void gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen)
+ 	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
+ 
+ 	gfs2_trans_add_rg(rgd);
++	gfs2_meta_wipe(ip, bstart, blen);
++}
+ 
++/**
++ * gfs2_free_meta - free a contiguous run of data block(s)
++ * @ip: the inode these blocks are being freed from
++ * @bstart: first block of a run of contiguous blocks
++ * @blen: the length of the block run
++ *
++ */
++
++void gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen)
++{
++	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
++
++	__gfs2_free_meta(ip, bstart, blen);
+ 	gfs2_statfs_change(sdp, 0, +blen, 0);
+ 	gfs2_quota_change(ip, -(s64)blen, ip->i_inode.i_uid, ip->i_inode.i_gid);
+-	gfs2_meta_wipe(ip, bstart, blen);
+ }
+ 
+ void gfs2_unlink_di(struct inode *inode)
+diff --git a/fs/gfs2/rgrp.h b/fs/gfs2/rgrp.h
+index 50c2bb0..a80e303 100644
+--- a/fs/gfs2/rgrp.h
++++ b/fs/gfs2/rgrp.h
+@@ -52,7 +52,9 @@ extern int gfs2_ri_update(struct gfs2_inode *ip);
+ extern int gfs2_alloc_block(struct gfs2_inode *ip, u64 *bn, unsigned int *n);
+ extern int gfs2_alloc_di(struct gfs2_inode *ip, u64 *bn, u64 *generation);
+ 
++extern void __gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen);
+ extern void gfs2_free_data(struct gfs2_inode *ip, u64 bstart, u32 blen);
++extern void __gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen);
+ extern void gfs2_free_meta(struct gfs2_inode *ip, u64 bstart, u32 blen);
+ extern void gfs2_free_di(struct gfs2_rgrpd *rgd, struct gfs2_inode *ip);
+ extern void gfs2_unlink_di(struct inode *inode);
 -- 
 1.7.4
 
