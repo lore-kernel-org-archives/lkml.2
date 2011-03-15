@@ -1,152 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab1COFBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 01:01:53 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:63697 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab1COFB0 (ORCPT
+	id S1753687Ab1COFCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 01:02:18 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:37727 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab1COFCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 01:01:26 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6285"; a="79964170"
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-To: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 11/11] msm: dma: support msm8960 dma
-Date: Mon, 14 Mar 2011 22:01:14 -0700
-Message-Id: <1300165274-8544-12-git-send-email-johlstei@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300165274-8544-1-git-send-email-johlstei@codeaurora.org>
-References: <1300165274-8544-1-git-send-email-johlstei@codeaurora.org>
+	Tue, 15 Mar 2011 01:02:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=eaX09YYEJ5faIwnPRo1fnPTFi0fYGYxm2Zxh/gBaJd+S81090QAXM/DejIZ0vi6c4Y
+         Go0ih9U7N89/gXrVFSCqbsPsspbSBMAm0K4xpXq3BvqSewgfOjz8T1GlVKtKvGw5n+zB
+         rlC0qMaudc0jfdLfShq6GEHz57AfJNB4Bt0ME=
+Date: Mon, 14 Mar 2011 22:02:06 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Haojian Zhuang <hzhuang1@marvell.com>
+Cc: "johnpol@2ka.mipt.ru" <johnpol@2ka.mipt.ru>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] input: touchscreen: use polling mode in 88pm860x
+Message-ID: <20110315050206.GC1046@core.coreip.homeip.net>
+References: <1299512600-29047-1-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-2-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-3-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-4-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-5-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-6-git-send-email-haojian.zhuang@marvell.com>
+ <20110313064426.GG31566@core.coreip.homeip.net>
+ <25B60CDC2F704E4E9D88FFD52780CB4C05CEAFFB99@SC-VEXCH1.marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C05CEAFFB99@SC-VEXCH1.marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
----
- arch/arm/mach-msm/Makefile                      |    2 +-
- arch/arm/mach-msm/board-msm8960.c               |    5 +++++
- arch/arm/mach-msm/devices-msm8960.c             |   21 +++++++++++++++++++++
- arch/arm/mach-msm/devices.h                     |    1 +
- arch/arm/mach-msm/dma.c                         |    3 +++
- arch/arm/mach-msm/include/mach/msm_iomap-8960.h |    3 +++
- 6 files changed, 34 insertions(+), 1 deletions(-)
+On Mon, Mar 14, 2011 at 05:41:35AM -0700, Haojian Zhuang wrote:
+> 
+> 
+> >-----Original Message-----
+> >From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> >Sent: 2011年3月13日 2:44 PM
+> >To: Haojian Zhuang
+> >Cc: johnpol@2ka.mipt.ru; sameo@linux.intel.com; a.zummo@towertech.it;
+> >lrg@slimlogic.co.uk; broonie@opensource.wolfsonmicro.com;
+> >rpurdie@rpsys.net; linux-kernel@vger.kernel.org
+> >Subject: Re: [PATCH] input: touchscreen: use polling mode in 88pm860x
+> >
+> >On Mon, Mar 07, 2011 at 11:43:14PM +0800, Haojian Zhuang wrote:
+> >> Measuring point on touchscreen with IRQ mode can only monitor pen-down
+> >> event. If finger is moving on touchscreen, it can't be monitored by
+> >> IRQ pen-down event. So switch to polling mode after pen-down event.
+> >>
+> >
+> >Instead of scheduling work you could stay in the interrupt handler
+> >(which is a separate thread) and poll from it. Or is it a nested
+> >interrupt and it is sharing the interrupt thread?
+> >
+> >Thanks.
+> >
+> >--
+> >Dmitry
+> 
+> I'm using a nested interrupt. Do you mean that I should keep polling in the nested interrupt handler?
+> 
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 9998f75..35fd3e8 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -9,7 +9,7 @@ obj-$(CONFIG_ARCH_MSM7X00A) += dma.o irq.o acpuclock-arm11.o
- obj-$(CONFIG_ARCH_MSM7X30) += dma.o
- obj-$(CONFIG_ARCH_QSD8X50) += dma.o sirc.o
- obj-$(CONFIG_ARCH_MSM8X60) += dma.o
--obj-$(CONFIG_ARCH_MSM8960) += clock-dummy.o
-+obj-$(CONFIG_ARCH_MSM8960) += dma.o clock-dummy.o
- 
- obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
- 
-diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
-index 9511ea6..72ac090 100644
---- a/arch/arm/mach-msm/board-msm8960.c
-+++ b/arch/arm/mach-msm/board-msm8960.c
-@@ -65,9 +65,14 @@ static struct platform_device *rumi3_devices[] __initdata = {
- 	&msm8960_device_uart_gsbi5,
- };
- 
-+static struct platform_device *devices[] __initdata = {
-+	&msm8960_device_dmov,
-+};
-+
- static void __init msm8960_init(void)
- {
- 	msm_clock_init(msm_clocks_8960, msm_num_clocks_8960);
-+	platform_add_devices(devices, ARRAY_SIZE(devices));
- }
- 
- static void __init msm8960_sim_init(void)
-diff --git a/arch/arm/mach-msm/devices-msm8960.c b/arch/arm/mach-msm/devices-msm8960.c
-index 894ff98..75dc162 100644
---- a/arch/arm/mach-msm/devices-msm8960.c
-+++ b/arch/arm/mach-msm/devices-msm8960.c
-@@ -24,6 +24,8 @@
- 
- #include <mach/irqs-8960.h>
- #include <mach/board.h>
-+#include <mach/msm_iomap.h>
-+#include <mach/irqs.h>
- 
- #include "devices.h"
- #include "clock.h"
-@@ -89,6 +91,25 @@ struct platform_device msm8960_device_uart_gsbi5 = {
- 	.resource	= resources_uart_gsbi5,
- };
- 
-+static struct resource resources_dmov[] = {
-+	{
-+		.start = MSM8960_DMOV_PHYS,
-+		.end = MSM8960_DMOV_PHYS + MSM8960_DMOV_SIZE - 1,
-+		.flags = IORESOURCE_MEM,
-+	},
-+	{
-+		.start = INT_ADM0_SCSS_0_IRQ,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device msm8960_device_dmov = {
-+	.name	= "msm_dmov",
-+	.id	= -1,
-+	.num_resources = ARRAY_SIZE(resources_dmov),
-+	.resource = resources_dmov,
-+};
-+
- struct clk_lookup msm_clocks_8960[] = {
- 	CLK_DUMMY("ce_clk",		CE2_CLK,		NULL, OFF),
- 	CLK_DUMMY("gsbi_uart_clk",	GSBI1_UART_CLK,		NULL, OFF),
-diff --git a/arch/arm/mach-msm/devices.h b/arch/arm/mach-msm/devices.h
-index 0abf25f..e38fc86 100644
---- a/arch/arm/mach-msm/devices.h
-+++ b/arch/arm/mach-msm/devices.h
-@@ -41,6 +41,7 @@ extern struct platform_device msm_device_i2c;
- extern struct platform_device msm_device_smd;
- 
- extern struct platform_device msm_device_dmov;
-+extern struct platform_device msm8960_device_dmov;
- extern struct platform_device msm_device_dmov_adm0;
- extern struct platform_device msm_device_dmov_adm1;
- 
-diff --git a/arch/arm/mach-msm/dma.c b/arch/arm/mach-msm/dma.c
-index 44d9621..16b4034 100644
---- a/arch/arm/mach-msm/dma.c
-+++ b/arch/arm/mach-msm/dma.c
-@@ -57,6 +57,9 @@ static int nr_adms;
- #elif defined(CONFIG_ARCH_MSM8X60)
- #define DMOV_SD_AARM DMOV_SD1
- #define DMOV_SD_SIZE 0x800
-+#elif defined(CONFIG_ARCH_MSM8960)
-+#define DMOV_SD_AARM DMOV_SD0
-+#define DMOV_SD_SIZE 0x800
- #else
- #define DMOV_SD_AARM DMOV_SD3
- #define DMOV_SD_SIZE 0x400
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-index 3c9d960..b251ba6 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-@@ -45,4 +45,7 @@
- #define MSM8960_TMR0_PHYS	0x0208A000
- #define MSM8960_TMR0_SIZE	SZ_4K
- 
-+#define MSM8960_DMOV_PHYS	0x18300000
-+#define MSM8960_DMOV_SIZE	SZ_1M
-+
- #endif
+No, I do not believe you can poll from the nested handler since I
+believe it shares the thread with other interrupts. In non-nested case
+you could though.
+
+Thanks.
+
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Dmitry
