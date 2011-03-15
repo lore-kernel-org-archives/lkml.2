@@ -1,80 +1,381 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1COEuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 00:50:40 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:61472 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab1COEui (ORCPT
+	id S1752964Ab1COEyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 00:54:43 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:58570 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab1COEyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 00:50:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=CY3h3h7LhN5mrvyt5L9vLSLvJbcu7b6H54jnyfAv9zaoFj3jsq4jN017uttZjUsAAS
-         7YRa64qt9AvNUbPnWmbA==
-Date: Mon, 14 Mar 2011 21:50:24 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: Linux 2.6.38
-In-Reply-To: <20110314213331.24229139.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1103142137020.13734@chino.kir.corp.google.com>
-References: <AANLkTi=_cZRNPU29+MJkt9u6zDSLo153CKqLqg1+t7O6@mail.gmail.com> <alpine.DEB.2.00.1103142011550.16032@chino.kir.corp.google.com> <20110314213331.24229139.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 15 Mar 2011 00:54:41 -0400
+Subject: Re: [RFC-v2 03/12] iscsi-target: Add TCM v4 compatiable ConfigFS
+	control plane
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <alpine.LNX.2.00.1103150130390.26293@swampdragon.chaosbits.net>
+References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org>
+	 <1300103829-10337-4-git-send-email-nab@linux-iscsi.org>
+	 <alpine.LNX.2.00.1103150130390.26293@swampdragon.chaosbits.net>
+Content-Type: text/plain
+Date: Mon, 14 Mar 2011 21:47:36 -0700
+Message-Id: <1300164456.28255.261.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011, Andrew Morton wrote:
-
-> > once oom-prevent-unnecessary-oom-kills-or-kernel-panics.patch is merged 
-> > from -mm
+On Tue, 2011-03-15 at 01:54 +0100, Jesper Juhl wrote:
+> On Mon, 14 Mar 2011, Nicholas A. Bellinger wrote:
 > 
-> Please (re)send the patches which you believe should be merged into
-> 2.6.38 to address the problems which Oleg found, and any other critical
-> problems.  Not in a huge rush - let's get this right.
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch adds support for /sys/kernel/config/target/iscsi using
+> > TCM v4.0 compatiable calls following target_core_fabric_configfs.c
+> > 
+> > This includes a number of iSCSI fabric dependent attributes upon
+> > target_core_fabric_configfs.c provided struct config_item_types from
+> > include/target/target_core_configfs.hstruct target_fabric_configfs_template
+> > 
+> > It also includes iscsi_target_nodeattrib.[c,h] for handling the
+> > lio_target_nacl_attrib_attrs[] store/show for iSCSI fabric dependent
+> > attributes.
+> > 
+> [...]
+> 
+> A few minor comments below. Not a thorough review by any stretch of the 
+> imagination, just a quick glance and then pointing out a few things that 
+> caught my eye.
+> 
+> 
+> > +	op = simple_strtoul(page, &endptr, 0);
+> > +	 if ((op != 1) && (op != 0)) {
+> 
+> Indentation is <tab><space> here, should just be <tab>.
+> 
 > 
 
-In my testing, Oleg's three test cases that he sent to the security list 
-and cc'd us on get appropriately oom killed once swap is exhausted or 
-swapoff -a is used on mmotm-2011-03-10-16-42 because of these two patches:
+Fixed
 
-	oom-prevent-unnecessary-oom-kills-or-kernel-panics.patch
-	oom-skip-zombies-when-iterating-tasklist.patch
+> > +		printk(KERN_ERR "Illegal value for tpg_enable: %u\n", op);
+> > +		return -EINVAL;
+> > +	}
+> > +	np = tpg_np->tpg_np;
+> > +	if (!(np)) {
+> 
+> if (!np) {
+> 
+> 
 
-He also presented a test case on linux-mm that caused the oom killer to 
-avoid acting if a thread is ptracing a thread in the exit path with 
-PTRACE_O_TRACEEXIT.  That should be fixed with
+<nod>, fixed a ton of these earlier this afternoon.
 
-	http://marc.info/?l=linux-mm&m=129997893430351
+> > +		printk(KERN_ERR "Unable to locate struct iscsi_np from"
+> > +				" struct iscsi_tpg_np\n");
+> 
+> Perhaps put the entire log message text on one line. Makes it easier to 
+> grep for.
+> 
+> 
 
-that has yet to see -mm.  There are no other test cases that have been 
-presented that cause undesired behavior.
+Mmmmm, yes.  I fixed a bunch of the 80 line warnings at one point for
+checkpatch.pl,  but point taken for reference for new printk()'s..
 
-That said, my approach to doing this has been to avoid arbitrary 
-heuristics for special cases and address known issues by adding the 
-appropriate logic in the oom killer.  For example, the ptrace problem that 
-Oleg presented showed that the oom killer logic incorrectly deferred doing 
-anything when an eligible thread was PF_EXITING.  It had done that 
-believing that nothing would stop the thread from exiting or current 
-would be given access to memory reserves itself and that assumption was 
-broken for PTRACE_O_TRACEEXIT.  My patch above, in combination with 
-Andrey's patch that only considers threads with valid mm's, fixes that 
-issue because we'll now only defer if you still have an attached mm, are 
-PF_EXITING, and are not being traced.
 
-If, at some point, there is another gap in the exit code where a thread 
-may hold PF_EXITING with a valid mm for an indefinite period, we'll need 
-to address that in the oom killer as well.  We use PF_EXITING specifically 
-in the oom killer to identify tasks that are going to exit soon and need 
-handling for any case where that isn't guaranteed.  Anything else results 
-in needlessly killing other tasks or, in the worst case, panicking when 
-there is nothing left that is eligible.
+> > +	char buf[MAX_PORTAL_LEN];
+> > +
+> > +	if (strlen(name) > MAX_PORTAL_LEN) {
+> > +		printk(KERN_ERR "strlen(name): %d exceeds MAX_PORTAL_LEN: %d\n",
+> > +			(int)strlen(name), MAX_PORTAL_LEN);
+> 
+> Shouldn't this be 
+> 
+>      char buf[MAX_PORTAL_LEN + 1];
+>      
+>      if (strlen(name) > MAX_PORTAL_LEN) {
+>              printk(KERN_ERR "strlen(name): %d exceeds MAX_PORTAL_LEN: %d\n",
+>                      (int)strlen(name), MAX_PORTAL_LEN);
+> 
+> so that there is room for the terminating \0 ?
+> 
+
+Mmmm, fair point.  Fixed.
+
+> 
+> > +	snprintf(buf, MAX_PORTAL_LEN, "%s", name);
+> > +
+> > +	memset((void *)&np_addr, 0, sizeof(struct iscsi_np_addr));
+> 
+> Unneeded cast?
+> 
+> 
+
+Dropped
+
+> > +
+> > +	str = strstr(buf, "[");
+> > +	if ((str)) {
+> 
+> if (str) {
+> 
+> 
+
+Fixed
+
+> > +		str2 = strstr(str, "]");
+> > +		if (!(str2)) {
+> 
+> if (!str2) {
+> 
+> 
+
+Ditto
+
+> > +			printk(KERN_ERR "Unable to locate trailing \"]\""
+> > +				" in IPv6 iSCSI network portal address\n");
+> > +			return ERR_PTR(-EINVAL);
+> > +		}
+> > +		str++; /* Skip over leading "[" */
+> > +		*str2 = '\0'; /* Terminate the IPv6 address */
+> > +		str2 += 1; /* Skip over the "]" */
+> 
+> why "str++" vs "str2 += 1" and not "str++" & "str2++" ?
+> 
+
+Mmmm, changing to '++' for consistency..
+
+> 
+> > +		port_str = strstr(str2, ":");
+> > +		if (!(port_str)) {
+> 
+> if (!port_str) {
+> 
+
+Fixed
+
+> > +			printk(KERN_ERR "Unable to locate \":port\""
+> > +				" in IPv6 iSCSI network portal address\n");
+> > +			return ERR_PTR(-EINVAL);
+> > +		}
+> > +		*port_str = '\0'; /* Terminate string for IP */
+> > +		port_str += 1; /* Skip over ":" */
+> 
+> port_str++;
+> 
+> 
+
+Ditto
+
+> > +		np_addr.np_port = simple_strtoul(port_str, &end_ptr, 0);
+> > +
+> > +		snprintf(np_addr.np_ipv6, IPV6_ADDRESS_SPACE, "%s", str);
+> > +		np_addr.np_flags |= NPF_NET_IPV6;
+> > +	} else {
+> > +		ip_str = &buf[0];
+> > +		port_str = strstr(ip_str, ":");
+> > +		if (!(port_str)) {
+> 
+> if (!port_str) {
+> 
+
+Fixed
+
+> > +			printk(KERN_ERR "Unable to locate \":port\""
+> > +				" in IPv4 iSCSI network portal address\n");
+> > +			return ERR_PTR(-EINVAL);
+> > +		}
+> > +		*port_str = '\0'; /* Terminate string for IP */
+> > +		port_str += 1; /* Skip over ":" */
+> 
+> port_str++;
+> 
+
+Fixed
+
+> 
+> > +static void lio_target_call_delnpfromtpg(
+> > +	struct se_tpg_np *se_tpg_np)
+> > +{
+> > +	struct iscsi_portal_group *tpg;
+> > +	struct iscsi_tpg_np *tpg_np;
+> > +	struct se_portal_group *se_tpg;
+> > +	int ret = 0;
+> > +
+> 
+> pointless initialization of 'ret' to 0
+> 
+
+Removed
+
+> > +	tpg_np = container_of(se_tpg_np, struct iscsi_tpg_np, se_tpg_np);
+> > +	tpg = tpg_np->tpg;
+> > +	ret = iscsi_get_tpg(tpg);
+> 
+> 'ret' is assigned to here before it's used.
+> 
+> 
+
+<nod>
+
+> > +#define DEF_NACL_PARAM(name)						\
+> > +static ssize_t iscsi_nacl_param_show_##name(				\
+> > +	struct se_node_acl *se_nacl,					\
+> > +	char *page)							\
+> > +{									\
+> > +	struct iscsi_session *sess;						\
+> > +	struct se_session *se_sess;						\
+> > +	ssize_t rb;							\
+> > +									\
+> > +	spin_lock_bh(&se_nacl->nacl_sess_lock);				\
+> > +	se_sess = se_nacl->nacl_sess;					\
+> > +	if (!(se_sess)) {						\
+> 
+> if (!se_sess) {
+> 
+> 
+
+Fixed
+
+> > +static ssize_t lio_target_nacl_show_info(
+> > +	struct se_node_acl *se_nacl,
+> > +	char *page)
+> > +{
+> > +	struct iscsi_session *sess;
+> > +	struct iscsi_conn *conn;
+> > +	struct se_session *se_sess;
+> > +	unsigned char *ip, buf_ipv4[IPV4_BUF_SIZE];
+> > +	ssize_t rb = 0;
+> > +
+> > +	spin_lock_bh(&se_nacl->nacl_sess_lock);
+> > +	se_sess = se_nacl->nacl_sess;
+> > +	if (!(se_sess))
+> 
+> if (!se_sess)
+> 
+> (not pointing out any more of these)
+> 
+
+<nod>, I fixed probably 100 of these this afternoon.  ;)
+
+> 
+> > +		rb += sprintf(page+rb, "No active iSCSI Session for Initiator"
+> > +			" Endpoint: %s\n", se_nacl->initiatorname);
+> > +	else {
+> 
+> when one branch has {}, please use them for the other as well.
+> 
+> 
+
+Fixed
+
+> > +			if (conn->net_size == IPV6_ADDRESS_SPACE)
+> > +				ip = &conn->ipv6_login_ip[0];
+> > +			else {
+> 
+> if () {
+> } else {
+> }
+> 
+> 
+
+Fixed
+
+> > +	u32 cmdsn_depth = 0;
+> > +	int ret = 0;
+> 
+> pointless default init of 'ret' to 0.
+> 
+
+Removed
+
+> > +
+> > +	cmdsn_depth = simple_strtoul(page, &endptr, 0);
+> > +	if (cmdsn_depth > TA_DEFAULT_CMDSN_DEPTH_MAX) {
+> > +		printk(KERN_ERR "Passed cmdsn_depth: %u exceeds"
+> > +			" TA_DEFAULT_CMDSN_DEPTH_MAX: %u\n", cmdsn_depth,
+> > +			TA_DEFAULT_CMDSN_DEPTH_MAX);
+> > +		return -EINVAL;
+> > +	}
+> > +	acl_ci = &se_nacl->acl_group.cg_item;
+> > +	if (!(acl_ci)) {
+> > +		printk(KERN_ERR "Unable to locatel acl_ci\n");
+> > +		return -EINVAL;
+> > +	}
+> > +	tpg_ci = &acl_ci->ci_parent->ci_group->cg_item;
+> > +	if (!(tpg_ci)) {
+> > +		printk(KERN_ERR "Unable to locate tpg_ci\n");
+> > +		return -EINVAL;
+> > +	}
+> > +	wwn_ci = &tpg_ci->ci_group->cg_item;
+> > +	if (!(wwn_ci)) {
+> > +		printk(KERN_ERR "Unable to locate config_item wwn_ci\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (iscsi_get_tpg(tpg) < 0)
+> > +		return -EINVAL;
+> > +	/*
+> > +	 * iscsi_tpg_set_initiator_node_queue_depth() assumes force=1
+> > +	 */
+> > +	ret = iscsi_tpg_set_initiator_node_queue_depth(tpg,
+> > +				config_item_name(acl_ci), cmdsn_depth, 1);
+> 
+> 'ret' is initialized nicely here before it is used.
+> 
+> 
+
+<nod>
+
+> 
+> > +	ssize_t len = 0;
+> > +
+> 
+> no need to initialize 'len' to 0 here - 
+> 
+
+Removed
+
+> > +	spin_lock(&tpg->tpg_state_lock);
+> > +	len = sprintf(page, "%d\n",
+> > +			(tpg->tpg_state == TPG_STATE_ACTIVE) ? 1 : 0);
+> 
+>         it's initialized here.
+> 
+> 
+
+<nod>
+
+> > +static ssize_t lio_target_tpg_store_enable(
+> > +	struct se_portal_group *se_tpg,
+> > +	const char *page,
+> > +	size_t count)
+> > +{
+> > +	struct iscsi_portal_group *tpg = container_of(se_tpg,
+> > +			struct iscsi_portal_group, tpg_se_tpg);
+> > +	char *endptr;
+> > +	u32 op;
+> > +	int ret = 0;
+> > +
+> 
+> pointless init of 'ret'.
+> 
+> 
+
+Removed.
+
+Thanks alot for your review hereh Jesper.  I will get these changed
+pushed into lio-4.1 upstream shortly and included for the follow-up RFC
+posting for mainline.
+
+Best Regards,
+
+--nab
+
