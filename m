@@ -1,80 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab1COWjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 18:39:12 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:57981 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab1COWjK convert rfc822-to-8bit (ORCPT
+	id S1754319Ab1COWjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 18:39:20 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49078 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754114Ab1COWjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 18:39:10 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Mike Sterling" <Mike.Sterling@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Subject: RE: [PATCH 05/12] Staging: hv: Get rid of the forward declaration
- for vmbus_uevent
-Thread-Topic: [PATCH 05/12] Staging: hv: Get rid of the forward declaration
- for vmbus_uevent
-Thread-Index: AQHL417lkAYu+nVIpkSNP5Bo1GpdaZQvbZ8A//+NyfA=
-Date: Tue, 15 Mar 2011 22:39:07 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048019AB1@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
- <1300226624-27004-1-git-send-email-kys@microsoft.com>
- <1300226624-27004-2-git-send-email-kys@microsoft.com>
- <1300226624-27004-3-git-send-email-kys@microsoft.com>
- <1300226624-27004-4-git-send-email-kys@microsoft.com>
- <1300226624-27004-5-git-send-email-kys@microsoft.com>
- <1300226624-27004-6-git-send-email-kys@microsoft.com>
- <20110315222246.GA2339@kroah.com>
-In-Reply-To: <20110315222246.GA2339@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Mar 2011 18:39:16 -0400
+Date: Tue, 15 Mar 2011 23:37:53 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: matthieu castet <castet.matthieu@free.fr>
+Cc: x86@kernel.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] v2 merge 32 and 64 realmode wakeup code
+Message-ID: <20110315223753.GA1700@atrey.karlin.mff.cuni.cz>
+References: <4D7FE5C5.3040106@free.fr>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7FE5C5.3040106@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> - this mean less ifdef in code
+> - we could remove now unused field in wakeup_header (pmode_*)
+>
+> Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
 
+ACK.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, March 15, 2011 6:23 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Mike
-> Sterling; Abhishek Kane (Mindtree Consulting PVT LTD)
-> Subject: Re: [PATCH 05/12] Staging: hv: Get rid of the forward declaration for
-> vmbus_uevent
-> 
-> On Tue, Mar 15, 2011 at 03:03:37PM -0700, K. Y. Srinivasan wrote:
-> > Get rid of the forward declaration of vmbus_uevent by moving
-> > the code around.
-> 
-> There are 2 05/12 patches and they are different.
-Sorry about that Greg; I had an incorrect commit message that I fixed,
-but forgot to delete that patch that was generated with the 
-incorrect commit message. Loose the patch that has the subject line:
-
-[PATCH 05/12] Get rid of the forward declaration for vmbus_uevent
-
-You want to keep the one that has the following subject line:
-
-[PATCH 05/12] Staging: hv: Get rid of the forward declaration for vmbus_uevent
-
-I could resend, if you prefer.
-
-Regards,
-
-K. Y
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
