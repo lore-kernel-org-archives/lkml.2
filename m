@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab1COEb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 00:31:26 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42235 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab1COEbZ (ORCPT
+	id S1751611Ab1COEeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 00:34:25 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:56605 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750813Ab1COEeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 00:31:25 -0400
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 0/2] Common struct clk implementation, v14
-Date: Tue, 15 Mar 2011 12:31:08 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-27-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>
-References: <1299134429.100626.661279191478.0.gpush@pororo>
-In-Reply-To: <1299134429.100626.661279191478.0.gpush@pororo>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Tue, 15 Mar 2011 00:34:24 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19gteFVBYNgCTlfdbu8oc5PRtYwFTngRxkTnzCs5N
+	4RSCCQZ+u0guLo
+Subject: Re: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
+From: Mike Galbraith <efault@gmx.de>
+To: piotr@hosowicz.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D7E42A6.70409@example.com>
+References: <4D7E42A6.70409@example.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Mar 2011 05:34:19 +0100
+Message-ID: <1300163659.8209.11.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103151231.10106.jeremy.kerr@canonical.com>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Mon, 2011-03-14 at 17:30 +0100, Piotr Hosowicz wrote:
+> Hello,
+> 
+> I do no have it and my Debian package doesn't have it either. I cannot 
+> build and test linux-next kernels, as a minute ago. It searches for 
+> rtl_nic/rtl8105e-1.fw.
 
-Any thughts on merging this? Would you like me to add to your patch tracking 
-system, or would you prefer it to go through some other path?
+I would think you could just download the linux driver from the vendor,
+and pluck the firmware out.  Having spent a half hour trying to do that,
+I couldn't get there from here, so.. dunno.
 
-Cheers,
+	-Mike
 
-
-Jeremy
