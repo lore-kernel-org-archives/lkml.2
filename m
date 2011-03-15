@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417Ab1COT1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 15:27:25 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:28374 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758170Ab1COT1S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758356Ab1COT1S (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 15 Mar 2011 15:27:18 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:51076 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab1COT1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 15:27:16 -0400
 X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-Subject: [PATCH 4/4 v3] smp_call_function_interrupt: use typedef and %pf
-To: akpm@linux-foundation.org
+Subject: [PATCH 1/4 v3] call_function_many: fix list delete vs add race
 From: Milton Miller <miltonm@bga.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Anton Blanchard <anton@samba.org>,
-        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu,
+To: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org
+Cc: Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
+        rusty@rustcorp.com.au, efault@gmx.de,
         Jan Beulich <JBeulich@novell.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Tony Luck <tony.luck@intel.com>, jaxboe@fusionio.com,
-        npiggin@gmail.com, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        efault@gmx.de, benh@kernel.crashing.org, linux-kernel@vger.kernel.org
-Message-ID: <smp-ipi-interrupt-cleanup-v3@mdm.bga.com>
-In-Reply-To: <ipi-list-reply@mdm.bga.com>
+        Tony Luck <tony.luck@intel.com>, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
 References: <20110112150740.77dde58c@kryten>
 	 <1295288253.30950.280.camel@laptop>
 	 <smp-call-function-peter-reply@mdm.bga.com>
 	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
+	 <1296145360.15234.234.camel@laptop> 
 	 <smp-call-function-list-race@mdm.bga.com>
 	 <smp-call-function-list-race-fix@mdm.bga.com>
-	 <1296458482.7889.175.camel@marge.simson.net>
 	 <ipi-list-reply@mdm.bga.com>
-Date: Tue, 15 Mar 2011 13:27:17 -0600
+In-Reply-To: <ipi-list-reply@mdm.bga.com>
+Message-ID: <smp-call-function-list-race-fix-v3@mdm.bga.com>
+Date: Tue, 15 Mar 2011 13:27:16 -0600
 X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the newly added smp_call_func_t in smp_call_function_interrupt
-for the func variable, and make the comment above the WARN more assertive
-and explicit.  Also, func is a function pointer and does not need an
-offset, so use %pf not %pS.
+Peter pointed out there was nothing preventing the list_del_rcu in
+smp_call_function_interrupt from running before the list_add_rcu in
+smp_call_function_many.   Fix this by not setting refs until we
+have gotten the lock for the list.  Take advantage of the wmb in
+list_add_rcu to save an explicit additional one.
 
+I tried to force this race with a udelay before the lock & list_add
+and by mixing all 64 online cpus with just 3 random cpus in the mask,
+but was unsuccessful.  Still, inspection shows a valid race, and the
+fix is a extension of the existing protection window in the current code.
+
+Cc: stable (v2.6.32 and later)
+Reported-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Milton Miller <miltonm@bga.com>
 ---
-v3 use func to call the function too, as suggested, instead of making
-compiler notice the repeated access.
+v2: rely on wmb in list_add_rcu not combined partial ordering of spin
+lock and unlock, which does not provide the needed guarantees.
 
-Index: common/kernel/smp.c
+Index: linux-2.6/kernel/smp.c
 ===================================================================
---- common.orig/kernel/smp.c	2011-03-15 06:22:26.000000000 -0500
-+++ common/kernel/smp.c	2011-03-15 06:55:07.000000000 -0500
-@@ -194,7 +194,7 @@ void generic_smp_call_function_interrupt
+--- linux-2.6.orig/kernel/smp.c	2011-01-31 17:44:47.182756513 -0600
++++ linux-2.6/kernel/smp.c	2011-01-31 18:25:47.266755387 -0600
+@@ -491,14 +491,15 @@ void smp_call_function_many(const struct
+ 	cpumask_clear_cpu(this_cpu, data->cpumask);
+ 
+ 	/*
+-	 * To ensure the interrupt handler gets an complete view
+-	 * we order the cpumask and refs writes and order the read
+-	 * of them in the interrupt handler.  In addition we may
+-	 * only clear our own cpu bit from the mask.
++	 * We reuse the call function data without waiting for any grace
++	 * period after some other cpu removes it from the global queue.
++	 * This means a cpu might find our data block as it is writen.
++	 * The interrupt handler waits until it sees refs filled out
++	 * while its cpu mask bit is set; here we may only clear our
++	 * own cpu mask bit, and must wait to set refs until we are sure
++	 * previous writes are complete and we have obtained the lock to
++	 * add the element to the queue.
  	 */
- 	list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
- 		int refs;
--		void (*func) (void *info);
-+		smp_call_func_t func;
+-	smp_wmb();
+-
+-	atomic_set(&data->refs, cpumask_weight(data->cpumask));
  
- 		/*
- 		 * Since we walk the list without any locks, we might
-@@ -214,16 +214,17 @@ void generic_smp_call_function_interrupt
- 		if (atomic_read(&data->refs) == 0)
- 			continue;
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+@@ -507,6 +508,11 @@ void smp_call_function_many(const struct
+ 	 * will not miss any other list entries:
+ 	 */
+ 	list_add_rcu(&data->csd.list, &call_function.queue);
++	/*
++	 * We rely on the wmb() in list_add_rcu to order the writes
++	 * to func, data, and cpumask before this write to refs.
++	 */
++	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
  
--		func = data->csd.func;			/* for later warn */
--		data->csd.func(data->csd.info);
-+		func = data->csd.func;		/* save for later warn */
-+		func(data->csd.info);
- 
- 		/*
--		 * If the cpu mask is not still set then it enabled interrupts,
--		 * we took another smp interrupt, and executed the function
--		 * twice on this cpu.  In theory that copy decremented refs.
-+		 * If the cpu mask is not still set then func enabled
-+		 * interrupts (BUG), and this cpu took another smp call
-+		 * function interrupt and executed func(info) twice
-+		 * on this cpu.  That nested execution decremented refs.
- 		 */
- 		if (!cpumask_test_and_clear_cpu(cpu, data->cpumask)) {
--			WARN(1, "%pS enabled interrupts and double executed\n",
-+			WARN(1, "%pf enabled interrupts and double executed\n",
- 			     func);
- 			continue;
- 		}
+ 	/*
