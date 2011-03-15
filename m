@@ -1,90 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab1COVTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:19:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59863 "EHLO mx1.redhat.com"
+	id S932488Ab1COVTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:19:43 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36034 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932335Ab1COVTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:19:11 -0400
-Date: Tue, 15 Mar 2011 22:08:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: Linux 2.6.38
-Message-ID: <20110315210855.GI21640@redhat.com>
-References: <AANLkTi=_cZRNPU29+MJkt9u6zDSLo153CKqLqg1+t7O6@mail.gmail.com> <alpine.DEB.2.00.1103142011550.16032@chino.kir.corp.google.com> <20110314213331.24229139.akpm@linux-foundation.org> <alpine.DEB.2.00.1103142137020.13734@chino.kir.corp.google.com>
+	id S932354Ab1COVTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:19:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Power management updates for 2.6.39
+Date: Tue, 15 Mar 2011 22:19:52 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103142137020.13734@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103152219.52694.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14, David Rientjes wrote:
->
-> He also presented a test case on linux-mm that caused the oom killer to 
-> avoid acting if a thread is ptracing a thread in the exit path with 
-> PTRACE_O_TRACEEXIT.  That should be fixed with
->
-> 	http://marc.info/?l=linux-mm&m=129997893430351
+Hi Linus,
 
-I don't think it can fix this. I didn't verify this, but the slightly
-different test-case below should have the same effect.
+Please pull power management updates for 2.6.39 from:
 
-But this doesn't matter. We can fix this particular case, and we have
-the problems with the coredump anyway.
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-linus
 
-What I can't understand is what exactly the first patch tries to fix.
-When I ask you, you tell me that for_each_process() can miss the group
-leader because it can exit before sub-threads. This must not happen,
-or we have some serious bug triggered by your workload.
+They include:
 
-So, once again. Could you please explain the original problem and how
-this patch helps?
+* Wakeup sources framework fixes.
 
-Oleg.
+* PM core modification preventing sysfs files related to wakeup from being
+  created for devices that can't wake up the system.
 
-#include <unistd.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/ptrace.h>
-#include <sys/wait.h>
-#include <assert.h>
-#include <stdio.h>
+* Reduction of the number of power management Kconfig options.
 
-void *tfunc(void* arg)
-{
-	if (arg) {
-		ptrace(PTRACE_TRACEME, 0,0,0);
-		raise(SIGSTOP);
-		pthread_kill(*(pthread_t*)arg, SIGQUIT);
-	}
-	pause();
-}
+* Runtime PM framework modification allowing pm_runtime_suspend() to succeed
+  during system suspend.
 
-int main(void)
-{
-	int pid;
+* Removal of pm_flags.
 
-	if (!fork()) {
-		pthread_t thread1, thread2;
-		pthread_create(&thread1, NULL, tfunc, NULL);
-		pthread_create(&thread2, NULL, tfunc, &thread1);
-		pause();
-		return 0;
-	}
+* Support for device power domains in the core PM code.
 
-	assert((pid = waitpid(-1, NULL, __WALL)) > 0);
-	assert(ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEEXIT) == 0);
-	assert(ptrace(PTRACE_CONT, pid, 0, 0) == 0);
-	wait(NULL);
+* PM core and runtime PM framework modification making them treat subsystems
+  in a consistent way.
 
-	pause();
-	return 0;
-}
+* Introduction of struct syscore_ops for implementing core subsystems'
+  suspend/resume and shutdown operations without using sysdevs.
+
+* Various PM-related fixes.
+
+
+ Documentation/ABI/testing/sysfs-devices-power |   20 +-
+ Documentation/power/devices.txt               |   94 +++++++---
+ Documentation/power/runtime_pm.txt            |   13 +-
+ Documentation/power/states.txt                |   12 +-
+ arch/x86/kernel/apm_32.c                      |    5 +-
+ arch/x86/xen/Kconfig                          |    2 +-
+ drivers/acpi/Kconfig                          |    1 -
+ drivers/acpi/bus.c                            |   23 +--
+ drivers/acpi/sleep.c                          |    4 +-
+ drivers/base/Makefile                         |    2 +-
+ drivers/base/power/Makefile                   |    3 +-
+ drivers/base/power/main.c                     |  175 ++++++++++---------
+ drivers/base/power/opp.c                      |    2 +-
+ drivers/base/power/power.h                    |   21 +--
+ drivers/base/power/runtime.c                  |   37 +++--
+ drivers/base/power/sysfs.c                    |   78 ++++++---
+ drivers/base/power/trace.c                    |    6 +-
+ drivers/base/power/wakeup.c                   |  109 ++++++++----
+ drivers/base/syscore.c                        |  117 ++++++++++++
+ drivers/net/e1000e/netdev.c                   |    8 +-
+ drivers/net/pch_gbe/pch_gbe_main.c            |    2 +-
+ drivers/pci/pci-driver.c                      |    4 +-
+ drivers/scsi/Makefile                         |    2 +-
+ drivers/scsi/scsi_priv.h                      |    2 +-
+ drivers/scsi/scsi_sysfs.c                     |    2 +-
+ drivers/usb/core/hcd-pci.c                    |    4 +-
+ drivers/usb/core/hub.c                        |   10 +-
+ include/acpi/acpi_bus.h                       |    2 +-
+ include/linux/device.h                        |    1 +
+ include/linux/pm.h                            |   19 +-
+ include/linux/pm_runtime.h                    |    6 +
+ include/linux/pm_wakeup.h                     |    8 +-
+ include/linux/syscore_ops.h                   |   29 +++
+ kernel/pm_qos_params.c                        |   24 +++
+ kernel/power/Kconfig                          |  237 +++++++++++--------------
+ kernel/power/hibernate.c                      |    9 +
+ kernel/power/main.c                           |    3 -
+ kernel/power/snapshot.c                       |    8 +-
+ kernel/power/suspend.c                        |    4 +
+ kernel/sys.c                                  |    4 +
+ 40 files changed, 691 insertions(+), 421 deletions(-)
+
+---------------
+
+Alexandre Courbot (1):
+      PM: Documentation/power/states.txt: fix repetition
+
+Jan Beulich (1):
+      PM: Simplify kernel/power/Kconfig
+
+Mandeep Singh Baines (1):
+      PM: Use appropriate printk() priority level in trace.c
+
+Nishanth Menon (1):
+      PM / OPP: opp_find_freq_exact() documentation fix
+
+Rafael J. Wysocki (16):
+      PM / Wakeup: Combine atomic counters to avoid reordering issues
+      PM / Wakeup: Make pm_save_wakeup_count() work as documented
+      PM / Wakeup: Don't update events_check_enabled in pm_get_wakeup_count()
+      USB / Hub: Do not call device_set_wakeup_capable() under spinlock
+      PM: Do not create wakeup sysfs files for devices that cannot wake up
+      PM / ACPI: Remove references to pm_flags from bus.c
+      PM: Make CONFIG_PM depend on (CONFIG_PM_SLEEP || CONFIG_PM_RUNTIME)
+      PM: Reorder power management Kconfig options
+      PM: Remove CONFIG_PM_OPS
+      PM: Clean up PM_TRACE dependencies and drop unnecessary Kconfig option
+      PM: Allow pm_runtime_suspend() to succeed during system suspend
+      PM: Drop pm_flags that is not necessary
+      PM: Add support for device power domains
+      PM: Make system-wide PM and runtime PM treat subsystems consistently
+      PM / Core: Introduce struct syscore_ops for core subsystems PM
+      PM / Hibernate: Reduce autotuned default image size
+
+Thomas Renninger (1):
+      PM QoS: Make pm_qos settings readable
 
