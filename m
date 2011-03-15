@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab1COIh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 04:37:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50416 "EHLO mga01.intel.com"
+	id S1756023Ab1COIiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 04:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13462 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755736Ab1COIh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 04:37:56 -0400
-Message-Id: <b7da2f$qnp1ps@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,321,1297065600"; 
-   d="scan'208";a="897353532"
-Date: Tue, 15 Mar 2011 08:37:51 +0000
-To: Indan Zupancic <indan@nul.nu>
-Subject: Re: [PATCH] ACPI/Intel: Rework Opregion support
-Cc: Dave Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Alan Cox <alan@linux.intel.com>,
-        Keith Packard <keithp@keithp.com>, Len Brown <lenb@kernel.org>
-References: <1298404994-2907-1-git-send-email-mjg@redhat.com> <1300125566-29648-1-git-send-email-chris@chris-wilson.co.uk> <cb03c0cd31393b476e63c4e699247c91.squirrel@webmail.greenhost.nl>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <cb03c0cd31393b476e63c4e699247c91.squirrel@webmail.greenhost.nl>
+	id S1754980Ab1COIix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 04:38:53 -0400
+Message-ID: <4D7F2609.3080508@redhat.com>
+Date: Tue, 15 Mar 2011 09:40:41 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Jean Delvare <khali@linux-fr.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (jdelvare-hwmon
+ tree related)
+References: <20110315192428.ce74a177.sfr@canb.auug.org.au>
+In-Reply-To: <20110315192428.ce74a177.sfr@canb.auug.org.au>
+Content-Type: multipart/mixed;
+ boundary="------------020301000309030604090703"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 02:18:02 +0100 (CET), "Indan Zupancic" <indan@nul.nu> wrote:
-> Hello,
-> 
-> Some nitpicks below.
-> 
-> On Mon, March 14, 2011 18:59, Chris Wilson wrote:
-> > Note: neither the opregion_dev interface or the alse_set_* properly report
-> > failures. As such we have a slight change in behaviour on Ironlake+
-> > platforms and an uncorrected bug for earlier chipsets.
-> > -Chris
-> 
-> What uncorrected bug?
+This is a multi-part message in MIME format.
+--------------020301000309030604090703
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-For later chipsets we currently report the failure to respond to the ALSE
-requests, for earlier we do not. The patch harmonises the two code paths
-reusing the earlier code for later chipsets, hence the change in behaviour
-and potential regression. Alternatively, actually reporting the failure
-for earlier chipsets may also break existing setups.
+Hi,
 
-> And are there earlier chipsets with ASLE support at all, besides gen 4?
-> If there are no gen 2 or gen 3 chipsets with ASLE then the backlight
-> code can be simplified further.
+On 03/15/2011 09:24 AM, Stephen Rothwell wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> drivers/hwmon/sch5627.c: In function 'sch5627_read_virtual_reg':
+> drivers/hwmon/sch5627.c:179: error: implicit declaration of function 'msleep'
+>
+> Caused by commit 19803daeb145 ("hwmon: New driver for SMSC SCH5627").
+> See Rule 1 in Documentation/SubmitChecklist.
+>
+> I have reverted that commit for today.
 
-The OpRegion interface was devised midway through gen3 (afaik), and you
-find it on some i915-class hw and not others. In theory, there is nothing
-to prevent a BIOS/ACPI from being rewritten for it to be of use in gen2,
-and who knows one such beast may already exist (considering much to our
-horror you can still buy gen2 chipsets).
+The attached patch should fix this, Jean can you please add this to your
+tree? Note feel free to merge it into the initial patch adding the sch5627 driver
+if you prefer.
 
-> > diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> > index 4e5ff59..51565bb 100644
-> > --- a/drivers/gpu/drm/i915/intel_panel.c
-> > +++ b/drivers/gpu/drm/i915/intel_panel.c
-> > @@ -261,8 +261,8 @@ intel_panel_detect(struct drm_device *dev)
-> >  	 * appears to be either the BIOS or Linux ACPI fault */
-> >  #if 0
-> >  	/* Assume that the BIOS does not lie through the OpRegion... */
-> > -	if (dev_priv->opregion.lid_state)
-> > -		return ioread32(dev_priv->opregion.lid_state) & 0x1 ?
-> > +	if (dev_priv->opregion_dev.opregion.acpi)
-> > +		return ioread32(&dev_priv->opregion_dev.opregion.acpi->clid) & 0x1 ?
-> 
-> What guarantees that opregion.acpi != NULL here?
+Thanks & Regards,
 
-You mean other than the explicit test for opregion.acpi != NULL?
+Hans
 
-> Or perhaps just remove that #if 0 code chunk altogether?
+--------------020301000309030604090703
+Content-Type: text/plain;
+ name="0001-hwmon-sch5627-include-linux-delay.h-for-msleep-proto.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-hwmon-sch5627-include-linux-delay.h-for-msleep-proto.pa";
+ filename*1="tch"
 
-Read the changelog and thread on the patch that disabled this logic, the
-failure (or at least inconsistent behaviour with the expectations of the
-HP BIOS authors) appears to be in how we initialise ACPI on the HP
-machines that causes the initial value of lid state to be incorrect. Since
-one of the laptops that Dave tests drm-next on is a HP, he was bitten by
-the bug and temporarily (we hope) disabled the logic. Or else once again,
-we will continue to light up the panel on a closed laptop.
--Chris
+>From a5ffc5ddcdb230fcb10fe6c80ebe043c25763416 Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Tue, 15 Mar 2011 09:37:47 +0100
+Subject: [PATCH] hwmon/sch5627: include linux/delay.h for msleep prototype
 
+This should fix sch5627 breaking the building of linux-next
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/hwmon/sch5627.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/hwmon/sch5627.c b/drivers/hwmon/sch5627.c
+index 0001331..9a51dcc 100644
+--- a/drivers/hwmon/sch5627.c
++++ b/drivers/hwmon/sch5627.c
+@@ -30,6 +30,7 @@
+ #include <linux/mutex.h>
+ #include <linux/io.h>
+ #include <linux/acpi.h>
++#include <linux/delay.h>
+ 
+ #define DRVNAME "sch5627"
+ #define DEVNAME DRVNAME /* We only support one model */
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.3.2
+
+
+--------------020301000309030604090703--
