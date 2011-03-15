@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab1COVN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:13:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46305 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043Ab1COVNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:13:54 -0400
-Date: Tue, 15 Mar 2011 14:13:47 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-kbuild@vger.kernel.org
-Cc: lkml <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] modpost: fix trailing comma
-Message-Id: <20110315141347.d4ee75d3.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1758756Ab1COVOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:14:42 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:59740 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540Ab1COVOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 17:14:40 -0400
+Date: Tue, 15 Mar 2011 22:14:34 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: oliver@neukum.org, jwjstone@fastmail.fm, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, Patrick Boettcher <pboettcher@dibcom.fr>
+Subject: Re: [PATCH 01/16] [media] dib0700: get rid of on-stack dma buffers
+Message-ID: <20110315221434.7b0dc2a8@schatten.dmk.lab>
+In-Reply-To: <4D7F5538.6080907@infradead.org>
+References: <20110315093632.5fc9fb77@schatten.dmk.lab>
+	<1300178655-24832-1-git-send-email-florian@mickler.org>
+	<4D7F5538.6080907@infradead.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D7FD68E.00DF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 15 Mar 2011 09:02:00 -0300
+Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+> 
+> You're allocating a buffer for URB control messages. IMO, this is a good idea, as
+> this way, allocating/freeing on each urb call is avoided. However, on most places,
+> you're not using it. The better would be to just use this buffer on all
+> the above places.
+> 
+> You should just take care of protecting such buffer with a mutex, to avoid concurrency.
+> Such kind of protection is generally ok, as dvb applications generally serialize
+> the calls anyway.
+> 
 
-Consolidate locations that print a section whitelist into
-calls to print_section_list().
+I didn't do so already, because I had/have no overview over the big
+picture operation of the dvb framework and thus feared to introduce
+deadlocks or massive serializations where concurrency is needed. But if
+you suggest it, I guess it should be benign. I'm wondering about the
+purpose of the usb_mutex and the i2c_mutex ... 
 
-Fix print_section_list() so that it does not print a trailing
-comma & space:
+Should I introduce new driver specific mutexes to protect the buffer or
+is it possible to reuse one of the 2? 
 
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console, 
+vp702x_usb_inout_op takes the usb_mutex, 
+but vp702x_usb_out_op and vp702x_usb_in_op get called without that
+mutex hold. That makes me wonder what that mutex purpose is in that
+driver?
 
-becomes:
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+Other drivers like the az6027 introduce a driver specific mutex and
+also use the usb_mutex. That make conceptually (to my inexperienced
+mind) more sense. (each layer does it's own locking) but the idea of
+operation is not yet clear in my mind...
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- scripts/mod/modpost.c |   23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
+Can you perhaps shed some light on what the purpose of those locks is
+and if it is sufficient to use the usb_mutex to serialize all
+usb_control_msg calls (which would probably protect the buffer
+sufficiently but may be too much if the dvb-usb framework uses that
+mutex for different purposes). 
 
---- linux-next-20110315.orig/scripts/mod/modpost.c
-+++ linux-next-20110315/scripts/mod/modpost.c
-@@ -1248,6 +1248,19 @@ static int is_function(Elf_Sym *sym)
- 		return -1;
- }
- 
-+static void print_section_list(const char * const list[20])
-+{
-+	const char *const *s = list;
-+
-+	while (*s) {
-+		fprintf(stderr, "%s", *s);
-+		s++;
-+		if (*s)
-+			fprintf(stderr, ", ");
-+	}
-+	fprintf(stderr, "\n");
-+}
-+
- /*
-  * Print a warning about a section mismatch.
-  * Try to find symbols near it so user can find it.
-@@ -1304,7 +1317,6 @@ static void report_sec_mismatch(const ch
- 		break;
- 	case DATA_TO_ANY_INIT: {
- 		prl_to = sec2annotation(tosec);
--		const char *const *s = mismatch->symbol_white_list;
- 		fprintf(stderr,
- 		"The variable %s references\n"
- 		"the %s %s%s%s\n"
-@@ -1312,9 +1324,7 @@ static void report_sec_mismatch(const ch
- 		"variable with __init* or __refdata (see linux/init.h) "
- 		"or name the variable:\n",
- 		fromsym, to, prl_to, tosym, to_p);
--		while (*s)
--			fprintf(stderr, "%s, ", *s++);
--		fprintf(stderr, "\n");
-+		print_section_list(mismatch->symbol_white_list);
- 		free(prl_to);
- 		break;
- 	}
-@@ -1329,7 +1339,6 @@ static void report_sec_mismatch(const ch
- 		break;
- 	case DATA_TO_ANY_EXIT: {
- 		prl_to = sec2annotation(tosec);
--		const char *const *s = mismatch->symbol_white_list;
- 		fprintf(stderr,
- 		"The variable %s references\n"
- 		"the %s %s%s%s\n"
-@@ -1337,9 +1346,7 @@ static void report_sec_mismatch(const ch
- 		"variable with __exit* (see linux/init.h) or "
- 		"name the variable:\n",
- 		fromsym, to, prl_to, tosym, to_p);
--		while (*s)
--			fprintf(stderr, "%s, ", *s++);
--		fprintf(stderr, "\n");
-+		print_section_list(mismatch->symbol_white_list);
- 		free(prl_to);
- 		break;
- 	}
+In the meantime I will respin this series using preallocated buffers and
+will hopefully work out stuff that is unclear to me yet ...
+
+Regards,
+Flo
+
+
