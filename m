@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab1COErW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 00:47:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47013 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab1COErR (ORCPT
+	id S1752762Ab1COEuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 00:50:40 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61472 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab1COEui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 00:47:17 -0400
+	Tue, 15 Mar 2011 00:50:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=x2IrcVfOJJ/Cb4aZ7Je2DoHJJ4N+IkyZvKYejL4Vq5fpL2cIR1ubZQdLiugIgn5kZ5
-         ovt3SRZZBBx3F6ENBr8oDOTAjmw5jzPJrG/vNLAkmWrAebymiWq45535Iy2JnAxkd+SF
-         qXZ8LYVjnveVayiqKmzu1peAnVD634h0tauKU=
-Date: Mon, 14 Mar 2011 21:47:08 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Olaf Hering <olaf@aepfle.de>
-Subject: Re: [PATCH] input/xen-fbfront: advertise either absolute or relative
- coordinates
-Message-ID: <20110315044708.GA1046@core.coreip.homeip.net>
-References: <alpine.DEB.2.00.1103111124400.2968@kaball-desktop>
- <20110313062411.GB31566@core.coreip.homeip.net>
- <alpine.DEB.2.00.1103141135170.3382@kaball-desktop>
- <20110314150321.GB11244@dumpdata.com>
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=CY3h3h7LhN5mrvyt5L9vLSLvJbcu7b6H54jnyfAv9zaoFj3jsq4jN017uttZjUsAAS
+         7YRa64qt9AvNUbPnWmbA==
+Date: Mon, 14 Mar 2011 21:50:24 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: Linux 2.6.38
+In-Reply-To: <20110314213331.24229139.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1103142137020.13734@chino.kir.corp.google.com>
+References: <AANLkTi=_cZRNPU29+MJkt9u6zDSLo153CKqLqg1+t7O6@mail.gmail.com> <alpine.DEB.2.00.1103142011550.16032@chino.kir.corp.google.com> <20110314213331.24229139.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110314150321.GB11244@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 11:03:21AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > BTW, drivers/input is intended for core input and handlers stuff with
-> > > drivers suppsed to be in drivers/input/<type>. Would you mind if I moved
-> > > this driver to drivers/input/misc?
-> > 
-> > I am OK with it.
-> > Konrad, any comments on this?
+On Mon, 14 Mar 2011, Andrew Morton wrote:
+
+> > once oom-prevent-unnecessary-oom-kills-or-kernel-panics.patch is merged 
+> > from -mm
 > 
-> Go for it! Dmitry, were you thinking to do that for 2.6.39 or 2.6.40?
+> Please (re)send the patches which you believe should be merged into
+> 2.6.38 to address the problems which Oleg found, and any other critical
+> problems.  Not in a huge rush - let's get this right.
 > 
 
-.39 I guess.
+In my testing, Oleg's three test cases that he sent to the security list 
+and cc'd us on get appropriately oom killed once swap is exhausted or 
+swapoff -a is used on mmotm-2011-03-10-16-42 because of these two patches:
 
-> I've two more patches for xen-fbfront (and one for xen-kbdfront) that I was thinking
-> could go for 2.6.39:
-> 
-> http://lists.colo.xensource.com/archives/html/xen-devel/2011-03/msg00383.html
-> 
-> oh, and they seemed to have not been posted here. I stuck them 
-> in
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git #devel/fb_kb_front_use_page_gref
-> 
-> and was testing them. Do you want me to repost them on LKML with you
-> on the CC?
-> 
+	oom-prevent-unnecessary-oom-kills-or-kernel-panics.patch
+	oom-skip-zombies-when-iterating-tasklist.patch
 
-Yes, please.
+He also presented a test case on linux-mm that caused the oom killer to 
+avoid acting if a thread is ptracing a thread in the exit path with 
+PTRACE_O_TRACEEXIT.  That should be fixed with
 
--- 
-Dmitry
+	http://marc.info/?l=linux-mm&m=129997893430351
+
+that has yet to see -mm.  There are no other test cases that have been 
+presented that cause undesired behavior.
+
+That said, my approach to doing this has been to avoid arbitrary 
+heuristics for special cases and address known issues by adding the 
+appropriate logic in the oom killer.  For example, the ptrace problem that 
+Oleg presented showed that the oom killer logic incorrectly deferred doing 
+anything when an eligible thread was PF_EXITING.  It had done that 
+believing that nothing would stop the thread from exiting or current 
+would be given access to memory reserves itself and that assumption was 
+broken for PTRACE_O_TRACEEXIT.  My patch above, in combination with 
+Andrey's patch that only considers threads with valid mm's, fixes that 
+issue because we'll now only defer if you still have an attached mm, are 
+PF_EXITING, and are not being traced.
+
+If, at some point, there is another gap in the exit code where a thread 
+may hold PF_EXITING with a valid mm for an indefinite period, we'll need 
+to address that in the oom killer as well.  We use PF_EXITING specifically 
+in the oom killer to identify tasks that are going to exit soon and need 
+handling for any case where that isn't guaranteed.  Anything else results 
+in needlessly killing other tasks or, in the worst case, panicking when 
+there is nothing left that is eligible.
