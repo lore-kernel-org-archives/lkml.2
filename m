@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab1COUHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 16:07:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39003 "EHLO
+	id S1758244Ab1COUHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 16:07:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38994 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429Ab1COUFR (ORCPT
+	with ESMTP id S1757649Ab1COUFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 16:05:17 -0400
+	Tue, 15 Mar 2011 16:05:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/12] perf script: Add support for dumping symbols
-Date: Tue, 15 Mar 2011 17:04:59 -0300
-Message-Id: <1300219501-15085-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/12] perf script: Change process_event prototype
+Date: Tue, 15 Mar 2011 17:04:55 -0300
+Message-Id: <1300219501-15085-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1300219501-15085-1-git-send-email-acme@infradead.org>
 References: <1300219501-15085-1-git-send-email-acme@infradead.org>
@@ -29,36 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <daahern@cisco.com>
 
-Add option to dump symbols found in events.
-
-e.g., perf script -f comm,pid,tid,time,trace,sym
-
-swapper     0/0       537.037184: prev_comm=swapper prev_pid=0 prev_prio=120...
-        ffffffff81030350 perf_trace_sched_switch ([kernel.kallsyms])
-        ffffffff81382ac5 schedule ([kernel.kallsyms])
-        ffffffff8100134a cpu_idle ([kernel.kallsyms])
-        ffffffff81370b39 rest_init ([kernel.kallsyms])
-        ffffffff81696c23 start_kernel ([kernel.kallsyms].init.text)
-        ffffffff816962af x86_64_start_reservations ([kernel.kallsyms].init.text)
-        ffffffff816963b9 x86_64_start_kernel ([kernel.kallsyms].init.text)
-
-sshd  1675/1675    537.037309: prev_comm=sshd prev_pid=1675 prev_prio=120...
-        ffffffff81030350 perf_trace_sched_switch ([kernel.kallsyms])
-        ffffffff81382ac5 schedule ([kernel.kallsyms])
-        ffffffff813837aa schedule_hrtimeout_range_clock ([kernel.kallsyms])
-        ffffffff81383886 schedule_hrtimeout_range ([kernel.kallsyms])
-        ffffffff8110c4f9 poll_schedule_timeout ([kernel.kallsyms])
-        ffffffff8110cd20 do_select ([kernel.kallsyms])
-        ffffffff8110ced8 core_sys_select ([kernel.kallsyms])
-        ffffffff8110d00d sys_select ([kernel.kallsyms])
-        ffffffff81002bc2 system_call ([kernel.kallsyms])
-            7f1647e56e93 __GI_select (/lib64/libc-2.12.90.so)
-
-netstat  1692/1692    537.038664: prev_comm=netstat prev_pid=1692 prev_prio=...
-        ffffffff81030350 perf_trace_sched_switch ([kernel.kallsyms])
-        ffffffff81382ac5 schedule ([kernel.kallsyms])
-        ffffffff81002c3a sysret_careful ([kernel.kallsyms])
-            7f7a6cd1b210 __GI___libc_read (/lib64/libc-2.12.90.so)
+Prepare for handling of samples for any event type.
 
 Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -66,218 +37,170 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <1299734608-5223-6-git-send-email-daahern@cisco.com>
+LKML-Reference: <1299734608-5223-2-git-send-email-daahern@cisco.com>
 Signed-off-by: David Ahern <daahern@cisco.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-script.txt |   16 +++++++-
- tools/perf/builtin-script.c              |   31 +++++++++++++++-
- tools/perf/util/session.c                |   61 ++++++++++++++++++++++++++++++
- tools/perf/util/session.h                |    4 ++
- 4 files changed, 110 insertions(+), 2 deletions(-)
+ tools/perf/builtin-script.c                        |   25 ++++++++++++-------
+ .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++--
+ .../util/scripting-engines/trace-event-python.c    |   11 ++++++--
+ tools/perf/util/trace-event-scripting.c            |    9 +++----
+ tools/perf/util/trace-event.h                      |    7 ++++-
+ 5 files changed, 41 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index b73cf58..c64118a 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -115,7 +115,21 @@ OPTIONS
- -f::
- --fields
-         Comma separated list of fields to print. Options are:
--        comm, tid, pid, time, cpu, event, trace
-+        comm, tid, pid, time, cpu, event, trace, sym
-+
-+-k::
-+--vmlinux=<file>::
-+        vmlinux pathname
-+
-+--kallsyms=<file>::
-+        kallsyms pathname
-+
-+--symfs=<directory>::
-+        Look for files with symbols relative to this directory.
-+
-+-G::
-+--hide-call-graph::
-+        When printing symbols do not display call chain.
- 
- SEE ALSO
- --------
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index c046e6e..b45b09c 100644
+index 5f40df6..b2bdd55 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -19,6 +19,7 @@ static bool			debug_mode;
- static u64			last_timestamp;
+@@ -20,6 +20,20 @@ static u64			last_timestamp;
  static u64			nr_unordered;
  extern const struct option	record_options[];
-+static bool			no_callchain;
  
- enum perf_output_field {
- 	PERF_OUTPUT_COMM            = 1U << 0,
-@@ -28,6 +29,7 @@ enum perf_output_field {
- 	PERF_OUTPUT_CPU             = 1U << 4,
- 	PERF_OUTPUT_EVNAME          = 1U << 5,
- 	PERF_OUTPUT_TRACE           = 1U << 6,
-+	PERF_OUTPUT_SYM             = 1U << 7,
- };
- 
- struct output_option {
-@@ -41,6 +43,7 @@ struct output_option {
- 	{.str = "cpu",   .field = PERF_OUTPUT_CPU},
- 	{.str = "event", .field = PERF_OUTPUT_EVNAME},
- 	{.str = "trace", .field = PERF_OUTPUT_TRACE},
-+	{.str = "sym",   .field = PERF_OUTPUT_SYM},
- };
- 
- /* default set to maintain compatibility with current format */
-@@ -65,6 +68,8 @@ static void print_sample_start(struct perf_sample *sample,
- 	if (PRINT_FIELD(COMM)) {
- 		if (latency_format)
- 			printf("%8.8s ", thread->comm);
-+		else if (PRINT_FIELD(SYM) && symbol_conf.use_callchain)
-+			printf("%s ", thread->comm);
- 		else
- 			printf("%16s ", thread->comm);
- 	}
-@@ -112,6 +117,14 @@ static void process_event(union perf_event *event __unused,
- 		print_trace_event(sample->cpu, sample->raw_data,
- 				  sample->raw_size);
- 
-+	if (PRINT_FIELD(SYM)) {
-+		if (!symbol_conf.use_callchain)
-+			printf(" ");
-+		else
-+			printf("\n");
-+		perf_session__print_symbols(event, sample, session);
-+	}
-+
- 	printf("\n");
- }
- 
-@@ -190,7 +203,10 @@ static int process_sample_event(union perf_event *event,
- 
- static struct perf_event_ops event_ops = {
- 	.sample		 = process_sample_event,
-+	.mmap		 = perf_event__process_mmap,
- 	.comm		 = perf_event__process_comm,
-+	.exit		 = perf_event__process_task,
-+	.fork		 = perf_event__process_task,
- 	.attr		 = perf_event__process_attr,
- 	.event_type	 = perf_event__process_event_type,
- 	.tracing_data	 = perf_event__process_tracing_data,
-@@ -722,8 +738,16 @@ static const struct option options[] = {
- 		    "input file name"),
- 	OPT_BOOLEAN('d', "debug-mode", &debug_mode,
- 		   "do various checks like samples ordering and lost events"),
-+	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
-+		   "file", "vmlinux pathname"),
-+	OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name,
-+		   "file", "kallsyms pathname"),
-+	OPT_BOOLEAN('G', "hide-call-graph", &no_callchain,
-+		    "When printing symbols do not display call chain"),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_CALLBACK('f', "fields", NULL, "str",
--		     "comma separated output fields. Options: comm,tid,pid,time,cpu,event,trace",
-+		     "comma separated output fields. Options: comm,tid,pid,time,cpu,event,trace,sym",
- 		     parse_output_fields),
- 
- 	OPT_END()
-@@ -905,6 +929,11 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	if (!no_callchain && (session->sample_type & PERF_SAMPLE_CALLCHAIN))
-+		symbol_conf.use_callchain = true;
-+	else
-+		symbol_conf.use_callchain = false;
-+
- 	if (strcmp(input_name, "-") &&
- 	    !perf_session__has_traces(session, "record -R"))
- 		return -EINVAL;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index f26639f..c68cf40 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1134,3 +1134,64 @@ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
- 
- 	return ret;
- }
-+
-+void perf_session__print_symbols(union perf_event *event,
-+				struct perf_sample *sample,
-+				struct perf_session *session)
++static void process_event(union perf_event *event __unused,
++			  struct perf_sample *sample,
++			  struct perf_session *session __unused,
++			  struct thread *thread)
 +{
-+	struct addr_location al;
-+	const char *symname, *dsoname;
-+	struct callchain_cursor *cursor = &session->callchain_cursor;
-+	struct callchain_cursor_node *node;
-+
-+	if (perf_event__preprocess_sample(event, session, &al, sample,
-+					  NULL) < 0) {
-+		error("problem processing %d event, skipping it.\n",
-+			event->header.type);
-+		return;
-+	}
-+
-+	if (symbol_conf.use_callchain && sample->callchain) {
-+
-+		if (perf_session__resolve_callchain(session, al.thread,
-+						sample->callchain, NULL) != 0) {
-+			if (verbose)
-+				error("Failed to resolve callchain. Skipping\n");
-+			return;
-+		}
-+		callchain_cursor_commit(cursor);
-+
-+		while (1) {
-+			node = callchain_cursor_current(cursor);
-+			if (!node)
-+				break;
-+
-+			if (node->sym && node->sym->name)
-+				symname = node->sym->name;
-+			else
-+				symname = "";
-+
-+			if (node->map && node->map->dso && node->map->dso->name)
-+				dsoname = node->map->dso->name;
-+			else
-+				dsoname = "";
-+
-+			printf("\t%16" PRIx64 " %s (%s)\n", node->ip, symname, dsoname);
-+
-+			callchain_cursor_advance(cursor);
-+		}
-+
-+	} else {
-+		if (al.sym && al.sym->name)
-+			symname = al.sym->name;
-+		else
-+			symname = "";
-+
-+		if (al.map && al.map->dso && al.map->dso->name)
-+			dsoname = al.map->dso->name;
-+		else
-+			dsoname = "";
-+
-+		printf("%16" PRIx64 " %s (%s)", al.addr, symname, dsoname);
-+	}
++	/*
++	 * FIXME: better resolve from pid from the struct trace_entry
++	 * field, although it should be the same than this perf
++	 * event pid
++	 */
++	print_event(sample->cpu, sample->raw_data, sample->raw_size,
++		    sample->time, thread->comm);
 +}
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index b5b148b..0b3c9af 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -159,4 +159,8 @@ static inline int perf_session__parse_sample(struct perf_session *session,
- 					session->sample_id_all, sample);
++
+ static int default_start_script(const char *script __unused,
+ 				int argc __unused,
+ 				const char **argv __unused)
+@@ -40,7 +54,7 @@ static int default_generate_script(const char *outfile __unused)
+ static struct scripting_ops default_scripting_ops = {
+ 	.start_script		= default_start_script,
+ 	.stop_script		= default_stop_script,
+-	.process_event		= print_event,
++	.process_event		= process_event,
+ 	.generate_script	= default_generate_script,
+ };
+ 
+@@ -86,14 +100,7 @@ static int process_sample_event(union perf_event *event,
+ 			last_timestamp = sample->time;
+ 			return 0;
+ 		}
+-		/*
+-		 * FIXME: better resolve from pid from the struct trace_entry
+-		 * field, although it should be the same than this perf
+-		 * event pid
+-		 */
+-		scripting_ops->process_event(sample->cpu, sample->raw_data,
+-					     sample->raw_size,
+-					     sample->time, thread->comm);
++		scripting_ops->process_event(event, sample, session, thread);
+ 	}
+ 
+ 	session->hists.stats.total_period += sample->period;
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 9368081..6214272 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -245,9 +245,10 @@ static inline struct event *find_cache_event(int type)
+ 	return event;
  }
  
-+void perf_session__print_symbols(union perf_event *event,
+-static void perl_process_event(int cpu, void *data,
+-			       int size __unused,
+-			       unsigned long long nsecs, char *comm)
++static void perl_process_event(union perf_event *pevent __unused,
++			       struct perf_sample *sample,
++			       struct perf_session *session __unused,
++			       struct thread *thread)
+ {
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -256,6 +257,10 @@ static void perl_process_event(int cpu, void *data,
+ 	struct event *event;
+ 	int type;
+ 	int pid;
++	int cpu = sample->cpu;
++	void *data = sample->raw_data;
++	unsigned long long nsecs = sample->time;
++	char *comm = thread->comm;
+ 
+ 	dSP;
+ 
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 2040b85..1b85d60 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -204,9 +204,10 @@ static inline struct event *find_cache_event(int type)
+ 	return event;
+ }
+ 
+-static void python_process_event(int cpu, void *data,
+-				 int size __unused,
+-				 unsigned long long nsecs, char *comm)
++static void python_process_event(union perf_event *pevent __unused,
 +				 struct perf_sample *sample,
-+				 struct perf_session *session);
-+
- #endif /* __PERF_SESSION_H */
++				 struct perf_session *session __unused,
++				 struct thread *thread)
+ {
+ 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+@@ -217,6 +218,10 @@ static void python_process_event(int cpu, void *data,
+ 	unsigned n = 0;
+ 	int type;
+ 	int pid;
++	int cpu = sample->cpu;
++	void *data = sample->raw_data;
++	unsigned long long nsecs = sample->time;
++	char *comm = thread->comm;
+ 
+ 	t = PyTuple_New(MAX_FIELDS);
+ 	if (!t)
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index f7af2fc..66f4b78 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -36,11 +36,10 @@ static int stop_script_unsupported(void)
+ 	return 0;
+ }
+ 
+-static void process_event_unsupported(int cpu __unused,
+-				      void *data __unused,
+-				      int size __unused,
+-				      unsigned long long nsecs __unused,
+-				      char *comm __unused)
++static void process_event_unsupported(union perf_event *event __unused,
++				      struct perf_sample *sample __unused,
++				      struct perf_session *session __unused,
++				      struct thread *thread __unused)
+ {
+ }
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index b5f12ca..5f7b513 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -3,6 +3,7 @@
+ 
+ #include <stdbool.h>
+ #include "parse-events.h"
++#include "session.h"
+ 
+ #define __unused __attribute__((unused))
+ 
+@@ -278,8 +279,10 @@ struct scripting_ops {
+ 	const char *name;
+ 	int (*start_script) (const char *script, int argc, const char **argv);
+ 	int (*stop_script) (void);
+-	void (*process_event) (int cpu, void *data, int size,
+-			       unsigned long long nsecs, char *comm);
++	void (*process_event) (union perf_event *event,
++			       struct perf_sample *sample,
++			       struct perf_session *session,
++			       struct thread *thread);
+ 	int (*generate_script) (const char *outfile);
+ };
+ 
 -- 
 1.6.2.5
 
