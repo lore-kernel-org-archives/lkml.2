@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab1COQYA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 12:24:00 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:34514 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138Ab1COQX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 12:23:58 -0400
-Date: Tue, 15 Mar 2011 21:47:52 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 7/20]  7: uprobes: store/restore
- original instruction.
-Message-ID: <20110315161752.GA6791@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
- <20110314133522.27435.45121.sendpatchset@localhost6.localdomain6>
- <20110314180914.GA18855@fibrous.localdomain>
- <20110315092247.GW24254@linux.vnet.ibm.com>
- <1300196879.9910.271.camel@gandalf.stny.rr.com>
- <20110315161530.GA23862@fibrous.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110315161530.GA23862@fibrous.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S932328Ab1COQ1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 12:27:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59019 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215Ab1COQ1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 12:27:32 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: dave <dave@jikos.cz>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        adilger <adilger@dilger.ca>
+Subject: Re: ext4 deep stack with mark_page_dirty reclaim
+In-reply-to: <20110315152222.GW17108@twin.jikos.cz>
+References: <alpine.LSU.2.00.1103141156190.3220@sister.anvils> <20110314204627.GB8120@thunk.org> <FE7209AC-C66C-4482-945E-58CF5AF8FEE7@dilger.ca> <20110315152222.GW17108@twin.jikos.cz>
+Date: Tue, 15 Mar 2011 12:26:43 -0400
+Message-Id: <1300206353-sup-9759@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D7F9367.00A3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > 	rcu_read_lock();
-> > 	tsk = mm->owner;
-> > 	if (tsk)
-> > 		get_task_struct(tsk);
-> > 	rcu_read_unlock();
-> > 	if (!tsk)
-> > 		return ret;
-> > 
-> > Probably looks cleaner.
+Excerpts from David Sterba's message of 2011-03-15 11:22:22 -0400:
+> On Mon, Mar 14, 2011 at 07:25:10PM -0700, Andreas Dilger wrote:
+> > Is there a script which you used to generate this stack trace to
+> > function size mapping, or did you do it by hand?  I've always wanted
+> > such a script, but the tricky part is that there is so much garbage on
+> > the stack that any automated stack parsing is almost useless.
+> > Alternately, it would seem trivial to have the stack dumper print the
+> > relative address of each symbol, and the delta from the previous
+> > symbol...
 > 
-> Yes, plus we should do "tsk = rcu_dereference(mm->owner);" and wrap the
-> whole thing in a static uprobes_get_mm_owner() or similar.
+> > > 240 schedule+0x25a
+> > > 368 io_schedule+0x35
+> > >  32 get_request_wait+0xc6
 > 
+> from the callstack:
+> 
+> ffff88007a704338 schedule+0x25a
+> ffff88007a7044a8 io_schedule+0x35
+> ffff88007a7044c8 get_request_wait+0xc6
+> 
+> subtract the values and you get the ones Ted posted,
+> 
+> eg. for get_request_wait:
+> 
+> 0xffff88007a7044c8 - 0xffff88007a7044a8 = 32
+> 
+> There'se a script scripts/checkstack.pl which tries to determine stack
+> usage from 'objdump -d' looking for the 'sub 0x123,%rsp' instruction and
+> reporting the 0x123 as stack consumption. It does not give same results,
+> for the get_request_wait:
+> 
+> ffffffff81216205:       48 83 ec 68             sub    $0x68,%rsp
+> 
+> reported as 104.
 
-Okay, will do that.
+Also, the ftrace stack usage tracer gives more verbose output that
+includes the size of each function.
 
--- 
-Thanks and Regards
-Srikar
+-chris
