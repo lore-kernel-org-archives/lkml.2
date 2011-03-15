@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab1COVDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 17:03:48 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41221
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758703Ab1COVDp (ORCPT
+	id S1758748Ab1COVEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 17:04:46 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52672 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757232Ab1COVEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 17:03:45 -0400
-Date: Tue, 15 Mar 2011 14:04:22 -0700 (PDT)
-Message-Id: <20110315.140422.59684684.davem@davemloft.net>
-To: laijs@cn.fujitsu.com
-Cc: mingo@elte.hu, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
-        Trond.Myklebust@netapp.com, vladislav.yasevich@hp.com, sri@us.ibm.com,
-        viro@zeniv.linux.org.uk, eparis@redhat.com, menage@google.com,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, johannes@sipsolutions.net,
-        linville@tuxdriver.com, hadi@cyberus.ca, jpirko@redhat.com,
-        eric.dumazet@gmail.com, hagen@jauu.net, randy.dunlap@oracle.com,
-        jkosina@suse.cz, joe@perches.com, u.kleine-koenig@pengutronix.de,
-        ebiederm@xmission.com, gregkh@suse.de, xemul@openvz.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        linux-decnet-user@lists.sourceforge.net,
-        linux-wireless@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 15/17] net,rcu: convert call_rcu(ha_rcu_free) to
- kfree_rcu()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D7F3ABA.7020709@cn.fujitsu.com>
-References: <4D7F3610.6000809@cn.fujitsu.com>
-	<4D7F3ABA.7020709@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 15 Mar 2011 17:04:43 -0400
+Date: Tue, 15 Mar 2011 14:04:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, oakad@yahoo.com
+Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
+Message-Id: <20110315140402.334cc55c.akpm@linux-foundation.org>
+In-Reply-To: <1300219210.13493.0.camel@MAIN>
+References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
+	<1299947013.17988.0.camel@maxim-laptop>
+	<1300219210.13493.0.camel@MAIN>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Tue, 15 Mar 2011 18:08:58 +0800
+On Tue, 15 Mar 2011 22:00:10 +0200
+Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 
+> On Sat, 2011-03-12 at 18:23 +0200, Maxim Levitsky wrote:
+> > On Fri, 2011-03-04 at 06:16 +0200, Maxim Levitsky wrote:
+> > > Hi,
+> > > 
+> > > This is a repost of my patches for 2.6.39 inclusion, which I hope not to
+> > > miss this time.
+> > > 
+> > > I addressed the comments on the scatterlist issues.
+> > > 
+> > > Andrew, please note that my richoh memstick driver is standalone, unchanged from previos versions
+> > > has many users which use the version I posted at ubuntu's Launchpad and happy with it.
+> > > Please include it regardless of other patches.
+> > > 
+> > > The other half of my work is support for legacy memorysticks which consists of 2 patches,
+> > > first that adds few functions to scatterlist.c, and the other patch that adds the driver.
+> > > Driver is also stable and tested.
+> > > 
+> > > Best regards,
+> > > 	Maxim Levitsky
+> > 
+> > 
+> > Any update?
 > 
+> Any update?
 > 
-> The rcu callback ha_rcu_free() just calls a kfree(),
-> so we use kfree_rcu() instead of the call_rcu(ha_rcu_free).
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Acked-by: David S. Miller <davem@davemloft.net>
+I'm hoping that Alex will soon have time to (re)review these patches.
