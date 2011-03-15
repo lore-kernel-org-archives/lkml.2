@@ -1,48 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab1CONvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 09:51:55 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52064 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab1CONvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 09:51:54 -0400
-Date: Tue, 15 Mar 2011 09:51:37 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: menage@google.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 0/2] suck some poison out of cgroups' linked lists
-Message-ID: <20110315135137.GA27545@infradead.org>
-References: <1300194523-19325-1-git-send-email-ext-phil.2.carmody@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300194523-19325-1-git-send-email-ext-phil.2.carmody@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757651Ab1CONzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 09:55:39 -0400
+Received: from lo.gmane.org ([80.91.229.12]:36441 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757384Ab1CONzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 09:55:38 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: WANG Cong <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH][rfc] Use int as return type of main in
+ arch/x86/boot/main.c
+Date: Tue, 15 Mar 2011 13:55:26 +0000 (UTC)
+Message-ID: <ilnr4d$rjj$3@dough.gmane.org>
+References: <alpine.LNX.2.00.1103132257430.9985@swampdragon.chaosbits.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 122.232.152.135
+User-Agent: Pan/0.133 (House of Butterflies)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 03:08:41PM +0200, Phil Carmody wrote:
-> Apparently, whether nodes are on a list is being checked with list_empty(),
-> and if they're on a list, they're list_del()ed. According to a subsequent 
-> list_empty() check, they're still on a list, as list_del() doesn't turn
-> the nodes into singleton lists, it simply poisons both its pointers, and
-> merry poison dereferencing may ensue. Oops.
-> 
-> There are at least 2 to address this matter, I've gone for the latter:
-> 
-> 1) Do not use list_empty() to check if a node is on a list or not. Have
-> an additional new function that checks to see whether the node is either
-> a singleton or is poisoned. Something like list_node_{on,off}_list()?
-> 
-> 2) Ensure that you never leave poison anywhere where you might want
-> to use list_empty().
+On Sun, 13 Mar 2011 23:00:09 +0100, Jesper Juhl wrote:
 
-The correct way is to use list_del_init() if you want to do list_empty
-checks later on.
+> I believe the return type of main should always be 'int'.
+> 
+
+In user-space, yes, but this is not true in kernel space especially here.
 
