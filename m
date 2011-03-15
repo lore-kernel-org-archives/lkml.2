@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab1COKSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 06:18:40 -0400
-Received: from verein.lst.de ([213.95.11.211]:51757 "EHLO newverein.lst.de"
+	id S1757057Ab1COKSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 06:18:51 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:57190 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752276Ab1COKSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 06:18:39 -0400
-Date: Tue, 15 Mar 2011 11:18:38 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@lst.de>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [PATCH 21/21] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
-	module
-Message-ID: <20110315101838.GB23623@lst.de>
-References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org> <1300100775-10012-22-git-send-email-nab@linux-iscsi.org> <20110314145808.GA28480@lst.de> <1300140175.28255.156.camel@haakon2.linux-iscsi.org>
+	id S1756837Ab1COKSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 06:18:48 -0400
+Message-ID: <4D7F3CD5.9030105@secunet.com>
+Date: Tue, 15 Mar 2011 11:17:57 +0100
+From: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300140175.28255.156.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: linux-kernel@vger.kernel.org
+CC: =?ISO-8859-1?Q?Andreas_Bie=DFmann?= <biessmann@corscience.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH] fs-writeback: fix NULL pointer dereference in, __mark_inode_dirty
+References: <fa.8ND6HoGS9dKYUuniFCAoNq+1TFY@ifi.uio.no> <4D78AA72.3060202@secunet.com>
+In-Reply-To: <4D78AA72.3060202@secunet.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Mar 2011 10:18:46.0574 (UTC) FILETIME=[5E861CE0:01CBE2FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 03:02:55PM -0700, Nicholas A. Bellinger wrote:
-> > Please descide on a naming scheme for the frontend modules.  You have
-> > tcm_loop for thise one, and just iscsi for the iscsi frontend.
+On 10.03.2011 11:39, Torsten Hilbrich wrote:
+> I ran into the same problem and successfully applied your fix.
 > 
-> Ok, curently everything that appears under drivers/target/ beside
-> iscsi_target_mod.ko is using a matching drivers/target/$FABRIC_MOD/ and
-> $FABRIC_MOD.ko naming scheme.
+> I was able to reproduce this panic and bisected it to the following commit:
 > 
-> I would prefer to keep iscsi_target_mod.ko for the software iSCSI case
-> in order to prevent chaos with existing userspace tools and prevent
-> breakage with existing other iSCSI target modules (IET is using
-> iscsi_trgt.ko IIRC).
+> commit aaead25b954879e1a708ff2f3602f494c18d20b5
+> Author: Christoph Hellwig <hch@lst.de>
+> Date:   Mon Oct 4 14:25:33 2010 +0200
 > 
-> How about dropping the 'tcm_' prefix from the drivers/target/tcm_subdir/
-> to follow how the fabric module actually appears once loaded under
-> /sys/kernel/config/target/$FABRIC/..?  We will need to keep the common
-> 'tcm_' prefix for the actual target fabric modules (or choose a
-> different one) to handle those that interface with existing SCSI LLD
-> code.
+>     writeback: always use sb->s_bdi for writeback purposes
+> 
+> The steps to reproduce it on my test system (T60p with Intel Core Duo) were.
 
-Dropping the tcm sounds fine to me.
+Added Christoph to CC. I also open a bug report at
+https://bugzilla.kernel.org/show_bug.cgi?id=31112
 
-> This makes it a bit easier to grok as a reference for newcomers by
-> having seperate sections for configfs control plane, struct
-> target_core_fabric_ops API callers, and Linux/SCSI LLD specific glue.
-
-I don't think it's a very good reference, though.  E.g. currently the
-fabric ops methods are implemented in tcm_loop_fabric.c, and all need
-non-static scope because they are assigned in tcm_loop_configfs.c, which
-creates a lot of global scope and pointless prototypes.  Either one
-could clean all that up or just merge the files into one which would
-be a lot easier.  Especiall as the way the target_fabric_configfs structure
-and the fabric ops are structured will get a big overhaul from me soon.
-
+	Torsten
