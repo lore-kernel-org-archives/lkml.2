@@ -1,102 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1COJnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 05:43:32 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30064 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233Ab1COJn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 05:43:29 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8; format=flowed
-Date: Tue, 15 Mar 2011 18:34:42 +0900
-From: daeinki <inki.dae@samsung.com>
-Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU	(IOMMU)
- driver
-In-reply-to: <20110315083515.GA3921@n2100.arm.linux.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: InKi Dae <daeinki@gmail.com>, KyongHo Cho <pullip.cho@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        =?UTF-8?B?6rCV66+86rec?= <mk7.kang@samsung.com>,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        kgene.kim@samsung.com, Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-id: <4D7F32B2.6020905@samsung.com>
-Content-transfer-encoding: 8BIT
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
-References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com>
- <201103111615.01829.arnd@arndb.de>
- <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com>
- <201103111700.17373.arnd@arndb.de>
- <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com>
- <20110314124652.GF26085@n2100.arm.linux.org.uk>
- <AANLkTinzBvkcB111UZd2rJ9raaXkh2TqmTw5Y+4WFd48@mail.gmail.com>
- <20110315083515.GA3921@n2100.arm.linux.org.uk>
-X-OriginalArrivalTime: 15 Mar 2011 09:34:43.0136 (UTC)
- FILETIME=[36E97C00:01CBE2F4]
+	id S1755723Ab1COJol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 05:44:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58612 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752328Ab1COJoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 05:44:39 -0400
+Message-ID: <4D7F356C.8020903@cn.fujitsu.com>
+Date: Tue, 15 Mar 2011 17:46:20 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH V4 1/1] rcu: introduce kfree_rcu()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-15 17:43:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-15 17:43:19,
+	Serialize complete at 2011-03-15 17:43:19
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux 쓴 글:
-> On Tue, Mar 15, 2011 at 10:45:50AM +0900, InKi Dae wrote:
->> 2011/3/14 Russell King - ARM Linux <linux@arm.linux.org.uk>:
->>> On Mon, Mar 14, 2011 at 09:37:51PM +0900, KyongHo Cho wrote:
->>>> I have also noticed that dma_map_single/page/sg() can map physical
->>>> memory into an arbitrary device address region.
->>>> But it is not enough solution for various kinds of IOMMUs.
->>>> As Kukjin Kim addressed, we need to support larger page size than 4KB
->>>> because we can reduce TLB miss when we have larger page size.
->>>>
->>>> Our IOMMU(system mmu) supports all page size of ARM architecture
->>>> including 16MB, 1MB, 64KB and 4KB.
->>>> Since the largest size supported by buddy system of 32-bit architecture is 4MB,
->>>> our system support all page sizes except 16MB.
->>>> We proved that larger page size is helpful for DMA performance
->>>> significantly (more than 10%, approximately).
->>>> Big page size is not a problem for peripheral devices
->>>> because their address space is not suffer from external fragmentation.
->>> 1. dma_map_single() et.al. is used for mapping *system* *RAM* for devices
->>>   using whatever is necessary.  It must not be used for trying to setup
->>>   arbitary other mappings.
->>>
->>> 2. It doesn't matter where the memory for dma_map_single() et.al. comes
->>>   from provided the virtual address is a valid system RAM address or
->>>   the struct page * is a valid struct page in the memory map (iow, you
->>>   can't create this yourself.)
->> You mean that we cannot have arbitrary virtual address mapping for
->> iommu based device?
-> 
-> No.  I mean exactly what I said - I'm talking about the DMA API in the
-> above two points.  The implication is that you can not create arbitary
-> mappings of non-system RAM with the DMA API.
-> 
-sorry but I couldn't understand exactly what you said. could you give me 
-your answer one more time?
-does non-system RAM mean reserved memory regions? if not, is it 
-arbitrary virtual address space that isn't kernel or user virtual 
-address space and is the space for iommu based deivce?
+kfree_rcu() which was original proposed by Lai 2.5 years ago is one of
+the most important RCU TODO list entries, Lai and Manfred have worked on
+patches for this. This V4 patch is based on the Manfred's patch and
+the V1 of Lai's patch. (These two patches are almost the same
+in implementation, and this patch is mainly based on the Manfred's).
 
+Lai's V1 patch: http://lkml.org/lkml/2008/9/18/1
+Manfred's patch: http://lkml.org/lkml/2009/1/2/115
+RCU TODO list: http://www.kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
 
->> actually, we have memory mapping to arbitrary device virtual address
->> space, not kernel virtual address space.
->>
->>> 3. In the case of an IOMMU, the DMA API does not limit you to only using
->>>   4K pages to setup the IOMMU mappings.  You can use whatever you like
->>>   provided the hardware can cope with it.  You can coalesce several
->>>   existing entries together provided you track what you're doing and can
->>>   undo what's been done when the mapping is no longer required.
->>>
->>> So really there's no reason not to use 64K, 1M and 16M IOMMU entries if
->>> that's the size of buffer which has been passed to the DMA API.
->>>
->>> _______________________________________________
->>> linux-arm-kernel mailing list
->>> linux-arm-kernel@lists.infradead.org
->>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>>
-> 
+This new introduced API kfree_rcu() primitive kfree()s the specified memory
+after a RCU grace period elapses.
 
+It replaces many simple "call_rcu(head, simple_kfree_callback)";
+These many simple_kfree_callback() instances just does
+
+	kfree(containerof(head,struct whatever_struct,rcu_member));
+
+These simple_kfree_callback() instances are just duplicate code, we need
+a generic function for them.
+
+And kfree_rcu() is also help for unloadable modules, kfree_rcu() does not
+queue any function which belong to the module, so a rcu_barrier() can
+be avoid when module exit. (If we queue any other function by call_rcu(),
+rcu_barrier() is still needed.)
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+ include/linux/rcupdate.h |   40 ++++++++++++++++++++++++++++++++++++++++
+ kernel/rcutiny.c         |    2 +-
+ kernel/rcutree.c         |    2 +-
+ 3 files changed, 42 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7d62909..18f7ade 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -777,4 +777,44 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+ }
+ #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ 
++static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
++{
++	return offset < 4096;
++}
++
++static __always_inline
++void __kfree_rcu(struct rcu_head *head, unsigned long offset)
++{
++	typedef void (*rcu_callback)(struct rcu_head *);
++
++	BUILD_BUG_ON(!__builtin_constant_p(offset));
++	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
++
++	call_rcu(head, (rcu_callback)offset);
++}
++
++extern void kfree(const void *);
++
++static inline void __rcu_reclaim(struct rcu_head *head)
++{
++	unsigned long offset = (unsigned long)head->func;
++
++	if (__is_kfree_rcu_offset(offset))
++		kfree((void *)head - offset);
++	else
++		head->func(head);
++}
++
++/**
++ * kfree_rcu() - kfree an object after a grace period.
++ * @ptr:	pointer to kfree
++ * @rcu_head:	the name of the struct rcu_head within the type of @ptr.
++ *
++ * Many rcu callbacks just call kfree() on the base structure. This helper
++ * function calls kfree internally. The rcu_head structure must be embedded
++ * in the to be freed structure.
++ */
++#define kfree_rcu(ptr, rcu_head)					\
++	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
++
+ #endif /* __LINUX_RCUPDATE_H */
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 0c343b9..4d60fbc 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -167,7 +167,7 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ 		prefetch(next);
+ 		debug_rcu_head_unqueue(list);
+ 		local_bh_disable();
+-		list->func(list);
++		__rcu_reclaim(list);
+ 		local_bh_enable();
+ 		list = next;
+ 		RCU_TRACE(cb_count++);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index dd4aea8..b3c1aed 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1143,7 +1143,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 		next = list->next;
+ 		prefetch(next);
+ 		debug_rcu_head_unqueue(list);
+-		list->func(list);
++		__rcu_reclaim(list);
+ 		list = next;
+ 		if (++count >= rdp->blimit)
+ 			break;
+-- 
+1.7.4
