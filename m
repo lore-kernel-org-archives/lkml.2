@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab1COUCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 16:02:13 -0400
-Received: from www.tglx.de ([62.245.132.106]:57778 "EHLO www.tglx.de"
+	id S1757571Ab1COUFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 16:05:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19884 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757411Ab1COUCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 16:02:09 -0400
-Date: Tue, 15 Mar 2011 20:43:01 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
-In-Reply-To: <20110315180639.GQ2499@one.firstfloor.org>
-Message-ID: <alpine.LFD.2.00.1103152038280.2787@localhost6.localdomain6>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6> <20110314163028.a05cec49.akpm@linux-foundation.org> <20110314234754.GP2499@one.firstfloor.org> <alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
- <20110315180639.GQ2499@one.firstfloor.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756429Ab1COUFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 16:05:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110315173810.GA12775@suse.de>
+References: <20110315173810.GA12775@suse.de> <20110310202516.GA16122@suse.de> <20110307210656.GA1750@suse.de> <18893.1299607373@redhat.com> <29980.1299861232@redhat.com>
+To: Tony Jones <tonyj@suse.de>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: PATCH [1/1]: audit: acquire creds selectively to reduce atomic op overhead
+Date: Tue, 15 Mar 2011 20:04:47 +0000
+Message-ID: <21411.1300219487@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011, Andi Kleen wrote:
-> > > How do you envisage these features actually get used?  For example,
-> > > will gdb be modified?  Will other debuggers be modified or written?
-> > 
-> > How about answering this question first _BEFORE_ advertising
-> > systemtap?
-> 
-> I thought this was obvious.  systemtap is essentially a script driven 
-> debugger. 
+Tony Jones <tonyj@suse.de> wrote:
 
-Oh thanks for the clarification. I always wondered why a computer
-would need a tap.
+> Agree. Also I believe it is safe to use tsk->cred directly as tsk == current 
+> or tsk is being created by copy_process.  
 
-And it does not matter at all whether systemtap can use this or
-not. If the main debuggers used like gdb are not going to use it then
-it's a complete waste. We don't need another debugging interface just
-for a single esoteric use case.
+You can't quite access it like that without sparse throwing a warning.  The
+pointer is marked with an __rcu attribute, so you need to use something like
+this:
 
-Thanks,
+	cred = rcu_dereference_check(tsk->cred, (tsk == current ||
+						 called_from_copy_process());
 
-	tglx
-
-
+David
