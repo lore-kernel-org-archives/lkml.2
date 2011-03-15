@@ -1,87 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab1COKNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 06:13:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37142 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab1COKNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 06:13:09 -0400
-Date: Tue, 15 Mar 2011 09:53:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: daeinki <inki.dae@samsung.com>
-Cc: Tomasz Stanislawski <t.stanislaws@samsung.com>, k.debski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        =?utf-8?B?6rCV66+86rec?= <mk7.kang@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        kgene.kim@samsung.com, Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        InKi Dae <daeinki@gmail.com>, KyongHo Cho <pullip.cho@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 3/7] ARM: Samsung: update/rewrite Samsung SYSMMU (IOMMU)
-	driver
-Message-ID: <20110315095341.GD3921@n2100.arm.linux.org.uk>
-References: <1299229274-9753-4-git-send-email-m.szyprowski@samsung.com> <201103111615.01829.arnd@arndb.de> <000201cbe002$768d9de0$63a8d9a0$%szyprowski@samsung.com> <201103111700.17373.arnd@arndb.de> <AANLkTimagS1vBXEYjXQDx=OGhTRm=n0yO4n+kHTAqBOz@mail.gmail.com> <20110314124652.GF26085@n2100.arm.linux.org.uk> <AANLkTinzBvkcB111UZd2rJ9raaXkh2TqmTw5Y+4WFd48@mail.gmail.com> <20110315083515.GA3921@n2100.arm.linux.org.uk> <4D7F32B2.6020905@samsung.com>
+	id S1756607Ab1COKPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 06:15:05 -0400
+Received: from verein.lst.de ([213.95.11.211]:35178 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879Ab1COKPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 06:15:01 -0400
+Date: Tue, 15 Mar 2011 11:15:00 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Christoph Hellwig <hch@lst.de>, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [RFC-v2 02/12] iscsi-target: Add primary iSCSI
+	request/response state machine logic
+Message-ID: <20110315101500.GA23623@lst.de>
+References: <1300103829-10337-1-git-send-email-nab@linux-iscsi.org> <1300103829-10337-3-git-send-email-nab@linux-iscsi.org> <20110314153300.GC28480@lst.de> <1300148232.28255.238.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D7F32B2.6020905@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1300148232.28255.238.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 06:34:42PM +0900, daeinki wrote:
-> Russell King - ARM Linux 쓴 글:
->> On Tue, Mar 15, 2011 at 10:45:50AM +0900, InKi Dae wrote:
->>> 2011/3/14 Russell King - ARM Linux <linux@arm.linux.org.uk>:
->>>> On Mon, Mar 14, 2011 at 09:37:51PM +0900, KyongHo Cho wrote:
->>>>> I have also noticed that dma_map_single/page/sg() can map physical
->>>>> memory into an arbitrary device address region.
->>>>> But it is not enough solution for various kinds of IOMMUs.
->>>>> As Kukjin Kim addressed, we need to support larger page size than 4KB
->>>>> because we can reduce TLB miss when we have larger page size.
->>>>>
->>>>> Our IOMMU(system mmu) supports all page size of ARM architecture
->>>>> including 16MB, 1MB, 64KB and 4KB.
->>>>> Since the largest size supported by buddy system of 32-bit architecture is 4MB,
->>>>> our system support all page sizes except 16MB.
->>>>> We proved that larger page size is helpful for DMA performance
->>>>> significantly (more than 10%, approximately).
->>>>> Big page size is not a problem for peripheral devices
->>>>> because their address space is not suffer from external fragmentation.
->>>> 1. dma_map_single() et.al. is used for mapping *system* *RAM* for devices
->>>>   using whatever is necessary.  It must not be used for trying to setup
->>>>   arbitary other mappings.
->>>>
->>>> 2. It doesn't matter where the memory for dma_map_single() et.al. comes
->>>>   from provided the virtual address is a valid system RAM address or
->>>>   the struct page * is a valid struct page in the memory map (iow, you
->>>>   can't create this yourself.)
->>> You mean that we cannot have arbitrary virtual address mapping for
->>> iommu based device?
->>
->> No.  I mean exactly what I said - I'm talking about the DMA API in the
->> above two points.  The implication is that you can not create arbitary
->> mappings of non-system RAM with the DMA API.
->>
-> sorry but I couldn't understand exactly what you said. could you give me  
-> your answer one more time?
-> does non-system RAM mean reserved memory regions? if not, is it  
-> arbitrary virtual address space that isn't kernel or user virtual  
-> address space and is the space for iommu based deivce?
+On Mon, Mar 14, 2011 at 05:17:12PM -0700, Nicholas A. Bellinger wrote:
+> > > +#include <linux/version.h>
+> > > +#include <generated/utsrelease.h>
+> > > +#include <linux/utsname.h>
+> > 
+> > You keep including these headers a lot, and I still don't understand why.  Even
+> > if we need to expose data from it it should be done once in the core and not
+> > all over the code.
+> > 
+> 
+> OK, moved into a single iscsi_target_core.h include.
 
-For dma_map_single(dev, addr, size, dir), basically:
+That's not what I meant.
 
-	for (a = addr; a < addr + size; a += PAGE_SIZE)
-		BUG_ON(!virt_addr_valid(a));
+ - for linux/version.h:
 
-For dma_map_page(dev, page, offset, size, dir), 'page' must be something
-obtained from one of the page-based kernel allocators (so either refering
-to a page in the *existing* lowmem or highmem memory) _and_ you must not
-use offset/size to then point at something outside that.
+	neither LINUX_VERSION_CODE nor KERNEL_VERSION is used anywhere in
+	the target code, so it can't possibly required at all.
 
-So, if you take something out of the kernel's knowledge of what is memory,
-you can't then use the DMA API with it.
+ - for linux/utsname.h and <generated/utsrelease.h>:
+
+	please either remove the attributes printing this information
+	into common code.  or better off just remove it all all.  You can
+	get the kernel version and release from the utsname system call,
+	there is absolutely no need to duplicate it in a different attribute in
+	every target frontend.
+	Also printing it during initialization is completely pointless, too.
+
+> > > +void core_put_tiqn_for_login(struct iscsi_tiqn *tiqn)
+> > > +{
+> > > +	spin_lock(&tiqn->tiqn_state_lock);
+> > > +	atomic_dec(&tiqn->tiqn_access_count);
+> > > +	spin_unlock(&tiqn->tiqn_state_lock);
+> > > +	return;
+> > 
+> > no need for the return here.  Also what's the point of making tiqn_access_count
+> > if you take a spinlock around all it's modifications?
+> > 
+> 
+> Removed the unnecessary return here..  I was behind paranoid here..
+
+Also please make tiqn_access_count a normal integer type, it is always
+protected by tiqn_state_lock.
+
+> Indeed..  Ok, I am going to go ahead an rename everything using core_ to
+> iscsi_
+
+Looks like none of the initiator code currently uses iscsi_, but I'd still
+feel better about iscsit_ to make sure we're not conflicting with other
+initiator side code.
+
+> > Can't you just use the core idr code for generating indices?
+> > 
+> 
+> Mmmm, not sure what you mean here..
+
+Take a look at include/linux/idr.h.
+
+Note that the uses for np_index, tpg_np_index and conn_index can be
+removed entirely as they are unused.
+
+> Ok, there are a quite a few struct semaphores that need to be converted
+> into a struct mutex or struct completion..  I will get all of these
+> converted over..
+
+or sometimes spinlocks.  Or often removed at all, as they just implement weird
+semantics for the threads - no need to have startup/shutdown synchronization
+as the kthread semantics are synchronous, and for a wakeup after queueing
+up work a simple wake_up_process on the task_struct pointer is enough.
+
+If you have question on how to avoid certain uses feel free to ask.
+
+> 
+> Ok, this is where I have previously run into some issues after doing a
+> kthread conversion for the RX/TX pairs using sock_recvmsg() some time a
+> while back.  That said, I will go ahead will get the ulgiest pieces for
+> the NP thread converted first and then have another look where the RX
+> path code was (I think) having an issue to successfully perform iSCSI
+> Logout Request -> Response processing..
+
+Note that you might get away with less copies using the sk_data_ready,
+sk_state_change callbacks and tcp_read_sock() and totally dropping the
+traditional recvmsg path.  As this remove the blocking behaviour it
+will as a side effect also remove any issues with thread startup/stop.
+
+Take a look at drivers/scsi/iscsi_tcp.c for an implementation.
+
+> > > +#define CONN(cmd)		((struct iscsi_conn *)(cmd)->conn)
+> > > +#define CONN_OPS(conn)		((struct iscsi_conn_ops *)(conn)->conn_ops)
+> > 
+> > There really shouldn't be any need for these macros.
+> > 
+> > 
+> > > +#define SESS(conn)		((struct iscsi_session *)(conn)->sess)
+> > > +#define SESS_OPS(sess)		((struct iscsi_sess_ops *)(sess)->sess_ops)
+> > > +#define SESS_OPS_C(conn)	((struct iscsi_sess_ops *)(conn)->sess->sess_ops)
+> > > +#define SESS_NODE_ACL(sess)	((struct se_node_acl *)(sess)->se_sess->se_node_acl)
+> > 
+> > Same here.
+> > 
+> 
+> Ok, I will drop the unnecessary casts here, and I will look at thinning
+> -> removing these out these handful of macros.
+
+It's not just the casts - macros just for dereferencing a field just obsfucate
+the code.
+
