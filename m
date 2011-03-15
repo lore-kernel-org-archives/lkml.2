@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758356Ab1COT1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 15:27:18 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:51076 "EHLO
+	id S1758402Ab1COT1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 15:27:21 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:56382 "EHLO
 	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab1COT1Q (ORCPT
+	with ESMTP id S1753153Ab1COT1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Mar 2011 15:27:16 -0400
 X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-Subject: [PATCH 1/4 v3] call_function_many: fix list delete vs add race
+Subject: [PATCH 0/4 v3] smp_call_function_many issues from review
 From: Milton Miller <miltonm@bga.com>
 To: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org
 Cc: Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
@@ -26,68 +26,49 @@ References: <20110112150740.77dde58c@kryten>
 	 <smp-call-function-list-race@mdm.bga.com>
 	 <smp-call-function-list-race-fix@mdm.bga.com>
 	 <ipi-list-reply@mdm.bga.com>
-In-Reply-To: <ipi-list-reply@mdm.bga.com>
-Message-ID: <smp-call-function-list-race-fix-v3@mdm.bga.com>
-Date: Tue, 15 Mar 2011 13:27:16 -0600
+	 <smp-cfm-list-comment@mdm.bga.com>
+	 <smp-call-function-list-race-fix-v2@mdm.bga.com>
+	 <20110201220026.GD2142@linux.vnet.ibm.com>
+	 <ipi-paul-reply@mdm.bga.com>
+	 <20110202041740.GB2129@linux.vnet.ibm.com>
+	 <20110206235136.GA23658@linux.vnet.ibm.com>
+In-Reply-To: <20110206235136.GA23658@linux.vnet.ibm.com>
+Message-ID: <smp-call-function-intro-v3@mdm.bga.com>
+Date: Tue, 15 Mar 2011 13:27:15 -0600
 X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter pointed out there was nothing preventing the list_del_rcu in
-smp_call_function_interrupt from running before the list_add_rcu in
-smp_call_function_many.   Fix this by not setting refs until we
-have gotten the lock for the list.  Take advantage of the wmb in
-list_add_rcu to save an explicit additional one.
+Picking up this thread from the beginning of Feburary,  I updated
+the comments in 3 and 4 based on Paul's review.  I have inserted
+my proposed alternative to Paul's additional patch as patch 2,
+and tweaked the changelog on 1.
 
-I tried to force this race with a udelay before the lock & list_add
-and by mixing all 64 online cpus with just 3 random cpus in the mask,
-but was unsuccessful.  Still, inspection shows a valid race, and the
-fix is a extension of the existing protection window in the current code.
+[PATCH 1/4 v3] call_function_many: fix list delete vs add race
+[PATCH 2/4 v3] call_function_many: add missing ordering
+[PATCH 3/4 v3] smp_call_function_many: handle concurrent clearing of mask
+[PATCH 4/4 v3] smp_call_function_interrupt: use typedef and %pf
 
-Cc: stable (v2.6.32 and later)
-Reported-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Milton Miller <miltonm@bga.com>
----
-v2: rely on wmb in list_add_rcu not combined partial ordering of spin
-lock and unlock, which does not provide the needed guarantees.
+Peter Z acked a prior version of patch 1, and Mike Galbraith has
+done some stress testing on the combinaton of 1,3,4, and Paul's patch.
 
-Index: linux-2.6/kernel/smp.c
-===================================================================
---- linux-2.6.orig/kernel/smp.c	2011-01-31 17:44:47.182756513 -0600
-+++ linux-2.6/kernel/smp.c	2011-01-31 18:25:47.266755387 -0600
-@@ -491,14 +491,15 @@ void smp_call_function_many(const struct
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
- 
- 	/*
--	 * To ensure the interrupt handler gets an complete view
--	 * we order the cpumask and refs writes and order the read
--	 * of them in the interrupt handler.  In addition we may
--	 * only clear our own cpu bit from the mask.
-+	 * We reuse the call function data without waiting for any grace
-+	 * period after some other cpu removes it from the global queue.
-+	 * This means a cpu might find our data block as it is writen.
-+	 * The interrupt handler waits until it sees refs filled out
-+	 * while its cpu mask bit is set; here we may only clear our
-+	 * own cpu mask bit, and must wait to set refs until we are sure
-+	 * previous writes are complete and we have obtained the lock to
-+	 * add the element to the queue.
- 	 */
--	smp_wmb();
--
--	atomic_set(&data->refs, cpumask_weight(data->cpumask));
- 
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
-@@ -507,6 +508,11 @@ void smp_call_function_many(const struct
- 	 * will not miss any other list entries:
- 	 */
- 	list_add_rcu(&data->csd.list, &call_function.queue);
-+	/*
-+	 * We rely on the wmb() in list_add_rcu to order the writes
-+	 * to func, data, and cpumask before this write to refs.
-+	 */
-+	atomic_set(&data->refs, cpumask_weight(data->cpumask));
- 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
- 
- 	/*
+The prior posting of this series is available here:
+https://patchwork.kernel.org/patch/522021/
+https://patchwork.kernel.org/patch/522031/
+http://marc.info/?l=linux-kernel&m=129654439817236&w=2
+
+And Paul's additional patch from review was here
+https://patchwork.kernel.org/patch/525891/
+
+Looking forward, I would suggest 1 and 2 are required for stable, 3 may
+be suitable as it fixes races that otherwise requires cpumask copies
+as in 75c1c91cb92806f960fcd6e53d2a0c21f343081c ([IA64] eliminate race
+condition in smp_flush_tlb_mm).  By contrast 4 is just comments except
+for the %pS to %pf change.
+
+Dimitri or Tony, let me know if you would like a revert patch for
+75c1c91c to be added after patch 3.
+
+
+milton
