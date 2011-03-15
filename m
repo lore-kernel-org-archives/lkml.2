@@ -1,38 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab1CPNZS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:25:18 -0400
-Received: from r-mail1.rd.francetelecom.com ([217.108.152.41]:45322 "EHLO
-	r-mail1.rd.francetelecom.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752733Ab1CPNZJ (ORCPT
+	id S1752866Ab1CPN32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:29:28 -0400
+Received: from 201-41-83-19.gnace304.ipd.brasiltelecom.net.br ([201.41.83.19]:51533
+	"EHLO webmail.itertins.to.gov.br" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752383Ab1CPN3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 09:25:09 -0400
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 09:25:09 EDT
-Message-ID: <4D80B7EE.40706@Free.fr>
-Date: Wed, 16 Mar 2011 14:15:26 +0100
-From: Eric Valette <Eric.Valette@Free.fr>
-Reply-To: Eric.Valette@Free.fr
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110309 Lightning/1.0b2 Icedove/3.1.9
+	Wed, 16 Mar 2011 09:29:24 -0400
+X-Greylist: delayed 65885 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 09:29:24 EDT
+From: "Ramos Finance Agency" <mail@loan.com>
+Reply-To: Ramosloanfirm@mail.net.sa
+Subject: Re
+Date: Tue, 15 Mar 2011 02:42:59 -0300
+Message-Id: <20110315031029.M60247@loan.com>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 41.203.64.253 (presidencia)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Typo in linux-2.6.38/arch/x86/kernel/entry_32.S
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Mar 2011 13:15:27.0456 (UTC) FILETIME=[378E1600:01CBE3DC]
+Content-Type: text/plain;
+	charset=iso-8859-1
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Trying to compile 2.6.38, I found the follwoing bug. Compiler barks...
 
-diff linux-2.6.38/arch/x86/kernel/entry_32.S 
-linux-2.6.38/arch/x86/kernel/entry_32.S~
-1416c1416
-< END(async_page_fault)
----
- > END(apf_page_fault)
-
---eric
+Are you interested? we offer 3% loan offer.
 
