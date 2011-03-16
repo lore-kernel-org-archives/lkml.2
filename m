@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157Ab1CPE3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 00:29:22 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:33871 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab1CPE3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 00:29:16 -0400
-Date: Tue, 15 Mar 2011 21:29:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH V4 1/1] rcu: introduce kfree_rcu()
-Message-ID: <20110316042909.GG2273@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4D7F356C.8020903@cn.fujitsu.com>
- <20110315113038.GB2167@linux.vnet.ibm.com>
- <4D802578.8050603@cn.fujitsu.com>
+	id S1751226Ab1CPEaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 00:30:35 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:56996 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab1CPEaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 00:30:30 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: X32 psABI status update
+Date: Wed, 16 Mar 2011 00:30:26 -0400
+User-Agent: KMail/1.13.6 (Linux/2.6.37.3; KDE/4.6.0; x86_64; ; )
+Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
+        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com> <201103071633.08197.vapier@gentoo.org> <AANLkTinu_FZ2_T4N7W9qNtoatG7zQua-SYSJ0GU0cJia@mail.gmail.com>
+In-Reply-To: <AANLkTinu_FZ2_T4N7W9qNtoatG7zQua-SYSJ0GU0cJia@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D802578.8050603@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart1407405.j8Mm4vX3LF";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103160030.27594.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 10:50:32AM +0800, Lai Jiangshan wrote:
-> On 03/15/2011 07:30 PM, Paul E. McKenney wrote:
-> > On Tue, Mar 15, 2011 at 05:46:20PM +0800, Lai Jiangshan wrote:
-> >> kfree_rcu() which was original proposed by Lai 2.5 years ago is one of
-> >> the most important RCU TODO list entries, Lai and Manfred have worked on
-> >> patches for this. This V4 patch is based on the Manfred's patch and
-> >> the V1 of Lai's patch. (These two patches are almost the same
-> >> in implementation, and this patch is mainly based on the Manfred's).
-> >>
-> >> Lai's V1 patch: http://lkml.org/lkml/2008/9/18/1
-> >> Manfred's patch: http://lkml.org/lkml/2009/1/2/115
-> >> RCU TODO list: http://www.kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
-> >>
-> >> This new introduced API kfree_rcu() primitive kfree()s the specified memory
-> >> after a RCU grace period elapses.
-> >>
-> >> It replaces many simple "call_rcu(head, simple_kfree_callback)";
-> >> These many simple_kfree_callback() instances just does
-> >>
-> >> 	kfree(containerof(head,struct whatever_struct,rcu_member));
-> >>
-> >> These simple_kfree_callback() instances are just duplicate code, we need
-> >> a generic function for them.
-> >>
-> >> And kfree_rcu() is also help for unloadable modules, kfree_rcu() does not
-> >> queue any function which belong to the module, so a rcu_barrier() can
-> >> be avoid when module exit. (If we queue any other function by call_rcu(),
-> >> rcu_barrier() is still needed.)
-> > 
-> > Thank you for putting this together!  It does represent a nice
-> > reduction in code size.
-> > 
-> > Once it settles out a bit, I intend to queue this patch.  It would be
-> > best if the subsystems queue their own patches using kfree_rcu() once
-> > this patch reaches mainline.
-> > 
-> 
-> It seems that the subsystems maintainers just Ack the patches.
-> I hope Ingo queue the Acked using kfree_rcu() patches into -tip,
-> it will help the kfree_rcu() reaches mainline earlier.
+--nextPart1407405.j8Mm4vX3LF
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Yep, I am comfortable pushing the patches that have received acks.
+On Wednesday, March 16, 2011 00:17:04 H.J. Lu wrote:
+> On Mon, Mar 7, 2011 at 1:33 PM, Mike Frysinger wrote:
+> > On Saturday, March 05, 2011 14:08:04 H.J. Lu wrote:
+> >> Many x32 bugs are fixed in kernel, glibc, binutils and GCC:
+> >>=20
+> >> https://sites.google.com/site/x32abi/
+> >>=20
+> >> The major remaining issues are glibc/gcc testsuite failures,
+> >> kernel core dump and signal handler unwind.
+> >=20
+> > are you getting a unique host tuple for this ?  or are you extending
+> > x86_64- linux-gnu ?  so the only way of knowing which ABI is to check
+> > for the output of the compiler+compiler flags ?
+>=20
+> x32 requires x32 enabled x86-64 kernel.
 
-							Thanx, Paul
+ok, but that doesnt answer my question.  what are you passing to --target ?
+=2Dmike
+
+--nextPart1407405.j8Mm4vX3LF
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJNgDzjAAoJEEFjO5/oN/WBExgQAJ8bkb8ZI5Tq8bpRgGh0cS1q
+/M4ZMfb+vV0RRHBilA4ZFinzUAT30AlPGgLMSCLrIjBpxoj1/4XehdLU44tT2+xB
+f8uPcW22ReyUJPkvUHRT52yx15dUR/2BI03f1NUboNaLTfTBTZKUdvYUkwPg3/iP
+NXCYlo5DPPzyRumNh7l+oJpcbFeheObptqq+O6FmutQO5TKvUWhnVbf/QdrZx6A4
+UD3OO5V/bPN+C3aITqQYJBfDe5FFSPNRMOj430JlbkACYuIwTTy4pVVyhNTtopQh
+/sv6LT/TpT1wd6zy5FoUoJTO5wwRPYRZXii++2bLlkJaAiPl7dShLwDsAyE1iCN8
+FRhKBVyLN3B4WDpHWgTbwihYlrseHXkwGOHxEKeA1LZyTTBZmNdBn5bSjlyT3eb2
+q9LedHu2m6hHM0qUETNEUjNm0+1QOX+OhakaU6K+7gGS8vrx1GDPKmeJYH2IRIu/
+rlYmcD/M5XlexCEr/BrcE2ynPIXyxdORiRloRUJIbvmP14kCTXnKAPY0/hCpxAJV
+PUjq6uEgqVguH8+cyrq2ntJojJFXlK9QXNO5NOkQ/MZxZpSQ706JSGeXRYsocvPT
+SfXaCkRoQHSc57XsXGzc1eEA7oXj3fpc6ERgw5cTEn0RrS7gg+SMXW8K3ZjnJ9LW
+PsbC4P40WYZ7Rg1InIuy
+=NCJx
+-----END PGP SIGNATURE-----
+
+--nextPart1407405.j8Mm4vX3LF--
