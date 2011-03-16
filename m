@@ -1,172 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab1CPMG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 08:06:27 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:42721 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab1CPMG0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 08:06:26 -0400
-Date: Wed, 16 Mar 2011 05:06:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        rusty@rustcorp.com.au, efault@gmx.de,
-        Jan Beulich <JBeulich@novell.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Tony Luck <tony.luck@intel.com>, torvalds@linux-foundation.org,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4 v3] call_function_many: add missing ordering
-Message-ID: <20110316120606.GN2273@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110112150740.77dde58c@kryten>
- <1295288253.30950.280.camel@laptop>
- <smp-call-function-peter-reply@mdm.bga.com>
- <smp-call-function-move-writes@mdm.bga.com>
- <1296145360.15234.234.camel@laptop>
- <smp-call-function-list-race@mdm.bga.com>
- <smp-call-function-list-race-fix@mdm.bga.com>
- <ipi-list-reply@mdm.bga.com>
- <smp-call-function-barriers-v3@mdm.bga.com>
+	id S1751523Ab1CPMHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 08:07:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35582 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098Ab1CPMHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 08:07:37 -0400
+Date: Wed, 16 Mar 2011 13:07:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/platform changes for v2.6.39
+Message-ID: <20110316120723.GA23417@elte.hu>
+References: <20110315213223.GA21481@elte.hu>
+ <20110315230943.GA8464@angua.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <smp-call-function-barriers-v3@mdm.bga.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110315230943.GA8464@angua.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 01:27:16PM -0600, Milton Miller wrote:
-> Paul McKenney's review pointed out two problems with the barriers
-> in the 2.6.38 update to the smp call function many code.
-> 
-> First, a barrier that would force the func and info members of data
-> to be visible before their consumption in the interrupt handler
-> was missing.  This can be solved by adding a smp_wmb between
-> setting the func and info members and setting setting the cpumask;
-> this will pair with the existing and required smp_rmb ordering
-> the cpumask read before the read of refs.  This placement avoids
-> the need a second smp_rmb in the interrupt handler which would
-> be executed on each of the N cpus executing the call request.
-> (I was thinking this barrier was present but was not).
-> 
-> Second, the previous write to refs (establishing the zero that
-> we the interrupt handler was testing from all cpus) was performed
-> by a third party cpu.  This would invoke transitivity which, as
-> a recient or concurrent addition to memory-barriers.txt now
-> explicitly states, would require a full smp_mb().
-> 
-> However, we know the cpumask will only be set by one cpu (the
-> data owner) and any preivous iteration of the mask would have
-> cleared by the reading cpu.  By redundantly writing refs to 0 on
-> the owning cpu before the smp_wmb, the write to refs will follow
-> the same path as the writes that set the cpumask, which in turn
-> allows us to keep the barrier in the interrupt handler a smp_rmb
-> instead of promoting it to a smp_mb (which will be be executed
-> by N cpus for each of the possible M elements on the list).
-> 
-> I moved and expanded the comment about our (ab)use of the rcu list
-> primitives for the concurrent walk earlier into this function.
-> I considered moving the first two paragraphs to the queue list
-> head and lock, but felt it would have been too disconected from
-> the code.
-> 
-> Cc: Paul McKinney <paulmck@linux.vnet.ibm.com>
-> Cc: stable (2.6.32 and later)
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-> 
-> Paul, please review this alternative to your patch at either of
 
-Hello, Milton,
+* Grant Likely <grant.likely@secretlab.ca> wrote:
 
-At first glance, this looks promising, but it will take me a few
-more days to wrap my head fully around it.  Fair enough?
+> On Tue, Mar 15, 2011 at 10:32:23PM +0100, Ingo Molnar wrote:
+> > Linus,
+> > 
+> > Please pull the latest x86-platform-for-linus git tree from:
+> > 
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-platform-for-linus
+> > 
+> > 
+> > out-of-topic modifications in x86-platform-for-linus:
+> > -----------------------------------------------------
+> 
+> ... all merged in from my devicetree/next branch which Thomas and I
+> discussed before hand.
 
-						Thanx, Paul
+Yeah. We auto-generate these notifiers for all arch/x86/ pull requests that come 
+from -tip, to not surprise Linus with any modification he might not expect from an 
+x86 topic, and to give us a final chance to catch any unintended out-of-tree 
+modifications ourselves.
 
-> http://marc.info/?l=linux-kernel&m=129662029916241&w=2
-> https://patchwork.kernel.org/patch/525891/
-> 
-> In contrast to your patch, this proposal keeps the additional
-> barriers in the (interrupt enabled) requester instead of the
-> execution interrupt, where they would be executed by all N cpus
-> in the system triggered concurrently for each of the N possible
-> elements in the list.
-> 
-> Index: common/kernel/smp.c
-> ===================================================================
-> --- common.orig/kernel/smp.c	2011-03-15 05:21:41.000000000 -0500
-> +++ common/kernel/smp.c	2011-03-15 05:22:26.000000000 -0500
-> @@ -483,23 +483,42 @@ void smp_call_function_many(const struct
-> 
->  	data = &__get_cpu_var(cfd_data);
->  	csd_lock(&data->csd);
-> -	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
-> 
-> -	data->csd.func = func;
-> -	data->csd.info = info;
-> -	cpumask_and(data->cpumask, mask, cpu_online_mask);
-> -	cpumask_clear_cpu(this_cpu, data->cpumask);
-> +	/* This BUG_ON verifies our reuse assertions and can be removed */
-> +	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
-> 
->  	/*
-> +	 * The global call function queue list add and delete are protected
-> +	 * by a lock, but the list is traversed without any lock, relying
-> +	 * on the rcu list add and delete to allow safe concurrent traversal.
->  	 * We reuse the call function data without waiting for any grace
->  	 * period after some other cpu removes it from the global queue.
-> -	 * This means a cpu might find our data block as it is writen.
-> -	 * The interrupt handler waits until it sees refs filled out
-> -	 * while its cpu mask bit is set; here we may only clear our
-> -	 * own cpu mask bit, and must wait to set refs until we are sure
-> -	 * previous writes are complete and we have obtained the lock to
-> -	 * add the element to the queue.
-> +	 * This means a cpu might find our data block as it is being
-> +	 * filled out.
-> +	 *
-> +	 * We hold off the interrupt handler on the other cpu by
-> +	 * ordering our writes to the cpu mask vs our setting of the
-> +	 * refs counter.  We assert only the cpu owning the data block
-> +	 * will set a bit in cpumask, and each bit will only be cleared
-> +	 * by the subject cpu.  Each cpu must first find its bit is
-> +	 * set and then check that refs is set indicating the element is
-> +	 * ready to be processed, otherwise it must skip the entry.
-> +	 *
-> +	 * On the previous iteration refs was set to 0 by another cpu.
-> +	 * To avoid the use of transitivity, set the counter to 0 here
-> +	 * so the wmb will pair with the rmb in the interrupt handler.
->  	 */
-> +	atomic_set(&data->refs, 0);	/* convert 3rd to 1st party write */
-> +
-> +	data->csd.func = func;
-> +	data->csd.info = info;
-> +
-> +	/* Ensure 0 refs is visible before mask.  Also orders func and info */
-> +	smp_wmb();
-> +
-> +	/* We rely on the "and" being processed before the store */
-> +	cpumask_and(data->cpumask, mask, cpu_online_mask);
-> +	cpumask_clear_cpu(this_cpu, data->cpumask);
-> 
->  	raw_spin_lock_irqsave(&call_function.lock, flags);
->  	/*
-> @@ -509,8 +528,9 @@ void smp_call_function_many(const struct
->  	 */
->  	list_add_rcu(&data->csd.list, &call_function.queue);
->  	/*
-> -	 * We rely on the wmb() in list_add_rcu to order the writes
-> -	 * to func, data, and cpumask before this write to refs.
-> +	 * We rely on the wmb() in list_add_rcu to complete our writes
-> +	 * to the cpumask before this write to refs, which indicates
-> +	 * data is on the list and is ready to be processed.
->  	 */
->  	atomic_set(&data->refs, cpumask_weight(data->cpumask));
->  	raw_spin_unlock_irqrestore(&call_function.lock, flags);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The sha1's can be used to check the individual commits easily and as you say they 
+come with acks from affected maintainers.
+
+> [...]  I agree with this pull.
+
+Thanks,
+
+	Ingo
