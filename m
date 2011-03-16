@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab1CPODN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 10:03:13 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:63029 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab1CPODB (ORCPT
+	id S1752123Ab1CPOG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 10:06:29 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:44067
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870Ab1CPOGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 10:03:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=e4vEjVAZD/4LMMtDRuNAv8MtEdFjVxK0EWETfa5TvduzAMtUAkKnyNEWC0T+WO+Q5b
-         ou4nDjxe8AM8OWRSNNmGOtdfz4FjkkF1DzztSd2B5AOzOh79WTtn5QryaO6D4zgc/VW/
-         xnBTqMUBzpnk95HyxVjUylWOoGDRQDJq65Kzo=
-Date: Wed, 16 Mar 2011 15:02:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-Message-ID: <20110316140242.GB1774@nowhere>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
- <1300228374.2250.42.camel@laptop>
- <20110316135308.GA1774@nowhere>
- <1300283775.2203.1516.camel@twins>
+	Wed, 16 Mar 2011 10:06:22 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LI5LU9-01-P0C-02
+X-M-MSG: 
+Date: Wed, 16 Mar 2011 15:06:10 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Sheetal Sahasrabudhe <sheetals@codeaurora.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "jamie.iles@picochip.com" <jamie.iles@picochip.com>,
+        "jean.pihet@newoldbits.com" <jean.pihet@newoldbits.com>,
+        "dwalker@fifo99.com" <dwalker@fifo99.com>,
+        "bryanh@codeaurora.org" <bryanh@codeaurora.org>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] ARM: Add Scorpion/ScorpionMP support to perf
+ and Oprofile
+Message-ID: <20110316140610.GN31407@erda.amd.com>
+References: <1299534404-25346-1-git-send-email-sheetals@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1300283775.2203.1516.camel@twins>
+In-Reply-To: <1299534404-25346-1-git-send-email-sheetals@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 02:56:15PM +0100, Peter Zijlstra wrote:
-> On Wed, 2011-03-16 at 14:53 +0100, Frederic Weisbecker wrote:
-> > On Tue, Mar 15, 2011 at 11:32:54PM +0100, Peter Zijlstra wrote:
-> > > Right, so I don't much like the interface, two new ioctl()s and a flag
-> > > of dubious use.
-> > 
-> > Do you think we need a new syscall for this new feature.
+On 07.03.11 16:46:44, Sheetal Sahasrabudhe wrote:
+> This patchset contains the following features:
+> It adds support for Qualcomm Scorpion and ScorpionMP processors to perfevents
+> and Oprofile.
+> It adds PMU support for Scorpion and ScorpionMP.
+> It also updates PMU IRQ identifiers for various Scorpion and ScorpionMP targets.
 > 
-> No.
+> Sheetal Sahasrabudhe (3):
+>   msm: Add support for Scorpion and ScorpionMP PMU
+>   [ARM] perfevents: Add support for Scorpion performance monitors
+>   [ARM] Oprofile: Add Qualcomm Scorpion and ScorpionMP CPU type
 > 
-> > > How important is this recursive nature of the thing to you:
-> > > 
-> > > > It's supposed to support infinite combinations with starter having starters
-> > > > themselves, plus filters, etc...
-> > > 
-> > > We've so far avoided recursion like that, we only have single level
-> > > groups etc.
-> > 
-> > There is actually no recursivity of any sort that the kernel has to handle.
-> > The starter/stopper links are never handled recursively. ie: there is no
-> > loop walking through the entire chain of starter to starter to starter, etc...
-> > 
-> > It's always only handled between direct related event: starter and target, but
-> > never further.
-> > 
-> > Only the final effect has recursion properties in the resulting count
-> > or trace.
+>  arch/arm/include/asm/perf_event.h          |    2 +
+>  arch/arm/kernel/perf_event.c               |   11 +
+>  arch/arm/kernel/perf_event_msm.c           |  665 ++++++++++++++++++++++++++++
+>  arch/arm/mach-msm/Makefile                 |    2 +
+>  arch/arm/mach-msm/include/mach/irqs-7x30.h |    2 +-
+>  arch/arm/mach-msm/include/mach/irqs-8960.h |    2 +-
+>  arch/arm/mach-msm/include/mach/irqs-8x50.h |    2 +-
+>  arch/arm/mach-msm/include/mach/irqs-8x60.h |    2 +-
+>  arch/arm/mach-msm/pmu.c                    |   35 ++
+>  arch/arm/oprofile/common.c                 |    4 +
+
+Oprofile changes ...
+
+Acked-by: Robert Richter <robert.richter@amd.com>
+
+>  10 files changed, 723 insertions(+), 4 deletions(-)
+>  create mode 100644 arch/arm/kernel/perf_event_msm.c
+>  create mode 100644 arch/arm/mach-msm/pmu.c
 > 
-> That's not an answer to my question.
+> -- 
+> 1.7.4.1
+> 
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+> 
+> 
 
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-Well, since there is no recursivity involved, there should be ne more worries
-about allowing or not starters on starters. And I think it's an important
-feature, that's in fact one of its key properties that let's one able to
-define whatever kind of precise stacked context.
-
-The possible usecase is so wide that I have a hard time to find a good
-example. Counting instructions in exceptions on some specific syscalls,
-counting instructions when some lock is taken on some irq handler, or
-whatever...
