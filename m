@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1CPN44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:56:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52271 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1CPN4t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 09:56:49 -0400
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-In-Reply-To: <20110316135308.GA1774@nowhere>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
-	 <1300228374.2250.42.camel@laptop>  <20110316135308.GA1774@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 16 Mar 2011 14:56:15 +0100
-Message-ID: <1300283775.2203.1516.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753045Ab1CPN5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:57:03 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35808 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752987Ab1CPN4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 09:56:52 -0400
+Date: Wed, 16 Mar 2011 13:56:22 GMT
+From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        randy.dunlap@oracle.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        randy.dunlap@oracle.com, mingo@elte.hu
+In-Reply-To: <20110315161230.c4e1e8e3.rdunlap@xenotime.net>
+References: <20110315161230.c4e1e8e3.rdunlap@xenotime.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched, kernel-doc: Fix runqueue_is_locked() description
+Message-ID: <tip-58cbe2476abce8b5e3508d23bd05c2e2e8c394da@git.kernel.org>
+Git-Commit-ID: 58cbe2476abce8b5e3508d23bd05c2e2e8c394da
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Mar 2011 13:56:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 14:53 +0100, Frederic Weisbecker wrote:
-> On Tue, Mar 15, 2011 at 11:32:54PM +0100, Peter Zijlstra wrote:
-> > Right, so I don't much like the interface, two new ioctl()s and a flag
-> > of dubious use.
-> 
-> Do you think we need a new syscall for this new feature.
+Commit-ID:  58cbe2476abce8b5e3508d23bd05c2e2e8c394da
+Gitweb:     http://git.kernel.org/tip/58cbe2476abce8b5e3508d23bd05c2e2e8c394da
+Author:     Randy Dunlap <randy.dunlap@oracle.com>
+AuthorDate: Tue, 15 Mar 2011 16:12:30 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 16 Mar 2011 14:00:23 +0100
 
-No.
+sched, kernel-doc: Fix runqueue_is_locked() description
 
-> > How important is this recursive nature of the thing to you:
-> > 
-> > > It's supposed to support infinite combinations with starter having starters
-> > > themselves, plus filters, etc...
-> > 
-> > We've so far avoided recursion like that, we only have single level
-> > groups etc.
-> 
-> There is actually no recursivity of any sort that the kernel has to handle.
-> The starter/stopper links are never handled recursively. ie: there is no
-> loop walking through the entire chain of starter to starter to starter, etc...
-> 
-> It's always only handled between direct related event: starter and target, but
-> never further.
-> 
-> Only the final effect has recursion properties in the resulting count
-> or trace.
+Fix kernel-doc warning for runqueue_is_locked():
 
-That's not an answer to my question.
+  Warning(kernel/sched.c:664): missing initial short description
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <20110315161230.c4e1e8e3.rdunlap@xenotime.net>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index c8e40b7..58d66ea 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -661,10 +661,9 @@ static void update_rq_clock(struct rq *rq)
+ #endif
+ 
+ /**
+- * runqueue_is_locked
++ * runqueue_is_locked - Returns true if the current cpu runqueue is locked
+  * @cpu: the processor in question.
+  *
+- * Returns true if the current cpu runqueue is locked.
+  * This interface allows printk to be called with the runqueue lock
+  * held and know whether or not it is OK to wake up the klogd.
+  */
