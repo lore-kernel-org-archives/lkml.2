@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab1CPGt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 02:49:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46140 "EHLO mx1.suse.de"
+	id S1751759Ab1CPGuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 02:50:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57547 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527Ab1CPGtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 02:49:53 -0400
-Date: Wed, 16 Mar 2011 07:49:52 +0100
-Message-ID: <s5h8vwfr23z.wl%tiwai@suse.de>
+	id S1751656Ab1CPGuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 02:50:07 -0400
+Date: Wed, 16 Mar 2011 07:50:03 +0100
+Message-ID: <s5h7hbzr23o.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Jay Fenlason <fenlason@redhat.com>
-Subject: Re: linux-next: build failure after merge of the final tree (sound tree related)
-In-Reply-To: <20110316173928.6481eda5.sfr@canb.auug.org.au>
-References: <20110316173928.6481eda5.sfr@canb.auug.org.au>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 12/13] alsa: use list_move() instead of list_del()/list_add() combination
+In-Reply-To: <1300229605-14499-12-git-send-email-kirill@shutemov.name>
+References: <1300229605-14499-1-git-send-email-kirill@shutemov.name>
+	<1300229605-14499-12-git-send-email-kirill@shutemov.name>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -26,62 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 16 Mar 2011 17:39:28 +1100,
-Stephen Rothwell wrote:
+At Wed, 16 Mar 2011 00:53:24 +0200,
+Kirill A. Shutemov wrote:
 > 
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> sound/firewire/fcp.c: In function 'fcp_avc_transaction':
-> sound/firewire/fcp.c:103: error: implicit declaration of function 'msleep'
-> 
-> Caused by commit 31ef9134eb52 ("ALSA: add LaCie FireWire Speakers/Griffin
-> FireWave Surround driver").  See Rule 1 from
-> Documentation/SubmitChecklist.
-> 
-> I have added this patch for today:
-> 
-> >From d238d290ba37e4a31929e6d3f6a08c187b537628 Mon Sep 17 00:00:00 2001
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 16 Mar 2011 17:35:53 +1100
-> Subject: [PATCH] ALSA: msleep needs delay.h
-> 
-> fixes this error:
-> 
-> sound/firewire/fcp.c: In function 'fcp_avc_transaction':
-> sound/firewire/fcp.c:103: error: implicit declaration of function 'msleep'
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Cc: Jaroslav Kysela <perex@perex.cz>
+> Cc: Takashi Iwai <tiwai@suse.de>
+> Cc: alsa-devel@alsa-project.org
 
-Thanks, fixed now in sound git tree.
+Thanks, applied now.
 
 
 Takashi
 
 > ---
->  sound/firewire/fcp.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  sound/pci/ctxfi/ctvmem.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 > 
-> diff --git a/sound/firewire/fcp.c b/sound/firewire/fcp.c
-> index c20bd9c..ec578b5 100644
-> --- a/sound/firewire/fcp.c
-> +++ b/sound/firewire/fcp.c
-> @@ -13,6 +13,7 @@
->  #include <linux/sched.h>
->  #include <linux/spinlock.h>
->  #include <linux/wait.h>
-> +#include <linux/delay.h>
->  #include "fcp.h"
->  #include "lib.h"
+> diff --git a/sound/pci/ctxfi/ctvmem.c b/sound/pci/ctxfi/ctvmem.c
+> index 65da6e4..b78f3fc 100644
+> --- a/sound/pci/ctxfi/ctvmem.c
+> +++ b/sound/pci/ctxfi/ctvmem.c
+> @@ -52,8 +52,7 @@ get_vm_block(struct ct_vm *vm, unsigned int size)
 >  
+>  	if (entry->size == size) {
+>  		/* Move the vm node from unused list to used list directly */
+> -		list_del(&entry->list);
+> -		list_add(&entry->list, &vm->used);
+> +		list_move(&entry->list, &vm->used);
+>  		vm->size -= size;
+>  		block = entry;
+>  		goto out;
 > -- 
 > 1.7.4.1
-> 
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
 > 
