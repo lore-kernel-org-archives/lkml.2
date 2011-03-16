@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab1CPNag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:30:36 -0400
-Received: from mail-tx2.bigfish.com ([65.55.88.10]:8685 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752383Ab1CPNa2 (ORCPT
+	id S1751202Ab1CPNd3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:33:29 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:40065 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab1CPNd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 09:30:28 -0400
-X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 09:30:28 EDT
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LI5JHG-02-BYD-02
-X-M-MSG: 
-Date: Wed, 16 Mar 2011 14:15:15 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Subject: Re: [patch 2/2] Remove hwsampler_files.c and merge its contents
- into init.c
-Message-ID: <20110316131515.GL31407@erda.amd.com>
-References: <20110215180212.334742128@linux.vnet.ibm.com>
- <20110215180928.546457180@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110215180928.546457180@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	Wed, 16 Mar 2011 09:33:28 -0400
+Date: Wed, 16 Mar 2011 14:32:56 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: ben-linux@fluff.org
+Cc: Bernhard Walle <walle@corscience.de>, ddaney@caviumnetworks.com,
+        ralf@linux-mips.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: octeon: Make the timeout independent of CONFIG_HZ
+Message-ID: <20110316143256.1353b0a9@endymion.delvare>
+In-Reply-To: <20110124150005.577b0235@endymion.delvare>
+References: <4D3D7290.9050203@corscience.de>
+	<1295872826-22129-1-git-send-email-walle@corscience.de>
+	<20110124150005.577b0235@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.02.11 13:02:14, Heinz Graalfs wrote:
-> From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+On Mon, 24 Jan 2011 15:00:05 +0100, Jean Delvare wrote:
+> On Mon, 24 Jan 2011 13:40:26 +0100, Bernhard Walle wrote:
+> > Since the timeout in the struct i2c_adapter use jiffies as unit and a
+> > timeout should be independent of CONFIG_HZ, use a value of HZ/50 which
+> > is equal to the current value 2 for CONFIG_HZ=100.
+> > 
+> > Signed-off-by: Bernhard Walle <walle@corscience.de>
 > 
-> I've merged the contents of hwsampler_files.c into according to Robert Richter's comment.
->  
-> Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-> Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-> ---
->  arch/s390/oprofile/Makefile          |    2 
->  arch/s390/oprofile/hwsampler_files.c |  162 -----------------------------------
->  arch/s390/oprofile/init.c            |  161 ++++++++++++++++++++++++++++++++++
->  3 files changed, 159 insertions(+), 166 deletions(-)
+> Acked-by: Jean Delvare <khali@linux-fr.org>
+> 
+> Ben, please apply.
 
-Applied to oprofile/s390, thanks Heinz.
+Ben, I can't see this fix in your tree, it seems it got lost?
 
--Robert
+> > ---
+> >  drivers/i2c/busses/i2c-octeon.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
+> > index 4cffda5..d07e5c7 100644
+> > --- a/drivers/i2c/busses/i2c-octeon.c
+> > +++ b/drivers/i2c/busses/i2c-octeon.c
+> > @@ -469,7 +469,7 @@ static struct i2c_adapter octeon_i2c_ops = {
+> >  	.owner = THIS_MODULE,
+> >  	.name = "OCTEON adapter",
+> >  	.algo = &octeon_i2c_algo,
+> > -	.timeout = 2,
+> > +	.timeout = HZ/50,
+> >  };
+> >  
+> >  /**
+> 
+> 
+
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Jean Delvare
