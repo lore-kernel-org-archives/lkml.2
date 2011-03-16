@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab1CPLCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 07:02:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58222 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752080Ab1CPLCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 07:02:38 -0400
-Date: Wed, 16 Mar 2011 22:02:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+	id S1752672Ab1CPLTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 07:19:09 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40718 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab1CPLTC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 07:19:02 -0400
+From: "M. Mohan Kumar" <mohan@in.ibm.com>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] fs/9p: Use updated offset for writing
+Date: Wed, 16 Mar 2011 16:48:56 +0530
+User-Agent: KMail/1.13.5 (Linux/2.6.35.10-74.fc14.i686.PAE; KDE/4.5.4; i686; ; )
+Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree with Linus' tree
-Message-Id: <20110316220228.70f7514c.sfr@canb.auug.org.au>
-In-Reply-To: <4D8079BE.6050505@linutronix.de>
-References: <20110316160842.493967db.sfr@canb.auug.org.au>
-	<4D8079BE.6050505@linutronix.de>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__16_Mar_2011_22_02_28_+1100_HwXBK7fDDcD+rBhy"
+References: <1300252156-5002-1-git-send-email-mohan@in.ibm.com> <874o73ij6t.fsf@linux.vnet.ibm.com>
+In-Reply-To: <874o73ij6t.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103161648.57678.mohan@in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Mar_2011_22_02_28_+1100_HwXBK7fDDcD+rBhy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wednesday 16 March 2011 1:35:46 pm Aneesh Kumar K. V wrote:
+> On Wed, 16 Mar 2011 10:39:16 +0530, "M. Mohan Kumar" <mohan@in.ibm.com> 
+wrote:
+> > Use the updated offset given by generic_write_checks. Without this fix,
+> > even if a file is opened in O_APPEND mode, data will be written at
+> > current file position instead of end of file.
 
-Hi Sebastian,
+> 
+> You should also update offset on success.
 
-On Wed, 16 Mar 2011 09:50:06 +0100 Sebastian Andrzej Siewior <bigeasy@linut=
-ronix.de> wrote:
->
-> I just looked and Linus already pulled and fixed it up by himself. Thanks
-> for letting me know.
+Thanks Aneesh, I will send a updated patch.
 
-And he fixed it much better than I did :-)
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__16_Mar_2011_22_02_28_+1100_HwXBK7fDDcD+rBhy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNgJjEAAoJEDMEi1NhKgbspYcH/j3dq5GIRhtV2o2w2ozlkM5r
-F7PE+9/WyIf2vu3CtnAuIQundsB6iWjG2+8iA90HfIxBMMCuNEjeh4qPK9YrJBGl
-CLbpprPYIi/Uqq9PHvEC9p0zziMiRCS1M2jdEaFZkZwOqXXfbD0BiYXO5WVdxRET
-FwZvuvv6HU14NCu6aNY+ZD/hFoadbjCBU1LQVDZVrj6DHsix5RpYzaJP1zhYzK3j
-EeqvUO24B0kKF1JbT25neR/0ZmhC+6/WVXShzyxyOOGRHI9PQUElyDgVylVT3FRL
-eSfpCmzub4Tbpqa+L8ogx60W9xqdwH+opajKp8rFhcnneAbYWZbv8mppkwkXYpI=
-=OIs0
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_Mar_2011_22_02_28_+1100_HwXBK7fDDcD+rBhy--
+----
+M. Mohan Kumar
