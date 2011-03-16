@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab1CPVZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:25:42 -0400
-Received: from kroah.org ([198.145.64.141]:42690 "EHLO coco.kroah.org"
+	id S1755538Ab1CPVZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:25:53 -0400
+Received: from kroah.org ([198.145.64.141]:42683 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab1CPVMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754361Ab1CPVMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Mar 2011 17:12:03 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Harry Wei <jiaweiwei.xiyou@gmail.com>, Harry Wei <harryxiyou@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: =?UTF-8?q?=5BPATCH=2031/50=5D=20Translate=20linux-2=2E6/Documentation/magic-number=2Etxt=20into=20Chinese?=
-Date: Wed, 16 Mar 2011 14:11:09 -0700
-Message-Id: <1300309888-5028-31-git-send-email-gregkh@suse.de>
+Cc: Harry Wei <harryxiyou@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: =?UTF-8?q?=5BPATCH=2030/50=5D=20Translat=20Documentation/SubmittingChecklist=20into=20Chinese?=
+Date: Wed, 16 Mar 2011 14:11:08 -0700
+Message-Id: <1300309888-5028-30-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
 References: <20110316205204.GA2686@kroah.com>
@@ -24,190 +23,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+From: Harry Wei <harryxiyou@gmail.com>
 
-I have translated linux-2.6/Documentation/magic-number.txt into Chinese.
+I have translated linux-2.6/Documentation/SubmittingChecklist into
+Chinese. This patch can add translated file(SubmittingChecklist) under
+linux-2.6/Documentation/zh_CN/.  Thanks.
 
 Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- Documentation/zh_CN/magic-number.txt |  167 ++++++++++++++++++++++++++++++++++
- 1 files changed, 167 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/zh_CN/magic-number.txt
+ Documentation/zh_CN/SubmitChecklist |  109 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 109 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/zh_CN/SubmitChecklist
 
-diff --git a/Documentation/zh_CN/magic-number.txt b/Documentation/zh_CN/magic-number.txt
+diff --git a/Documentation/zh_CN/SubmitChecklist b/Documentation/zh_CN/SubmitChecklist
 new file mode 100644
-index 0000000..4c4ce85
+index 0000000..951415b
 --- /dev/null
-+++ b/Documentation/zh_CN/magic-number.txt
-@@ -0,0 +1,167 @@
-+Chinese translated version of Documentation/magic-number.txt
++++ b/Documentation/zh_CN/SubmitChecklist
+@@ -0,0 +1,109 @@
++Chinese translated version of Documentation/SubmitChecklist
 +
-+If you have any comment or update to the content, please post to LKML directly.
-+However, if you have problem communicating in English you can also ask the
-+Chinese maintainer for help.  Contact the Chinese maintainer, if this
-+translation is outdated or there is problem with translation.
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
 +
-+Chinese maintainer: Jia Wei Wei <harryxiyou@gmail.com>
++Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
 +---------------------------------------------------------------------
-+Documentation/magic-number.txtçš„ä¸­æ–‡ç¿»è¯‘
++Documentation/SubmitChecklist µÄÖĞÎÄ·­Òë
 +
-+å¦‚æœæƒ³è¯„è®ºæˆ–æ›´æ–°æœ¬æ–‡çš„å†…å®¹ï¼Œè¯·ç›´æ¥å‘ä¿¡åˆ°LKMLã€‚å¦‚æœä½ ä½¿ç”¨è‹±æ–‡äº¤æµæœ‰å›°éš¾çš„è¯ï¼Œä¹Ÿå¯
-+ä»¥å‘ä¸­æ–‡ç‰ˆç»´æŠ¤è€…æ±‚åŠ©ã€‚å¦‚æœæœ¬ç¿»è¯‘æ›´æ–°ä¸åŠæ—¶æˆ–è€…ç¿»è¯‘å­˜åœ¨é—®é¢˜ï¼Œè¯·è”ç³»ä¸­æ–‡ç‰ˆç»´æŠ¤è€…ã€‚
++Èç¹ûÏëÆÀÂÛ»ò¸üĞÂ±¾ÎÄµÄÄÚÈİ£¬ÇëÖ±½ÓÁªÏµÔ­ÎÄµµµÄÎ¬»¤Õß¡£Èç¹ûÄãÊ¹ÓÃÓ¢ÎÄ
++½»Á÷ÓĞÀ§ÄÑµÄ»°£¬Ò²¿ÉÒÔÏòÖĞÎÄ°æÎ¬»¤ÕßÇóÖú¡£Èç¹û±¾·­Òë¸üĞÂ²»¼°Ê±»òÕß·­
++Òë´æÔÚÎÊÌâ£¬ÇëÁªÏµÖĞÎÄ°æÎ¬»¤Õß¡£
 +
-+ä¸­æ–‡ç‰ˆç»´æŠ¤è€…ï¼š è´¾å¨å¨ Jia Wei Wei <harryxiyou@gmail.com>
-+ä¸­æ–‡ç‰ˆç¿»è¯‘è€…ï¼š è´¾å¨å¨ Jia Wei Wei <harryxiyou@gmail.com>
-+ä¸­æ–‡ç‰ˆæ ¡è¯‘è€…ï¼š è´¾å¨å¨ Jia Wei Wei <harryxiyou@gmail.com>
++ÖĞÎÄ°æÎ¬»¤Õß£º ¼ÖÍşÍş Harry Wei <harryxiyou@gmail.com>
++ÖĞÎÄ°æ·­ÒëÕß£º ¼ÖÍşÍş Harry Wei <harryxiyou@gmail.com>
++ÖĞÎÄ°æĞ£ÒëÕß£º ¼ÖÍşÍş Harry Wei <harryxiyou@gmail.com>
 +
-+ä»¥ä¸‹ä¸ºæ­£æ–‡
++
++ÒÔÏÂÎªÕıÎÄ
 +---------------------------------------------------------------------
-+è¿™ä¸ªæ–‡ä»¶æ˜¯æœ‰å…³å½“å‰ä½¿ç”¨çš„é­”æœ¯å€¼æ³¨å†Œè¡¨ã€‚å½“ä½ ç»™ä¸€ä¸ªç»“æ„æ·»åŠ äº†ä¸€ä¸ªé­”æœ¯å€¼ï¼Œä½ ä¹Ÿåº”è¯¥æŠŠè¿™ä¸ªé­”æœ¯å€¼æ·»åŠ åˆ°è¿™ä¸ªæ–‡ä»¶ï¼Œå› ä¸ºæˆ‘ä»¬æœ€å¥½æŠŠç”¨äºå„ç§ç»“æ„çš„é­”æœ¯å€¼ç»Ÿä¸€èµ·æ¥ã€‚
++LinuxÄÚºËÌá½»Çåµ¥
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 +
-+ä½¿ç”¨é­”æœ¯å€¼æ¥ä¿æŠ¤å†…æ ¸æ•°æ®ç»“æ„æ˜¯ä¸€ä¸ªéå¸¸å¥½çš„ä¸»æ„ã€‚è¿™å°±å…è®¸ä½ åœ¨è¿è¡ŒæœŸæ£€æŸ¥(a)ä¸€ä¸ªç»“æ„æ˜¯å¦å·²ç»è¢«æ”»å‡»ï¼Œæˆ–è€…(b)ä½ å·²ç»ç»™ä¸€ä¸ªä¾‹è¡Œç¨‹åºé€šè¿‡äº†ä¸€ä¸ªé”™è¯¯çš„ç»“æ„ã€‚åä¸€ç§æƒ…å†µç‰¹åˆ«åœ°æœ‰ç”¨---ç‰¹åˆ«æ˜¯å½“ä½ é€šè¿‡ä¸€ä¸ªç©ºæŒ‡é’ˆæŒ‡å‘ç»“æ„ä½“çš„æ—¶å€™ã€‚ttyæºç ï¼Œä¾‹å¦‚ï¼Œç»å¸¸é€šè¿‡ç‰¹å®šé©±åŠ¨ä½¿ç”¨è¿™ç§æ–¹æ³•å¹¶ä¸”åå¤åœ°æ’åˆ—ç‰¹å®šæ–¹é¢çš„ç»“æ„ã€‚
++ÕâÀïÓĞÒ»Ğ©ÄÚºË¿ª·¢ÕßÓ¦¸Ã×öµÄ»ù±¾ÊÂÇé£¬Èç¹ûËûÃÇÏë¿´µ½×Ô¼ºµÄÄÚºË²¹¶¡Ìá½»
++±»½ÓÊÜµÄ¸ü¿ì¡£
 +
-+ä½¿ç”¨é­”æœ¯å€¼çš„æ–¹æ³•æ˜¯åœ¨ç»“æ„çš„å¼€å§‹å¤„å£°æ˜çš„ï¼Œå¦‚ä¸‹ï¼š
++ÕâĞ©¶¼ÊÇ³¬³öDocumentation/SubmittingPatchesÎÄµµÀïËùÌá¹©µÄÒÔ¼°ÆäËû
++¹ØÓÚÌá½»LinuxÄÚºË²¹¶¡µÄËµÃ÷¡£
 +
-+struct tty_ldisc {
-+	int	magic;
-+	...
-+};
++1£ºÈç¹ûÄãÊ¹ÓÃÁËÒ»¸ö¹¦ÄÜÄÇÃ´¾Í#include¶¨Òå/ÉùÃ÷ÄÇ¸ö¹¦ÄÜµÄÄÇ¸öÎÄ¼ş¡£
++   ²»ÒªÒÀ¿¿ÆäËû¼ä½ÓÒıÈë¶¨Òå/ÉùÃ÷ÄÇ¸ö¹¦ÄÜµÄÍ·ÎÄ¼ş¡£
 +
-+å½“ä½ ä»¥åç»™å†…æ ¸æ·»åŠ å¢å¼ºåŠŸèƒ½çš„æ—¶å€™ï¼Œè¯·éµå®ˆè¿™æ¡è§„åˆ™ï¼è¿™æ ·å°±ä¼šèŠ‚çœæ•°ä¸æ¸…çš„è°ƒè¯•æ—¶é—´ï¼Œç‰¹åˆ«æ˜¯ä¸€äº›å¤æ€ªçš„æƒ…å†µï¼Œä¾‹å¦‚ï¼Œæ•°ç»„è¶…å‡ºèŒƒå›´å¹¶ä¸”é‡æ–°å†™äº†è¶…å‡ºéƒ¨åˆ†ã€‚éµå®ˆè¿™ä¸ªè§„åˆ™ï¼Œâ€ªè¿™äº›æƒ…å†µå¯ä»¥è¢«å¿«é€Ÿåœ°ï¼Œå®‰å…¨åœ°é¿å…ã€‚
++2£º¹¹½¨¼ò½àÊÊÓÃ»òÕß¸ü¸ÄCONFIGÑ¡Ïî =y£¬=m£¬»òÕß=n¡£
++   ²»ÒªÓĞ±àÒë¾¯¸æ/´íÎó£¬ ²»ÒªÓĞÁ´½Ó¾¯¸æ/´íÎó¡£
 +
-+		Theodore Ts'o
-+		  31 Mar 94
++2b£ºÍ¨¹ı allnoconfig, allmodconfig
 +
-+ç»™å½“å‰çš„Linux 2.1.55æ·»åŠ é­”æœ¯è¡¨ã€‚
++2c£ºµ±Ê¹ÓÃ 0=builddir ³É¹¦µØ¹¹½¨
 +
-+		Michael Chastain
-+		<mailto:mec@shout.net>
-+		22 Sep 1997
++3£ºÍ¨¹ıÊ¹ÓÃ±¾µØ½»²æ±àÒë¹¤¾ß»òÕßÆäËûÒ»Ğ©¹¹½¨²úËù£¬ÔÚ¶àCPU¿ò¼ÜÉÏ¹¹½¨¡£
 +
-+ç°åœ¨åº”è¯¥æœ€æ–°çš„Linux 2.1.112.å› ä¸ºåœ¨ç‰¹æ€§å†»ç»“æœŸé—´ï¼Œä¸èƒ½åœ¨2.2.xå‰æ”¹å˜ä»»ä½•ä¸œè¥¿ã€‚è¿™äº›æ¡ç›®è¢«æ•°åŸŸæ‰€æ’åºã€‚
++4£ºppc64 ÊÇÒ»¸öºÜºÃµÄ¼ì²é½»²æ±àÒëµÄ¿ò¼Ü£¬ÒòÎªËüÍùÍù°Ñ¡®unsigned long¡¯
++   µ±64Î»ÖµÀ´Ê¹ÓÃ¡£
 +
-+		Krzysztof G.Baranowski
-+	        <mailto: kgb@knm.org.pl>
-+		29 Jul 1998
++5£º°´ÕÕDocumentation/CodingStyleÎÄ¼şÀïµÄÏêÏ¸ÃèÊö£¬¼ì²éÄã²¹¶¡µÄÕûÌå·ç¸ñ¡£
++   Ê¹ÓÃ²¹¶¡·ç¸ñ¼ì²éËöËéµÄÎ¥¹æ(scripts/checkpatch.pl)£¬ÉóºËÔ±ÓÅÏÈÌá½»¡£
++   ÄãÓ¦¸Ãµ÷ÕûÒÅÁôÔÚÄã²¹¶¡ÖĞµÄËùÓĞÎ¥¹æ¡£
 +
-+æ›´æ–°é­”æœ¯è¡¨åˆ°Linux 2.5.45ã€‚åˆšå¥½è¶Šè¿‡ç‰¹æ€§å†»ç»“ï¼Œä½†æ˜¯æœ‰å¯èƒ½è¿˜ä¼šæœ‰ä¸€äº›æ–°çš„é­”æœ¯å€¼åœ¨2.6.xä¹‹å‰èå…¥åˆ°å†…æ ¸ä¸­ã€‚
++6£ºÈÎºÎ¸üĞÂ»òÕß¸Ä¶¯CONFIGÑ¡Ïî¶¼²»ÄÜ´òÂÒÅäÖÃ²Ëµ¥¡£
 +
-+		Petr Baudis
-+		<pasky@ucw.cz>
-+		03 Nov 2002
++7£ºËùÓĞµÄKconfigÑ¡Ïî¸üĞÂ¶¼ÒªÓĞËµÃ÷ÎÄ×Ö¡£
 +
-+æ›´æ–°é­”æœ¯è¡¨åˆ°Linux 2.5.74ã€‚
++8£ºÒÑ¾­ÈÏÕæµØ×Ü½áÁËÏà¹ØµÄKconfig×éºÏ¡£ÕâÊÇºÜÄÑÍ¨¹ı²âÊÔ×öºÃµÄ--ÄÔÁ¦ÔÚÕâÀïÏÂ½µ¡£
 +
-+		Fabian Frederick
-+                <ffrederick@users.sourceforge.net>
-+		09 Jul 2003
++9£º¼ì²é¾ßÓĞ¼ò½àĞÔ¡£
 +
-+é­”æœ¯å                 åœ°å€         ç»“æ„               æ‰€åœ¨æ–‡ä»¶
-+===========================================================================
-+PG_MAGIC              'P'         pg_{read,write}_hdr include/linux/pg.h
-+CMAGIC                0x0111      user              include/linux/a.out.h
-+MKISS_DRIVER_MAGIC    0x04bf      mkiss_channel     drivers/net/mkiss.h
-+RISCOM8_MAGIC         0x0907      riscom_port       drivers/char/riscom8.h
-+SPECIALIX_MAGIC       0x0907      specialix_port    drivers/char/specialix_io8.h
-+HDLC_MAGIC            0x239e      n_hdlc            drivers/char/n_hdlc.c
-+APM_BIOS_MAGIC        0x4101      apm_user          arch/i386/kernel/apm.c
-+CYCLADES_MAGIC        0x4359      cyclades_port     include/linux/cyclades.h
-+DB_MAGIC              0x4442      fc_info           drivers/net/iph5526_novram.c
-+DL_MAGIC              0x444d      fc_info           drivers/net/iph5526_novram.c
-+FASYNC_MAGIC          0x4601      fasync_struct     include/linux/fs.h
-+FF_MAGIC              0x4646      fc_info           drivers/net/iph5526_novram.c
-+ISICOM_MAGIC          0x4d54      isi_port          include/linux/isicom.h
-+PTY_MAGIC             0x5001                        drivers/char/pty.c
-+PPP_MAGIC             0x5002      ppp               include/linux/if_pppvar.h
-+SERIAL_MAGIC          0x5301      async_struct      include/linux/serial.h
-+SSTATE_MAGIC          0x5302      serial_state      include/linux/serial.h
-+SLIP_MAGIC            0x5302      slip              drivers/net/slip.h
-+STRIP_MAGIC           0x5303      strip             drivers/net/strip.c
-+X25_ASY_MAGIC         0x5303      x25_asy           drivers/net/x25_asy.h
-+SIXPACK_MAGIC         0x5304      sixpack           drivers/net/hamradio/6pack.h
-+AX25_MAGIC            0x5316      ax_disp           drivers/net/mkiss.h
-+ESP_MAGIC             0x53ee      esp_struct        drivers/char/esp.h
-+TTY_MAGIC             0x5401      tty_struct        include/linux/tty.h
-+MGSL_MAGIC            0x5401      mgsl_info         drivers/char/synclink.c
-+TTY_DRIVER_MAGIC      0x5402      tty_driver        include/linux/tty_driver.h
-+MGSLPC_MAGIC          0x5402      mgslpc_info       drivers/char/pcmcia/synclink_cs.c
-+TTY_LDISC_MAGIC       0x5403      tty_ldisc         include/linux/tty_ldisc.h
-+USB_SERIAL_MAGIC      0x6702      usb_serial        drivers/usb/serial/usb-serial.h
-+FULL_DUPLEX_MAGIC     0x6969                        drivers/net/tulip/de2104x.c
-+USB_BLUETOOTH_MAGIC   0x6d02      usb_bluetooth     drivers/usb/class/bluetty.c
-+RFCOMM_TTY_MAGIC      0x6d02                        net/bluetooth/rfcomm/tty.c
-+USB_SERIAL_PORT_MAGIC 0x7301      usb_serial_port   drivers/usb/serial/usb-serial.h
-+CG_MAGIC              0x00090255  ufs_cylinder_group include/linux/ufs_fs.h
-+A2232_MAGIC           0x000a2232  gs_port           drivers/char/ser_a2232.h
-+RPORT_MAGIC           0x00525001  r_port            drivers/char/rocket_int.h
-+LSEMAGIC              0x05091998  lse               drivers/fc4/fc.c
-+GDTIOCTL_MAGIC        0x06030f07  gdth_iowr_str     drivers/scsi/gdth_ioctl.h
-+RIEBL_MAGIC           0x09051990                    drivers/net/atarilance.c
-+RIO_MAGIC             0x12345678  gs_port           drivers/char/rio/rio_linux.c
-+SX_MAGIC              0x12345678  gs_port           drivers/char/sx.h
-+NBD_REQUEST_MAGIC     0x12560953  nbd_request       include/linux/nbd.h
-+RED_MAGIC2            0x170fc2a5  (any)             mm/slab.c
-+BAYCOM_MAGIC          0x19730510  baycom_state      drivers/net/baycom_epp.c
-+ISDN_X25IFACE_MAGIC   0x1e75a2b9  isdn_x25iface_proto_data
-+                                                    drivers/isdn/isdn_x25iface.h
-+ECP_MAGIC             0x21504345  cdkecpsig         include/linux/cdk.h
-+LSOMAGIC              0x27091997  lso               drivers/fc4/fc.c
-+LSMAGIC               0x2a3b4d2a  ls                drivers/fc4/fc.c
-+WANPIPE_MAGIC         0x414C4453  sdla_{dump,exec}  include/linux/wanpipe.h
-+CS_CARD_MAGIC         0x43525553  cs_card           sound/oss/cs46xx.c
-+LABELCL_MAGIC         0x4857434c  labelcl_info_s    include/asm/ia64/sn/labelcl.h
-+ISDN_ASYNC_MAGIC      0x49344C01  modem_info        include/linux/isdn.h
-+CTC_ASYNC_MAGIC       0x49344C01  ctc_tty_info      drivers/s390/net/ctctty.c
-+ISDN_NET_MAGIC        0x49344C02  isdn_net_local_s  drivers/isdn/i4l/isdn_net_lib.h
-+SAVEKMSG_MAGIC2       0x4B4D5347  savekmsg          arch/*/amiga/config.c
-+STLI_BOARDMAGIC       0x4bc6c825  stlibrd           include/linux/istallion.h
-+CS_STATE_MAGIC        0x4c4f4749  cs_state          sound/oss/cs46xx.c
-+SLAB_C_MAGIC          0x4f17a36d  kmem_cache        mm/slab.c
-+COW_MAGIC             0x4f4f4f4d  cow_header_v1     arch/um/drivers/ubd_user.c
-+I810_CARD_MAGIC       0x5072696E  i810_card         sound/oss/i810_audio.c
-+TRIDENT_CARD_MAGIC    0x5072696E  trident_card      sound/oss/trident.c
-+ROUTER_MAGIC          0x524d4157  wan_device        include/linux/wanrouter.h
-+SCC_MAGIC             0x52696368  gs_port           drivers/char/scc.h
-+SAVEKMSG_MAGIC1       0x53415645  savekmsg          arch/*/amiga/config.c
-+GDA_MAGIC             0x58464552  gda               arch/mips/include/asm/sn/gda.h
-+RED_MAGIC1            0x5a2cf071  (any)             mm/slab.c
-+STL_PORTMAGIC         0x5a7182c9  stlport           include/linux/stallion.h
-+EEPROM_MAGIC_VALUE    0x5ab478d2  lanai_dev         drivers/atm/lanai.c
-+HDLCDRV_MAGIC         0x5ac6e778  hdlcdrv_state     include/linux/hdlcdrv.h
-+EPCA_MAGIC            0x5c6df104  channel           include/linux/epca.h
-+PCXX_MAGIC            0x5c6df104  channel           drivers/char/pcxx.h
-+KV_MAGIC              0x5f4b565f  kernel_vars_s     arch/mips/include/asm/sn/klkernvars.h
-+I810_STATE_MAGIC      0x63657373  i810_state        sound/oss/i810_audio.c
-+TRIDENT_STATE_MAGIC   0x63657373  trient_state      sound/oss/trident.c
-+M3_CARD_MAGIC         0x646e6f50  m3_card           sound/oss/maestro3.c
-+FW_HEADER_MAGIC       0x65726F66  fw_header         drivers/atm/fore200e.h
-+SLOT_MAGIC            0x67267321  slot              drivers/hotplug/cpqphp.h
-+SLOT_MAGIC            0x67267322  slot              drivers/hotplug/acpiphp.h
-+LO_MAGIC              0x68797548  nbd_device        include/linux/nbd.h
-+OPROFILE_MAGIC        0x6f70726f  super_block       drivers/oprofile/oprofilefs.h
-+M3_STATE_MAGIC        0x734d724d  m3_state          sound/oss/maestro3.c
-+STL_PANELMAGIC        0x7ef621a1  stlpanel          include/linux/stallion.h
-+VMALLOC_MAGIC         0x87654320  snd_alloc_track   sound/core/memory.c
-+KMALLOC_MAGIC         0x87654321  snd_alloc_track   sound/core/memory.c
-+PWC_MAGIC             0x89DC10AB  pwc_device        drivers/usb/media/pwc.h
-+NBD_REPLY_MAGIC       0x96744668  nbd_reply         include/linux/nbd.h
-+STL_BOARDMAGIC        0xa2267f52  stlbrd            include/linux/stallion.h
-+ENI155_MAGIC          0xa54b872d  midway_eprom	    drivers/atm/eni.h
-+SCI_MAGIC             0xbabeface  gs_port           drivers/char/sh-sci.h
-+CODA_MAGIC            0xC0DAC0DA  coda_file_info    include/linux/coda_fs_i.h
-+DPMEM_MAGIC           0xc0ffee11  gdt_pci_sram      drivers/scsi/gdth.h
-+STLI_PORTMAGIC        0xe671c7a1  stliport          include/linux/istallion.h
-+YAM_MAGIC             0xF10A7654  yam_port          drivers/net/hamradio/yam.c
-+CCB_MAGIC             0xf2691ad2  ccb               drivers/scsi/ncr53c8xx.c
-+QUEUE_MAGIC_FREE      0xf7e1c9a3  queue_entry       drivers/scsi/arm/queue.c
-+QUEUE_MAGIC_USED      0xf7e1cc33  queue_entry       drivers/scsi/arm/queue.c
-+HTB_CMAGIC            0xFEFAFEF1  htb_class         net/sched/sch_htb.c
-+NMI_MAGIC             0x48414d4d455201 nmi_s        arch/mips/include/asm/sn/nmi.h
++10£ºÊ¹ÓÃ'make checkstack'ºÍ'make namespacecheck'¼ì²é£¬È»ºóĞŞ¸ÄËùÕÒµ½µÄÎÊÌâ¡£
++    ×¢Òâ£º¶ÑÕ»¼ì²é²»»áÃ÷È·µØ³öÏÖÎÊÌâ£¬µ«ÊÇÈÎºÎµÄÒ»¸öº¯ÊıÔÚ¶ÑÕ»ÉÏÊ¹ÓÃ¶àÓÚ512×Ö½Ú
++    ¶¼Òª×¼±¸ĞŞ¸Ä¡£
 +
-+è¯·æ³¨æ„ï¼Œåœ¨å£°éŸ³è®°å¿†ç®¡ç†ä¸­ä»ç„¶æœ‰æ¯ä¸€äº›è¢«å®šä¹‰çš„é©±åŠ¨é­”æœ¯å€¼ã€‚æŸ¥çœ‹include/sound/sndmagic.hæ¥è·å–ä»–ä»¬å®Œæ•´çš„åˆ—è¡¨ä¿¡æ¯ã€‚å¾ˆå¤šOSSå£°éŸ³é©±åŠ¨æ‹¥æœ‰è‡ªå·±ä»å£°å¡PCI IDæ„å»ºçš„é­”æœ¯å€¼-ä»–ä»¬ä¹Ÿæ²¡æœ‰è¢«åˆ—åœ¨è¿™é‡Œã€‚
++11£º°üº¬kernel-docµ½È«¾ÖÄÚºËAPIsÎÄ¼ş¡££¨²»ÒªÇó¾²Ì¬µÄº¯Êı£¬µ«ÊÇ°üº¬Ò²ÎŞËùÎ½¡££©
++    Ê¹ÓÃ'make htmldocs'»òÕß'make mandocs'À´¼ì²ékernel-doc£¬È»ºóĞŞ¸ÄÈÎºÎ
++    ·¢ÏÖµÄÎÊÌâ¡£
 +
-+IrDAå­ç³»ç»Ÿä¹Ÿä½¿ç”¨äº†å¤§é‡çš„è‡ªå·±çš„é­”æœ¯å€¼ï¼ŒæŸ¥çœ‹include/net/irda/irda.hæ¥è·å–ä»–ä»¬å®Œæ•´çš„ä¿¡æ¯ã€‚
++12£ºÒÑ¾­Í¨¹ıCONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
++    CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
++    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP²âÊÔ£¬²¢ÇÒÍ¬Ê±¶¼
++    Ê¹ÄÜ¡£
 +
-+HFSæ˜¯å¦å¤–ä¸€ä¸ªæ¯”è¾ƒå¤§çš„ä½¿ç”¨é­”æœ¯å€¼çš„æ–‡ä»¶ç³»ç»Ÿ-ä½ å¯ä»¥åœ¨fs/hfs/hfs.hä¸­æ‰¾åˆ°ä»–ä»¬ã€‚
++13£ºÒÑ¾­¶¼¹¹½¨²¢ÇÒÊ¹ÓÃ»òÕß²»Ê¹ÓÃ CONFIG_SMP ºÍ CONFIG_PREEMPT²âÊÔÖ´ĞĞÊ±¼ä¡£
++
++14£ºÈç¹û²¹¶¡Ó°ÏìIO/Disk£¬µÈµÈ£ºÒÑ¾­Í¨¹ıÊ¹ÓÃ»òÕß²»Ê¹ÓÃ CONFIG_LBDAF ²âÊÔ¡£
++
++15£ºËùÓĞµÄcodepathsÒÑ¾­ĞĞÊ¹ËùÓĞlockdepÆôÓÃ¹¦ÄÜ¡£
++
++16£ºËùÓĞµÄ/proc¼ÇÂ¼¸üĞÂ¶¼Òª×÷³ÉÎÄ¼ş·ÅÔÚDocumentation/Ä¿Â¼ÏÂ¡£
++
++17£ºËùÓĞµÄÄÚºËÆô¶¯²ÎÊı¸üĞÂ¶¼±»¼ÇÂ¼µ½Documentation/kernel-parameters.txtÎÄ¼şÖĞ¡£
++
++18£ºËùÓĞµÄÄ£¿é²ÎÊı¸üĞÂ¶¼ÓÃMODULE_PARM_DESC()¼ÇÂ¼¡£
++
++19£ºËùÓĞµÄÓÃ»§¿Õ¼ä½Ó¿Ú¸üĞÂ¶¼±»¼ÇÂ¼µ½Documentation/ABI/¡£²é¿´Documentation/ABI/README
++    ¿ÉÒÔ»ñµÃ¸ü¶àµÄĞÅÏ¢¡£¸Ä±äÓÃ»§¿Õ¼ä½Ó¿ÚµÄ²¹¶¡Ó¦¸Ã±»ÓÊ¼ş³­ËÍ¸ølinux-api@vger.kernel.org¡£
++
++20£º¼ì²éËüÊÇ²»ÊÇ¶¼Í¨¹ı`make headers_check'¡£
++
++21£ºÒÑ¾­Í¨¹ıÖÁÉÙÒıÈëslabºÍpage-allocationÊ§°Ü¼ì²é¡£²é¿´Documentation/fault-injection/¡£
++
++22£ºĞÂ¼ÓÈëµÄÔ´ÂëÒÑ¾­Í¨¹ı`gcc -W'£¨Ê¹ÓÃ"make EXTRA_CFLAGS=-W"£©±àÒë¡£ÕâÑù½«²úÉúºÜ¶à·³ÄÕ£¬
++    µ«ÊÇ¶ÔÓÚÑ°ÕÒÂ©¶´ºÜÓĞÒæ´¦£¬ÀıÈç:"warning: comparison between signed and unsigned"¡£
++
++23£ºµ±Ëü±»ºÏ²¢µ½-mm²¹¶¡¼¯ºóÔÙ²âÊÔ£¬ÓÃÀ´È·¶¨ËüÊÇ·ñ»¹ºÍ²¹¶¡¶ÓÁĞÖĞµÄÆäËû²¹¶¡Ò»Æğ¹¤×÷ÒÔ¼°ÔÚVM£¬VFS
++    ºÍÆäËû×ÓÏµÍ³ÖĞ¸÷¸ö±ä»¯¡£
++
++24£ºËùÓĞµÄÄÚ´æÆÁÕÏ{e.g., barrier(), rmb(), wmb()}ĞèÒªÔÚÔ´´úÂëÖĞµÄÒ»¸ö×¢ÊÍÀ´½âÊÍËûÃÇ¶¼ÊÇ¸ÉÊ²Ã´µÄ
++    ÒÔ¼°Ô­Òò¡£
++
++25£ºÈç¹ûÓĞÈÎºÎÊäÈëÊä³ö¿ØÖÆµÄ²¹¶¡±»Ìí¼Ó£¬Ò²Òª¸üĞÂDocumentation/ioctl/ioctl-number.txt¡£
++
++26£ºÈç¹ûÄãµÄ¸ü¸Ä´úÂëÒÀ¿¿»òÕßÊ¹ÓÃÈÎºÎµÄÄÚºËAPIs»òÕßÓëÏÂÃæµÄkconfig·ûºÅÓĞ¹ØÏµµÄ¹¦ÄÜ£¬Äã¾ÍÒª
++    Ê¹ÓÃÏà¹ØµÄkconfig·ûºÅ¹Ø±Õ£¬ and/or =m£¨Èç¹ûÑ¡ÏîÌá¹©£©[ÔÚÍ¬Ò»Ê±¼ä²»ÊÇËùÓÃµÄ¶¼ÆôÓÃ£¬½ö½ö¸÷¸ö»òÕß×ÔÓÉ
++    ×éºÏËûÃÇ]£º
++
++    CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
++    CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
++    CONFIG_NET, CONFIG_INET=n (ºóÒ»¸öÊ¹ÓÃ CONFIG_NET=y)
 -- 
 1.7.4.1
 
