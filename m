@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab1CPT0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 15:26:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45447 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab1CPT0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 15:26:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ow7FVVS7sqUztQZr8TPvE7Jd9wAIGiQvMnaFN0mCVhIDQNZGpHAeyPxXHH3MU8KXEc
-         qBNGDBrNrB/sBfdQTIewx53lkym1KPKAlRwmtIVQ4ge3tW3d6TooQJxWw4Xj5VpRCCvO
-         yubdveWdPMCoKVXg32z2ewoGjkfR1GXj3BJYA=
-Subject: Re: [PATCH 1/8] drivers/random: Cache align ip_random better
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Hugh Dickins <hughd@google.com>, George Spelvin <linux@horizon.com>,
-        penberg@cs.helsinki.fi, herbert@gondor.hengli.com.au,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1300299787.3128.495.camel@calx>
-References: <20110316022804.27679.qmail@science.horizon.com>
-	 <alpine.LSU.2.00.1103161011370.13407@sister.anvils>
-	 <1300299787.3128.495.camel@calx>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Mar 2011 20:26:33 +0100
-Message-ID: <1300303593.3202.30.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753656Ab1CPTcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 15:32:04 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:43096 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752118Ab1CPTb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 15:31:59 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, serge@hallyn.com, eparis@redhat.com,
+        kees.cook@canonical.com, jmorris@namei.org, eugeneteo@kernel.org,
+        drosenberg@vsecurity.com, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] [RFC] Make it easier to harden /proc/
+Date: Wed, 16 Mar 2011 20:31:47 +0100
+Message-Id: <1300303907-22627-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When containers like LXC are used a unprivileged and jailed
+root user can still write to critical files in /proc/.
+E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
 
-> I think this alignment exists to minimize the number of cacheline
-> bounces on SMP as this can be a pretty hot structure in the network
-> stack. It could probably benefit from a per-cpu treatment.
-> 
+This new restricted attribute makes it possible to protect such
+files. When restricted is set to true root needs CAP_SYS_ADMIN
+to into the file.
 
-Well, this is a mostly read area of memory, dirtied every 5 minutes.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ fs/proc/proc_sysctl.c  |    3 +++
+ include/linux/sysctl.h |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-Compare this to 'jiffies' for example ;)
-
-What could be done is to embed 'ip_cnt' inside ip_keydata[0] for
-example, to avoid wasting a cache line for one bit ;)
-
-
-c1606c40 b ip_cnt
-<hole>
-c1606c80 b ip_keydata
-
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index 8eb2522..cf7f27d 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -149,6 +149,9 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
+ 	if (sysctl_perm(head->root, table, write ? MAY_WRITE : MAY_READ))
+ 		goto out;
+ 
++	if (write && table->restricted && !capable(CAP_SYS_ADMIN))
++		goto out;
++
+ 	/* if that can happen at all, it should be -EINVAL, not -EISDIR */
+ 	error = -EINVAL;
+ 	if (!table->proc_handler)
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 11684d9..67d6129 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -1018,6 +1018,7 @@ struct ctl_table
+ 	void *data;
+ 	int maxlen;
+ 	mode_t mode;
++	bool restricted; /* CAP_SYS_ADMIN is needed for write access */
+ 	struct ctl_table *child;
+ 	struct ctl_table *parent;	/* Automatically set */
+ 	proc_handler *proc_handler;	/* Callback for text formatting */
+-- 
+1.6.6.1
 
