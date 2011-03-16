@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab1CPDu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 23:50:29 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:34032 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750981Ab1CPDuZ (ORCPT
+	id S1750887Ab1CPEIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 00:08:17 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:60519 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab1CPEIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 23:50:25 -0400
-Message-ID: <4D803353.7030004@st.com>
-Date: Wed, 16 Mar 2011 09:19:39 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 16 Mar 2011 00:08:13 -0400
+Date: Tue, 15 Mar 2011 21:02:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH V4 1/1] rcu: introduce kfree_rcu()
+Message-ID: <20110316040203.GB2273@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D7F356C.8020903@cn.fujitsu.com>
+ <201103151302.09381.arnd@arndb.de>
+ <20110315121941.GD2167@linux.vnet.ibm.com>
+ <201103151407.24800.arnd@arndb.de>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>
-Subject: Re: [PATCH 02/13] plat-spear: use list_move() instead of list_del()/list_add()
- combination
-References: <1300229605-14499-1-git-send-email-kirill@shutemov.name> <1300229605-14499-2-git-send-email-kirill@shutemov.name>
-In-Reply-To: <1300229605-14499-2-git-send-email-kirill@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103151407.24800.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2011 04:23 AM, Kirill A. Shutemov wrote:
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
->  arch/arm/plat-spear/clock.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
+On Tue, Mar 15, 2011 at 02:07:24PM +0100, Arnd Bergmann wrote:
+> On Tuesday 15 March 2011, Paul E. McKenney wrote:
+> > And it makes use of statically allocated structures a bit clunky.
 > 
-> diff --git a/arch/arm/plat-spear/clock.c b/arch/arm/plat-spear/clock.c
-> index ee4f90e..1d24faf 100644
-> --- a/arch/arm/plat-spear/clock.c
-> +++ b/arch/arm/plat-spear/clock.c
-> @@ -267,9 +267,7 @@ static void change_parent(struct clk *cclk, struct clk *pclk)
->  	unsigned long flags;
->  
->  	spin_lock_irqsave(&clocks_lock, flags);
-> -	list_del(&cclk->sibling);
-> -	list_add(&cclk->sibling, &pclk->children);
-> -
-> +	list_move(&cclk->sibling, &pclk->children);
->  	cclk->pclk = pclk;
->  	spin_unlock_irqrestore(&clocks_lock, flags);
->  }
+> How do statically allocated structures relate to this? I would
+> expect that you never call kfree_rcu on them, so it shouldn't
+> matter.
+> 
+> > Yet another approach is to use the low-order bit of the rcu_head pointer,
+> > given that the rcu_head structure does have to be aligned.  If this bit
+> > is set, then the function pointer could be interpreted as an offset.
+> > This approach might also allow a slab_free_rcu() to be constructed, given
+> > that the full 32 bits of the function pointer would be available.
+> > For example, if the upper 16 bits are zero, the low-order 16 bits are
+> > the offset.  If the upper 16 bits are 0x1, then the low-order 16 bits
+> > might be an index that selects the desired slab cache.
+> 
+> This solution sounds like a clear improvement over the patch that Lai
+> Jiangshan posted, without any downsides.
 
-Acked-by: Viresh Kumar <viresh.kumar@st.com>
+Except that I was forgetting that we don't really have any way to stop
+people from handing us misaligned rcu_head structures -- that topic came
+up last time as well.  Or were the people mentioning that possibility
+being overly paranoid?
 
--- 
-viresh
+							Thanx, Paul
