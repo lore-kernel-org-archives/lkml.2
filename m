@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab1CPVMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:12:34 -0400
-Received: from kroah.org ([198.145.64.141]:42564 "EHLO coco.kroah.org"
+	id S1754579Ab1CPVMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:12:38 -0400
+Received: from kroah.org ([198.145.64.141]:42575 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754217Ab1CPVLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:11:38 -0400
+	id S1753822Ab1CPVLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:11:40 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Borislav Petkov <borislav.petkov@amd.com>,
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 09/50] sysdev: Do not register with sysdev when erroring on add
-Date: Wed, 16 Mar 2011 14:10:47 -0700
-Message-Id: <1300309888-5028-9-git-send-email-gregkh@suse.de>
+Subject: [PATCH 11/50] pch_phub: add new device ML7213
+Date: Wed, 16 Mar 2011 14:10:49 -0700
+Message-Id: <1300309888-5028-11-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
 References: <20110316205204.GA2686@kroah.com>
@@ -21,129 +21,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-When encountering an error while executing the driver's ->add method, we
-should cancel registration and unwind what we've regged so far. The low
-level ->add methods do return proper error codes but those aren't looked
-at in sysdev_driver_register(). Fix that by sharing the unregistering
-code.
+Add ML7213 device information.
+ML7213 is companion chip of Intel Atom E6xx series for IVI(In-Vehicle Infotainment).
+ML7213 is completely compatible for Intel EG20T PCH.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/sys.c |   61 +++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 44 insertions(+), 17 deletions(-)
+ drivers/misc/Kconfig    |    7 ++++-
+ drivers/misc/pch_phub.c |   69 ++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 53 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/base/sys.c b/drivers/base/sys.c
-index b094e0d..f6fb547 100644
---- a/drivers/base/sys.c
-+++ b/drivers/base/sys.c
-@@ -166,6 +166,36 @@ EXPORT_SYMBOL_GPL(sysdev_class_unregister);
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index cc8e49d..b7d5ef2 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -441,7 +441,7 @@ config BMP085
+ 	  module will be called bmp085.
  
- static DEFINE_MUTEX(sysdev_drivers_lock);
+ config PCH_PHUB
+-	tristate "PCH Packet Hub of Intel Topcliff"
++	tristate "PCH Packet Hub of Intel Topcliff / OKI SEMICONDUCTOR ML7213"
+ 	depends on PCI
+ 	help
+ 	  This driver is for PCH(Platform controller Hub) PHUB(Packet Hub) of
+@@ -449,6 +449,11 @@ config PCH_PHUB
+ 	  processor. The Topcliff has MAC address and Option ROM data in SROM.
+ 	  This driver can access MAC address and Option ROM data in SROM.
  
-+/*
-+ * @dev != NULL means that we're unwinding because some drv->add()
-+ * failed for some reason. You need to grab sysdev_drivers_lock before
-+ * calling this.
-+ */
-+static void __sysdev_driver_remove(struct sysdev_class *cls,
-+				   struct sysdev_driver *drv,
-+				   struct sys_device *from_dev)
-+{
-+	struct sys_device *dev = from_dev;
++	  This driver also can be used for OKI SEMICONDUCTOR's ML7213 which is
++	  for IVI(In-Vehicle Infotainment) use.
++	  ML7213 is companion chip for Intel Atom E6xx series.
++	  ML7213 is completely compatible for Intel EG20T PCH.
 +
-+	list_del_init(&drv->entry);
-+	if (!cls)
-+		return;
+ 	  To compile this driver as a module, choose M here: the module will
+ 	  be called pch_phub.
+ 
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 744b804..98bffc4 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
++ * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -33,7 +33,12 @@
+ #define PHUB_TIMEOUT 0x05		/* Time out value for Status Register */
+ #define PCH_PHUB_ROM_WRITE_ENABLE 0x01	/* Enabling for writing ROM */
+ #define PCH_PHUB_ROM_WRITE_DISABLE 0x00	/* Disabling for writing ROM */
+-#define PCH_PHUB_ROM_START_ADDR 0x14	/* ROM data area start address offset */
++#define PCH_PHUB_MAC_START_ADDR 0x20C  /* MAC data area start address offset */
++#define PCH_PHUB_ROM_START_ADDR_EG20T 0x14 /* ROM data area start address offset
++					      (Intel EG20T PCH)*/
++#define PCH_PHUB_ROM_START_ADDR_ML7213 0x400 /* ROM data area start address
++						offset(OKI SEMICONDUCTOR ML7213)
++					      */
+ 
+ /* MAX number of INT_REDUCE_CONTROL registers */
+ #define MAX_NUM_INT_REDUCE_CONTROL_REG 128
+@@ -42,6 +47,10 @@
+ #define CLKCFG_CAN_50MHZ 0x12000000
+ #define CLKCFG_CANCLK_MASK 0xFF000000
+ 
++/* Macros for ML7213 */
++#define PCI_VENDOR_ID_ROHM			0x10db
++#define PCI_DEVICE_ID_ROHM_ML7213_PHUB		0x801A
 +
-+	if (!drv->remove)
-+		goto kset_put;
-+
-+	if (dev)
-+		list_for_each_entry_continue_reverse(dev, &cls->kset.list,
-+						     kobj.entry)
-+			drv->remove(dev);
-+	else
-+		list_for_each_entry(dev, &cls->kset.list, kobj.entry)
-+			drv->remove(dev);
-+
-+kset_put:
-+	kset_put(&cls->kset);
-+}
-+
- /**
-  *	sysdev_driver_register - Register auxillary driver
-  *	@cls:	Device class driver belongs to.
-@@ -175,9 +205,9 @@ static DEFINE_MUTEX(sysdev_drivers_lock);
-  *	called on each operation on devices of that class. The refcount
-  *	of @cls is incremented.
-  */
--
- int sysdev_driver_register(struct sysdev_class *cls, struct sysdev_driver *drv)
+ /* SROM ACCESS Macro */
+ #define PCH_WORD_ADDR_MASK (~((1 << 2) - 1))
+ 
+@@ -298,7 +307,7 @@ static void pch_phub_read_serial_rom_val(struct pch_phub_reg *chip,
  {
-+	struct sys_device *dev = NULL;
- 	int err = 0;
+ 	unsigned int mem_addr;
  
- 	if (!cls) {
-@@ -198,19 +228,27 @@ int sysdev_driver_register(struct sysdev_class *cls, struct sysdev_driver *drv)
+-	mem_addr = PCH_PHUB_ROM_START_ADDR +
++	mem_addr = PCH_PHUB_ROM_START_ADDR_EG20T +
+ 			pch_phub_mac_offset[offset_address];
  
- 		/* If devices of this class already exist, tell the driver */
- 		if (drv->add) {
--			struct sys_device *dev;
--			list_for_each_entry(dev, &cls->kset.list, kobj.entry)
--				drv->add(dev);
-+			list_for_each_entry(dev, &cls->kset.list, kobj.entry) {
-+				err = drv->add(dev);
-+				if (err)
-+					goto unwind;
-+			}
- 		}
- 	} else {
- 		err = -EINVAL;
- 		WARN(1, KERN_ERR "%s: invalid device class\n", __func__);
- 	}
+ 	pch_phub_read_serial_rom(chip, mem_addr, data);
+@@ -315,7 +324,7 @@ static int pch_phub_write_serial_rom_val(struct pch_phub_reg *chip,
+ 	int retval;
+ 	unsigned int mem_addr;
+ 
+-	mem_addr = PCH_PHUB_ROM_START_ADDR +
++	mem_addr = PCH_PHUB_ROM_START_ADDR_EG20T +
+ 			pch_phub_mac_offset[offset_address];
+ 
+ 	retval = pch_phub_write_serial_rom(chip, mem_addr, data);
+@@ -594,23 +603,38 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 		"pch_phub_extrom_base_address variable is %p\n", __func__,
+ 		chip->pch_phub_extrom_base_address);
+ 
+-	pci_set_drvdata(pdev, chip);
+-
+-	retval = sysfs_create_file(&pdev->dev.kobj, &dev_attr_pch_mac.attr);
+-	if (retval)
+-		goto err_sysfs_create;
+-
+-	retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
+-	if (retval)
+-		goto exit_bin_attr;
+-
+-	pch_phub_read_modify_write_reg(chip, (unsigned int)CLKCFG_REG_OFFSET,
+-					CLKCFG_CAN_50MHZ, CLKCFG_CANCLK_MASK);
++	if (id->driver_data == 1) {
++		retval = sysfs_create_file(&pdev->dev.kobj,
++					   &dev_attr_pch_mac.attr);
++		if (retval)
++			goto err_sysfs_create;
+ 
+-	/* set the prefech value */
+-	iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
+-	/* set the interrupt delay value */
+-	iowrite32(0x25, chip->pch_phub_base_address + 0x44);
++		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (retval)
++			goto exit_bin_attr;
 +
-+	goto unlock;
++		pch_phub_read_modify_write_reg(chip,
++					       (unsigned int)CLKCFG_REG_OFFSET,
++					       CLKCFG_CAN_50MHZ,
++					       CLKCFG_CANCLK_MASK);
 +
-+unwind:
-+	__sysdev_driver_remove(cls, drv, dev);
-+
-+unlock:
- 	mutex_unlock(&sysdev_drivers_lock);
- 	return err;
- }
++		/* set the prefech value */
++		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
++		/* set the interrupt delay value */
++		iowrite32(0x25, chip->pch_phub_base_address + 0x44);
++	} else if (id->driver_data == 2) {
++		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (retval)
++			goto err_sysfs_create;
++		/* set the prefech value
++		 * Device2(USB OHCI #1/ USB EHCI #1/ USB Device):a
++		 * Device4(SDIO #0,1,2):f
++		 * Device6(SATA 2):f
++		 * Device8(USB OHCI #0/ USB EHCI #0):a
++		 */
++		iowrite32(0x000affa0, chip->pch_phub_base_address + 0x14);
++	}
++	pci_set_drvdata(pdev, chip);
  
--
- /**
-  *	sysdev_driver_unregister - Remove an auxillary driver.
-  *	@cls:	Class driver belongs to.
-@@ -220,23 +258,12 @@ void sysdev_driver_unregister(struct sysdev_class *cls,
- 			      struct sysdev_driver *drv)
- {
- 	mutex_lock(&sysdev_drivers_lock);
--	list_del_init(&drv->entry);
--	if (cls) {
--		if (drv->remove) {
--			struct sys_device *dev;
--			list_for_each_entry(dev, &cls->kset.list, kobj.entry)
--				drv->remove(dev);
--		}
--		kset_put(&cls->kset);
--	}
-+	__sysdev_driver_remove(cls, drv, NULL);
- 	mutex_unlock(&sysdev_drivers_lock);
- }
--
- EXPORT_SYMBOL_GPL(sysdev_driver_register);
- EXPORT_SYMBOL_GPL(sysdev_driver_unregister);
+ 	return 0;
+ exit_bin_attr:
+@@ -687,8 +711,9 @@ static int pch_phub_resume(struct pci_dev *pdev)
+ #endif /* CONFIG_PM */
  
--
--
- /**
-  *	sysdev_register - add a system device to the tree
-  *	@sysdev:	device in question
+ static struct pci_device_id pch_phub_pcidev_id[] = {
+-	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCH1_PHUB)},
+-	{0,}
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_PCH1_PHUB),       1,  },
++	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7213_PHUB), 2,  },
++	{ }
+ };
+ 
+ static struct pci_driver pch_phub_driver = {
 -- 
 1.7.4.1
 
