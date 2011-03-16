@@ -1,31 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab1CPRn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 13:43:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56244 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752652Ab1CPRnv (ORCPT
+	id S1753320Ab1CPRoP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 13:44:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57254 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab1CPRoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 13:43:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <E1PzuM6-0006iJ-KV@pomaz-ex.szeredi.hu>
-References: <20110316144253.GT22723@ZenIV.linux.org.uk> <E1PzuM6-0006iJ-KV@pomaz-ex.szeredi.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Mar 2011 10:42:59 -0700
-Message-ID: <AANLkTinC2i_+kBjRNFsf8fCKMWJ1zvxAf-A9rf+ZGt-y@mail.gmail.com>
-Subject: Re: [git pull] several fixes
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Mar 2011 13:44:11 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=DpMNfemkRQYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=-WpgdHg-5en9gwS5ykoA:9 a=HbiDRmzK8qweAR7gqCiUTS9vtbsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tom Tromey <tromey@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <m3lj0f2cq1.fsf@fleche.redhat.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	 <20110314163028.a05cec49.akpm@linux-foundation.org>
+	 <20110314234754.GP2499@one.firstfloor.org>
+	 <alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
+	 <20110315180639.GQ2499@one.firstfloor.org>
+	 <alpine.LFD.2.00.1103152038280.2787@localhost6.localdomain6>
+	 <1300219261.9910.300.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
+	 <1300221856.9910.305.camel@gandalf.stny.rr.com>
+	 <m3lj0f2cq1.fsf@fleche.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 16 Mar 2011 13:44:09 -0400
+Message-ID: <1300297449.16880.45.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 10:17 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
-> __fput doesn't need a cdev_put() for O_PATH handles.
+On Wed, 2011-03-16 at 11:32 -0600, Tom Tromey wrote:
+> Steve> I'm more interested in the perf/trace than gdb, as the way gdb is mostly
+> Steve> used (at least now) to debug problems in the code with a big hammer
+> Steve> (single step, look at registers/variables). That is, gdb is usually very
+> Steve> interactive and its best to "stop the code" from running to examine what
+> Steve> has happened. gdb is not something you will run on an application that
+> Steve> is being used by others.
+> 
+> It depends.  People do in fact do this stuff.  In recent years gdb got
+> its own implementation of "always inserted" breakpoints (basically the
+> same idea as uprobes) to support some trickier multi-thread debugging
+> scenarios.
 
-"doesn't need" or "must not have"?
+Like I said, if it helps out gdb then great! My concern is that we will
+want it to replace ptrace, where it may not be designed to, then people
+will start NAKing it.
 
-                      Linus
+I hope that gdb uses it, and we don't add another interface that nobody
+uses. But I don't see that happening with uprobes.
+
+-- Steve
+
+
