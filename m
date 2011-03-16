@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1CPMvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 08:51:51 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:42989 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751003Ab1CPMvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 08:51:46 -0400
-Date: Wed, 16 Mar 2011 14:51:40 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: musb as module broken in 2.6.38
-Message-ID: <20110316125138.GI2325@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110316090327.GA2325@legolas.emea.dhcp.ti.com>
- <4D808729.9060608@ahsoftware.de>
- <20110316095541.GD2325@legolas.emea.dhcp.ti.com>
- <4D808E41.8040402@ahsoftware.de>
- <E19651BD-B634-4BD4-96EC-70E10CD975CD@ti.com>
- <4D809150.4000600@ahsoftware.de>
- <AF1846C5-739D-4598-83C0-34C3CBD5B9BB@ti.com>
- <4D809455.9060901@ahsoftware.de>
- <91490377-2892-46CA-827F-A80CD057490D@ti.com>
- <4D809D42.7000102@ahsoftware.de>
+	id S1752718Ab1CPMxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 08:53:44 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52537 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab1CPMxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 08:53:40 -0400
+Date: Wed, 16 Mar 2011 13:53:17 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 00/12] perf/core improvements, fixes and cleanups
+Message-ID: <20110316125317.GA3320@elte.hu>
+References: <1300219501-15085-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D809D42.7000102@ahsoftware.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1300219501-15085-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 12:21:38PM +0100, Alexander Holler wrote:
-> Am 16.03.2011 11:48, schrieb Felipe Balbi:
-> >Hi,
-> >
-> >On Mar 16, 2011, at 12:43 PM, Alexander Holler wrote:
-> >
-> >>Am 16.03.2011 11:38, schrieb Felipe Balbi:
-> >>>hi,
-> >>>
-> >>>On Mar 16, 2011, at 12:30 PM, Alexander Holler wrote:
-> >>>>Am 16.03.2011 11:24, schrieb Felipe Balbi:
-> >>>>>Hi,
-> >>>>>
-> >>>>>On Mar 16, 2011, at 12:17 PM, Alexander Holler wrote:
-> >>>>>>>static int __init omap2430_probe(struct platform_device *pdev)
-> >>>>>>
-> >>>>>>Neither omap2430_init() nor omap2430_probe() will be called here.
-> >>>>>
-> >>>>>and why is that ? It's even in sysfs already:
-> >>>>>
-> >>>>>>>>beagle linux # ls /sys/devices/platform/ | grep musb
-> >>>>>>>>musb-omap2430
-> >>>>
-> >>>>Don't know, I haven't written or changed the driver. ;)
-> >>>
-> >>>hehe, Just thought that you had something in mind already.
-> >>>
-> >>>probe() functions are called when, in case of platform_devices,
-> >>>the name matches with driver name. musb-omap2430 platform_device
-> >>>is allocated in arch/arm/mach-omap2/usb-musb.c, then musb-2430
-> >>>driver lives in drivers/usb/musb/omap2430.c. musb-2430 allocates a
-> >>>platform_device for musb-hdrc core driver.
-> >>>
-> >>>We did that because the same core is used in many different platforms
-> >>>(OMAP, discrete chips, ST-Ericsson, DaVinci, PCI cards, etc) so we
-> >>>needed to "abstract" platform-specific details such as clock handling
-> >>>and power management.
-> >>>
-> >>>There's still work to be done, for sure, e.g. the DMA part is still quite
-> >>>screwed up, but the drivers are correctly named which means they
-> >>>should be matching and probing. Now, musb-hdrc isn't probing, as
-> >>>you say, and I'd like to know why. I'll try to spend some time in
-> >>>it when I get back to the office.
-> >>
-> >>I currently assume it's something with
-> >>
-> >>subsys_initcall(omap2430_init);
-> >>
-> >>Have to read about subsys_initcall() and why omap2430_init isn't called here.
-> >
-> >I guess I know what the problem is. If you search for omap2430_init
-> >in vmlinux it won't be there. I guess when a directory is marked as
-> >obj-m, Kbuild won't search for symbols to be statically linked to vmlinux
-> >on that directory. Since we use the same Kconfig entry to select musb as
-> >module and include drivers/usb/musb directory into build system, we
-> >are falling into that case.
-> >
-> >Try changing drivers/usb/musb to obj-y in drivers/Makefile and see if things
-> >start working.
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> Thanks, seems to be the right way, but doesn't work without more
-> changes. I get some undefined references e.g. to stuff in musb_core.c
-> and musb_debug (otg_state_string and musb_debug). I assume it's
-> because musb_core and musb_debug are part of the module musb_hdrc.
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (5):
+>   perf top: Remove redundant perf_top->sym_counter
+>   perf top: Remove redundant syme->origin field
+>   perf symbols: Rename dso->origin to dso->symtab_type
+>   perf symbol: Move sym_entry->skip to symbol->ignore
+>   perf evlist: New command to list the names of events present in a perf.data file
+> 
+> David Ahern (6):
+>   perf script: Change process_event prototype
+>   perf tracing: Remove print_graph_cpu and print_graph_proc from trace-event-parse
+>   perf script: Move printing of 'common' data from print_event and rename
+>   perf script: Support custom field selection for output
+>   perf script: Add support for dumping symbols
+>   perf script: Add support for H/W and S/W events
+> 
+> Frederic Weisbecker (1):
+>   perf stat: Provide support for filters
+> 
+>  tools/perf/Documentation/perf-evlist.txt           |   26 ++
+>  tools/perf/Documentation/perf-script.txt           |   22 ++
+>  tools/perf/Makefile                                |    1 +
+>  tools/perf/builtin-evlist.c                        |   54 ++++
+>  tools/perf/builtin-script.c                        |  300 ++++++++++++++++++--
+>  tools/perf/builtin-stat.c                          |    8 +
+>  tools/perf/builtin-top.c                           |   20 +-
+>  tools/perf/builtin.h                               |    1 +
+>  tools/perf/command-list.txt                        |    1 +
+>  tools/perf/perf.c                                  |    1 +
+>  tools/perf/util/annotate.c                         |    2 +-
+>  tools/perf/util/parse-events.c                     |   22 ++
+>  tools/perf/util/parse-events.h                     |    1 +
+>  .../perf/util/scripting-engines/trace-event-perl.c |   11 +-
+>  .../util/scripting-engines/trace-event-python.c    |   11 +-
+>  tools/perf/util/session.c                          |   61 ++++
+>  tools/perf/util/session.h                          |    4 +
+>  tools/perf/util/symbol.c                           |   64 ++--
+>  tools/perf/util/symbol.h                           |   31 ++-
+>  tools/perf/util/top.c                              |    6 +-
+>  tools/perf/util/top.h                              |    4 +-
+>  tools/perf/util/trace-event-parse.c                |  110 +-------
+>  tools/perf/util/trace-event-scripting.c            |    9 +-
+>  tools/perf/util/trace-event.h                      |   10 +-
+>  24 files changed, 580 insertions(+), 200 deletions(-)
+>  create mode 100644 tools/perf/Documentation/perf-evlist.txt
+>  create mode 100644 tools/perf/builtin-evlist.c
 
-yeah, just saw it. I need to fix up the musb_debug part... I guess there
-was a patch making otg_state_string generic (as it should be) will get
-that. I guess a fix for this can't come to -rc though, it would depend
-on new features, unfortunately :-(
+Pulled, thanks a lot Arnaldo!
 
--- 
-balbi
+	Ingo
