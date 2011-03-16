@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1CPISm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 04:18:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49624 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab1CPISb convert rfc822-to-8bit (ORCPT
+	id S1752173Ab1CPI2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 04:28:42 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34910 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab1CPI2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 04:18:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=lg02sEOA/0y4Ay3maBHNsucxMZi4BTH+IDokVFsSswWxmwPFWdv1GnS3BKJY3i80sL
-         pLO2pXof+Qi6V50oy6GP/f11kTYn4jWohYFsbaBqo8J0WD7H+SraG0bLD6lecOx0At28
-         4SpSdjAVeCMXs5WRquh5zvX7Oh/+6vInC5Dbw=
-MIME-Version: 1.0
-In-Reply-To: <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	<1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
-Date: Wed, 16 Mar 2011 16:18:30 +0800
-X-Google-Sender-Auth: khwiuVqxnKyyo_LOLMuo8r-oo64
-Message-ID: <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
-Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task plugging
-From: Shaohua Li <shli@kernel.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org,
-        Vivek Goyal <vgoyal@redhat.com>, jmoyer@redhat.com,
-        shaohua.li@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Mar 2011 04:28:32 -0400
+Subject: Re: [PATCH 01/22] sched: Provide scheduler_ipi() callback in
+ response to smp_send_reschedule()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: frank.rowand@am.sony.com
+Cc: Chris Mason <chris.mason@oracle.com>,
+        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>, davem <davem@davemloft.net>
+In-Reply-To: <4D797C88.7080607@am.sony.com>
+References: <20110302173831.295031866@chello.nl>
+	 <20110302174120.313761743@chello.nl>  <4D797C88.7080607@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 09:30:15 +0100
+Message-ID: <1300264215.2250.74.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/22 Jens Axboe <jaxboe@fusionio.com>:
-> Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-> ---
->  block/blk-core.c          |  357 ++++++++++++++++++++++++++++++++------------
->  block/elevator.c          |    6 +-
->  include/linux/blk_types.h |    2 +
->  include/linux/blkdev.h    |   30 ++++
->  include/linux/elevator.h  |    1 +
->  include/linux/sched.h     |    6 +
->  kernel/exit.c             |    1 +
->  kernel/fork.c             |    3 +
->  kernel/sched.c            |   11 ++-
->  9 files changed, 317 insertions(+), 100 deletions(-)
->
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 960f12c..42dbfcc 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -27,6 +27,7 @@
->  #include <linux/writeback.h>
->  #include <linux/task_io_accounting_ops.h>
->  #include <linux/fault-inject.h>
-> +#include <linux/list_sort.h>
->
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/block.h>
-> @@ -213,7 +214,7 @@ static void blk_delay_work(struct work_struct *work)
->
->        q = container_of(work, struct request_queue, delay_work.work);
->        spin_lock_irq(q->queue_lock);
-> -       q->request_fn(q);
-> +       __blk_run_queue(q);
->        spin_unlock_irq(q->queue_lock);
->  }
-Hi Jens,
-I have some questions about the per-task plugging. Since the request
-list is per-task, and each task delivers its requests at finish flush
-or schedule. But when one cpu delivers requests to global queue, other
-cpus don't know. This seems to have problem. For example:
-1. get_request_wait() can only flush current task's request list,
-other cpus/tasks might still have a lot of requests, which aren't sent
-to request_queue. your ioc-rq-alloc branch is for this, right? Will it
-be pushed to 2.6.39 too? I'm wondering if we should limit per-task
-queue length. If there are enough requests there, we force a flush
-plug.
-2. some APIs like blk_delay_work, which call __blk_run_queue() might
-not work. because other CPUs might not dispatch their requests to
-request queue. So __blk_run_queue will eventually find no requests,
-which might stall devices.
-Since one cpu doesn't know other cpus' request list, I'm wondering if
-there are other similar issues.
+On Thu, 2011-03-10 at 17:36 -0800, Frank Rowand wrote:
+> 
+> > Index: linux-2.6/arch/sparc/kernel/smp_32.c
+> > ===================================================================
+> > --- linux-2.6.orig/arch/sparc/kernel/smp_32.c
+> > +++ linux-2.6/arch/sparc/kernel/smp_32.c
+> > @@ -125,7 +125,7 @@ struct linux_prom_registers smp_penguin_
+> > 
+> >  void smp_send_reschedule(int cpu)
+> >  {
+> > -       /* See sparc64 */
+> > +       scheduler_ipi();
+> >  }
+> 
+> If I understand correctly, this is calling scheduler_ipi() on the
+> cpu that should be sending an IPI, not on the cpu receiving the IPI.
+> If so, smp_send_reschedule() needs to send an IPI, and the scheduler_ipi()
+> put in the place where the IPI is processed. 
 
-Thanks,
-Shaohua
+Yes, D'0h.. Dave how does sparc32 work here? There appears to be an ipi
+missing.
+
