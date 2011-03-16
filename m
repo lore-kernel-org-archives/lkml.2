@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab1CPHVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 03:21:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57247 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab1CPHV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 03:21:29 -0400
-Date: Wed, 16 Mar 2011 07:21:23 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] VFS - the first pile
-Message-ID: <20110316072123.GR22723@ZenIV.linux.org.uk>
-References: <20110315213248.GL22723@ZenIV.linux.org.uk>
- <20110316061917.GA30195@dastard>
- <20110316065103.GP22723@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110316065103.GP22723@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752167Ab1CPH1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 03:27:09 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:43384 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751538Ab1CPH1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 03:27:03 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (ubi
+ tree related)
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reply-To: Artem.Bityutskiy@nokia.com
+To: ext Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20110316175041.67c4f371.sfr@canb.auug.org.au>
+References: <20110316175041.67c4f371.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Wed, 16 Mar 2011 09:22:50 +0200
+Message-ID: <1300260170.2817.4.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 06:51:03AM +0000, Al Viro wrote:
-> On Wed, Mar 16, 2011 at 05:19:17PM +1100, Dave Chinner wrote:
-> > I think there's something not quite right in this tree. xfstests 005
-> > (nested symlink test) fails on both ext4 and XFS with the following:
+On Wed, 2011-03-16 at 17:50 +1100, ext Stephen Rothwell wrote:
+> Hi all,
 > 
-> Yeah...  Brown paperbag time - it's actually a missing piece that
-> got glued with a commit a bit later in queue ;-/  I've dropped it
-> into for-linus for the morning push; in the meanwhile, the patch is
-> below.
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/mtd/ubi/io.c: In function 'ubi_dbg_check_write':
+> drivers/mtd/ubi/io.c:1348: error: 'PAGE_KERNEL' undeclared (first use in this function)
+> drivers/mtd/ubi/io.c: In function 'ubi_dbg_check_all_ff':
+> drivers/mtd/ubi/io.c:1412: error: 'PAGE_KERNEL' undeclared (first use in this function)
+> 
+> Caused by commit 823ed5091113 ("UBI: allocate write checking buffer on demand").
+> 
+> I don't know how to fix this, so I have left it for today.
 
-BTW, you want to update 005 in there - we are back to correct "maximum
-is 40 symlinks total, 8 levels on nesting" for all syscalls.  Add the
-41st symlink to your chain in testcase ;-)
+Hmm, strange, include <linux/vmalloc.h> should be enough to use
+__vmalloc with 'PAGE_KERNEL' AFAICS, and we have this include... I'll
+try to look better.
+
+--
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
