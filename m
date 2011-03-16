@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab1CPMHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 08:07:42 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35582 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098Ab1CPMHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 08:07:37 -0400
-Date: Wed, 16 Mar 2011 13:07:23 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/platform changes for v2.6.39
-Message-ID: <20110316120723.GA23417@elte.hu>
-References: <20110315213223.GA21481@elte.hu>
- <20110315230943.GA8464@angua.secretlab.ca>
+	id S1751599Ab1CPMQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 08:16:36 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:40621 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750829Ab1CPMQc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 08:16:32 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+QzBtNFXeQADGbQynTGDi6Nrwa0mcx+LRtiStfsn
+	bfRHah7vr1Wd8I
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: Andy Whitcroft <apw@canonical.com>
+Subject: Re: checkpatch.pl: never finishes w/ specific file
+Date: Wed, 16 Mar 2011 13:16:27 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38; KDE/4.6.1; i686; ; )
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+References: <201103021731.01598.toralf.foerster@gmx.de> <20110316114752.GI1407@shadowen.org>
+In-Reply-To: <20110316114752.GI1407@shadowen.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315230943.GA8464@angua.secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103161316.28629.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Tue, Mar 15, 2011 at 10:32:23PM +0100, Ingo Molnar wrote:
-> > Linus,
-> > 
-> > Please pull the latest x86-platform-for-linus git tree from:
-> > 
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-platform-for-linus
-> > 
-> > 
-> > out-of-topic modifications in x86-platform-for-linus:
-> > -----------------------------------------------------
+Andy Whitcroft wrote at 12:47:52
+> That one may be already fixed in my development version.  The form of
+> the file is familiar.
 > 
-> ... all merged in from my devicetree/next branch which Thomas and I
-> discussed before hand.
+> Could you try your file with the one below and let me know:
+> -apw
+That works much more faster :
 
-Yeah. We auto-generate these notifiers for all arch/x86/ pull requests that come 
-from -tip, to not surprise Linus with any modification he might not expect from an 
-x86 topic, and to give us a final chance to catch any unintended out-of-tree 
-modifications ourselves.
+real    0m18.215s
+user    0m8.876s
+sys     0m0.281s
 
-The sha1's can be used to check the individual commits easily and as you say they 
-come with acks from affected maintainers.
+:-)
 
-> [...]  I agree with this pull.
-
-Thanks,
-
-	Ingo
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
