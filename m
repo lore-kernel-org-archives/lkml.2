@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab1CPMxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 08:53:44 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52537 "EHLO mx2.mail.elte.hu"
+	id S1752550Ab1CPNEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:04:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20771 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab1CPMxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 08:53:40 -0400
-Date: Wed, 16 Mar 2011 13:53:17 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 00/12] perf/core improvements, fixes and cleanups
-Message-ID: <20110316125317.GA3320@elte.hu>
-References: <1300219501-15085-1-git-send-email-acme@infradead.org>
+	id S1751169Ab1CPNEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 09:04:31 -0400
+Message-ID: <4D80B514.3030409@redhat.com>
+Date: Wed, 16 Mar 2011 09:03:16 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300219501-15085-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        y-goto@jp.fujitsu.com, "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        stable <stable@kernel.org>
+Subject: Re: [PATCH]x86: flush tlb if PGD entry is changed in i386 PAE mode
+References: <1300246649.2337.95.camel@sli10-conroe>
+In-Reply-To: <1300246649.2337.95.camel@sli10-conroe>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/15/2011 11:37 PM, Shaohua Li wrote:
+> According to intel CPU manual, every time PGD entry is changed in i386 PAE mode,
+> we need do a full TLB flush. Current code follows this and there is comment
+> for this too in the code. But current code misses the multi-threaded case. A
+> changed page table might be used by several CPUs, every such CPU should flush
+> TLB.
+> Usually this isn't a problem, because we prepopulate all PGD entries at process
+> fork. But when the process does munmap and follows new mmap, this issue will be
+> triggered. When it happens, some CPUs will keep doing page fault.
+>
+> See: http://marc.info/?l=linux-kernel&m=129915020508238&w=2
+>
+> Reported-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+> Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+> Tested-by: Yasunori Goto<y-goto@jp.fujitsu.com>
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (5):
->   perf top: Remove redundant perf_top->sym_counter
->   perf top: Remove redundant syme->origin field
->   perf symbols: Rename dso->origin to dso->symtab_type
->   perf symbol: Move sym_entry->skip to symbol->ignore
->   perf evlist: New command to list the names of events present in a perf.data file
-> 
-> David Ahern (6):
->   perf script: Change process_event prototype
->   perf tracing: Remove print_graph_cpu and print_graph_proc from trace-event-parse
->   perf script: Move printing of 'common' data from print_event and rename
->   perf script: Support custom field selection for output
->   perf script: Add support for dumping symbols
->   perf script: Add support for H/W and S/W events
-> 
-> Frederic Weisbecker (1):
->   perf stat: Provide support for filters
-> 
->  tools/perf/Documentation/perf-evlist.txt           |   26 ++
->  tools/perf/Documentation/perf-script.txt           |   22 ++
->  tools/perf/Makefile                                |    1 +
->  tools/perf/builtin-evlist.c                        |   54 ++++
->  tools/perf/builtin-script.c                        |  300 ++++++++++++++++++--
->  tools/perf/builtin-stat.c                          |    8 +
->  tools/perf/builtin-top.c                           |   20 +-
->  tools/perf/builtin.h                               |    1 +
->  tools/perf/command-list.txt                        |    1 +
->  tools/perf/perf.c                                  |    1 +
->  tools/perf/util/annotate.c                         |    2 +-
->  tools/perf/util/parse-events.c                     |   22 ++
->  tools/perf/util/parse-events.h                     |    1 +
->  .../perf/util/scripting-engines/trace-event-perl.c |   11 +-
->  .../util/scripting-engines/trace-event-python.c    |   11 +-
->  tools/perf/util/session.c                          |   61 ++++
->  tools/perf/util/session.h                          |    4 +
->  tools/perf/util/symbol.c                           |   64 ++--
->  tools/perf/util/symbol.h                           |   31 ++-
->  tools/perf/util/top.c                              |    6 +-
->  tools/perf/util/top.h                              |    4 +-
->  tools/perf/util/trace-event-parse.c                |  110 +-------
->  tools/perf/util/trace-event-scripting.c            |    9 +-
->  tools/perf/util/trace-event.h                      |   10 +-
->  24 files changed, 580 insertions(+), 200 deletions(-)
->  create mode 100644 tools/perf/Documentation/perf-evlist.txt
->  create mode 100644 tools/perf/builtin-evlist.c
-
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
+-- 
+All rights reversed
