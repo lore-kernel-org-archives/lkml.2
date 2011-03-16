@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab1CPKi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 06:38:26 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36739 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab1CPKiT (ORCPT
+	id S1750867Ab1CPKij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 06:38:39 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:38542 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751841Ab1CPKiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 06:38:19 -0400
-X-AuditID: b753bd60-a4cc9ba0000066fd-56-4d809313713c
-X-AuditID: b753bd60-a4cc9ba0000066fd-56-4d809313713c
-Message-ID: <4D809311.5050806@hitachi.com>
-Date: Wed, 16 Mar 2011 19:38:09 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [tip:perf/core] perf probe: Clean up probe_point_lazy_walker()
- return value
-References: <new-submission>	 <tip-5e814dd597c42daeb8d2a276e64a6ec986ad0e2a@git.kernel.org> <1300262357.2250.58.camel@laptop>
-In-Reply-To: <1300262357.2250.58.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Mar 2011 06:38:23 -0400
+Subject: Re: musb as module broken in 2.6.38
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Felipe Balbi <balbi@ti.com>
+In-Reply-To: <4D809150.4000600@ahsoftware.de>
+Date: Wed, 16 Mar 2011 12:38:08 +0200
+Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Message-Id: <AF1846C5-739D-4598-83C0-34C3CBD5B9BB@ti.com>
+References: <4D8018A9.6000800@ahsoftware.de> <20110316090327.GA2325@legolas.emea.dhcp.ti.com> <4D808729.9060608@ahsoftware.de> <20110316095541.GD2325@legolas.emea.dhcp.ti.com> <4D808E41.8040402@ahsoftware.de> <E19651BD-B634-4BD4-96EC-70E10CD975CD@ti.com> <4D809150.4000600@ahsoftware.de>
+To: Alexander Holler <holler@ahsoftware.de>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/03/16 16:59), Peter Zijlstra wrote:
-> On Tue, 2011-03-15 at 23:18 +0000, tip-bot for Ingo Molnar wrote:
-> 
->> perf probe: Clean up probe_point_lazy_walker() return value
-> 
->> --- a/tools/perf/util/probe-finder.c
->> +++ b/tools/perf/util/probe-finder.c
->> @@ -1328,7 +1328,7 @@ static int probe_point_lazy_walker(const char *fname, int lineno,
->>  	 * Continue if no error, because the lazy pattern will match
->>  	 * to other lines
->>  	 */
->> -	return ret < 0 ?: 0;
->> +	return ret < 0 ? ret : 0;
->>  }
-> 
-> It is a slight change in semantics though, the return value will now be
-> negative instead of 1. If its used as a boolean that's fine, but still.
-> 
-> I'd have changed it to:
-> 
->   return ret < 0;
-> 
-> Which is identical to the previous statement.
+hi,
 
-Sorry this was my mistake, that statement actually aims to
-what Ingo has done.
+On Mar 16, 2011, at 12:30 PM, Alexander Holler wrote:
+> Am 16.03.2011 11:24, schrieb Felipe Balbi:
+>> Hi,
+>> 
+>> On Mar 16, 2011, at 12:17 PM, Alexander Holler wrote:
+>>>> static int __init omap2430_probe(struct platform_device *pdev)
+>>> 
+>>> Neither omap2430_init() nor omap2430_probe() will be called here.
+>> 
+>> and why is that ? It's even in sysfs already:
+>> 
+>>>>> beagle linux # ls /sys/devices/platform/ | grep musb
+>>>>> musb-omap2430
+> 
+> Don't know, I haven't written or changed the driver. ;)
 
-If probe_point_lazy_walker() returns non-zero value,
-die_walk_lines() returns immediately, because a positive return
-value means the handler finds line and wanna stop walking on
-the lines, and a negative return value means some errors
-occurred in the handler and must stop.
+hehe, Just thought that you had something in mind already.
 
-However, probe_point_lazy_walker() has to continue to walk,
-because given lazy-pattern can match several lines. Thus, this
-must return 0 if ret is a positive value, and return an error code
-if ret is a negative value.
+probe() functions are called when, in case of platform_devices,
+the name matches with driver name. musb-omap2430 platform_device
+is allocated in arch/arm/mach-omap2/usb-musb.c, then musb-2430
+driver lives in drivers/usb/musb/omap2430.c. musb-2430 allocates a
+platform_device for musb-hdrc core driver.
 
-Thank you,
+We did that because the same core is used in many different platforms
+(OMAP, discrete chips, ST-Ericsson, DaVinci, PCI cards, etc) so we
+needed to "abstract" platform-specific details such as clock handling
+and power management.
 
+There's still work to be done, for sure, e.g. the DMA part is still quite
+screwed up, but the drivers are correctly named which means they
+should be matching and probing. Now, musb-hdrc isn't probing, as
+you say, and I'd like to know why. I'll try to spend some time in
+it when I get back to the office.
 
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+balbi
+
