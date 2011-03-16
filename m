@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1CPUNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:13:25 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37265
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751685Ab1CPUNV (ORCPT
+	id S1753964Ab1CPUQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:16:12 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:62635 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab1CPUQJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:13:21 -0400
-Date: Wed, 16 Mar 2011 13:13:56 -0700 (PDT)
-Message-Id: <20110316.131356.35037389.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: jbaron@redhat.com, peterz@infradead.org, hpa@zytor.com,
-        mathieu.desnoyers@polymtl.ca, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        ralf@linux-mips.org, jang@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: Need ack from sparc maintainer
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1300305973.16880.47.camel@gandalf.stny.rr.com>
-References: <cover.1300299760.git.jbaron@redhat.com>
-	<2b6c03eb5ff0ed7c4d4a1cc9f1eb0fdff741aead.1300299760.git.jbaron@redhat.com>
-	<1300305973.16880.47.camel@gandalf.stny.rr.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Mar 2011 16:16:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cJi4yhDMVEefV2ADnQfbTwESIEt6OYRB9OiPTzI1udUXYqiK9mThZi6P+6RdYjlTqL
+         sCZY6ckJ/44+13ttRuXyW+2X8KUAg5jrhwNYDboZnF5WubM7yru27pOFbgNwVYGKWQoI
+         4Phwbs2ysDPqk0rnp2wpFQCyFZT3ygc632Ghk=
+MIME-Version: 1.0
+In-Reply-To: <1300298305-9164-3-git-send-email-robert.richter@amd.com>
+References: <1300298305-9164-1-git-send-email-robert.richter@amd.com> <1300298305-9164-3-git-send-email-robert.richter@amd.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 16 Mar 2011 16:15:49 -0400
+Message-ID: <AANLkTi=g-Dd957gPxCUfRxVw52T2m6GbswapEAJLnBtP@mail.gmail.com>
+Subject: Re: [PATCH 2/2] oprofile: Add __exit attibute to oprofile_arch_exit() functions
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Wed, 16 Mar 2011 16:06:13 -0400
+On Wed, Mar 16, 2011 at 13:58, Robert Richter wrote:
+>  979048e oprofile: don't call arch exit code from init code on failure
+>
+> we may add __exit attibutes to oprofile_arch_exit() functions.
 
-> Can you give your Acked-by for this change.
-
-Acked-by: David S. Miller <davem@davemloft.net>
+i dont think this the way to go.  how about updating one place
+(include/linux/oprofile.h:oprofile_arch_exit) and making sure all arch
+files are including that header if they arent already ?  after all, if
+they arent including that header, the arch code could break without
+noticing.
+-mike
