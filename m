@@ -1,229 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1CPN4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:56:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35794 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592Ab1CPN4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 09:56:32 -0400
-Date: Wed, 16 Mar 2011 13:55:58 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evlist: New command to list the names of events present in a perf.data file
-Message-ID: <tip-43adec955edd116c3e98c6e2f85fbd63281f5221@git.kernel.org>
-Git-Commit-ID: 43adec955edd116c3e98c6e2f85fbd63281f5221
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Mar 2011 13:55:59 +0000 (UTC)
+	id S1753007Ab1CPN44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:56:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52271 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab1CPN4t convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 09:56:49 -0400
+Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+In-Reply-To: <20110316135308.GA1774@nowhere>
+References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
+	 <1300228374.2250.42.camel@laptop>  <20110316135308.GA1774@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 16 Mar 2011 14:56:15 +0100
+Message-ID: <1300283775.2203.1516.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  43adec955edd116c3e98c6e2f85fbd63281f5221
-Gitweb:     http://git.kernel.org/tip/43adec955edd116c3e98c6e2f85fbd63281f5221
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 15 Mar 2011 11:04:13 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 15 Mar 2011 11:10:48 -0300
+On Wed, 2011-03-16 at 14:53 +0100, Frederic Weisbecker wrote:
+> On Tue, Mar 15, 2011 at 11:32:54PM +0100, Peter Zijlstra wrote:
+> > Right, so I don't much like the interface, two new ioctl()s and a flag
+> > of dubious use.
+> 
+> Do you think we need a new syscall for this new feature.
 
-perf evlist: New command to list the names of events present in a perf.data file
+No.
 
-[root@emilia ~]# perf record -a -e sched:* -e timer:timer* sleep 5
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.172 MB perf.data (~7530 samples) ]
-[root@emilia ~]# perf evlist
-sched:sched_kthread_stop
-sched:sched_kthread_stop_ret
-sched:sched_wakeup
-sched:sched_wakeup_new
-sched:sched_switch
-sched:sched_migrate_task
-sched:sched_process_free
-sched:sched_process_exit
-sched:sched_wait_task
-sched:sched_process_wait
-sched:sched_process_fork
-sched:sched_stat_wait
-sched:sched_stat_sleep
-sched:sched_stat_iowait
-sched:sched_stat_runtime
-sched:sched_pi_setprio
-timer:timer_init
-timer:timer_start
-timer:timer_expire_entry
-timer:timer_expire_exit
-timer:timer_cancel
-[root@emilia ~]#
+> > How important is this recursive nature of the thing to you:
+> > 
+> > > It's supposed to support infinite combinations with starter having starters
+> > > themselves, plus filters, etc...
+> > 
+> > We've so far avoided recursion like that, we only have single level
+> > groups etc.
+> 
+> There is actually no recursivity of any sort that the kernel has to handle.
+> The starter/stopper links are never handled recursively. ie: there is no
+> loop walking through the entire chain of starter to starter to starter, etc...
+> 
+> It's always only handled between direct related event: starter and target, but
+> never further.
+> 
+> Only the final effect has recursion properties in the resulting count
+> or trace.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-evlist.txt |   26 ++++++++++++++
- tools/perf/Makefile                      |    1 +
- tools/perf/builtin-evlist.c              |   54 ++++++++++++++++++++++++++++++
- tools/perf/builtin.h                     |    1 +
- tools/perf/command-list.txt              |    1 +
- tools/perf/perf.c                        |    1 +
- 6 files changed, 84 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-evlist.txt b/tools/perf/Documentation/perf-evlist.txt
-new file mode 100644
-index 0000000..0cada9e
---- /dev/null
-+++ b/tools/perf/Documentation/perf-evlist.txt
-@@ -0,0 +1,26 @@
-+perf-evlist(1)
-+==============
-+
-+NAME
-+----
-+perf-evlist - List the event names in a perf.data file
-+
-+SYNOPSIS
-+--------
-+[verse]
-+'perf evlist <options>'
-+
-+DESCRIPTION
-+-----------
-+This command displays the names of events sampled in a perf.data file.
-+
-+OPTIONS
-+-------
-+-i::
-+--input=::
-+        Input file name. (default: perf.data)
-+
-+SEE ALSO
-+--------
-+linkperf:perf-record[1], linkperf:perf-list[1],
-+linkperf:perf-report[1]
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 9b84218..158c30e 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -338,6 +338,7 @@ endif
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
-+BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
- BUILTIN_OBJS += $(OUTPUT)builtin-help.o
- BUILTIN_OBJS += $(OUTPUT)builtin-sched.o
- BUILTIN_OBJS += $(OUTPUT)builtin-buildid-list.o
-diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
-new file mode 100644
-index 0000000..4c5e9e0
---- /dev/null
-+++ b/tools/perf/builtin-evlist.c
-@@ -0,0 +1,54 @@
-+/*
-+ * Builtin evlist command: Show the list of event selectors present
-+ * in a perf.data file.
-+ */
-+#include "builtin.h"
-+
-+#include "util/util.h"
-+
-+#include <linux/list.h>
-+
-+#include "perf.h"
-+#include "util/evlist.h"
-+#include "util/evsel.h"
-+#include "util/parse-events.h"
-+#include "util/parse-options.h"
-+#include "util/session.h"
-+
-+static char const *input_name = "perf.data";
-+
-+static int __cmd_evlist(void)
-+{
-+	struct perf_session *session;
-+	struct perf_evsel *pos;
-+
-+	session = perf_session__new(input_name, O_RDONLY, 0, false, NULL);
-+	if (session == NULL)
-+		return -ENOMEM;
-+
-+	list_for_each_entry(pos, &session->evlist->entries, node)
-+		printf("%s\n", event_name(pos));
-+
-+	perf_session__delete(session);
-+	return 0;
-+}
-+
-+static const char * const evlist_usage[] = {
-+	"perf evlist [<options>]",
-+	NULL
-+};
-+
-+static const struct option options[] = {
-+	OPT_STRING('i', "input", &input_name, "file",
-+		    "input file name"),
-+	OPT_END()
-+};
-+
-+int cmd_evlist(int argc, const char **argv, const char *prefix __used)
-+{
-+	argc = parse_options(argc, argv, options, evlist_usage, 0);
-+	if (argc)
-+		usage_with_options(evlist_usage, options);
-+
-+	return __cmd_evlist();
-+}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index c7798c7..4702e24 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -19,6 +19,7 @@ extern int cmd_bench(int argc, const char **argv, const char *prefix);
- extern int cmd_buildid_cache(int argc, const char **argv, const char *prefix);
- extern int cmd_buildid_list(int argc, const char **argv, const char *prefix);
- extern int cmd_diff(int argc, const char **argv, const char *prefix);
-+extern int cmd_evlist(int argc, const char **argv, const char *prefix);
- extern int cmd_help(int argc, const char **argv, const char *prefix);
- extern int cmd_sched(int argc, const char **argv, const char *prefix);
- extern int cmd_list(int argc, const char **argv, const char *prefix);
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index 16b5088..d695fe4 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -8,6 +8,7 @@ perf-bench			mainporcelain common
- perf-buildid-cache		mainporcelain common
- perf-buildid-list		mainporcelain common
- perf-diff			mainporcelain common
-+perf-evlist			mainporcelain common
- perf-inject			mainporcelain common
- perf-list			mainporcelain common
- perf-sched			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 595d0f4..ec635b7 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -313,6 +313,7 @@ static void handle_internal_command(int argc, const char **argv)
- 		{ "buildid-cache", cmd_buildid_cache, 0 },
- 		{ "buildid-list", cmd_buildid_list, 0 },
- 		{ "diff",	cmd_diff,	0 },
-+		{ "evlist",	cmd_evlist,	0 },
- 		{ "help",	cmd_help,	0 },
- 		{ "list",	cmd_list,	0 },
- 		{ "record",	cmd_record,	0 },
+That's not an answer to my question.
