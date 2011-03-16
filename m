@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab1CPSPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 14:15:10 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58046
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751218Ab1CPSPG (ORCPT
+	id S1753494Ab1CPSR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 14:17:28 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:39048 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab1CPSRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 14:15:06 -0400
-Date: Wed, 16 Mar 2011 11:15:44 -0700 (PDT)
-Message-Id: <20110316.111544.115931576.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: frank.peters@comcast.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: 2.6.38 Compile Failure e1000e Module
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110316082105.c911bb1c.randy.dunlap@oracle.com>
-References: <20110316103318.19bd03e4.frank.peters@comcast.net>
-	<20110316082105.c911bb1c.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Mar 2011 14:17:22 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-reply-to: <AANLkTinC2i_+kBjRNFsf8fCKMWJ1zvxAf-A9rf+ZGt-y@mail.gmail.com>
+	(message from Linus Torvalds on Wed, 16 Mar 2011 10:42:59 -0700)
+Subject: Re: [git pull] several fixes
+References: <20110316144253.GT22723@ZenIV.linux.org.uk> <E1PzuM6-0006iJ-KV@pomaz-ex.szeredi.hu> <AANLkTinC2i_+kBjRNFsf8fCKMWJ1zvxAf-A9rf+ZGt-y@mail.gmail.com>
+Message-Id: <E1PzvHb-0006x5-IF@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 16 Mar 2011 19:17:19 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Wed, 16 Mar 2011 08:21:05 -0700
+On Wed, 16 Mar 2011, Linus Torvalds wrote:
+> On Wed, Mar 16, 2011 at 10:17 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> >
+> > __fput doesn't need a cdev_put() for O_PATH handles.
+> 
+> "doesn't need" or "must not have"?
 
-> Hi,
-> Please test this patch:
-> 
-> 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> e1000e needs to select CRC32 for CRC support.
-> This patch fixes the build error:
-> ERROR: "crc32_le" [drivers/net/e1000e/e1000e.ko] undefined!
-> 
-> Reported-by: Frank Peters <frank.peters@comcast.net>
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+It must not have one, otherwise refcounting will go astray.
 
-Randy, I applied Eric Dumazet's copy of this fix only because
-his submission preceded your's in terms of time of submission :-)
+That cdev_put() should really be moved into f_op->release(), but that
+would be quite a bit of work.
 
-Thanks!
+Thanks,
+Miklos
