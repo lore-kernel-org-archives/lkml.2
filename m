@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1CPUxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:53:01 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:42338 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab1CPUw4 convert rfc822-to-8bit (ORCPT
+	id S1754114Ab1CPUxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:53:38 -0400
+Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:30917 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab1CPUxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:52:56 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
-Date: Wed, 16 Mar 2011 21:52:49 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, serge@hallyn.com, eparis@redhat.com,
-        jmorris@namei.org, eugeneteo@kernel.org, drosenberg@vsecurity.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-References: <1300303907-22627-1-git-send-email-richard@nod.at> <201103162108.17127.richard@nod.at> <201103162145.45772.arnd@arndb.de>
-In-Reply-To: <201103162145.45772.arnd@arndb.de>
+	Wed, 16 Mar 2011 16:53:31 -0400
+Message-ID: <4D812349.1050501@free.fr>
+Date: Wed, 16 Mar 2011 21:53:29 +0100
+From: Eric Valette <eric.valette@free.fr>
+Reply-To: eric.valette@free.fr
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110309 Iceowl/1.0b2 Icedove/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103162152.49615.richard@nod.at>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Typo in linux-2.6.38/arch/x86/kernel/entry_32.S
+References: <4D80B7EE.40706@Free.fr>	 <20110316195210.GA14675@home.goodmis.org>  <4D8118F7.5060107@free.fr>	 <1300306954.16880.51.camel@gandalf.stny.rr.com>  <4D811E5A.7080201@free.fr> <1300308282.16880.57.camel@gandalf.stny.rr.com>
+In-Reply-To: <1300308282.16880.57.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch 16 März 2011, 21:45:45 schrieb Arnd Bergmann:
-> On Wednesday 16 March 2011 21:08:16 Richard Weinberger wrote:
-> > Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
-> > > On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
-> > > > When containers like LXC are used a unprivileged and jailed
-> > > > root user can still write to critical files in /proc/.
-> > > > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
-> > > > 
-> > > > This new restricted attribute makes it possible to protect such
-> > > > files. When restricted is set to true root needs CAP_SYS_ADMIN
-> > > > to into the file.
-> > > 
-> > > I was thinking about this too. I'd prefer more fine-grained control
-> > > in this area, since some sysctl entries aren't strictly controlled by
-> > > CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking CAP_SYS_RAWIO).
-> > > 
-> > > How about this instead?
-> > 
-> > Good Idea.
-> > May we should also consider a per-directory restriction.
-> > Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
-> > It would be much easier to set the protection on the parent directory
-> > instead of protecting file by file...
-> 
-> How does this interact with the per-namespace sysctls that Eric
-> Biederman added a few years ago?
+On 16/03/2011 21:44, Steven Rostedt wrote:
+> On Wed, 2011-03-16 at 21:32 +0100, Eric Valette wrote:
+>
+>
+>>> The old binutils never complained.
+>>
+>> Anyway this show once again that the world like symetry and you better
+>> remember it ;-) (lock/unlock, malloc free, ...)
+>
+> Right, but it should be a warning not an error. If it worked before, why
+> not work now and just warn about it. This "BUG" existed forever in the
+> kernel, and its in more than one place. Having the compiler crash on the
+> first instance means you need to fix it and run the compiler again to
+> find the next instance and so on.
 
-Do you mean CONFIG_{UTS, UPC, USER, NET,}_NS?
+Yes like any other name change in a .h file with incompatible function 
+signature...
 
-> I had expected that any dangerous sysctl would not be visible in
-> an unpriviledge container anyway.
+The exact error message is a complaint about the .size directive not 
+being a "constant"...
 
-No way.
-That's why it's currently a very good idea to mount /proc/ read-only into a container.
 
-> 	Arnd
-> 
-> > > Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> > > ---
-> > > diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-> > > index 8eb2522..5c5cfab 100644
-> > > --- a/fs/proc/proc_sysctl.c
-> > > +++ b/fs/proc/proc_sysctl.c
-> > > @@ -149,6 +149,10 @@ static ssize_t proc_sys_call_handler(struct file
-> > > *filp, void __user *buf, if (sysctl_perm(head->root, table, write ?
-> > > MAY_WRITE : MAY_READ)) goto out;
-> > > 
-> > > +	if (write && !cap_isclear(table->write_caps) &&
-> > > +            !cap_issubset(table->write_caps,
-> > > current_cred()->cap_permitted)) +		goto out;
-> > > +
-> > > 
-> > >  	/* if that can happen at all, it should be -EINVAL, not -EISDIR */
-> > >  	error = -EINVAL;
-> > >  	if (!table->proc_handler)
-> > > 
-> > > diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-> > > index 11684d9..4e05493 100644
-> > > --- a/include/linux/sysctl.h
-> > > +++ b/include/linux/sysctl.h
-> > > @@ -1018,6 +1018,7 @@ struct ctl_table
-> > > 
-> > >  	void *data;
-> > >  	int maxlen;
-> > >  	mode_t mode;
-> > > 
-> > > +	kernel_cap_t write_caps;	/* Capabilities required to write */
-> > > 
-> > >  	struct ctl_table *child;
-> > >  	struct ctl_table *parent;	/* Automatically set */
-> > >  	proc_handler *proc_handler;	/* Callback for text formatting */
+> binutils made a fatal error in making this a bug and not an warning.
+>
+>>
+>> Probably a stable candidate for 2.6.38.1
+>
+> Perhaps, but what about all older kernels. Now this version of binutils
+> does not work for bisecting.
+
+I guess its binutils git of the 2011/03/02
+
+As far as I'm concerned I only found one occurence on one machine 
+although I compiled tree 2.6.38 kernels for different machines.
+because its under the CONFIG_KVM_GUEST flag
+
+--eric
+
 
