@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1CPVZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:25:57 -0400
-Received: from kroah.org ([198.145.64.141]:42673 "EHLO coco.kroah.org"
+	id S1754311Ab1CPV0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:26:20 -0400
+Received: from kroah.org ([198.145.64.141]:42646 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350Ab1CPVMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:12:01 -0400
+	id S1754329Ab1CPVL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:11:57 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 29/50] debugfs: Fix filesystem reference counting on debugfs_remove() failure
-Date: Wed, 16 Mar 2011 14:11:07 -0700
-Message-Id: <1300309888-5028-29-git-send-email-gregkh@suse.de>
+Cc: Pavan Savoy <pavan_savoy@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 25/50] drivers:misc: ti-st: firmware download optimization
+Date: Wed, 16 Mar 2011 14:11:03 -0700
+Message-Id: <1300309888-5028-25-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
 References: <20110316205204.GA2686@kroah.com>
@@ -20,63 +20,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-When __debugfs_remove() fails (because simple_rmdir() fails e.g. when a
-directory is not empty), we must not decrement use count of the filesystem
-as nothing was in fact deleted.
+To fasten the process of firmware download, the chip allows
+disabling of the command complete event generation from host.
+In these cases, only few very essential commands would have
+the command complete events and hence the wait associated with
+them.
 
-This fixes use after free caused by debugfs in some cases.
+So now the driver would wait for a command complete event, only
+when it comes across a wait event during firmware parsing.
+This would also mean we need to skip not just the change baud
+rate command but also the wait for it.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/debugfs/inode.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ drivers/misc/ti-st/st_core.c |   18 +++++++++
+ drivers/misc/ti-st/st_kim.c  |   80 ++++++++++++++++++++++++++++++++++++++----
+ include/linux/ti_wilink_st.h |    6 +++
+ 3 files changed, 97 insertions(+), 7 deletions(-)
 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index d38c88f..e7a7a2f 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -307,7 +307,7 @@ struct dentry *debugfs_create_symlink(const char *name, struct dentry *parent,
- }
- EXPORT_SYMBOL_GPL(debugfs_create_symlink);
- 
--static void __debugfs_remove(struct dentry *dentry, struct dentry *parent)
-+static int __debugfs_remove(struct dentry *dentry, struct dentry *parent)
- {
- 	int ret = 0;
- 
-@@ -330,6 +330,7 @@ static void __debugfs_remove(struct dentry *dentry, struct dentry *parent)
- 			dput(dentry);
- 		}
- 	}
-+	return ret;
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index f7bb96f..dd2c879 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -52,6 +52,24 @@ static void remove_channel_from_table(struct st_data_s *st_gdata,
+ 	st_gdata->list[proto->chnl_id] = NULL;
  }
  
- /**
-@@ -348,7 +349,8 @@ static void __debugfs_remove(struct dentry *dentry, struct dentry *parent)
- void debugfs_remove(struct dentry *dentry)
- {
- 	struct dentry *parent;
--	
-+	int ret;
++/*
++ * called from KIM during firmware download.
++ *
++ * This is a wrapper function to tty->ops->write_room.
++ * It returns number of free space available in
++ * uart tx buffer.
++ */
++int st_get_uart_wr_room(struct st_data_s *st_gdata)
++{
++	struct tty_struct *tty;
++	if (unlikely(st_gdata == NULL || st_gdata->tty == NULL)) {
++		pr_err("tty unavailable to perform write");
++		return -1;
++	}
++	tty = st_gdata->tty;
++	return tty->ops->write_room(tty);
++}
 +
- 	if (!dentry)
- 		return;
- 
-@@ -357,9 +359,10 @@ void debugfs_remove(struct dentry *dentry)
- 		return;
- 
- 	mutex_lock(&parent->d_inode->i_mutex);
--	__debugfs_remove(dentry, parent);
-+	ret = __debugfs_remove(dentry, parent);
- 	mutex_unlock(&parent->d_inode->i_mutex);
--	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-+	if (!ret)
-+		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ /* can be called in from
+  * -- KIM (during fw download)
+  * -- ST Core (during st_write)
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index ccc46a7b..2c096cc 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -232,6 +232,26 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(debugfs_remove);
+ 
++void skip_change_remote_baud(unsigned char **ptr, long *len)
++{
++	unsigned char *nxt_action, *cur_action;
++	cur_action = *ptr;
++
++	nxt_action = cur_action + sizeof(struct bts_action) +
++		((struct bts_action *) cur_action)->size;
++
++	if (((struct bts_action *) nxt_action)->type != ACTION_WAIT_EVENT) {
++		pr_err("invalid action after change remote baud command");
++	} else {
++		*ptr = *ptr + sizeof(struct bts_action) +
++			((struct bts_action *)nxt_action)->size;
++		*len = *len - (sizeof(struct bts_action) +
++				((struct bts_action *)nxt_action)->size);
++		/* warn user on not commenting these in firmware */
++		pr_warn("skipping the wait event of change remote baud");
++	}
++}
++
+ /**
+  * download_firmware -
+  *	internal function which parses through the .bts firmware
+@@ -244,6 +264,9 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 	unsigned char *ptr = NULL;
+ 	unsigned char *action_ptr = NULL;
+ 	unsigned char bts_scr_name[30] = { 0 };	/* 30 char long bts scr name? */
++	int wr_room_space;
++	int cmd_size;
++	unsigned long timeout;
+ 
+ 	err = read_local_version(kim_gdata, bts_scr_name);
+ 	if (err != 0) {
+@@ -280,13 +303,43 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 			     0xFF36)) {
+ 				/* ignore remote change
+ 				 * baud rate HCI VS command */
+-				pr_err
+-				    (" change remote baud"
++				pr_warn("change remote baud"
+ 				    " rate command in firmware");
++				skip_change_remote_baud(&ptr, &len);
+ 				break;
+ 			}
++			/*
++			 * Make sure we have enough free space in uart
++			 * tx buffer to write current firmware command
++			 */
++			cmd_size = ((struct bts_action *)ptr)->size;
++			timeout = jiffies + msecs_to_jiffies(CMD_WR_TIME);
++			do {
++				wr_room_space =
++					st_get_uart_wr_room(kim_gdata->core_data);
++				if (wr_room_space < 0) {
++					pr_err("Unable to get free "
++							"space info from uart tx buffer");
++					release_firmware(kim_gdata->fw_entry);
++					return wr_room_space;
++				}
++				mdelay(1); /* wait 1ms before checking room */
++			} while ((wr_room_space < cmd_size) &&
++					time_before(jiffies, timeout));
++
++			/* Timeout happened ? */
++			if (time_after_eq(jiffies, timeout)) {
++				pr_err("Timeout while waiting for free "
++						"free space in uart tx buffer");
++				release_firmware(kim_gdata->fw_entry);
++				return -ETIMEDOUT;
++			}
+ 
+-			INIT_COMPLETION(kim_gdata->kim_rcvd);
++			/*
++			 * Free space found in uart buffer, call st_int_write
++			 * to send current firmware command to the uart tx
++			 * buffer.
++			 */
+ 			err = st_int_write(kim_gdata->core_data,
+ 			((struct bts_action_send *)action_ptr)->data,
+ 					   ((struct bts_action *)ptr)->size);
+@@ -294,15 +347,28 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 				release_firmware(kim_gdata->fw_entry);
+ 				return err;
+ 			}
++			/*
++			 * Check number of bytes written to the uart tx buffer
++			 * and requested command write size
++			 */
++			if (err != cmd_size) {
++				pr_err("Number of bytes written to uart "
++						"tx buffer are not matching with "
++						"requested cmd write size");
++				release_firmware(kim_gdata->fw_entry);
++				return -EIO;
++			}
++			break;
++		case ACTION_WAIT_EVENT:  /* wait */
+ 			if (!wait_for_completion_timeout
+-			    (&kim_gdata->kim_rcvd,
+-			     msecs_to_jiffies(CMD_RESP_TIME))) {
+-				pr_err
+-				    (" response timeout during fw download ");
++					(&kim_gdata->kim_rcvd,
++					 msecs_to_jiffies(CMD_RESP_TIME))) {
++				pr_err("response timeout during fw download ");
+ 				/* timed out */
+ 				release_firmware(kim_gdata->fw_entry);
+ 				return -ETIMEDOUT;
+ 			}
++			INIT_COMPLETION(kim_gdata->kim_rcvd);
+ 			break;
+ 		case ACTION_DELAY:	/* sleep */
+ 			pr_info("sleep command in scr");
+diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
+index 010cda7..7885a77 100644
+--- a/include/linux/ti_wilink_st.h
++++ b/include/linux/ti_wilink_st.h
+@@ -166,6 +166,11 @@ struct st_data_s {
+ 	void *kim_data;
+ };
+ 
++/*
++ * wrapper around tty->ops->write_room to check
++ * availability during firmware download
++ */
++int st_get_uart_wr_room(struct st_data_s *st_gdata);
+ /**
+  * st_int_write -
+  * point this to tty->driver->write or tty->ops->write
+@@ -208,6 +213,7 @@ void gps_chrdrv_stub_init(void);
+  */
+ #define LDISC_TIME	1000
+ #define CMD_RESP_TIME	800
++#define CMD_WR_TIME	5000
+ #define MAKEWORD(a, b)  ((unsigned short)(((unsigned char)(a)) \
+ 	| ((unsigned short)((unsigned char)(b))) << 8))
  
 -- 
 1.7.4.1
