@@ -1,110 +1,474 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab1CPV2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:28:14 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:45143 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609Ab1CPV2E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:28:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Richard Weinberger <richard@nod.at>
-Cc: Arnd Bergmann <arnd@arndb.de>, Kees Cook <kees.cook@canonical.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        serge@hallyn.com, eparis@redhat.com, jmorris@namei.org,
-        eugeneteo@kernel.org, drosenberg@vsecurity.com
-References: <1300303907-22627-1-git-send-email-richard@nod.at>
-	<201103162152.49615.richard@nod.at> <m1lj0eepe4.fsf@fess.ebiederm.org>
-	<201103162223.30997.richard@nod.at>
-Date: Wed, 16 Mar 2011 14:27:57 -0700
-In-Reply-To: <201103162223.30997.richard@nod.at> (Richard Weinberger's message
-	of "Wed, 16 Mar 2011 22:23:30 +0100")
-Message-ID: <m1aagudaci.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX182kveviXA2k9FaaREO6hXWgpnvRXPP8ek=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Richard Weinberger <richard@nod.at>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S1755556Ab1CPV2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:28:38 -0400
+Received: from kroah.org ([198.145.64.141]:42587 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754105Ab1CPVLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:11:43 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Nathan Fontenot <nfont@austin.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 13/50] memory hotplug: Allow memory blocks to span multiple memory sections
+Date: Wed, 16 Mar 2011 14:10:51 -0700
+Message-Id: <1300309888-5028-13-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
+References: <20110316205204.GA2686@kroah.com>
+ <1300309888-5028-1-git-send-email-gregkh@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard@nod.at> writes:
+From: Nathan Fontenot <nfont@austin.ibm.com>
 
-> Am Mittwoch 16 März 2011, 22:17:39 schrieb Eric W. Biederman:
->> Richard Weinberger <richard@nod.at> writes:
->> 
->> 2> Am Mittwoch 16 März 2011, 21:45:45 schrieb Arnd Bergmann:
->> >> On Wednesday 16 March 2011 21:08:16 Richard Weinberger wrote:
->> >> > Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
->> >> > > On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
->> >> > > > When containers like LXC are used a unprivileged and jailed
->> >> > > > root user can still write to critical files in /proc/.
->> >> > > > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
->> >> > > > 
->> >> > > > This new restricted attribute makes it possible to protect such
->> >> > > > files. When restricted is set to true root needs CAP_SYS_ADMIN
->> >> > > > to into the file.
->> >> > > 
->> >> > > I was thinking about this too. I'd prefer more fine-grained control
->> >> > > in this area, since some sysctl entries aren't strictly controlled
->> >> > > by CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking
->> >> > > CAP_SYS_RAWIO).
->> >> > > 
->> >> > > How about this instead?
->> >> > 
->> >> > Good Idea.
->> >> > May we should also consider a per-directory restriction.
->> >> > Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
->> >> > It would be much easier to set the protection on the parent directory
->> >> > instead of protecting file by file...
->> >> 
->> >> How does this interact with the per-namespace sysctls that Eric
->> >> Biederman added a few years ago?
->> > 
->> > Do you mean CONFIG_{UTS, UPC, USER, NET,}_NS?
->> > 
->> >> I had expected that any dangerous sysctl would not be visible in
->> >> an unpriviledge container anyway.
->> > 
->> > No way.
->> > That's why it's currently a very good idea to mount /proc/ read-only
->> > into a container.
->> 
->> However it is in the architecture.  The problem is that the user
->> namespace is not finished.  Once finished even root with all caps in a
->> container will have no more permissions than the unprivileged user that
->> created the user namespace.
->> 
->> Essentially the change is to make permissions checks become a comparison
->> of the tuple (user_ns, uid) instead of just comparisons by uid.  If we
->> want to fix permission problems with proc and containers please let's
->> focus on the completing the user namespace.
->
-> Ok. What's the current status, where can I help?
+Update the memory sysfs code such that each sysfs memory directory is now
+considered a memory block that can span multiple memory sections per
+memory block.  The default size of each memory block is SECTION_SIZE_BITS
+to maintain the current behavior of having a single memory section per
+memory block (i.e. one sysfs directory per memory section).
 
-Serge has been getting some of the pieces together and merging them to
-Andrew.  I think he has the basic infrastructure in place.  Certainly he
-has the infrastructure in place for per user namespace capabilities.
+For architectures that want to have memory blocks span multiple
+memory sections they need only define their own memory_block_size_bytes()
+routine.
 
-What should be left is the mechanics of making certain every permission
-check in the kernel takes user namespaces properly into account.
+Update the memory hotplug documentation to reflect the new behaviors of
+memory blocks reflected in sysfs.
 
-Eric
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+Reviewed-by: Robin Holt <holt@sgi.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ Documentation/memory-hotplug.txt |   47 ++++++++----
+ drivers/base/memory.c            |  155 ++++++++++++++++++++++++++------------
+ 2 files changed, 139 insertions(+), 63 deletions(-)
+
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 57e7e9c..8f485d7 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -126,36 +126,51 @@ config options.
+ --------------------------------
+ 4 sysfs files for memory hotplug
+ --------------------------------
+-All sections have their device information under /sys/devices/system/memory as
++All sections have their device information in sysfs.  Each section is part of
++a memory block under /sys/devices/system/memory as
+ 
+ /sys/devices/system/memory/memoryXXX
+-(XXX is section id.)
++(XXX is the section id.)
+ 
+-Now, XXX is defined as start_address_of_section / section_size.
++Now, XXX is defined as (start_address_of_section / section_size) of the first
++section contained in the memory block.  The files 'phys_index' and
++'end_phys_index' under each directory report the beginning and end section id's
++for the memory block covered by the sysfs directory.  It is expected that all
++memory sections in this range are present and no memory holes exist in the
++range. Currently there is no way to determine if there is a memory hole, but
++the existence of one should not affect the hotplug capabilities of the memory
++block.
+ 
+ For example, assume 1GiB section size. A device for a memory starting at
+ 0x100000000 is /sys/device/system/memory/memory4
+ (0x100000000 / 1Gib = 4)
+ This device covers address range [0x100000000 ... 0x140000000)
+ 
+-Under each section, you can see 4 files.
++Under each section, you can see 4 or 5 files, the end_phys_index file being
++a recent addition and not present on older kernels.
+ 
+-/sys/devices/system/memory/memoryXXX/phys_index
++/sys/devices/system/memory/memoryXXX/start_phys_index
++/sys/devices/system/memory/memoryXXX/end_phys_index
+ /sys/devices/system/memory/memoryXXX/phys_device
+ /sys/devices/system/memory/memoryXXX/state
+ /sys/devices/system/memory/memoryXXX/removable
+ 
+-'phys_index' : read-only and contains section id, same as XXX.
+-'state'      : read-write
+-               at read:  contains online/offline state of memory.
+-               at write: user can specify "online", "offline" command
+-'phys_device': read-only: designed to show the name of physical memory device.
+-               This is not well implemented now.
+-'removable'  : read-only: contains an integer value indicating
+-               whether the memory section is removable or not
+-               removable.  A value of 1 indicates that the memory
+-               section is removable and a value of 0 indicates that
+-               it is not removable.
++'phys_index'      : read-only and contains section id of the first section
++		    in the memory block, same as XXX.
++'end_phys_index'  : read-only and contains section id of the last section
++		    in the memory block.
++'state'           : read-write
++                    at read:  contains online/offline state of memory.
++                    at write: user can specify "online", "offline" command
++                    which will be performed on al sections in the block.
++'phys_device'     : read-only: designed to show the name of physical memory
++                    device.  This is not well implemented now.
++'removable'       : read-only: contains an integer value indicating
++                    whether the memory block is removable or not
++                    removable.  A value of 1 indicates that the memory
++                    block is removable and a value of 0 indicates that
++                    it is not removable. A memory block is removable only if
++                    every section in the block is removable.
+ 
+ NOTE:
+   These directories/files appear after physical memory hotplug phase.
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index cafeaaf..0b70400 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -30,6 +30,14 @@
+ static DEFINE_MUTEX(mem_sysfs_mutex);
+ 
+ #define MEMORY_CLASS_NAME	"memory"
++#define MIN_MEMORY_BLOCK_SIZE	(1 << SECTION_SIZE_BITS)
++
++static int sections_per_block;
++
++static inline int base_memory_block_id(int section_nr)
++{
++	return section_nr / sections_per_block;
++}
+ 
+ static struct sysdev_class memory_sysdev_class = {
+ 	.name = MEMORY_CLASS_NAME,
+@@ -84,28 +92,47 @@ EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+  * register_memory - Setup a sysfs device for a memory block
+  */
+ static
+-int register_memory(struct memory_block *memory, struct mem_section *section)
++int register_memory(struct memory_block *memory)
+ {
+ 	int error;
+ 
+ 	memory->sysdev.cls = &memory_sysdev_class;
+-	memory->sysdev.id = __section_nr(section);
++	memory->sysdev.id = memory->phys_index / sections_per_block;
+ 
+ 	error = sysdev_register(&memory->sysdev);
+ 	return error;
+ }
+ 
+ static void
+-unregister_memory(struct memory_block *memory, struct mem_section *section)
++unregister_memory(struct memory_block *memory)
+ {
+ 	BUG_ON(memory->sysdev.cls != &memory_sysdev_class);
+-	BUG_ON(memory->sysdev.id != __section_nr(section));
+ 
+ 	/* drop the ref. we got in remove_memory_block() */
+ 	kobject_put(&memory->sysdev.kobj);
+ 	sysdev_unregister(&memory->sysdev);
+ }
+ 
++unsigned long __weak memory_block_size_bytes(void)
++{
++	return MIN_MEMORY_BLOCK_SIZE;
++}
++
++static unsigned long get_memory_block_size(void)
++{
++	unsigned long block_sz;
++
++	block_sz = memory_block_size_bytes();
++
++	/* Validate blk_sz is a power of 2 and not less than section size */
++	if ((block_sz & (block_sz - 1)) || (block_sz < MIN_MEMORY_BLOCK_SIZE)) {
++		WARN_ON(1);
++		block_sz = MIN_MEMORY_BLOCK_SIZE;
++	}
++
++	return block_sz;
++}
++
+ /*
+  * use this as the physical section index that this memsection
+  * uses.
+@@ -116,7 +143,7 @@ static ssize_t show_mem_phys_index(struct sys_device *dev,
+ {
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, sysdev);
+-	return sprintf(buf, "%08lx\n", mem->phys_index);
++	return sprintf(buf, "%08lx\n", mem->phys_index / sections_per_block);
+ }
+ 
+ /*
+@@ -125,13 +152,16 @@ static ssize_t show_mem_phys_index(struct sys_device *dev,
+ static ssize_t show_mem_removable(struct sys_device *dev,
+ 			struct sysdev_attribute *attr, char *buf)
+ {
+-	unsigned long start_pfn;
+-	int ret;
++	unsigned long i, pfn;
++	int ret = 1;
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, sysdev);
+ 
+-	start_pfn = section_nr_to_pfn(mem->phys_index);
+-	ret = is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
++	for (i = 0; i < sections_per_block; i++) {
++		pfn = section_nr_to_pfn(mem->phys_index + i);
++		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
++	}
++
+ 	return sprintf(buf, "%d\n", ret);
+ }
+ 
+@@ -184,17 +214,14 @@ int memory_isolate_notify(unsigned long val, void *v)
+  * OK to have direct references to sparsemem variables in here.
+  */
+ static int
+-memory_block_action(struct memory_block *mem, unsigned long action)
++memory_section_action(unsigned long phys_index, unsigned long action)
+ {
+ 	int i;
+-	unsigned long psection;
+ 	unsigned long start_pfn, start_paddr;
+ 	struct page *first_page;
+ 	int ret;
+-	int old_state = mem->state;
+ 
+-	psection = mem->phys_index;
+-	first_page = pfn_to_page(psection << PFN_SECTION_SHIFT);
++	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+ 
+ 	/*
+ 	 * The probe routines leave the pages reserved, just
+@@ -207,8 +234,8 @@ memory_block_action(struct memory_block *mem, unsigned long action)
+ 				continue;
+ 
+ 			printk(KERN_WARNING "section number %ld page number %d "
+-				"not reserved, was it already online? \n",
+-				psection, i);
++				"not reserved, was it already online?\n",
++				phys_index, i);
+ 			return -EBUSY;
+ 		}
+ 	}
+@@ -219,18 +246,13 @@ memory_block_action(struct memory_block *mem, unsigned long action)
+ 			ret = online_pages(start_pfn, PAGES_PER_SECTION);
+ 			break;
+ 		case MEM_OFFLINE:
+-			mem->state = MEM_GOING_OFFLINE;
+ 			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+ 			ret = remove_memory(start_paddr,
+ 					    PAGES_PER_SECTION << PAGE_SHIFT);
+-			if (ret) {
+-				mem->state = old_state;
+-				break;
+-			}
+ 			break;
+ 		default:
+-			WARN(1, KERN_WARNING "%s(%p, %ld) unknown action: %ld\n",
+-					__func__, mem, action, action);
++			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
++			     "%ld\n", __func__, phys_index, action, action);
+ 			ret = -EINVAL;
+ 	}
+ 
+@@ -240,7 +262,8 @@ memory_block_action(struct memory_block *mem, unsigned long action)
+ static int memory_block_change_state(struct memory_block *mem,
+ 		unsigned long to_state, unsigned long from_state_req)
+ {
+-	int ret = 0;
++	int i, ret = 0;
++
+ 	mutex_lock(&mem->state_mutex);
+ 
+ 	if (mem->state != from_state_req) {
+@@ -248,8 +271,22 @@ static int memory_block_change_state(struct memory_block *mem,
+ 		goto out;
+ 	}
+ 
+-	ret = memory_block_action(mem, to_state);
+-	if (!ret)
++	if (to_state == MEM_OFFLINE)
++		mem->state = MEM_GOING_OFFLINE;
++
++	for (i = 0; i < sections_per_block; i++) {
++		ret = memory_section_action(mem->phys_index + i, to_state);
++		if (ret)
++			break;
++	}
++
++	if (ret) {
++		for (i = 0; i < sections_per_block; i++)
++			memory_section_action(mem->phys_index + i,
++					      from_state_req);
++
++		mem->state = from_state_req;
++	} else
+ 		mem->state = to_state;
+ 
+ out:
+@@ -262,20 +299,15 @@ store_mem_state(struct sys_device *dev,
+ 		struct sysdev_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct memory_block *mem;
+-	unsigned int phys_section_nr;
+ 	int ret = -EINVAL;
+ 
+ 	mem = container_of(dev, struct memory_block, sysdev);
+-	phys_section_nr = mem->phys_index;
+-
+-	if (!present_section_nr(phys_section_nr))
+-		goto out;
+ 
+ 	if (!strncmp(buf, "online", min((int)count, 6)))
+ 		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE);
+ 	else if(!strncmp(buf, "offline", min((int)count, 7)))
+ 		ret = memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE);
+-out:
++
+ 	if (ret)
+ 		return ret;
+ 	return count;
+@@ -315,7 +347,7 @@ static ssize_t
+ print_block_size(struct sysdev_class *class, struct sysdev_class_attribute *attr,
+ 		 char *buf)
+ {
+-	return sprintf(buf, "%lx\n", (unsigned long)PAGES_PER_SECTION * PAGE_SIZE);
++	return sprintf(buf, "%lx\n", get_memory_block_size());
+ }
+ 
+ static SYSDEV_CLASS_ATTR(block_size_bytes, 0444, print_block_size, NULL);
+@@ -444,6 +476,7 @@ struct memory_block *find_memory_block_hinted(struct mem_section *section,
+ 	struct sys_device *sysdev;
+ 	struct memory_block *mem;
+ 	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
++	int block_id = base_memory_block_id(__section_nr(section));
+ 
+ 	kobj = hint ? &hint->sysdev.kobj : NULL;
+ 
+@@ -451,7 +484,7 @@ struct memory_block *find_memory_block_hinted(struct mem_section *section,
+ 	 * This only works because we know that section == sysdev->id
+ 	 * slightly redundant with sysdev_register()
+ 	 */
+-	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
++	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, block_id);
+ 
+ 	kobj = kset_find_obj_hinted(&memory_sysdev_class.kset, name, kobj);
+ 	if (!kobj)
+@@ -476,26 +509,27 @@ struct memory_block *find_memory_block(struct mem_section *section)
+ 	return find_memory_block_hinted(section, NULL);
+ }
+ 
+-static int add_memory_block(int nid, struct mem_section *section,
+-			unsigned long state, enum mem_add_context context)
++static int init_memory_block(struct memory_block **memory,
++			     struct mem_section *section, unsigned long state)
+ {
+-	struct memory_block *mem = kzalloc(sizeof(*mem), GFP_KERNEL);
++	struct memory_block *mem;
+ 	unsigned long start_pfn;
++	int scn_nr;
+ 	int ret = 0;
+ 
++	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+ 	if (!mem)
+ 		return -ENOMEM;
+ 
+-	mutex_lock(&mem_sysfs_mutex);
+-
+-	mem->phys_index = __section_nr(section);
++	scn_nr = __section_nr(section);
++	mem->phys_index = base_memory_block_id(scn_nr) * sections_per_block;
+ 	mem->state = state;
+ 	mem->section_count++;
+ 	mutex_init(&mem->state_mutex);
+ 	start_pfn = section_nr_to_pfn(mem->phys_index);
+ 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+ 
+-	ret = register_memory(mem, section);
++	ret = register_memory(mem);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, phys_index);
+ 	if (!ret)
+@@ -504,8 +538,29 @@ static int add_memory_block(int nid, struct mem_section *section,
+ 		ret = mem_create_simple_file(mem, phys_device);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, removable);
++
++	*memory = mem;
++	return ret;
++}
++
++static int add_memory_section(int nid, struct mem_section *section,
++			unsigned long state, enum mem_add_context context)
++{
++	struct memory_block *mem;
++	int ret = 0;
++
++	mutex_lock(&mem_sysfs_mutex);
++
++	mem = find_memory_block(section);
++	if (mem) {
++		mem->section_count++;
++		kobject_put(&mem->sysdev.kobj);
++	} else
++		ret = init_memory_block(&mem, section, state);
++
+ 	if (!ret) {
+-		if (context == HOTPLUG)
++		if (context == HOTPLUG &&
++		    mem->section_count == sections_per_block)
+ 			ret = register_mem_sect_under_node(mem, nid);
+ 	}
+ 
+@@ -528,8 +583,10 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		mem_remove_simple_file(mem, state);
+ 		mem_remove_simple_file(mem, phys_device);
+ 		mem_remove_simple_file(mem, removable);
+-		unregister_memory(mem, section);
+-	}
++		unregister_memory(mem);
++		kfree(mem);
++	} else
++		kobject_put(&mem->sysdev.kobj);
+ 
+ 	mutex_unlock(&mem_sysfs_mutex);
+ 	return 0;
+@@ -541,7 +598,7 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+  */
+ int register_new_memory(int nid, struct mem_section *section)
+ {
+-	return add_memory_block(nid, section, MEM_OFFLINE, HOTPLUG);
++	return add_memory_section(nid, section, MEM_OFFLINE, HOTPLUG);
+ }
+ 
+ int unregister_memory_section(struct mem_section *section)
+@@ -560,12 +617,16 @@ int __init memory_dev_init(void)
+ 	unsigned int i;
+ 	int ret;
+ 	int err;
++	unsigned long block_sz;
+ 
+ 	memory_sysdev_class.kset.uevent_ops = &memory_uevent_ops;
+ 	ret = sysdev_class_register(&memory_sysdev_class);
+ 	if (ret)
+ 		goto out;
+ 
++	block_sz = get_memory_block_size();
++	sections_per_block = block_sz / MIN_MEMORY_BLOCK_SIZE;
++
+ 	/*
+ 	 * Create entries for memory sections that were found
+ 	 * during boot and have been initialized
+@@ -573,8 +634,8 @@ int __init memory_dev_init(void)
+ 	for (i = 0; i < NR_MEM_SECTIONS; i++) {
+ 		if (!present_section_nr(i))
+ 			continue;
+-		err = add_memory_block(0, __nr_to_section(i), MEM_ONLINE,
+-				       BOOT);
++		err = add_memory_section(0, __nr_to_section(i), MEM_ONLINE,
++					 BOOT);
+ 		if (!ret)
+ 			ret = err;
+ 	}
+-- 
+1.7.4.1
+
