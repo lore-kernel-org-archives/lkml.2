@@ -1,115 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab1CPBDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 21:03:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37276 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab1CPBDK (ORCPT
+	id S1751517Ab1CPBVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 21:21:18 -0400
+Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:33977 "EHLO
+	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750975Ab1CPBVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 21:03:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GM7vn/ErzDH1ai1iX5/UN60IS1wU8jhmDwOwnlYYWs81Qw9TiccaU24NZypZETUIUV
-         ifEp8Rl+jMFZ+Lz5LENjTxzyle8oaH2j0M1qqfBTmR11LVS/edztvNpIraNmb501De/z
-         lDXXqZRX/LqHSapjA7CBm2a/MMfgEZmdofbL4=
-Date: Wed, 16 Mar 2011 02:03:06 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-Message-ID: <20110316010304.GB7760@nowhere>
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com>
- <20110314204341.GC9388@ghostprotocols.net>
- <20110314205100.GG6139@nowhere>
- <20110314210315.GC2388@ghostprotocols.net>
- <20110314212050.GH6139@nowhere>
- <20110314215603.GD2388@ghostprotocols.net>
- <20110314224344.GA11443@nowhere>
- <20110314230211.GG2388@ghostprotocols.net>
- <20110315185812.GB6605@nowhere>
- <20110315192422.GF7011@ghostprotocols.net>
+	Tue, 15 Mar 2011 21:21:14 -0400
+Message-ID: <4D801078.5090104@lougher.demon.co.uk>
+Date: Wed, 16 Mar 2011 01:20:56 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110315192422.GF7011@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-fsdevel@vger.kernel.org
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Squashfs: handle corruption of directory structure
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 04:24:22PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Mar 15, 2011 at 07:58:16PM +0100, Frederic Weisbecker escreveu:
-> > If we want to count everywhere but when we hold B:
-> > 
-> > 	-e inst*@(..lock:*acquire(B) && lock:*release(B)..)
-> 
-> Makes sense but looks confusing at first sight, how to translate that to
-> events starter/stoppers?
-> 
-> its an event: instructions, it starts in what state? Enabled, i.e. the
-> first part of the expression has precedence: ..lock:*acquire(B), then,
-> after it is disabled, because we acquired B, the second part gets armed,
-> i.e. when the release(B) event takes place, the first part gets armed
-> again.
-> 
-> That is why I felt '&&' to be confusing, its not that both are in
-> effect, its that one is only armed when the previous was disarmed.
-> 
-> Perhaps we could find some other operator that was more natural, or just
-> agree that && in this context works this way, almost like what we do in
-> shell scripting with && and || (the cycle to rearm the first range after
-> the last one is disarmed is the part that doesn't matches the shell
-> use).
 
-Doh you're right. && would have two meaning.
-No we should probably keep  a && b  has a meaning of we are
-in the range a AND in the range b. Both at the same time, with
-a evaluated first and then b. We also need to ensure than
-a && b  doesn't mean the same than  b && a. You're right, perhaps
-we need another operator to expression inclusion, or we need to
-assume that specific meaning of &&.
+Handle the rare case where a directory metadata block is uncompressed and
+corrupted, leading to a kernel oops in directory scanning (memcpy).
+Normally corruption is detected at the decompression stage and dealt with
+then, however, this will not happen if:
 
-For what I wanted to express in the example above, || seem be the
-right choice: -e inst*@(..lock:*acquire(B) || lock:*release(B)..)
+- metadata isn't compressed (users can optionally request no metadata
+   compression), or
+- the compressed metadata block was larger than the original, in which
+   case the uncompressed version was used, or
+- the data was corrupt after decompression
 
-So || would mean union and && would mean inclusion.
+This patch fixes this by adding some sanity checks against known maximum
+values.
 
-> 
-> Also:
-> 
->  	-e inst*@(lock:*release(B)..lock:*acquire(B))
-> 
-> Wouldn't be simpler? Not equivalent tho if one is interested in
-> everything that happens till the first time the lock is acquired in some
-> specific thread that is started from the tool, etc.
+Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+---
+  fs/squashfs/dir.c   |    9 +++++++++
+  fs/squashfs/namei.c |   12 ++++++++++++
+  2 files changed, 21 insertions(+), 0 deletions(-)
 
-Yep, they are not the same.
+diff --git a/fs/squashfs/dir.c b/fs/squashfs/dir.c
+index 0dc340a..3f79cd1 100644
+--- a/fs/squashfs/dir.c
++++ b/fs/squashfs/dir.c
+@@ -172,6 +172,11 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
+  		length += sizeof(dirh);
 
->  
-> > This covers about everything. Now if in the future we want to support having
-> > multiple starters or stoppers for a single target, in order to union custom
-> > contexts, we can use the ||.
-> > 
-> > Like only count when we hold B or when we hold A:
-> > 
-> > 	-e inst*@(lock:*acquire(A)..lock:*release(A) || lock:*acquire(B)..lock:*release(B))
-> 
-> > Right?
-> 
-> Yeah, this one is natural at first sight. As is:
-> 
->  	-e (inst*,cycles,dTLB*misses)@(lock:*acquire(A)..lock:*release(A) || lock:*acquire(B)..lock:*release(B))
-> 
-> I.e. we're expressing an evlist (list of event selectors) to be counted
-> when the 'at' expression allows.
+  		dir_count = le32_to_cpu(dirh.count) + 1;
++
++		/* dir_count should never be larger than 256 */
++		if (dir_count > 256)
++			goto failed_read;
++
+  		while (dir_count--) {
+  			/*
+  			 * Read directory entry.
+@@ -183,6 +188,10 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 
-Indeed, looks nice.
+  			size = le16_to_cpu(dire->size) + 1;
+
++			/* size should never be larger than SQUASHFS_NAME_LEN */
++			if (size > SQUASHFS_NAME_LEN)
++				goto failed_read;
++
+  			err = squashfs_read_metadata(inode->i_sb, dire->name,
+  					&block, &offset, size);
+  			if (err < 0)
+diff --git a/fs/squashfs/namei.c b/fs/squashfs/namei.c
+index 7a9464d..5d922a6 100644
+--- a/fs/squashfs/namei.c
++++ b/fs/squashfs/namei.c
+@@ -176,6 +176,11 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
+  		length += sizeof(dirh);
+
+  		dir_count = le32_to_cpu(dirh.count) + 1;
++
++		/* dir_count should never be larger than 256 */
++		if (dir_count > 256)
++			goto data_error;
++
+  		while (dir_count--) {
+  			/*
+  			 * Read directory entry.
+@@ -187,6 +192,10 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
+
+  			size = le16_to_cpu(dire->size) + 1;
+
++			/* size should never be larger than SQUASHFS_NAME_LEN */
++			if (size > SQUASHFS_NAME_LEN)
++				goto data_error;
++
+  			err = squashfs_read_metadata(dir->i_sb, dire->name,
+  					&block, &offset, size);
+  			if (err < 0)
+@@ -228,6 +237,9 @@ exit_lookup:
+  	d_add(dentry, inode);
+  	return ERR_PTR(0);
+
++data_error:
++	err = -EIO;
++
+  read_failure:
+  	ERROR("Unable to read directory block [%llx:%x]\n",
+  		squashfs_i(dir)->start + msblk->directory_table,
+-- 
+1.7.1
+
