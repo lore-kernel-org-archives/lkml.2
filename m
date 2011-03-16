@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab1CPWzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 18:55:46 -0400
-Received: from fieldses.org ([174.143.236.118]:57889 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab1CPWzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 18:55:38 -0400
-Date: Wed, 16 Mar 2011 18:55:25 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Mi Jinlong <mijinlong@cn.fujitsu.com>, roel <roel.kluin@gmail.com>,
-        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: wrong index used in inner loop
-Message-ID: <20110316225524.GC17004@fieldses.org>
-References: <4D76A06A.4090405@gmail.com>
- <20110309004955.GD15814@fieldses.org>
- <4D79A183.8090306@cn.fujitsu.com>
- <20110314222229.GJ25442@fieldses.org>
- <1300146731.3026.4.camel@lade.trondhjem.org>
+	id S1753381Ab1CPW55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 18:57:57 -0400
+Received: from 31.mail-out.ovh.net ([213.186.62.10]:37161 "HELO
+	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751859Ab1CPW5y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 18:57:54 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 18:57:53 EDT
+Message-ID: <4D813EDB.20307@example.com>
+Date: Wed, 16 Mar 2011 23:51:07 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300146731.3026.4.camel@lade.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>, benh@debian.org
+Subject: Re: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
+References: <201103101209.p2AC9YdZ014233@violet.fr.zoreil.com> <20110316202220.GA14741@electric-eye.fr.zoreil.com>
+In-Reply-To: <20110316202220.GA14741@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 4529776800600519066
+X-Ovh-Remote: 178.36.184.107 (178-36-184-107.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 07:52:11PM -0400, Trond Myklebust wrote:
-> On Mon, 2011-03-14 at 18:22 -0400, J. Bruce Fields wrote:
-> > On Fri, Mar 11, 2011 at 12:13:55PM +0800, Mi Jinlong wrote:
-> > > 
-> > > 
-> > > J. Bruce Fields:
-> > > > On Tue, Mar 08, 2011 at 10:32:26PM +0100, roel wrote:
-> > > >> @@ -1215,7 +1215,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
-> > > >>  			READ_BUF(4);
-> > > >>  			READ32(dummy);
-> > > >>  			READ_BUF(dummy * 4);
-> > > >> -			for (i = 0; i < dummy; ++i)
-> > > >> +			for (j = 0; j < dummy; ++j)
-> > > >>  				READ32(dummy);
-> > > 
-> > >   We must not use dummy for index here.
-> > >   After the first index, READ32(dummy) will change dummy!!!!
-> > 
-> > Actually, wait, this is kind of silly.  I don't see why we couldn't just
-> > skip the loop and do
-> > 
-> > 	p += dummy;
-> 
-> This is exactly why I _hate_ the READ*() macros and their ilk, and am
-> really happy we got rid of them in the client.
-
-Agreed, I'm all for getting rid of them completely.
-
-> READ_BUF() _sets_ p to whatever the value of argp->p is, and then
-> updates argp->p. It is just very very very hard to see that due to the
-> lack of transparency.
+On 16.03.2011 21:22, Francois Romieu wrote:
+> You can get it there:
 >
-> IOW: You don't need the "p += dummy" either. That happens automatically
-> when you next invoke READ_BUF().
+> http://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.git
+> git://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.git
+>
+> It has already been submitted to the maintainer of linux-firmware.
 
-Yes, you're right, we could remove that silly loop entirely.
+Thanks a lot, you saved me hours of searching.
 
---b.
+Regards,
+
+Piotr Hosowicz
+-- 
+Miss World 2006: Jestem szczê¶liwa, ¿e mogê wspaniale uczestniczyæ w
+prze¿yciu najpiêkniejszych kobiet tutaj w Warszawie, gdzie Jan Pawe³ II,
+papie¿, w Polsce, sk±d pochodzi. Spotka³am siê z Ko¶cio³em Mariackim
+w Krakowie, który ciep³o ludzi i wielka przyja¼ñ. Po³owa mojego serca
+zostanie w Polsce, a druga po³owa pojedzie ze mn± do mojego kraju.
+NP: Phideaux - waiting for the axe to fall
+NB: 2.6.38-git2
