@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab1CPOZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 10:25:53 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:40525 "EHLO mail-out1.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752446Ab1CPOZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 10:25:47 -0400
-Subject: Re: [patch]xprt: remove redundant checks
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: j223yang@asset.uwaterloo.ca
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110316064509.GA1498@asset.uwaterloo.ca>
-References: <20110316064509.GA1498@asset.uwaterloo.ca>
+	id S1753078Ab1CPO0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 10:26:13 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32873 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab1CPO0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 10:26:07 -0400
+Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+In-Reply-To: <AANLkTiks-D6QfoXmsJv_VPh-v4kZfjR29c6gpG5bW_vk@mail.gmail.com>
+References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
+	 <20110311153134.GO1760@opensource.wolfsonmicro.com>
+	 <AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
+	 <20110314181531.GA32434@opensource.wolfsonmicro.com>
+	 <AANLkTi=W980GYHVxdYPV3xNKcdGpjAewKssoUc3ZoEDi@mail.gmail.com>
+	 <1300275412.3432.46.camel@odin>
+	 <AANLkTiks-D6QfoXmsJv_VPh-v4kZfjR29c6gpG5bW_vk@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Mar 2011 10:25:40 -0400
-Message-ID: <1300285540.16266.49.camel@lade.trondhjem.org>
+Date: Wed, 16 Mar 2011 14:26:01 +0000
+Message-ID: <1300285561.3432.47.camel@odin>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 5 sum msgs/h 1 total rcpts 1363 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 037F1F956DC80D0C34AAEF887C3E96295C29033B
-X-UiO-SPAM-Test: remote_host: 98.250.108.142 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 10 max/h 2 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 02:45 -0400, j223yang@asset.uwaterloo.ca wrote:
-> 'req' is already dereferenced in 
-> 'struct rpc_xprt *xprt = req->rq_xprt;',
-> but check again later in the function.
-> The patch removes these redundant checks.
+On Wed, 2011-03-16 at 13:43 +0100, Linus Walleij wrote:
+> 2011/3/16 Liam Girdwood <lrg@slimlogic.co.uk>:
 > 
-> Signed-off-by: Jinqiu Yang <crindy646@gmail.com>
-> ---
->  xprt.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
+> > Btw, you have a few other regulator patches recently in amongst MFD and
+> > ARM updates. I assume these will go via MFD ?
 > 
-> diff --git a/net/sunrpt/xprt.c b/net/sunrpt/xprt.c
-> --- a/net/sunrpc/xprt.c	2011-03-16 00:10:08.764164573 -0400
-> +++ b/net/sunrpt/xprt.c	2011-03-16 02:33:38.559164414 -0400
-> @@ -202,10 +202,8 @@ int xprt_reserve_xprt(struct rpc_task *t
->  		goto out_sleep;
->  	}
->  	xprt->snd_task = task;
-> -	if (req) {
-> -		req->rq_bytes_sent = 0;
-> -		req->rq_ntrans++;
-> -	}
-> +	req->rq_bytes_sent = 0;
-> +	req->rq_ntrans++;
->  	return 1;
->  
->  out_sleep:
-> @@ -213,7 +211,7 @@ out_sleep:
->  			task->tk_pid, xprt);
->  	task->tk_timeout = 0;
->  	task->tk_status = -EAGAIN;
-> -	if (req && req->rq_ntrans)
-> +	if (req->rq_ntrans)
->  		rpc_sleep_on(&xprt->resend, task, NULL);
->  	else
->  		rpc_sleep_on(&xprt->sending, task, NULL);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> The TPS6105x stuff will go through MFD, hopefully.
+> 
+> There are two other AB8500 regulator patches which are ripe
+> for merge through the regulator tree right now, and that's the
+> ones with Subjects:
+> 
+> "[PATCH 1/4] regulator: add support for USB voltage regulator"
+> "[PATCH 3/4] regulator: initialization for ab8500 regulators"
+> 
+> Both have Mark's ACK, and I think they apply cleanly in
+> that order. If there are any problems, tell me and I'll respin.
+ 
+Both look fine and have been applied.
 
-You already sent hunk 1 in a different patch, and I've already applied
-that to the nfs-for-2.6.39 branch. Could you therefore please resend
-this patch with just the second hunk.
+Thanks
 
-Cheers
-  Trond
+Liam
 
