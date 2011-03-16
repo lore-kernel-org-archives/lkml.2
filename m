@@ -1,66 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab1CPUxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:53:38 -0400
-Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:30917 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab1CPUxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:53:31 -0400
-Message-ID: <4D812349.1050501@free.fr>
-Date: Wed, 16 Mar 2011 21:53:29 +0100
-From: Eric Valette <eric.valette@free.fr>
-Reply-To: eric.valette@free.fr
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110309 Iceowl/1.0b2 Icedove/3.1.9
+	id S1753954Ab1CPU6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:58:04 -0400
+Received: from kroah.org ([198.145.64.141]:33042 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab1CPU54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 16:57:56 -0400
+Date: Wed, 16 Mar 2011 13:52:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] driver core patches for .39
+Message-ID: <20110316205204.GA2686@kroah.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Typo in linux-2.6.38/arch/x86/kernel/entry_32.S
-References: <4D80B7EE.40706@Free.fr>	 <20110316195210.GA14675@home.goodmis.org>  <4D8118F7.5060107@free.fr>	 <1300306954.16880.51.camel@gandalf.stny.rr.com>  <4D811E5A.7080201@free.fr> <1300308282.16880.57.camel@gandalf.stny.rr.com>
-In-Reply-To: <1300308282.16880.57.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/03/2011 21:44, Steven Rostedt wrote:
-> On Wed, 2011-03-16 at 21:32 +0100, Eric Valette wrote:
->
->
->>> The old binutils never complained.
->>
->> Anyway this show once again that the world like symetry and you better
->> remember it ;-) (lock/unlock, malloc free, ...)
->
-> Right, but it should be a warning not an error. If it worked before, why
-> not work now and just warn about it. This "BUG" existed forever in the
-> kernel, and its in more than one place. Having the compiler crash on the
-> first instance means you need to fix it and run the compiler again to
-> find the next instance and so on.
+Here's the "big" driver core merge for the .39 tree.
 
-Yes like any other name change in a .h file with incompatible function 
-signature...
+Not much for the driver core itself, but there is some firmware driver
+work, and a new UIO driver as well.  Also some Documentation updates and
+a new translation added.
 
-The exact error message is a complaint about the .size directive not 
-being a "constant"...
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/ driver-core-next
 
+All of these patches have been in the linux-next and mm trees for a
+while now.
 
-> binutils made a fatal error in making this a bug and not an warning.
->
->>
->> Probably a stable candidate for 2.6.38.1
->
-> Perhaps, but what about all older kernels. Now this version of binutils
-> does not work for bisecting.
+The patches will be sent as a follow-on to this message to lkml for
+people to see.
 
-I guess its binutils git of the 2011/03/02
+thanks,
 
-As far as I'm concerned I only found one occurence on one machine 
-although I compiled tree 2.6.38 kernels for different machines.
-because its under the CONFIG_KVM_GUEST flag
+greg k-h
 
---eric
+------------
 
+ Documentation/ABI/stable/sysfs-firmware-efi-vars |   75 +++
+ Documentation/ABI/testing/sysfs-firmware-dmi     |  110 ++++
+ Documentation/ABI/testing/sysfs-platform-kim     |   48 ++
+ Documentation/dynamic-debug-howto.txt            |   12 +-
+ Documentation/filesystems/sysfs.txt              |   16 +-
+ Documentation/kref.txt                           |    2 +-
+ Documentation/memory-hotplug.txt                 |   47 +-
+ Documentation/zh_CN/SecurityBugs                 |   50 ++
+ Documentation/zh_CN/SubmitChecklist              |  109 ++++
+ Documentation/zh_CN/SubmittingPatches            |    4 +-
+ Documentation/zh_CN/magic-number.txt             |  167 ++++++
+ arch/powerpc/platforms/pseries/hotplug-memory.c  |   66 ++-
+ arch/x86/mm/init_64.c                            |   14 +
+ drivers/base/core.c                              |   34 +-
+ drivers/base/firmware_class.c                    |    7 +-
+ drivers/base/memory.c                            |  197 +++++--
+ drivers/base/node.c                              |   12 +-
+ drivers/base/sys.c                               |   65 ++-
+ drivers/firmware/Kconfig                         |   11 +
+ drivers/firmware/Makefile                        |    1 +
+ drivers/firmware/dmi-sysfs.c                     |  696 ++++++++++++++++++++++
+ drivers/firmware/efivars.c                       |  343 +++++++-----
+ drivers/misc/Kconfig                             |    7 +-
+ drivers/misc/pch_phub.c                          |   69 ++-
+ drivers/misc/ti-st/st_core.c                     |  419 +++++---------
+ drivers/misc/ti-st/st_kim.c                      |  491 ++++++++--------
+ drivers/misc/ti-st/st_ll.c                       |   10 +-
+ drivers/uio/Kconfig                              |   17 +
+ drivers/uio/Makefile                             |    1 +
+ drivers/uio/uio_pruss.c                          |  247 ++++++++
+ fs/debugfs/inode.c                               |   26 +-
+ include/linux/dmi.h                              |   47 ++
+ include/linux/dynamic_debug.h                    |    8 +-
+ include/linux/efi.h                              |   37 ++
+ include/linux/firmware.h                         |    4 +-
+ include/linux/kobject.h                          |   10 +-
+ include/linux/memory.h                           |    3 +-
+ include/linux/node.h                             |    6 +-
+ include/linux/platform_data/uio_pruss.h          |   25 +
+ include/linux/platform_device.h                  |   11 +-
+ include/linux/ti_wilink_st.h                     |   76 ++-
+ init/Kconfig                                     |    4 +-
+ kernel/printk.c                                  |  138 ++++-
+ lib/dynamic_debug.c                              |   61 ++-
+ 44 files changed, 2890 insertions(+), 913 deletions(-)
+ create mode 100644 Documentation/ABI/stable/sysfs-firmware-efi-vars
+ create mode 100644 Documentation/ABI/testing/sysfs-firmware-dmi
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-kim
+ create mode 100644 Documentation/zh_CN/SecurityBugs
+ create mode 100644 Documentation/zh_CN/SubmitChecklist
+ create mode 100644 Documentation/zh_CN/magic-number.txt
+ create mode 100644 drivers/firmware/dmi-sysfs.c
+ create mode 100644 drivers/uio/uio_pruss.c
+ create mode 100644 include/linux/platform_data/uio_pruss.h
+
+---------------
+
+Amerigo Wang (1):
+      debugfs: remove module_exit()
+
+Bart Van Assche (4):
+      docs/sysfs: Update directory/kobject documentation.
+      docs/sysfs: show() methods should use scnprintf().
+      kobject: Add missing format attribute specifications
+      Dynamic debug: Add more flags
+
+Bob Liu (1):
+      firmware_classs: change val uevent's type to bool
+
+Borislav Petkov (2):
+      sysdev: Fixup warning message
+      sysdev: Do not register with sysdev when erroring on add
+
+Ferenc Wagner (2):
+      driver core: Replace the dangerous to_root_device macro with an inline function
+      sysfs: Capitalize description of SYSFS_DEPRECATED{_V2} options
+
+Greg Kroah-Hartman (1):
+      dynamic_debug: add #include <linux/sched.h>
+
+Harry Wei (4):
+      Translate Documentation/SecurityBugs into Chinese
+      Fix a mistake Chinese character in Documentation/zh_CN/SubmittingPatches
+      Translat Documentation/SubmittingChecklist into Chinese
+      Translate linux-2.6/Documentation/magic-number.txt into Chinese
+
+Jan Kara (1):
+      debugfs: Fix filesystem reference counting on debugfs_remove() failure
+
+Javi Merino (1):
+      kref: Fix typo in kref documentation
+
+Kay Sievers (1):
+      printk: do not mangle valid userspace syslog prefixes
+
+Marc Kleine-Budde (1):
+      Driver core: convert platform_{get,set}_drvdata to static inline functions
+
+Mike Waychison (13):
+      firmware: Add DMI entry types to the headers
+      firmware: Basic dmi-sysfs support
+      firmware: Break out system_event_log in dmi-sysfs
+      firmware: Expose DMI type 15 System Event Log
+      firmware: Add documentation for /sys/firmware/dmi
+      firmware: Fix unaligned memory accesses in dmi-sysfs
+      efivars: move efivars globals into struct efivars
+      efivars: Make efivars bin_attributes dynamic
+      efivars: parameterize efivars
+      efivars: Split out variable registration
+      efivars: Parameterize operations.
+      efivars: Expose efivars functionality to external drivers.
+      efivars: Add Documentation
+
+Nathan Fontenot (5):
+      memory hotplug: Allow memory blocks to span multiple memory sections
+      memory hotplug: Update phys_index to [start|end]_section_nr
+      memory hotplug: Define memory_block_size_bytes for powerpc/pseries
+      memory hotplug: Define memory_block_size_bytes for x86_64 with CONFIG_X86_UV
+      memory hotplug: sysfs probe routine should add all memory sections
+
+Pavan Savoy (8):
+      drivers:misc: ti-st: register with channel IDs
+      drivers:misc: ti-st: move from rfkill to sysfs
+      drivers:misc: ti-st: fix error codes
+      drivers:misc: ti-st: set right debug levels for logs
+      drivers:misc: ti-st: firmware download optimization
+      drivers:misc: ti-st: fix hci-ll on wake_ind collision
+      drivers:misc: ti-st: remove multiple gpio handling
+      drivers:misc: ti-st: fix debugging code
+
+Pratheesh Gangadhar (1):
+      UIO: add PRUSS UIO driver support
+
+Randy Dunlap (1):
+      kobject.h: fix build when CONFIG_HOTPLUG is disabled
+
+Timur Tabi (1):
+      driver-core: document restrictions on device_rename()
+
+Tomoya MORINAGA (1):
+      pch_phub: add new device ML7213
+
+Xiaochen Wang (1):
+      Fix spelling mistakes in Documentation/zh_CN/SubmittingPatches
 
