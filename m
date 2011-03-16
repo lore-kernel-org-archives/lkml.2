@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab1CPKb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 06:31:27 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:57327 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab1CPKbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 06:31:20 -0400
-Subject: Re: linux-next: build failure after merge of the final tree (ubi
- tree related)
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: ext Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <1300270508.22236.1168.camel@pasglop>
-References: <20110316175041.67c4f371.sfr@canb.auug.org.au>
-	 <1300260170.2817.4.camel@localhost>  <1300270508.22236.1168.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Wed, 16 Mar 2011 12:27:37 +0200
-Message-ID: <1300271257.2817.8.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1752270Ab1CPKi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 06:38:26 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36739 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab1CPKiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 06:38:19 -0400
+X-AuditID: b753bd60-a4cc9ba0000066fd-56-4d809313713c
+X-AuditID: b753bd60-a4cc9ba0000066fd-56-4d809313713c
+Message-ID: <4D809311.5050806@hitachi.com>
+Date: Wed, 16 Mar 2011 19:38:09 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+Subject: Re: [tip:perf/core] perf probe: Clean up probe_point_lazy_walker()
+ return value
+References: <new-submission>	 <tip-5e814dd597c42daeb8d2a276e64a6ec986ad0e2a@git.kernel.org> <1300262357.2250.58.camel@laptop>
+In-Reply-To: <1300262357.2250.58.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 21:15 +1100, Benjamin Herrenschmidt wrote:
-> On Wed, 2011-03-16 at 09:22 +0200, Artem Bityutskiy wrote:
-> > On Wed, 2011-03-16 at 17:50 +1100, ext Stephen Rothwell wrote:
-> > > Hi all,
-> > > 
-> > > After merging the final tree, today's linux-next build (powerpc
-> > > allyesconfig) failed like this:
-> > > 
-> > > drivers/mtd/ubi/io.c: In function 'ubi_dbg_check_write':
-> > > drivers/mtd/ubi/io.c:1348: error: 'PAGE_KERNEL' undeclared (first use in this function)
-> > > drivers/mtd/ubi/io.c: In function 'ubi_dbg_check_all_ff':
-> > > drivers/mtd/ubi/io.c:1412: error: 'PAGE_KERNEL' undeclared (first use in this function)
-> > > 
-> > > Caused by commit 823ed5091113 ("UBI: allocate write checking buffer on demand").
-> > > 
-> > > I don't know how to fix this, so I have left it for today.
-> > 
-> > Hmm, strange, include <linux/vmalloc.h> should be enough to use
-> > __vmalloc with 'PAGE_KERNEL' AFAICS, and we have this include... I'll
-> > try to look better.
+(2011/03/16 16:59), Peter Zijlstra wrote:
+> On Tue, 2011-03-15 at 23:18 +0000, tip-bot for Ingo Molnar wrote:
 > 
-> Try adding asm/pgtable.h 
+>> perf probe: Clean up probe_point_lazy_walker() return value
+> 
+>> --- a/tools/perf/util/probe-finder.c
+>> +++ b/tools/perf/util/probe-finder.c
+>> @@ -1328,7 +1328,7 @@ static int probe_point_lazy_walker(const char *fname, int lineno,
+>>  	 * Continue if no error, because the lazy pattern will match
+>>  	 * to other lines
+>>  	 */
+>> -	return ret < 0 ?: 0;
+>> +	return ret < 0 ? ret : 0;
+>>  }
+> 
+> It is a slight change in semantics though, the return value will now be
+> negative instead of 1. If its used as a boolean that's fine, but still.
+> 
+> I'd have changed it to:
+> 
+>   return ret < 0;
+> 
+> Which is identical to the previous statement.
 
-Thanks, that's what I was thinking about as well.
+Sorry this was my mistake, that statement actually aims to
+what Ingo has done.
+
+If probe_point_lazy_walker() returns non-zero value,
+die_walk_lines() returns immediately, because a positive return
+value means the handler finds line and wanna stop walking on
+the lines, and a negative return value means some errors
+occurred in the handler and must stop.
+
+However, probe_point_lazy_walker() has to continue to walk,
+because given lazy-pattern can match several lines. Thus, this
+must return 0 if ret is a positive value, and return an error code
+if ret is a negative value.
+
+Thank you,
+
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
