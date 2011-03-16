@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1CPWfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 18:35:08 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55378 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab1CPWfE convert rfc822-to-8bit (ORCPT
+	id S1753224Ab1CPWgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 18:36:38 -0400
+Received: from science.horizon.com ([71.41.210.146]:26737 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751446Ab1CPWgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 18:35:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QEfWjItw6SiCEZPJmQ3LLQKALNB1sDyFTLWXlDCUBbxAaeg5B5QPwdyI9pBMAi3Whj
-         Y1e+OX1H9rVZ5tTgQikJo+Y+CnHTj2kPjRAm5ScQLRz011V5mhqyEcgedoSdSyY5MXMc
-         w0Yxcp+LypHCul0d27IT4bLl5+anLQ56sA7Wg=
-MIME-Version: 1.0
-In-Reply-To: <201103170022.24290.mihai.dontu@gmail.com>
-References: <201103170018.32061.mihai.dontu@gmail.com>
-	<201103170022.24290.mihai.dontu@gmail.com>
-Date: Wed, 16 Mar 2011 23:35:02 +0100
-Message-ID: <AANLkTi=-B0e4VT_v+F23Q+hG_zn=JnVbmVHnFpETVrZu@mail.gmail.com>
-Subject: Re: [b43] usb device disconnects automatically after 1s
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: =?UTF-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.og,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Mar 2011 18:36:33 -0400
+Date: 16 Mar 2011 18:36:31 -0400
+Message-ID: <20110316223631.20091.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, rientjes@google.com
+Subject: Re: [PATCH 5/8] mm/slub: Factor out some common code.
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, mpm@selenic.com, penberg@cs.helsinki.fi
+In-Reply-To: <alpine.DEB.2.00.1103161352150.11002@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/16 Mihai Donțu <mihai.dontu@gmail.com>:
-> Added linux-usb and linux-wireless to CC.
->
-> On Thursday 17 March 2011 00:18:31 Mihai Donțu wrote:
->> Hi,
->>
->> I have just upgraded to 2.6.38 and discovered that I can't use my wireless
->> device (BCM4312 802.11a/b/g). I press Fn + F2, the bluetooth led lights
->> and after a second it turns off by itself. In dmesg I'm seeing the
->> following:
->>
->> [   88.167212] usb 1-2.2: new full speed USB device using ehci_hcd and
->> address 5
->> [   88.782330] usb 1-2.2: USB disconnect, address 5
->>
->> I switched to 2.6.37 until I'll have some time to bisect this. In the mean
->> time I have attached the output of lspci, interrupts and dmesg.
+> Patches that you would like to propose but don't think are ready for merge 
+> should have s/PATCH/RFC/ done on the subject line.
 
-I suspect it's WMI related. What is your machine?
+You're right; I should have.  I blame git-format-patch's defaults, but mea culpa.
+(Now I know about the --subject-prefix=RFC option!)
 
-Please check:
-https://bugzilla.kernel.org/show_bug.cgi?id=31002
-http://comments.gmane.org/gmane.linux.acpi.devel/49577
+> You deliberately created a helper function to take an unsigned int when 
+> the actuals being passed in are all unsigned long to trigger a discussion 
+> on why they are unsigned long?
 
-I can't help you more, I just noticed such a issue reported on ACPI
-ML, you have to dig into this yourself (or someone else may help you).
+Er, no, I'm not that Machiavellian.
+I deliberately did it because it was obvious that the flags would always
+fit into an "unsigned", so I didn't need "unsigned long".
 
--- 
-Rafał
+(Actually, I owe you an apology; when writing that e-mail, I remember
+thinking "I should go back and clarify that statement", but forgot before
+hitting send.)
+
+> unsigned long uses the native word size of the architecture which can 
+> generate more efficient code; we typically imply that flags have a limited 
+> size by including leading zeros in their definition for 32-bit 
+> compatibility:
+
+Um, can you name a (64-bit) architecture on which 32-bit is more
+expensive than 64-bit?  On x86-64, it's potentially cheaper, and even
+the infamous Alpha 21064 has no penalty for 32-bit accesses.  SPARC,
+MIPS, PPC, Itanium, what else?  I don't know about z/ARchitecture,
+but given the emphasis on backward compatibility in IBM's mainframes,
+it seems hard to imagine.
