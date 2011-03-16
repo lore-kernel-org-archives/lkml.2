@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab1CPL17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 07:27:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36141 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab1CPL1z (ORCPT
+	id S1752088Ab1CPLbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 07:31:03 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:3662 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab1CPLaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 07:27:55 -0400
-Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-In-Reply-To: <20110311153134.GO1760@opensource.wolfsonmicro.com>
-References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
-	 <20110311153134.GO1760@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Mar 2011 11:27:51 +0000
-Message-ID: <1300274871.3432.43.camel@odin>
+	Wed, 16 Mar 2011 07:30:55 -0400
+Date: Wed, 16 Mar 2011 12:30:30 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Hans de Goede <hdegoede@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree 
+ (jdelvare-hwmon  tree related)
+Message-ID: <20110316123030.68bdbdcb@endymion.delvare>
+In-Reply-To: <20110315212226.7e940b51.sfr@canb.auug.org.au>
+References: <20110315192428.ce74a177.sfr@canb.auug.org.au>
+	<4D7F2609.3080508@redhat.com>
+	<20110315103228.30233acc@endymion.delvare>
+	<20110315212226.7e940b51.sfr@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-11 at 15:31 +0000, Mark Brown wrote:
-> On Fri, Mar 11, 2011 at 04:26:18PM +0100, Linus Walleij wrote:
-> > From: Linus Walleij <linus.walleij@linaro.org>
-> > 
-> > This switches the ab3100 core to use the enable_time()
-> > infrastructure from the regulator core.
+On Tue, 15 Mar 2011 21:22:26 +1100, Stephen Rothwell wrote:
+> Hi Jean,
 > 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> On Tue, 15 Mar 2011 10:32:28 +0100 Jean Delvare <khali@linux-fr.org> wrote:
+> >
+> > Stephen, sorry for the inconvenience, both Hans and myself build-tested
+> > the new code on an architecture where <linux/delay.h> gets included
+> > implicitly, so we didn't notice it was missing.
+> 
+> It happens.  It seems that delay.h is almost always the one that is
+> forgotten.  X86 builds include it implicitly but powerpc doesn't.
+> 
+> I wonder if we could concoct a nice checkpatch test for it.
 
-Applied.
+Would certainly be a good idea, yes. Probably not trivial though.
 
-Thanks
-
-Liam
-
+-- 
+Jean Delvare
