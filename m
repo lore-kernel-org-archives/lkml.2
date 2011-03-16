@@ -1,128 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab1CPOY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 10:24:27 -0400
-Received: from waste.org ([173.11.57.241]:40406 "EHLO waste.org"
+	id S1752999Ab1CPOZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 10:25:53 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:40525 "EHLO mail-out1.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab1CPOYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 10:24:09 -0400
-Subject: Re: [PATCH 2/8] drivers/char/random: Split out __get_random_int
-From: Matt Mackall <mpm@selenic.com>
-To: George Spelvin <linux@horizon.com>
-Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, penberg@cs.helsinki.fi
-In-Reply-To: <20110316042452.21452.qmail@science.horizon.com>
-References: <20110316042452.21452.qmail@science.horizon.com>
+	id S1752446Ab1CPOZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 10:25:47 -0400
+Subject: Re: [patch]xprt: remove redundant checks
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: j223yang@asset.uwaterloo.ca
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110316064509.GA1498@asset.uwaterloo.ca>
+References: <20110316064509.GA1498@asset.uwaterloo.ca>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Mar 2011 09:24:05 -0500
-Message-ID: <1300285445.3128.485.camel@calx>
+Date: Wed, 16 Mar 2011 10:25:40 -0400
+Message-ID: <1300285540.16266.49.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 5 sum msgs/h 1 total rcpts 1363 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 037F1F956DC80D0C34AAEF887C3E96295C29033B
+X-UiO-SPAM-Test: remote_host: 98.250.108.142 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 10 max/h 2 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 00:24 -0400, George Spelvin wrote:
-> Thank you very much for your review!
+On Wed, 2011-03-16 at 02:45 -0400, j223yang@asset.uwaterloo.ca wrote:
+> 'req' is already dereferenced in 
+> 'struct rpc_xprt *xprt = req->rq_xprt;',
+> but check again later in the function.
+> The patch removes these redundant checks.
 > 
-> > I've spent a while thinking about this over the past few weeks, and I
-> > really don't think it's productive to try to randomize the allocators.
-> > It provides negligible defense and just makes life harder for kernel
-> > hackers.
-> > 
-> > (And you definitely can't randomize SLOB like this.)
+> Signed-off-by: Jinqiu Yang <crindy646@gmail.com>
+> ---
+>  xprt.c |    8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
 > 
-> I'm not sure, either.  I *do* think it actually prevents an attacker
-> reliably allocating two consecutive kernel objects, but I expect that
-> most buffer overrun attacks can just allocate lots of taget objects and
-> figure out which one got smashed.
-> 
-> It's mostly for benchmarking and discussion.
-> 
-> 
-> >> The unlocked function is needed for following work.
-> >> No API change.
-> 
-> > As I mentioned last time this code was discussed, we're already one
-> > crypto-savvy attacker away from this code becoming a security hole. 
-> > We really need to give it a serious rethink before we make it look
-> > anything like a general-use API. 
-> 
-> If you like, and don't mind a few more bytes of per-cpu data, I'll
-> happily replace the whole dubious thing with a cryptographically secure
-> high-speed PRNG.  I'm thinking ChaCha/12, as Salsa20 was selected by
-> eSTREAM and ChaCha is generally agreed to be stronger.  (It's had more
-> review as the basis of the BLAKE hash function, a SHA-3 finalist.)
+> diff --git a/net/sunrpt/xprt.c b/net/sunrpt/xprt.c
+> --- a/net/sunrpc/xprt.c	2011-03-16 00:10:08.764164573 -0400
+> +++ b/net/sunrpt/xprt.c	2011-03-16 02:33:38.559164414 -0400
+> @@ -202,10 +202,8 @@ int xprt_reserve_xprt(struct rpc_task *t
+>  		goto out_sleep;
+>  	}
+>  	xprt->snd_task = task;
+> -	if (req) {
+> -		req->rq_bytes_sent = 0;
+> -		req->rq_ntrans++;
+> -	}
+> +	req->rq_bytes_sent = 0;
+> +	req->rq_ntrans++;
+>  	return 1;
+>  
+>  out_sleep:
+> @@ -213,7 +211,7 @@ out_sleep:
+>  			task->tk_pid, xprt);
+>  	task->tk_timeout = 0;
+>  	task->tk_status = -EAGAIN;
+> -	if (req && req->rq_ntrans)
+> +	if (req->rq_ntrans)
+>  		rpc_sleep_on(&xprt->resend, task, NULL);
+>  	else
+>  		rpc_sleep_on(&xprt->sending, task, NULL);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Yes, let's do this. ChaCha looks like a fine candidate.
+You already sent hunk 1 in a different patch, and I've already applied
+that to the nfs-for-2.6.39 branch. Could you therefore please resend
+this patch with just the second hunk.
 
-> I've got some working SSE2 code for it, too.  Invoking it should be
-> conditional on the amount requested; there's no point context-switching
-> the FPU for one iteration.
-> 
-> I can also add a (configurable) /dev/frandom interface for it.
-
-I'd rather not add an frandom until after we get rid of the
-random/urandom dichotomy.
-
-> > And you've got it backwards here: __ should be the unlocked, dangerous
-> > version. But the locked version already has a __ because it's already
-> > dangerous.
-> 
-> I don't understand.  The old version did *not* have a __, and I added
-> __ in front of the dangerous unlocked version.  If, on re-reading it,
-> you still think I did something wrong, can you please explain in more
-> detail?
-
-I probably misread your patch, sorry.
-
-> 
-> >> This is a function for generating random numbers modulo small
-> >> integers, with uniform distribution and parsimonious use of seed
-> >> material.
-> 
-> > This actually looks pretty reasonable, ignoring the scary API foundation
-> > it's built on. But as popular as rand() % m constructs are with
-> > programmers, it's better to design things so as to avoid the modulus
-> > entirely. We've done pretty well at that so far, so I'd rather not have
-> > such a thing in the kernel.
-> 
-> I was thinking of using it to implement randomize_range(), I just didn't
-> want to be too intrusive, and I'd need to extend the code to handle 64-bit
-> address spaces.
-> 
-> If you'd like, I can do that.  (Actually, looking at it, there are
-> only three callers and the range is always 0x02000000.  And the
-> use of PAGE_ALIGN is wrong; it should round down rather than up.)
-> On Mon, 2011-03-14 at 21:58 -0400, George Spelvin wrote:
-> 
-> 
-> >> For sysfs files that map a boolean to a flags bit.
-> 
-> > This one's actually pretty nice.
-> 
-> The old code just annoyed me; I couldn't stand to cut & paste one
-> more time.
-> 
-> I can probably do better; I can extend the slab_sttribute structure to
-> include the bit mask, have the slab_attr_show and slab_attr_store dispatch
-> functions pass the attribute pointer to the ->show and ->store functions,
-> and do away with all the per-bit functions.
-> 
-> > You should really try to put all the uncontroversial bits of a series
-> > first.
-> 
-> Is that really a more important principle than putting related changes
-> together?  I get the idea, but thought it made more sense to put
-> all the slub.c changes together.
-
-Think of it as a way of making forward progress. You should explicitly
-call out 'hey, these bits are cleanups you should just merge' so they
-don't get lost in the debate. Then the next time around, you have that
-many fewer patches.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
+Cheers
+  Trond
 
