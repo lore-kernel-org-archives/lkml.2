@@ -1,84 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1CPVXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:23:09 -0400
-Received: from kroah.org ([198.145.64.141]:60920 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754459Ab1CPVMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:12:19 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
+	id S1755448Ab1CPVXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:23:25 -0400
+Received: from mail.ch.keymile.com ([193.17.201.103]:34474 "HELO
+	mail.ch.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755298Ab1CPVXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:23:17 -0400
+X-Greylist: delayed 2124 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 17:23:17 EDT
+Message-ID: <4D8121F6.9060600@keymile.com>
+Date: Wed, 16 Mar 2011 21:47:50 +0100
+From: Stefan Bigler <stefan.bigler@keymile.com>
+Reply-To: stefan.bigler@keymile.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Cc: Pavan Savoy <pavan_savoy@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 42/50] drivers:misc: ti-st: fix debugging code
-Date: Wed, 16 Mar 2011 14:11:20 -0700
-Message-Id: <1300309888-5028-42-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
-References: <20110316205204.GA2686@kroah.com>
- <1300309888-5028-1-git-send-email-gregkh@suse.de>
+Subject: TTY loosing data with u_serial gadget
+Content-Type: text/plain;
+	charset=ISO-8859-15;
+	format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Mar 2011 20:47:50.0774 (UTC) FILETIME=[6A3BB960:01CBE41B]
+X-ESAFE-STATUS: Mail allowed
+X-ESAFE-DETAILS: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+Hi all
 
-debug code in TI-ST driver can be enabled by #defining
-DEBUG in the first line of the code and in case debugfs
-is mounted, the 2 entries in /sys/kernel/debug/ti-st/ will
-also provide useful information.
-These 2 were broken because of the recent changes to the parsing
-logic and the registration mechanism of the protocol drivers,
-this patch fixes them.
+I'm facing a problem with TTY loosing data using u_serial gadget.
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+I have a MPC8247 based system running 2.6.33. Data transfer is done 
+bidirectional
+to see the problem more often. I use tty in raw mode and do some delayed 
+reads on the
+receiver side to stress the throttling / un-throttling.
+
+I tracked down the problem and was able to see that n_tty_receive_buf()
+is not able to store all data in the read queue.
+
+The function flush_to_ldisc() use the values of tty->receive_room to
+schedule_delayed_work()or to pass data to receive_buf() and finally 
+n_tty_receive_buf().
+Also the number of passed bytes rely on variable receive_room.
+
+I added debug code to re-calculate the real free space.
+   left_space = N_TTY_BUF_SIZE - tty->read_cnt - 1;
+Comparing receive_room and left_space showed in some cases big 
+differences up to 1600
+bytes. left_space was always smaller and sometimes zero.
+
+receive_room is calculated in n_tty_set_room() without read locking.
+There are various "FIXME does n_tty_set_room need locking ?"
+My test showed, adding a read looking solves the problem.
+
+I asked me why is the locking not done? How big is the risk for dead-locks?
+To minimize this risk, I reduced the changes to a minimum (see the patch 
+below).
+The code in the patch only re-calculates the receive_room for raw mode 
+right before
+it is used in flush_to_ldisc().
+
+Can somebody give me an advice, what is the best way to solve this problem?
+
+Thanks for your help.
+
+Regards Stefan
+
+
+ From 91b04c875cecc890139ccdd101cfff6b02b5f22c Mon Sep 17 00:00:00 2001
+From: Stefan Bigler <stefan.bigler@keymile.com>
+Date: Wed, 16 Mar 2011 15:20:03 +0100
+Subject: [PATCH 1/1] n_tty: fix race condition with receive_room
+
+Do an additional update of receive_room with locking for raw tty.
+The n_tty_set_room is done without locking what is known as a
+potential problem.
+In case of heavy load and raw tty  and flush_to_ldisc() determine
+the number of char to send with receive_buf(). If there is not
+enough space available in receive_buf() the data is lost.
+This additional update of receive_room should reduce the risk of
+have invalid receive_room. It is not a clean fix but the risk of
+risk a dead-lock with clean protection is too high
+
+Signed-off-by: Stefan Bigler <stefan.bigler@keymile.com>
 ---
- drivers/misc/ti-st/st_core.c |   18 ++++--------------
- 1 files changed, 4 insertions(+), 14 deletions(-)
+  drivers/char/tty_buffer.c |   16 ++++++++++++++++
+  1 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index 1847c47..486117f 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -475,9 +475,9 @@ void kim_st_list_protocols(struct st_data_s *st_gdata, void *buf)
- {
- 	seq_printf(buf, "[%d]\nBT=%c\nFM=%c\nGPS=%c\n",
- 			st_gdata->protos_registered,
--			st_gdata->list[ST_BT] != NULL ? 'R' : 'U',
--			st_gdata->list[ST_FM] != NULL ? 'R' : 'U',
--			st_gdata->list[ST_GPS] != NULL ? 'R' : 'U');
-+			st_gdata->list[0x04] != NULL ? 'R' : 'U',
-+			st_gdata->list[0x08] != NULL ? 'R' : 'U',
-+			st_gdata->list[0x09] != NULL ? 'R' : 'U');
- }
- 
- /********************************************************************/
-@@ -644,9 +644,6 @@ long st_unregister(struct st_proto_s *proto)
- long st_write(struct sk_buff *skb)
- {
- 	struct st_data_s *st_gdata;
--#ifdef DEBUG
--	unsigned char chnl_id = ST_MAX_CHANNELS;
--#endif
- 	long len;
- 
- 	st_kim_ref(&st_gdata, 0);
-@@ -655,14 +652,7 @@ long st_write(struct sk_buff *skb)
- 		pr_err("data/tty unavailable to perform write");
- 		return -EINVAL;
- 	}
--#ifdef DEBUG			/* open-up skb to read the 1st byte */
--	chnl_id = skb->data[0];
--	if (unlikely(st_gdata->list[chnl_id] == NULL)) {
--		pr_err(" chnl_id %d not registered, and writing? ",
--			   chnl_id);
--		return -EINVAL;
--	}
--#endif
+diff --git a/drivers/char/tty_buffer.c b/drivers/char/tty_buffer.c
+index f27c4d6..5db07fe 100644
+--- a/drivers/char/tty_buffer.c
++++ b/drivers/char/tty_buffer.c
+@@ -431,6 +431,22 @@ static void flush_to_ldisc(struct work_struct *work)
+                 line discipline as we want to empty the queue */
+              if (test_bit(TTY_FLUSHPENDING, &tty->flags))
+                  break;
 +
- 	pr_debug("%d to be written", skb->len);
- 	len = skb->len;
- 
++            /* Take read_lock to update receive_room.
++               This avoids invalid free space information.
++               To limit the risk of introducing problems
++               only do it for raw tty */
++            if (tty->raw) {
++                unsigned long flags_r;
++                spin_lock_irqsave(&tty->read_lock,
++                    flags_r);
++                tty->receive_room =
++                    N_TTY_BUF_SIZE -
++                    tty->read_cnt - 1;
++                spin_unlock_irqrestore(&tty->read_lock,
++                    flags_r);
++            }
++
+              if (!tty->receive_room) {
+                  schedule_delayed_work(&tty->buf.work, 1);
+                  break;
 -- 
-1.7.4.1
+1.7.0.5
+
+
+
 
