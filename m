@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab1CPJzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 05:55:52 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:42575 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752097Ab1CPJzr (ORCPT
+	id S1752568Ab1CPJ6C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 05:58:02 -0400
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:60045 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab1CPJ55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 05:55:47 -0400
-Date: Wed, 16 Mar 2011 11:55:42 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: balbi@ti.com, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: musb as module broken in 2.6.38
-Message-ID: <20110316095541.GD2325@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <4D8018A9.6000800@ahsoftware.de>
- <20110316090327.GA2325@legolas.emea.dhcp.ti.com>
- <4D808729.9060608@ahsoftware.de>
+	Wed, 16 Mar 2011 05:57:57 -0400
+Date: Wed, 16 Mar 2011 10:57:52 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: chenliu@asset.uwaterloo.ca
+Cc: schwidefsky@de.ibm.com, linux390@de.ibm.com, cotte@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]early: Fix possible overlapping data buffer
+Message-ID: <20110316095752.GA2825@osiris.boeblingen.de.ibm.com>
+References: <20110314152532.GA27277@asset.uwaterloo.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D808729.9060608@ahsoftware.de>
+In-Reply-To: <20110314152532.GA27277@asset.uwaterloo.ca>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 10:47:21AM +0100, Alexander Holler wrote:
-> Am 16.03.2011 10:03, schrieb Felipe Balbi:
-> >Hi,
-> >
-> >On Wed, Mar 16, 2011 at 02:55:53AM +0100, Alexander Holler wrote:
-> >>in commit dc09886bfa781e2b442301116c18199519e36f0f the name of the
-> >>platform-driver was splitted and musb-omap2430 is used for several
-> >>boards (arch/arm/mach-omap2/usb-musb.c).
-> >>
-> >>But musb_hdrc still uses musb-hdrc as name when
-> >>platform_driver_probe() is called. The result is that loading the
-> >>driver (when build as a module) doesn't work anymore (it doesn't find
-> >>the platform-device).
-> >>
-> >>Do I miss something or was something forgotten when the glue-layers
-> >>for musb got introduced?
-> >>
-> >>(The driver still works when linked into the kernel, but is
-> >>disfunctional when build as a module.)
-> >
-> >Send me the output you get on console and a snippet of the .config with
-> >the MUSB section.
+On Mon, Mar 14, 2011 at 11:25:32AM -0400, chenliu@asset.uwaterloo.ca wrote:
+> Thanks Heiko. This patch hasn't been tested yet. I've modifed
+> the Signed=off-by to make it identical to From. Here is the
+> patch:
+
+Yes, obviously untested (see below).
+
+> Signed-off-by: Chen Liu <chenliu@asset.uwaterloo.ca>
+> ---
+>  arch/s390/kernel/early.c |   16 +++++++++++-----
+>  1 file changed, 11 insertions(+), 5 deletions(-)
 > 
-> I don't see the need for it, but here it is:
+> diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
+> --- a/arch/s390/kernel/early.c
+> +++ b/arch/s390/kernel/early.c
+> @@ -94,6 +94,7 @@ static noinline __init void create_kerne
+>  	unsigned int sinitrd_pfn, einitrd_pfn;
+>  #endif
+>  	int response;
+> +	int hlen;
+>  	size_t len;
+>  	char *savesys_ptr;
+>  	char defsys_cmd[DEFSYS_CMD_SIZE];
+> @@ -124,22 +125,27 @@ static noinline __init void create_kerne
+>  	end_pfn = PFN_UP(__pa(&_end));
+>  	min_size = end_pfn << 2;
 > 
-> ------------
-> beagle linux # grep -i MUSB .config
-> CONFIG_USB_MUSB_HDRC=m
-> # CONFIG_USB_MUSB_TUSB6010 is not set
-> CONFIG_USB_MUSB_OMAP2PLUS=y
-> # CONFIG_USB_MUSB_AM35X is not set
-> # CONFIG_USB_MUSB_HOST is not set
-> # CONFIG_USB_MUSB_PERIPHERAL is not set
-> CONFIG_USB_MUSB_OTG=y
-> CONFIG_USB_GADGET_MUSB_HDRC=y
-> CONFIG_USB_MUSB_HDRC_HCD=y
-> # CONFIG_MUSB_PIO_ONLY is not set
-> CONFIG_USB_MUSB_DEBUG=y
-> beagle linux # modprobe musb_hdrc
-> FATAL: Error inserting musb_hdrc (/lib/modules/2.6.38-beagleboard-00002-g0017ea0-dirty/kernel/drivers/usb/musb/musb_hdrc.ko):
-> No such device
-> beagle linux # tail -n 1 /var/log/messages
-> Mar 16 10:37:51 beagle kernel: [  177.302825] musb-hdrc: version 6.0,
-> musb-dma, otg (peripheral+host), debug=5
-> beagle linux # ls /sys/devices/platform/ | grep musb
-> musb-omap2430
-> ------------
+> -	sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
+> +	snprintf(defsys_cmd, sizeof(defsys_cmd),
+> +		"DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
+>  		kernel_nss_name, stext_pfn - 1, stext_pfn, eshared_pfn - 1,
+>  		eshared_pfn, end_pfn);
+> +	defsys_cmd[DEFSYS_CMD_SIZE - 1] = '\0';
 > 
-> The problem in detail:
-> 
-> Through modprobe musb_core.c:musb_init() is called, and this calls
-> platform_driver_probe() with a pointer to a struct of platform_device
-> where the name is musb-hdrc.
-> drivers/base/platform.c:platform_driver_probe() fails with -ENODEV
-> because it doesn't find a platform device with the name musb-hdrc
-> (list_empty()) which is understandable because the platform-device
-> has the name musb-omap2430.
+>  #ifdef CONFIG_BLK_DEV_INITRD
+>  	if (INITRD_START && INITRD_SIZE) {
+>  		sinitrd_pfn = PFN_DOWN(__pa(INITRD_START));
+>  		einitrd_pfn = PFN_UP(__pa(INITRD_START + INITRD_SIZE));
+>  		min_size = einitrd_pfn << 2;
+> -		sprintf(defsys_cmd, "%s EW %.5X-%.5X", defsys_cmd,
+> -		sinitrd_pfn, einitrd_pfn);
+> +		hlen += snprintf(defsys_cmd, DEFSYS_CMD_SIZE - hlen,
 
-look further, omap2430.c allocates musb-hdrc platform_device. The
-problem is a different one.
+hlen is unitialized here, since you forgot to save the size in the
+snprintf statement above.
 
-static int __init omap2430_probe(struct platform_device *pdev)
-{
-	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
-	struct platform_device		*musb;
-	struct omap2430_glue		*glue;
-	struct clk			*clk;
+> +			" EW %.5X-%.5X", defsys_cmd,
 
-	int				ret = -ENOMEM;
+defsys_cmd is still in the input parameter list. The whole point was to
+remove it. ;)
 
-	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
-	if (!glue) {
-		dev_err(&pdev->dev, "failed to allocate glue context\n");
-		goto err0;
-	}
-
-	musb = platform_device_alloc("musb-hdrc", -1);
-	if (!musb) {
-		dev_err(&pdev->dev, "failed to allocate musb device\n");
-		goto err1;
-	}
-
-
--- 
-balbi
+Anyway, I fixed it and applied your patch. Thanks!
