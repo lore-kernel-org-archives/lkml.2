@@ -1,71 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1CPUcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:32:35 -0400
-Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:53188 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792Ab1CPUc2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:32:28 -0400
-Message-ID: <4D811E5A.7080201@free.fr>
-Date: Wed, 16 Mar 2011 21:32:26 +0100
-From: Eric Valette <eric.valette@free.fr>
-Reply-To: eric.valette@free.fr
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110309 Iceowl/1.0b2 Icedove/3.1.9
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Typo in linux-2.6.38/arch/x86/kernel/entry_32.S
-References: <4D80B7EE.40706@Free.fr>	 <20110316195210.GA14675@home.goodmis.org>  <4D8118F7.5060107@free.fr> <1300306954.16880.51.camel@gandalf.stny.rr.com>
-In-Reply-To: <1300306954.16880.51.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753284Ab1CPUfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:35:31 -0400
+Received: from waste.org ([173.11.57.241]:51132 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab1CPUfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 16:35:25 -0400
+Subject: Re: [PATCH 2/8] drivers/char/random: Split out __get_random_int
+From: Matt Mackall <mpm@selenic.com>
+To: George Spelvin <linux@horizon.com>
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, penberg@cs.helsinki.fi
+In-Reply-To: <20110316183549.8468.qmail@science.horizon.com>
+References: <20110316183549.8468.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 15:35:07 -0500
+Message-ID: <1300307707.3128.560.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/03/2011 21:22, Steven Rostedt wrote:
-> On Wed, 2011-03-16 at 21:09 +0100, Eric Vlette wrote:
->> On 16/03/2011 20:52, Steven Rostedt wrote:
->>> On Wed, Mar 16, 2011 at 02:15:26PM +0100, Eric Valette wrote:
->>>> Hi,
->>>>
->>>> Trying to compile 2.6.38, I found the follwoing bug. Compiler barks...
->>>
->>> New compiler? (new binutils more likely)
->>
->> Maybe. I use debian unstable + experimental and upgrade packages almost
->> everyday...
->
-> You probably have new binutils.
->
-> What does "as --version" give you. Binutils 2.21... ?
+On Wed, 2011-03-16 at 14:35 -0400, George Spelvin wrote:
+> >From mpm@selenic.com Wed Mar 16 14:24:09 2011
+> X-Virus-Scanned: Debian amavisd-new at waste.org
+> Subject: Re: [PATCH 2/8] drivers/char/random: Split out __get_random_int
+> From: Matt Mackall <mpm@selenic.com>
+> To: George Spelvin <linux@horizon.com>
+> Cc: herbert@gondor.apana.org.au, linux-kernel@vger.kernel.org, 
+>  linux-mm@kvack.org, penberg@cs.helsinki.fi
+> In-Reply-To: <20110316042452.21452.qmail@science.horizon.com>
+> References: <20110316042452.21452.qmail@science.horizon.com>
+> Content-Type: text/plain; charset="UTF-8"
+> Date: Wed, 16 Mar 2011 09:24:05 -0500
+> Mime-Version: 1.0
+> X-Mailer: Evolution 2.32.2 
+> Content-Transfer-Encoding: 7bit
+> 
+> On Wed, 2011-03-16, Mat Mackall wrote:
+> > On Wed, 2011-03-16 at 00:24 -0400, George Spelvin wrote:
+> >> If you like, and don't mind a few more bytes of per-cpu data, I'll
+> >> happily replace the whole dubious thing with a cryptographically secure
+> >> high-speed PRNG.  I'm thinking ChaCha/12, as Salsa20 was selected by
+> >> eSTREAM and ChaCha is generally agreed to be stronger.  (It's had more
+> >> review as the basis of the BLAKE hash function, a SHA-3 finalist.)
+> 
+> > Yes, let's do this. ChaCha looks like a fine candidate.
+> 
+> Just to confirm, it'll have basically the same structure as the
+> current code: a global secret key, re-seeded every 300 seconds,
+> with per-CPU state for generation.
 
-Well I found the problem at work and I'm home now but since I use the 
-same distrib and just updated, its probably the same.
+>   I'll generate 16 words at a time,
+> and use them until they're exhausted or the global secret changes.
+> 
+> ChaCha uses a 256-bit (8-word) key.  It obviously shouldn't be shared
+> with the weaker half-MD4 operation.  Should I generate both from the
+> pool directly, or only take 8 words and use ChaCha to generate the
+> half-MD4 key?
 
-as --version
-GNU assembler (GNU Binutils for Debian) 2.21.0.20110302
+Ideally, I'd like to banish the syncookie code back to networking. I
+actually had patches that did this, but they collided in flight with
+Arjan's address-space randomization patches.
 
-So probably most debian user will soon or late have the problem.
+So decoupling the lightweight RNG from the half-MD4 crap should be the
+goal. A future goal would be replacing half-MD4 (and its IPv6 sibling)
+with a sensible alternative.
+
+> > I'd rather not add an frandom until after we get rid of the
+> > random/urandom dichotomy.
+> 
+> Can you explain?  I think Ted's idea of the split was a good idea.
+
+I had a long talk with Ted about two years ago (and separately with
+Bruce Schneier) and we all agreed that the entropy accounting was a neat
+idea in theory, but broken in practice. For entropy accounting to
+actually work (and thus make random stronger than urandom), we MUST
+strictly underestimate input entropy. But in general, we have no model
+of entropy sources that actually lets us meet this claim (and in fact we
+know that most of the sources don't!). 
+
+And it hurts us because (a) it keeps us from sampling sources that may
+have significant entropy in practice but not in theory and (b) confuses
+the hell out of everyone.
+
+We'd be better off with significantly more lighter-weight sampling from
+less ideal sources and ditching entropy counting. In other words, we can
+trade some ideal but unrealizable level of security for more actual
+depth.
+
+There's a bit of a chicken and egg problem here though: it's hard to
+introduce a lot of new sampling (eg per-interrupt!) due to locking
+overhead associated with entropy counting. A really lightweight approach
+needs to be nearly exclusively cpu-local, but we need a design that can
+still do cross-cpu catastrophic reseeding. And I've been pretty busy
+with another little project, so this is all a bit stalled.
+
+> >From c7a878c143c7e63d2540785b76db54b2e8cf6d38 Mon Sep 17 00:00:00 2001
+> From: George Spelvin <linux@horizon.com>
+> Date: Wed, 16 Mar 2011 11:42:52 -0400
+> Subject: [PATCH 1/9] drivers/char/random: Eliminate randomize_range().
+> 
+> This is only called in three places, each of which is trivially
+> replaced by a call to get_random_int() followed by a bit mask.
+> (It's to randomize the start of the brk() range by 0..32M bytes,
+> 0..8K pages, which is 13 bits of entropy.)
+> 
+> There is a slight behaviour change, as randomize_range() used PAGE_ALIGN()
+> which rounds up, but it appears that rounding down was the intention.
+
+Can't say I really like this. Your rolled-in bugfix is a perfect
+demonstration of why we don't want to inline this: it's too easy to do
+wrong. Ideally we'd have a nice ASR-friendly helper function using a
+mask somewhere in mm/ that gets all the tricky arch pointer size and
+alignment issues right, rather than a generic-looking one using modulus
+(in a sketchy way) in random.h
+
+> ---
+>  arch/arm/kernel/process.c    |    3 +--
+>  arch/x86/kernel/process.c    |    3 +--
+>  arch/x86/kernel/sys_x86_64.c |    7 ++-----
+>  drivers/char/random.c        |   19 -------------------
+>  include/linux/random.h       |    1 -
+>  5 files changed, 4 insertions(+), 29 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> index 94bbedb..ffb7c87 100644
+> --- a/arch/arm/kernel/process.c
+> +++ b/arch/arm/kernel/process.c
+> @@ -479,8 +479,7 @@ unsigned long get_wchan(struct task_struct *p)
+>  
+>  unsigned long arch_randomize_brk(struct mm_struct *mm)
+>  {
+> -	unsigned long range_end = mm->brk + 0x02000000;
+> -	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
+> +	return mm->brk + (get_random_int() & 0x01ffffff & PAGE_MASK);
+>  }
+>  
+>  #ifdef CONFIG_MMU
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index ff45541..dcec1a1 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -677,7 +677,6 @@ unsigned long arch_align_stack(unsigned long sp)
+>  
+>  unsigned long arch_randomize_brk(struct mm_struct *mm)
+>  {
+> -	unsigned long range_end = mm->brk + 0x02000000;
+> -	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
+> +	return mm->brk + (get_random_int() & 0x01ffffff & PAGE_MASK);
+>  }
+>  
+> diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+> index ff14a50..0f874f7 100644
+> --- a/arch/x86/kernel/sys_x86_64.c
+> +++ b/arch/x86/kernel/sys_x86_64.c
+> @@ -46,11 +46,8 @@ static void find_start_end(unsigned long flags, unsigned long *begin,
+>  		   of playground for now. -AK */
+>  		*begin = 0x40000000;
+>  		*end = 0x80000000;
+> -		if (current->flags & PF_RANDOMIZE) {
+> -			new_begin = randomize_range(*begin, *begin + 0x02000000, 0);
+> -			if (new_begin)
+> -				*begin = new_begin;
+> -		}
+> +		if (current->flags & PF_RANDOMIZE)
+> +			*begin += (get_random_int() & 0x01ffffff & PAGE_MASK);
+>  	} else {
+>  		*begin = TASK_UNMAPPED_BASE;
+>  		*end = TASK_SIZE;
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+> index 72a4fcb..cea9ddc 100644
+> --- a/drivers/char/random.c
+> +++ b/drivers/char/random.c
+> @@ -1639,22 +1639,3 @@ unsigned int get_random_int(void)
+>  
+>  	return ret;
+>  }
+> -
+> -/*
+> - * randomize_range() returns a start address such that
+> - *
+> - *    [...... <range> .....]
+> - *  start                  end
+> - *
+> - * a <range> with size "len" starting at the return value is inside in the
+> - * area defined by [start, end], but is otherwise randomized.
+> - */
+> -unsigned long
+> -randomize_range(unsigned long start, unsigned long end, unsigned long len)
+> -{
+> -	unsigned long range = end - len - start;
+> -
+> -	if (end <= start + len)
+> -		return 0;
+> -	return PAGE_ALIGN(get_random_int() % range + start);
+> -}
+> diff --git a/include/linux/random.h b/include/linux/random.h
+> index fb7ab9d..0e17434 100644
+> --- a/include/linux/random.h
+> +++ b/include/linux/random.h
+> @@ -73,7 +73,6 @@ extern const struct file_operations random_fops, urandom_fops;
+>  #endif
+>  
+>  unsigned int get_random_int(void);
+> -unsigned long randomize_range(unsigned long start, unsigned long end, unsigned long len);
+>  
+>  u32 random32(void);
+>  void srandom32(u32 seed);
 
 
-> I think it was 2.21 that started giving problems.
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-Sound plausible.
 
->> But obviously the begin end is not symmetric as in other function.
->
-> Right, there was a discussion before about this causing issues with new
-> binutils, and I think Ingo or Thomas said that they had patches to fix
-> these for x86. Which this looks like one.
->
-> The old binutils never complained.
-
-Anyway this show once again that the world like symetry and you better 
-remember it ;-) (lock/unlock, malloc free, ...)
-
-Probably a stable candidate for 2.6.38.1
-
---eric
