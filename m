@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab1CPXKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 19:10:25 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:34185 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751561Ab1CPXKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 19:10:20 -0400
-Date: Wed, 16 Mar 2011 19:10:15 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Subject: [RELEASE] LTTng 0.247 and lttng-modules 0.19.8 for Linux 2.6.38
-Message-ID: <20110316231015.GA17725@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 19:08:24 up 113 days,  4:11,  3 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753044Ab1CPXbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 19:31:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49252 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab1CPXbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 19:31:40 -0400
+Date: Thu, 17 Mar 2011 10:31:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>
+Subject: Re: linux-next: build failure after merge of the final tree (block
+ tree  related)
+Message-Id: <20110317103131.6c6be7a5.sfr@canb.auug.org.au>
+In-Reply-To: <4D79CB66.2020302@kernel.dk>
+References: <20110311175830.29a387b2.sfr@canb.auug.org.au>
+	<4D79CB66.2020302@kernel.dk>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__17_Mar_2011_10_31_31_+1100_bSuDZTQECf/l=Ewm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a project that aims
-at producing a highly efficient full system tracing solution.  It is
-composed of several components to allow tracing of the kernel, of
-userspace, trace viewing and analysis and trace streaming.  LTTng is
-open source software. It is being actively developed with the community.
+--Signature=_Thu__17_Mar_2011_10_31_31_+1100_bSuDZTQECf/l=Ewm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Changelog:
+Hi Jens,
 
-* LTTng 0.247 and lttng-modules 0.19.8 now support Linux kernel 2.6.38.
+On Fri, 11 Mar 2011 08:12:38 +0100 Jens Axboe <axboe@kernel.dk> wrote:
+>
+> On 2011-03-11 07:58, Stephen Rothwell wrote:
+> >=20
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> >=20
+> > drivers/char/tpm/tpm_tis.c:96: warning: 'is_itpm' defined but not used
+> > drivers/block/drbd/drbd_bitmap.c: In function '__bm_change_bits_to':
+> > drivers/block/drbd/drbd_bitmap.c:1287: error: implicit declaration of f=
+unction 'generic___test_and_set_le_bit'
+> > drivers/block/drbd/drbd_bitmap.c:1289: error: implicit declaration of f=
+unction 'generic___test_and_clear_le_bit'
+> > drivers/block/drbd/drbd_bitmap.c: In function 'drbd_bm_test_bit':
+> > drivers/block/drbd/drbd_bitmap.c:1438: error: implicit declaration of f=
+unction 'generic_test_le_bit'
+> >=20
+> > Caused by commit 4b0715f09655 ("drbd: allow petabyte storage on 64bit
+> > arch").
+> >=20
+> > I have applied this patch for today (surely there is a better way):
+>=20
+> Thanks for not dropping it, I'll let the drbd guys send in a proper fix
+> and get it committed.
 
-Project website: http://lttng.org
-Download link: http://lttng.org/content/download
-(please refer to the LTTng Manual for installation instructions)
+Ping?
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__17_Mar_2011_10_31_31_+1100_bSuDZTQECf/l=Ewm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNgUhTAAoJEDMEi1NhKgbshu8H/R2uopYWplW5UvRNsfvBTYxL
+gDteVNyNV/qYagK9B42b4M9pbcn6tzJxQcr0LpT8ApMhfQ/hWt/3eJzB/FNNY0ws
+vxZT87W7U3rGl5JHOameYIURKs43cqQutZ3RyEHbSZQsGpnD2ghDMt9EckBhBnII
+WoZ0ch74Ch3MghJ9RU+R29SwDdFm62vUC4NgtbmmqV+z71ohtFxjQ5yvKonrIQTi
+aCmP8KZOudj32+TjSHL3GuGba/G1yRvQI1PARjTL8QNWjWHr7aBOiJHQkaX+nlla
+fa9rRbdCFcmwCmm/z61Ex8kASgJQe5bce1WHzxjmJflj349vSeb0uytWVIh01xI=
+=4OQO
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Mar_2011_10_31_31_+1100_bSuDZTQECf/l=Ewm--
