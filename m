@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab1CPFqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 01:46:45 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:52771 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab1CPFqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 01:46:38 -0400
-Message-ID: <4D804EBD.4030904@us.ibm.com>
-Date: Tue, 15 Mar 2011 22:46:37 -0700
-From: Sridhar Samudrala <sri@us.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1751489Ab1CPFvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 01:51:55 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:52147 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab1CPFvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 01:51:49 -0400
+Date: Wed, 16 Mar 2011 11:21:39 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 7/20]  7: uprobes: store/restore
+ original instruction.
+Message-ID: <20110316055138.GI3410@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+ <20110314133522.27435.45121.sendpatchset@localhost6.localdomain6>
+ <20110314180914.GA18855@fibrous.localdomain>
+ <20110315092247.GW24254@linux.vnet.ibm.com>
+ <1300211862.2203.302.camel@twins>
+ <20110315185841.GH3410@balbir.in.ibm.com>
+ <1300217432.2250.0.camel@laptop>
+ <1300217560.9910.296.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@vyatta.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: No iproute2 for 2.6.38
-References: <20110315195534.0cc43032@nehalam>
-In-Reply-To: <20110315195534.0cc43032@nehalam>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1300217560.9910.296.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/15/2011 7:55 PM, Stephen Hemminger wrote:
-> I am not going to bother releasing for 2.6.38 the only changes
-> were later reverted.
-2.6.38 includes support for macvlan/macvtap 'passthru' mode that allows 
-assigning
-SR-IOV VFs to a KVM guest via macvtap/virtio.
-It is not possible to support live migration using direct assignment of 
-VF's to a guest,
-but 'passthu' assignment makes this possible.
+* Steven Rostedt <rostedt@goodmis.org> [2011-03-15 15:32:40]:
 
-Enabling this feature requires the following patch to iproute2 that 
-allows creating macvlan
-device in 'passthru' mode.
-     http://patchwork.ozlabs.org/patch/69515/
-Looks like this patch is still marked as 'Awaiting upstream'.
-
-Could you apply this patch and it would be great if a version of 
-iproute2 is released for 2.6.38.
-
-Thanks
-Sridhar
-
-> ---
-> Roopa Prabhu (1):
->        iproute2: add VF_PORT support
+> On Tue, 2011-03-15 at 20:30 +0100, Peter Zijlstra wrote:
+> > On Wed, 2011-03-16 at 00:28 +0530, Balbir Singh wrote:
+> 
+> > > I accept the blame and am willing to fix anything incorrect found in
+> > > the code. 
+> > 
+> > :-), ok sounds right, just wasn't entirely obvious when having a quick
+> > look.
+> 
+> Does that mean we should be adding a comment there?
 >
-> Stephen Hemminger (3):
->        Update to lasest kernel headers
->        Revert "iproute2: add VF_PORT support"
->        v2.6.38
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+This is what the current documentation looks like.
 
+#ifdef CONFIG_MM_OWNER
+        /*
+         * "owner" points to a task that is regarded as the canonical
+         * user/owner of this mm. All of the following must be true in
+         * order for it to be changed:
+         *
+         * current == mm->owner
+         * current->mm != mm
+         * new_owner->mm == mm
+         * new_owner->alloc_lock is held
+         */
+        struct task_struct __rcu *owner;
+#endif
+
+Do you want me to document the fork/exit case?
+ 
+
+-- 
+	Three Cheers,
+	Balbir
