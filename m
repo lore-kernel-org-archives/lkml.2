@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab1CPLsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 07:48:15 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:54038 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab1CPLsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 07:48:12 -0400
-Date: Wed, 16 Mar 2011 11:47:52 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: checkpatch.pl: never finishes w/ specific file
-Message-ID: <20110316114752.GI1407@shadowen.org>
-References: <201103021731.01598.toralf.foerster@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S1752480Ab1CPLwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 07:52:32 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:49762 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290Ab1CPLw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 07:52:26 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (ubi
+ tree related)
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reply-To: Artem.Bityutskiy@nokia.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20110316175041.67c4f371.sfr@canb.auug.org.au>
+References: <20110316175041.67c4f371.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Wed, 16 Mar 2011 13:48:39 +0200
+Message-ID: <1300276119.2817.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <201103021731.01598.toralf.foerster@gmx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 05:31:01PM +0100, Toralf F�rster wrote:
-> Hello,
+On Wed, 2011-03-16 at 17:50 +1100, Stephen Rothwell wrote:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 > 
-> this runs infinitely :
+> drivers/mtd/ubi/io.c: In function 'ubi_dbg_check_write':
+> drivers/mtd/ubi/io.c:1348: error: 'PAGE_KERNEL' undeclared (first use in this function)
+> drivers/mtd/ubi/io.c: In function 'ubi_dbg_check_all_ff':
+> drivers/mtd/ubi/io.c:1412: error: 'PAGE_KERNEL' undeclared (first use in this function)
 > 
-> ./scripts/checkpatch.pl --file ./drivers/staging/rtl8192u/r819xU_firmware_img.c
+> Caused by commit 823ed5091113 ("UBI: allocate write checking buffer on demand").
 > 
-> Is this a known behaviour of checkpatch.pl  ?
+> I don't know how to fix this, so I have left it for today.
 
-That one may be already fixed in my development version.  The form of
-the file is familiar.
+Fixed, sorry for the hassle and thank you!
 
-Could you try your file with the one below and let me know:
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-  http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl-testing
-
--apw
