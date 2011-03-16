@@ -1,65 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab1CPMnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 08:43:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61959 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470Ab1CPMn0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 08:43:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Uiv/fKqOcYcXkacX2TTYxuFHFvA690R3x4D9IIgB6mg/kquanXU2vYOaMgi8njSdQS
-         2HxebbVWBnXfmCyETOzgaPAOwQAp1ahUoolksOtSYXqtiC+LJ03Q8ec9stIvEdrTnTpM
-         oK7m1/X7QqeWF7M00yBd1S+RRzBDKacnxtk9g=
+	id S1752659Ab1CPMph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 08:45:37 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50753 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab1CPMpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 08:45:33 -0400
+Date: Wed, 16 Mar 2011 13:45:17 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-ID: <20110316124517.GL2140@cmpxchg.org>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
-In-Reply-To: <1300275412.3432.46.camel@odin>
-References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
-	<20110311153134.GO1760@opensource.wolfsonmicro.com>
-	<AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
-	<20110314181531.GA32434@opensource.wolfsonmicro.com>
-	<AANLkTi=W980GYHVxdYPV3xNKcdGpjAewKssoUc3ZoEDi@mail.gmail.com>
-	<1300275412.3432.46.camel@odin>
-Date: Wed, 16 Mar 2011 13:43:25 +0100
-X-Google-Sender-Auth: KEYquN7uvGLTI90Af2ti6z_w0CY
-Message-ID: <AANLkTiks-D6QfoXmsJv_VPh-v4kZfjR29c6gpG5bW_vk@mail.gmail.com>
-Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299869011-26152-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/16 Liam Girdwood <lrg@slimlogic.co.uk>:
+On Fri, Mar 11, 2011 at 10:43:22AM -0800, Greg Thelen wrote:
+> This patch set provides the ability for each cgroup to have independent dirty
+> page limits.
+> 
+> Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+> page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+> not be able to consume more than their designated share of dirty pages and will
+> be throttled if they cross that limit.
+> 
+> Example use case:
+>   #!/bin/bash
+>   #
+>   # Here is a test script that shows a situation where memcg dirty limits are
+>   # beneficial.
+>   #
+>   # The script runs two programs:
+>   # 1) a dirty page background antagonist (dd)
+>   # 2) an interactive foreground process (tar).
+>   #
+>   # If the script's argument is false, then both processes are run together in
+>   # the root cgroup sharing system-wide dirty memory in classic fashion.  If the
+>   # script is given a true argument, then a cgroup is used to contain dd dirty
+>   # page consumption.  The cgroup isolates the dd dirty memory consumption from
+>   # the rest of the system processes (tar in this case).
+>   #
+>   # The time used by the tar process is printed (lower is better).
+>   #
+>   # The tar process had faster and more predictable performance.  memcg dirty
+>   # ratios might be useful to serve different task classes (interactive vs
+>   # batch).  A past discussion touched on this:
+>   # http://lkml.org/lkml/2010/5/20/136
+>   #
+>   # When called with 'false' (using memcg without dirty isolation):
+>   #  tar takes 8s
+>   #  dd reports 69 MB/s
+>   #
+>   # When called with 'true' (using memcg for dirty isolation):
+>   #  tar takes 6s
+>   #  dd reports 66 MB/s
+>   #
+>   echo memcg_dirty_limits: $1
+>   
+>   # Declare system limits.
+>   echo $((1<<30)) > /proc/sys/vm/dirty_bytes
+>   echo $((1<<29)) > /proc/sys/vm/dirty_background_bytes
+>   
+>   mkdir /dev/cgroup/memory/A
+>   
+>   # start antagonist
+>   if $1; then    # if using cgroup to contain 'dd'...
+>     echo 400M > /dev/cgroup/memory/A/memory.dirty_limit_in_bytes
+>   fi
+>   
+>   (echo $BASHPID > /dev/cgroup/memory/A/tasks; \
+>    dd if=/dev/zero of=big.file count=10k bs=1M) &
+>   
+>   # let antagonist get warmed up
+>   sleep 10
+>   
+>   # time interactive job
+>   time tar -xzf linux.tar.gz
+>   
+>   wait
+>   sleep 10
+>   rmdir /dev/cgroup/memory/A
+> 
+> 
+> The patches are based on a series proposed by Andrea Righi in Mar 2010.
+> 
+> 
+> Overview:
+> - Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+>   unstable.
+> 
+> - Extend mem_cgroup to record the total number of pages in each of the 
+>   interesting dirty states (dirty, writeback, unstable_nfs).  
+> 
+> - Add dirty parameters similar to the system-wide /proc/sys/vm/dirty_* limits to
+>   mem_cgroup.  The mem_cgroup dirty parameters are accessible via cgroupfs
+>   control files.
+> 
+> - Consider both system and per-memcg dirty limits in page writeback when
+>   deciding to queue background writeback or throttle dirty memory production.
+> 
+> Known shortcomings (see the patch 1/9 update to Documentation/cgroups/memory.txt
+> for more details):
+> - When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+>   writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+>   just inodes contributing dirty pages to the cgroup exceeding its limit.
 
-> Btw, you have a few other regulator patches recently in amongst MFD and
-> ARM updates. I assume these will go via MFD ?
+The smaller your cgroups wrt overall system size, the less likely it
+becomes that writeback will find the pages that unblock throttled
+cgrouped dirtiers.
 
-The TPS6105x stuff will go through MFD, hopefully.
+Your example was probably not much affected from this because the
+'needle' of 400MB dirty memory from the cgroup would have to be
+searched for only in the 1G 'haystack' that is the sum total of dirty
+memory before the dirtier could continue (and considering.  Even
+memcg-unaware writeback has a decent chance of writing back the right
+pages by accident.
 
-There are two other AB8500 regulator patches which are ripe
-for merge through the regulator tree right now, and that's the
-ones with Subjects:
+The performance of the throttled dirtier already dropped by 5% in your
+testcase, so I would be really interested in a case where you have 100
+cgroups with dirty limits relatively small to the global dirty limit.
 
-"[PATCH 1/4] regulator: add support for USB voltage regulator"
-"[PATCH 3/4] regulator: initialization for ab8500 regulators"
+> - A cgroup may exceed its dirty limit if the memory is dirtied by a process in a
+>   different memcg.
 
-Both have Mark's ACK, and I think they apply cleanly in
-that order. If there are any problems, tell me and I'll respin.
+I do wonder if we should hide the knobs from userspace as long as the
+limits can not be strictly enforced.  Just proportionally apply the
+global dirty limit (memory.limit_in_bytes * dirty_ratio / 100) and
+make it a best-effort optimization.  It would be an improvement for
+the common case without promising anything.  Does that make sense?
 
-The platform data [4/4] can be applied out-of-order so I will
-bring that in later.
-
-The last patch [2/4] needs some refactoring and a consumer
-interface that I'm working on in accordance with Mark's
-directions, but that's a separate issue.
-
-Yours,
-Linus Walleij
+	Hannes
