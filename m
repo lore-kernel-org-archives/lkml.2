@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab1CPNsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:48:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48269 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab1CPNsL (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 16 Mar 2011 09:48:11 -0400
-Date: Wed, 16 Mar 2011 09:47:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, dgdegra@tycho.nsa.gov,
-        xen-devel@lists.xensource.com, Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] [PATCH 1/4] xen-fbfront: Read width/height from
- backend
-Message-ID: <20110316134754.GC4959@dumpdata.com>
-References: <1300198274-1325-1-git-send-email-konrad.wilk@oracle.com>
- <1300198274-1325-2-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300198274-1325-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D80BF8D.013D,ss=1,fgs=0
+	id S1751237Ab1CPNwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:52:13 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35372 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750765Ab1CPNwC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 09:52:02 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Magnus Damm <damm@opensource.se>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] device: add dev_WARN_ON and dev_WARN_ONCE
+Date: Wed, 16 Mar 2011 15:51:54 +0200
+Message-Id: <1300283514-27105-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.4.rc2
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 10:11:12AM -0400, Konrad Rzeszutek Wilk wrote:
-> From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-> 
-> This allows the backend driver to specify the size of the framebuffer
-> instead of requiring it to be on the kernel command line.
-> 
-> Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+it's quite useful to print the device name
+on the stack dump caused by WARN(), but
+there are other cases where we might want
+to use WARN_ON() or WARN_ONCE, introduce
+helpers similar to dev_WARN() for those
+cases too.
 
-Replace Acked-by by Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-please.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ include/linux/device.h |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 1bf5cf0..454d7c1 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -739,13 +739,21 @@ do {						     \
+ #endif
+ 
+ /*
+- * dev_WARN() acts like dev_printk(), but with the key difference
++ * dev_WARN*() acts like dev_printk(), but with the key difference
+  * of using a WARN/WARN_ON to get the message out, including the
+  * file/line information and a backtrace.
+  */
+ #define dev_WARN(dev, format, arg...) \
+ 	WARN(1, "Device: %s\n" format, dev_driver_string(dev), ## arg);
+ 
++#define dev_WARN_ON(dev, condition, format, arg...) \
++	WARN_ON(condition, "Device: %s\n" format,  \
++			dev_driver_string(dev), ## arg)
++
++#define dev_WARN_ONCE(dev, condition, format, arg...) \
++	WARN_ONCE(condition, "Device %s\n" format, \
++			dev_driver_string(dev), ## arg)
++
+ /* Create alias, so I can be autoloaded. */
+ #define MODULE_ALIAS_CHARDEV(major,minor) \
+ 	MODULE_ALIAS("char-major-" __stringify(major) "-" __stringify(minor))
+-- 
+1.7.4.rc2
+
