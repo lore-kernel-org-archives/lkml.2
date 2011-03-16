@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab1CPWeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 18:34:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39682 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751143Ab1CPWeH (ORCPT
+	id S1753091Ab1CPWfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 18:35:08 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55378 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab1CPWfE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 18:34:07 -0400
-Date: Wed, 16 Mar 2011 15:33:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, maximlevitsky@gmail.com,
-        James.Bottomley@HansenPartnership.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-Message-Id: <20110316153321.8345606a.akpm@linux-foundation.org>
-In-Reply-To: <403815.22502.qm@web37607.mail.mud.yahoo.com>
-References: <20110316113527C.fujita.tomonori@lab.ntt.co.jp>
-	<403815.22502.qm@web37607.mail.mud.yahoo.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Mar 2011 18:35:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QEfWjItw6SiCEZPJmQ3LLQKALNB1sDyFTLWXlDCUBbxAaeg5B5QPwdyI9pBMAi3Whj
+         Y1e+OX1H9rVZ5tTgQikJo+Y+CnHTj2kPjRAm5ScQLRz011V5mhqyEcgedoSdSyY5MXMc
+         w0Yxcp+LypHCul0d27IT4bLl5+anLQ56sA7Wg=
+MIME-Version: 1.0
+In-Reply-To: <201103170022.24290.mihai.dontu@gmail.com>
+References: <201103170018.32061.mihai.dontu@gmail.com>
+	<201103170022.24290.mihai.dontu@gmail.com>
+Date: Wed, 16 Mar 2011 23:35:02 +0100
+Message-ID: <AANLkTi=-B0e4VT_v+F23Q+hG_zn=JnVbmVHnFpETVrZu@mail.gmail.com>
+Subject: Re: [b43] usb device disconnects automatically after 1s
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: =?UTF-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.og,
+        linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 21:18:14 -0700 (PDT)
-Alex Dubov <oakad@yahoo.com> wrote:
+2011/3/16 Mihai Donțu <mihai.dontu@gmail.com>:
+> Added linux-usb and linux-wireless to CC.
+>
+> On Thursday 17 March 2011 00:18:31 Mihai Donțu wrote:
+>> Hi,
+>>
+>> I have just upgraded to 2.6.38 and discovered that I can't use my wireless
+>> device (BCM4312 802.11a/b/g). I press Fn + F2, the bluetooth led lights
+>> and after a second it turns off by itself. In dmesg I'm seeing the
+>> following:
+>>
+>> [   88.167212] usb 1-2.2: new full speed USB device using ehci_hcd and
+>> address 5
+>> [   88.782330] usb 1-2.2: USB disconnect, address 5
+>>
+>> I switched to 2.6.37 until I'll have some time to bisect this. In the mean
+>> time I have attached the output of lspci, interrupts and dmesg.
 
-> 
-> > 
-> > I don't think so.
-> > 
-> > Splitting (or merging) a request and playing with sg lists
-> > inside a
-> > driver is a bad idea. Such should be done in the block
-> > layer.
-> > 
-> > I still don't see why the block layer can't do that for the
-> > driver.
-> > 
-> > I believe that the helper functions for such should not be
-> > added.
-> > 
-> 
-> 
-> In a particular case of flash-like devices, letting the block layer
-> split requests into memory sequential blocks too often results in
-> unnecessary fragmentation of writes/erases.
-> 
-> If only one sg entry is requested from the block layer, it will be (more
-> often than not) only 1 or 2 pages in length, even if total size of
-> prospective write request spans multiple erase blocks.
-> 
-> So there are really only two options for legacy memorystick driver:
-> 1. Play with scatterlists explicitly.
-> 2. Make it an MTD backend, rather then stand-alone block device.
-> 
-> The second option makes more sense, but it is not necessarily the optimal
-> approach for implementation of this particular media format.
-> 
+I suspect it's WMI related. What is your machine?
 
-Thanks.
+Please check:
+https://bugzilla.kernel.org/show_bug.cgi?id=31002
+http://comments.gmane.org/gmane.linux.acpi.devel/49577
 
-Do you believe that any other driver is likely to ue the sg
-infrastructure which this patch adds?  Should those additions be 
-internal to the memstick code, at least for now?
+I can't help you more, I just noticed such a issue reported on ACPI
+ML, you have to dig into this yourself (or someone else may help you).
+
+-- 
+Rafał
