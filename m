@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1CPVNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:13:06 -0400
-Received: from kroah.org ([198.145.64.141]:42613 "EHLO coco.kroah.org"
+	id S1754740Ab1CPVNU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:13:20 -0400
+Received: from kroah.org ([198.145.64.141]:42652 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752851Ab1CPVLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:11:48 -0400
+	id S1753635Ab1CPVMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:12:10 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Ferenc Wagner <wferi@niif.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 18/50] driver core: Replace the dangerous to_root_device macro with an inline function
-Date: Wed, 16 Mar 2011 14:10:56 -0700
-Message-Id: <1300309888-5028-18-git-send-email-gregkh@suse.de>
+Cc: Mike Waychison <mikew@google.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 37/50] firmware: Add documentation for /sys/firmware/dmi
+Date: Wed, 16 Mar 2011 14:11:15 -0700
+Message-Id: <1300309888-5028-37-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
 References: <20110316205204.GA2686@kroah.com>
@@ -20,34 +20,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ferenc Wagner <wferi@niif.hu>
+From: Mike Waychison <mikew@google.com>
 
-The original macro worked only when applied to variables named 'dev'.
-While this could have been fixed by simply renaming the macro argument,
-a more type-safe replacement by an inline function is preferred.
+Document the new ABI added by the dmi-sysfs module.
 
-Signed-off-by: Ferenc Wagner <wferi@niif.hu>
+Signed-off-by: Mike Waychison <mikew@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/core.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ Documentation/ABI/testing/sysfs-firmware-dmi |  110 ++++++++++++++++++++++++++
+ 1 files changed, 110 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-firmware-dmi
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 9cd3b5c..81b78ed 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1320,7 +1320,10 @@ struct root_device
- 	struct module *owner;
- };
- 
--#define to_root_device(dev) container_of(dev, struct root_device, dev)
-+inline struct root_device *to_root_device(struct device *d)
-+{
-+	return container_of(d, struct root_device, dev);
-+}
- 
- static void root_device_release(struct device *dev)
- {
+diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
+new file mode 100644
+index 0000000..ba9da95
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-firmware-dmi
+@@ -0,0 +1,110 @@
++What:		/sys/firmware/dmi/
++Date:		February 2011
++Contact:	Mike Waychison <mikew@google.com>
++Description:
++		Many machines' firmware (x86 and ia64) export DMI /
++		SMBIOS tables to the operating system.  Getting at this
++		information is often valuable to userland, especially in
++		cases where there are OEM extensions used.
++
++		The kernel itself does not rely on the majority of the
++		information in these tables being correct.  It equally
++		cannot ensure that the data as exported to userland is
++		without error either.
++
++		DMI is structured as a large table of entries, where
++		each entry has a common header indicating the type and
++		length of the entry, as well as 'handle' that is
++		supposed to be unique amongst all entries.
++
++		Some entries are required by the specification, but many
++		others are optional.  In general though, users should
++		never expect to find a specific entry type on their
++		system unless they know for certain what their firmware
++		is doing.  Machine to machine will vary.
++
++		Multiple entries of the same type are allowed.  In order
++		to handle these duplicate entry types, each entry is
++		assigned by the operating system an 'instance', which is
++		derived from an entry type's ordinal position.  That is
++		to say, if there are 'N' multiple entries with the same type
++		'T' in the DMI tables (adjacent or spread apart, it
++		doesn't matter), they will be represented in sysfs as
++		entries "T-0" through "T-(N-1)":
++
++		Example entry directories:
++
++			/sys/firmware/dmi/entries/17-0
++			/sys/firmware/dmi/entries/17-1
++			/sys/firmware/dmi/entries/17-2
++			/sys/firmware/dmi/entries/17-3
++			...
++
++		Instance numbers are used in lieu of the firmware
++		assigned entry handles as the kernel itself makes no
++		guarantees that handles as exported are unique, and
++		there are likely firmware images that get this wrong in
++		the wild.
++
++		Each DMI entry in sysfs has the common header values
++		exported as attributes:
++
++		handle	: The 16bit 'handle' that is assigned to this
++			  entry by the firmware.  This handle may be
++			  referred to by other entries.
++		length	: The length of the entry, as presented in the
++			  entry itself.  Note that this is _not the
++			  total count of bytes associated with the
++			  entry_.  This value represents the length of
++			  the "formatted" portion of the entry.  This
++			  "formatted" region is sometimes followed by
++			  the "unformatted" region composed of nul
++			  terminated strings, with termination signalled
++			  by a two nul characters in series.
++		raw	: The raw bytes of the entry. This includes the
++			  "formatted" portion of the entry, the
++			  "unformatted" strings portion of the entry,
++			  and the two terminating nul characters.
++		type	: The type of the entry.  This value is the same
++			  as found in the directory name.  It indicates
++			  how the rest of the entry should be
++			  interpreted.
++		instance: The instance ordinal of the entry for the
++			  given type.  This value is the same as found
++			  in the parent directory name.
++		position: The position of the entry within the entirety
++			  of the entirety.
++
++		=== Entry Specialization ===
++
++		Some entry types may have other information available in
++		sysfs.
++
++		--- Type 15 - System Event Log ---
++
++		This entry allows the firmware to export a log of
++		events the system has taken.  This information is
++		typically backed by nvram, but the implementation
++		details are abstracted by this table.  This entries data
++		is exported in the directory:
++
++		/sys/firmware/dmi/entries/15-0/system_event_log
++
++		and has the following attributes (documented in the
++		SMBIOS / DMI specification under "System Event Log (Type 15)":
++
++		area_length
++		header_start_offset
++		data_start_offset
++		access_method
++		status
++		change_token
++		access_method_address
++		header_format
++		per_log_type_descriptor_length
++		type_descriptors_supported_count
++
++		As well, the kernel exports the binary attribute:
++
++		raw_event_log	: The raw binary bits of the event log
++				  as described by the DMI entry.
 -- 
 1.7.4.1
 
