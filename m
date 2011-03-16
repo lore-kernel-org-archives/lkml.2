@@ -1,107 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab1CPRcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 13:32:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2096 "EHLO mx1.redhat.com"
+	id S1753165Ab1CPRcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 13:32:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4149 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab1CPRb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 13:31:57 -0400
-Date: Wed, 16 Mar 2011 13:31:48 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, jmoyer@redhat.com, shaohua.li@intel.com
-Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task plugging
-Message-ID: <20110316173148.GC13562@redhat.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
- <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
- <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
+	id S1751218Ab1CPRcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 13:32:31 -0400
+From: Tom Tromey <tromey@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	<20110314163028.a05cec49.akpm@linux-foundation.org>
+	<20110314234754.GP2499@one.firstfloor.org>
+	<alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
+	<20110315180639.GQ2499@one.firstfloor.org>
+	<alpine.LFD.2.00.1103152038280.2787@localhost6.localdomain6>
+	<1300219261.9910.300.camel@gandalf.stny.rr.com>
+	<alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
+	<1300221856.9910.305.camel@gandalf.stny.rr.com>
+X-Attribution: Tom
+Date: Wed, 16 Mar 2011 11:32:06 -0600
+In-Reply-To: <1300221856.9910.305.camel@gandalf.stny.rr.com> (Steven Rostedt's
+	message of "Tue, 15 Mar 2011 16:44:16 -0400")
+Message-ID: <m3lj0f2cq1.fsf@fleche.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 04:18:30PM +0800, Shaohua Li wrote:
-> 2011/1/22 Jens Axboe <jaxboe@fusionio.com>:
-> > Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-> > ---
-> >  block/blk-core.c          |  357 ++++++++++++++++++++++++++++++++------------
-> >  block/elevator.c          |    6 +-
-> >  include/linux/blk_types.h |    2 +
-> >  include/linux/blkdev.h    |   30 ++++
-> >  include/linux/elevator.h  |    1 +
-> >  include/linux/sched.h     |    6 +
-> >  kernel/exit.c             |    1 +
-> >  kernel/fork.c             |    3 +
-> >  kernel/sched.c            |   11 ++-
-> >  9 files changed, 317 insertions(+), 100 deletions(-)
-> >
-> > diff --git a/block/blk-core.c b/block/blk-core.c
-> > index 960f12c..42dbfcc 100644
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -27,6 +27,7 @@
-> >  #include <linux/writeback.h>
-> >  #include <linux/task_io_accounting_ops.h>
-> >  #include <linux/fault-inject.h>
-> > +#include <linux/list_sort.h>
-> >
-> >  #define CREATE_TRACE_POINTS
-> >  #include <trace/events/block.h>
-> > @@ -213,7 +214,7 @@ static void blk_delay_work(struct work_struct *work)
-> >
-> >        q = container_of(work, struct request_queue, delay_work.work);
-> >        spin_lock_irq(q->queue_lock);
-> > -       q->request_fn(q);
-> > +       __blk_run_queue(q);
-> >        spin_unlock_irq(q->queue_lock);
-> >  }
-> Hi Jens,
-> I have some questions about the per-task plugging. Since the request
-> list is per-task, and each task delivers its requests at finish flush
-> or schedule. But when one cpu delivers requests to global queue, other
-> cpus don't know. This seems to have problem. For example:
-> 1. get_request_wait() can only flush current task's request list,
-> other cpus/tasks might still have a lot of requests, which aren't sent
-> to request_queue.
+Steve> I'm more interested in the perf/trace than gdb, as the way gdb is mostly
+Steve> used (at least now) to debug problems in the code with a big hammer
+Steve> (single step, look at registers/variables). That is, gdb is usually very
+Steve> interactive and its best to "stop the code" from running to examine what
+Steve> has happened. gdb is not something you will run on an application that
+Steve> is being used by others.
 
-But very soon these requests will be sent to request queue as soon task
-is either scheduled out or task explicitly flushes the plug? So we might
-wait a bit longer but that might not matter in general, i guess. 
+It depends.  People do in fact do this stuff.  In recent years gdb got
+its own implementation of "always inserted" breakpoints (basically the
+same idea as uprobes) to support some trickier multi-thread debugging
+scenarios.
 
-> your ioc-rq-alloc branch is for this, right? Will it
-> be pushed to 2.6.39 too? I'm wondering if we should limit per-task
-> queue length. If there are enough requests there, we force a flush
-> plug.
-
-That's the idea jens had. But then came the question of maintaining
-data structures per task per disk. That makes it complicated.
-
-Even if we move the accounting out of request queue and do it say at
-bdi, ideally we shall to do per task per bdi accounting.
-
-Jens seemed to be suggesting that generally fluser threads are the
-main cluprit for submitting large amount of IO. They are already per
-bdi. So probably just maintain a per task limit for flusher threads.
-
-I am not sure what happens to direct reclaim path, AIO deep queue 
-paths etc.
-  
-> 2. some APIs like blk_delay_work, which call __blk_run_queue() might
-> not work. because other CPUs might not dispatch their requests to
-> request queue. So __blk_run_queue will eventually find no requests,
-> which might stall devices.
-> Since one cpu doesn't know other cpus' request list, I'm wondering if
-> there are other similar issues.
-
-So again in this case if queue is empty at the time of __blk_run_queue(),
-then we will probably just experinece little more delay then intended
-till some task flushes. But should not stall the system?
-
-Thanks
-Vivek
+Tom
