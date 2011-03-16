@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab1CPXz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 19:55:56 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12996 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab1CPXzu (ORCPT
+	id S1751490Ab1CPX4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 19:56:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38233 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab1CPX4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 19:55:50 -0400
-Date: Thu, 17 Mar 2011 00:55:33 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Michal Hocko <mhocko@suse.cz>
-cc: Jiri Kosina <trivial@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation/vm/unevictable-lru.txt: CONFIG_UNEVICTABLE_LRU
- doesn't exist anymore
-In-Reply-To: <20110316140137.GA12544@tiehlicka.suse.cz>
-Message-ID: <alpine.LNX.2.00.1103170051510.24706@swampdragon.chaosbits.net>
-References: <20110316140137.GA12544@tiehlicka.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 16 Mar 2011 19:56:11 -0400
+Date: Wed, 16 Mar 2011 23:56:08 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] mnt_devname queue
+Message-ID: <20110316235608.GY22723@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Mar 2011, Michal Hocko wrote:
+	Kills ->mnt_devname mangling in NFS, completes switch from ->get_sb()
+to ->mount() (and kills the remnants of ->get_sb() helpers), makes /proc/mounts
+and /proc/*/mountinfo show the right thing after mount --bind on NFS.  Trond
+has ACKed the nfs side of things and suggested to push through the vfs tree,
+so please pull from
+git:git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ mnt_devname
 
-> commit 6837765963f1723e80ca97b1fae660f3a60d77df has removed the config
-> option so we should sync up the doc as well.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  Documentation/vm/unevictable-lru.txt |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/vm/unevictable-lru.txt b/Documentation/vm/unevictable-lru.txt
-> index 2d70d0d..aad6607 100644
-> --- a/Documentation/vm/unevictable-lru.txt
-> +++ b/Documentation/vm/unevictable-lru.txt
-> @@ -84,8 +84,7 @@ indicate that the page is being managed on the unevictable list.
->  
->  The PG_unevictable flag is analogous to, and mutually exclusive with, the
->  PG_active flag in that it indicates on which LRU list a page resides when
-> -PG_lru is set.  The unevictable list is compile-time configurable based on the
-> -UNEVICTABLE_LRU Kconfig option.
-> +PG_lru is set. 
->  
->  The Unevictable LRU infrastructure maintains unevictable pages on an additional
->  LRU list for a few reasons:
-> 
+Shortlog:
+Al Viro (8):
+      nfs: propagate devname to nfs{,4}_get_root()
+      nfs: store devname at disconnected NFS roots
+      nfs: make nfs_path() work without vfsmount
+      nfs: nfs_do_{ref,sub}mount() superblock argument is redundant
+      vfs: new superblock methods to override /proc/*/mount{s,info}
+      nfs: stop mangling ->mnt_devname on NFS
+      nfs: switch NFS from ->get_sb() to ->mount()
+      vfs: bury ->get_sb()
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+Diffstat:
+ Documentation/filesystems/Locking |    6 +-
+ Documentation/filesystems/porting |    7 ++
+ Documentation/filesystems/vfs.txt |   56 ++++++-----
+ fs/namespace.c                    |   39 ++++++--
+ fs/nfs/dir.c                      |   13 +++
+ fs/nfs/getroot.c                  |   42 +++++++-
+ fs/nfs/internal.h                 |   21 ++--
+ fs/nfs/namespace.c                |   66 ++++++++-----
+ fs/nfs/nfs4namespace.c            |   41 +++-----
+ fs/nfs/super.c                    |  194 +++++++++++++++++++------------------
+ fs/nfs/unlink.c                   |   20 ++++
+ fs/super.c                        |   67 +------------
+ include/linux/fs.h                |   16 +---
+ 13 files changed, 316 insertions(+), 272 deletions(-)
 
