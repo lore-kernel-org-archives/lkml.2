@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab1CPJmB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 05:42:01 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43024 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab1CPJl4 convert rfc822-to-8bit (ORCPT
+	id S1752505Ab1CPJrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 05:47:35 -0400
+Received: from h1047321.serverkompetenz.net ([85.214.67.163]:42814 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab1CPJr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 05:41:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=QBpc+U0/duEw75Civ2fKiniZMcFzC6DG3VYFILaZoqn9sGUOJ2WVHp4O4m6+adliyO
-         alVIuPoSm6GCFRdK7WYw==
+	Wed, 16 Mar 2011 05:47:29 -0400
+Message-ID: <4D808729.9060608@ahsoftware.de>
+Date: Wed, 16 Mar 2011 10:47:21 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1299697239.12209.1.camel@rklein-linux2>
-References: <1298853672-21330-1-git-send-email-bleung@chromium.org>
-	<1298857308-22790-2-git-send-email-bleung@chromium.org>
-	<1299697239.12209.1.camel@rklein-linux2>
-Date: Wed, 16 Mar 2011 02:41:52 -0700
-X-Google-Sender-Auth: gCb8PYBhtTtdaxdf2ufbzBow53I
-Message-ID: <AANLkTi=7_+hRgGFOyOuN2VKD8jQRaL5AKi=ih-x+3Ck7@mail.gmail.com>
-Subject: Re: [PATCH] power: bq20z75: Fix time and temp units
-From: Benson Leung <bleung@chromium.org>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: balbi@ti.com
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: musb as module broken in 2.6.38
+References: <4D8018A9.6000800@ahsoftware.de> <20110316090327.GA2325@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110316090327.GA2325@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
-
-Rhyland has LGTM'd my change to the bq20z75 driver to fix temperature
-and time units. Can it go upstream?
-
-Thanks,
-Benson
-
-On Wed, Mar 9, 2011 at 11:00 AM, Rhyland Klein <rklein@nvidia.com> wrote:
+Am 16.03.2011 10:03, schrieb Felipe Balbi:
+> Hi,
 >
-> On Sun, 2011-02-27 at 17:41 -0800, Benson Leung wrote:
-> > Corrected temperature and time to empty/full conversions.
-> > Temperature is in 0.1°C, time is in seconds.
-> >
-> > Corrected units in comment. "Convert to µWh."
-> >
-> > Signed-off-by: Benson Leung <bleung@chromium.org>
-> > ---
-> >  drivers/power/bq20z75.c |   18 ++++++++++++------
-> >  1 files changed, 12 insertions(+), 6 deletions(-)
-> >
-> > diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-> > index 4141775..123e169 100644
-> > --- a/drivers/power/bq20z75.c
-> > +++ b/drivers/power/bq20z75.c
-> > @@ -269,12 +269,15 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
-> >  {
-> >  #define BASE_UNIT_CONVERSION         1000
-> >  #define BATTERY_MODE_CAP_MULT_WATT   (10 * BASE_UNIT_CONVERSION)
-> > -#define TIME_UNIT_CONVERSION         600
-> > -#define TEMP_KELVIN_TO_CELCIUS               2731
-> > +#define TIME_UNIT_CONVERSION         60
-> > +#define TEMP_KELVIN_TO_CELSIUS               2731
-> >       switch (psp) {
-> >       case POWER_SUPPLY_PROP_ENERGY_NOW:
-> >       case POWER_SUPPLY_PROP_ENERGY_FULL:
-> >       case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
-> > +             /* bq20z75 provides energy in units of 10mWh.
-> > +              * Convert to µWh
-> > +              */
-> >               val->intval *= BATTERY_MODE_CAP_MULT_WATT;
-> >               break;
-> >
-> > @@ -288,14 +291,17 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
-> >               break;
-> >
-> >       case POWER_SUPPLY_PROP_TEMP:
-> > -             /* bq20z75 provides battery tempreture in 0.1°K
-> > -              * so convert it to 0.1°C */
-> > -             val->intval -= TEMP_KELVIN_TO_CELCIUS;
-> > -             val->intval *= 10;
-> > +             /* bq20z75 provides battery temperature in 0.1K
-> > +              * so convert it to 0.1°C
-> > +              */
-> > +             val->intval -= TEMP_KELVIN_TO_CELSIUS;
-> >               break;
-> >
-> >       case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
-> >       case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
-> > +             /* bq20z75 provides time to empty and time to full in minutes.
-> > +              * Convert to seconds
-> > +              */
-> >               val->intval *= TIME_UNIT_CONVERSION;
-> >               break;
-> >
+> On Wed, Mar 16, 2011 at 02:55:53AM +0100, Alexander Holler wrote:
+>> in commit dc09886bfa781e2b442301116c18199519e36f0f the name of the
+>> platform-driver was splitted and musb-omap2430 is used for several
+>> boards (arch/arm/mach-omap2/usb-musb.c).
+>>
+>> But musb_hdrc still uses musb-hdrc as name when
+>> platform_driver_probe() is called. The result is that loading the
+>> driver (when build as a module) doesn't work anymore (it doesn't find
+>> the platform-device).
+>>
+>> Do I miss something or was something forgotten when the glue-layers
+>> for musb got introduced?
+>>
+>> (The driver still works when linked into the kernel, but is
+>> disfunctional when build as a module.)
 >
-> LGTM
->
-> Acked-by: Rhyland Klein <rklein@nvidia.com>
->
->
+> Send me the output you get on console and a snippet of the .config with
+> the MUSB section.
 
+I don't see the need for it, but here it is:
 
+------------
+beagle linux # grep -i MUSB .config
+CONFIG_USB_MUSB_HDRC=m
+# CONFIG_USB_MUSB_TUSB6010 is not set
+CONFIG_USB_MUSB_OMAP2PLUS=y
+# CONFIG_USB_MUSB_AM35X is not set
+# CONFIG_USB_MUSB_HOST is not set
+# CONFIG_USB_MUSB_PERIPHERAL is not set
+CONFIG_USB_MUSB_OTG=y
+CONFIG_USB_GADGET_MUSB_HDRC=y
+CONFIG_USB_MUSB_HDRC_HCD=y
+# CONFIG_MUSB_PIO_ONLY is not set
+CONFIG_USB_MUSB_DEBUG=y
+beagle linux # modprobe musb_hdrc
+FATAL: Error inserting musb_hdrc 
+(/lib/modules/2.6.38-beagleboard-00002-g0017ea0-dirty/kernel/drivers/usb/musb/musb_hdrc.ko): 
+No such device
+beagle linux # tail -n 1 /var/log/messages
+Mar 16 10:37:51 beagle kernel: [  177.302825] musb-hdrc: version 6.0, 
+musb-dma, otg (peripheral+host), debug=5
+beagle linux # ls /sys/devices/platform/ | grep musb
+musb-omap2430
+------------
 
---
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
+The problem in detail:
+
+Through modprobe musb_core.c:musb_init() is called, and this calls 
+platform_driver_probe() with a pointer to a struct of platform_device 
+where the name is musb-hdrc. 
+drivers/base/platform.c:platform_driver_probe() fails with -ENODEV 
+because it doesn't find a platform device with the name musb-hdrc 
+(list_empty()) which is understandable because the platform-device has 
+the name musb-omap2430.
+
+Regards,
+
+Alexander Holler
