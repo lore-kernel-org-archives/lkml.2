@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab1CPVUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:20:48 -0400
-Received: from kroah.org ([198.145.64.141]:60993 "EHLO coco.kroah.org"
+	id S1755373Ab1CPVVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:21:00 -0400
+Received: from kroah.org ([198.145.64.141]:60920 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108Ab1CPVMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:12:34 -0400
+	id S1754548Ab1CPVMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:12:32 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
+Cc: Mike Waychison <mikew@google.com>, Matt Domsch <Matt_Domsch@dell.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 50/50] printk: do not mangle valid userspace syslog prefixes
-Date: Wed, 16 Mar 2011 14:11:28 -0700
-Message-Id: <1300309888-5028-50-git-send-email-gregkh@suse.de>
+Subject: [PATCH 49/50] efivars: Add Documentation
+Date: Wed, 16 Mar 2011 14:11:27 -0700
+Message-Id: <1300309888-5028-49-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
 References: <20110316205204.GA2686@kroah.com>
@@ -22,216 +21,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay.sievers@vrfy.org>
+From: Mike Waychison <mikew@google.com>
 
-printk: do not mangle valid userspace syslog prefixes with /dev/kmsg
+This patch documents the interface exposed by the 'efivars' module.
 
-Log messages passed to the kernel log by using /dev/kmsg or /dev/ttyprintk
-might contain a syslog prefix including the syslog facility value.
-
-This makes printk to recognize these headers properly, extract the real log
-level from it to use, and add the prefix as a proper prefix to the
-log buffer, instead of wrongly printing it as the log message text.
-
-Before:
-  $ echo '<14>text' > /dev/kmsg
-  $ dmesg -r
-  <4>[135159.594810] <14>text
-
-After:
-  $ echo '<14>text' > /dev/kmsg
-  $ dmesg -r
-  <14>[   50.750654] text
-
-Cc: Lennart Poettering <lennart@poettering.net>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Mike Waychison <mikew@google.com>
+Cc: Matt Domsch <Matt_Domsch@dell.com>,
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/printk.c |  138 +++++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 104 insertions(+), 34 deletions(-)
+ Documentation/ABI/stable/sysfs-firmware-efi-vars |   75 ++++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/stable/sysfs-firmware-efi-vars
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 2ddbdc7..5e3d042 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -499,6 +499,71 @@ static void _call_console_drivers(unsigned start,
- }
- 
- /*
-+ * Parse the syslog header <[0-9]*>. The decimal value represents 32bit, the
-+ * lower 3 bit are the log level, the rest are the log facility. In case
-+ * userspace passes usual userspace syslog messages to /dev/kmsg or
-+ * /dev/ttyprintk, the log prefix might contain the facility. Printk needs
-+ * to extract the correct log level for in-kernel processing, and not mangle
-+ * the original value.
-+ *
-+ * If a prefix is found, the length of the prefix is returned. If 'level' is
-+ * passed, it will be filled in with the log level without a possible facility
-+ * value. If 'special' is passed, the special printk prefix chars are accepted
-+ * and returned. If no valid header is found, 0 is returned and the passed
-+ * variables are not touched.
-+ */
-+static size_t log_prefix(const char *p, unsigned int *level, char *special)
-+{
-+	unsigned int lev = 0;
-+	char sp = '\0';
-+	size_t len;
+diff --git a/Documentation/ABI/stable/sysfs-firmware-efi-vars b/Documentation/ABI/stable/sysfs-firmware-efi-vars
+new file mode 100644
+index 0000000..5def20b
+--- /dev/null
++++ b/Documentation/ABI/stable/sysfs-firmware-efi-vars
+@@ -0,0 +1,75 @@
++What:		/sys/firmware/efi/vars
++Date:		April 2004
++Contact:	Matt Domsch <Matt_Domsch@dell.com>
++Description:
++		This directory exposes interfaces for interactive with
++		EFI variables.  For more information on EFI variables,
++		see 'Variable Services' in the UEFI specification
++		(section 7.2 in specification version 2.3 Errata D).
 +
-+	if (p[0] != '<' || !p[1])
-+		return 0;
-+	if (p[2] == '>') {
-+		/* usual single digit level number or special char */
-+		switch (p[1]) {
-+		case '0' ... '7':
-+			lev = p[1] - '0';
-+			break;
-+		case 'c': /* KERN_CONT */
-+		case 'd': /* KERN_DEFAULT */
-+			sp = p[1];
-+			break;
-+		default:
-+			return 0;
-+		}
-+		len = 3;
-+	} else {
-+		/* multi digit including the level and facility number */
-+		char *endp = NULL;
++		In summary, EFI variables are named, and are classified
++		into separate namespaces through the use of a vendor
++		GUID.  They also have an arbitrary binary value
++		associated with them.
 +
-+		if (p[1] < '0' && p[1] > '9')
-+			return 0;
++		The efivars module enumerates these variables and
++		creates a separate directory for each one found.  Each
++		directory has a name of the form "<key>-<vendor guid>"
++		and contains the following files:
 +
-+		lev = (simple_strtoul(&p[1], &endp, 10) & 7);
-+		if (endp == NULL || endp[0] != '>')
-+			return 0;
-+		len = (endp + 1) - p;
-+	}
++		attributes:	A read-only text file enumerating the
++				EFI variable flags.  Potential values
++				include:
 +
-+	/* do not accept special char if not asked for */
-+	if (sp && !special)
-+		return 0;
++				EFI_VARIABLE_NON_VOLATILE
++				EFI_VARIABLE_BOOTSERVICE_ACCESS
++				EFI_VARIABLE_RUNTIME_ACCESS
++				EFI_VARIABLE_HARDWARE_ERROR_RECORD
++				EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS
 +
-+	if (special) {
-+		*special = sp;
-+		/* return special char, do not touch level */
-+		if (sp)
-+			return len;
-+	}
++				See the EFI documentation for an
++				explanation of each of these variables.
 +
-+	if (level)
-+		*level = lev;
-+	return len;
-+}
++		data:		A read-only binary file that can be read
++				to attain the value of the EFI variable
 +
-+/*
-  * Call the console drivers, asking them to write out
-  * log_buf[start] to log_buf[end - 1].
-  * The console_lock must be held.
-@@ -513,13 +578,9 @@ static void call_console_drivers(unsigned start, unsigned end)
- 	cur_index = start;
- 	start_print = start;
- 	while (cur_index != end) {
--		if (msg_level < 0 && ((end - cur_index) > 2) &&
--				LOG_BUF(cur_index + 0) == '<' &&
--				LOG_BUF(cur_index + 1) >= '0' &&
--				LOG_BUF(cur_index + 1) <= '7' &&
--				LOG_BUF(cur_index + 2) == '>') {
--			msg_level = LOG_BUF(cur_index + 1) - '0';
--			cur_index += 3;
-+		if (msg_level < 0 && ((end - cur_index) > 2)) {
-+			/* strip log prefix */
-+			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
- 			start_print = cur_index;
- 		}
- 		while (cur_index != end) {
-@@ -717,6 +778,8 @@ asmlinkage int vprintk(const char *fmt, va_list args)
- 	unsigned long flags;
- 	int this_cpu;
- 	char *p;
-+	size_t plen;
-+	char special;
- 
- 	boot_delay_msec();
- 	printk_delay();
-@@ -757,45 +820,52 @@ asmlinkage int vprintk(const char *fmt, va_list args)
- 	printed_len += vscnprintf(printk_buf + printed_len,
- 				  sizeof(printk_buf) - printed_len, fmt, args);
- 
--
- 	p = printk_buf;
- 
--	/* Do we have a loglevel in the string? */
--	if (p[0] == '<') {
--		unsigned char c = p[1];
--		if (c && p[2] == '>') {
--			switch (c) {
--			case '0' ... '7': /* loglevel */
--				current_log_level = c - '0';
--			/* Fallthrough - make sure we're on a new line */
--			case 'd': /* KERN_DEFAULT */
--				if (!new_text_line) {
--					emit_log_char('\n');
--					new_text_line = 1;
--				}
--			/* Fallthrough - skip the loglevel */
--			case 'c': /* KERN_CONT */
--				p += 3;
--				break;
-+	/* Read log level and handle special printk prefix */
-+	plen = log_prefix(p, &current_log_level, &special);
-+	if (plen) {
-+		p += plen;
++		guid:		The vendor GUID of the variable.  This
++				should always match the GUID in the
++				variable's name.
 +
-+		switch (special) {
-+		case 'c': /* Strip <c> KERN_CONT, continue line */
-+			plen = 0;
-+			break;
-+		case 'd': /* Strip <d> KERN_DEFAULT, start new line */
-+			plen = 0;
-+		default:
-+			if (!new_text_line) {
-+				emit_log_char('\n');
-+				new_text_line = 1;
- 			}
- 		}
- 	}
- 
- 	/*
--	 * Copy the output into log_buf.  If the caller didn't provide
--	 * appropriate log level tags, we insert them here
-+	 * Copy the output into log_buf. If the caller didn't provide
-+	 * the appropriate log prefix, we insert them here
- 	 */
--	for ( ; *p; p++) {
-+	for (; *p; p++) {
- 		if (new_text_line) {
--			/* Always output the token */
--			emit_log_char('<');
--			emit_log_char(current_log_level + '0');
--			emit_log_char('>');
--			printed_len += 3;
- 			new_text_line = 0;
- 
-+			if (plen) {
-+				/* Copy original log prefix */
-+				int i;
++		raw_var:	A binary file that can be read to obtain
++				a structure that contains everything
++				there is to know about the variable.
++				For structure definition see "struct
++				efi_variable" in the kernel sources.
 +
-+				for (i = 0; i < plen; i++)
-+					emit_log_char(printk_buf[i]);
-+				printed_len += plen;
-+			} else {
-+				/* Add log prefix */
-+				emit_log_char('<');
-+				emit_log_char(current_log_level + '0');
-+				emit_log_char('>');
-+				printed_len += 3;
-+			}
++				This file can also be written to in
++				order to update the value of a variable.
++				For this to work however, all fields of
++				the "struct efi_variable" passed must
++				match byte for byte with the structure
++				read out of the file, save for the value
++				portion.
 +
- 			if (printk_time) {
--				/* Follow the token with the time */
-+				/* Add the current time stamp */
- 				char tbuf[50], *tp;
- 				unsigned tlen;
- 				unsigned long long t;
++				**Note** the efi_variable structure
++				read/written with this file contains a
++				'long' type that may change widths
++				depending on your underlying
++				architecture.
++
++		size:		As ASCII representation of the size of
++				the variable's value.
++
++
++		In addition, two other magic binary files are provided
++		in the top-level directory and are used for adding and
++		removing variables:
++
++		new_var:	Takes a "struct efi_variable" and
++				instructs the EFI firmware to create a
++				new variable.
++
++		del_var:	Takes a "struct efi_variable" and
++				instructs the EFI firmware to remove any
++				variable that has a matching vendor GUID
++				and variable key name.
 -- 
 1.7.4.1
 
