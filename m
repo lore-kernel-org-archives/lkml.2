@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751213Ab1CPFEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 01:04:36 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:45560 "EHLO e5.ny.us.ibm.com"
+	id S1751308Ab1CPFIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 01:08:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53385 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033Ab1CPFE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 01:04:29 -0400
-Date: Wed, 16 Mar 2011 10:28:20 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 11/20] 11: uprobes: slot allocation
- for uprobes
-Message-ID: <20110316045820.GF24254@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
- <20110314133610.27435.93666.sendpatchset@localhost6.localdomain6>
- <20110315131020.36477a1c@bike.lwn.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110315131020.36477a1c@bike.lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1751060Ab1CPFIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 01:08:45 -0400
+Date: Wed, 16 Mar 2011 16:08:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: linux-next: manual merge of the tip tree with Linus' tree
+Message-Id: <20110316160842.493967db.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jonathan Corbet <corbet@lwn.net> [2011-03-15 13:10:20]:
+Hi all,
 
-> Just a couple of minor notes while I was looking at this code...
-> 
-> > +static struct uprobes_xol_area *xol_alloc_area(void)
-> > +{
-> > +	struct uprobes_xol_area *area = NULL;
-> > +
-> > +	area = kzalloc(sizeof(*area), GFP_USER);
-> > +	if (unlikely(!area))
-> > +		return NULL;
-> > +
-> > +	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
-> > +								GFP_USER);
-> 
-> Why GFP_USER?  That causes extra allocation limits to be enforced.  Given
-> that in part 14 you have:
+Today's linux-next merge of the tip tree got a conflict in
+arch/x86/platform/ce4100/ce4100.c between commit 03150171dcf9 ("x86:
+ce4100: Set pci ops via callback instead of module init") from Linus'
+tree and commit 1fa4163bdc19 ("x86: ce4100: Use OF to setup devices")
+from the tip tree.
 
-Okay, Will use GFP_KERNEL. 
-We used GFP_USER because we thought its going to represent part of
-process address space; 
-
-> 
-> +/* Prepare to single-step probed instruction out of line. */
-> +static int pre_ssout(struct uprobe *uprobe, struct pt_regs *regs,
-> +				unsigned long vaddr)
-> +{
-> +	xol_get_insn_slot(uprobe, vaddr);
-> +	BUG_ON(!current->utask->xol_vaddr);
-> 
-> It seems to me that you really don't want those allocations to fail.
-> 
-> back to xol_alloc_area():
-> 
-> > +	if (!area->bitmap)
-> > +		goto fail;
-> > +
-> > +	spin_lock_init(&area->slot_lock);
-> > +	if (!xol_add_vma(area) && !current->mm->uprobes_xol_area) {
-> > +		task_lock(current);
-> > +		if (!current->mm->uprobes_xol_area) {
-> > +			current->mm->uprobes_xol_area = area;
-> > +			task_unlock(current);
-> > +			return area;
-> > +		}
-> > +		task_unlock(current);
-> > +	}
-> > +
-> > +fail:
-> > +	if (area) {
-> > +		if (area->bitmap)
-> > +			kfree(area->bitmap);
-> > +		kfree(area);
-> > +	}
-> 
-> You've already checked area against NULL, and kfree() can handle null
-> pointers, so both of those tests are unneeded.
-
-Okay, 
-
-> 
-> > +	return current->mm->uprobes_xol_area;
-> > +}
-> 
-> jon
-
+I fixed it up (see below) and can carry the fix as necessary.  However, I
+have no idea if the final setup of x86_init.pci.init_irq is correct.
+Hopefully this will be fixed up in the tip tree before it is sent to
+Linus.
 -- 
-Thanks and Regards
-Srikar
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/x86/platform/ce4100/ce4100.c
+index cd6f184,68c0dbc..0000000
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@@ -15,9 -15,11 +15,12 @@@
+  #include <linux/serial_reg.h>
+  #include <linux/serial_8250.h>
+  
+ +#include <asm/ce4100.h>
++ #include <asm/prom.h>
+  #include <asm/setup.h>
++ #include <asm/i8259.h>
+  #include <asm/io.h>
++ #include <asm/io_apic.h>
+  
+  static int ce4100_i8042_detect(void)
+  {
