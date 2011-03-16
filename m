@@ -1,57 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab1CPWSm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 18:18:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56538 "EHLO
+	id S1752731Ab1CPWXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 18:23:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56080 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab1CPWSh (ORCPT
+	with ESMTP id S1751997Ab1CPWXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 18:18:37 -0400
+	Wed, 16 Mar 2011 18:23:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:mime-version:content-type
-         :message-id;
-        b=bNAR08P7vZAb4cg5BeNpjQcdVMbA3mZCHpEIormTliJI1nNxJkaJHRMFVu4N0OHpzI
-         rk7nbwyAXPj9cJaciRot2I9rWpee0UdHka59nGMS+/CcjQE6sMcjSDVnYM7BgCLTsuYF
-         V4sCEZ8H4cnhuALLgm6fDilPKmSj5ABj8RAVo=
+        h=from:organization:to:subject:date:cc:references:in-reply-to
+         :mime-version:content-type:message-id;
+        b=feZzZ4mBas6Tv7ka6H+wVAw5yYcncDf8ja279wslrKlhX0xEFYmdQ88O0a8yBq8NbP
+         OWim3UYk92lFyE7o2IHrnR6jwalOBJwWQAo02v5D3BTmaoKRtn22+bPnufsFU8KMX5Ag
+         oD3J/XYKCrub4SOuoNtV7CUmIUl1HV2vvYs1M=
 From: Mihai =?utf-8?q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
 Organization: Home
 To: linux-kernel@vger.kernel.org
-Subject: [b43] usb device disconnects automatically after 1s
-Date: Thu, 17 Mar 2011 00:18:31 +0200
+Subject: Re: [b43] usb device disconnects automatically after 1s
+Date: Thu, 17 Mar 2011 00:22:23 +0200
+Cc: linux-usb@vger.kernel.og, linux-wireless@vger.kernel.org
+References: <201103170018.32061.mihai.dontu@gmail.com>
+In-Reply-To: <201103170018.32061.mihai.dontu@gmail.com>
 MIME-Version: 1.0
 Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_4cTgN6pQ/LUeyOr"
-Message-Id: <201103170018.32061.mihai.dontu@gmail.com>
+  boundary="Boundary-00=_ggTgNtmwDKBKp4z"
+Message-Id: <201103170022.24290.mihai.dontu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_4cTgN6pQ/LUeyOr
+--Boundary-00=_ggTgNtmwDKBKp4z
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Added linux-usb and linux-wireless to CC.
 
-I have just upgraded to 2.6.38 and discovered that I can't use my wireless
-device (BCM4312 802.11a/b/g). I press Fn + F2, the bluetooth led lights
-and after a second it turns off by itself. In dmesg I'm seeing the followin=
-g:
-
-[   88.167212] usb 1-2.2: new full speed USB device using ehci_hcd and addr=
-ess 5
-[   88.782330] usb 1-2.2: USB disconnect, address 5
-
-I switched to 2.6.37 until I'll have some time to bisect this. In the mean
-time I have attached the output of lspci, interrupts and dmesg.
-
-Thanks,
+On Thursday 17 March 2011 00:18:31 Mihai Don=C8=9Bu wrote:
+> Hi,
+>=20
+> I have just upgraded to 2.6.38 and discovered that I can't use my wireless
+> device (BCM4312 802.11a/b/g). I press Fn + F2, the bluetooth led lights
+> and after a second it turns off by itself. In dmesg I'm seeing the
+> following:
+>=20
+> [   88.167212] usb 1-2.2: new full speed USB device using ehci_hcd and
+> address 5
+> [   88.782330] usb 1-2.2: USB disconnect, address 5
+>=20
+> I switched to 2.6.37 until I'll have some time to bisect this. In the mean
+> time I have attached the output of lspci, interrupts and dmesg.
+>=20
+> Thanks,
 
 =2D-=20
 Mihai Don=C8=9Bu
 
---Boundary-00=_4cTgN6pQ/LUeyOr
+--Boundary-00=_ggTgNtmwDKBKp4z
+Content-Type: text/plain;
+  charset="UTF-8";
+  name="interrupts.txt"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="interrupts.txt"
+
+           CPU0       CPU1       
+  0:     185247          0   IO-APIC-edge      timer
+  1:       3764          0   IO-APIC-edge      i8042
+  8:         18          0   IO-APIC-edge      rtc0
+  9:          3          0   IO-APIC-fasteoi   acpi
+ 12:        106          0   IO-APIC-edge      i8042
+ 14:      28675          0   IO-APIC-edge      ata_piix
+ 15:       4047          0   IO-APIC-edge      ata_piix
+ 16:      30275          0   IO-APIC-fasteoi   i915
+ 17:      27542          0   IO-APIC-fasteoi   eth0, b43
+ 19:         31          0   IO-APIC-fasteoi   firewire_ohci, yenta
+ 20:         60          0   IO-APIC-fasteoi   ehci_hcd:usb1, uhci_hcd:usb2
+ 21:          0          0   IO-APIC-fasteoi   uhci_hcd:usb3
+ 22:      16401          0   IO-APIC-fasteoi   uhci_hcd:usb4
+ 23:          0          0   IO-APIC-fasteoi   uhci_hcd:usb5
+ 40:        391          0   PCI-MSI-edge      hda_intel
+NMI:          0          0   Non-maskable interrupts
+LOC:     202224     259238   Local timer interrupts
+SPU:          0          0   Spurious interrupts
+PMI:          0          0   Performance monitoring interrupts
+IWI:          0          0   IRQ work interrupts
+RES:     123639     198860   Rescheduling interrupts
+CAL:       1252       1055   Function call interrupts
+TLB:       3962       2590   TLB shootdowns
+TRM:          0          0   Thermal event interrupts
+THR:          0          0   Threshold APIC interrupts
+MCE:          0          0   Machine check exceptions
+MCP:          5          5   Machine check polls
+ERR:          1
+MIS:          0
+
+--Boundary-00=_ggTgNtmwDKBKp4z
+Content-Type: text/plain;
+  charset="UTF-8";
+  name="lspci.txt"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="lspci.txt"
+
+00:00.0 Host bridge: Intel Corporation Mobile 945GM/PM/GMS, 943/940GML and 945GT Express Memory Controller Hub (rev 03)
+	Subsystem: Dell Device 01d4
+	Flags: bus master, fast devsel, latency 0
+	Capabilities: [e0] Vendor Specific Information: Len=09 <?>
+	Kernel driver in use: agpgart-intel
+
+00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller (rev 03) (prog-if 00 [VGA controller])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, fast devsel, latency 0, IRQ 16
+	Memory at eff00000 (32-bit, non-prefetchable) [size=512K]
+	I/O ports at eff8 [size=8]
+	Memory at d0000000 (32-bit, prefetchable) [size=256M]
+	Memory at efec0000 (32-bit, non-prefetchable) [size=256K]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: [90] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [d0] Power Management version 2
+	Kernel driver in use: i915
+
+00:02.1 Display controller: Intel Corporation Mobile 945GM/GMS/GME, 943/940GML Express Integrated Graphics Controller (rev 03)
+	Subsystem: Dell Device 01d4
+	Flags: bus master, fast devsel, latency 0
+	Memory at eff80000 (32-bit, non-prefetchable) [size=512K]
+	Capabilities: [d0] Power Management version 2
+
+00:1b.0 Audio device: Intel Corporation 82801G (ICH7 Family) High Definition Audio Controller (rev 01)
+	Subsystem: Dell Device 01d4
+	Flags: bus master, fast devsel, latency 0, IRQ 40
+	Memory at efebc000 (64-bit, non-prefetchable) [size=16K]
+	Capabilities: [50] Power Management version 2
+	Capabilities: [60] MSI: Enable+ Count=1/1 Maskable- 64bit+
+	Capabilities: [70] Express Root Complex Integrated Endpoint, MSI 00
+	Capabilities: [100] Virtual Channel
+	Capabilities: [130] Root Complex Link
+	Kernel driver in use: HDA Intel
+
+00:1c.0 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express Port 1 (rev 01) (prog-if 00 [Normal decode])
+	Flags: bus master, fast devsel, latency 0
+	Bus: primary=00, secondary=0b, subordinate=0b, sec-latency=0
+	I/O behind bridge: 00002000-00002fff
+	Memory behind bridge: e4000000-e41fffff
+	Prefetchable memory behind bridge: 00000000e4200000-00000000e43fffff
+	Capabilities: [40] Express Root Port (Slot+), MSI 00
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [90] Subsystem: Dell Device 01d4
+	Capabilities: [a0] Power Management version 2
+	Capabilities: [100] Virtual Channel
+	Capabilities: [180] Root Complex Link
+
+00:1c.1 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express Port 2 (rev 01) (prog-if 00 [Normal decode])
+	Flags: bus master, fast devsel, latency 0
+	Bus: primary=00, secondary=0c, subordinate=0c, sec-latency=0
+	I/O behind bridge: 00003000-00003fff
+	Memory behind bridge: efd00000-efdfffff
+	Prefetchable memory behind bridge: 00000000e4400000-00000000e45fffff
+	Capabilities: [40] Express Root Port (Slot+), MSI 00
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [90] Subsystem: Dell Device 01d4
+	Capabilities: [a0] Power Management version 2
+	Capabilities: [100] Virtual Channel
+	Capabilities: [180] Root Complex Link
+
+00:1d.0 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #1 (rev 01) (prog-if 00 [UHCI])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, medium devsel, latency 0, IRQ 20
+	I/O ports at bf80 [size=32]
+	Kernel driver in use: uhci_hcd
+
+00:1d.1 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #2 (rev 01) (prog-if 00 [UHCI])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, medium devsel, latency 0, IRQ 21
+	I/O ports at bf60 [size=32]
+	Kernel driver in use: uhci_hcd
+
+00:1d.2 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #3 (rev 01) (prog-if 00 [UHCI])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, medium devsel, latency 0, IRQ 22
+	I/O ports at bf40 [size=32]
+	Kernel driver in use: uhci_hcd
+
+00:1d.3 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #4 (rev 01) (prog-if 00 [UHCI])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, medium devsel, latency 0, IRQ 23
+	I/O ports at bf20 [size=32]
+	Kernel driver in use: uhci_hcd
+
+00:1d.7 USB Controller: Intel Corporation 82801G (ICH7 Family) USB2 EHCI Controller (rev 01) (prog-if 20 [EHCI])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, medium devsel, latency 0, IRQ 20
+	Memory at ffa80000 (32-bit, non-prefetchable) [size=1K]
+	Capabilities: [50] Power Management version 2
+	Capabilities: [58] Debug port: BAR=1 offset=00a0
+	Kernel driver in use: ehci_hcd
+
+00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev e1) (prog-if 01 [Subtractive decode])
+	Flags: bus master, fast devsel, latency 0
+	Bus: primary=00, secondary=02, subordinate=06, sec-latency=32
+	I/O behind bridge: 00004000-00004fff
+	Memory behind bridge: efc00000-efcfffff
+	Prefetchable memory behind bridge: 00000000e0000000-00000000e3ffffff
+	Capabilities: [50] Subsystem: Dell Device 01d4
+
+00:1f.0 ISA bridge: Intel Corporation 82801GBM (ICH7-M) LPC Interface Bridge (rev 01)
+	Subsystem: Dell Device 01d4
+	Flags: bus master, medium devsel, latency 0
+	Capabilities: [e0] Vendor Specific Information: Len=0c <?>
+
+00:1f.2 IDE interface: Intel Corporation 82801GBM/GHM (ICH7 Family) SATA IDE Controller (rev 01) (prog-if 80 [Master])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 17
+	I/O ports at 01f0 [size=8]
+	I/O ports at 03f4 [size=1]
+	I/O ports at 0170 [size=8]
+	I/O ports at 0374 [size=1]
+	I/O ports at bfa0 [size=16]
+	Capabilities: [70] Power Management version 2
+	Kernel driver in use: ata_piix
+
+00:1f.3 SMBus: Intel Corporation 82801G (ICH7 Family) SMBus Controller (rev 01)
+	Subsystem: Dell Device 01d4
+	Flags: medium devsel, IRQ 17
+	I/O ports at 10c0 [size=32]
+	Kernel driver in use: i801_smbus
+
+02:00.0 Ethernet controller: Broadcom Corporation BCM4401-B0 100Base-TX (rev 02)
+	Subsystem: Dell Device 01d4
+	Flags: bus master, fast devsel, latency 64, IRQ 17
+	Memory at efcfe000 (32-bit, non-prefetchable) [size=8K]
+	Capabilities: [40] Power Management version 2
+	Kernel driver in use: b44
+
+02:01.0 CardBus bridge: O2 Micro, Inc. Cardbus bridge (rev 21)
+	Subsystem: Dell Device 01d4
+	Flags: bus master, stepping, slow devsel, latency 168, IRQ 19
+	Memory at efc00000 (32-bit, non-prefetchable) [size=4K]
+	Bus: primary=02, secondary=03, subordinate=06, sec-latency=176
+	Memory window 0: e0000000-e3fff000 (prefetchable)
+	Memory window 1: e8000000-ebfff000
+	I/O window 0: 00004000-000040ff
+	I/O window 1: 00004400-000044ff
+	16-bit legacy interface ports at 0001
+	Kernel driver in use: yenta_cardbus
+
+02:01.4 FireWire (IEEE 1394): O2 Micro, Inc. Firewire (IEEE 1394) (rev 02) (prog-if 10 [OHCI])
+	Subsystem: Dell Device 01d4
+	Flags: bus master, medium devsel, latency 64, IRQ 19
+	Memory at efcfd000 (32-bit, non-prefetchable) [size=4K]
+	Memory at efcfc800 (32-bit, non-prefetchable) [size=2K]
+	Capabilities: [60] Power Management version 2
+	Kernel driver in use: firewire_ohci
+
+0c:00.0 Network controller: Broadcom Corporation BCM4312 802.11a/b/g (rev 01)
+	Subsystem: Dell Wireless 1490 Dual Band WLAN Mini-Card
+	Flags: bus master, fast devsel, latency 0, IRQ 17
+	Memory at efdfc000 (32-bit, non-prefetchable) [size=16K]
+	Capabilities: [40] Power Management version 2
+	Capabilities: [58] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [d0] Express Legacy Endpoint, MSI 00
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [13c] Virtual Channel
+	Kernel driver in use: b43-pci-bridge
+
+
+--Boundary-00=_ggTgNtmwDKBKp4z
 Content-Type: application/x-gzip;
   name="dmesg.txt.gz"
 Content-Transfer-Encoding: base64
@@ -356,213 +571,4 @@ mvYqqCxmdvYBtg8NXbG2rWhnJxEPV8x+gJwAv76CgFEy3AhA0fJn1JEmGHb0+iXE06jLlrN7AALM
 Zxho9ch1wXoODHO406ZxcbjdO0G2pNlJ15imJCkr1ctdIrw10PBnoIEpy+I+oTNrdNXuzoS4wTI2
 qcHLLmNky93NRmGI2wulnG2Vv6ao626dPbMfE3H94V8sssrYjLUsSfV/7xI23M5XAQA=
 
---Boundary-00=_4cTgN6pQ/LUeyOr
-Content-Type: text/plain;
-  charset="UTF-8";
-  name="interrupts.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="interrupts.txt"
-
-           CPU0       CPU1       
-  0:     185247          0   IO-APIC-edge      timer
-  1:       3764          0   IO-APIC-edge      i8042
-  8:         18          0   IO-APIC-edge      rtc0
-  9:          3          0   IO-APIC-fasteoi   acpi
- 12:        106          0   IO-APIC-edge      i8042
- 14:      28675          0   IO-APIC-edge      ata_piix
- 15:       4047          0   IO-APIC-edge      ata_piix
- 16:      30275          0   IO-APIC-fasteoi   i915
- 17:      27542          0   IO-APIC-fasteoi   eth0, b43
- 19:         31          0   IO-APIC-fasteoi   firewire_ohci, yenta
- 20:         60          0   IO-APIC-fasteoi   ehci_hcd:usb1, uhci_hcd:usb2
- 21:          0          0   IO-APIC-fasteoi   uhci_hcd:usb3
- 22:      16401          0   IO-APIC-fasteoi   uhci_hcd:usb4
- 23:          0          0   IO-APIC-fasteoi   uhci_hcd:usb5
- 40:        391          0   PCI-MSI-edge      hda_intel
-NMI:          0          0   Non-maskable interrupts
-LOC:     202224     259238   Local timer interrupts
-SPU:          0          0   Spurious interrupts
-PMI:          0          0   Performance monitoring interrupts
-IWI:          0          0   IRQ work interrupts
-RES:     123639     198860   Rescheduling interrupts
-CAL:       1252       1055   Function call interrupts
-TLB:       3962       2590   TLB shootdowns
-TRM:          0          0   Thermal event interrupts
-THR:          0          0   Threshold APIC interrupts
-MCE:          0          0   Machine check exceptions
-MCP:          5          5   Machine check polls
-ERR:          1
-MIS:          0
-
---Boundary-00=_4cTgN6pQ/LUeyOr
-Content-Type: text/plain;
-  charset="UTF-8";
-  name="lspci.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="lspci.txt"
-
-00:00.0 Host bridge: Intel Corporation Mobile 945GM/PM/GMS, 943/940GML and 945GT Express Memory Controller Hub (rev 03)
-	Subsystem: Dell Device 01d4
-	Flags: bus master, fast devsel, latency 0
-	Capabilities: [e0] Vendor Specific Information: Len=09 <?>
-	Kernel driver in use: agpgart-intel
-
-00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller (rev 03) (prog-if 00 [VGA controller])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, fast devsel, latency 0, IRQ 16
-	Memory at eff00000 (32-bit, non-prefetchable) [size=512K]
-	I/O ports at eff8 [size=8]
-	Memory at d0000000 (32-bit, prefetchable) [size=256M]
-	Memory at efec0000 (32-bit, non-prefetchable) [size=256K]
-	Expansion ROM at <unassigned> [disabled]
-	Capabilities: [90] MSI: Enable- Count=1/1 Maskable- 64bit-
-	Capabilities: [d0] Power Management version 2
-	Kernel driver in use: i915
-
-00:02.1 Display controller: Intel Corporation Mobile 945GM/GMS/GME, 943/940GML Express Integrated Graphics Controller (rev 03)
-	Subsystem: Dell Device 01d4
-	Flags: bus master, fast devsel, latency 0
-	Memory at eff80000 (32-bit, non-prefetchable) [size=512K]
-	Capabilities: [d0] Power Management version 2
-
-00:1b.0 Audio device: Intel Corporation 82801G (ICH7 Family) High Definition Audio Controller (rev 01)
-	Subsystem: Dell Device 01d4
-	Flags: bus master, fast devsel, latency 0, IRQ 40
-	Memory at efebc000 (64-bit, non-prefetchable) [size=16K]
-	Capabilities: [50] Power Management version 2
-	Capabilities: [60] MSI: Enable+ Count=1/1 Maskable- 64bit+
-	Capabilities: [70] Express Root Complex Integrated Endpoint, MSI 00
-	Capabilities: [100] Virtual Channel
-	Capabilities: [130] Root Complex Link
-	Kernel driver in use: HDA Intel
-
-00:1c.0 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express Port 1 (rev 01) (prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=00, secondary=0b, subordinate=0b, sec-latency=0
-	I/O behind bridge: 00002000-00002fff
-	Memory behind bridge: e4000000-e41fffff
-	Prefetchable memory behind bridge: 00000000e4200000-00000000e43fffff
-	Capabilities: [40] Express Root Port (Slot+), MSI 00
-	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
-	Capabilities: [90] Subsystem: Dell Device 01d4
-	Capabilities: [a0] Power Management version 2
-	Capabilities: [100] Virtual Channel
-	Capabilities: [180] Root Complex Link
-
-00:1c.1 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express Port 2 (rev 01) (prog-if 00 [Normal decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=00, secondary=0c, subordinate=0c, sec-latency=0
-	I/O behind bridge: 00003000-00003fff
-	Memory behind bridge: efd00000-efdfffff
-	Prefetchable memory behind bridge: 00000000e4400000-00000000e45fffff
-	Capabilities: [40] Express Root Port (Slot+), MSI 00
-	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
-	Capabilities: [90] Subsystem: Dell Device 01d4
-	Capabilities: [a0] Power Management version 2
-	Capabilities: [100] Virtual Channel
-	Capabilities: [180] Root Complex Link
-
-00:1d.0 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #1 (rev 01) (prog-if 00 [UHCI])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, medium devsel, latency 0, IRQ 20
-	I/O ports at bf80 [size=32]
-	Kernel driver in use: uhci_hcd
-
-00:1d.1 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #2 (rev 01) (prog-if 00 [UHCI])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, medium devsel, latency 0, IRQ 21
-	I/O ports at bf60 [size=32]
-	Kernel driver in use: uhci_hcd
-
-00:1d.2 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #3 (rev 01) (prog-if 00 [UHCI])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, medium devsel, latency 0, IRQ 22
-	I/O ports at bf40 [size=32]
-	Kernel driver in use: uhci_hcd
-
-00:1d.3 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #4 (rev 01) (prog-if 00 [UHCI])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, medium devsel, latency 0, IRQ 23
-	I/O ports at bf20 [size=32]
-	Kernel driver in use: uhci_hcd
-
-00:1d.7 USB Controller: Intel Corporation 82801G (ICH7 Family) USB2 EHCI Controller (rev 01) (prog-if 20 [EHCI])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, medium devsel, latency 0, IRQ 20
-	Memory at ffa80000 (32-bit, non-prefetchable) [size=1K]
-	Capabilities: [50] Power Management version 2
-	Capabilities: [58] Debug port: BAR=1 offset=00a0
-	Kernel driver in use: ehci_hcd
-
-00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev e1) (prog-if 01 [Subtractive decode])
-	Flags: bus master, fast devsel, latency 0
-	Bus: primary=00, secondary=02, subordinate=06, sec-latency=32
-	I/O behind bridge: 00004000-00004fff
-	Memory behind bridge: efc00000-efcfffff
-	Prefetchable memory behind bridge: 00000000e0000000-00000000e3ffffff
-	Capabilities: [50] Subsystem: Dell Device 01d4
-
-00:1f.0 ISA bridge: Intel Corporation 82801GBM (ICH7-M) LPC Interface Bridge (rev 01)
-	Subsystem: Dell Device 01d4
-	Flags: bus master, medium devsel, latency 0
-	Capabilities: [e0] Vendor Specific Information: Len=0c <?>
-
-00:1f.2 IDE interface: Intel Corporation 82801GBM/GHM (ICH7 Family) SATA IDE Controller (rev 01) (prog-if 80 [Master])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 17
-	I/O ports at 01f0 [size=8]
-	I/O ports at 03f4 [size=1]
-	I/O ports at 0170 [size=8]
-	I/O ports at 0374 [size=1]
-	I/O ports at bfa0 [size=16]
-	Capabilities: [70] Power Management version 2
-	Kernel driver in use: ata_piix
-
-00:1f.3 SMBus: Intel Corporation 82801G (ICH7 Family) SMBus Controller (rev 01)
-	Subsystem: Dell Device 01d4
-	Flags: medium devsel, IRQ 17
-	I/O ports at 10c0 [size=32]
-	Kernel driver in use: i801_smbus
-
-02:00.0 Ethernet controller: Broadcom Corporation BCM4401-B0 100Base-TX (rev 02)
-	Subsystem: Dell Device 01d4
-	Flags: bus master, fast devsel, latency 64, IRQ 17
-	Memory at efcfe000 (32-bit, non-prefetchable) [size=8K]
-	Capabilities: [40] Power Management version 2
-	Kernel driver in use: b44
-
-02:01.0 CardBus bridge: O2 Micro, Inc. Cardbus bridge (rev 21)
-	Subsystem: Dell Device 01d4
-	Flags: bus master, stepping, slow devsel, latency 168, IRQ 19
-	Memory at efc00000 (32-bit, non-prefetchable) [size=4K]
-	Bus: primary=02, secondary=03, subordinate=06, sec-latency=176
-	Memory window 0: e0000000-e3fff000 (prefetchable)
-	Memory window 1: e8000000-ebfff000
-	I/O window 0: 00004000-000040ff
-	I/O window 1: 00004400-000044ff
-	16-bit legacy interface ports at 0001
-	Kernel driver in use: yenta_cardbus
-
-02:01.4 FireWire (IEEE 1394): O2 Micro, Inc. Firewire (IEEE 1394) (rev 02) (prog-if 10 [OHCI])
-	Subsystem: Dell Device 01d4
-	Flags: bus master, medium devsel, latency 64, IRQ 19
-	Memory at efcfd000 (32-bit, non-prefetchable) [size=4K]
-	Memory at efcfc800 (32-bit, non-prefetchable) [size=2K]
-	Capabilities: [60] Power Management version 2
-	Kernel driver in use: firewire_ohci
-
-0c:00.0 Network controller: Broadcom Corporation BCM4312 802.11a/b/g (rev 01)
-	Subsystem: Dell Wireless 1490 Dual Band WLAN Mini-Card
-	Flags: bus master, fast devsel, latency 0, IRQ 17
-	Memory at efdfc000 (32-bit, non-prefetchable) [size=16K]
-	Capabilities: [40] Power Management version 2
-	Capabilities: [58] MSI: Enable- Count=1/1 Maskable- 64bit-
-	Capabilities: [d0] Express Legacy Endpoint, MSI 00
-	Capabilities: [100] Advanced Error Reporting
-	Capabilities: [13c] Virtual Channel
-	Kernel driver in use: b43-pci-bridge
-
-
---Boundary-00=_4cTgN6pQ/LUeyOr--
+--Boundary-00=_ggTgNtmwDKBKp4z--
