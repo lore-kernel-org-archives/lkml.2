@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab1CPAru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 20:47:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39502 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753844Ab1CPArt (ORCPT
+	id S1757412Ab1CPAup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 20:50:45 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20727 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844Ab1CPAul convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 20:47:49 -0400
-Date: Tue, 15 Mar 2011 17:44:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James.Bottomley@HansenPartnership.com, linux-kernel@vger.kernel.org,
-        oakad@yahoo.com
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-Message-Id: <20110315174459.54b02f99.akpm@linux-foundation.org>
-In-Reply-To: <1299464437.24051.13.camel@maxim-laptop>
-References: <1299212213-4255-2-git-send-email-maximlevitsky@gmail.com>
-	<20110306162859E.fujita.tomonori@lab.ntt.co.jp>
-	<1299424470.22378.9.camel@maxim-laptop>
-	<20110307064900X.fujita.tomonori@lab.ntt.co.jp>
-	<1299464437.24051.13.camel@maxim-laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Mar 2011 20:50:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=pnNmOvQO6yxfFp1seeRZWN5D0ZXiLC7P+/IX5jqmzfiq6mTbRqf3WMnx7FftGNakI5
+         7f8g1L4pyZPS9gl5O2ig==
+MIME-Version: 1.0
+In-Reply-To: <4D7F7121.5040009@librato.com>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <1299869011-26152-7-git-send-email-gthelen@google.com> <4D7F7121.5040009@librato.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Tue, 15 Mar 2011 17:50:17 -0700
+Message-ID: <AANLkTin5tTf4rEuq=UkygQ1=RVQUaGtoX8iPej-kt6Js@mail.gmail.com>
+Subject: Re: [PATCH v6 6/9] memcg: add cgroupfs interface to memcg dirty limits
+To: Mike Heffner <mike@librato.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Andrea Righi <arighi@develer.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Mar 2011 04:20:37 +0200 Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+On Tue, Mar 15, 2011 at 7:01 AM, Mike Heffner <mike@librato.com> wrote:
+> On 03/11/2011 01:43 PM, Greg Thelen wrote:
+>>
+>> Add cgroupfs interface to memcg dirty page limits:
+>>   Direct write-out is controlled with:
+>>   - memory.dirty_ratio
+>>   - memory.dirty_limit_in_bytes
+>>
+>>   Background write-out is controlled with:
+>>   - memory.dirty_background_ratio
+>>   - memory.dirty_background_limit_bytes
+>
+>
+> What's the overlap, if any, with the current memory limits controlled by
+> `memory.limit_in_bytes` and the above `memory.dirty_limit_in_bytes`? If I
+> want to fairly balance memory between two cgroups be one a dirty page
+> antagonist (dd) and the other an anonymous page (memcache), do I just set
+> `memory.limit_in_bytes`? Does this patch simply provide a more granular
+> level of control of the dirty limits?
+>
+>
+> Thanks,
+>
+> Mike
+>
 
-> On Mon, 2011-03-07 at 06:49 +0900, FUJITA Tomonori wrote:
-> > On Sun, 06 Mar 2011 17:14:30 +0200
-> > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > 
-> > > On Sun, 2011-03-06 at 16:29 +0900, FUJITA Tomonori wrote:
-> > > > On Fri,  4 Mar 2011 06:16:50 +0200
-> > > > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > > > 
-> > > > > While developing memstick driver for legacy memsticks
-> > > > > I found the need in few helpers that I think should be
-> > > > > in common scatterlist library
-> > > > > 
-> > > > > The functions that were added:
-> > > > > 
-> > > > > * sg_nents/sg_total_len - iterate over scatterlist to figure
-> > > > > out total length of memory it covers / number of entries.
-> > > > 
-> > > > You should invent a data structure per I/O request, something like
-> > > > msb_request structure. Then you can store nents and total_len in
-> > > > that.
-> > > > 
-> > > > That's what block subsystems and drivers do. I took a look at your
-> > > > driver but I can't see why your driver can't do the same.
-> > > I also need to break the request into small grained chunks.
-> > > If I invent such structure, I will end up writing these helpers for it.
-> > > 
-> > > The I have this lifetime of a request:
-> > > 
-> > > I get arbitary sized request from block layer (I can of course control
-> > > maximum size/number of segments in it, etc).
-> > > 
-> > > I break it into eraseblock sized chunks, and for each I translate the
-> > > the LBA, into flash address.
-> > > 
-> > > Then I break it into flash page sized requests (512 bytes), and yet its
-> > > better not to assume that such requests always contained in one sg
-> > > entry.
-> > > 
-> > > Worse than that, I have to pass an sg list that spans always one 512
-> > > page to lowlevel driver, because thats how Alex defined the interface.
-> > 
-> > This restriction is due to hardware specification or the software
-> > design (e.g. memstick layer)? If it is due to the latter, why can't
-> > you fix that?
-> 
-> Yes.
-> I already tried addressing some shortcomings of memstick layer, no no, I
-> don't want to deal with its author, Alex Dubov again.
-> I think this code tries to be too clever/complex for the range of
-> devices/speeds it supports, but I rather leave it as is.
-> 
-
-I have to say, these aren't very good reasons for a particular
-implementation!
-
-> To be honest, the code in question is for >5 year old memstick standard
-> cards, thats hardly anybody uses.
-> It works, it is more or less simple, its not performance bound, its
-> testd, and thus I want to keep it as is _for_ now.
-> 
-> 
-> Why I break sg lists into chunks?
-> Because unlike vast majority of block devices, I need to do FTL in the
-> driver, thus its easier to work on eraseblock boundary.
-> Also unlike anything else, you can't just read/write a sector from a
-> memorystick (especially the legacy one), you have to perform full dance
-> of commands.
-> 
-> Not to mention error handling (like if you failed to write to block, you
-> must try to choose another one, etc...)
-> 
-> (Of course writes follow same rules as raw nand flash, thats is writes
-> only clear bits, and you can erase a eraseblock only).
-
-hm.  If you think there's little likelihood that other drivers will
-need the new sg functions in the future then perhaps they should be
-made private to the memstick driver, rather than bloating everyone's
-kernels.  Which is, I think, the exact opposite of what I suggested
-last year :(
-
-Fujita-san, you've gone all quiet.  Do you believe that these functions
-should be added to the sg API?
-
-Thanks.
-
+The per memcg dirty ratios are more about controlling how memory
+within a cgroup is used.  If you isolate two processes in
+different memcg, then the memcg dirty ratios will neither help nor hurt
+isolation between cgroups.  The per memcg dirty limits are more
+focused on providing
+some form of better behavior when multiple processes share a single memcg.
+Running an antagonist (dd) in the same cgroup as a read-mostly workload
+would benefit because the antagonist dirty memory usage should be
+capped at the memcg's dirty memory usage.  So any clean page
+allocation requests by the read-mostly workload should be faster (and
+less likely to OOM) because there will be more clean pages available
+within the memcg.
