@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab1CPAHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 20:07:23 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57375 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab1CPAHV (ORCPT
+	id S1757107Ab1CPAJa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 20:09:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16699 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab1CPAJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 20:07:21 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 16 Mar 2011 09:00:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mike Heffner <mike@librato.com>
-Cc: Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>,
-        Andrea Righi <arighi@develer.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH v6 6/9] memcg: add cgroupfs interface to memcg dirty
- limits
-Message-Id: <20110316090042.e1f0183b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4D7F7121.5040009@librato.com>
-References: <1299869011-26152-1-git-send-email-gthelen@google.com>
-	<1299869011-26152-7-git-send-email-gthelen@google.com>
-	<4D7F7121.5040009@librato.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 15 Mar 2011 20:09:29 -0400
+Date: Tue, 15 Mar 2011 17:09:10 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        lud <linux-usb@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Siewior <bigeasy@linutronix.de>
+Subject: [PATCH -next] usb: fix ips1760-hcd printk format warning
+Message-Id: <20110315170910.9b6f1c58.randy.dunlap@oracle.com>
+In-Reply-To: <20110315194543.a5d56c0c.sfr@canb.auug.org.au>
+References: <20110315194543.a5d56c0c.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt357.oracle.com [141.146.40.157]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D7FFFAC.00AC,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 10:01:05 -0400
-Mike Heffner <mike@librato.com> wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> On 03/11/2011 01:43 PM, Greg Thelen wrote:
-> > Add cgroupfs interface to memcg dirty page limits:
-> >    Direct write-out is controlled with:
-> >    - memory.dirty_ratio
-> >    - memory.dirty_limit_in_bytes
-> >
-> >    Background write-out is controlled with:
-> >    - memory.dirty_background_ratio
-> >    - memory.dirty_background_limit_bytes
-> 
-> 
-> What's the overlap, if any, with the current memory limits controlled by 
-> `memory.limit_in_bytes` and the above `memory.dirty_limit_in_bytes`? If 
-> I want to fairly balance memory between two cgroups be one a dirty page 
-> antagonist (dd) and the other an anonymous page (memcache), do I just 
-> set `memory.limit_in_bytes`? Does this patch simply provide a more 
-> granular level of control of the dirty limits?
-> 
+Fix printk format build warning and grammar typo on same line.
 
-dirty_ratio is for control
- - speed of write() within cgroup.
- - risk of huge latency at memory reclaim (and OOM)
-   Small dirty ratio means big ratio of clean page within cgroup.
-   This will make memory reclaim, pageout easier.
+drivers/usb/host/isp1760-hcd.c:300: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'size_t'
 
-memory.limit_in_bytes controls the amount of memory.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/usb/host/isp1760-hcd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
--Kame
-
+--- linux-next-20110315.orig/drivers/usb/host/isp1760-hcd.c
++++ linux-next-20110315/drivers/usb/host/isp1760-hcd.c
+@@ -295,7 +295,7 @@ static void alloc_mem(struct usb_hcd *hc
+ 	}
+ 
+ 	dev_err(hcd->self.controller,
+-				"%s: Can not allocate %lu bytes of memory\n"
++				"%s: Cannot allocate %zu bytes of memory\n"
+ 				"Current memory map:\n",
+ 				__func__, qtd->length);
+ 	for (i = 0; i < BLOCKS; i++) {
