@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab1CPTps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 15:45:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35004 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483Ab1CPTpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 15:45:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,195,1299484800"; 
-   d="scan'208";a="613829535"
-From: Andi Kleen <andi@firstfloor.org>
-To: robert.richter@amd.com
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] oprofile: Allow setting EDGE/INV/CMASK for Intel counter events v2
-Date: Wed, 16 Mar 2011 12:44:33 -0700
-Message-Id: <1300304673-4823-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4
+	id S1753755Ab1CPTp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 15:45:57 -0400
+Received: from science.horizon.com ([71.41.210.146]:48388 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753698Ab1CPTpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 15:45:43 -0400
+Date: 16 Mar 2011 15:45:42 -0400
+Message-ID: <20110316194542.22530.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hughd@google.com, linux@horizon.com
+Subject: Re: [PATCH 1/8] drivers/random: Cache align ip_random better
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, mpm@selenic.com, penberg@cs.helsinki.fi
+In-Reply-To: <alpine.LSU.2.00.1103161123360.14076@sister.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+>> 1) A smart compiler could note the alignment and issue wider copy
+>>    instructions.  (Especially on alignment-required architectures.)
 
-For some performance events it's useful to set the EDGE and INV
-bits and the CMASK mask in the counter control register. The list
-of predefined events Intel releases for each CPU has some events which
-require these settings to get more "natural" to use higher level events.
+> Right, that part of it would benefit from stronger alignment,
+> but does not generally need cacheline alignment.
 
-oprofile currently doesn't allow this.
+Agreed.  The only reason the structure is cacheline aligned is to keep
+it all in a single cache line, and swapping the order of the elements
+made the buffer more aligned without hurting the counter.
 
-This patch adds new extra configuration fields for them, so that
-they can be specified in oprofilefs.
+>> 2) The cacheline fetch would get more data faster.  The data would
+>>    be transferred in the first 6 beats of the load from RAM (assuming a
+>>    64-bit data bus) rather than waiting for 7, so you'd finish the copy
+>>    1 ns sooner or so.  Similar 1-cycle win on a 128-bit Ln->L(n-1) cache
+>>    transfer.
 
-An updated oprofile daemon can then make use of this to set them.
+> That argument worries me.  I don't know enough to say whether you are
+> correct or not.  But if you are correct, then it worries me that your
+> patch will be the first of a trickle growing to a stream to an avalanche
+> of patches where people align and reorder structures so that the most
+> commonly accessed fields are at the beginnng of the cacheline, so that
+> those can then be accessed minutely faster.
+> 
+> Aargh, and now I am setting off the avalanche with that remark.
+> Please, someone, save us by discrediting George's argument.
 
-v2: Write back masked extra value to variable.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/oprofile/nmi_int.c    |    5 +++++
- arch/x86/oprofile/op_counter.h |    1 +
- 2 files changed, 6 insertions(+), 0 deletions(-)
+It was mostly #1 and #3.  The *important* thing is to minimize the number
+of cache lines touched by common operations, which has already been the
+subject of a lot of kernel patches.
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index e2b7b0c..ee165f1 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -49,6 +49,10 @@ u64 op_x86_get_ctrl(struct op_x86_model_spec const *model,
- 	val |= counter_config->user ? ARCH_PERFMON_EVENTSEL_USR : 0;
- 	val |= counter_config->kernel ? ARCH_PERFMON_EVENTSEL_OS : 0;
- 	val |= (counter_config->unit_mask & 0xFF) << 8;
-+	counter_config->extra &= (ARCH_PERFMON_EVENTSEL_INV |
-+				  ARCH_PERFMON_EVENTSEL_EDGE |
-+				  ARCH_PERFMON_EVENTSEL_CMASK);
-+	val |= counter_config->extra;
- 	event &= model->event_mask ? model->event_mask : 0xFF;
- 	val |= event & 0xFF;
- 	val |= (event & 0x0F00) << 24;
-@@ -440,6 +444,7 @@ static int nmi_create_files(struct super_block *sb, struct dentry *root)
- 		oprofilefs_create_ulong(sb, dir, "unit_mask", &counter_config[i].unit_mask);
- 		oprofilefs_create_ulong(sb, dir, "kernel", &counter_config[i].kernel);
- 		oprofilefs_create_ulong(sb, dir, "user", &counter_config[i].user);
-+		oprofilefs_create_ulong(sb, dir, "extra", &counter_config[i].extra);
- 	}
- 
- 	return 0;
-diff --git a/arch/x86/oprofile/op_counter.h b/arch/x86/oprofile/op_counter.h
-index e28398d..0b7b7b1 100644
---- a/arch/x86/oprofile/op_counter.h
-+++ b/arch/x86/oprofile/op_counter.h
-@@ -22,6 +22,7 @@ struct op_counter_config {
- 	unsigned long kernel;
- 	unsigned long user;
- 	unsigned long unit_mask;
-+	unsigned long extra;
- };
- 
- extern struct op_counter_config counter_config[];
--- 
-1.7.4
+Remember, most hardware does have critical-word-first loads.  So alignment
+to the width of the data bus is enough.  "Keep it naturally aligned" is
+all that's necessary, and most kernel data structures already obey that.
 
+I was just extending it, because I wanted to make it *possible* to use
+wider loads.
+
+>> As I said, "infinitesimal".  The main reason that I bothered to
+>> generate a patch was that it appealed to my sense of neatness to
+>> keep the 3x16-byte buffer 16-byte aligned.
+
+> Ah, now you come clean!  Yes, it does feel neater to me too;
+> but I doubt that would be sufficient justification by itself.
+
+It took both factors to make it worth it to me.  The real reason was:
+1) Neater
+2) Definitely not slower
+3) Maybe a tiny bit faster
+Conclusion: do it.
+
+Sorry to alarm you.
