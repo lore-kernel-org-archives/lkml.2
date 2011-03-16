@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab1CPUIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:08:25 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:33947 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753528Ab1CPUIU convert rfc822-to-8bit (ORCPT
+	id S1753870Ab1CPUJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:09:50 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:49955 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753788Ab1CPUJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:08:20 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Kees Cook <kees.cook@canonical.com>
-Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
-Date: Wed, 16 Mar 2011 21:08:16 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, serge@hallyn.com,
-        eparis@redhat.com, jmorris@namei.org, eugeneteo@kernel.org,
-        drosenberg@vsecurity.com
-References: <1300303907-22627-1-git-send-email-richard@nod.at> <20110316195549.GZ5466@outflux.net>
-In-Reply-To: <20110316195549.GZ5466@outflux.net>
+	Wed, 16 Mar 2011 16:09:45 -0400
+Message-ID: <4D8118EB.2070209@fastmail.fm>
+Date: Wed, 16 Mar 2011 21:09:15 +0100
+From: Anders Eriksson <aeriksson@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101003 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103162108.17127.richard@nod.at>
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, xorg-driver-ati@lists.x.org
+Subject: Re: Radeon jittery post 2.6.35
+References: <4D7CCFC3.7030906@fastmail.fm>	<AANLkTinug=6d6BKrZvA1HGZWNqgUNJKOBC3f8J5B_5oJ@mail.gmail.com>	<AANLkTik0nXX+WEwa2xZ9VV+yHwrWnx+tYNdZXPEjk=SO@mail.gmail.com>	<4D7FD2FB.9090505@fastmail.fm> <AANLkTimboMAFkqTUOwP9m2z361TM_EgthQO07T5Y_az1@mail.gmail.com>
+In-Reply-To: <AANLkTimboMAFkqTUOwP9m2z361TM_EgthQO07T5Y_az1@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.252.238.16
+X-Scan-Result: No virus found in message 1Pzx2C-0006xC-3v.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Pzx2C-0006xC-3v 05821f60c876658c7c703530372582cc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees,
+ On 03/15/11 22:46, Alex Deucher wrote:
+>  Try booting with radeon.audio=0 on 2.6.38rc, some TVs have problems
+> with the hdmi packets we send by default.  disabling audio will treat
+> the hdmi like dvi.
+>
+> Alex
+You seem to be on to something there. radeon.audio=0 removes
+what appears to be all of the jitter. I say "appear", because during
+my many test runs today, I've come across moments where my brain
+goes "wasn't what I just noticed on the TV something abnormal?" Both
+in fb mode (post KMS), and in X11. It's definetly improved from useless
+for family use, to perfectly ok though.
 
-Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
-> Hi Richard,
-> 
-> On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
-> > When containers like LXC are used a unprivileged and jailed
-> > root user can still write to critical files in /proc/.
-> > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
-> > 
-> > This new restricted attribute makes it possible to protect such
-> > files. When restricted is set to true root needs CAP_SYS_ADMIN
-> > to into the file.
-> 
-> I was thinking about this too. I'd prefer more fine-grained control
-> in this area, since some sysctl entries aren't strictly controlled by
-> CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking CAP_SYS_RAWIO).
-> 
-> How about this instead?
+Back when the radeonhd and radeon X drivers where on par, HDMIAudio
+where first introduced in the radeonhd driver. I recall testing HDMIAudio
+sucessfully then, but haven't used HDMUAudio since, and have switched to
+the radeon driver. Now when I check for HDMIAudio (with and without that
+command line option), I come up blank (all I see is an S/PDIF output). Isn't
+HDMIAudio supported on this card? I googled up a post suggesting that it
+was ported to R600+ cards in the radeon driver which would suggest that
+the RS690 driver doesn't support it(?).
 
-Good Idea.
-May we should also consider a per-directory restriction.
-Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
-It would be much easier to set the protection on the parent directory
-instead of protecting file by file...
+If at all possible, I'd like to have HDMIAudio operational as the HW
+supports it.
 
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> ---
-> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-> index 8eb2522..5c5cfab 100644
-> --- a/fs/proc/proc_sysctl.c
-> +++ b/fs/proc/proc_sysctl.c
-> @@ -149,6 +149,10 @@ static ssize_t proc_sys_call_handler(struct file
-> *filp, void __user *buf, if (sysctl_perm(head->root, table, write ?
-> MAY_WRITE : MAY_READ)) goto out;
-> 
-> +	if (write && !cap_isclear(table->write_caps) &&
-> +            !cap_issubset(table->write_caps,
-> current_cred()->cap_permitted)) +		goto out;
-> +
->  	/* if that can happen at all, it should be -EINVAL, not -EISDIR */
->  	error = -EINVAL;
->  	if (!table->proc_handler)
-> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-> index 11684d9..4e05493 100644
-> --- a/include/linux/sysctl.h
-> +++ b/include/linux/sysctl.h
-> @@ -1018,6 +1018,7 @@ struct ctl_table
->  	void *data;
->  	int maxlen;
->  	mode_t mode;
-> +	kernel_cap_t write_caps;	/* Capabilities required to write */
->  	struct ctl_table *child;
->  	struct ctl_table *parent;	/* Automatically set */
->  	proc_handler *proc_handler;	/* Callback for text formatting */
+A couple of data points:
+* Disabling HDMIAudio in the BIOS does not change anything (GRUB bad,
+KMS fixes it, etc..)
+* A pm-suspend cycle with the TV powered on is enough to turn a
+jitter-free session jittery (if I don't use radeon.audio=0)
+
+Any patches I can try (either to add support, or fixup what's currently
+broken w/ HDMIAudio?)
+
+-Anders
 
