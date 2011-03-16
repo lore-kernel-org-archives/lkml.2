@@ -1,55 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab1CPVMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:12:53 -0400
-Received: from kroah.org ([198.145.64.141]:42616 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754279Ab1CPVLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:11:50 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ferenc Wagner <wferi@niif.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 19/50] sysfs: Capitalize description of SYSFS_DEPRECATED{_V2} options
-Date: Wed, 16 Mar 2011 14:10:57 -0700
-Message-Id: <1300309888-5028-19-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
-References: <20110316205204.GA2686@kroah.com>
- <1300309888-5028-1-git-send-email-gregkh@suse.de>
+	id S1754731Ab1CPVS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:18:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19178 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab1CPVSs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:18:48 -0400
+Message-ID: <4D812919.30706@kernel.org>
+Date: Wed, 16 Mar 2011 14:18:17 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Mike Waychison <mikew@google.com>, Wim Van Sebroeck <wim@iguana.be>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        linux-watchdog@vger.kernel.org, Priyanka Gupta <priyankag@google.com>
+Subject: [PATCH] watchdog, SP5100: Check if firmware has set correct value
+ in tcobase.
+References: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop> <20110311222129.GA3168@dumpdata.com> <alpine.DEB.2.00.1103161150010.3382@kaball-desktop> <alpine.DEB.2.00.1103161442210.3382@kaball-desktop> <4D80F992.10603@kernel.org> <alpine.DEB.2.00.1103161757040.3382@kaball-desktop> <4D812180.5030102@kernel.org> <AANLkTimNva3c_-kGA+JLCPZgrKAbwqLKaN559cwTh7cq@mail.gmail.com>
+In-Reply-To: <AANLkTimNva3c_-kGA+JLCPZgrKAbwqLKaN559cwTh7cq@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D81292B.00A4,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ferenc Wagner <wferi@niif.hu>
 
-Signed-off-by: Ferenc Wagner <wferi@niif.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+Stefano found SP5100 TCO watchdog driver using wrong address.
+
+[    9.148536] SP5100 TCO timer: SP5100 TCO WatchDog Timer Driver v0.01
+[    9.148628] DEBUG __ioremap_caller WARNING address=b8fe00 size=8 valid=1 reserved=1
+
+and e820 said that range is RAM.
+
+We should check if we can use that reading out. BIOS could just program wrong address there.
+
+-v2: Mike pointed out one path need one release.
+
+Reported-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by:Yinghai Lu <yinghai@kernel.org>
+Acked-by: Mike Waychison <mikew@google.com>
+
 ---
- init/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+  drivers/watchdog/sp5100_tco.c |   14 ++++++++++++--
+  1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index be788c0..e72fd10 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -814,7 +814,7 @@ config MM_OWNER
- 	bool
- 
- config SYSFS_DEPRECATED
--	bool "enable deprecated sysfs features to support old userspace tools"
-+	bool "Enable deprecated sysfs features to support old userspace tools"
- 	depends on SYSFS
- 	default n
- 	help
-@@ -837,7 +837,7 @@ config SYSFS_DEPRECATED
- 	  need to say Y here.
- 
- config SYSFS_DEPRECATED_V2
--	bool "enabled deprecated sysfs features by default"
-+	bool "Enable deprecated sysfs features by default"
- 	default n
- 	depends on SYSFS
- 	depends on SYSFS_DEPRECATED
--- 
-1.7.4.1
-
+Index: linux-2.6/drivers/watchdog/sp5100_tco.c
+===================================================================
+--- linux-2.6.orig/drivers/watchdog/sp5100_tco.c
++++ linux-2.6/drivers/watchdog/sp5100_tco.c
+@@ -42,6 +42,7 @@
+  #define PFX TCO_MODULE_NAME ": "
+  
+  /* internal variables */
++static u32 tcobase_phys;
+  static void __iomem *tcobase;
+  static unsigned int pm_iobase;
+  static DEFINE_SPINLOCK(tco_lock);	/* Guards the hardware */
+@@ -305,10 +306,16 @@ static unsigned char __devinit sp5100_tc
+  	/* Low three bits of BASE0 are reserved. */
+  	val = val << 8 | (inb(SP5100_IO_PM_DATA_REG) & 0xf8);
+  
++	if (request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE, "SP5100 TCO")) {
++		printk(KERN_ERR PFX "mmio address 0x%04x already in use\n", val);
++		goto unreg_region;
++	}
++	tcobase_phys = val;
++
+  	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
+  	if (tcobase == 0) {
+  		printk(KERN_ERR PFX "failed to get tcobase address\n");
+-		goto unreg_region;
++		goto unreg_mem_region;
+  	}
+  
+  	/* Enable watchdog decode bit */
+@@ -346,7 +353,8 @@ static unsigned char __devinit sp5100_tc
+  	/* Done */
+  	return 1;
+  
+-	iounmap(tcobase);
++unreg_mem_region:
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+  unreg_region:
+  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+  exit:
+@@ -401,6 +409,7 @@ static int __devinit sp5100_tco_init(str
+  
+  exit:
+  	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+  	return ret;
+  }
+@@ -414,6 +423,7 @@ static void __devexit sp5100_tco_cleanup
+  	/* Deregister */
+  	misc_deregister(&sp5100_tco_miscdev);
+  	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+  }
+  
