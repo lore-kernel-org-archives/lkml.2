@@ -1,229 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1CPVKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:10:20 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:44640 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab1CPVKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:10:14 -0400
-Subject: [PATCH] drm: radeon: *_cs_packet_parse_vline() cleanup
-From: Paul Bolle <pebolle@tiscali.nl>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 Mar 2011 22:10:06 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.91 (2.91.91-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1300309813.1954.15.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	id S1754208Ab1CPVLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:11:35 -0400
+Received: from kroah.org ([198.145.64.141]:42511 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751048Ab1CPVLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:11:30 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Timur Tabi <timur@freescale.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 01/50] driver-core: document restrictions on device_rename()
+Date: Wed, 16 Mar 2011 14:10:39 -0700
+Message-Id: <1300309888-5028-1-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20110316205204.GA2686@kroah.com>
+References: <20110316205204.GA2686@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify the way the return value is set a number of times (mostly on
-error).
+From: Timur Tabi <timur@freescale.com>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Add text, courtesy of Kay Sievers, that provides some background on
+device_rename() and why it shouldn't be used.
+
+Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
-Should a patch like this go through the trivial tree?
-Documentation/SubmittingPatches wasn't entirely clear on that.
+ drivers/base/core.c |   29 ++++++++++++++++++++++++++++-
+ 1 files changed, 28 insertions(+), 1 deletions(-)
 
- drivers/gpu/drm/radeon/evergreen_cs.c |   24 ++++++++----------------
- drivers/gpu/drm/radeon/r100.c         |   16 ++++++----------
- drivers/gpu/drm/radeon/r600_cs.c      |   25 +++++++++----------------
- 3 files changed, 23 insertions(+), 42 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
-index 345a75a..d091e70 100644
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -292,33 +292,28 @@ static int evergreen_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 	if (wait_reg_mem.type != PACKET_TYPE3 ||
- 	    wait_reg_mem.opcode != PACKET3_WAIT_REG_MEM) {
- 		DRM_ERROR("vline wait missing WAIT_REG_MEM segment\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	wait_reg_mem_info = radeon_get_ib_value(p, wait_reg_mem.idx + 1);
- 	/* bit 4 is reg (0) or mem (1) */
- 	if (wait_reg_mem_info & 0x10) {
- 		DRM_ERROR("vline WAIT_REG_MEM waiting on MEM rather than REG\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 	/* waiting for value to be equal */
- 	if ((wait_reg_mem_info & 0x7) != 0x3) {
- 		DRM_ERROR("vline WAIT_REG_MEM function not equal\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 	if ((radeon_get_ib_value(p, wait_reg_mem.idx + 2) << 2) != EVERGREEN_VLINE_STATUS) {
- 		DRM_ERROR("vline WAIT_REG_MEM bad reg\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	if (radeon_get_ib_value(p, wait_reg_mem.idx + 5) != EVERGREEN_VLINE_STAT) {
- 		DRM_ERROR("vline WAIT_REG_MEM bad bit mask\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	/* jump over the NOP */
-@@ -336,8 +331,7 @@ static int evergreen_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 	obj = drm_mode_object_find(p->rdev->ddev, crtc_id, DRM_MODE_OBJECT_CRTC);
- 	if (!obj) {
- 		DRM_ERROR("cannot find crtc %d\n", crtc_id);
--		r = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 	crtc = obj_to_crtc(obj);
- 	radeon_crtc = to_radeon_crtc(crtc);
-@@ -362,12 +356,10 @@ static int evergreen_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 			break;
- 		default:
- 			DRM_ERROR("unknown crtc reloc\n");
--			r = -EINVAL;
--			goto out;
-+			return -EINVAL;
- 		}
- 	}
--out:
--	return r;
-+	return 0;
- }
- 
- static int evergreen_packet0_check(struct radeon_cs_parser *p,
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index e372f9e..fcc23e4 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -1205,14 +1205,12 @@ int r100_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 	if (waitreloc.reg != RADEON_WAIT_UNTIL ||
- 	    waitreloc.count != 0) {
- 		DRM_ERROR("vline wait had illegal wait until segment\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	if (radeon_get_ib_value(p, waitreloc.idx + 1) != RADEON_WAIT_CRTC_VLINE) {
- 		DRM_ERROR("vline wait had illegal wait until\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	/* jump over the NOP */
-@@ -1230,8 +1228,7 @@ int r100_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 	obj = drm_mode_object_find(p->rdev->ddev, crtc_id, DRM_MODE_OBJECT_CRTC);
- 	if (!obj) {
- 		DRM_ERROR("cannot find crtc %d\n", crtc_id);
--		r = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 	crtc = obj_to_crtc(obj);
- 	radeon_crtc = to_radeon_crtc(crtc);
-@@ -1253,14 +1250,13 @@ int r100_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 			break;
- 		default:
- 			DRM_ERROR("unknown crtc reloc\n");
--			r = -EINVAL;
--			goto out;
-+			return -EINVAL;
- 		}
- 		ib[h_idx] = header;
- 		ib[h_idx + 3] |= RADEON_ENG_DISPLAY_SELECT_CRTC1;
- 	}
--out:
--	return r;
-+
-+	return 0;
- }
- 
- /**
-diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
-index 153095f..5bfed09 100644
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -687,33 +687,28 @@ static int r600_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 	if (wait_reg_mem.type != PACKET_TYPE3 ||
- 	    wait_reg_mem.opcode != PACKET3_WAIT_REG_MEM) {
- 		DRM_ERROR("vline wait missing WAIT_REG_MEM segment\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	wait_reg_mem_info = radeon_get_ib_value(p, wait_reg_mem.idx + 1);
- 	/* bit 4 is reg (0) or mem (1) */
- 	if (wait_reg_mem_info & 0x10) {
- 		DRM_ERROR("vline WAIT_REG_MEM waiting on MEM rather than REG\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 	/* waiting for value to be equal */
- 	if ((wait_reg_mem_info & 0x7) != 0x3) {
- 		DRM_ERROR("vline WAIT_REG_MEM function not equal\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 	if ((radeon_get_ib_value(p, wait_reg_mem.idx + 2) << 2) != AVIVO_D1MODE_VLINE_STATUS) {
- 		DRM_ERROR("vline WAIT_REG_MEM bad reg\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	if (radeon_get_ib_value(p, wait_reg_mem.idx + 5) != AVIVO_D1MODE_VLINE_STAT) {
- 		DRM_ERROR("vline WAIT_REG_MEM bad bit mask\n");
--		r = -EINVAL;
--		return r;
-+		return -EINVAL;
- 	}
- 
- 	/* jump over the NOP */
-@@ -732,8 +727,7 @@ static int r600_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 	obj = drm_mode_object_find(p->rdev->ddev, crtc_id, DRM_MODE_OBJECT_CRTC);
- 	if (!obj) {
- 		DRM_ERROR("cannot find crtc %d\n", crtc_id);
--		r = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 	crtc = obj_to_crtc(obj);
- 	radeon_crtc = to_radeon_crtc(crtc);
-@@ -756,14 +750,13 @@ static int r600_cs_packet_parse_vline(struct radeon_cs_parser *p)
- 			break;
- 		default:
- 			DRM_ERROR("unknown crtc reloc\n");
--			r = -EINVAL;
--			goto out;
-+			return -EINVAL;
- 		}
- 		ib[h_idx] = header;
- 		ib[h_idx + 4] = AVIVO_D2MODE_VLINE_STATUS >> 2;
- 	}
--out:
--	return r;
-+
-+	return 0;
- }
- 
- static int r600_packet0_check(struct radeon_cs_parser *p,
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 080e9ca..9cd3b5c 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1551,7 +1551,34 @@ EXPORT_SYMBOL_GPL(device_destroy);
+  * on the same device to ensure that new_name is valid and
+  * won't conflict with other devices.
+  *
+- * "Never use this function, bad things will happen" - gregkh
++ * Note: Don't call this function.  Currently, the networking layer calls this
++ * function, but that will change.  The following text from Kay Sievers offers
++ * some insight:
++ *
++ * Renaming devices is racy at many levels, symlinks and other stuff are not
++ * replaced atomically, and you get a "move" uevent, but it's not easy to
++ * connect the event to the old and new device. Device nodes are not renamed at
++ * all, there isn't even support for that in the kernel now.
++ *
++ * In the meantime, during renaming, your target name might be taken by another
++ * driver, creating conflicts. Or the old name is taken directly after you
++ * renamed it -- then you get events for the same DEVPATH, before you even see
++ * the "move" event. It's just a mess, and nothing new should ever rely on
++ * kernel device renaming. Besides that, it's not even implemented now for
++ * other things than (driver-core wise very simple) network devices.
++ *
++ * We are currently about to change network renaming in udev to completely
++ * disallow renaming of devices in the same namespace as the kernel uses,
++ * because we can't solve the problems properly, that arise with swapping names
++ * of multiple interfaces without races. Means, renaming of eth[0-9]* will only
++ * be allowed to some other name than eth[0-9]*, for the aforementioned
++ * reasons.
++ *
++ * Make up a "real" name in the driver before you register anything, or add
++ * some other attributes for userspace to find the device, or use udev to add
++ * symlinks -- but never rename kernel devices later, it's a complete mess. We
++ * don't even want to get into that and try to implement the missing pieces in
++ * the core. We really have other pieces to fix in the driver core mess. :)
+  */
+ int device_rename(struct device *dev, const char *new_name)
+ {
 -- 
 1.7.4.1
-
-
 
