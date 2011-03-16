@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab1CPPEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 11:04:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42985 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752446Ab1CPPEd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 11:04:33 -0400
+	id S1753258Ab1CPPFE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 11:05:04 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:41199
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752446Ab1CPPFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 11:05:00 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LI5OK2-02-MF9-02
+X-M-MSG: 
+Date: Wed, 16 Mar 2011 16:04:51 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] oprofile: Allow setting EDGE/INV/CMASK for Intel
+ counter events
+Message-ID: <20110316150450.GO31407@erda.amd.com>
+References: <1299870748-13319-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <4D80695D.8080903@orcon.net.nz>
-References: <4D7F2C11.907@orcon.net.nz> <AANLkTimRDH4S1QMN6f4AfKOe6ipPK6jm+g91nuBJYQJa@mail.gmail.com>
- <AANLkTi=yev46gYosVdSfVvmf7MnB2oVriyvDT+pu1FnC@mail.gmail.com> <4D80695D.8080903@orcon.net.nz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Mar 2011 08:03:42 -0700
-Message-ID: <AANLkTinvRJNZGrKT0pbFBcHoe2LOeSVMd2CEBaKdbU2u@mail.gmail.com>
-Subject: Re: Alpha no longer recognises certain partition tables (v2.6.38)
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-        warns@pre-sense.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1299870748-13319-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 12:40 AM, Michael Cree <mcree@orcon.net.nz> wrote:
->
-> OK, I've fallen for that and created too many partitions on my system disk.
->  When using your patch dmesg reports:
->
-> [    7.511714] sd 1:0:0:0: [sdb] 2930277168 512-byte logical blocks: (1.50
-> TB/1.36 TiB)
-> [    7.551753] sd 1:0:0:0: [sdb] Write Protect is off
-> [    7.572261] sd 1:0:0:0: [sdb] Mode Sense: 00 3a 00 00
-> [    7.591792] sd 1:0:0:0: [sdb] Write cache: enabled, read cache: enabled,
-> doesn't support DPO or FUA
-> [    7.633785] OSF: 10 partitions
-> [    7.654292]  sdb: sdb1 sdb2 sdb3 sdb4 sdb5 sdb6 sdb7 sdb8
-> [    7.675777] sd 1:0:0:0: [sdb] Attached SCSI disk
+On 11.03.11 14:12:28, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> For some performance events it's useful to set the EDGE and INV
+> bits and the CMASK mask in the counter control register. The list
+> of predefined events Intel releases for each CPU has some events which
+> require these settings to get more "natural" to use higher level events.
+> 
+> oprofile currently doesn't allow this.
+> 
+> This patch adds new extra configuration fields for them, so that
+> they can be specified in oprofilefs.
+> 
+> An updated oprofile daemon can then make use of this to set them.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/oprofile/nmi_int.c    |    4 ++++
+>  arch/x86/oprofile/op_counter.h |    1 +
+>  2 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+> index e2b7b0c..bace252 100644
+> --- a/arch/x86/oprofile/nmi_int.c
+> +++ b/arch/x86/oprofile/nmi_int.c
+> @@ -49,6 +49,9 @@ u64 op_x86_get_ctrl(struct op_x86_model_spec const *model,
+>  	val |= counter_config->user ? ARCH_PERFMON_EVENTSEL_USR : 0;
+>  	val |= counter_config->kernel ? ARCH_PERFMON_EVENTSEL_OS : 0;
+>  	val |= (counter_config->unit_mask & 0xFF) << 8;
+> +	val |= counter_config->extra & (ARCH_PERFMON_EVENTSEL_INV|
+> +					ARCH_PERFMON_EVENTSEL_EDGE|
+> +					ARCH_PERFMON_EVENTSEL_CMASK);
 
-Ok, no problem.
+I would like to write the actual value back so that userland may read
+it:
 
-I'll increase the value of OSF_MAX_PARTITIONS to 18 (which is what
-fits in a 512 byte sector), and mark it for back-porting into stable
-too.
+	counter_config->extra &= (ARCH_PERFMON_EVENTSEL_INV|
+                         ARCH_PERFMON_EVENTSEL_EDGE|
+                         ARCH_PERFMON_EVENTSEL_CMASK);
+	val |= counter_config->extra;
 
-Thanks for testing.
+The value will not be updated emmediately but at least after profiling
+was started.
 
-> I could get it back to eight partitions but it will require copying the
-> largest partition to another disk and back again as that partition does not
-> meet the conditions for resizing.
+As an alternative, maybe we better put this extra bits in the
+unit_mask, e.g. in bits [31:16] of the unit mask for bits [31:16] of
+PerfEvtSel? Then, we simply could use the current userland to set it
+up.
 
-Oh, no need for that. There really isn't any real technical limit for
-the "limit to 8 partitions", and we don't cause regressions.
+-Robert
 
-                              Linus
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
