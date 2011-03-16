@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1CPVGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:06:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48870 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab1CPVGc (ORCPT
+	id S1754172Ab1CPVIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:08:01 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:42126 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753204Ab1CPVHz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:06:32 -0400
-Subject: Re: [PATCH 02/17] mm: mmu_gather rework
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Tony Luck <tony.luck@intel.com>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <AANLkTimB4NFSPz5dSQCuEy3Rj5968n5k0=4c7tvhErE5@mail.gmail.com>
-References: <20110217162327.434629380@chello.nl>
-	 <20110217163234.823185666@chello.nl> <20110310155032.GB32302@csn.ul.ie>
-	 <1300301742.2203.1899.camel@twins>
-	 <AANLkTimB4NFSPz5dSQCuEy3Rj5968n5k0=4c7tvhErE5@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Mar 2011 22:08:21 +0100
-Message-ID: <1300309701.2250.89.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Mar 2011 17:07:55 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
+Date: Wed, 16 Mar 2011 22:07:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, Kees Cook <kees.cook@canonical.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        serge@hallyn.com, eparis@redhat.com, jmorris@namei.org,
+        eugeneteo@kernel.org, drosenberg@vsecurity.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+References: <1300303907-22627-1-git-send-email-richard@nod.at> <201103162152.49615.richard@nod.at> <20110316210452.GA13624@p183.telecom.by>
+In-Reply-To: <20110316210452.GA13624@p183.telecom.by>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103162207.49182.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 21:15 +0100, Geert Uytterhoeven wrote:
-> On Wed, Mar 16, 2011 at 19:55, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Thu, 2011-03-10 at 15:50 +0000, Mel Gorman wrote:
-> >
-> >> > +static inline void
-> >> > +tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
-> >> >  {
-> >>
-> >> checkpatch will bitch about line length.
-> >
-> > I did a s/full_mm_flush/fullmm/ which puts the line length at 81. At
-> > which point I'll ignore it ;-)
+Am Mittwoch 16 März 2011, 22:04:52 schrieb Alexey Dobriyan:
+> On Wed, Mar 16, 2011 at 09:52:49PM +0100, Richard Weinberger wrote:
+> > Am Mittwoch 16 März 2011, 21:45:45 schrieb Arnd Bergmann:
+> > > On Wednesday 16 March 2011 21:08:16 Richard Weinberger wrote:
+> > > > Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
+> > > > > On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
+> > > > > > When containers like LXC are used a unprivileged and jailed
+> > > > > > root user can still write to critical files in /proc/.
+> > > > > > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
+> > > > > > 
+> > > > > > This new restricted attribute makes it possible to protect such
+> > > > > > files. When restricted is set to true root needs CAP_SYS_ADMIN
+> > > > > > to into the file.
+> > > > > 
+> > > > > I was thinking about this too. I'd prefer more fine-grained control
+> > > > > in this area, since some sysctl entries aren't strictly controlled
+> > > > > by CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking
+> > > > > CAP_SYS_RAWIO).
+> > > > > 
+> > > > > How about this instead?
+> > > > 
+> > > > Good Idea.
+> > > > May we should also consider a per-directory restriction.
+> > > > Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
+> > > > It would be much easier to set the protection on the parent directory
+> > > > instead of protecting file by file...
+> > > 
+> > > How does this interact with the per-namespace sysctls that Eric
+> > > Biederman added a few years ago?
+> > 
+> > Do you mean CONFIG_{UTS, UPC, USER, NET,}_NS?
 > 
-> But what does "fullmm" mean here? Shouldn't that be documented.
-> BTW, the function no longer returns a struct, but void, so the documentation
-> should be updated for sure.
+> It only covers /proc/sys/net/
 
-You're talking about the comment right? I'll update that. I was also
-considering writing Documentation/mmugather.txt, but that's a slightly
-bigger undertaking.
+Exactly.
+
+> > > I had expected that any dangerous sysctl would not be visible in
+> > > an unpriviledge container anyway.
+> > 
+> > No way.
+> 
+> No way what exactly?
+
+Dangerous sysctls are not protected at all.
+E.g. A jailed root can use /proc/sysrq-trigger.
+
+> 
+> > That's why it's currently a very good idea to mount /proc/ read-only into
+> > a container.
 
