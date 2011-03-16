@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab1CPJrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 05:47:35 -0400
-Received: from h1047321.serverkompetenz.net ([85.214.67.163]:42814 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab1CPJr3 (ORCPT
+	id S1752508Ab1CPJvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 05:51:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44420 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab1CPJv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 05:47:29 -0400
-Message-ID: <4D808729.9060608@ahsoftware.de>
-Date: Wed, 16 Mar 2011 10:47:21 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: musb as module broken in 2.6.38
-References: <4D8018A9.6000800@ahsoftware.de> <20110316090327.GA2325@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110316090327.GA2325@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	Wed, 16 Mar 2011 05:51:26 -0400
+Subject: Re: [PATCH 22/22] sched: Remove TASK_WAKING
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: frank.rowand@am.sony.com
+Cc: Chris Mason <chris.mason@oracle.com>,
+        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D797F92.6020504@am.sony.com>
+References: <20110302173831.295031866@chello.nl>
+	 <20110302174121.858324339@chello.nl>  <4D797F92.6020504@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 10:53:20 +0100
+Message-ID: <1300269200.2250.83.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.03.2011 10:03, schrieb Felipe Balbi:
-> Hi,
->
-> On Wed, Mar 16, 2011 at 02:55:53AM +0100, Alexander Holler wrote:
->> in commit dc09886bfa781e2b442301116c18199519e36f0f the name of the
->> platform-driver was splitted and musb-omap2430 is used for several
->> boards (arch/arm/mach-omap2/usb-musb.c).
->>
->> But musb_hdrc still uses musb-hdrc as name when
->> platform_driver_probe() is called. The result is that loading the
->> driver (when build as a module) doesn't work anymore (it doesn't find
->> the platform-device).
->>
->> Do I miss something or was something forgotten when the glue-layers
->> for musb got introduced?
->>
->> (The driver still works when linked into the kernel, but is
->> disfunctional when build as a module.)
->
-> Send me the output you get on console and a snippet of the .config with
-> the MUSB section.
+On Thu, 2011-03-10 at 17:49 -0800, Frank Rowand wrote:
+> On 03/02/11 09:38, Peter Zijlstra wrote:
+> > With the new locking TASK_WAKING has become obsolete, remove it.
+> > 
+> > Suggested-by: Oleg Nesterov <oleg@redhat.com>
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > LKML-Reference: <new-submission>
+> > ---
+> 
+> < snip >
+> 
+> > Index: linux-2.6/kernel/sched.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/sched.c
+> > +++ linux-2.6/kernel/sched.c
+> > @@ -2175,7 +2175,7 @@ void set_task_cpu(struct task_struct *p,
+> >  	 * We should never call set_task_cpu() on a blocked task,
+> >  	 * ttwu() will sort out the placement.
+> >  	 */
+> > -	WARN_ON_ONCE(p->state != TASK_RUNNING && p->state != TASK_WAKING &&
+> > +	WARN_ON_ONCE(p->state != TASK_RUNNING &&
+> >  			!(task_thread_info(p)->preempt_count & PREEMPT_ACTIVE));
+> >  
+> >  #ifdef CONFIG_LOCKDEP
+> > @@ -2613,7 +2613,7 @@ try_to_wake_up(struct task_struct *p, un
+> >  	smp_rmb();
+> >  
+> >  	p->sched_contributes_to_load = !!task_contributes_to_load(p);
+> > -	p->state = TASK_WAKING;
+> > +	p->state = TASK_RUNNING;
+> >  
+> >  	if (p->sched_class->task_waking)
+> >  		p->sched_class->task_waking(p);
+> 
+> No harm if the coded as in the patch, but an alternate suggestion
+> if you like it:
+> 
+> The only reason left for "p->state = TASK_RUNNING;" here is when
+> cpu is remote.  If cpu is not remote then p->state will be set by:
+> 
+>    ttwu_queue()
+>       ttwu_do_activate()
+>          ttwu_do_wakeup()
+>             p->state = TASK_RUNNING;
+> 
+> It would be more clear that setting state to TASK_RUNNING is protecting
+> the process until it has been removed from the wake_list by
+> sched_ttwu_pending() by setting p->state = TASK_RUNNING in ttwu_queue_remote().
+> 
 
-I don't see the need for it, but here it is:
+Yeah, its a bit of a maze.. maybe we should just drop this and keep the
+slightly redundant but more clear TASK_WAKING around.
 
-------------
-beagle linux # grep -i MUSB .config
-CONFIG_USB_MUSB_HDRC=m
-# CONFIG_USB_MUSB_TUSB6010 is not set
-CONFIG_USB_MUSB_OMAP2PLUS=y
-# CONFIG_USB_MUSB_AM35X is not set
-# CONFIG_USB_MUSB_HOST is not set
-# CONFIG_USB_MUSB_PERIPHERAL is not set
-CONFIG_USB_MUSB_OTG=y
-CONFIG_USB_GADGET_MUSB_HDRC=y
-CONFIG_USB_MUSB_HDRC_HCD=y
-# CONFIG_MUSB_PIO_ONLY is not set
-CONFIG_USB_MUSB_DEBUG=y
-beagle linux # modprobe musb_hdrc
-FATAL: Error inserting musb_hdrc 
-(/lib/modules/2.6.38-beagleboard-00002-g0017ea0-dirty/kernel/drivers/usb/musb/musb_hdrc.ko): 
-No such device
-beagle linux # tail -n 1 /var/log/messages
-Mar 16 10:37:51 beagle kernel: [  177.302825] musb-hdrc: version 6.0, 
-musb-dma, otg (peripheral+host), debug=5
-beagle linux # ls /sys/devices/platform/ | grep musb
-musb-omap2430
-------------
 
-The problem in detail:
 
-Through modprobe musb_core.c:musb_init() is called, and this calls 
-platform_driver_probe() with a pointer to a struct of platform_device 
-where the name is musb-hdrc. 
-drivers/base/platform.c:platform_driver_probe() fails with -ENODEV 
-because it doesn't find a platform device with the name musb-hdrc 
-(list_empty()) which is understandable because the platform-device has 
-the name musb-omap2430.
-
-Regards,
-
-Alexander Holler
