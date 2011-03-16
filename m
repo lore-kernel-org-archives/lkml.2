@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1CPPgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 11:36:46 -0400
-Received: from linux-sh.org ([111.68.239.195]:34238 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab1CPPgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 11:36:40 -0400
-Date: Thu, 17 Mar 2011 00:36:02 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Heiko Schocher <hs@denx.de>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@ozlabs.org, Ben Dooks <ben@simtec.co.uk>,
-        Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>
-Subject: Re: [PATCH 3/4 v5] video, sm501: add OF binding to support SM501
-Message-ID: <20110316153601.GA13315@linux-sh.org>
-References: <1291451028-22532-1-git-send-email-hs@denx.de> <1296026490-14665-1-git-send-email-hs@denx.de> <4D7F14B0.1030008@denx.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7F14B0.1030008@denx.de>
-User-Agent: Mutt/1.4.1i
+	id S1753435Ab1CPPjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 11:39:13 -0400
+Received: from 94-30-104-162.xdsl.murphx.net ([94.30.104.162]:54518 "EHLO
+	spin.home.annexia.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752987Ab1CPPjI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 11:39:08 -0400
+X-Greylist: delayed 1023 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 11:39:07 EDT
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: "Richard W.M. Jones" <rjones@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Allow core dumps to block devices as well as regular files.
+Date: Wed, 16 Mar 2011 15:21:56 +0000
+Message-Id: <1300288916-607-1-git-send-email-rjones@redhat.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 08:26:40AM +0100, Heiko Schocher wrote:
-> > 0003-video-sm501-add-OF-binding-to-support-SM501.patch has no obvious style problems and is ready for submission.
-> > 
-> >  Documentation/powerpc/dts-bindings/sm501.txt |   34 +++++++++++++++++++++
-> >  drivers/mfd/sm501.c                          |    9 +++++-
-> >  drivers/video/sm501fb.c                      |   42 ++++++++++++++++++++++++--
-> >  3 files changed, 81 insertions(+), 4 deletions(-)
-> >  create mode 100644 Documentation/powerpc/dts-bindings/sm501.txt
-> 
-> This patchset is pending know for a while. I got Acked by from
-> 
-> Samuel Ortiz for the mfd part, see here:
-> 
-> http://www.spinics.net/lists/linux-fbdev/msg02550.html
-> http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
-> 
-> and for the DTS part from Benjamin Herrenschmidt:
-> 
-> http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
-> 
-> Are there some more issues?
-> 
-Not that I remember off the top of my head, but I think they've been lost
-in my backlog. Could you re-send the current series with the appropriate
-acked-bys? If there's nothing else obvious outstanding I'll roll them in.
+Allow core dumps to block devices by allowing the user to name a block
+device in core_pattern.  This change also removes the historical
+comment which would no longer be accurate.
+
+This is extremely useful when running the kernel in a "captive"
+appliance.  There is not necessarily a writable, mounted filesystem
+that can be used to catch a core dump, so instead we set aside a
+virtual disk for core dumps and allow the kernel to write a core to
+that.
+
+This patch was tested by running the modified kernel under qemu (using
+libguestfs) and forcing various core dumps to attached virtual disks.
+
+Signed-off-by: Richard W.M. Jones <rjones@redhat.com>
+---
+ fs/exec.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index ba99e1a..ee8051a 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2052,11 +2052,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 			goto close_fail;
+ 		if (d_unhashed(cprm.file->f_path.dentry))
+ 			goto close_fail;
+-		/*
+-		 * AK: actually i see no reason to not allow this for named
+-		 * pipes etc, but keep the previous behaviour for now.
+-		 */
+-		if (!S_ISREG(inode->i_mode))
++		if (!S_ISREG(inode->i_mode) && !S_ISBLK(inode->i_mode))
+ 			goto close_fail;
+ 		/*
+ 		 * Dont allow local users get cute and trick others to coredump
+-- 
+1.7.4
+
