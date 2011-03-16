@@ -1,26 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab1CPUWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:22:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55913 "EHLO
+	id S1754026Ab1CPUW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:22:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56857 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753856Ab1CPUWg (ORCPT
+	with ESMTP id S1753792Ab1CPUWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:22:36 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=9QXU0bjljTkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=HMbYz5bvLV9qGdviWvIA:9 a=iO9LGUtj3SKfjII-8MzfakOS6xQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Wed, 16 Mar 2011 16:22:53 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=J1Y8HTJGAAAA:8 a=WOs8Lwq4G9GqI6EBHeQA:9 a=5LmsEZXz082aiRzOi29F7_6cbdIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=4N9Db7Z2_RYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: Typo in linux-2.6.38/arch/x86/kernel/entry_32.S
+Subject: Re: Need ack from sparc maintainer
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Eric Vlette <eric.valette@free.fr>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <4D8118F7.5060107@free.fr>
-References: <4D80B7EE.40706@Free.fr>
-	 <20110316195210.GA14675@home.goodmis.org>  <4D8118F7.5060107@free.fr>
+To: David Miller <davem@davemloft.net>
+Cc: jbaron@redhat.com, peterz@infradead.org, hpa@zytor.com,
+        mathieu.desnoyers@polymtl.ca, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        ralf@linux-mips.org, jang@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110316.131356.35037389.davem@davemloft.net>
+References: <cover.1300299760.git.jbaron@redhat.com>
+	 <2b6c03eb5ff0ed7c4d4a1cc9f1eb0fdff741aead.1300299760.git.jbaron@redhat.com>
+	 <1300305973.16880.47.camel@gandalf.stny.rr.com>
+	 <20110316.131356.35037389.davem@davemloft.net>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 16 Mar 2011 16:22:34 -0400
-Message-ID: <1300306954.16880.51.camel@gandalf.stny.rr.com>
+Date: Wed, 16 Mar 2011 16:22:49 -0400
+Message-ID: <1300306969.16880.52.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -28,40 +35,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 21:09 +0100, Eric Vlette wrote:
-> On 16/03/2011 20:52, Steven Rostedt wrote:
-> > On Wed, Mar 16, 2011 at 02:15:26PM +0100, Eric Valette wrote:
-> >> Hi,
-> >>
-> >> Trying to compile 2.6.38, I found the follwoing bug. Compiler barks...
-> > 
-> > New compiler? (new binutils more likely)
+On Wed, 2011-03-16 at 13:13 -0700, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Wed, 16 Mar 2011 16:06:13 -0400
 > 
-> Maybe. I use debian unstable + experimental and upgrade packages almost
-> everyday...
-
-You probably have new binutils.
-
-What does "as --version" give you. Binutils 2.21... ?
-
-I think it was 2.21 that started giving problems.
-
+> > Can you give your Acked-by for this change.
 > 
-> >>
-> >> diff linux-2.6.38/arch/x86/kernel/entry_32.S
-> >> linux-2.6.38/arch/x86/kernel/entry_32.S~
-> >> 1416c1416
-> >> < END(async_page_fault)
-> >> ---
-> >>> END(apf_page_fault)
-> 
-> But obviously the begin end is not symmetric as in other function.
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Right, there was a discussion before about this causing issues with new
-binutils, and I think Ingo or Thomas said that they had patches to fix
-these for x86. Which this looks like one.
-
-The old binutils never complained.
+Thanks David!
 
 -- Steve
 
