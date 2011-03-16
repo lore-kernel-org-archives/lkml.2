@@ -1,116 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab1CPVXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:23:49 -0400
-Received: from kroah.org ([198.145.64.141]:42690 "EHLO coco.kroah.org"
+	id S1755478Ab1CPVX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:23:57 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:60997 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754421Ab1CPVML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:12:11 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Waychison <mikew@google.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 38/50] firmware: Fix unaligned memory accesses in dmi-sysfs
-Date: Wed, 16 Mar 2011 14:11:16 -0700
-Message-Id: <1300309888-5028-38-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
-References: <20110316205204.GA2686@kroah.com>
- <1300309888-5028-1-git-send-email-gregkh@suse.de>
+	id S1755426Ab1CPVXg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:23:36 -0400
+From: Richard Weinberger <richard@nod.at>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
+Date: Wed, 16 Mar 2011 22:23:30 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, Kees Cook <kees.cook@canonical.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        serge@hallyn.com, eparis@redhat.com, jmorris@namei.org,
+        eugeneteo@kernel.org, drosenberg@vsecurity.com
+References: <1300303907-22627-1-git-send-email-richard@nod.at> <201103162152.49615.richard@nod.at> <m1lj0eepe4.fsf@fess.ebiederm.org>
+In-Reply-To: <m1lj0eepe4.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103162223.30997.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Waychison <mikew@google.com>
+Am Mittwoch 16 März 2011, 22:17:39 schrieb Eric W. Biederman:
+> Richard Weinberger <richard@nod.at> writes:
+> 
+> 2> Am Mittwoch 16 März 2011, 21:45:45 schrieb Arnd Bergmann:
+> >> On Wednesday 16 March 2011 21:08:16 Richard Weinberger wrote:
+> >> > Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
+> >> > > On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
+> >> > > > When containers like LXC are used a unprivileged and jailed
+> >> > > > root user can still write to critical files in /proc/.
+> >> > > > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
+> >> > > > 
+> >> > > > This new restricted attribute makes it possible to protect such
+> >> > > > files. When restricted is set to true root needs CAP_SYS_ADMIN
+> >> > > > to into the file.
+> >> > > 
+> >> > > I was thinking about this too. I'd prefer more fine-grained control
+> >> > > in this area, since some sysctl entries aren't strictly controlled
+> >> > > by CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking
+> >> > > CAP_SYS_RAWIO).
+> >> > > 
+> >> > > How about this instead?
+> >> > 
+> >> > Good Idea.
+> >> > May we should also consider a per-directory restriction.
+> >> > Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
+> >> > It would be much easier to set the protection on the parent directory
+> >> > instead of protecting file by file...
+> >> 
+> >> How does this interact with the per-namespace sysctls that Eric
+> >> Biederman added a few years ago?
+> > 
+> > Do you mean CONFIG_{UTS, UPC, USER, NET,}_NS?
+> > 
+> >> I had expected that any dangerous sysctl would not be visible in
+> >> an unpriviledge container anyway.
+> > 
+> > No way.
+> > That's why it's currently a very good idea to mount /proc/ read-only
+> > into a container.
+> 
+> However it is in the architecture.  The problem is that the user
+> namespace is not finished.  Once finished even root with all caps in a
+> container will have no more permissions than the unprivileged user that
+> created the user namespace.
+> 
+> Essentially the change is to make permissions checks become a comparison
+> of the tuple (user_ns, uid) instead of just comparisons by uid.  If we
+> want to fix permission problems with proc and containers please let's
+> focus on the completing the user namespace.
 
-DMI entries are arranged in memory back to back with no alignment
-guarantees. This means that the struct dmi_header passed to callbacks
-from dmi_walk() itself isn't byte aligned.  This causes problems on
-architectures that expect aligned data, such as IA64.
+Ok. What's the current status, where can I help?
 
-The dmi-sysfs patchset introduced structure member accesses through this
-passed in dmi_header.  Fix this by memcpy()ing the structures to
-temporary locations on stack when inspecting/copying them.
-
-Signed-off-by: Mike Waychison <mikew@google.com>
-Tested-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/firmware/dmi-sysfs.c |   28 +++++++++++++---------------
- 1 files changed, 13 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
-index a5afd80..eb26d62 100644
---- a/drivers/firmware/dmi-sysfs.c
-+++ b/drivers/firmware/dmi-sysfs.c
-@@ -263,20 +263,16 @@ struct dmi_system_event_log {
- 	u8	supported_log_type_descriptos[0];
- } __packed;
- 
--static const struct dmi_system_event_log *to_sel(const struct dmi_header *dh)
--{
--	return (const struct dmi_system_event_log *)dh;
--}
--
- #define DMI_SYSFS_SEL_FIELD(_field) \
- static ssize_t dmi_sysfs_sel_##_field(struct dmi_sysfs_entry *entry, \
- 				      const struct dmi_header *dh, \
- 				      char *buf) \
- { \
--	const struct dmi_system_event_log *sel = to_sel(dh); \
--	if (sizeof(*sel) > dmi_entry_length(dh)) \
-+	struct dmi_system_event_log sel; \
-+	if (sizeof(sel) > dmi_entry_length(dh)) \
- 		return -EIO; \
--	return sprintf(buf, "%u\n", sel->_field); \
-+	memcpy(&sel, dh, sizeof(sel)); \
-+	return sprintf(buf, "%u\n", sel._field); \
- } \
- static DMI_SYSFS_MAPPED_ATTR(sel, _field)
- 
-@@ -403,26 +399,28 @@ static ssize_t dmi_sel_raw_read_helper(struct dmi_sysfs_entry *entry,
- 				       void *_state)
- {
- 	struct dmi_read_state *state = _state;
--	const struct dmi_system_event_log *sel = to_sel(dh);
-+	struct dmi_system_event_log sel;
- 
--	if (sizeof(*sel) > dmi_entry_length(dh))
-+	if (sizeof(sel) > dmi_entry_length(dh))
- 		return -EIO;
- 
--	switch (sel->access_method) {
-+	memcpy(&sel, dh, sizeof(sel));
-+
-+	switch (sel.access_method) {
- 	case DMI_SEL_ACCESS_METHOD_IO8:
- 	case DMI_SEL_ACCESS_METHOD_IO2x8:
- 	case DMI_SEL_ACCESS_METHOD_IO16:
--		return dmi_sel_raw_read_io(entry, sel, state->buf,
-+		return dmi_sel_raw_read_io(entry, &sel, state->buf,
- 					   state->pos, state->count);
- 	case DMI_SEL_ACCESS_METHOD_PHYS32:
--		return dmi_sel_raw_read_phys32(entry, sel, state->buf,
-+		return dmi_sel_raw_read_phys32(entry, &sel, state->buf,
- 					       state->pos, state->count);
- 	case DMI_SEL_ACCESS_METHOD_GPNV:
- 		pr_info("dmi-sysfs: GPNV support missing.\n");
- 		return -EIO;
- 	default:
- 		pr_info("dmi-sysfs: Unknown access method %02x\n",
--			sel->access_method);
-+			sel.access_method);
- 		return -EIO;
- 	}
- }
-@@ -595,7 +593,7 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
- 	}
- 
- 	/* Set the key */
--	entry->dh = *dh;
-+	memcpy(&entry->dh, dh, sizeof(*dh));
- 	entry->instance = instance_counts[dh->type]++;
- 	entry->position = position_count++;
- 
--- 
-1.7.4.1
+> Eric
 
