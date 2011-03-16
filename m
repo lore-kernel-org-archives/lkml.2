@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab1CPAZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 20:25:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54465 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab1CPAZR (ORCPT
+	id S1757123Ab1CPAd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 20:33:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:16700 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab1CPAd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 20:25:17 -0400
+	Tue, 15 Mar 2011 20:33:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=wuiaZMeO1asI5oYOiYfdxafrcYgfe8MFs0Az6u0fjN9uadkw1q5eROIaYEpUZRhrSH
-         fcGRrICW2H8hNRGLZmVMQ4ALM7DTdOavPqCoMVe8UErBBk+gd60zcvZGHzMlbQwTnihk
-         ++cp2uk5Pa12kLEfoGghIMCFf8WjfWDmwrfus=
-Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, oakad@yahoo.com
-In-Reply-To: <20110315140402.334cc55c.akpm@linux-foundation.org>
-References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
-	 <1299947013.17988.0.camel@maxim-laptop> <1300219210.13493.0.camel@MAIN>
-	 <20110315140402.334cc55c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Mar 2011 02:25:09 +0200
-Message-ID: <1300235109.24919.6.camel@MAIN>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=apcLwmGDUzEhwvW8Mwm6hKq6ZVYBAuyqZp3o35BZHbRanlENV56LNA0qTUaTUIkuP6
+         1aAwIQOmePtbMZ/YlboA==
+MIME-Version: 1.0
+In-Reply-To: <1300156268.9910.242.camel@gandalf.stny.rr.com>
+References: <1300142528-4918-1-git-send-email-slavapestov@google.com> <1300156268.9910.242.camel@gandalf.stny.rr.com>
+From: David Sharp <dhsharp@google.com>
+Date: Tue, 15 Mar 2011 17:33:34 -0700
+Message-ID: <AANLkTi=ssMY8615j1dXJPfK-awZnFSVn4tjLHh4Mnv4C@mail.gmail.com>
+Subject: Re: [PATCH] ftrace: add 'version' special file for ring buffer format
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Slava Pestov <slavapestov@google.com>, linux-kernel@vger.kernel.org,
+        mrubin@google.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 14:04 -0700, Andrew Morton wrote:
-> On Tue, 15 Mar 2011 22:00:10 +0200
-> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> 
-> > On Sat, 2011-03-12 at 18:23 +0200, Maxim Levitsky wrote:
-> > > On Fri, 2011-03-04 at 06:16 +0200, Maxim Levitsky wrote:
-> > > > Hi,
-> > > > 
-> > > > This is a repost of my patches for 2.6.39 inclusion, which I hope not to
-> > > > miss this time.
-> > > > 
-> > > > I addressed the comments on the scatterlist issues.
-> > > > 
-> > > > Andrew, please note that my richoh memstick driver is standalone, unchanged from previos versions
-> > > > has many users which use the version I posted at ubuntu's Launchpad and happy with it.
-> > > > Please include it regardless of other patches.
-> > > > 
-> > > > The other half of my work is support for legacy memorysticks which consists of 2 patches,
-> > > > first that adds few functions to scatterlist.c, and the other patch that adds the driver.
-> > > > Driver is also stable and tested.
-> > > > 
-> > > > Best regards,
-> > > > 	Maxim Levitsky
-> > > 
-> > > 
-> > > Any update?
-> > 
-> > Any update?
-> > 
-> 
-> I'm hoping that Alex will soon have time to (re)review these patches.
-Andrew Morton, I am so glad to hear something, really was frustrated to
-see no responses, really thanks.
+On Mon, Mar 14, 2011 at 7:31 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2011-03-14 at 15:42 -0700, Slava Pestov wrote:
+>> The intention here is that if the ftrace ring buffer format changes
+>> in the future like it did in the past with ktrace, we can increment
+>> the version number and update clients appropriately.
+>
+> I purposely avoided "versions", and instead use the
+> tracing/events/header_page and .../header_event to describe how the ring
+> buffer format is laid out. If the format changes, then so should those
+> files.
+>
+> -- Steve
 
-Alex already did gave green light for these patches, and they are pretty
-much unchanged from that point, except trivial adoptions of changes in
-scatterlist code. 
+Those are useful files, but do not encompass the entirety of the API.
+Specifically, they do not encode the semantics of those values, nor
+the control interface.
 
-Both drivers I send are completely standalone, patch just adds the .c
-and .h file.
+For example, when the ring buffer header changed from type:2;len:3 to
+type_len:5, while this would have been reflected in header_event, how
+to interpret the different versions is not something that could be
+automatically understood by a parser.
 
-And I add few functions to scatterlist.c, which is more or less agreed.
-(If some of these functions don't fit there, I can just put in in the
-driver locally).
+These files also do not cover the semantics of the control files. For
+example, it is imaginable that buffer_size_kb could be changed from
+per-core size to a total size, or that it would reflect the actual
+total amount of memory used, instead of the "non-header" space. The
+grammar of filter expressions is another example of something that
+could change without notice.
 
-It is very important to me to merge that code now.
-There is absolutely to risk of regressions, I don't touch any code
-there.
+d#
 
-Thanks in advance,
-
-Best regards,
-	Maxim Levitsky
-
-
+>
+>>
+>> Tested: Verified that special file contains correct content
+>>
+>> This patch is against 2.6.38-rc8 but should apply to any version
+>> from at least 2.6.34 onwards.
+>>
+>> Signed-Off-By: Slava Pestov <slavapestov@google.com>
+>
+>
+>
