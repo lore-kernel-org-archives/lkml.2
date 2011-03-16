@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750965Ab1CPEi2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 00:38:28 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:33944 "EHLO e7.ny.us.ibm.com"
+	id S1751108Ab1CPErE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 00:47:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43296 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750799Ab1CPEiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 00:38:25 -0400
-Date: Tue, 15 Mar 2011 21:38:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH V4 1/1] rcu: introduce kfree_rcu()
-Message-ID: <20110316043817.GH2273@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4D7F356C.8020903@cn.fujitsu.com>
- <201103151302.09381.arnd@arndb.de>
- <20110315121941.GD2167@linux.vnet.ibm.com>
- <201103151407.24800.arnd@arndb.de>
- <4D802746.3020509@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D802746.3020509@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1750799Ab1CPEq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 00:46:58 -0400
+Date: Wed, 16 Mar 2011 15:46:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Scott Wood <scottwood@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: linux-next: manual merge of the devicetree tree with the galak tree
+Message-Id: <20110316154653.c178910a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 10:58:14AM +0800, Lai Jiangshan wrote:
-> On 03/15/2011 09:07 PM, Arnd Bergmann wrote:
-> > On Tuesday 15 March 2011, Paul E. McKenney wrote:
-> >> And it makes use of statically allocated structures a bit clunky.
-> > 
-> > How do statically allocated structures relate to this? I would
-> > expect that you never call kfree_rcu on them, so it shouldn't
-> > matter.
-> > 
-> >> Yet another approach is to use the low-order bit of the rcu_head pointer,
-> >> given that the rcu_head structure does have to be aligned.  If this bit
-> >> is set, then the function pointer could be interpreted as an offset.
-> >> This approach might also allow a slab_free_rcu() to be constructed, given
-> >> that the full 32 bits of the function pointer would be available.
-> >> For example, if the upper 16 bits are zero, the low-order 16 bits are
-> >> the offset.  If the upper 16 bits are 0x1, then the low-order 16 bits
-> >> might be an index that selects the desired slab cache.
-> > 
-> > This solution sounds like a clear improvement over the patch that Lai
-> > Jiangshan posted, without any downsides.
-> 
-> This solution is good, but it changes too much code, I think we will switch to
-> this solution until my posted solution can't work under some real bad situation
-> happened.
+Hi Grant,
 
-Indeed, the bit patterns are totally internal to this patch, so we can
-change as needed -- for example, if we later want to apply this same
-technique to slab_free() as well as kfree().
+Today's linux-next merge of the devicetree tree got a conflict in
+arch/powerpc/sysdev/fsl_msi.c between commit 6820fead714d
+("powerpc/fsl_msi: Handle msi-available-ranges better") from the galak
+tree and commit 000061245a67 ("dt/powerpc: Eliminate users of of_platform_
+{,un}register_driver") from the devicetree tree.
 
-							Thanx, Paul
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/powerpc/sysdev/fsl_msi.c
+index 8d6b074,ee6a8a5..0000000
+--- a/arch/powerpc/sysdev/fsl_msi.c
++++ b/arch/powerpc/sysdev/fsl_msi.c
+@@@ -274,48 -273,23 +274,51 @@@ static int fsl_of_msi_remove(struct pla
+  	return 0;
+  }
+  
+ +static int __devinit fsl_msi_setup_hwirq(struct fsl_msi *msi,
+ +					 struct platform_device *dev,
+ +					 int offset, int irq_index)
+ +{
+ +	struct fsl_msi_cascade_data *cascade_data = NULL;
+ +	int virt_msir;
+ +
+ +	virt_msir = irq_of_parse_and_map(dev->dev.of_node, irq_index);
+ +	if (virt_msir == NO_IRQ) {
+ +		dev_err(&dev->dev, "%s: Cannot translate IRQ index %d\n",
+ +			__func__, irq_index);
+ +		return 0;
+ +	}
+ +
+ +	cascade_data = kzalloc(sizeof(struct fsl_msi_cascade_data), GFP_KERNEL);
+ +	if (!cascade_data) {
+ +		dev_err(&dev->dev, "No memory for MSI cascade data\n");
+ +		return -ENOMEM;
+ +	}
+ +
+ +	msi->msi_virqs[irq_index] = virt_msir;
+ +	cascade_data->index = offset + irq_index;
+ +	cascade_data->msi_data = msi;
+ +	set_irq_data(virt_msir, cascade_data);
+ +	set_irq_chained_handler(virt_msir, fsl_msi_cascade);
+ +
+ +	return 0;
+ +}
+ +
+- static int __devinit fsl_of_msi_probe(struct platform_device *dev,
+- 				const struct of_device_id *match)
++ static int __devinit fsl_of_msi_probe(struct platform_device *dev)
+  {
+  	struct fsl_msi *msi;
+  	struct resource res;
+ -	int err, i, count;
+ +	int err, i, j, irq_index, count;
+  	int rc;
+ -	int virt_msir;
+  	const u32 *p;
+- 	struct fsl_msi_feature *features = match->data;
++ 	struct fsl_msi_feature *features;
+ -	struct fsl_msi_cascade_data *cascade_data = NULL;
+  	int len;
+  	u32 offset;
+ +	static const u32 all_avail[] = { 0, NR_MSI_IRQS };
+  
++ 	if (!dev->dev.of_match)
++ 		return -EINVAL;
++ 	features = dev->dev.of_match->data;
++ 
+  	printk(KERN_DEBUG "Setting up Freescale MSI support\n");
+  
+  	msi = kzalloc(sizeof(struct fsl_msi), GFP_KERNEL);
