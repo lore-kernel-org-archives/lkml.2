@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327Ab1CPNmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:42:17 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:51290 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab1CPNmM (ORCPT
+	id S1750995Ab1CPNnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:43:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38558 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab1CPNnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 09:42:12 -0400
+	Wed, 16 Mar 2011 09:43:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=mkv48tTmYic8SnVjTYwQOqgl82KU/c6hbeJiZ0noW7hyDWoOXdEwEDWO7pJK0MEJ7b
-         1ttg8IEHpuDTq/Ie0d9+tZNM7MummApcwxxOCUke3MMrqnc2vUSQaQOsXCrvyV3BFyy0
-         org2XDs7INpgxxCxsnPs756jtrBCoJIj7OTm0=
-Date: Wed, 16 Mar 2011 16:42:06 +0300
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=q2GVyiWzhygnliXlcOaVeQP3FVCXdHVoYxK1+vZZolKxYDyfO8VYK8XQduVCy6mACy
+         tHfvPycZOQzu9zq2ba6YPIf6YKn7WHG4oQLBDz/b3tF8IjEqvfyoQr+pFDuyax14s0E0
+         oyN2/77q6aDKPN1wI39D4EcYAIsV8aBOy1RuY=
+Date: Wed, 16 Mar 2011 16:43:37 +0300
 From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-Cc: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] s3c_adc_battery: Fix method names when PM not set
-Message-ID: <20110316134206.GA12394@oksana.dev.rtsoft.ru>
-References: <201103142112.39392.heiko@sntech.de>
- <201103142338.40584.anarsoul@gmail.com>
+To: Benson Leung <bleung@chromium.org>
+Cc: Rhyland Klein <rklein@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] power: bq20z75: Fix time and temp units
+Message-ID: <20110316134337.GB12394@oksana.dev.rtsoft.ru>
+References: <1298853672-21330-1-git-send-email-bleung@chromium.org>
+ <1298857308-22790-2-git-send-email-bleung@chromium.org>
+ <1299697239.12209.1.camel@rklein-linux2>
+ <AANLkTi=7_+hRgGFOyOuN2VKD8jQRaL5AKi=ih-x+3Ck7@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201103142338.40584.anarsoul@gmail.com>
+In-Reply-To: <AANLkTi=7_+hRgGFOyOuN2VKD8jQRaL5AKi=ih-x+3Ck7@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 11:38:40PM +0200, Vasily Khoruzhick wrote:
-> On Monday 14 March 2011 22:12:39 Heiko Stübner wrote:
-> > From: Heiko Stuebner <heiko@sntech.de>
-> > 
-> > s3c_adc_battery declares wrong method names when CONFIG_PM is not set.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+On Wed, Mar 16, 2011 at 02:41:52AM -0700, Benson Leung wrote:
+> Hi Anton,
 > 
-> Acked-by: Vasily Khoruzhick <anarsoul@gmail.com>
+> Rhyland has LGTM'd my change to the bq20z75 driver to fix temperature
+> and time units. Can it go upstream?
 
-Applied, thanks!
+Sorry for the delay, the patch is now applied.
+
+Thanks!
 
 -- 
 Anton Vorontsov
