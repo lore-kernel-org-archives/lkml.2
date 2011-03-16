@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab1CPIue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 04:50:34 -0400
-Received: from www.tglx.de ([62.245.132.106]:59728 "EHLO www.tglx.de"
+	id S1752228Ab1CPI5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 04:57:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12225 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751578Ab1CPIu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 04:50:28 -0400
-Message-ID: <4D8079BE.6050505@linutronix.de>
-Date: Wed, 16 Mar 2011 09:50:06 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1751490Ab1CPI5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 04:57:13 -0400
+Date: Wed, 16 Mar 2011 10:57:04 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: Re: [PATCHv2] Fix EDD3.0 data verification.
+Message-ID: <20110316085704.GD10151@redhat.com>
+References: <20110203122948.GX14984@redhat.com>
+ <20110208145301.GO14984@redhat.com>
+ <20110216150933.GE14984@redhat.com>
+ <4D5C1DFD.5010108@zytor.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree with Linus' tree
-References: <20110316160842.493967db.sfr@canb.auug.org.au>
-In-Reply-To: <20110316160842.493967db.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5C1DFD.5010108@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Hi all,
-Hi Stephen,
+On Wed, Feb 16, 2011 at 10:57:01AM -0800, H. Peter Anvin wrote:
+> On 02/16/2011 07:09 AM, Gleb Natapov wrote:
+> > On Tue, Feb 08, 2011 at 04:53:01PM +0200, Gleb Natapov wrote:
+> >> Peter, ping.
+> >>
+> >> Is this version acceptable?
+> >>
+> > Ping?
+> > 
+> 
+> Yes, looks good... I'll try to pull it into the tree today.
+> 
+Hi Peter,
 
-> Today's linux-next merge of the tip tree got a conflict in
-> arch/x86/platform/ce4100/ce4100.c between commit 03150171dcf9 ("x86:
-> ce4100: Set pci ops via callback instead of module init") from Linus'
-> tree and commit 1fa4163bdc19 ("x86: ce4100: Use OF to setup devices")
-> from the tip tree.
+Was this applied? Will it go to 2.6.39?
 
-I just looked and Linus already pulled and fixed it up by himself. Thanks
-for letting me know.
-
-Sebastian
+--
+			Gleb.
