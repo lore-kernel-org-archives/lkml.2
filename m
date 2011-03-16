@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab1CPFel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 01:34:41 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43893 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab1CPFed (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 01:34:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=luZH07GyUnHwXLMClmBJ4aj6YH1qA9WkcbL6BodqAtattERCERmed5oxSiTRlaH+L/
-         9MgnAs9Q6ZhGbg11X+9cyU/tV8N+fMrv0FkbeQn0BqcmznS6U2TEWrdj1nxFzc/mTeVn
-         o+j2BAu0BbKPIYqoWjT8aGPXReOKZ3T6ypJxc=
-Date: Tue, 15 Mar 2011 22:34:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, dgdegra@tycho.nsa.gov
-Subject: Re: [PATCH 2/4] xen-kbdfront: Add grant reference for shared page
-Message-ID: <20110316053426.GB14604@core.coreip.homeip.net>
-References: <1300198274-1325-1-git-send-email-konrad.wilk@oracle.com>
- <1300198274-1325-3-git-send-email-konrad.wilk@oracle.com>
+	id S1751495Ab1CPFqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 01:46:45 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:52771 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349Ab1CPFqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 01:46:38 -0400
+Message-ID: <4D804EBD.4030904@us.ibm.com>
+Date: Tue, 15 Mar 2011 22:46:37 -0700
+From: Sridhar Samudrala <sri@us.ibm.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300198274-1325-3-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: No iproute2 for 2.6.38
+References: <20110315195534.0cc43032@nehalam>
+In-Reply-To: <20110315195534.0cc43032@nehalam>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 10:11:13AM -0400, Konrad Rzeszutek Wilk wrote:
-> From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-> 
-> Without a grant reference, full access to the domain's memory is
-> required to use the shared page. Add an additional parameter in
-> xenstore to allow grant mapping to be used.
-> 
-> Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On 3/15/2011 7:55 PM, Stephen Hemminger wrote:
+> I am not going to bother releasing for 2.6.38 the only changes
+> were later reverted.
+2.6.38 includes support for macvlan/macvtap 'passthru' mode that allows 
+assigning
+SR-IOV VFs to a KVM guest via macvtap/virtio.
+It is not possible to support live migration using direct assignment of 
+VF's to a guest,
+but 'passthu' assignment makes this possible.
 
-You are passing the patch on so it should be Signed-off-by...
+Enabling this feature requires the following patch to iproute2 that 
+allows creating macvlan
+device in 'passthru' mode.
+     http://patchwork.ozlabs.org/patch/69515/
+Looks like this patch is still marked as 'Awaiting upstream'.
 
-It is independent of the other 2 so I can pick it up and merge (so that
-we do not have conflicts with move), right?
+Could you apply this patch and it would be great if a version of 
+iproute2 is released for 2.6.38.
 
--- 
-Dmitry
+Thanks
+Sridhar
+
+> ---
+> Roopa Prabhu (1):
+>        iproute2: add VF_PORT support
+>
+> Stephen Hemminger (3):
+>        Update to lasest kernel headers
+>        Revert "iproute2: add VF_PORT support"
+>        v2.6.38
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
