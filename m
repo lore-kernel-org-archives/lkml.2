@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab1CPPrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 11:47:11 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:49544 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753392Ab1CPPrH (ORCPT
+	id S1753380Ab1CPPsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 11:48:20 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:50926 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012Ab1CPPsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 11:47:07 -0400
-X-AuditID: b753bd60-a1d49ba0000001d0-12-4d80db77db02
-X-AuditID: b753bd60-a1d49ba0000001d0-12-4d80db77db02
-Message-ID: <4D80DB75.6060408@hitachi.com>
-Date: Thu, 17 Mar 2011 00:47:01 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-References: <1300130283-10466-1-git-send-email-fweisbec@gmail.com> <20110314204341.GC9388@ghostprotocols.net> <20110314205100.GG6139@nowhere> <20110314210315.GC2388@ghostprotocols.net> <20110314212050.GH6139@nowhere> <20110314215603.GD2388@ghostprotocols.net> <20110314224344.GA11443@nowhere> <20110314230211.GG2388@ghostprotocols.net> <20110315185812.GB6605@nowhere> <20110315192422.GF7011@ghostprotocols.net> <20110316010304.GB7760@nowhere>
-In-Reply-To: <20110316010304.GB7760@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 16 Mar 2011 11:48:13 -0400
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: add support for Ortek PKB-1700
+Date: Wed, 16 Mar 2011 12:48:08 -0300
+Message-Id: <1300290488-8128-1-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/03/16 10:03), Frederic Weisbecker wrote:
-> On Tue, Mar 15, 2011 at 04:24:22PM -0300, Arnaldo Carvalho de Melo wrote:
->> Em Tue, Mar 15, 2011 at 07:58:16PM +0100, Frederic Weisbecker escreveu:
->>> If we want to count everywhere but when we hold B:
->>>
->>> 	-e inst*@(..lock:*acquire(B) && lock:*release(B)..)
->>
->> Makes sense but looks confusing at first sight, how to translate that to
->> events starter/stoppers?
->>
->> its an event: instructions, it starts in what state? Enabled, i.e. the
->> first part of the expression has precedence: ..lock:*acquire(B), then,
->> after it is disabled, because we acquired B, the second part gets armed,
->> i.e. when the release(B) event takes place, the first part gets armed
->> again.
->>
->> That is why I felt '&&' to be confusing, its not that both are in
->> effect, its that one is only armed when the previous was disarmed.
->>
->> Perhaps we could find some other operator that was more natural, or just
->> agree that && in this context works this way, almost like what we do in
->> shell scripting with && and || (the cycle to rearm the first range after
->> the last one is disarmed is the part that doesn't matches the shell
->> use).
-> 
-> Doh you're right. && would have two meaning.
-> No we should probably keep  a && b  has a meaning of we are
-> in the range a AND in the range b. Both at the same time, with
-> a evaluated first and then b. We also need to ensure than
-> a && b  doesn't mean the same than  b && a. You're right, perhaps
-> we need another operator to expression inclusion, or we need to
-> assume that specific meaning of &&.
-> 
-> For what I wanted to express in the example above, || seem be the
-> right choice: -e inst*@(..lock:*acquire(B) || lock:*release(B)..)
-> 
-> So || would mean union and && would mean inclusion.
+As reported on http://ubuntuforums.org/showthread.php?t=1594007 the
+PKB-1700 needs same special handling as WKB-2000. This patch is
+originally from user asmoore82 on the Ubuntu forums.
 
-Hmm, would we really need that kind of complex rules?
-It seems that we only need union case. If so, I'd suggest
-you to use ',' to express that, instead of ||.
+BugLink: http://bugs.launchpad.net/bugs/735640
+Cc: stable@kernel.org
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/hid/hid-core.c  |    1 +
+ drivers/hid/hid-ids.h   |    1 +
+ drivers/hid/hid-ortek.c |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
--e inst*@(..lock:*acquire(B),lock:*release(B)..)
-
-Thank you,
-
-
-
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index d678cf3..295e248 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1400,6 +1400,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 92a0d61..5f5cc91 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -466,6 +466,7 @@
+ #define USB_DEVICE_ID_ONTRAK_ADU100	0x0064
+ 
+ #define USB_VENDOR_ID_ORTEK		0x05a4
++#define USB_DEVICE_ID_ORTEK_PKB1700	0x1700
+ #define USB_DEVICE_ID_ORTEK_WKB2000	0x2000
+ 
+ #define USB_VENDOR_ID_PANJIT		0x134c
+diff --git a/drivers/hid/hid-ortek.c b/drivers/hid/hid-ortek.c
+index e90edfc..96804bb 100644
+--- a/drivers/hid/hid-ortek.c
++++ b/drivers/hid/hid-ortek.c
+@@ -30,6 +30,7 @@ static __u8 *ortek_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ }
+ 
+ static const struct hid_device_id ortek_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+ 	{ }
+ };
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.1
+
