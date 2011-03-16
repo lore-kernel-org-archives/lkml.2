@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751149Ab1CPEZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 00:25:25 -0400
-Received: from web37607.mail.mud.yahoo.com ([209.191.87.90]:48548 "HELO
-	web37607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750943Ab1CPEY4 convert rfc822-to-8bit
+	id S1751241Ab1CPEZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 00:25:39 -0400
+Received: from web37606.mail.mud.yahoo.com ([209.191.87.89]:40300 "HELO
+	web37606.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751143Ab1CPEZg convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 00:24:56 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 00:24:56 EDT
+	Wed, 16 Mar 2011 00:25:36 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=yahoo.com;
   h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=3FLz5kEqlFTIVphgkZPPjL64hnJIodkrGPYyB9fLuAWsIMbiANIB/A6TbP43rqdPoixRvdGlQbnLsTKpdj80tT00UGwItuoldkxfjwb6MTooWn//2PAch4+ZsW8QhA+bWVHqgtD6Q/o9EUMQMPEexYiCFlRA+T2aFzhVB93lRKc=;
-Message-ID: <403815.22502.qm@web37607.mail.mud.yahoo.com>
-X-YMail-OSG: u2lamPUVM1m2Fdsj8Patfdct0og3kKzIBh1_c17c58WcXWX
- oreUeVr8L2rSRFSZCea4CK8DtfnUxjonQAA5GhiUn4WiUT2VxtEhIoIi0T8D
- Yg5Q8jrOjbbLUu6j75RfNKAImP2WS7Ao24ngp3yfHRBvY23_cMAI5xF7JBH_
- aTHFuPbt.2v7tdSHkEbVUbkZsW8QkBmPE5R2WzjMUnNBF9H0pDiFXxrjYjql
- Q_F2_yeHowdTPaNsYTXgIe62blXZv1F8dWTHFNK5QWUXaLHuc6xegrCTA9wD
- MOjdUKebzH_83bk74CoxRGY_KbmZjvB7SGS58OgeoQANWQDXNXVLNW5L12c9
- .DhrX
+  b=bzoA01dAsZ67ifnKK/j+9fLMMWolNyyeWOEf6XI7ChwfqjJ/juZCII1DLhpw72dh9QBzGuaDwYDg49MfHOFFQdTnSLxkXGufMQWbOstnvXcTWyqhO16hJJdNKUgT1V85wbb6F2LipizV8K+zFPWPhGhaOoreSX8E6GXHFGED+IU=;
+Message-ID: <491744.37716.qm@web37606.mail.mud.yahoo.com>
+X-YMail-OSG: Tftwru4VM1lTT7udwcV4RH0UjHcVFVnM338PuIPxHM_7OYm
+ qK0XRlZBGDwxm07INppCU1FPEJmgtmfMtu0zK4MbyC0A5xciRdWOHnnzMSGN
+ Hhb2_.cSQV7rT.qeoYkua3Virk50.FY6ksIlf2X6.dFBHiDvM7XNw0taas6L
+ 0p49yTXJ.j0MhltdltiiND50XKleny1Tpt4tf9n6vThBkvilkFxOd4rIt0l1
+ DhVlibjcGI1iT2NFyRL5EsgrtmnsR1N30oEsjNaJIq4EjoU8CpYtArtUqZx6
+ UqYEOeuFckhgR9jxsoi0k6BZH6DHcIXOctSFCdz7eDXupORrlOngvWM5HPNX
+ EvJXrY4pd_.vAleC3XAfiGRmC_4SFqGuIOwMVeSo41BiY
 X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.295617
-Date: Tue, 15 Mar 2011 21:18:14 -0700 (PDT)
+Date: Tue, 15 Mar 2011 21:25:34 -0700 (PDT)
 From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-To: akpm@linux-foundation.org, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: maximlevitsky@gmail.com, fujita.tomonori@lab.ntt.co.jp,
-        James.Bottomley@HansenPartnership.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20110316113527C.fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH 3/4] memstick: Add driver for Ricoh R5C592 card reader.
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, Maxim Levitsky <maximlevitsky@gmail.com>
+In-Reply-To: <1299212213-4255-4-git-send-email-maximlevitsky@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
@@ -35,37 +36,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Maxim Levitsky <maximlevitsky@gmail.com>
+> Subject: [PATCH 3/4] memstick: Add driver for Ricoh R5C592 card reader.
+> To: "Andrew Morton" <akpm@linux-foundation.org>
+> Cc: "James Bottomley" <James.Bottomley@HansenPartnership.com>, "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>, linux-kernel@vger.kernel.org, oakad@yahoo.com, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> Received: Friday, 4 March, 2011, 3:16 PM
+> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
 
-> 
-> I don't think so.
-> 
-> Splitting (or merging) a request and playing with sg lists
-> inside a
-> driver is a bad idea. Such should be done in the block
-> layer.
-> 
-> I still don't see why the block layer can't do that for the
-> driver.
-> 
-> I believe that the helper functions for such should not be
-> added.
-> 
+Acked-by: Alex Dubov <oakad@yahoo.com>
+---
 
-
-In a particular case of flash-like devices, letting the block layer
-split requests into memory sequential blocks too often results in
-unnecessary fragmentation of writes/erases.
-
-If only one sg entry is requested from the block layer, it will be (more
-often than not) only 1 or 2 pages in length, even if total size of
-prospective write request spans multiple erase blocks.
-
-So there are really only two options for legacy memorystick driver:
-1. Play with scatterlists explicitly.
-2. Make it an MTD backend, rather then stand-alone block device.
-
-The second option makes more sense, but it is not necessarily the optimal
-approach for implementation of this particular media format.
+I understand, this patch can be applied as it is, and has no dependency
+on the discussed scatter list functionality.
 
 
 
