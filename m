@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab1CPDiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 23:38:09 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42208 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab1CPDiE (ORCPT
+	id S1751247Ab1CPDqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 23:46:35 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62897 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab1CPDq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 23:38:04 -0400
+	Tue, 15 Mar 2011 23:46:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=wTE1wH7+Wpt5DiLnVzm+RfSuCRNiJxkvqg2gV7UCJNwmQr60aqMTOQQ4dX69os4x8Z
-         DmarFJ3oieEMFjKTxiCKS2CqRamQtxw5Ou3WayVNJVhOOaw3sMezc65O6CFW+3sQ0w3/
-         EsxQc0UMz5zuIHwiWTYHc/P1vU4PhtYKf4lkY=
+        b=I0+88jCJ94eDLHcuVjCrPy+9GaeZdQAPwD4qOEZ8Ia8g54msoRmXl0qwP4e0G2xhRl
+         v6EtilePtZg9EthU8yfwNRonbRKApV9blD07eN6jzm26IIDlVKqSBbAPpGlPoK5FD7YF
+         QKzVMChTVXPfE1Qkd23S+PfaqtkVnpxIGPs28=
 MIME-Version: 1.0
-In-Reply-To: <20110315172208.82934b13.randy.dunlap@oracle.com>
-References: <20110315194543.a5d56c0c.sfr@canb.auug.org.au>
-	<20110315172208.82934b13.randy.dunlap@oracle.com>
-Date: Wed, 16 Mar 2011 11:38:03 +0800
-Message-ID: <AANLkTi=yDHaeosLpyuCjTJ8hZA8Q4bzHCmKK0J1Giunz@mail.gmail.com>
-Subject: Re: [PATCH -next] uml: fix tty interface warnings
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <b7da2f$qnp1ps@fmsmga001.fm.intel.com>
+References: <1298404994-2907-1-git-send-email-mjg@redhat.com>
+	<1300125566-29648-1-git-send-email-chris@chris-wilson.co.uk>
+	<cb03c0cd31393b476e63c4e699247c91.squirrel@webmail.greenhost.nl>
+	<b7da2f$qnp1ps@fmsmga001.fm.intel.com>
+Date: Wed, 16 Mar 2011 13:46:27 +1000
+Message-ID: <AANLkTinexavArS+V2APjxrqMeLSzgs8QiyGAEhtWR0mh@mail.gmail.com>
+Subject: Re: [PATCH] ACPI/Intel: Rework Opregion support
+From: Dave Airlie <airlied@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Indan Zupancic <indan@nul.nu>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
+        Alan Cox <alan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 8:22 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
 >
-> Fix tty interface warnings in arch/um:
->
-> arch/um/drivers/stdio_console.c:122: warning: initialization from incompatible pointer type
-> arch/um/drivers/ssl.c:139: warning: initialization from incompatible pointer type
->
+> Read the changelog and thread on the patch that disabled this logic, the
+> failure (or at least inconsistent behaviour with the expectations of the
+> HP BIOS authors) appears to be in how we initialise ACPI on the HP
+> machines that causes the initial value of lid state to be incorrect. Since
+> one of the laptops that Dave tests drm-next on is a HP, he was bitten by
+> the bug and temporarily (we hope) disabled the logic. Or else once again,
+> we will continue to light up the panel on a closed laptop.
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+Yeah I've no idea if the ACPI implementation is wrong or not :-(
 
-Thanks.
+I suspects its the BIOS actually, the BIOS wants _INI called before _REG.
+The ACPI video device isn't in the EC address space, so it ends up in the
+default region address space. So we'd really need to know how Windows
+sets up the _REG calls for the non-EC spaces and where its calls the _INI
+methods wrt to that.
+
+The thing is I think the actual ACPI lid device is fine, its just opregion isn't
+updated until we get an event later.
+
+Dave.
