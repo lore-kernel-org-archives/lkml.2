@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390Ab1CPFYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 01:24:52 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:38466 "EHLO smtp.gentoo.org"
+	id S1751428Ab1CPFZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 01:25:22 -0400
+Received: from ns2.allidaho.com ([66.232.90.194]:58019 "EHLO mail.allidaho.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751226Ab1CPFYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 01:24:46 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: X32 psABI status update
-Date: Wed, 16 Mar 2011 01:24:41 -0400
-User-Agent: KMail/1.13.6 (Linux/2.6.37.3; KDE/4.6.0; x86_64; ; )
-Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
-References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com> <201103160030.27594.vapier@gentoo.org> <AANLkTimk3dfOBoPhGQ8NeOYY5rKdsefPm8gTJ-75vg3-@mail.gmail.com>
-In-Reply-To: <AANLkTimk3dfOBoPhGQ8NeOYY5rKdsefPm8gTJ-75vg3-@mail.gmail.com>
+	id S1751226Ab1CPFZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 01:25:18 -0400
+X-Greylist: delayed 2495 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 01:25:18 EDT
+From: "Dialup Jon Norstog" <thursday@allidaho.com>
+To: Michael Cree <mcree@orcon.net.nz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        warns@pre-sense.de
+Subject: Re: Alpha no longer recognises certain partition tables (v2.6.38)
+Date: Tue, 15 Mar 2011 21:09:57 -0700
+Message-Id: <20110316040630.M24051@allidaho.com>
+In-Reply-To: <E0782A6F-B851-4A11-B740-446EF7941B7C@orcon.net.nz>
+References: <4D7F2C11.907@orcon.net.nz> <AANLkTimRDH4S1QMN6f4AfKOe6ipPK6jm+g91nuBJYQJa@mail.gmail.com> <E0782A6F-B851-4A11-B740-446EF7941B7C@orcon.net.nz>
+X-Mailer: OpenWebMail 2.52 20061019
+X-OriginatingIP: 67.206.183.147 (thursday)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1480052.zWKNAQ7hHJ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103160124.42939.vapier@gentoo.org>
+Content-Type: text/plain;
+	charset=iso-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1480052.zWKNAQ7hHJ
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+To the lists:
 
-On Wednesday, March 16, 2011 00:51:37 H.J. Lu wrote:
-> On Tue, Mar 15, 2011 at 9:30 PM, Mike Frysinger <vapier@gentoo.org> wrote:
-> > On Wednesday, March 16, 2011 00:17:04 H.J. Lu wrote:
-> >> On Mon, Mar 7, 2011 at 1:33 PM, Mike Frysinger wrote:
-> >> > On Saturday, March 05, 2011 14:08:04 H.J. Lu wrote:
-> >> >> Many x32 bugs are fixed in kernel, glibc, binutils and GCC:
-> >> >>=20
-> >> >> https://sites.google.com/site/x32abi/
-> >> >>=20
-> >> >> The major remaining issues are glibc/gcc testsuite failures,
-> >> >> kernel core dump and signal handler unwind.
-> >> >=20
-> >> > are you getting a unique host tuple for this ?  or are you extending
-> >> > x86_64- linux-gnu ?  so the only way of knowing which ABI is to check
-> >> > for the output of the compiler+compiler flags ?
-> >>=20
-> >> x32 requires x32 enabled x86-64 kernel.
-> >=20
-> > ok, but that doesnt answer my question.  what are you passing to --targ=
-et
-> > ?
->=20
-> See:
->=20
-> https://sites.google.com/site/x32abi/
->=20
-> You configure it as
->=20
-> CC=3D"gcc -mx32" ...../configure x86_64- linux-gnu
+Pardon me for a userland-type question, but is this going to be a problem if I
+want to mount advfs disks? Or even some old OSF1 disks (that have some quite
+valuable GIS covers on them)?  Just curious.
 
-that isnt what the page says.  it does say for glibc to do:
-	CC=3D"x32-gcc -mx32 " CXX=3D"x32-g++ -mx32 " CFLAGS=3D"-O2 -g"  ../configu=
-re
+jn
 
-but it doesnt say what to do for binutils or gcc itself.  obviously you can=
-t=20
-use the -mx32 flag when building the cross gcc for the first time since the=
-=20
-current native gcc wont support it.
 
-the invocation given for glibc implies that the proposed tuple is x32-linux-
-gnu, but the GNU config project doesnt support that tuple and i didnt see=20
-mention of it in the binutils or gcc sources.
+On Wed, 16 Mar 2011 14:23:43 +1300, Michael Cree wrote
+> On 16/03/2011, at 4:10 AM, Linus Torvalds wrote:
+> > On Tue, Mar 15, 2011 at 2:06 AM, Michael Cree <mcree@orcon.net.nz>  
+> > wrote:
+> >> v2.6.38 boot reports it can't recognise the partition table on the  
+> >> system
+> >> disk on my Alpha and panics when it can't find the root device.
+> >>
+> >> It worked at v2.6.38-rc7.
+> >>
+> >> While I haven't done a bisect to fully verify I nevertheless  
+> >> suggest the
+> >> following patch as the likely cause:
+> >>
+> >> 1eafbfe Fix corrupted OSF partition table parsing
+> >
+> > That sounds likely. What does something like the attached do? In
+> > particular, what's the printed-out value of the OSF npartitions thing?
+> >
+> > Also, it's quite possible that we should raise the value of
+> > MAX_OSF_PARTITIONS. If I checked it right, the d_partitions[] array
+> > starts at byte offset 148 in the sector, and it's 16 bytes in size, so
+> > there _could_ be up to 22 partitions there. The fact that we had
+> > defined the 'struct disklabel' to only contain 8 partitions is I think
+> > from documentation, not a technical "there can be only eight".
+> 
+> I am not able to run the patch until much later today but I think 
+> the  number of partitions is the issue.  I have three disks, all 
+> with bsd  type partition tables, and the kernel sees the partition 
+> tables of two  of them (they both have fewer than five partitions) 
+> but the system  disk has about nine (or it might be ten) partitions. 
+>  I didn't know  the limit when creating them some time ago and 
+> assumed fdisk would  flag an error if the number of permitted 
+> partitions was exceeded!   What's more it worked with recent kernels 
+> until now.
+> 
+> I'll give the patch a whirl later (my) today.
+> 
+> Cheers
+> Michael.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-
+> alpha" in the body of a message to majordomo@vger.kernel.org More 
+> majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-so we get back to my original e-mail:
-	are you getting a unique host tuple for this ?  or are you extending
-	x86_64-linux-gnu ?  so the only way of knowing which ABI is to check for
-	the output of the compiler+compiler flags ?
-=2Dmike
 
---nextPart1480052.zWKNAQ7hHJ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+--
+Open WebMail Project (http://openwebmail.org)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJNgEmaAAoJEEFjO5/oN/WBQPMP/i2hJHBlmudiRaAWTMQoL3sS
-EpoZrVUdKhtfBJyLIrH0bdT24NSsCgbbOj3GkxqHkNX5/6ikRkEFBCyyM+vGECHw
-54Mtk0OaP2HrsmiItzZ4UMjlGOpGBsg4kCN1cpimRAdA7fJn2w2OSbVx4hqGE1BH
-hALcz6V5IjiBJyyXr/0l0CQ0s77kzt/aQAh8GOMoIX9gEq7MLoap38kv5nRXqiWj
-e3C7xfnkrGqWsepwVX6P1QeYLg7sWJimxRTbyEHe/MzFCmzX70yqdRjh18R4Hz/v
-n7W8cid33EwLysBAisHYX6/zNOWT7j0IaWy9JKE8PR7N9CHjiM1AEoo6UkeLW4K9
-URMgvJOvM3tAipnsTCXLh/J0OpHZDOLJuyy/qo2/41fqfOkbCYrKkJrGA7tMmDH8
-aRC7zhm/JsltoQVbzv2+6SEZWRStC8CP548BKa3NJ8CDfr/dBdYXcY7YvuiczZPb
-DXqjLz0Op9z2s+p/+H/KEdip84P54AWAtY7xjyR13J/dt6dJlrFOneJ3v0KDQV52
-acalJl96g9KFHx/FFKqNHmAgQTP7vekJrwYxkeEQNuKUypZ25XvCZWIaIQwBEaH3
-cEsRd5hnyzqa/teynX8TLhsQLw7hGQ0+EK9lC7OZEp0AKYgXvTgpgCDTSnVKwbLO
-3UH/eEbbag5gmwCTXQT7
-=Wq8Z
------END PGP SIGNATURE-----
-
---nextPart1480052.zWKNAQ7hHJ--
