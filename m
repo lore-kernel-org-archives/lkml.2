@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab1CPRoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 13:44:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57254 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab1CPRoL (ORCPT
+	id S1753309Ab1CPRxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 13:53:24 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:43545 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab1CPRxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 13:44:11 -0400
-X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=DpMNfemkRQYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=-WpgdHg-5en9gwS5ykoA:9 a=HbiDRmzK8qweAR7gqCiUTS9vtbsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tom Tromey <tromey@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        SystemTap <systemtap@sources.redhat.com>,
+	Wed, 16 Mar 2011 13:53:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=nJU/ntl2RiHCAwSwRAe3zPjSqj75Sfbo6mj4R2Kt6h5Rfl4Y6vMTH6/BNLnFRuYHU9
+         N+dPxOQcQOZaLo07TGIrZLoq21FoXYF/XflgIu1YZTA+p/ljFUji1Ex4r9cmFvu3SqJ6
+         2uxkVEiEgNxgQ9KHepzoPhhH8MulSZ6qfT8sU=
+Date: Wed, 16 Mar 2011 14:53:10 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <m3lj0f2cq1.fsf@fleche.redhat.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
-	 <20110314163028.a05cec49.akpm@linux-foundation.org>
-	 <20110314234754.GP2499@one.firstfloor.org>
-	 <alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
-	 <20110315180639.GQ2499@one.firstfloor.org>
-	 <alpine.LFD.2.00.1103152038280.2787@localhost6.localdomain6>
-	 <1300219261.9910.300.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
-	 <1300221856.9910.305.camel@gandalf.stny.rr.com>
-	 <m3lj0f2cq1.fsf@fleche.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 16 Mar 2011 13:44:09 -0400
-Message-ID: <1300297449.16880.45.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
+Message-ID: <20110316175310.GA2861@ghostprotocols.net>
+References: <20110314205100.GG6139@nowhere>
+ <20110314210315.GC2388@ghostprotocols.net>
+ <20110314212050.GH6139@nowhere>
+ <20110314215603.GD2388@ghostprotocols.net>
+ <20110314224344.GA11443@nowhere>
+ <20110314230211.GG2388@ghostprotocols.net>
+ <20110315185812.GB6605@nowhere>
+ <20110315192422.GF7011@ghostprotocols.net>
+ <20110316010304.GB7760@nowhere>
+ <4D80DB75.6060408@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D80DB75.6060408@hitachi.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 11:32 -0600, Tom Tromey wrote:
-> Steve> I'm more interested in the perf/trace than gdb, as the way gdb is mostly
-> Steve> used (at least now) to debug problems in the code with a big hammer
-> Steve> (single step, look at registers/variables). That is, gdb is usually very
-> Steve> interactive and its best to "stop the code" from running to examine what
-> Steve> has happened. gdb is not something you will run on an application that
-> Steve> is being used by others.
+Em Thu, Mar 17, 2011 at 12:47:01AM +0900, Masami Hiramatsu escreveu:
+> (2011/03/16 10:03), Frederic Weisbecker wrote:
+> > Doh you're right. && would have two meaning.
+> > No we should probably keep  a && b  has a meaning of we are
+> > in the range a AND in the range b. Both at the same time, with
+> > a evaluated first and then b. We also need to ensure than
+> > a && b  doesn't mean the same than  b && a. You're right, perhaps
+> > we need another operator to expression inclusion, or we need to
+> > assume that specific meaning of &&.
+> > 
+> > For what I wanted to express in the example above, || seem be the
+> > right choice: -e inst*@(..lock:*acquire(B) || lock:*release(B)..)
+> > 
+> > So || would mean union and && would mean inclusion.
 > 
-> It depends.  People do in fact do this stuff.  In recent years gdb got
-> its own implementation of "always inserted" breakpoints (basically the
-> same idea as uprobes) to support some trickier multi-thread debugging
-> scenarios.
+> Hmm, would we really need that kind of complex rules?
+> It seems that we only need union case. If so, I'd suggest
+> you to use ',' to express that, instead of ||.
+> 
+> -e inst*@(..lock:*acquire(B),lock:*release(B)..)
 
-Like I said, if it helps out gdb then great! My concern is that we will
-want it to replace ptrace, where it may not be designed to, then people
-will start NAKing it.
+Yeah, I somehow was avoiding the comma operator because it could be used
+to represent multiple events, but then its a different context, using it
+to represent a circular list of ranges in the @ (at, location) expression
+seems ok.
 
-I hope that gdb uses it, and we don't add another interface that nobody
-uses. But I don't see that happening with uprobes.
+1. '..lock:*acquire(B)' is armed, 'lock:*release(B)..' isn't
+2. '..lock:*acquire(B)' trigers, which causes 'lock:*release(B)..' to be
+   armed
+3. 'lock:*release(B)..' triggers, which causes '..lock:*acquire(B)' to
+   be armed, rinse, repeat
 
--- Steve
-
-
+- Arnaldo
