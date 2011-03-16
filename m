@@ -1,94 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab1CPOYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 10:24:17 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:32979 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab1CPOYJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753014Ab1CPOY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 10:24:27 -0400
+Received: from waste.org ([173.11.57.241]:40406 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751362Ab1CPOYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Mar 2011 10:24:09 -0400
-From: "Garcia, Alfredo (Sales)" <alfredo.garcia-sanchez@hp.com>
-To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernelnewbies@nl.linux.org" <kernelnewbies@nl.linux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Mar 2011 14:22:52 +0000
-Subject: FW: smart card driver (ricoh) with ubuntu
-Thread-Topic: smart card driver (ricoh) with ubuntu
-Thread-Index: Acvj47FtoFaWFG6KQEeOZo4gCfnVZQAAPP+Q
-Message-ID: <354760CEA71F254DBD117DC5DF6B46227C5EACA4D7@GVW1118EXC.americas.hpqcorp.net>
-References: <354760CEA71F254DBD117DC5DF6B46227C5EACA3BE@GVW1118EXC.americas.hpqcorp.net>
- <20110316140237.GA18392@kroah.com>
-In-Reply-To: <20110316140237.GA18392@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Subject: Re: [PATCH 2/8] drivers/char/random: Split out __get_random_int
+From: Matt Mackall <mpm@selenic.com>
+To: George Spelvin <linux@horizon.com>
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, penberg@cs.helsinki.fi
+In-Reply-To: <20110316042452.21452.qmail@science.horizon.com>
+References: <20110316042452.21452.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 09:24:05 -0500
+Message-ID: <1300285445.3128.485.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi to all!
+On Wed, 2011-03-16 at 00:24 -0400, George Spelvin wrote:
+> Thank you very much for your review!
+> 
+> > I've spent a while thinking about this over the past few weeks, and I
+> > really don't think it's productive to try to randomize the allocators.
+> > It provides negligible defense and just makes life harder for kernel
+> > hackers.
+> > 
+> > (And you definitely can't randomize SLOB like this.)
+> 
+> I'm not sure, either.  I *do* think it actually prevents an attacker
+> reliably allocating two consecutive kernel objects, but I expect that
+> most buffer overrun attacks can just allocate lots of taget objects and
+> figure out which one got smashed.
+> 
+> It's mostly for benchmarking and discussion.
+> 
+> 
+> >> The unlocked function is needed for following work.
+> >> No API change.
+> 
+> > As I mentioned last time this code was discussed, we're already one
+> > crypto-savvy attacker away from this code becoming a security hole. 
+> > We really need to give it a serious rethink before we make it look
+> > anything like a general-use API. 
+> 
+> If you like, and don't mind a few more bytes of per-cpu data, I'll
+> happily replace the whole dubious thing with a cryptographically secure
+> high-speed PRNG.  I'm thinking ChaCha/12, as Salsa20 was selected by
+> eSTREAM and ChaCha is generally agreed to be stronger.  (It's had more
+> review as the basis of the BLAKE hash function, a SHA-3 finalist.)
 
-I'm Alfredo Garcia,  Bussines Developer in HP Spain.
+Yes, let's do this. ChaCha looks like a fine candidate.
 
-I,m searching a linux expert.
+> I've got some working SSE2 code for it, too.  Invoking it should be
+> conditional on the amount requested; there's no point context-switching
+> the FPU for one iteration.
+> 
+> I can also add a (configurable) /dev/frandom interface for it.
 
-I have a problem in ubuntu linux because I don't have the driver smartcard (ricoh) Ricoh Co Ltd RL5c476 II (don't exist the driver). We changes the smart card device in all new laptops and ricoh don't have the linux driver for the smart card. The smart card in integrated in the mother board.
+I'd rather not add an frandom until after we get rid of the
+random/urandom dichotomy.
 
-Is difficult develop a driver?? Could you make it?
-Can you help me?
+> > And you've got it backwards here: __ should be the unlocked, dangerous
+> > version. But the locked version already has a __ because it's already
+> > dangerous.
+> 
+> I don't understand.  The old version did *not* have a __, and I added
+> __ in front of the dangerous unlocked version.  If, on re-reading it,
+> you still think I did something wrong, can you please explain in more
+> detail?
 
-Thanks,
+I probably misread your patch, sorry.
+
+> 
+> >> This is a function for generating random numbers modulo small
+> >> integers, with uniform distribution and parsimonious use of seed
+> >> material.
+> 
+> > This actually looks pretty reasonable, ignoring the scary API foundation
+> > it's built on. But as popular as rand() % m constructs are with
+> > programmers, it's better to design things so as to avoid the modulus
+> > entirely. We've done pretty well at that so far, so I'd rather not have
+> > such a thing in the kernel.
+> 
+> I was thinking of using it to implement randomize_range(), I just didn't
+> want to be too intrusive, and I'd need to extend the code to handle 64-bit
+> address spaces.
+> 
+> If you'd like, I can do that.  (Actually, looking at it, there are
+> only three callers and the range is always 0x02000000.  And the
+> use of PAGE_ALIGN is wrong; it should round down rather than up.)
+> On Mon, 2011-03-14 at 21:58 -0400, George Spelvin wrote:
+> 
+> 
+> >> For sysfs files that map a boolean to a flags bit.
+> 
+> > This one's actually pretty nice.
+> 
+> The old code just annoyed me; I couldn't stand to cut & paste one
+> more time.
+> 
+> I can probably do better; I can extend the slab_sttribute structure to
+> include the bit mask, have the slab_attr_show and slab_attr_store dispatch
+> functions pass the attribute pointer to the ->show and ->store functions,
+> and do away with all the per-bit functions.
+> 
+> > You should really try to put all the uncontroversial bits of a series
+> > first.
+> 
+> Is that really a more important principle than putting related changes
+> together?  I get the idea, but thought it made more sense to put
+> all the slub.c changes together.
+
+Think of it as a way of making forward progress. You should explicitly
+call out 'hey, these bits are cleanups you should just merge' so they
+don't get lost in the debate. Then the next time around, you have that
+many fewer patches.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
 
 
------Original Message-----
-From: Greg KH [mailto:greg@kroah.com] 
-Sent: miércoles, 16 de marzo de 2011 15:03
-To: Garcia, Alfredo (Sales)
-Subject: Re: smart card driver (ricoh) with ubuntu
-
-Hi,
-
-This is the friendly email-bot of Greg Kroah-Hartman's inbox.  I've detected that you have sent him a direct question that might be better sent to a public mailing list which is much faster in responding to questions than Greg normally is.
-
-Please try asking one of the following mailing lists for your questions:
-
-  For udev and hotplug related questions, please ask on the
-  linux-hotplug@vger.kernel.org mailing list
-
-  For USB related questions, please ask on the linux-usb@vger.kernel.org
-  mailing list
-
-  For PCI related questions, please ask on the
-  linux-pci@vger.kernel.org or linux-kernel@vger.kernel.org mailing
-  lists
-
-  For staging tree related questions, please ask on the
-  devel@linuxdriverproject.org mailing list.
-
-  For general kernel related questions, please ask on the
-  kernelnewbies@nl.linux.org or linux-kernel@vger.kernel.org mailing
-  lists, depending on the type of question.  More basic, beginner
-  questions are better asked on the kernelnewbies list, after reading
-  the wiki at www.kernelnewbies.org.
-
-If you really want to ask Greg the question, please read the following two links as to why emailing a single person directly is usually not a good thing, and causes extra work on a single person:
-	http://www.arm.linux.org.uk/news/?newsitem=11
-	http://www.eyrie.org/~eagle/faqs/questions.html
-
-After reading those messages, and you still feel that you want to email Greg instead of posting on a mailing list, then resend your message within 24 hours and it will go through to him.  But be forewarned, his email inbox currently looks like:
-	912 messages in /home/greg/mail/INBOX/
-so it might be a while before he gets to the message.
-
-Thank you for your understanding.
-
-The email triggering this response has been automatically discarded.
-
-thanks,
-
-greg k-h's email bot
