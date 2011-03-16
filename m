@@ -1,87 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab1CPMet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 08:34:49 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:53185 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1CPMel (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 08:34:41 -0400
-X-IronPort-AV: E=Sophos;i="4.63,194,1299456000"; 
-   d="scan'208";a="4817470"
-Date: Wed, 16 Mar 2011 12:34:10 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Ian Campbell <ijc@hellion.org.uk>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
- register_slot
-In-Reply-To: <1299601032.17339.525.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.00.1103161230570.3382@kaball-desktop>
-References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>  <20110304104251.45b257c4@jbarnes-desktop>  <1299595858.17339.512.camel@zakaz.uk.xensource.com> <1299601032.17339.525.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752597Ab1CPMfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 08:35:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43049 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab1CPMf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 08:35:27 -0400
+Date: Wed, 16 Mar 2011 13:35:14 +0100
+From: Jan Kara <jack@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Jan Kara <jack@suse.cz>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>
+Subject: Re: [PATCH v6 8/9] memcg: check memcg dirty limits in page
+ writeback
+Message-ID: <20110316123514.GA4456@quack.suse.cz>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <1299869011-26152-9-git-send-email-gthelen@google.com>
+ <20110314175408.GE31120@redhat.com>
+ <20110314211002.GD4998@quack.suse.cz>
+ <AANLkTikCt90o2qRV=0cJijtnA_W44dcUCBOmZ53Biv07@mail.gmail.com>
+ <20110315231230.GC4995@quack.suse.cz>
+ <AANLkTimLNxcLQ23SRtdeynC19Htxe_aBm7sLuax_fQTX@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimLNxcLQ23SRtdeynC19Htxe_aBm7sLuax_fQTX@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesse,
-do you have any comments on the following patch?
-Also, are you OK with taking "set current_state to D0 in register_slot"
-in your tree? Otherwise should I send a pull request to Linus with the
-patch and your ack?
-Cheers,
+On Tue 15-03-11 19:35:26, Greg Thelen wrote:
+> On Tue, Mar 15, 2011 at 4:12 PM, Jan Kara <jack@suse.cz> wrote:
+> >  I found out I've already deleted the relevant email and thus have no good
+> > way to reply to it. So in the end I'll write it here: As Vivek pointed out,
+> > you try to introduce background writeback that honors per-cgroup limits but
+> > the way you do it it doesn't quite work. To avoid livelocking of flusher
+> > thread, any essentially unbounded work (and background writeback of bdi or
+> > in your case a cgroup pages on the bdi is in principle unbounded) has to
+> > give way to other work items in the queue (like a work submitted by
+> > sync(1)). Thus wb_writeback() stops for_background works if there are other
+> > works to do with the rationale that as soon as that work is finished, we
+> > may happily return to background cleaning (and that other work works for
+> > background cleaning as well anyway).
+> >
+> > But with your introduction of per-cgroup background writeback we are going
+> > to loose the information in which cgroup we have to get below background
+> > limit. And if we stored the context somewhere and tried to return to it
+> > later, we'd have the above problems with livelocking and we'd have to
+> > really carefully handle cases where more cgroups actually want their limits
+> > observed.
+> >
+> > I'm not decided what would be a good solution for this. It seems that
+> > a flusher thread should check all cgroups whether they are not exceeding
+> > their background limit and if yes, do writeback. I'm not sure how practical
+> > that would be but possibly we could have a list of cgroups with exceeded
+> > limits and flusher thread could check that?
+> 
+> mem_cgroup_balance_dirty_pages() queues a bdi work item which already
+> includes a memcg that is available to wb_writeback() in '[PATCH v6
+> 9/9] memcg: make background writeback memcg aware'.  Background
+> writeback checks the given memcg usage vs memcg limit rather than
+> global usage vs global limit.
+  Yes.
 
-Stefano
+> If we amend this to requeue an interrupted background work to the end
+> of the per-bdi work_list, then I think that would address the
+> livelocking issue.
+  Yes, that would work. But it would be nice (I'd find that cleaner design)
+if we could keep just one type of background work and make sure that it
+observes all the imposed memcg limits. For that we wouldn't explicitely
+pass memcg to the flusher thread but rather make over_bground_thresh()
+check all the memcg limits - or to make this more effective have some list
+of memcgs which crossed the background limit. What do you think?
 
-On Tue, 8 Mar 2011, Ian Campbell wrote:
-> From 5cb5d576e7177762abe29cfba3f616c48e619145 Mon Sep 17 00:00:00 2001
-> From: Ian Campbell <ian.campbell@citrix.com>
-> Date: Tue, 8 Mar 2011 16:16:34 +0000
-> Subject: [PATCH] acpiphp: assume device is in state D0 after powering on a slot.
-> 
-> Devices which do not support PCI configuration space based power
-> management may not otherwise be enabled.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index e610cfe..a502fef 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -827,6 +827,13 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->  	acpiphp_set_hpp_values(bus);
->  	acpiphp_set_acpi_region(slot);
->  	pci_enable_bridges(bus);
-> +
-> +	list_for_each_entry(dev, &bus->devices, bus_list) {
-> +		/* Assume that newly added devices are powered on already. */
-> +		if (!dev->is_added)
-> +			dev->current_state = PCI_D0;
-> +	}
-> +
->  	pci_bus_add_devices(bus);
->  
->  	list_for_each_entry(func, &slot->funcs, sibling) {
-> -- 
-> 1.5.6.5
-> 
-> 
-> 
-> -- 
-> Ian Campbell
-> Current Noise: Behemoth - Daimonos
-> 
-> Unix is a Registered Bell of AT&T Trademark Laboratories.
-> 		-- Donn Seeley
-> 
-> 
+> To prevent a memcg writeback work item from writing irrelevant inodes
+> (outside the memcg) then bdi writeback could call
+> mem_cgroup_queue_io(memcg, bdi) to locate an inode to writeback for
+> the memcg under dirty pressure.  mem_cgroup_queue_io() would scan the
+> memcg lru for dirty pages belonging to the particular bdi.
+  And similarly here, we could just loop over all relevant memcg's and
+let each of them queue relevant inodes as they wish and after that we go
+and write all the queued inodes... That would also solve the problem with
+cgroups competing with each other on the same bdi (writeback thread makes
+sure that all queued inodes get comparable amount of writeback). Does it
+look OK? It seems cleaner to me than what you propose but maybe I miss
+something...
+
+> If mem_cgroup_queue_io() is unable to find any dirty inodes for the
+> bdi, then it would return an empty set.  Then wb_writeback() would
+> abandon background writeback because there is nothing useful to write
+> back to that bdi.  In patch 9/9, wb_writeback() calls
+> mem_cgroup_bg_writeback_done() when writeback completes.
+> mem_cgroup_bg_writeback_done() could check that cgroup is still over
+> background thresh and use the memcg lru to select another bdi to start
+> per-memcg bdi writeback on.  This allows one queued per-memcg bdi
+> background writeback work item to pass off to another bdi to continue
+> per-memcg background writeback.
+  Here I'd think that memcg_balance_dirty_pages() would check which memcgs
+are over threshold on that bdi and add these to the list of relevant memcgs
+for that bdi. Thinking about it it's rather similar to what you propose
+just instead of queueing and requeueing work items (which are processed
+sequentially, which isn't really what we want) we'd rather maintain a
+separate list of memcgs which would be processed in parallel.
+
+> Unfortunately the approach above would only queue a memcg's bg writes
+> to one bdi at a time.  Another way to approach the problem would be to
+> have a per-memcg flusher thread that is able to queue inodes to
+> multiple bdis concurrently.
+  Well, in principle there's no reason why memcg couldn't ask for writeback
+(either via work items as you propose or via my mechanism) on several bdis
+in parallel. I see no reason why a special flusher thread would be needed
+for that...
+
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
