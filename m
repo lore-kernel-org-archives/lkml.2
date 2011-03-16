@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1CPPcT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 11:32:19 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:42488 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752967Ab1CPPcQ (ORCPT
+	id S1753406Ab1CPPc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 11:32:57 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:36559 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752967Ab1CPPcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 11:32:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=c3xhqXhwZ92TjEyuQPK8fhEZBXSw1q6DxCuztjMEOzBSfeG31c5/EkPL6m2IRdpecBhU/G8BdIlP55nrwNoPlhjP184fwUUkPNav4r6E598GsupENcla3nJyqmbtBICP;
-Date: Wed, 16 Mar 2011 08:32:05 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Ian Campbell <ijc@hellion.org.uk>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
- register_slot
-Message-ID: <20110316083205.405910ac@jbarnes-desktop>
-In-Reply-To: <alpine.DEB.2.00.1103161230570.3382@kaball-desktop>
-References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>
-	<20110304104251.45b257c4@jbarnes-desktop>
-	<1299595858.17339.512.camel@zakaz.uk.xensource.com>
-	<1299601032.17339.525.camel@zakaz.uk.xensource.com>
-	<alpine.DEB.2.00.1103161230570.3382@kaball-desktop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	Wed, 16 Mar 2011 11:32:51 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: hpa@zytor.com
+To: mingo@redhat.com
+To: tglx@linutronix.de
+To: x86@kernel.org
+Cc: dilinger@queued.net
+Cc: linux-kernel@vger.kernel.org
+Cc: jon.nettleton@gmail.com
+Subject: [PATCH] x86: Use PentiumPro-optimized partial_csum() on VIA C7
+Message-Id: <20110316153247.30CBC9D401E@zog.reactivated.net>
+Date: Wed, 16 Mar 2011 15:32:47 +0000 (GMT)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=sPz8cD7fu90A:10 a=pGLkceISAAAA:8 a=Op-mwl0xAAAA:8 a=AoRmLkDiQGNTvVk2bYYA:9 a=_NAwfJwhTU-g270CjT9JkOhReFUA:4 a=MSl-tDqOz04A:10 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Mar 2011 12:34:10 +0000
-Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+From: Jon Nettleton <jon.nettleton@gmail.com>
 
-> Jesse,
-> do you have any comments on the following patch?
-> Also, are you OK with taking "set current_state to D0 in register_slot"
-> in your tree? Otherwise should I send a pull request to Linus with the
-> patch and your ack?
+Testing on the OLPC XO-1.5 (VIA C7-M 1000MHz CPU) shows a
+partial_csum() speed increase by a factor of 1.5 when we switch
+to the Pentium-optimized version.
 
-Yeah, I think the patch is ok, I can send it to Linus either as part of
-my 2.6.39 pull req (though it's probably too late for that) or in my
-next -fixes pull.
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ arch/x86/Kconfig.cpu |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index ed47e6e..75d89ac 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -366,7 +366,7 @@ config X86_INTEL_USERCOPY
+ 
+ config X86_USE_PPRO_CHECKSUM
+ 	def_bool y
+-	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MVIAC3_2 || MEFFICEON || MGEODE_LX || MCORE2 || MATOM
++	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MVIAC3_2 || MVIAC7 || MEFFICEON || MGEODE_LX || MCORE2 || MATOM
+ 
+ config X86_USE_3DNOW
+ 	def_bool y
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+1.7.4
+
