@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1CPLfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 07:35:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12998 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab1CPLfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 07:35:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,193,1299484800"; 
-   d="scan'208";a="897830811"
-Date: Wed, 16 Mar 2011 04:35:45 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v9 3/3] cgroups: introduce timer slack controller
-Message-ID: <20110316043545.493c7b36@jacob-laptop>
-In-Reply-To: <20110314164652.5b44fb9e.akpm@linux-foundation.org>
-References: <1300111524-5666-1-git-send-email-kirill@shutemov.name>
-	<1300111524-5666-4-git-send-email-kirill@shutemov.name>
-	<20110314164652.5b44fb9e.akpm@linux-foundation.org>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752758Ab1CPLhC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 07:37:02 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48661 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab1CPLg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 07:36:56 -0400
+Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+In-Reply-To: <AANLkTi=W980GYHVxdYPV3xNKcdGpjAewKssoUc3ZoEDi@mail.gmail.com>
+References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
+	 <20110311153134.GO1760@opensource.wolfsonmicro.com>
+	 <AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
+	 <20110314181531.GA32434@opensource.wolfsonmicro.com>
+	 <AANLkTi=W980GYHVxdYPV3xNKcdGpjAewKssoUc3ZoEDi@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 11:36:52 +0000
+Message-ID: <1300275412.3432.46.camel@odin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Mar 2011 16:46:52 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, 2011-03-15 at 10:07 +0100, Linus Walleij wrote:
+> On Mon, Mar 14, 2011 at 7:15 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+> > On Mon, Mar 14, 2011 at 05:42:28PM +0100, Linus Walleij wrote:
+> >
+> >> Mark can you pick this into the regulator tree? I have sent my ux500
+> >> tree upstream.
+> >
+> > No, I can't do that - mostly because Liam manages the regulator tree and
+> > not me :)
+> 
+> Ah yeah now I remember. Liam, please?
+> 
 
-> On Mon, 14 Mar 2011 16:05:24 +0200
-> Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-> 
-> > +Overview
-> > +--------
-> > +
-> > +Every task_struct has timer_slack_ns value. This value uses to
-> > round up +poll() and select() timeout values. This feature can be
-> > useful in +mobile environment where combined wakeups are desired.
-> > +
-> > +Originally, prctl() was the only way to change timer slack value of
-> > +a process. So you was not able change timer slack value of another
-> > +process.
-> > +
-> > +cgroup subsys "timer_slack" implements timer slack controller. It
-> > +provides a way to set minimal timer slack value for a group of
-> > tasks. +If a task belongs to a cgroup with minimal timer slack
-> > value higher than +task's value, cgroup's value will be applied.
-> > +
-> > +Timer slack controller allows to implement setting timer slack
-> > value of +a process based on a policy. For example, you can create
-> > foreground and +background cgroups and move tasks between them
-> > based on system state.
-> 
-> (quoting myself from last time)
-> 
-> Why do we need a cgroup for this as opposed to (say) inheritance over
-> fork(), or a system-wide knob, or a per-process/threadgroup knob, or
-> just leaving the existing code as-is?  Presumably you felt that a
-> cgroup approach is better for manageability, but you didn't tell us
-> about this and you didn't explore alternative ways of solving the
-> problem-which-you-didn't-describe.
-> 
-> 
-> 
-> 
-> I'm still having trouble seeing why we should merge this.  Who will
-> use it, and for what reason and what benefits will they see?
-> Quantified benefits, if possible!
-> 
-I am planning to use it for doing resource management for a mobile
-device where we classify applications by groups based on priority and
-trust level. Then at runtime, I plan to use timer slack as one of the
-knobs to penalize/manage them at different degree to reduce power
-consumption (via reduction of #wake-ups in this case).
+Now done. Sorry very busy atm.
 
-Thanks,
+Btw, you have a few other regulator patches recently in amongst MFD and
+ARM updates. I assume these will go via MFD ?
 
-Jacob
+Thanks
+
+Liam
+
