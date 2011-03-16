@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab1CPSFD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 14:05:03 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37831 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab1CPSE6 convert rfc822-to-8bit (ORCPT
+	id S1753340Ab1CPSFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 14:05:43 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:12008 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1CPSFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 14:04:58 -0400
-Subject: Re: [RFC PATCH 0/4] perf: Custom contexts
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <20110316175310.GA2861@ghostprotocols.net>
-References: <20110314205100.GG6139@nowhere>
-	 <20110314210315.GC2388@ghostprotocols.net> <20110314212050.GH6139@nowhere>
-	 <20110314215603.GD2388@ghostprotocols.net> <20110314224344.GA11443@nowhere>
-	 <20110314230211.GG2388@ghostprotocols.net> <20110315185812.GB6605@nowhere>
-	 <20110315192422.GF7011@ghostprotocols.net> <20110316010304.GB7760@nowhere>
-	 <4D80DB75.6060408@hitachi.com>  <20110316175310.GA2861@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 16 Mar 2011 19:02:37 +0100
-Message-ID: <1300298557.2203.1810.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 16 Mar 2011 14:05:37 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LI5WX6-01-8IK-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 1/2] oprofile, s390: Cleanups
+Date: Wed, 16 Mar 2011 18:58:24 +0100
+Message-ID: <1300298305-9164-2-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1300298305-9164-1-git-send-email-robert.richter@amd.com>
+References: <1300298305-9164-1-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 14:53 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Mar 17, 2011 at 12:47:01AM +0900, Masami Hiramatsu escreveu:
-> > (2011/03/16 10:03), Frederic Weisbecker wrote:
-> > > Doh you're right. && would have two meaning.
-> > > No we should probably keep  a && b  has a meaning of we are
-> > > in the range a AND in the range b. Both at the same time, with
-> > > a evaluated first and then b. We also need to ensure than
-> > > a && b  doesn't mean the same than  b && a. You're right, perhaps
-> > > we need another operator to expression inclusion, or we need to
-> > > assume that specific meaning of &&.
-> > > 
-> > > For what I wanted to express in the example above, || seem be the
-> > > right choice: -e inst*@(..lock:*acquire(B) || lock:*release(B)..)
-> > > 
-> > > So || would mean union and && would mean inclusion.
-> > 
-> > Hmm, would we really need that kind of complex rules?
-> > It seems that we only need union case. If so, I'd suggest
-> > you to use ',' to express that, instead of ||.
-> > 
-> > -e inst*@(..lock:*acquire(B),lock:*release(B)..)
-> 
-> Yeah, I somehow was avoiding the comma operator because it could be used
-> to represent multiple events, but then its a different context, using it
-> to represent a circular list of ranges in the @ (at, location) expression
-> seems ok.
-> 
-> 1. '..lock:*acquire(B)' is armed, 'lock:*release(B)..' isn't
-> 2. '..lock:*acquire(B)' trigers, which causes 'lock:*release(B)..' to be
->    armed
-> 3. 'lock:*release(B)..' triggers, which causes '..lock:*acquire(B)' to
->    be armed, rinse, repeat
+Remove unused HAVE_HWSAMPLER config option. It is not used anymore,
+removing it.
 
-How about we start writing proper EBNF syntax rules for this stuff, its
-getting seriously out of hand.
+Also make some functions static and some coding style fixes.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/Kconfig              |    3 ---
+ arch/s390/Kconfig         |    1 -
+ arch/s390/oprofile/init.c |    6 +++---
+ 3 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 43abf3c..f78c2be 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -30,9 +30,6 @@ config OPROFILE_EVENT_MULTIPLEX
+ config HAVE_OPROFILE
+ 	bool
+ 
+-config HAVE_HWSAMPLER
+-	bool
+-
+ config KPROBES
+ 	bool "Kprobes"
+ 	depends on MODULES
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 0cf20ad..ff19efd 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -115,7 +115,6 @@ config S390
+ 	select ARCH_INLINE_WRITE_UNLOCK_BH
+ 	select ARCH_INLINE_WRITE_UNLOCK_IRQ
+ 	select ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
+-	select HAVE_HWSAMPLER
+ 
+ config SCHED_OMIT_FRAME_POINTER
+ 	def_bool y
+diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
+index 0e38a5b..16c76de 100644
+--- a/arch/s390/oprofile/init.c
++++ b/arch/s390/oprofile/init.c
+@@ -133,7 +133,7 @@ static int oprofile_create_hwsampling_files(struct super_block *sb,
+ 	return 0;
+ }
+ 
+-int oprofile_hwsampler_init(struct oprofile_operations* ops)
++static int oprofile_hwsampler_init(struct oprofile_operations *ops)
+ {
+ 	if (hwsampler_setup())
+ 		return -ENODEV;
+@@ -166,13 +166,13 @@ int oprofile_hwsampler_init(struct oprofile_operations* ops)
+ 	return 0;
+ }
+ 
+-void oprofile_hwsampler_exit(void)
++static void oprofile_hwsampler_exit(void)
+ {
+ 	oprofile_timer_exit();
+ 	hwsampler_shutdown();
+ }
+ 
+-int __init oprofile_arch_init(struct oprofile_operations* ops)
++int __init oprofile_arch_init(struct oprofile_operations *ops)
+ {
+ 	ops->backtrace = s390_backtrace;
+ 
+-- 
+1.7.3.4
+
+
