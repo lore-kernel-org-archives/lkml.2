@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204Ab1CPEvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 00:51:43 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55137 "EHLO
+	id S1751222Ab1CPEyE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 00:54:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41279 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab1CPEvi convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750915Ab1CPEyA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 00:51:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=e+8Pmrfo6qqpYajq/21a2Q3O+8qnHgkC8u1wNUobI9mzb/Kun6u5jEdX4fWKnWD25K
-         1do//GN/tkpo7m0FhcXL54LAUbqnRX+zZ/Ij7lHlx3PUhR0GvBWxxdDUdrWWsxM9XcXP
-         t66QzCzvFSbzZ6zDOAuX8MBS63ElZBQflWqUg=
+	Wed, 16 Mar 2011 00:54:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <201103160030.27594.vapier@gentoo.org>
-References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
-	<201103071633.08197.vapier@gentoo.org>
-	<AANLkTinu_FZ2_T4N7W9qNtoatG7zQua-SYSJ0GU0cJia@mail.gmail.com>
-	<201103160030.27594.vapier@gentoo.org>
-Date: Tue, 15 Mar 2011 21:51:37 -0700
-Message-ID: <AANLkTimk3dfOBoPhGQ8NeOYY5rKdsefPm8gTJ-75vg3-@mail.gmail.com>
-Subject: Re: X32 psABI status update
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+In-Reply-To: <20110316154653.c178910a.sfr@canb.auug.org.au>
+References: <20110316154653.c178910a.sfr@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 15 Mar 2011 22:53:40 -0600
+X-Google-Sender-Auth: VXFvemJea9vBZ_Zy5mRHNMlynOY
+Message-ID: <AANLkTinPDaj3N7LrDGA7UA8RstyySXQS8yWG_3joHZ2Q@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the devicetree tree with the galak tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Scott Wood <scottwood@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 9:30 PM, Mike Frysinger <vapier@gentoo.org> wrote:
-> On Wednesday, March 16, 2011 00:17:04 H.J. Lu wrote:
->> On Mon, Mar 7, 2011 at 1:33 PM, Mike Frysinger wrote:
->> > On Saturday, March 05, 2011 14:08:04 H.J. Lu wrote:
->> >> Many x32 bugs are fixed in kernel, glibc, binutils and GCC:
->> >>
->> >> https://sites.google.com/site/x32abi/
->> >>
->> >> The major remaining issues are glibc/gcc testsuite failures,
->> >> kernel core dump and signal handler unwind.
->> >
->> > are you getting a unique host tuple for this ?  or are you extending
->> > x86_64- linux-gnu ?  so the only way of knowing which ABI is to check
->> > for the output of the compiler+compiler flags ?
->>
->> x32 requires x32 enabled x86-64 kernel.
+On Tue, Mar 15, 2011 at 10:46 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
 >
-> ok, but that doesnt answer my question.  what are you passing to --target ?
+> Today's linux-next merge of the devicetree tree got a conflict in
+> arch/powerpc/sysdev/fsl_msi.c between commit 6820fead714d
+> ("powerpc/fsl_msi: Handle msi-available-ranges better") from the galak
+> tree and commit 000061245a67 ("dt/powerpc: Eliminate users of of_platform_
+> {,un}register_driver") from the devicetree tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary.
 
-See:
+Looks correct to me.  Thanks Stephen.
 
-https://sites.google.com/site/x32abi/
+g.
 
-You configure it as
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc arch/powerpc/sysdev/fsl_msi.c
+> index 8d6b074,ee6a8a5..0000000
+> --- a/arch/powerpc/sysdev/fsl_msi.c
+> +++ b/arch/powerpc/sysdev/fsl_msi.c
+> @@@ -274,48 -273,23 +274,51 @@@ static int fsl_of_msi_remove(struct pla
+>        return 0;
+>  }
+>
+>  +static int __devinit fsl_msi_setup_hwirq(struct fsl_msi *msi,
+>  +                                       struct platform_device *dev,
+>  +                                       int offset, int irq_index)
+>  +{
+>  +      struct fsl_msi_cascade_data *cascade_data = NULL;
+>  +      int virt_msir;
+>  +
+>  +      virt_msir = irq_of_parse_and_map(dev->dev.of_node, irq_index);
+>  +      if (virt_msir == NO_IRQ) {
+>  +              dev_err(&dev->dev, "%s: Cannot translate IRQ index %d\n",
+>  +                      __func__, irq_index);
+>  +              return 0;
+>  +      }
+>  +
+>  +      cascade_data = kzalloc(sizeof(struct fsl_msi_cascade_data), GFP_KERNEL);
+>  +      if (!cascade_data) {
+>  +              dev_err(&dev->dev, "No memory for MSI cascade data\n");
+>  +              return -ENOMEM;
+>  +      }
+>  +
+>  +      msi->msi_virqs[irq_index] = virt_msir;
+>  +      cascade_data->index = offset + irq_index;
+>  +      cascade_data->msi_data = msi;
+>  +      set_irq_data(virt_msir, cascade_data);
+>  +      set_irq_chained_handler(virt_msir, fsl_msi_cascade);
+>  +
+>  +      return 0;
+>  +}
+>  +
+> - static int __devinit fsl_of_msi_probe(struct platform_device *dev,
+> -                               const struct of_device_id *match)
+> + static int __devinit fsl_of_msi_probe(struct platform_device *dev)
+>  {
+>        struct fsl_msi *msi;
+>        struct resource res;
+>  -      int err, i, count;
+>  +      int err, i, j, irq_index, count;
+>        int rc;
+>  -      int virt_msir;
+>        const u32 *p;
+> -       struct fsl_msi_feature *features = match->data;
+> +       struct fsl_msi_feature *features;
+>  -      struct fsl_msi_cascade_data *cascade_data = NULL;
+>        int len;
+>        u32 offset;
+>  +      static const u32 all_avail[] = { 0, NR_MSI_IRQS };
+>
+> +       if (!dev->dev.of_match)
+> +               return -EINVAL;
+> +       features = dev->dev.of_match->data;
+> +
+>        printk(KERN_DEBUG "Setting up Freescale MSI support\n");
+>
+>        msi = kzalloc(sizeof(struct fsl_msi), GFP_KERNEL);
+>
 
-CC="gcc -mx32" ...../configure x86_64- linux-gnu
 
 
 -- 
-H.J.
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
