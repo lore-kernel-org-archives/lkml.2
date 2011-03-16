@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1CPOjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 10:39:16 -0400
-Received: from qmta09.westchester.pa.mail.comcast.net ([76.96.62.96]:46628
-	"EHLO qmta09.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751137Ab1CPOjL (ORCPT
+	id S1753177Ab1CPOnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 10:43:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39521 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab1CPOmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 10:39:11 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 10:39:11 EDT
-Date: Wed, 16 Mar 2011 10:33:18 -0400
-From: Frank Peters <frank.peters@comcast.net>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.38 Compile Failure e1000e Module
-Message-Id: <20110316103318.19bd03e4.frank.peters@comcast.net>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Mar 2011 10:42:55 -0400
+Date: Wed, 16 Mar 2011 14:42:53 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] several fixes
+Message-ID: <20110316144253.GT22723@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+	Several fixes, including the brown paperbag one for -ELOOP breakage
+in the last commit of yesterday pull.  Please, pull from the usual place -
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-I cannot compile kernel 2.6.38.  Apparently, there is a build failure
-with the e1000e module (ethernet driver).  The brief error message is this:
+Shortlog:
 
-ERROR: "crc32_le" [drivers/net/e1000e/e1000e.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+Al Viro (1):
+      fix follow_link() breakage
 
-My compiler is gcc-4.5.2 on a Gentoo x64 system.  The kernel source
-is the stock source from kernel.org.
+Christoph Hellwig (1):
+      prune back iprune_sem
 
-Please CC to frank.peters (at) comcast.net.
+Stephen Rothwell (1):
+      vfs: add nonconflicting values for O_PATH
 
-Frank Peters
+Diffstat:
+
+ arch/alpha/include/asm/fcntl.h  |    2 ++
+ arch/parisc/include/asm/fcntl.h |    2 ++
+ arch/sparc/include/asm/fcntl.h  |    2 ++
+ fs/inode.c                      |   32 ++++++++++++++------------------
+ fs/namei.c                      |    7 +++----
+ 5 files changed, 23 insertions(+), 22 deletions(-)
+
