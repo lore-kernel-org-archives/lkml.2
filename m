@@ -1,51 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab1CPDHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 23:07:15 -0400
-Received: from smtp102.prem.mail.sp1.yahoo.com ([98.136.44.57]:25452 "HELO
-	smtp102.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751391Ab1CPDHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 23:07:10 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: tuJ5s7oVM1n6MGBLHcbhbs8VnI16JfI4xIkb_oBLNyvi4oB
- m.zoFmSXU29kDFMMIatrTt32K9cc0D9cwZAbiCba2oW_wfMVtTQT0ndVpM_q
- qPSLsKU3DsegVGN6j.S7uNHeFPEvROMIVIMV9ghE9mzT4mRluCeI_C5GxB7u
- p9cOUJikrA63SQOvDVZM0TakfMnpPhJXmI3iUcxBtfskAsNL.Z0X3YcJNQ4M
- iPfBdjle0u6C8TVbVqMpLuXMILQeUmxbp.xs_Uy0WIvvVnMTtYnDYDw0-
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4D80295C.7010605@schaufler-ca.com>
-Date: Tue, 15 Mar 2011 20:07:08 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.14) Gecko/20110221 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: Just what do you think F_SETFD is?
-References: <20110313074154.GI22723@ZenIV.linux.org.uk>
-In-Reply-To: <20110313074154.GI22723@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752441Ab1CPDJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 23:09:53 -0400
+Received: from waste.org ([173.11.57.241]:37840 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab1CPDJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 23:09:48 -0400
+Subject: Re: [PATCH 4/8] drivers/char/random: Add get_random_mod() functions
+From: Matt Mackall <mpm@selenic.com>
+To: George Spelvin <linux@horizon.com>
+Cc: penberg@cs.helsinki.fi, herbert@gondor.hengli.com.au, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110316022804.27701.qmail@science.horizon.com>
+References: <20110316022804.27701.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Mar 2011 22:09:45 -0500
+Message-ID: <1300244985.3128.430.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/2011 11:41 PM, Al Viro wrote:
-> 	May I politely inquire about the technics used to write
-> smack_file_fcntl()?  Beyond "GET is kinda like read, SET is kinda
-> like write", that is - there must've been something, since F_DUPFD
-> also got, er, handled.
+On Mon, 2011-03-14 at 14:26 -0400, George Spelvin wrote:
+> This is a function for generating random numbers modulo small
+> integers, with uniform distribution and parsimonious use of seed
+> material.
 
-I'm not ignoring you, I am trying to come up with a response
-that makes it look as if the following comment is unjustified.
-(smiley goes here)
-I am in the unfortunate position of having an employer who just
-decided to go Redmond and changes will have to wait until certain
-events occur.
+This actually looks pretty reasonable, ignoring the scary API foundation
+it's built on. But as popular as rand() % m constructs are with
+programmers, it's better to design things so as to avoid the modulus
+entirely. We've done pretty well at that so far, so I'd rather not have
+such a thing in the kernel.
 
-> 	Al, feeling a bit like Fermat - I think I have an adequate
-> flame, but it won't fit the maillist size limit...
+> ---
+>  drivers/char/random.c  |   63 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/random.h |   14 ++++++++++
+>  2 files changed, 77 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+> index 113508e..fc36a98 100644
+> --- a/drivers/char/random.c
+> +++ b/drivers/char/random.c
+> @@ -1626,6 +1626,8 @@ EXPORT_SYMBOL(secure_dccp_sequence_number);
+>   */
+>  struct cpu_random {
+>  	u32 hash[4];
+> +	u32 lim, x;
+> +	int avail;	/* Trailing bytes of hash[] available for seed */
+>  };
+>  DEFINE_PER_CPU(struct cpu_random, get_random_int_data);
+>  static u32 __get_random_int(u32 *hash)
+> @@ -1646,10 +1648,71 @@ unsigned int get_random_int(void)
+>  	struct cpu_random *r = &get_cpu_var(get_random_int_data);
+>  	u32 ret = __get_random_int(r->hash);
+>  
+> +	r->avail = 8;
+>  	put_cpu_var(r);
+>  	return ret;
+>  }
+>  
+> +struct cpu_random *
+> +get_random_mod_start(void)
+> +{
+> +	struct cpu_random *r = &get_cpu_var(get_random_int_data);
+> +
+> +	if (r->x >= r->lim) {
+> +		r->x = 0;
+> +		r->lim = 1;
+> +		r->avail = 0;
+> +	}
+> +	return r;
+> +}
+> +
+> +/*
+> + * Return a random 0 <= x < m.  This is exacctly uniformly distributed,
+> + * which "random() % m" is not, and it is economical with seed entropy.
+> + * For example, this can shuffle 27 elements (27! > 2^93) with only
+> + * one call to half_md4_transform.
+> + *
+> + * This is limited to 24-bit moduli m; larger values risk overflow.
+> + */
+> +unsigned
+> +get_random_mod(struct cpu_random *r, unsigned m)
+> +{
+> +	unsigned x = r->x, lim = r->lim;
+> +
+> +	BUG_ON(m >= 0x1000000);
+> +	do {
+> +		BUG_ON(x >= lim);
+> +
+> +		/* Ensure lim >= m */
+> +		while (lim < m) {
+> +			/* Invoke underlying random bit source, if needed. */
+> +			if (!r->avail) {
+> +				/* Generate 12 more bytes of seed */
+> +				(void)__get_random_int(r->hash);
+> +				r->avail = 12;
+> +			}
+> +			/* Add one byte of seed material. */
+> +			x = (x << 8) |
+> +				((u8 *)r->hash)[sizeof r->hash - r->avail--];
+> +			lim <<= 8;
+> +		}
+> +		/* Now check for uniformity, and loop if necessary. */
+> +		r->lim = lim / m;
+> +		lim %= m;
+> +	} while (unlikely(x < lim));
+> +
+> +	x -= lim;
+> +	/* We now have 0 <= x < m * r->lim, so x % m is uniform */
+> +	r->x = x / m;	/* Remainder available for future use */
+> +	return x % m;
+> +}
+> +
+> +void
+> +get_random_mod_stop(struct cpu_random *r)
+> +{
+> +	put_cpu_var(r);
+> +}
+> +
+>  /*
+>   * randomize_range() returns a start address such that
+>   *
+> diff --git a/include/linux/random.h b/include/linux/random.h
+> index fb7ab9d..2e1c227 100644
+> --- a/include/linux/random.h
+> +++ b/include/linux/random.h
+> @@ -75,6 +75,20 @@ extern const struct file_operations random_fops, urandom_fops;
+>  unsigned int get_random_int(void);
+>  unsigned long randomize_range(unsigned long start, unsigned long end, unsigned long len);
+>  
+> +
+> +/*
+> + * These functions generate a sequence of values modulo a small integer m.
+> + * They are intended for shuffling operations.  "m" must be no more
+> + * than 24 bits, or they will BUG().  (Rather than suffering an internal
+> + * overflow.)
+> + * They use per-CPU data, so preemption is disabled in the _start
+> + * function and re-enabled in _stop.
+> + */
+> +struct cpu_random;	/* Opaque to acllers of this interface */
+> +struct cpu_random *get_random_mod_start(void);
+> +unsigned get_random_mod(struct cpu_random *r, unsigned m);
+> +void get_random_mod_stop(struct cpu_random *r);
+> +
+>  u32 random32(void);
+>  void srandom32(u32 seed);
+>  
 
-Well, thank you for the courtesy you have extended to the list owners
-and subscribers around the world.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
