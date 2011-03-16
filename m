@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1CPUDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:03:19 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:6754 "EHLO
-	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753721Ab1CPUDP (ORCPT
+	id S1753909Ab1CPUDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:03:31 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:24446
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753731Ab1CPUDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:03:15 -0400
+	Wed, 16 Mar 2011 16:03:22 -0400
 X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h62h)
+X-Spam-TCS-SCL: 1:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 From: <Dinh.Nguyen@freescale.com>
 To: <linux-kernel@vger.kernel.org>
@@ -18,12 +18,13 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
         <arnaud.patard@rtp-net.org>, <ra5478@freescale.com>,
         <xiao-lizhang@freescale.com>, <festevam@gmail.com>,
         Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv3 2/3] ARM: mx51: Implement code to allow mx51 to enter WFI
-Date: Wed, 16 Mar 2011 15:03:06 -0500
-Message-ID: <1300305787-7970-2-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv3 3/3] ARM: mx51: Add support for low power suspend on MX51
+Date: Wed, 16 Mar 2011 15:03:07 -0500
+Message-ID: <1300305787-7970-3-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1300305787-7970-1-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1300305787-7970-2-git-send-email-Dinh.Nguyen@freescale.com>
 References: <1300305787-7970-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300305787-7970-2-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -33,44 +34,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Implement code for MX51 that allows the SoC to enter WFI when
-arch_idle is called.
+Adds initial low power suspend functionality to MX51.
+Supports "mem" and "standby" modes.
 
-This patch is also necessary for correctly suspending the system.
+Tested on mx51-babbage.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/mach-mx5/Makefile              |    2 +-
- arch/arm/mach-mx5/system.c              |   84 +++++++++++++++++++++++++++++++
- arch/arm/plat-mxc/include/mach/mxc.h    |    9 +++
- arch/arm/plat-mxc/include/mach/system.h |    6 ++-
- 4 files changed, 99 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/mach-mx5/system.c
+ arch/arm/mach-mx5/Makefile   |    1 +
+ arch/arm/mach-mx5/pm-imx51.c |   69 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/pm-imx51.c
 
 diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
-index 4f63048..0b9338c 100644
+index 0b9338c..787cb80 100644
 --- a/arch/arm/mach-mx5/Makefile
 +++ b/arch/arm/mach-mx5/Makefile
-@@ -3,7 +3,7 @@
- #
- 
- # Object file lists.
--obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o
-+obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
+@@ -6,6 +6,7 @@
+ obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
  obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
  
++obj-$(CONFIG_PM) += pm-imx51.o
  obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
-diff --git a/arch/arm/mach-mx5/system.c b/arch/arm/mach-mx5/system.c
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+ obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+diff --git a/arch/arm/mach-mx5/pm-imx51.c b/arch/arm/mach-mx5/pm-imx51.c
 new file mode 100644
-index 0000000..c4e9e00
+index 0000000..4a1d915
 --- /dev/null
-+++ b/arch/arm/mach-mx5/system.c
-@@ -0,0 +1,84 @@
++++ b/arch/arm/mach-mx5/pm-imx51.c
+@@ -0,0 +1,69 @@
 +/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
++ *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
 + * The code contained herein is licensed under the GNU General Public
 + * License. You may obtain a copy of the GNU General Public License
 + * Version 2 or later at the following locations:
@@ -78,122 +74,65 @@ index 0000000..c4e9e00
 + * http://www.opensource.org/licenses/gpl-license.html
 + * http://www.gnu.org/copyleft/gpl.html
 + */
-+#include <linux/platform_device.h>
-+#include <asm/io.h>
-+#include <mach/hardware.h>
++#include <linux/suspend.h>
++#include <linux/clk.h>
++#include <asm/mach/map.h>
++#include <asm/cacheflush.h>
++#include <asm/tlb.h>
++#include <mach/system.h>
 +#include "crm_regs.h"
 +
-+/* set cpu low power mode before WFI instruction. This function is called
-+  * mx5 because it can be used for mx50, mx51, and mx53.*/
-+void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
++struct clk *gpc_dvfs_clk;
++
++static int mx5_suspend_enter(suspend_state_t state)
 +{
-+	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
-+	u32 empgc0, empgc1;
-+	int stop_mode = 0;
++	if (gpc_dvfs_clk == NULL)
++		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs_clk");
 +
-+	/* always allow platform to issue a deep sleep mode request */
-+	plat_lpc = __raw_readl(MXC_CORTEXA8_PLAT_LPC) &
-+	    ~(MXC_CORTEXA8_PLAT_LPC_DSM);
-+	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
-+	arm_srpgcr = __raw_readl(MXC_SRPG_ARM_SRPGCR) & ~(MXC_SRPGCR_PCR);
-+	empgc0 = __raw_readl(MXC_SRPG_EMPGC0_SRPGCR) & ~(MXC_SRPGCR_PCR);
-+	empgc1 = __raw_readl(MXC_SRPG_EMPGC1_SRPGCR) & ~(MXC_SRPGCR_PCR);
-+
-+	switch (mode) {
-+	case WAIT_CLOCKED:
++	clk_enable(gpc_dvfs_clk);
++	switch (state) {
++	case PM_SUSPEND_MEM:
++		mx5_cpu_lp_set(STOP_POWER_OFF);
 +		break;
-+	case WAIT_UNCLOCKED:
-+		ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
-+		break;
-+	case WAIT_UNCLOCKED_POWER_OFF:
-+	case STOP_POWER_OFF:
-+		plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
-+			    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
-+		if (mode == WAIT_UNCLOCKED_POWER_OFF) {
-+			ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
-+			ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
-+			ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
-+			stop_mode = 0;
-+		} else {
-+			ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
-+			ccm_clpcr |= 0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET;
-+			ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
-+			ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
-+			stop_mode = 1;
-+		}
-+
-+		arm_srpgcr |= MXC_SRPGCR_PCR;
-+		if (stop_mode) {
-+			empgc0 |= MXC_SRPGCR_PCR;
-+			empgc1 |= MXC_SRPGCR_PCR;
-+		}
-+
-+		if (tzic_enable_wake(1) != 0)
-+			return;
-+		break;
-+	case STOP_POWER_ON:
-+		ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
++	case PM_SUSPEND_STANDBY:
++		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
 +		break;
 +	default:
-+		printk(KERN_WARNING "UNKNOWN cpu power mode: %d\n", mode);
-+		return;
++		return -EINVAL;
 +	}
 +
-+	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
-+	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
-+	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
-+	/* Enable NEON SRPG for all but MX50TO1.0. */
-+	__raw_writel(arm_srpgcr, MXC_SRPG_NEON_SRPGCR);
-+	if (stop_mode) {
-+		__raw_writel(empgc0, MXC_SRPG_EMPGC0_SRPGCR);
-+		__raw_writel(empgc1, MXC_SRPG_EMPGC1_SRPGCR);
++	if (state == PM_SUSPEND_MEM) {
++		local_flush_tlb_all();
++		flush_cache_all();
++
++		/*clear the EMPGC0/1 bits */
++		__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
++		__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
 +	}
++	cpu_do_idle();
++	clk_disable(gpc_dvfs_clk);
++
++	return 0;
 +}
 +
-diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
-index 7e07263..6c2a371 100644
---- a/arch/arm/plat-mxc/include/mach/mxc.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc.h
-@@ -181,6 +181,15 @@ struct cpu_op {
- 	u32 cpu_rate;
- };
- 
-+int tzic_enable_wake(int is_idle);
-+enum mxc_cpu_pwr_mode {
-+	WAIT_CLOCKED,		/* wfi only */
-+	WAIT_UNCLOCKED,		/* WAIT */
-+	WAIT_UNCLOCKED_POWER_OFF,	/* WAIT + SRPG */
-+	STOP_POWER_ON,		/* just STOP */
-+	STOP_POWER_OFF,		/* STOP + SRPG */
++static int mx5_pm_valid(suspend_state_t state)
++{
++	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
++}
++
++static const struct platform_suspend_ops mx5_suspend_ops = {
++	.valid = mx5_pm_valid,
++	.enter = mx5_suspend_enter,
 +};
 +
- extern struct cpu_op *(*get_cpu_op)(int *op);
- #endif
- 
-diff --git a/arch/arm/plat-mxc/include/mach/system.h b/arch/arm/plat-mxc/include/mach/system.h
-index 95be51b..0417da9 100644
---- a/arch/arm/plat-mxc/include/mach/system.h
-+++ b/arch/arm/plat-mxc/include/mach/system.h
-@@ -20,6 +20,8 @@
- #include <mach/hardware.h>
- #include <mach/common.h>
- 
-+extern void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode);
++static int __init mx5_pm_init(void)
++{
++	if (cpu_is_mx51())
++		suspend_set_ops(&mx5_suspend_ops);
 +
- static inline void arch_idle(void)
- {
- #ifdef CONFIG_ARCH_MXC91231
-@@ -54,7 +56,9 @@ static inline void arch_idle(void)
- 			"orr %0, %0, #0x00000004\n"
- 			"mcr p15, 0, %0, c1, c0, 0\n"
- 			: "=r" (reg));
--	} else
-+	} else if (cpu_is_mx51())
-+		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
-+	else
- 		cpu_do_idle();
- }
- 
++	return 0;
++}
++device_initcall(mx5_pm_init);
 -- 
 1.6.0.4
 
