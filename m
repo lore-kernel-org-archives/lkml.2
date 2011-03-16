@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab1CPCgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 22:36:22 -0400
-Received: from sh.osrg.net ([192.16.179.4]:55164 "EHLO sh.osrg.net"
+	id S1751785Ab1CPCiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 22:38:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54088 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751433Ab1CPCgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 22:36:20 -0400
-Date: Wed, 16 Mar 2011 11:35:35 +0900
-To: akpm@linux-foundation.org
-Cc: maximlevitsky@gmail.com, fujita.tomonori@lab.ntt.co.jp,
-        James.Bottomley@HansenPartnership.com, linux-kernel@vger.kernel.org,
-        oakad@yahoo.com
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110315174459.54b02f99.akpm@linux-foundation.org>
-References: <20110307064900X.fujita.tomonori@lab.ntt.co.jp>
-	<1299464437.24051.13.camel@maxim-laptop>
-	<20110315174459.54b02f99.akpm@linux-foundation.org>
+	id S1751247Ab1CPCiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 22:38:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,191,1299484800"; 
+   d="scan'208";a="897683305"
+Subject: Re: [PATCH repost 4/4] avr32: at32ap700x: specify DMA src and dst
+ masters
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>
+In-Reply-To: <20110315145652.GI2914@pulham.picochip.com>
+References: <1295619115-18420-1-git-send-email-jamie@jamieiles.com>
+	 <1295619115-18420-5-git-send-email-jamie@jamieiles.com>
+	 <1298295901.24505.68.camel@hcegtvedt>
+	 <20110221144539.GD2744@pulham.picochip.com>
+	 <20110315145652.GI2914@pulham.picochip.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 07:38:16 +0530
+Message-ID: <1300241296.19661.7.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20110316113527C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 16 Mar 2011 11:35:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 17:44:59 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> > > This restriction is due to hardware specification or the software
-> > > design (e.g. memstick layer)? If it is due to the latter, why can't
-> > > you fix that?
+On Tue, 2011-03-15 at 20:26 +0530, Jamie Iles wrote:
+> On Mon, Feb 21, 2011 at 02:45:40PM +0000, Jamie Iles wrote:
+> > On Mon, Feb 21, 2011 at 02:45:00PM +0100, Hans-Christian Egtvedt wrote:
+> > > Spotted by Nicolas Ferre, you use the wrong struct here, should be
+> > > tx_dws, not rx_dws.
 > > 
-> > Yes.
-> > I already tried addressing some shortcomings of memstick layer, no no, I
-> > don't want to deal with its author, Alex Dubov again.
-> > I think this code tries to be too clever/complex for the range of
-> > devices/speeds it supports, but I rather leave it as is.
-> > 
+> > Apologies, here's a patch to fix it up.
 > 
-> I have to say, these aren't very good reasons for a particular
-> implementation!
-
-Agreed. We need to fix it.
-
-
-> > To be honest, the code in question is for >5 year old memstick standard
-> > cards, thats hardly anybody uses.
-> > It works, it is more or less simple, its not performance bound, its
-> > testd, and thus I want to keep it as is _for_ now.
-> > 
-> > 
-> > Why I break sg lists into chunks?
-> > Because unlike vast majority of block devices, I need to do FTL in the
-> > driver, thus its easier to work on eraseblock boundary.
-> > Also unlike anything else, you can't just read/write a sector from a
-> > memorystick (especially the legacy one), you have to perform full dance
-> > of commands.
-> > 
-> > Not to mention error handling (like if you failed to write to block, you
-> > must try to choose another one, etc...)
-> > 
-> > (Of course writes follow same rules as raw nand flash, thats is writes
-> > only clear bits, and you can erase a eraseblock only).
+> Is anyone able to take this for the next merge?
 > 
-> hm.  If you think there's little likelihood that other drivers will
-> need the new sg functions in the future then perhaps they should be
-> made private to the memstick driver, rather than bloating everyone's
-> kernels.  Which is, I think, the exact opposite of what I suggested
-> last year :(
+> Jamie
 > 
-> Fujita-san, you've gone all quiet.  Do you believe that these functions
-> should be added to the sg API?
+> > 
+> > Jamie
+> > 
+> > 8<--------
+> > 
+> > From 9068d500450ad6f5189b9a71463851349700c505 Mon Sep 17 00:00:00 2001
+> > From: Jamie Iles <jamie@jamieiles.com>
+> > Date: Mon, 21 Feb 2011 14:38:32 +0000
+> > Subject: [PATCH] avr32: at32ap700x: fix typo in DMA master configuration
+> > 
+> > Commit 4aa5f366431fe (avr32: at32ap700x: specify DMA src and dst
+> > masters) specified the masters for the ac97c playback device
+> > but incorrectly set them in the capture slave information rather
+> > than playback.
+> > 
+> > Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> > Cc: Dan Williams <dan.j.williams@intel.com>
+> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> > ---
+> >  arch/avr32/mach-at32ap/at32ap700x.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
+> > index 2747cde..4635c7c 100644
+> > --- a/arch/avr32/mach-at32ap/at32ap700x.c
+> > +++ b/arch/avr32/mach-at32ap/at32ap700x.c
+> > @@ -2058,8 +2058,8 @@ at32_add_device_ac97c(unsigned int id, struct ac97c_platform_data *data,
+> >  		tx_dws->reg_width = DW_DMA_SLAVE_WIDTH_16BIT;
+> >  		tx_dws->cfg_hi = DWC_CFGH_DST_PER(4);
+> >  		tx_dws->cfg_lo &= ~(DWC_CFGL_HS_DST_POL | DWC_CFGL_HS_SRC_POL);
+> > -		rx_dws->src_master = 0;
+> > -		rx_dws->dst_master = 1;
+> > +		tx_dws->src_master = 0;
+> > +		tx_dws->dst_master = 1;
+> >  	}
+> >  
+> >  	if (platform_device_add_data(pdev, data,
+> > -- 
+> > 1.7.4
+> > 
+Looks good to me,
 
-I don't think so.
+Acked-By: Vinod Koul <vinod.koul@intel.com>
 
-Splitting (or merging) a request and playing with sg lists inside a
-driver is a bad idea. Such should be done in the block layer.
+Dan, please put this into you next queue as well
 
-I still don't see why the block layer can't do that for the driver.
+-- 
+~Vinod
 
-I believe that the helper functions for such should not be added.
