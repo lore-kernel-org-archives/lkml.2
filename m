@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab1CPUQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 16:16:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45499 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab1CPUQr convert rfc822-to-8bit (ORCPT
+	id S1753977Ab1CPURa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 16:17:30 -0400
+Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:40762 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880Ab1CPURZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 16:16:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=g6ZOODJEVNqGfaTXQMvwABSZSn7vHtZYmLlDFdXLl7I3R8C4fI1e1p/t7a3FqHpuMX
-         0A260a4VoRYV5gcIw+FRrrSl6sE8MPVxbRSLbwcynvr0U9oMw4JlWOvI26JPwfzCB+ND
-         PrXNBryYSUkZLvWKq2klS6ODdOTg9pnA+oXHg=
+	Wed, 16 Mar 2011 16:17:25 -0400
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Mar 2011 16:17:24 EDT
+Message-ID: <4D8118F7.5060107@free.fr>
+Date: Wed, 16 Mar 2011 21:09:27 +0100
+From: Eric Vlette <eric.valette@free.fr>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1300301742.2203.1899.camel@twins>
-References: <20110217162327.434629380@chello.nl>
-	<20110217163234.823185666@chello.nl>
-	<20110310155032.GB32302@csn.ul.ie>
-	<1300301742.2203.1899.camel@twins>
-Date: Wed, 16 Mar 2011 21:15:58 +0100
-X-Google-Sender-Auth: aIdImDqikVbTm73WD0vh476BInQ
-Message-ID: <AANLkTimB4NFSPz5dSQCuEy3Rj5968n5k0=4c7tvhErE5@mail.gmail.com>
-Subject: Re: [PATCH 02/17] mm: mmu_gather rework
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Tony Luck <tony.luck@intel.com>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Typo in linux-2.6.38/arch/x86/kernel/entry_32.S
+References: <4D80B7EE.40706@Free.fr> <20110316195210.GA14675@home.goodmis.org>
+In-Reply-To: <20110316195210.GA14675@home.goodmis.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 19:55, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2011-03-10 at 15:50 +0000, Mel Gorman wrote:
->
->> > +static inline void
->> > +tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
->> >  {
+On 16/03/2011 20:52, Steven Rostedt wrote:
+> On Wed, Mar 16, 2011 at 02:15:26PM +0100, Eric Valette wrote:
+>> Hi,
 >>
->> checkpatch will bitch about line length.
->
-> I did a s/full_mm_flush/fullmm/ which puts the line length at 81. At
-> which point I'll ignore it ;-)
+>> Trying to compile 2.6.38, I found the follwoing bug. Compiler barks...
+> 
+> New compiler? (new binutils more likely)
 
-But what does "fullmm" mean here? Shouldn't that be documented.
-BTW, the function no longer returns a struct, but void, so the documentation
-should be updated for sure.
+Maybe. I use debian unstable + experimental and upgrade packages almost
+everyday...
 
-Gr{oetje,eeting}s,
+>>
+>> diff linux-2.6.38/arch/x86/kernel/entry_32.S
+>> linux-2.6.38/arch/x86/kernel/entry_32.S~
+>> 1416c1416
+>> < END(async_page_fault)
+>> ---
+>>> END(apf_page_fault)
 
-                        Geert
+But obviously the begin end is not symmetric as in other function.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>>
+> 
+> Ingo and Thomas,
+> 
+> IIRC, you have patches to fix these, right?
+> 
+> Thanks,
+> 
+> -- Steve
+> 
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
