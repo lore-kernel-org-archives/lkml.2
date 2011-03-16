@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab1CPC5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 22:57:23 -0400
-Received: from waste.org ([173.11.57.241]:33055 "EHLO waste.org"
+	id S1753572Ab1CPDEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 23:04:06 -0400
+Received: from waste.org ([173.11.57.241]:37735 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059Ab1CPC5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 22:57:22 -0400
-Subject: Re: [PATCH 0/8] mm/slub: Add SLUB_RANDOMIZE support
+	id S1753456Ab1CPDD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 23:03:59 -0400
+Subject: Re: [PATCH 2/8] drivers/char/random: Split out __get_random_int
 From: Matt Mackall <mpm@selenic.com>
 To: George Spelvin <linux@horizon.com>
 Cc: penberg@cs.helsinki.fi, herbert@gondor.hengli.com.au, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20110316022804.27676.qmail@science.horizon.com>
-References: <20110316022804.27676.qmail@science.horizon.com>
+In-Reply-To: <20110316022804.27682.qmail@science.horizon.com>
+References: <20110316022804.27682.qmail@science.horizon.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Mar 2011 21:57:18 -0500
-Message-ID: <1300244238.3128.420.camel@calx>
+Date: Tue, 15 Mar 2011 22:03:56 -0500
+Message-ID: <1300244636.3128.426.camel@calx>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -23,24 +23,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-13 at 20:20 -0400, George Spelvin wrote:
-> As a followup to the "[PATCH] Make /proc/slabinfo 0400" thread, this
-> is a patch series to randomize the order of object allocations within
-> a page.  It can be extended to SLAB and SLOB if desired.  Mostly it's
-> for benchmarking and discussion.
+On Sun, 2011-03-13 at 20:57 -0400, George Spelvin wrote:
+> The unlocked function is needed for following work.
+> No API change.
 
-I've spent a while thinking about this over the past few weeks, and I
-really don't think it's productive to try to randomize the allocators.
-It provides negligible defense and just makes life harder for kernel
-hackers.
+As I mentioned last time this code was discussed, we're already one
+crypto-savvy attacker away from this code becoming a security hole. 
+We really need to give it a serious rethink before we make it look
+anything like a general-use API. 
 
-(And you definitely can't randomize SLOB like this.)
-
-> Patches 1-4 and 8 touch drivers/char/random.c, to add support for
-> efficiently generating a series of uniform random integers in small
-> ranges.  Is this okay with Herbert & Matt?
-
-But I will look at these.
+And you've got it backwards here: __ should be the unlocked, dangerous
+version. But the locked version already has a __ because it's already
+dangerous.
 
 -- 
 Mathematics is the supreme nostalgia of our time.
