@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab1CPN7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:59:51 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:52902 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752604Ab1CPN7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 09:59:46 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Magnus Damm <damm@opensource.se>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] device: add dev_WARN_ONCE
-Date: Wed, 16 Mar 2011 15:59:35 +0200
-Message-Id: <1300283975-27556-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.4.rc2
-Organization: Texas Instruments\n
+	id S1753173Ab1CPN7s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:59:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36009 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748Ab1CPN7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 09:59:42 -0400
+Date: Wed, 16 Mar 2011 13:59:17 GMT
+From: tip-bot for Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, richard@rsk.demon.co.uk, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, richard@rsk.demon.co.uk,
+        mingo@elte.hu
+In-Reply-To: <1299512819.2039.5.camel@castor.rsk>
+References: <1299512819.2039.5.camel@castor.rsk>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Reorder & optimize perf_event_context to remove alignment padding on 64 bit builds
+Message-ID: <tip-ee643c4179c3a18b018de3a4c07a7bb3a75c8e4e@git.kernel.org>
+Git-Commit-ID: ee643c4179c3a18b018de3a4c07a7bb3a75c8e4e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Mar 2011 13:59:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it's quite useful to print the device name
-on the stack dump caused by WARN(), but
-there are other cases where we might want
-to use WARN_ONCE.
+Commit-ID:  ee643c4179c3a18b018de3a4c07a7bb3a75c8e4e
+Gitweb:     http://git.kernel.org/tip/ee643c4179c3a18b018de3a4c07a7bb3a75c8e4e
+Author:     Richard Kennedy <richard@rsk.demon.co.uk>
+AuthorDate: Mon, 7 Mar 2011 15:46:59 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 16 Mar 2011 14:04:14 +0100
 
-Introduce a helper similar to dev_WARN() for
-that case too.
+perf: Reorder & optimize perf_event_context to remove alignment padding on 64 bit builds
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Remove 8 bytes of alignment padding from perf_event_context on 64 bit
+builds which shrinks its size to 192 bytes allowing it to fit into one
+fewer cache lines and into a smaller slab.
+
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1299512819.2039.5.camel@castor.rsk>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/device.h |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ include/linux/perf_event.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 1bf5cf0..83870b8 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -739,13 +739,17 @@ do {						     \
- #endif
- 
- /*
-- * dev_WARN() acts like dev_printk(), but with the key difference
-+ * dev_WARN*() acts like dev_printk(), but with the key difference
-  * of using a WARN/WARN_ON to get the message out, including the
-  * file/line information and a backtrace.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 614615b..f495c01 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -878,8 +878,8 @@ enum perf_event_context_type {
+  * Used as a container for task events and CPU events as well:
   */
- #define dev_WARN(dev, format, arg...) \
- 	WARN(1, "Device: %s\n" format, dev_driver_string(dev), ## arg);
- 
-+#define dev_WARN_ONCE(dev, condition, format, arg...) \
-+	WARN_ONCE(condition, "Device %s\n" format, \
-+			dev_driver_string(dev), ## arg)
-+
- /* Create alias, so I can be autoloaded. */
- #define MODULE_ALIAS_CHARDEV(major,minor) \
- 	MODULE_ALIAS("char-major-" __stringify(major) "-" __stringify(minor))
--- 
-1.7.4.rc2
-
+ struct perf_event_context {
+-	enum perf_event_context_type	type;
+ 	struct pmu			*pmu;
++	enum perf_event_context_type	type;
+ 	/*
+ 	 * Protect the states of the events in the list,
+ 	 * nr_active, and the list:
