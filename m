@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab1CPO0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 10:26:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:32873 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab1CPO0H (ORCPT
+	id S1753124Ab1CPO14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 10:27:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35713 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab1CPO1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 10:26:07 -0400
-Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-In-Reply-To: <AANLkTiks-D6QfoXmsJv_VPh-v4kZfjR29c6gpG5bW_vk@mail.gmail.com>
-References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
-	 <20110311153134.GO1760@opensource.wolfsonmicro.com>
-	 <AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
-	 <20110314181531.GA32434@opensource.wolfsonmicro.com>
-	 <AANLkTi=W980GYHVxdYPV3xNKcdGpjAewKssoUc3ZoEDi@mail.gmail.com>
-	 <1300275412.3432.46.camel@odin>
-	 <AANLkTiks-D6QfoXmsJv_VPh-v4kZfjR29c6gpG5bW_vk@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Mar 2011 14:26:01 +0000
-Message-ID: <1300285561.3432.47.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Mar 2011 10:27:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=U75cWSIWA3MTuHt6HL2q/VUvx11XLZ12RizvLsi0Qg/ZuSVQQ7+QygKTNFs0mzYoud
+         Fw7hy+fQ3a/RPJt3+jUJzSlwkoJXC9bZMWaX3LlkT7On2QKsc26zZYfolnU1v2TN3SAN
+         kgKpcPer+GLYBvE+ECyhjLUu6+5GjLgvcoxjk=
+Date: Wed, 16 Mar 2011 15:26:03 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH V12 0/4] ptp: IEEE 1588 hardware clock support
+Message-ID: <20110316142603.GC12435@riccoc20.at.omicron.at>
+References: <cover.1298878618.git.richard.cochran@omicron.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1298878618.git.richard.cochran@omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-16 at 13:43 +0100, Linus Walleij wrote:
-> 2011/3/16 Liam Girdwood <lrg@slimlogic.co.uk>:
-> 
-> > Btw, you have a few other regulator patches recently in amongst MFD and
-> > ARM updates. I assume these will go via MFD ?
-> 
-> The TPS6105x stuff will go through MFD, hopefully.
-> 
-> There are two other AB8500 regulator patches which are ripe
-> for merge through the regulator tree right now, and that's the
-> ones with Subjects:
-> 
-> "[PATCH 1/4] regulator: add support for USB voltage regulator"
-> "[PATCH 3/4] regulator: initialization for ab8500 regulators"
-> 
-> Both have Mark's ACK, and I think they apply cleanly in
-> that order. If there are any problems, tell me and I'll respin.
- 
-Both look fine and have been applied.
+On Mon, Feb 28, 2011 at 08:57:03AM +0100, Richard Cochran wrote:
+> * PHC Patch ChangeLog
+> ** v12
+> *** gianfar_ptp
+>    - fixed up device tree
+>    - inlined the header file
+>    - use platform_ calls instead of deprecated of_ calls
+>    - removed static global single instance
+>    - removed John Stultz's ack from this patch
 
-Thanks
+@Thomas and John:
 
-Liam
+Can I get your acks on the remaining patches?
 
+Can this be merged for 2.6.39?
+
+Thanks,
+
+Richard
