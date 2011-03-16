@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab1CPAWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 20:22:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33237 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab1CPAWf (ORCPT
+	id S1757401Ab1CPAZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 20:25:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54465 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab1CPAZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 20:22:35 -0400
-Date: Tue, 15 Mar 2011 17:22:08 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: [PATCH -next] uml: fix tty interface warnings
-Message-Id: <20110315172208.82934b13.randy.dunlap@oracle.com>
-In-Reply-To: <20110315194543.a5d56c0c.sfr@canb.auug.org.au>
-References: <20110315194543.a5d56c0c.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 15 Mar 2011 20:25:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wuiaZMeO1asI5oYOiYfdxafrcYgfe8MFs0Az6u0fjN9uadkw1q5eROIaYEpUZRhrSH
+         fcGRrICW2H8hNRGLZmVMQ4ALM7DTdOavPqCoMVe8UErBBk+gd60zcvZGHzMlbQwTnihk
+         ++cp2uk5Pa12kLEfoGghIMCFf8WjfWDmwrfus=
+Subject: Re: [PATH 0/4] Memstick patches for 2.6.39
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, oakad@yahoo.com
+In-Reply-To: <20110315140402.334cc55c.akpm@linux-foundation.org>
+References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
+	 <1299947013.17988.0.camel@maxim-laptop> <1300219210.13493.0.camel@MAIN>
+	 <20110315140402.334cc55c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 02:25:09 +0200
+Message-ID: <1300235109.24919.6.camel@MAIN>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4D8002B5.001D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 2011-03-15 at 14:04 -0700, Andrew Morton wrote:
+> On Tue, 15 Mar 2011 22:00:10 +0200
+> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > On Sat, 2011-03-12 at 18:23 +0200, Maxim Levitsky wrote:
+> > > On Fri, 2011-03-04 at 06:16 +0200, Maxim Levitsky wrote:
+> > > > Hi,
+> > > > 
+> > > > This is a repost of my patches for 2.6.39 inclusion, which I hope not to
+> > > > miss this time.
+> > > > 
+> > > > I addressed the comments on the scatterlist issues.
+> > > > 
+> > > > Andrew, please note that my richoh memstick driver is standalone, unchanged from previos versions
+> > > > has many users which use the version I posted at ubuntu's Launchpad and happy with it.
+> > > > Please include it regardless of other patches.
+> > > > 
+> > > > The other half of my work is support for legacy memorysticks which consists of 2 patches,
+> > > > first that adds few functions to scatterlist.c, and the other patch that adds the driver.
+> > > > Driver is also stable and tested.
+> > > > 
+> > > > Best regards,
+> > > > 	Maxim Levitsky
+> > > 
+> > > 
+> > > Any update?
+> > 
+> > Any update?
+> > 
+> 
+> I'm hoping that Alex will soon have time to (re)review these patches.
+Andrew Morton, I am so glad to hear something, really was frustrated to
+see no responses, really thanks.
 
-Fix tty interface warnings in arch/um:
+Alex already did gave green light for these patches, and they are pretty
+much unchanged from that point, except trivial adoptions of changes in
+scatterlist code. 
 
-arch/um/drivers/stdio_console.c:122: warning: initialization from incompatible pointer type
-arch/um/drivers/ssl.c:139: warning: initialization from incompatible pointer type
+Both drivers I send are completely standalone, patch just adds the .c
+and .h file.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Jeff Dike <jdike@addtoit.com>
-Cc:	user-mode-linux-devel@lists.sourceforge.net
----
- arch/um/drivers/line.c        |    3 +--
- arch/um/include/shared/line.h |    2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+And I add few functions to scatterlist.c, which is more or less agreed.
+(If some of these functions don't fit there, I can just put in in the
+driver locally).
 
---- linux-next-20110315.orig/arch/um/drivers/line.c
-+++ linux-next-20110315/arch/um/drivers/line.c
-@@ -255,8 +255,7 @@ static const struct {
- 	{ KDSIGACCEPT, KERN_INFO,  "KDSIGACCEPT" },
- };
- 
--int line_ioctl(struct tty_struct *tty, struct file * file,
--	       unsigned int cmd, unsigned long arg)
-+int line_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
- {
- 	int ret;
- 	int i;
---- linux-next-20110315.orig/arch/um/include/shared/line.h
-+++ linux-next-20110315/arch/um/include/shared/line.h
-@@ -77,7 +77,7 @@ extern int line_chars_in_buffer(struct t
- extern void line_flush_buffer(struct tty_struct *tty);
- extern void line_flush_chars(struct tty_struct *tty);
- extern int line_write_room(struct tty_struct *tty);
--extern int line_ioctl(struct tty_struct *tty, struct file * file,
-+extern int line_ioctl(struct tty_struct *tty,
- 		      unsigned int cmd, unsigned long arg);
- extern void line_throttle(struct tty_struct *tty);
- extern void line_unthrottle(struct tty_struct *tty);
+It is very important to me to merge that code now.
+There is absolutely to risk of regressions, I don't touch any code
+there.
+
+Thanks in advance,
+
+Best regards,
+	Maxim Levitsky
+
+
