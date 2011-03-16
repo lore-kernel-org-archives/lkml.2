@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab1CPOKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 10:10:04 -0400
-Received: from verein.lst.de ([213.95.11.211]:55980 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870Ab1CPOJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 10:09:59 -0400
-Date: Wed, 16 Mar 2011 15:09:58 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@lst.de>, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org, stefanha@gmail.com, kwolf@redhat.com,
-        prerna@linux.vnet.ibm.com, aliguori@us.ibm.com
-Subject: Re: [PATCH, RFC] virtio_blk: add cache control support
-Message-ID: <20110316140958.GB21877@lst.de>
-References: <20110315141049.GA30627@lst.de> <20110315141644.GA30803@lst.de> <87y64fhfjw.fsf@rustcorp.com.au>
+	id S1750870Ab1CPOKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 10:10:53 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:10887 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752242Ab1CPOKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 10:10:45 -0400
+Message-ID: <4D80C47C.80300@draigBrady.com>
+Date: Wed, 16 Mar 2011 14:09:00 +0000
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y64fhfjw.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Aneesh Bhasin <contact.aneesh@gmail.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        linux-newbie <linux-newbie@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: smap output - unnamed entries and heap
+References: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com> <20110315091412.de6eb63c.rdunlap@xenotime.net> <AANLkTikU_kPOoNv6gJiPOsmrkFDddTLQ-0--wViYyFxj@mail.gmail.com>
+In-Reply-To: <AANLkTikU_kPOoNv6gJiPOsmrkFDddTLQ-0--wViYyFxj@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 02:39:39PM +1030, Rusty Russell wrote:
-> > +	if (strncmp(buf, "write through", sizeof("write through") - 1) == 0) {
-> > +		;
-> > +	} else if (strncmp(buf, "write back", sizeof("write back") - 1) == 0) {
-> 
->    Is there a reason we're not letting gcc and/or strcmp do the
-> optimization work here?
+On 16/03/11 05:19, Aneesh Bhasin wrote:
+> Also, is there a way in linux (without using
+> dedicated tools like valgrind), to see how much heap or anonymous
+> memory is attributed to code arising from a particular library/binary
 
-I'm happ to switch strcmp.
+You might find ps_mem.py useful.
+If parses smaps and reports RAM usage of a program
 
-> > +	vdev->config->set(vdev, offsetof(struct virtio_blk_config, features),
-> > +	                  &features, sizeof(features));
-> > +
-> > +	vdev->config->get(vdev, offsetof(struct virtio_blk_config, features),
-> > +			  &features2, sizeof(features2));
-> > +
-> > +	if ((features & VIRTIO_BLK_RT_WCE) !=
-> > +	    (features2 & VIRTIO_BLK_RT_WCE))
-> > +		return -EIO;
-> 
->    This seems like a debugging check you left in.  Or do you suspect
-> some issues?
+http://www.pixelbeat.org/scripts/ps_mem.py
 
-No, it's intentional.  config space writes can't return errors, so we need
-to check that the value has really changed.  I'll add a comment explaining it.
-
+cheers,
+Pádraig.
