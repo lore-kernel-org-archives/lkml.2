@@ -1,247 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab1CPV15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 17:27:57 -0400
-Received: from kroah.org ([198.145.64.141]:42593 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754251Ab1CPVLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 17:11:44 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Nathan Fontenot <nfont@austin.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 14/50] memory hotplug: Update phys_index to [start|end]_section_nr
-Date: Wed, 16 Mar 2011 14:10:52 -0700
-Message-Id: <1300309888-5028-14-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300309888-5028-1-git-send-email-gregkh@suse.de>
-References: <20110316205204.GA2686@kroah.com>
- <1300309888-5028-1-git-send-email-gregkh@suse.de>
+	id S1755614Ab1CPV2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 17:28:14 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:45143 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755609Ab1CPV2E convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 17:28:04 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Richard Weinberger <richard@nod.at>
+Cc: Arnd Bergmann <arnd@arndb.de>, Kees Cook <kees.cook@canonical.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        serge@hallyn.com, eparis@redhat.com, jmorris@namei.org,
+        eugeneteo@kernel.org, drosenberg@vsecurity.com
+References: <1300303907-22627-1-git-send-email-richard@nod.at>
+	<201103162152.49615.richard@nod.at> <m1lj0eepe4.fsf@fess.ebiederm.org>
+	<201103162223.30997.richard@nod.at>
+Date: Wed, 16 Mar 2011 14:27:57 -0700
+In-Reply-To: <201103162223.30997.richard@nod.at> (Richard Weinberger's message
+	of "Wed, 16 Mar 2011 22:23:30 +0100")
+Message-ID: <m1aagudaci.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX182kveviXA2k9FaaREO6hXWgpnvRXPP8ek=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Richard Weinberger <richard@nod.at>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nathan Fontenot <nfont@austin.ibm.com>
+Richard Weinberger <richard@nod.at> writes:
 
-Update the 'phys_index' property of a the memory_block struct to be
-called start_section_nr, and add a end_section_nr property.  The
-data tracked here is the same but the updated naming is more in line
-with what is stored here, namely the first and last section number
-that the memory block spans.
+> Am Mittwoch 16 März 2011, 22:17:39 schrieb Eric W. Biederman:
+>> Richard Weinberger <richard@nod.at> writes:
+>> 
+>> 2> Am Mittwoch 16 März 2011, 21:45:45 schrieb Arnd Bergmann:
+>> >> On Wednesday 16 March 2011 21:08:16 Richard Weinberger wrote:
+>> >> > Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
+>> >> > > On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
+>> >> > > > When containers like LXC are used a unprivileged and jailed
+>> >> > > > root user can still write to critical files in /proc/.
+>> >> > > > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
+>> >> > > > 
+>> >> > > > This new restricted attribute makes it possible to protect such
+>> >> > > > files. When restricted is set to true root needs CAP_SYS_ADMIN
+>> >> > > > to into the file.
+>> >> > > 
+>> >> > > I was thinking about this too. I'd prefer more fine-grained control
+>> >> > > in this area, since some sysctl entries aren't strictly controlled
+>> >> > > by CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking
+>> >> > > CAP_SYS_RAWIO).
+>> >> > > 
+>> >> > > How about this instead?
+>> >> > 
+>> >> > Good Idea.
+>> >> > May we should also consider a per-directory restriction.
+>> >> > Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
+>> >> > It would be much easier to set the protection on the parent directory
+>> >> > instead of protecting file by file...
+>> >> 
+>> >> How does this interact with the per-namespace sysctls that Eric
+>> >> Biederman added a few years ago?
+>> > 
+>> > Do you mean CONFIG_{UTS, UPC, USER, NET,}_NS?
+>> > 
+>> >> I had expected that any dangerous sysctl would not be visible in
+>> >> an unpriviledge container anyway.
+>> > 
+>> > No way.
+>> > That's why it's currently a very good idea to mount /proc/ read-only
+>> > into a container.
+>> 
+>> However it is in the architecture.  The problem is that the user
+>> namespace is not finished.  Once finished even root with all caps in a
+>> container will have no more permissions than the unprivileged user that
+>> created the user namespace.
+>> 
+>> Essentially the change is to make permissions checks become a comparison
+>> of the tuple (user_ns, uid) instead of just comparisons by uid.  If we
+>> want to fix permission problems with proc and containers please let's
+>> focus on the completing the user namespace.
+>
+> Ok. What's the current status, where can I help?
 
-The names presented to userspace remain the same, phys_index for
-start_section_nr and end_phys_index for end_section_nr, to avoid breaking
-anything in userspace.
+Serge has been getting some of the pieces together and merging them to
+Andrew.  I think he has the basic infrastructure in place.  Certainly he
+has the infrastructure in place for per user namespace capabilities.
 
-This also updates the node sysfs code to be aware of the new capability for
-a memory block to contain multiple memory sections and be aware of the memory
-block structure name changes (start_section_nr).  This requires an additional
-parameter to unregister_mem_sect_under_nodes so that we know which memory
-section of the memory block to unregister.
+What should be left is the mechanics of making certain every permission
+check in the kernel takes user namespaces properly into account.
 
-Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-Reviewed-by: Robin Holt <holt@sgi.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/base/memory.c  |   41 +++++++++++++++++++++++++++++++----------
- drivers/base/node.c    |   12 ++++++++----
- include/linux/memory.h |    3 ++-
- include/linux/node.h   |    6 ++++--
- 4 files changed, 45 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 0b70400..71b4a32 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -97,7 +97,7 @@ int register_memory(struct memory_block *memory)
- 	int error;
- 
- 	memory->sysdev.cls = &memory_sysdev_class;
--	memory->sysdev.id = memory->phys_index / sections_per_block;
-+	memory->sysdev.id = memory->start_section_nr / sections_per_block;
- 
- 	error = sysdev_register(&memory->sysdev);
- 	return error;
-@@ -138,12 +138,26 @@ static unsigned long get_memory_block_size(void)
-  * uses.
-  */
- 
--static ssize_t show_mem_phys_index(struct sys_device *dev,
-+static ssize_t show_mem_start_phys_index(struct sys_device *dev,
- 			struct sysdev_attribute *attr, char *buf)
- {
- 	struct memory_block *mem =
- 		container_of(dev, struct memory_block, sysdev);
--	return sprintf(buf, "%08lx\n", mem->phys_index / sections_per_block);
-+	unsigned long phys_index;
-+
-+	phys_index = mem->start_section_nr / sections_per_block;
-+	return sprintf(buf, "%08lx\n", phys_index);
-+}
-+
-+static ssize_t show_mem_end_phys_index(struct sys_device *dev,
-+			struct sysdev_attribute *attr, char *buf)
-+{
-+	struct memory_block *mem =
-+		container_of(dev, struct memory_block, sysdev);
-+	unsigned long phys_index;
-+
-+	phys_index = mem->end_section_nr / sections_per_block;
-+	return sprintf(buf, "%08lx\n", phys_index);
- }
- 
- /*
-@@ -158,7 +172,7 @@ static ssize_t show_mem_removable(struct sys_device *dev,
- 		container_of(dev, struct memory_block, sysdev);
- 
- 	for (i = 0; i < sections_per_block; i++) {
--		pfn = section_nr_to_pfn(mem->phys_index + i);
-+		pfn = section_nr_to_pfn(mem->start_section_nr + i);
- 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
- 	}
- 
-@@ -275,14 +289,15 @@ static int memory_block_change_state(struct memory_block *mem,
- 		mem->state = MEM_GOING_OFFLINE;
- 
- 	for (i = 0; i < sections_per_block; i++) {
--		ret = memory_section_action(mem->phys_index + i, to_state);
-+		ret = memory_section_action(mem->start_section_nr + i,
-+					    to_state);
- 		if (ret)
- 			break;
- 	}
- 
- 	if (ret) {
- 		for (i = 0; i < sections_per_block; i++)
--			memory_section_action(mem->phys_index + i,
-+			memory_section_action(mem->start_section_nr + i,
- 					      from_state_req);
- 
- 		mem->state = from_state_req;
-@@ -330,7 +345,8 @@ static ssize_t show_phys_device(struct sys_device *dev,
- 	return sprintf(buf, "%d\n", mem->phys_device);
- }
- 
--static SYSDEV_ATTR(phys_index, 0444, show_mem_phys_index, NULL);
-+static SYSDEV_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
-+static SYSDEV_ATTR(end_phys_index, 0444, show_mem_end_phys_index, NULL);
- static SYSDEV_ATTR(state, 0644, show_mem_state, store_mem_state);
- static SYSDEV_ATTR(phys_device, 0444, show_phys_device, NULL);
- static SYSDEV_ATTR(removable, 0444, show_mem_removable, NULL);
-@@ -522,17 +538,21 @@ static int init_memory_block(struct memory_block **memory,
- 		return -ENOMEM;
- 
- 	scn_nr = __section_nr(section);
--	mem->phys_index = base_memory_block_id(scn_nr) * sections_per_block;
-+	mem->start_section_nr =
-+			base_memory_block_id(scn_nr) * sections_per_block;
-+	mem->end_section_nr = mem->start_section_nr + sections_per_block - 1;
- 	mem->state = state;
- 	mem->section_count++;
- 	mutex_init(&mem->state_mutex);
--	start_pfn = section_nr_to_pfn(mem->phys_index);
-+	start_pfn = section_nr_to_pfn(mem->start_section_nr);
- 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
- 
- 	ret = register_memory(mem);
- 	if (!ret)
- 		ret = mem_create_simple_file(mem, phys_index);
- 	if (!ret)
-+		ret = mem_create_simple_file(mem, end_phys_index);
-+	if (!ret)
- 		ret = mem_create_simple_file(mem, state);
- 	if (!ret)
- 		ret = mem_create_simple_file(mem, phys_device);
-@@ -575,11 +595,12 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
- 
- 	mutex_lock(&mem_sysfs_mutex);
- 	mem = find_memory_block(section);
-+	unregister_mem_sect_under_nodes(mem, __section_nr(section));
- 
- 	mem->section_count--;
- 	if (mem->section_count == 0) {
--		unregister_mem_sect_under_nodes(mem);
- 		mem_remove_simple_file(mem, phys_index);
-+		mem_remove_simple_file(mem, end_phys_index);
- 		mem_remove_simple_file(mem, state);
- 		mem_remove_simple_file(mem, phys_device);
- 		mem_remove_simple_file(mem, removable);
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 36b4305..b3b72d6 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -375,8 +375,10 @@ int register_mem_sect_under_node(struct memory_block *mem_blk, int nid)
- 		return -EFAULT;
- 	if (!node_online(nid))
- 		return 0;
--	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
--	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
-+
-+	sect_start_pfn = section_nr_to_pfn(mem_blk->start_section_nr);
-+	sect_end_pfn = section_nr_to_pfn(mem_blk->end_section_nr);
-+	sect_end_pfn += PAGES_PER_SECTION - 1;
- 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
- 		int page_nid;
- 
-@@ -400,7 +402,8 @@ int register_mem_sect_under_node(struct memory_block *mem_blk, int nid)
- }
- 
- /* unregister memory section under all nodes that it spans */
--int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
-+int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
-+				    unsigned long phys_index)
- {
- 	NODEMASK_ALLOC(nodemask_t, unlinked_nodes, GFP_KERNEL);
- 	unsigned long pfn, sect_start_pfn, sect_end_pfn;
-@@ -412,7 +415,8 @@ int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
- 	if (!unlinked_nodes)
- 		return -ENOMEM;
- 	nodes_clear(*unlinked_nodes);
--	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
-+
-+	sect_start_pfn = section_nr_to_pfn(phys_index);
- 	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
- 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
- 		int nid;
-diff --git a/include/linux/memory.h b/include/linux/memory.h
-index 06c1fa0..e1e3b2b 100644
---- a/include/linux/memory.h
-+++ b/include/linux/memory.h
-@@ -21,7 +21,8 @@
- #include <linux/mutex.h>
- 
- struct memory_block {
--	unsigned long phys_index;
-+	unsigned long start_section_nr;
-+	unsigned long end_section_nr;
- 	unsigned long state;
- 	int section_count;
- 
-diff --git a/include/linux/node.h b/include/linux/node.h
-index 1466945..92370e2 100644
---- a/include/linux/node.h
-+++ b/include/linux/node.h
-@@ -39,7 +39,8 @@ extern int register_cpu_under_node(unsigned int cpu, unsigned int nid);
- extern int unregister_cpu_under_node(unsigned int cpu, unsigned int nid);
- extern int register_mem_sect_under_node(struct memory_block *mem_blk,
- 						int nid);
--extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk);
-+extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
-+					   unsigned long phys_index);
- 
- #ifdef CONFIG_HUGETLBFS
- extern void register_hugetlbfs_with_node(node_registration_func_t doregister,
-@@ -67,7 +68,8 @@ static inline int register_mem_sect_under_node(struct memory_block *mem_blk,
- {
- 	return 0;
- }
--static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
-+static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
-+						  unsigned long phys_index)
- {
- 	return 0;
- }
--- 
-1.7.4.1
-
+Eric
