@@ -1,122 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1CPNxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 09:53:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32946 "EHLO hera.kernel.org"
+	id S1752641Ab1CPNyB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 09:54:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33008 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752469Ab1CPNx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 09:53:28 -0400
-Date: Wed, 16 Mar 2011 13:52:56 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1752469Ab1CPNxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 09:53:54 -0400
+Date: Wed, 16 Mar 2011 13:53:22 GMT
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        fweisbec@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1300117230-8404-1-git-send-email-fweisbec@gmail.com>
+References: <1300117230-8404-1-git-send-email-fweisbec@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbol: Move sym_entry->skip to symbol->ignore
-Message-ID: <tip-171b3be9c42e97cd4530706654242f6a3efb6ac3@git.kernel.org>
-Git-Commit-ID: 171b3be9c42e97cd4530706654242f6a3efb6ac3
+Subject: [tip:perf/urgent] perf stat: Provide support for filters
+Message-ID: <tip-cfd748ae066e776d45bdce550b47cd00c67d55de@git.kernel.org>
+Git-Commit-ID: cfd748ae066e776d45bdce550b47cd00c67d55de
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Mar 2011 13:52:56 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Mar 2011 13:53:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  171b3be9c42e97cd4530706654242f6a3efb6ac3
-Gitweb:     http://git.kernel.org/tip/171b3be9c42e97cd4530706654242f6a3efb6ac3
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 11 Mar 2011 13:36:01 -0300
+Commit-ID:  cfd748ae066e776d45bdce550b47cd00c67d55de
+Gitweb:     http://git.kernel.org/tip/cfd748ae066e776d45bdce550b47cd00c67d55de
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Mon, 14 Mar 2011 16:40:30 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 11 Mar 2011 13:36:01 -0300
+CommitDate: Mon, 14 Mar 2011 13:37:52 -0300
 
-perf symbol: Move sym_entry->skip to symbol->ignore
+perf stat: Provide support for filters
 
-While going thru each of the sym_entry fields looking to reduce it to
-the set of entries needed when in an active symbols list, 'skip' should
-really be in symbol, as we set it when loading the symtab.
+Now the --filter option is usable with perf stat too.
 
-And the space used by the basic symbol allocation remains the same as
-we had 5 bytes of padding.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
+LKML-Reference: <1300117230-8404-1-git-send-email-fweisbec@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c |    4 ++--
- tools/perf/util/symbol.h |    5 +++++
- tools/perf/util/top.h    |    1 -
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ tools/perf/builtin-stat.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 31ea7a6..70f1075 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -676,7 +676,7 @@ static int symbol_filter(struct map *map, struct symbol *sym)
- 
- 	for (i = 0; skip_symbols[i]; i++) {
- 		if (!strcmp(skip_symbols[i], name)) {
--			syme->skip = 1;
-+			sym->ignore = true;
- 			break;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 21c0252..e2109f9 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -333,6 +333,12 @@ static int run_perf_stat(int argc __used, const char **argv)
  		}
  	}
-@@ -779,7 +779,7 @@ static void perf_event__process_sample(const union perf_event *event,
- 	}
  
- 	syme = symbol__priv(al.sym);
--	if (!syme->skip) {
-+	if (!al.sym->ignore) {
- 		struct perf_evsel *evsel;
- 
- 		evsel = perf_evlist__id2evsel(top.evlist, sample->id);
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index db39c0c..713b0b4 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -48,12 +48,17 @@ char *strxfrchar(char *s, char from, char to);
- 
- #define BUILD_ID_SIZE 20
- 
-+/** struct symbol - symtab entry
-+ *
-+ * @ignore - resolvable but tools ignore it (e.g. idle routines)
-+ */
- struct symbol {
- 	struct rb_node	rb_node;
- 	u64		start;
- 	u64		end;
- 	u16		namelen;
- 	u8		binding;
-+	bool		ignore;
- 	char		name[0];
- };
- 
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index ba111b2..bfbf95b 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -16,7 +16,6 @@ struct sym_entry {
- 	struct list_head	node;
- 	unsigned long		snap_count;
- 	double			weight;
--	int			skip;
- 	struct map		*map;
- 	unsigned long		count[0];
- };
++	if (perf_evlist__set_filters(evsel_list)) {
++		error("failed to set filter with %d (%s)\n", errno,
++			strerror(errno));
++		return -1;
++	}
++
+ 	/*
+ 	 * Enable counters and exec the command:
+ 	 */
+@@ -634,6 +640,8 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('e', "event", &evsel_list, "event",
+ 		     "event selector. use 'perf list' to list available events",
+ 		     parse_events),
++	OPT_CALLBACK(0, "filter", &evsel_list, "filter",
++		     "event filter", parse_filter),
+ 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
+ 		    "child tasks do not inherit counters"),
+ 	OPT_INTEGER('p', "pid", &target_pid,
