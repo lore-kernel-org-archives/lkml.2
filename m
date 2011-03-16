@@ -1,119 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab1CPSe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 14:34:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5328 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab1CPSeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 14:34:20 -0400
-Message-ID: <4D8102A9.9080202@redhat.com>
-Date: Wed, 16 Mar 2011 15:34:17 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: [ANNOUNCE] usbmon capture and parser script
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753111Ab1CPSfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 14:35:55 -0400
+Received: from science.horizon.com ([71.41.210.146]:33784 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750951Ab1CPSfu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 14:35:50 -0400
+Date: 16 Mar 2011 14:35:49 -0400
+Message-ID: <20110316183549.8468.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, mpm@selenic.com
+Subject: Re: [PATCH 2/8] drivers/char/random: Split out __get_random_int
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, penberg@cs.helsinki.fi
+In-Reply-To: <1300285445.3128.485.camel@calx>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While trying to debug some issues on a driver on Linux, and using a Beagleboard card as a
-hardware USB sniffer[1], I noticed the need of having a parser to work with
-the sniffer data. While wireshark provides a good way of looking into the info,
-most of the times, I just want to convert the data into something more concise
-that allows me to work on a char terminal, and that allows to use a device-specific 
-parser that translates an obscure log into device-specific register reads and writes.
+>From mpm@selenic.com Wed Mar 16 14:24:09 2011
+X-Virus-Scanned: Debian amavisd-new at waste.org
+Subject: Re: [PATCH 2/8] drivers/char/random: Split out __get_random_int
+From: Matt Mackall <mpm@selenic.com>
+To: George Spelvin <linux@horizon.com>
+Cc: herbert@gondor.apana.org.au, linux-kernel@vger.kernel.org, 
+ linux-mm@kvack.org, penberg@cs.helsinki.fi
+In-Reply-To: <20110316042452.21452.qmail@science.horizon.com>
+References: <20110316042452.21452.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Mar 2011 09:24:05 -0500
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 
-[1] using the code available at: http://beagleboard-usbsniffer.blogspot.com/
+On Wed, 2011-03-16, Mat Mackall wrote:
+> On Wed, 2011-03-16 at 00:24 -0400, George Spelvin wrote:
+>> If you like, and don't mind a few more bytes of per-cpu data, I'll
+>> happily replace the whole dubious thing with a cryptographically secure
+>> high-speed PRNG.  I'm thinking ChaCha/12, as Salsa20 was selected by
+>> eSTREAM and ChaCha is generally agreed to be stronger.  (It's had more
+>> review as the basis of the BLAKE hash function, a SHA-3 finalist.)
 
-So, I wrote a parser, in perl, called parse_tcpdump_log.pl. The current version
-is, in fact, more than a parser, as it allows both parsing a previously captured
-log, or to start a capture and parse data in real time. The script is available
-at the v4l-utils tree, on:
-	http://git.linuxtv.org/v4l-utils.git?a=blob;f=contrib/parse_tcpdump_log.pl;h=f90e981125462a58cadefa607cbff0ecb4b5ed45;hb=HEAD
+> Yes, let's do this. ChaCha looks like a fine candidate.
 
-At the output, each line is a URB data control transfer. The script groups the
-request and the complete URB's into one line, so, each line of the dump
-will correspond to a call to usb_control_msg().
+Just to confirm, it'll have basically the same structure as the
+current code: a global secret key, re-seeded every 300 seconds,
+with per-CPU state for generation.  I'll generate 16 words at a time,
+and use them until they're exhausted or the global secret changes.
 
-The output is:
+ChaCha uses a 256-bit (8-word) key.  It obviously shouldn't be shared
+with the weaker half-MD4 operation.  Should I generate both from the
+pool directly, or only take 8 words and use ChaCha to generate the
+half-MD4 key?  Cryptographically, either is fine; it's a matter of code
+simplicity vs. economical use of entropy.  Do you have a preference?
+(I slightly prefer #2.)
 
-        000000000 ms 000000 ms (000127 us EP=80) 80 06 00 01 00 00 28 00 >>> 12 01 00 02 00 00 00 40 40 20 13 65 10 01 00 01 02 01
-        000000000 ms 000000 ms (000002 us EP=80) 80 06 00 01 00 00 28 00 >>> 12 01 00 02 09 00 00 40 6b 1d 02 00 06 02 03 02 01 01
-        000000006 ms 000005 ms (000239 us EP=80) c0 00 00 00 45 00 03 00 <<< 00 00 10
-        000001006 ms 001000 ms (000112 us EP=80) c0 00 00 00 45 00 03 00 <<< 00 00 10
-        000001106 ms 000100 ms (000150 us EP=80) c0 00 00 00 45 00 03 00 <<< 00 00 10
+> I'd rather not add an frandom until after we get rid of the
+> random/urandom dichotomy.
 
-The provided info on each of the above lines are:
+Can you explain?  I think Ted's idea of the split was a good idea.
+It does require user education, but it's important user education.
+(I'm talking API level; I understand the internal plumbing is a bit
+of a mess.)
 
-       - Time from the script start;
-       - Time from the last transaction;
-       - Time between URB send request and URB response;
-       - Endpoint for the transfer;
-       - 8 bytes with the following URB fields:
-           - Type (1 byte);
-           - Request (1 byte);
-           - wValue (2 bytes);
-           - wIndex (2 bytes);
-           - wLength (2 bytes);
-       - URB direction:
-           >>> - To URB device
-           <<< - To host
-       - Optional data (length is given by wLength).
+> Think of it as a way of making forward progress. You should explicitly
+> call out 'hey, these bits are cleanups you should just merge' so they
+> don't get lost in the debate. Then the next time around, you have that
+> many fewer patches.
 
-It is also possible to produce a detailed log, when used with "--debug 2", like:
+True enough.  I'll submit the cleanups separately.  Appended is another
+cleanup I'm thinking of.  Okay with you?  (If so, I'll post it separately
+for wider review.)
 
-PARSED data:
-		RAW: ID => 0xffff880105a53f00
-		RAW: Payload => 00000000000000000000000000000000000200000000000012010002090000406b1d0200060203020101
-		RAW: Time => 1300309970.745112
-		RAW: Status => 0
-		RAW: ArrivalTime => 5584788795812741120.745112
-		RAW: URBLength => 18
-		RAW: TransferType => 2
-		RAW: Device => 1
-		RAW: Type => C
-		RAW: DataLength => 18
-		RAW: BusID => 1
-		RAW: HasData => present
-		RAW: Endpoint => 128
-		RAW: PayloadSize => 42
-		RAW: SetupRequest => not present
 
-There are a few other parsers at the v4l-utils git tree that can work with the 
-default output format and produce a device-specific output. For example, the 
-parser_em28xx.pl will produce a code that will look close to the C clauses
-inside the em28xx driver. So, for a real-time debug of the em28xx driver, for
-example, it will do:
+>From c7a878c143c7e63d2540785b76db54b2e8cf6d38 Mon Sep 17 00:00:00 2001
+From: George Spelvin <linux@horizon.com>
+Date: Wed, 16 Mar 2011 11:42:52 -0400
+Subject: [PATCH 1/9] drivers/char/random: Eliminate randomize_range().
 
-# ./parse_tcpdump_log.pl --pcap |./parse_em28xx.pl 
+This is only called in three places, each of which is trivially
+replaced by a call to get_random_int() followed by a bit mask.
+(It's to randomize the start of the brk() range by 0..32M bytes,
+0..8K pages, which is 13 bits of entropy.)
 
-em28xx_read_reg(dev, EM28XX_R26_COMPR);		/* read 0x0c */
-em28xx_write_reg(dev, EM28XX_R26_COMPR, 0x0c);
-i2c_master_send(0xb8>>1, { 02 00 }, 0x02);
-i2c_master_send(0xb8>>1, { 00 00 }, 0x02);
-i2c_master_send(0xb8>>1, { 03 }, 0x01);
-i2c_master_recv(0xb8>>1, &buf, 0x01); /* 6f */
-em28xx_read_reg(dev, 0x05);		/* read 0x00 */
-i2c_master_send(0xb8>>1, { 03 6f }, 0x02);
-em28xx_write_ac97(dev, AC97_MASTER_VOL, 0x8000);
-em28xx_write_ac97(dev, AC97_LINE_LEVEL_VOL, 0x8000);
-em28xx_write_ac97(dev, AC97_MASTER_MONO_VOL, 0x8000);
-em28xx_write_ac97(dev, AC97_LFE_MASTER_VOL, 0x8000);
+There is a slight behaviour change, as randomize_range() used PAGE_ALIGN()
+which rounds up, but it appears that rounding down was the intention.
+---
+ arch/arm/kernel/process.c    |    3 +--
+ arch/x86/kernel/process.c    |    3 +--
+ arch/x86/kernel/sys_x86_64.c |    7 ++-----
+ drivers/char/random.c        |   19 -------------------
+ include/linux/random.h       |    1 -
+ 5 files changed, 4 insertions(+), 29 deletions(-)
 
-I wrote a short summary on how to use it at:
-	http://linuxtv.org/wiki/index.php/Bus_snooping/sniffing#Snooping_Procedures:
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 94bbedb..ffb7c87 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -479,8 +479,7 @@ unsigned long get_wchan(struct task_struct *p)
+ 
+ unsigned long arch_randomize_brk(struct mm_struct *mm)
+ {
+-	unsigned long range_end = mm->brk + 0x02000000;
+-	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
++	return mm->brk + (get_random_int() & 0x01ffffff & PAGE_MASK);
+ }
+ 
+ #ifdef CONFIG_MMU
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index ff45541..dcec1a1 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -677,7 +677,6 @@ unsigned long arch_align_stack(unsigned long sp)
+ 
+ unsigned long arch_randomize_brk(struct mm_struct *mm)
+ {
+-	unsigned long range_end = mm->brk + 0x02000000;
+-	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
++	return mm->brk + (get_random_int() & 0x01ffffff & PAGE_MASK);
+ }
+ 
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index ff14a50..0f874f7 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -46,11 +46,8 @@ static void find_start_end(unsigned long flags, unsigned long *begin,
+ 		   of playground for now. -AK */
+ 		*begin = 0x40000000;
+ 		*end = 0x80000000;
+-		if (current->flags & PF_RANDOMIZE) {
+-			new_begin = randomize_range(*begin, *begin + 0x02000000, 0);
+-			if (new_begin)
+-				*begin = new_begin;
+-		}
++		if (current->flags & PF_RANDOMIZE)
++			*begin += (get_random_int() & 0x01ffffff & PAGE_MASK);
+ 	} else {
+ 		*begin = TASK_UNMAPPED_BASE;
+ 		*end = TASK_SIZE;
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 72a4fcb..cea9ddc 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1639,22 +1639,3 @@ unsigned int get_random_int(void)
+ 
+ 	return ret;
+ }
+-
+-/*
+- * randomize_range() returns a start address such that
+- *
+- *    [...... <range> .....]
+- *  start                  end
+- *
+- * a <range> with size "len" starting at the return value is inside in the
+- * area defined by [start, end], but is otherwise randomized.
+- */
+-unsigned long
+-randomize_range(unsigned long start, unsigned long end, unsigned long len)
+-{
+-	unsigned long range = end - len - start;
+-
+-	if (end <= start + len)
+-		return 0;
+-	return PAGE_ALIGN(get_random_int() % range + start);
+-}
+diff --git a/include/linux/random.h b/include/linux/random.h
+index fb7ab9d..0e17434 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -73,7 +73,6 @@ extern const struct file_operations random_fops, urandom_fops;
+ #endif
+ 
+ unsigned int get_random_int(void);
+-unsigned long randomize_range(unsigned long start, unsigned long end, unsigned long len);
+ 
+ u32 random32(void);
+ void srandom32(u32 seed);
+-- 
+1.7.4.1
 
-The script also accepts the "--man" and "--help" parameters to produce a manpage
-or a help.
-
-In summary, I hope that this script will ease USB device driver debug and development.
-
-Feedback, fixes, etc are welcome.
-
-Have fun,
-Mauro.
