@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab1CPBVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Mar 2011 21:21:18 -0400
-Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:33977 "EHLO
-	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750975Ab1CPBVO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Mar 2011 21:21:14 -0400
-Message-ID: <4D801078.5090104@lougher.demon.co.uk>
-Date: Wed, 16 Mar 2011 01:20:56 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Squashfs: handle corruption of directory structure
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751433Ab1CPBXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Mar 2011 21:23:52 -0400
+Received: from mx6.orcon.net.nz ([219.88.242.56]:45464 "EHLO mx6.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768Ab1CPBXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Mar 2011 21:23:49 -0400
+Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        warns@pre-sense.de
+Message-Id: <E0782A6F-B851-4A11-B740-446EF7941B7C@orcon.net.nz>
+From: Michael Cree <mcree@orcon.net.nz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <AANLkTimRDH4S1QMN6f4AfKOe6ipPK6jm+g91nuBJYQJa@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: Alpha no longer recognises certain partition tables (v2.6.38)
+Date: Wed, 16 Mar 2011 14:23:43 +1300
+References: <4D7F2C11.907@orcon.net.nz> <AANLkTimRDH4S1QMN6f4AfKOe6ipPK6jm+g91nuBJYQJa@mail.gmail.com>
+X-Mailer: Apple Mail (2.936)
+X-DSPAM-Check: by mx6.orcon.net.nz on Wed, 16 Mar 2011 14:23:45 +1300
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Wed Mar 16 14:23:45 2011
+X-DSPAM-Confidence: 0.7007
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16/03/2011, at 4:10 AM, Linus Torvalds wrote:
+> On Tue, Mar 15, 2011 at 2:06 AM, Michael Cree <mcree@orcon.net.nz>  
+> wrote:
+>> v2.6.38 boot reports it can't recognise the partition table on the  
+>> system
+>> disk on my Alpha and panics when it can't find the root device.
+>>
+>> It worked at v2.6.38-rc7.
+>>
+>> While I haven't done a bisect to fully verify I nevertheless  
+>> suggest the
+>> following patch as the likely cause:
+>>
+>> 1eafbfe Fix corrupted OSF partition table parsing
+>
+> That sounds likely. What does something like the attached do? In
+> particular, what's the printed-out value of the OSF npartitions thing?
+>
+> Also, it's quite possible that we should raise the value of
+> MAX_OSF_PARTITIONS. If I checked it right, the d_partitions[] array
+> starts at byte offset 148 in the sector, and it's 16 bytes in size, so
+> there _could_ be up to 22 partitions there. The fact that we had
+> defined the 'struct disklabel' to only contain 8 partitions is I think
+> from documentation, not a technical "there can be only eight".
 
-Handle the rare case where a directory metadata block is uncompressed and
-corrupted, leading to a kernel oops in directory scanning (memcpy).
-Normally corruption is detected at the decompression stage and dealt with
-then, however, this will not happen if:
+I am not able to run the patch until much later today but I think the  
+number of partitions is the issue.  I have three disks, all with bsd  
+type partition tables, and the kernel sees the partition tables of two  
+of them (they both have fewer than five partitions) but the system  
+disk has about nine (or it might be ten) partitions.  I didn't know  
+the limit when creating them some time ago and assumed fdisk would  
+flag an error if the number of permitted partitions was exceeded!   
+What's more it worked with recent kernels until now.
 
-- metadata isn't compressed (users can optionally request no metadata
-   compression), or
-- the compressed metadata block was larger than the original, in which
-   case the uncompressed version was used, or
-- the data was corrupt after decompression
+I'll give the patch a whirl later (my) today.
 
-This patch fixes this by adding some sanity checks against known maximum
-values.
-
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
----
-  fs/squashfs/dir.c   |    9 +++++++++
-  fs/squashfs/namei.c |   12 ++++++++++++
-  2 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/fs/squashfs/dir.c b/fs/squashfs/dir.c
-index 0dc340a..3f79cd1 100644
---- a/fs/squashfs/dir.c
-+++ b/fs/squashfs/dir.c
-@@ -172,6 +172,11 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
-  		length += sizeof(dirh);
-
-  		dir_count = le32_to_cpu(dirh.count) + 1;
-+
-+		/* dir_count should never be larger than 256 */
-+		if (dir_count > 256)
-+			goto failed_read;
-+
-  		while (dir_count--) {
-  			/*
-  			 * Read directory entry.
-@@ -183,6 +188,10 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
-
-  			size = le16_to_cpu(dire->size) + 1;
-
-+			/* size should never be larger than SQUASHFS_NAME_LEN */
-+			if (size > SQUASHFS_NAME_LEN)
-+				goto failed_read;
-+
-  			err = squashfs_read_metadata(inode->i_sb, dire->name,
-  					&block, &offset, size);
-  			if (err < 0)
-diff --git a/fs/squashfs/namei.c b/fs/squashfs/namei.c
-index 7a9464d..5d922a6 100644
---- a/fs/squashfs/namei.c
-+++ b/fs/squashfs/namei.c
-@@ -176,6 +176,11 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
-  		length += sizeof(dirh);
-
-  		dir_count = le32_to_cpu(dirh.count) + 1;
-+
-+		/* dir_count should never be larger than 256 */
-+		if (dir_count > 256)
-+			goto data_error;
-+
-  		while (dir_count--) {
-  			/*
-  			 * Read directory entry.
-@@ -187,6 +192,10 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
-
-  			size = le16_to_cpu(dire->size) + 1;
-
-+			/* size should never be larger than SQUASHFS_NAME_LEN */
-+			if (size > SQUASHFS_NAME_LEN)
-+				goto data_error;
-+
-  			err = squashfs_read_metadata(dir->i_sb, dire->name,
-  					&block, &offset, size);
-  			if (err < 0)
-@@ -228,6 +237,9 @@ exit_lookup:
-  	d_add(dentry, inode);
-  	return ERR_PTR(0);
-
-+data_error:
-+	err = -EIO;
-+
-  read_failure:
-  	ERROR("Unable to read directory block [%llx:%x]\n",
-  		squashfs_i(dir)->start + msblk->directory_table,
--- 
-1.7.1
+Cheers
+Michael.
 
