@@ -1,139 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab1CPSom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 14:44:42 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:49539 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516Ab1CPSoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 14:44:38 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon changes for 2.6.39
-Date: Wed, 16 Mar 2011 11:49:38 -0700
-Message-ID: <1300301378-30788-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1753588Ab1CPSrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 14:47:47 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:45250 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab1CPSrj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 14:47:39 -0400
+Date: Wed, 16 Mar 2011 19:47:31 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 2.6.39
+Message-ID: <alpine.DEB.2.00.1103161945360.19171@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-Please pull hwmon subsystem changes for Linux 2.6.39 from:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
-
-Added support for several new devices this time around. Most notable addition
-is probably the PMBus driver, which provides support for a whole class of devices.
-
-Thanks,
-Guenter Roeck
-
-------
+	Hi Linus,
 
 The following changes since commit 521cb40b0c44418a4fd36dc633f575813d59a43d:
-
-  Linux 2.6.38 (2011-03-14 18:20:32 -0700)
+  Linus Torvalds (1):
+        Linux 2.6.38
 
 are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
-Guenter Roeck (29):
-      hwmon: Add support for Lineage Compact Power Line PEM devices
-      hwmon: (lm85) Use boolean to determine if VID5 is configured
-      hwmon: (lm85) Use function to remove sysfs attribute files
-      hwmon: (lm85) Do not update hysteresis and temp_auto_off if auto_temp_min is changed
-      hwmon: (lm85) Add support for EMC6D103S
-      hwmon: PMBus device driver
-      hwmon: PMBus driver documentation
-      hwmon: (pmbus) Add support for Maxim MAX8688
-      hwmon: (pmbus) Add support for Maxim MAX16064
-      hwmon: (pmbus) Add support for Maxim MAX34440/MAX34441
-      hwmon: (pmbus) More stringent checking of VOUT_MODE register
-      hwmon: (pmbus) Improve support for paged fans
-      hwmon: (pmbus) Improve support for paged temperature sensors
-      hwmon: (pmbus) Continuously update temperature limit registers
-      hwmon: (pmbus) Fix LINEAR16 data format
-      hwmon: Add tachometer pulses per fan revolution to sysfs ABI
-      hwmon: (w83627ehf) Unify temperature register access, and use strict string conversions
-      hwmon: (w83627ehf) Fixed most checkpatch warnings and errors
-      hwmon: (w83627ehf) Optimize multi-bank register access
-      hwmon: (w83627ehf) Improve support for W83667HG-B
-      hwmon: (w83627ehf) Remove references to datasheets which no longer exist
-      hwmon: (w83627ehf) Convert register arrays to 16 bit, and convert access to pointers
-      hwmon: (w83627ehf) Permit enabling SmartFan IV mode if configured at startup
-      hwmon: (w83627ehf) Add support for Nuvoton NCT6775F and NCT6776F
-      hwmon: (w83627ehf) Use 16 bit fan count registers if supported
-      hwmon: (w83627ehf) Store rpm instead of raw fan speed data
-      hwmon: (w83627ehf) Update Kconfig for W83677HG-B, NCT6775F and NCT6776F
-      hwmon: (w83627ehf) Display correct temperature sensor labels for systems with NCT6775F
-      hwmon: (lineage-pem): Fix in1 voltage alarm sysfs attributes
+  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
-Hans de Goede (10):
-      hwmon/f71882fg: Fix temp1 sensor type reporting
-      hwmon/f71882fg: Only allow negative auto point temps if fan_neg_temp is enabled
-      hwmon/f71882fg: Make creation of in sysfs attributes more generic
-      hwmon/f71882fg: Make number of temps configurable
-      hwmon/f71882fg: Remove bogus temp2_type for certain models
-      hwmon/f71882fg: Separate temp beep sysfs attr from the other temp sysfs attr
-      hwmon/f71882fg: Break out test for auto pwm's controlled by digital readings
-      hwmon/f71882fg: Add support for f71889ed
-      hwmon/f71882fg: Add support for f71869f and f71869e
-      hwmon/f71882fg: Add support for f71808e
+Andreas Schwab (1):
+      m68k: Allow all kernel traps to be handled via exception fixups
 
-Ian Dobson (1):
-      hwmon: (w83627ehf) Add fan debounce support for NCT6775F and NCT6776F
+Geert Uytterhoeven (3):
+      m68k/amiga: Reclaim Chip RAM for PPC exception handlers
+      m68k: Kconfig - Remove unneeded "default n"
+      m68k/block: amiflop - Remove superfluous amiga_chip_alloc() cast
 
-Mark Brown (1):
-      hwmon: (lis3lv02d) Convert SPI to dev_pm_ops
+Milan Jurik (1):
+      m68k/atari: ARAnyM - Add support for network access
 
-per.dalen@appeartv.com (1):
-      hwmon: Add support for LTC4151
+Petr Stehlik (1):
+      m68k/atari: Initial ARAnyM support
 
-stigge@antcom.de (2):
-      hwmon: Driver for Maxim MAX6639
-      hwmon: (max6639) Set reasonable default PWM frequency
+Roman Zippel (4):
+      m68k: Add helper function handle_kernel_fault()
+      m68k: Use base_trap_init() to initialize vectors
+      m68k/atari: ARAnyM - Add support for block access
+      m68k/atari: ARAnyM - Add support for console access
 
- Documentation/hwmon/f71882fg        |   16 +-
- Documentation/hwmon/lineage-pem     |   77 ++
- Documentation/hwmon/lm85            |   12 +-
- Documentation/hwmon/ltc4151         |   47 +
- Documentation/hwmon/max6639         |   49 +
- Documentation/hwmon/pmbus           |  215 +++++
- Documentation/hwmon/sysfs-interface |   11 +
- Documentation/hwmon/w83627ehf       |   60 +-
- drivers/hwmon/Kconfig               |   92 ++-
- drivers/hwmon/Makefile              |   10 +
- drivers/hwmon/f71882fg.c            |  522 ++++++++----
- drivers/hwmon/lineage-pem.c         |  586 +++++++++++++
- drivers/hwmon/lis3lv02d_spi.c       |   19 +-
- drivers/hwmon/lm85.c                |  136 ++--
- drivers/hwmon/ltc4151.c             |  256 ++++++
- drivers/hwmon/max16064.c            |   91 ++
- drivers/hwmon/max34440.c            |  199 +++++
- drivers/hwmon/max6639.c             |  653 ++++++++++++++
- drivers/hwmon/max8688.c             |  158 ++++
- drivers/hwmon/pmbus.c               |  203 +++++
- drivers/hwmon/pmbus.h               |  313 +++++++
- drivers/hwmon/pmbus_core.c          | 1658 +++++++++++++++++++++++++++++++++++
- drivers/hwmon/w83627ehf.c           | 1351 +++++++++++++++++++++-------
- include/linux/i2c/max6639.h         |   14 +
- include/linux/i2c/pmbus.h           |   45 +
- 25 files changed, 6208 insertions(+), 585 deletions(-)
- create mode 100644 Documentation/hwmon/lineage-pem
- create mode 100644 Documentation/hwmon/ltc4151
- create mode 100644 Documentation/hwmon/max6639
- create mode 100644 Documentation/hwmon/pmbus
- create mode 100644 drivers/hwmon/lineage-pem.c
- create mode 100644 drivers/hwmon/ltc4151.c
- create mode 100644 drivers/hwmon/max16064.c
- create mode 100644 drivers/hwmon/max34440.c
- create mode 100644 drivers/hwmon/max6639.c
- create mode 100644 drivers/hwmon/max8688.c
- create mode 100644 drivers/hwmon/pmbus.c
- create mode 100644 drivers/hwmon/pmbus.h
- create mode 100644 drivers/hwmon/pmbus_core.c
- create mode 100644 include/linux/i2c/max6639.h
- create mode 100644 include/linux/i2c/pmbus.h
+matt mooney (1):
+      m68k: Makefiles - Change to new flags variables
+
+ arch/m68k/Kconfig                 |   33 +++++-
+ arch/m68k/Makefile                |    1 +
+ arch/m68k/amiga/chipram.c         |    4 -
+ arch/m68k/emu/Makefile            |    9 ++
+ arch/m68k/emu/natfeat.c           |   78 +++++++++++
+ arch/m68k/emu/nfblock.c           |  195 ++++++++++++++++++++++++++
+ arch/m68k/emu/nfcon.c             |  162 ++++++++++++++++++++++
+ arch/m68k/emu/nfeth.c             |  270 +++++++++++++++++++++++++++++++++++++
+ arch/m68k/include/asm/natfeat.h   |   22 +++
+ arch/m68k/include/asm/processor.h |    2 +
+ arch/m68k/kernel/setup.c          |    5 +
+ arch/m68k/kernel/signal.c         |   24 +++-
+ arch/m68k/kernel/traps.c          |   20 ++-
+ arch/m68k/math-emu/Makefile       |    4 +-
+ arch/m68k/mm/fault.c              |   16 +--
+ drivers/block/amiflop.c           |    4 +-
+ 16 files changed, 815 insertions(+), 34 deletions(-)
+ create mode 100644 arch/m68k/emu/Makefile
+ create mode 100644 arch/m68k/emu/natfeat.c
+ create mode 100644 arch/m68k/emu/nfblock.c
+ create mode 100644 arch/m68k/emu/nfcon.c
+ create mode 100644 arch/m68k/emu/nfeth.c
+ create mode 100644 arch/m68k/include/asm/natfeat.h
+
+Thanks for pulling!
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
