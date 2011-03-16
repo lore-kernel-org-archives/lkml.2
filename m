@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab1CPPFE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 11:05:04 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:41199
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752446Ab1CPPFA (ORCPT
+	id S1753232Ab1CPPGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 11:06:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45956 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab1CPPGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 11:05:00 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LI5OK2-02-MF9-02
-X-M-MSG: 
-Date: Wed, 16 Mar 2011 16:04:51 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] oprofile: Allow setting EDGE/INV/CMASK for Intel
- counter events
-Message-ID: <20110316150450.GO31407@erda.amd.com>
-References: <1299870748-13319-1-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1299870748-13319-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	Wed, 16 Mar 2011 11:06:23 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=Upx0gwFd4kMA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=d1NOsjx2Xrt1CVOz9scA:9 a=SIN_Lqn2qpi7XKQQE0kA:7 a=-kzIhit1ZWzR29AU4pwPG7lBXe8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: jump label: mips alignment required?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Jason Baron <jbaron@redhat.com>, ddaney@caviumnetworks.com,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20110316145739.GA18787@linux-mips.org>
+References: <20110314150219.GA2568@redhat.com>
+	 <20110316145739.GA18787@linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 16 Mar 2011 11:06:20 -0400
+Message-ID: <1300287980.16880.37.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.03.11 14:12:28, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Wed, 2011-03-16 at 15:57 +0100, Ralf Baechle wrote:
+> On Mon, Mar 14, 2011 at 11:02:20AM -0400, Jason Baron wrote:
 > 
-> For some performance events it's useful to set the EDGE and INV
-> bits and the CMASK mask in the counter control register. The list
-> of predefined events Intel releases for each CPU has some events which
-> require these settings to get more "natural" to use higher level events.
+> > (off-list)
+
+Added LKML back, as well as others. There was really no reason to take
+this off list.
+
 > 
-> oprofile currently doesn't allow this.
+> Adding Steve Rosted again.
 > 
-> This patch adds new extra configuration fields for them, so that
-> they can be specified in oprofilefs.
+> > After last weeks discussion, I'm going to be re-posting the jump label
+> > series. I'm adding the following to the x86 code. If you want to add
+> > something similar for mips, I can include it in my posting (as coming
+> > from you).
+> > 
+> > thanks,
+> > 
+> > -Jason
+> > 
+> > diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+> > index f217cee..a32b18c 100644
+> > --- a/arch/x86/include/asm/jump_label.h
+> > +++ b/arch/x86/include/asm/jump_label.h
+> > @@ -16,6 +16,7 @@ static __always_inline bool arch_static_branch(struct jump_label_key *key)
+> >  	asm goto("1:"
+> >  		JUMP_LABEL_INITIAL_NOP
+> >  		".pushsection __jump_table,  \"aw\" \n\t"
+> > +		_ASM_ALIGN "\n\t"
+> >  		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+> >  		".popsection \n\t"
+> >  		: :  "i" (key) : : l_yes);
 > 
-> An updated oprofile daemon can then make use of this to set them.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/oprofile/nmi_int.c    |    4 ++++
->  arch/x86/oprofile/op_counter.h |    1 +
->  2 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-> index e2b7b0c..bace252 100644
-> --- a/arch/x86/oprofile/nmi_int.c
-> +++ b/arch/x86/oprofile/nmi_int.c
-> @@ -49,6 +49,9 @@ u64 op_x86_get_ctrl(struct op_x86_model_spec const *model,
->  	val |= counter_config->user ? ARCH_PERFMON_EVENTSEL_USR : 0;
->  	val |= counter_config->kernel ? ARCH_PERFMON_EVENTSEL_OS : 0;
->  	val |= (counter_config->unit_mask & 0xFF) << 8;
-> +	val |= counter_config->extra & (ARCH_PERFMON_EVENTSEL_INV|
-> +					ARCH_PERFMON_EVENTSEL_EDGE|
-> +					ARCH_PERFMON_EVENTSEL_CMASK);
+> I don't think we'll need something like this on MIPS.  Gas is smart enough to
+> set the __jump_table's section automatically to 64-bit if _ASM_PTR is emitting
+> 64-bit pointers.  So no alignment magic needed nor do I think x86 would need this
+> to work correct on both i386 and x86_64.
 
-I would like to write the actual value back so that userland may read
-it:
+Yeah, I still have strong doubts that the linker would add holes into a
+word aligned section. Such a linker IMNSHO would be broken. Why waste
+space?
 
-	counter_config->extra &= (ARCH_PERFMON_EVENTSEL_INV|
-                         ARCH_PERFMON_EVENTSEL_EDGE|
-                         ARCH_PERFMON_EVENTSEL_CMASK);
-	val |= counter_config->extra;
+OK, Jason, I think it's fine if you repost the patches. You can keep the
+alignment in x86_64 just to be paranoid^Wsafe.
 
-The value will not be updated emmediately but at least after profiling
-was started.
+-- Steve
 
-As an alternative, maybe we better put this extra bits in the
-unit_mask, e.g. in bits [31:16] of the unit mask for bits [31:16] of
-PerfEvtSel? Then, we simply could use the current userland to set it
-up.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
