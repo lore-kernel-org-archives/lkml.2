@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab1CPQOf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 12:14:35 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:9604 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1CPQO2 (ORCPT
+	id S1752150Ab1CPQOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 12:14:50 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:54017 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752092Ab1CPQOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 12:14:28 -0400
-X-IronPort-AV: E=Sophos;i="4.63,195,1299456000"; 
-   d="scan'208";a="4823513"
-Date: Wed, 16 Mar 2011 16:13:57 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <ijc@hellion.org.uk>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Allen Kay <allen.m.kay@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [RFC PATCH] set current_state to D0 in
- register_slot
-In-Reply-To: <20110316083205.405910ac@jbarnes-desktop>
-Message-ID: <alpine.DEB.2.00.1103161610110.3382@kaball-desktop>
-References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop> <20110304104251.45b257c4@jbarnes-desktop> <1299595858.17339.512.camel@zakaz.uk.xensource.com> <1299601032.17339.525.camel@zakaz.uk.xensource.com> <alpine.DEB.2.00.1103161230570.3382@kaball-desktop>
- <20110316083205.405910ac@jbarnes-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 16 Mar 2011 12:14:43 -0400
+Date: Wed, 16 Mar 2011 17:08:04 +0100
+From: Nicolas Kaiser <nikai@nikai.net>
+To: David Airlie <airlied@linux.ie>
+Cc: Jerome Glisse <jglisse@redhat.com>, Alex Deucher <alexdeucher@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] radeon: merge list_del()/list_add_tail() to
+ list_move_tail()
+Message-ID: <20110316170804.4fd96754@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Mar 2011, Jesse Barnes wrote:
-> On Wed, 16 Mar 2011 12:34:10 +0000
-> Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> 
-> > Jesse,
-> > do you have any comments on the following patch?
-> > Also, are you OK with taking "set current_state to D0 in register_slot"
-> > in your tree? Otherwise should I send a pull request to Linus with the
-> > patch and your ack?
-> 
-> Yeah, I think the patch is ok, I can send it to Linus either as part of
-> my 2.6.39 pull req (though it's probably too late for that) or in my
-> next -fixes pull.
+Merge list_del() + list_add_tail() to list_move_tail().
 
-Great, thanks!
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/gpu/drm/radeon/radeon_fence.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-Just to be clear there are two different patches, the first one is "set
-current_state to D0 in register_slot":
-
-https://lkml.org/lkml/2011/2/28/296
-
-the second one by Ian Campbell is "acpiphp: assume device is in state D0
-after powering on a slot.":
-
-https://lkml.org/lkml/2011/3/8/212
+diff --git a/drivers/gpu/drm/radeon/radeon_fence.c b/drivers/gpu/drm/radeon/radeon_fence.c
+index 171b0b2..9e59868 100644
+--- a/drivers/gpu/drm/radeon/radeon_fence.c
++++ b/drivers/gpu/drm/radeon/radeon_fence.c
+@@ -60,8 +60,7 @@ int radeon_fence_emit(struct radeon_device *rdev, struct radeon_fence *fence)
+ 
+ 	trace_radeon_fence_emit(rdev->ddev, fence->seq);
+ 	fence->emited = true;
+-	list_del(&fence->list);
+-	list_add_tail(&fence->list, &rdev->fence_drv.emited);
++	list_move_tail(&fence->list, &rdev->fence_drv.emited);
+ 	write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
+ 	return 0;
+ }
+@@ -121,8 +120,7 @@ static bool radeon_fence_poll_locked(struct radeon_device *rdev)
+ 		i = n;
+ 		do {
+ 			n = i->prev;
+-			list_del(i);
+-			list_add_tail(i, &rdev->fence_drv.signaled);
++			list_move_tail(i, &rdev->fence_drv.signaled);
+ 			fence = list_entry(i, struct radeon_fence, list);
+ 			fence->signaled = true;
+ 			i = n;
+-- 
+1.7.3.4
