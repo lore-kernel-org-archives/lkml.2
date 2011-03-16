@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab1CPFTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 01:19:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59837 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab1CPFTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 01:19:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=VDbnDHNMIYXJADmKGsIyp/WmlBczfLGy/IJooWBUZGScO45j4TqOwLD+68UxShOFu1
-         LULPe/iXUzOjxnuPUc0tSKVixgMfdPW2UlKL0PdPkEHO6Va/UpGTU3DRex5tT0S/E/LS
-         zfOr1/yYA/hbCX8TWbsdOxKDKTo/ZILrxDqz0=
+	id S1751390Ab1CPFYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 01:24:52 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:38466 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751226Ab1CPFYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 01:24:46 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: X32 psABI status update
+Date: Wed, 16 Mar 2011 01:24:41 -0400
+User-Agent: KMail/1.13.6 (Linux/2.6.37.3; KDE/4.6.0; x86_64; ; )
+Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
+        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com> <201103160030.27594.vapier@gentoo.org> <AANLkTimk3dfOBoPhGQ8NeOYY5rKdsefPm8gTJ-75vg3-@mail.gmail.com>
+In-Reply-To: <AANLkTimk3dfOBoPhGQ8NeOYY5rKdsefPm8gTJ-75vg3-@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110315091412.de6eb63c.rdunlap@xenotime.net>
-References: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com> <20110315091412.de6eb63c.rdunlap@xenotime.net>
-From: Aneesh Bhasin <contact.aneesh@gmail.com>
-Date: Wed, 16 Mar 2011 10:49:04 +0530
-Message-ID: <AANLkTikU_kPOoNv6gJiPOsmrkFDddTLQ-0--wViYyFxj@mail.gmail.com>
-Subject: Re: smap output - unnamed entries and heap
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-newbie <linux-newbie@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart1480052.zWKNAQ7hHJ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103160124.42939.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 9:44 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Tue, 15 Mar 2011 14:31:50 +0530 Aneesh Bhasin wrote:
->
->> Hi All,
->>
->> My apologies if this is not the right place for these type of
->> questions - I do not know of a better place to ask this.
->>
->> I am trying to take out some memory figures from the /proc/<pid>/smaps
->> interface (linux v2.6.35). However, I could not find what do the
->> entries that have no name associated to them (no library path or
->> binary path with these entries) mean. So, I wrote a test C program
->> that allocates 100MB of memory (using malloc) and then writes to it in
->> chunks of 10MB. I could see that the 'Size' and 'RSS' of one of the
->> unnamed entries was increasing in accordance with the code, but there
->> were several other such unnamed sections too - is there a way to know
->> what and where do they come from.
->>
->> Also, I could see that for some process the smap interface was showing
->> a '[heap]' entry but not for all - e.g. for my above test case, there
->> was no '[heap]' entry, although I assumed the malloc should have
->> reflected in the [heap]. Can someone please tell me (or point me in
->> the right direction) why is heap entry there only for some processes ?
->>
->> Thanks in advance for any help..
->
-> Did you look at Documentation/filesystems/proc.txt ?
-> It has some info on smaps and maps.
->
-> ---
-> ~Randy
+--nextPart1480052.zWKNAQ7hHJ
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the pointer Randy. I had a look at it and here is my
-understanding regarding this (please correct me if I am wrong)
+On Wednesday, March 16, 2011 00:51:37 H.J. Lu wrote:
+> On Tue, Mar 15, 2011 at 9:30 PM, Mike Frysinger <vapier@gentoo.org> wrote:
+> > On Wednesday, March 16, 2011 00:17:04 H.J. Lu wrote:
+> >> On Mon, Mar 7, 2011 at 1:33 PM, Mike Frysinger wrote:
+> >> > On Saturday, March 05, 2011 14:08:04 H.J. Lu wrote:
+> >> >> Many x32 bugs are fixed in kernel, glibc, binutils and GCC:
+> >> >>=20
+> >> >> https://sites.google.com/site/x32abi/
+> >> >>=20
+> >> >> The major remaining issues are glibc/gcc testsuite failures,
+> >> >> kernel core dump and signal handler unwind.
+> >> >=20
+> >> > are you getting a unique host tuple for this ?  or are you extending
+> >> > x86_64- linux-gnu ?  so the only way of knowing which ABI is to check
+> >> > for the output of the compiler+compiler flags ?
+> >>=20
+> >> x32 requires x32 enabled x86-64 kernel.
+> >=20
+> > ok, but that doesnt answer my question.  what are you passing to --targ=
+et
+> > ?
+>=20
+> See:
+>=20
+> https://sites.google.com/site/x32abi/
+>=20
+> You configure it as
+>=20
+> CC=3D"gcc -mx32" ...../configure x86_64- linux-gnu
 
-The entries in smaps (or maps) that have no name associated with them
-are anonymous memory regions. malloc, e.g. could allocate a memory
-using anonymous mmap for large blocks of memory due to efficiency
-reason. Are there any other such sources/reasons for creating
-anonymous memory regions ?
-I checked some of the above, by modifying my test program to allocate
-1KB memory - this time it was attributed to [heap] whereas a memory
-allocation of 1MB was attributed to one of the anonymous memory
-regions.
-So, does that mean that all anonymous regions can be treated
-effectively as heap ? Also, is there a way in linux (without using
-dedicated tools like valgrind), to see how much heap or anonymous
-memory is attributed to code arising from a particular library/binary
-?
+that isnt what the page says.  it does say for glibc to do:
+	CC=3D"x32-gcc -mx32 " CXX=3D"x32-g++ -mx32 " CFLAGS=3D"-O2 -g"  ../configu=
+re
 
-Thanks for the help !
+but it doesnt say what to do for binutils or gcc itself.  obviously you can=
+t=20
+use the -mx32 flag when building the cross gcc for the first time since the=
+=20
+current native gcc wont support it.
 
-Regards,
-Aneesh Bhasin
+the invocation given for glibc implies that the proposed tuple is x32-linux-
+gnu, but the GNU config project doesnt support that tuple and i didnt see=20
+mention of it in the binutils or gcc sources.
+
+so we get back to my original e-mail:
+	are you getting a unique host tuple for this ?  or are you extending
+	x86_64-linux-gnu ?  so the only way of knowing which ABI is to check for
+	the output of the compiler+compiler flags ?
+=2Dmike
+
+--nextPart1480052.zWKNAQ7hHJ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJNgEmaAAoJEEFjO5/oN/WBQPMP/i2hJHBlmudiRaAWTMQoL3sS
+EpoZrVUdKhtfBJyLIrH0bdT24NSsCgbbOj3GkxqHkNX5/6ikRkEFBCyyM+vGECHw
+54Mtk0OaP2HrsmiItzZ4UMjlGOpGBsg4kCN1cpimRAdA7fJn2w2OSbVx4hqGE1BH
+hALcz6V5IjiBJyyXr/0l0CQ0s77kzt/aQAh8GOMoIX9gEq7MLoap38kv5nRXqiWj
+e3C7xfnkrGqWsepwVX6P1QeYLg7sWJimxRTbyEHe/MzFCmzX70yqdRjh18R4Hz/v
+n7W8cid33EwLysBAisHYX6/zNOWT7j0IaWy9JKE8PR7N9CHjiM1AEoo6UkeLW4K9
+URMgvJOvM3tAipnsTCXLh/J0OpHZDOLJuyy/qo2/41fqfOkbCYrKkJrGA7tMmDH8
+aRC7zhm/JsltoQVbzv2+6SEZWRStC8CP548BKa3NJ8CDfr/dBdYXcY7YvuiczZPb
+DXqjLz0Op9z2s+p/+H/KEdip84P54AWAtY7xjyR13J/dt6dJlrFOneJ3v0KDQV52
+acalJl96g9KFHx/FFKqNHmAgQTP7vekJrwYxkeEQNuKUypZ25XvCZWIaIQwBEaH3
+cEsRd5hnyzqa/teynX8TLhsQLw7hGQ0+EK9lC7OZEp0AKYgXvTgpgCDTSnVKwbLO
+3UH/eEbbag5gmwCTXQT7
+=Wq8Z
+-----END PGP SIGNATURE-----
+
+--nextPart1480052.zWKNAQ7hHJ--
