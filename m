@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1CPR0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 13:26:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48099 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab1CPR0C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 13:26:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=w+ePLqH57RBZXUtqgIqRLEd8dOLB5kMv5c2hiawXj6sMBa13sVW/wRpxQQKgtMU6TN
-         HG1TPhYoPlgl0JRUwCsW7IY91YXntLhJQ+VMl02EeCeghBvJLQ/WCRsa23kRCosFNUU2
-         Ko/lBjtiSgCPWRF0nyc581KYsXufyBwAkYwtE=
+	id S1752997Ab1CPR3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 13:29:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752308Ab1CPR32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 13:29:28 -0400
+From: Tom Tromey <tromey@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 0/20] 0: Inode based uprobes
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+	<20110314163028.a05cec49.akpm@linux-foundation.org>
+	<20110314234754.GP2499@one.firstfloor.org>
+	<alpine.LFD.2.00.1103150114590.2787@localhost6.localdomain6>
+	<20110315180639.GQ2499@one.firstfloor.org>
+	<alpine.LFD.2.00.1103152038280.2787@localhost6.localdomain6>
+	<1300219261.9910.300.camel@gandalf.stny.rr.com>
+	<alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
+X-Attribution: Tom
+Date: Wed, 16 Mar 2011 11:27:38 -0600
+In-Reply-To: <alpine.LFD.2.00.1103152102430.2787@localhost6.localdomain6>
+	(Thomas Gleixner's message of "Tue, 15 Mar 2011 21:09:18 +0100 (CET)")
+Message-ID: <m3sjun2cxh.fsf@fleche.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <354760CEA71F254DBD117DC5DF6B46227C5EACA4D7@GVW1118EXC.americas.hpqcorp.net>
-References: <354760CEA71F254DBD117DC5DF6B46227C5EACA3BE@GVW1118EXC.americas.hpqcorp.net>
-	<20110316140237.GA18392@kroah.com>
-	<354760CEA71F254DBD117DC5DF6B46227C5EACA4D7@GVW1118EXC.americas.hpqcorp.net>
-Date: Wed, 16 Mar 2011 20:24:04 +0300
-Message-ID: <AANLkTimvQsmi56vpeX3e8fMmkNYHy9k6=A9vDz5cicyP@mail.gmail.com>
-Subject: Re: FW: smart card driver (ricoh) with ubuntu
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: "Garcia, Alfredo (Sales)" <alfredo.garcia-sanchez@hp.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernelnewbies@nl.linux.org" <kernelnewbies@nl.linux.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 March 2011 17:22, Garcia, Alfredo (Sales)
-<alfredo.garcia-sanchez@hp.com> wrote:
-> Hi to all!
->
-> I'm Alfredo Garcia,  Bussines Developer in HP Spain.
->
-> I,m searching a linux expert.
->
-> I have a problem in ubuntu linux because I don't have the driver smartcard (ricoh) Ricoh Co Ltd RL5c476 II (don't exist the driver). We changes the smart card device in all new laptops and ricoh don't have the linux driver for the smart card. The smart card in integrated in the mother board.
->
-> Is difficult develop a driver?? Could you make it?
-> Can you help me?
+>> If gdb, perf, trace can and will make use of it then we have sensible
+>> arguments enough to go there. If systemtap can use it as well then I
+>> have no problem with that..
 
-RL5c476 II is flash card reader chip, not smart card. It seems modern
-linux should support it.
+Yes, gdb would be able to use it.
+I don't know of anybody working on it at present.
+
+Tom
