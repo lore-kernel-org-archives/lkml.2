@@ -1,63 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab1CQQri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:47:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab1CQQrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:47:36 -0400
-Date: Thu, 17 Mar 2011 17:47:26 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
-Message-ID: <20110317164726.GA10696@random.random>
-References: <4D817234.9070106@jp.fujitsu.com>
- <4D8172D7.3040201@jp.fujitsu.com>
- <20110317041424.GD11094@one.firstfloor.org>
- <4D819A2A.8050606@jp.fujitsu.com>
- <20110317062612.GE11094@one.firstfloor.org>
- <4D81BB87.10803@jp.fujitsu.com>
- <20110317140401.GX10696@random.random>
- <20110317152559.GG11094@one.firstfloor.org>
- <20110317161219.GZ10696@random.random>
- <20110317162710.GH11094@one.firstfloor.org>
+	id S1754781Ab1CQQvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 12:51:53 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:59076 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab1CQQvv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 12:51:51 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, Kees Cook <kees.cook@canonical.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        serge@hallyn.com, eparis@redhat.com, jmorris@namei.org,
+        eugeneteo@kernel.org, drosenberg@vsecurity.com
+References: <1300303907-22627-1-git-send-email-richard@nod.at>
+	<20110316195549.GZ5466@outflux.net>
+	<201103162108.17127.richard@nod.at>
+	<20110316211911.GA13715@p183.telecom.by>
+Date: Thu, 17 Mar 2011 09:51:41 -0700
+In-Reply-To: <20110316211911.GA13715@p183.telecom.by> (Alexey Dobriyan's
+	message of "Wed, 16 Mar 2011 23:19:11 +0200")
+Message-ID: <m1mxktbsgy.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317162710.GH11094@one.firstfloor.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18rN4fLKZC/ALoOnggZBzdxhC/rarpgrzk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Alexey Dobriyan <adobriyan@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 05:27:10PM +0100, Andi Kleen wrote:
-> > What I can tell is with the default khugepaged scan rate, the
-> > collapse_huge_page will have an impact much smaller than KSM. It could
-> > have more impact than KSM if you increase khugepaged load to 100% with
-> > sysfs (because of the more memory that is covered by khugepaged
-> > compared to only the shared portion of KSM). Then the window gets much
-> > bigger, but still minor, if you can't trigger it with the testsuite
-> > it's even less likely to ever happen in practice.
-> 
-> You mean randomly injecting errors?
-> That tends to be hard and unreliable -- usually we try to have a 
-> specific tester that is not random.
+Alexey Dobriyan <adobriyan@gmail.com> writes:
 
-I meant the testsuite using MCE injection, called mce-test. I've run
-it a couple of times for some hugetlbfs collision with THP (solved
-some time ago).
+> On Wed, Mar 16, 2011 at 09:08:16PM +0100, Richard Weinberger wrote:
+>> Kees,
+>> 
+>> Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
+>> > Hi Richard,
+>> > 
+>> > On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
+>> > > When containers like LXC are used a unprivileged and jailed
+>> > > root user can still write to critical files in /proc/.
+>> > > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
+>> > > 
+>> > > This new restricted attribute makes it possible to protect such
+>> > > files. When restricted is set to true root needs CAP_SYS_ADMIN
+>> > > to into the file.
+>> > 
+>> > I was thinking about this too. I'd prefer more fine-grained control
+>> > in this area, since some sysctl entries aren't strictly controlled by
+>> > CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking CAP_SYS_RAWIO).
+>> > 
+>> > How about this instead?
+>> 
+>> Good Idea.
+>> May we should also consider a per-directory restriction.
+>> Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
+>> It would be much easier to set the protection on the parent directory
+>> instead of protecting file by file...
+>
+> Of course, not.
+>
+> You should _enable_ them one by one, not the other way around.
+>
+> 	"default deny"
 
-> The measurement is simple: run the workloads and do some dumps
-> with pagetypes and check if the memory with lots of pages 
-> has a state that can be handled by memory_failure()
-> 
-> AFAIK  this hasn't been done so far with THP.
+Right.
 
-I'm unsure if there's already coverage for it in mce-test yet, the
-biggest test I run was hugetlbfs related (MAP_ANONYMOUS|MAP_HUGETLB or
-filebacked or still shm). Surely it'd be good idea to add THP
-coverage.
+Since the primary problem here is containers we can use the
+user_namespace to add the default deny policy.
+
+Something like the trivial patch below should make /proc/sys safe,
+and the technique applies in general.
+
+Richard is that a good enough example to get you started?
+
+Eric
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 0f1bd83..a172a9d 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1674,10 +1674,12 @@ void register_sysctl_root(struct ctl_table_root *root)
+ 
+ static int test_perm(int mode, int op)
+ {
+-	if (!current_euid())
+-		mode >>= 6;
+-	else if (in_egroup_p(0))
+-		mode >>= 3;
++	if (current_user_ns() == &init_user_ns) {
++		if (!current_euid())
++			mode >>= 6;
++		else if (in_egroup_p(0))
++			mode >>= 3;
++	}
+ 	if ((op & ~mode & (MAY_READ|MAY_WRITE|MAY_EXEC)) == 0)
+ 		return 0;
+ 	return -EACCES;
+
+
