@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab1CQGXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 02:23:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53457 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab1CQGXk (ORCPT
+	id S1751819Ab1CQG0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 02:26:16 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:43013 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab1CQG0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 02:23:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=unuymZ0ETcCnxd0CZN+CrfRgtGo+1ih6cWY5bNRjHhmf7df/SlaFwDFFjljvjPH9+h
-         s0Bs+hFV7HxK6tFPV+qQ4SDpJx1vLsX4cJ+bP9AXgGSJbRgPkPkMXD7igNgMmZ4udHTY
-         549LSrRT+isMqQvyvT9QTh7SltoBgwMwdNHQA=
-MIME-Version: 1.0
-In-Reply-To: <20110316223631.20091.qmail@science.horizon.com>
-References: <alpine.DEB.2.00.1103161352150.11002@chino.kir.corp.google.com>
-	<20110316223631.20091.qmail@science.horizon.com>
-Date: Thu, 17 Mar 2011 08:23:39 +0200
-X-Google-Sender-Auth: _fZK1xTIkkLbeYAG6Y3hEVYL6zI
-Message-ID: <AANLkTikDAEuTcrgo0YcUO40A9x5jaL-d+ZPviCXANe3r@mail.gmail.com>
-Subject: Re: [PATCH 5/8] mm/slub: Factor out some common code.
-From: Pekka Enberg <penberg@kernel.org>
-To: George Spelvin <linux@horizon.com>
-Cc: rientjes@google.com, herbert@gondor.hengli.com.au,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, mpm@selenic.com,
-        penberg@cs.helsinki.fi
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Mar 2011 02:26:14 -0400
+Date: Thu, 17 Mar 2011 07:26:12 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
+Message-ID: <20110317062612.GE11094@one.firstfloor.org>
+References: <4D817234.9070106@jp.fujitsu.com> <4D8172D7.3040201@jp.fujitsu.com> <20110317041424.GD11094@one.firstfloor.org> <4D819A2A.8050606@jp.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D819A2A.8050606@jp.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George!
+On Thu, Mar 17, 2011 at 02:20:42PM +0900, Hidetoshi Seto wrote:
+> (2011/03/17 13:14), Andi Kleen wrote:
+> > On Thu, Mar 17, 2011 at 11:32:55AM +0900, Hidetoshi Seto wrote:
+> >> So to avoid the above problem, add poison checks for both of 4K pages
+> >> and the THP before copying in __collapse_huge_page_copy().
+> > 
+> > I don't think you need the check for the huge page -- it should not be allocated
+> > in this case.
+> 
+> Is there no case that the THP is once allocated but poison flag
+> is set before copy?  Though I know it is one of corner cases,
+> having this check for THP is worse than nothing.
 
-On Thu, Mar 17, 2011 at 12:36 AM, George Spelvin <linux@horizon.com> wrote:
-> Um, can you name a (64-bit) architecture on which 32-bit is more
-> expensive than 64-bit?
+There's a theoretical window, but it's only a few instructions.
+Probably not worth caring about, especially since you have a similar
+window after your check again.
 
-I certainly don't but I'd still like to ask you to change it to
-'unsigned long'. That's a Linux kernel idiom and we're not going to
-change the whole kernel.
+BTW normally I don't recommend to add new poison checks without
+doing new studies with page-types if the case is likely and happens
+with enough memory.
 
-                        Pekka
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
