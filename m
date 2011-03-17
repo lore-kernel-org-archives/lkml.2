@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1CQO1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 10:27:32 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59121 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab1CQO13 convert rfc822-to-8bit (ORCPT
+	id S1753762Ab1CQOaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 10:30:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63168 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab1CQOan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 10:27:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Wq5IyP9bWn3zyyGsu72F0CGHjQCbi6JqSoDTCZTd1Q4qsCmbVImkgw5mX0OReTPf/n
-         ABskNEFlELo2tiVEAdmIWvc9UaidJbKsjk5E1+b7brG/guw3TC3Av8F38RUsTALCZ/7m
-         J3QifgnXrtOA4F9eoNX9blcxt81HqUf+x7l/8=
-MIME-Version: 1.0
-In-Reply-To: <1300370936.16880.96.camel@gandalf.stny.rr.com>
-References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
-	<1300370936.16880.96.camel@gandalf.stny.rr.com>
-Date: Thu, 17 Mar 2011 15:27:29 +0100
-Message-ID: <AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
-Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Mar 2011 10:30:43 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=2-_pf7bKywUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=Qluxk-LBlLVSYSfvjjoA:9 a=YmSsoxOO-q2pWaBRQd8u4IcnPB8A:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [tip:perf/urgent] trace, documentation: Fix branch profiling
+ location in debugfs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, rientjes@google.com, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-13e5befaddcf8d542ae45610b552105490a0010b@git.kernel.org>
+References: <alpine.DEB.2.00.1103161716320.11407@chino.kir.corp.google.com>
+	 <tip-13e5befaddcf8d542ae45610b552105490a0010b@git.kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 10:30:41 -0400
+Message-ID: <1300372241.16880.119.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 3:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2011-03-17 at 13:25 +0100, richard -rw- weinberger wrote:
->> Lai,
->>
->> Your commit 2e12978a
->> (futex,plist: Pass the real head of the priority list to plist_del())
->> triggers gazillions warnings on User Mode Linux (x86, Linus' tree as of today):
->>
->> ------------[ cut here ]------------
->> WARNING: at kernel/futex.c:786 __unqueue_futex+0x12/0x16()
->> Modules linked in:
->> 27d4cce8:  [<081c13fe>] dump_stack+0x1c/0x20
->> 27d4cd00:  [<08071aa0>] warn_slowpath_common+0x49/0x5f
->> 27d4cd18:  [<08071acb>] warn_slowpath_null+0x15/0x19
->> 27d4cd28:  [<0808fdb8>] __unqueue_futex+0x12/0x16
->> 27d4cd38:  [<0808fef3>] futex_wait+0x137/0x1ed
->> 27d4cdd0:  [<080910c3>] do_futex+0x78/0x7c4
->> 27d4cedc:  [<080918e6>] sys_futex+0xd7/0xed
->> 27d4cf28:  [<0805abf6>] handle_syscall+0x7a/0x98
->> 27d4cf78:  [<080685d9>] userspace+0x2c9/0x370
->> 27d4cfe0:  [<08058be5>] fork_handler+0x53/0x5b
->> 27d4cffc:  [<00000000>] 0x0
->>
->> ---[ end trace ed7709f235f82328 ]---
->>
->> !spin_is_locked(q->lock_ptr) in the WARN_ON() at line 786
->> triggers the warnings.
->
-> Crap, I bet you are running CONFIG_SMP=n. I'll test this. We may need to
-> make that a WARN_ON_SMP().
+On Thu, 2011-03-17 at 11:04 +0000, tip-bot for David Rientjes wrote:
+> Commit-ID:  13e5befaddcf8d542ae45610b552105490a0010b
+> Gitweb:     http://git.kernel.org/tip/13e5befaddcf8d542ae45610b552105490a0010b
+> Author:     David Rientjes <rientjes@google.com>
+> AuthorDate: Wed, 16 Mar 2011 17:17:08 -0700
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Thu, 17 Mar 2011 09:10:45 +0100
 
-BTW: When using WARN_ON_SMP() the if-statement in __unqueue_futex
-will not longer work.
+Heh, I added this on top of the jump label patches that I'm testing.
+I'll just remove it ;)
 
-WARN_ON_SMP() is defined as "do { } while (0)" on non CONFIG_SMP systems.
+-- Steve
+
+> 
+> trace, documentation: Fix branch profiling location in debugfs
+> 
+> The debugfs interface for branch profiling is through
+> 
+> 	/sys/kernel/debug/tracing/trace_stat/branch_annotated
+> 	/sys/kernel/debug/tracing/trace_stat/branch_all
+> 
+> so update the Kconfig accordingly.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> LKML-Reference: <alpine.DEB.2.00.1103161716320.11407@chino.kir.corp.google.com>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  kernel/trace/Kconfig |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+> index 14674dc..61d7d59f 100644
+> --- a/kernel/trace/Kconfig
+> +++ b/kernel/trace/Kconfig
+> @@ -275,7 +275,7 @@ config PROFILE_ANNOTATED_BRANCHES
+>  	  This tracer profiles all the the likely and unlikely macros
+>  	  in the kernel. It will display the results in:
+>  
+> -	  /sys/kernel/debug/tracing/profile_annotated_branch
+> +	  /sys/kernel/debug/tracing/trace_stat/branch_annotated
+>  
+>  	  Note: this will add a significant overhead; only turn this
+>  	  on if you need to profile the system's use of these macros.
+> @@ -288,7 +288,7 @@ config PROFILE_ALL_BRANCHES
+>  	  taken in the kernel is recorded whether it hit or miss.
+>  	  The results will be displayed in:
+>  
+> -	  /sys/kernel/debug/tracing/profile_branch
+> +	  /sys/kernel/debug/tracing/trace_stat/branch_all
+>  
+>  	  This option also enables the likely/unlikely profiler.
+>  
 
 
-> -- Steve
->
->>
->> I'm not sure whether this shows a bug within UML
->> or the WARN_ON() is wrong.
->>
->> What do you think?
->>
->
->
->
-
--- 
-Thanks,
-//richard
