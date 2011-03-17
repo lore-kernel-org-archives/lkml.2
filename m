@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab1CQSh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:37:59 -0400
-Received: from fieldses.org ([174.143.236.118]:52998 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753354Ab1CQSh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:37:57 -0400
-Date: Thu, 17 Mar 2011 14:37:52 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@openvz.org>,
-        Chuck Lever <chuck.lever@oracle.com>, Tejun Heo <tj@kernel.org>,
-        Tom Tucker <tom@opengridcomputing.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH] SUNRPC: Remove resource leak in svc_rdma_send_error()
-Message-ID: <20110317183752.GH30180@fieldses.org>
-References: <alpine.LNX.2.00.1101222233260.7746@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1101222233260.7746@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755197Ab1CQSi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:38:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:36352 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028Ab1CQSiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 14:38:24 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=MpKEIbNVzpcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=3hK2hI1qgO4Yr5gWGu0A:9 a=_ocAiyNr2ImtjVLZroDzm0mmcT8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
+In-Reply-To: <AANLkTim4hY_HJrukNjVe5RDzBj7r547BcxKRozKcQ_uE@mail.gmail.com>
+References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+	 <1300370936.16880.96.camel@gandalf.stny.rr.com>
+	 <AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
+	 <1300380909.16880.264.camel@gandalf.stny.rr.com>
+	 <1300381340.6315.323.camel@edumazet-laptop>
+	 <1300385802.16880.348.camel@gandalf.stny.rr.com>
+	 <AANLkTim4hY_HJrukNjVe5RDzBj7r547BcxKRozKcQ_uE@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 14:38:22 -0400
+Message-ID: <1300387102.16880.391.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 22, 2011 at 10:40:20PM +0100, Jesper Juhl wrote:
-> We leak the memory allocated to 'ctxt' when we return after 
-> 'ib_dma_mapping_error()' returns !=0.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+On Thu, 2011-03-17 at 19:25 +0100, Geert Uytterhoeven wrote:
 
-I don't know this code, but I can't see how that could be wrong....
-Applying unless Tom tells me otherwise.
+> > Does if (do { } while (x, 0)) work?
+> 
+> No.
 
---b.
+Hehe, that was a rhetorical question ;)
 
-> ---
->  svc_rdma_transport.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
->   compile tested only
-> 
-> diff --git a/net/sunrpc/xprtrdma/svc_rdma_transport.c b/net/sunrpc/xprtrdma/svc_rdma_transport.c
-> index 9df1ead..1a10dcd 100644
-> --- a/net/sunrpc/xprtrdma/svc_rdma_transport.c
-> +++ b/net/sunrpc/xprtrdma/svc_rdma_transport.c
-> @@ -1335,6 +1335,7 @@ void svc_rdma_send_error(struct svcxprt_rdma *xprt, struct rpcrdma_msg *rmsgp,
->  					    p, 0, length, DMA_FROM_DEVICE);
->  	if (ib_dma_mapping_error(xprt->sc_cm_id->device, ctxt->sge[0].addr)) {
->  		put_page(p);
-> +		svc_rdma_put_context(ctxt, 1);
->  		return;
->  	}
->  	atomic_inc(&xprt->sc_dma_used);
-> 
-> 
-> -- 
-> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-> Plain text mails only, please.
-> 
+-- Steve
+
+
