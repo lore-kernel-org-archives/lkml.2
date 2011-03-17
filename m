@@ -1,316 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab1CQPbW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 11:31:22 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:3829 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab1CQPbU (ORCPT
+	id S1754707Ab1CQPgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 11:36:40 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:32201 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab1CQPgi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 11:31:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=T9TAI+Pxs/TQClHGVr1ZYX5MhFwzIFmoS0Yj8Umyu6ZrumFowJPxsMf6rAP3GJsOA
-	07e938eqjsJ4Ua+AjMySg==
-From: Justin TerAvest <teravest@google.com>
-To: jaxboe@fusionio.com, vgoyal@redhat.com, adurbin@google.com
-Cc: ctalbott@google.com, linux-kernel@vger.kernel.org,
-        Justin TerAvest <teravest@google.com>
-Subject: [PATCH] cfq-iosched: add symmetric reference wrappers
-Date: Thu, 17 Mar 2011 08:31:00 -0700
-Message-Id: <1300375860-14596-1-git-send-email-teravest@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 17 Mar 2011 11:36:38 -0400
+Date: Thu, 17 Mar 2011 16:36:21 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hans de Goede <hdegoede@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree 
+ (jdelvare-hwmon tree related)
+Message-ID: <20110317163621.2a546644@endymion.delvare>
+In-Reply-To: <AANLkTin46NLhP+0mmYELkD8zeC5o32H=-jXkySZ4R_dj@mail.gmail.com>
+References: <20110315192428.ce74a177.sfr@canb.auug.org.au>
+	<4D7F2609.3080508@redhat.com>
+	<20110315103228.30233acc@endymion.delvare>
+	<20110315212226.7e940b51.sfr@canb.auug.org.au>
+	<AANLkTin46NLhP+0mmYELkD8zeC5o32H=-jXkySZ4R_dj@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you sanity check this before I send it out?
+On Thu, 17 Mar 2011 13:18:00 +0100, Geert Uytterhoeven wrote:
+> On Tue, Mar 15, 2011 at 11:22, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > On Tue, 15 Mar 2011 10:32:28 +0100 Jean Delvare <khali@linux-fr.org> wrote:
+> >> Stephen, sorry for the inconvenience, both Hans and myself build-tested
+> >> the new code on an architecture where <linux/delay.h> gets included
+> >> implicitly, so we didn't notice it was missing.
+> >
+> > It happens.  It seems that delay.h is almost always the one that is
+> > forgotten.  X86 builds include it implicitly but powerpc doesn't.
+> >
+> > I wonder if we could concoct a nice checkpatch test for it.
+> 
+> Or remove the implicit includes on x86...
+> 
+> $ git grep delay\\.h arch/x86/include/
+> arch/x86/include/asm/apic.h:#include <linux/delay.h>
+> arch/x86/include/asm/dma.h:#include <linux/delay.h>
+> arch/x86/include/asm/i8259.h:#include <linux/delay.h>
+> $
+> 
+> At first sight, apic.h and dmah.h don't seem to need it.
 
-The cfq_group and cfq_queue objects did not have symmetric
-wrapper functions and many of the reference taking was
-open coded. For clarity add the following wrappers:
+Something like this?
 
-cfq_group:
-- cfq_get_group_ref()
-- cfq_put_group_ref()
+* * * * *
 
-cfq_queue:
-- cfq_get_queue_ref()
-- cfq_put_queue_ref()
+Stop including <linux/delay.h> in x86 header files which don't need
+it. This will let the compiler complain when this header is not
+included by source files when it should, so that contributors can fix
+the problem before building on other architectures starts to fail.
 
-The use of '_ref' was done not to collide with existing
-function names.
+Credits go to Geert for the idea.
 
-Signed-off-by: Justin TerAvest <teravest@google.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- block/cfq-iosched.c |   95 +++++++++++++++++++++++++++++---------------------
- 1 files changed, 55 insertions(+), 40 deletions(-)
+ arch/x86/include/asm/apic.h        |    1 -
+ arch/x86/include/asm/dma.h         |    1 -
+ arch/x86/kernel/apic/hw_nmi.c      |    1 +
+ arch/x86/kernel/apic/x2apic_uv_x.c |    1 +
+ arch/x86/kernel/irq.c              |    1 +
+ arch/x86/kernel/reboot.c           |    1 +
+ arch/x86/platform/uv/tlb_uv.c      |    1 +
+ drivers/scsi/ultrastor.c           |    1 +
+ 8 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 89e0d1c..e3136d7 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -301,6 +301,11 @@ struct cfq_data {
- 	struct rcu_head rcu;
- };
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -2,7 +2,6 @@
+ #define _ASM_X86_APIC_H
  
-+static void cfq_get_group_ref(struct cfq_group *cfqg);
-+static void cfq_put_group_ref(struct cfq_group *cfqg);
-+static void cfq_get_queue_ref(struct cfq_queue *cfqq);
-+static void cfq_put_queue_ref(struct cfq_queue *cfqq);
-+
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+ #include <linux/cpumask.h>
+-#include <linux/delay.h>
+ #include <linux/pm.h>
  
- static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
-@@ -1019,7 +1024,7 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
- 	 * elevator which will be dropped by either elevator exit
- 	 * or cgroup deletion path depending on who is exiting first.
- 	 */
--	cfqg->ref = 1;
-+	cfq_get_group_ref(cfqg);
+ #include <asm/alternative.h>
+--- a/arch/x86/include/asm/dma.h
++++ b/arch/x86/include/asm/dma.h
+@@ -10,7 +10,6 @@
  
- 	/*
- 	 * Add group onto cgroup list. It might happen that bdi->dev is
-@@ -1062,24 +1067,12 @@ static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
- 	return cfqg;
- }
+ #include <linux/spinlock.h>	/* And spinlocks */
+ #include <asm/io.h>		/* need byte IO */
+-#include <linux/delay.h>
  
--static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
-+static void cfq_get_group_ref(struct cfq_group *cfqg)
- {
- 	cfqg->ref++;
--	return cfqg;
- }
+ #ifdef HAVE_REALLY_SLOW_DMA_CONTROLLER
+ #define dma_outb	outb_p
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -16,6 +16,7 @@
+ #include <linux/kprobes.h>
+ #include <linux/nmi.h>
+ #include <linux/module.h>
++#include <linux/delay.h>
  
--static void cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg)
--{
--	/* Currently, all async queues are mapped to root group */
--	if (!cfq_cfqq_sync(cfqq))
--		cfqg = &cfqq->cfqd->root_group;
--
--	cfqq->cfqg = cfqg;
--	/* cfqq reference on cfqg */
--	cfqq->cfqg->ref++;
--}
--
--static void cfq_put_cfqg(struct cfq_group *cfqg)
-+static void cfq_put_group_ref(struct cfq_group *cfqg)
- {
- 	struct cfq_rb_root *st;
- 	int i, j;
-@@ -1093,6 +1086,17 @@ static void cfq_put_cfqg(struct cfq_group *cfqg)
- 	kfree(cfqg);
- }
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ u64 hw_nmi_get_sample_period(void)
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
+ #include <linux/pci.h>
+ #include <linux/kdebug.h>
++#include <linux/delay.h>
  
-+static void cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg)
-+{
-+	/* Currently, all async queues are mapped to root group */
-+	if (!cfq_cfqq_sync(cfqq))
-+		cfqg = &cfqq->cfqd->root_group;
-+
-+	cfqq->cfqg = cfqg;
-+	/* cfqq reference on cfqg */
-+	cfq_get_group_ref(cfqq->cfqg);
-+}
-+
- static void cfq_destroy_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
- 	/* Something wrong if we are trying to remove same group twice */
-@@ -1104,7 +1108,7 @@ static void cfq_destroy_cfqg(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	 * Put the reference taken at the time of creation so that when all
- 	 * queues are gone, group can be destroyed.
- 	 */
--	cfq_put_cfqg(cfqg);
-+	cfq_put_group_ref(cfqg);
- }
+ #include <asm/uv/uv_mmrs.h>
+ #include <asm/uv/uv_hub.h>
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -8,6 +8,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/smp.h>
+ #include <linux/ftrace.h>
++#include <linux/delay.h>
  
- static void cfq_release_cfq_groups(struct cfq_data *cfqd)
-@@ -1148,14 +1152,18 @@ void cfq_unlink_blkio_group(void *key, struct blkio_group *blkg)
- }
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -6,6 +6,7 @@
+ #include <linux/dmi.h>
+ #include <linux/sched.h>
+ #include <linux/tboot.h>
++#include <linux/delay.h>
+ #include <acpi/reboot.h>
+ #include <asm/io.h>
+ #include <asm/apic.h>
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -11,6 +11,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
++#include <linux/delay.h>
  
- #else /* GROUP_IOSCHED */
--static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
-+
-+static void cfq_get_group_ref(struct cfq_group *cfqg)
- {
--	return &cfqd->root_group;
- }
+ #include <asm/mmu_context.h>
+ #include <asm/uv/uv.h>
+--- a/drivers/scsi/ultrastor.c
++++ b/drivers/scsi/ultrastor.c
+@@ -138,6 +138,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/stat.h>
+ #include <linux/bitops.h>
++#include <linux/delay.h>
  
--static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
-+static void cfq_put_group_ref(struct cfq_group *cfqg)
- {
--	return cfqg;
-+}
-+
-+static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
-+{
-+	return &cfqd->root_group;
- }
- 
- static inline void
-@@ -1164,7 +1172,6 @@ cfq_link_cfqq_cfqg(struct cfq_queue *cfqq, struct cfq_group *cfqg) {
- }
- 
- static void cfq_release_cfq_groups(struct cfq_data *cfqd) {}
--static inline void cfq_put_cfqg(struct cfq_group *cfqg) {}
- 
- #endif /* GROUP_IOSCHED */
- 
-@@ -2524,6 +2531,11 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
- 	return 1;
- }
- 
-+static void cfq_get_queue_ref(struct cfq_queue *cfqq)
-+{
-+	cfqq->ref++;
-+}
-+
- /*
-  * task holds one reference to the queue, dropped when task exits. each rq
-  * in-flight on this queue also holds a reference, dropped when rq is freed.
-@@ -2531,7 +2543,7 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
-  * Each cfq queue took a reference on the parent group. Drop it now.
-  * queue lock must be held here.
-  */
--static void cfq_put_queue(struct cfq_queue *cfqq)
-+static void cfq_put_queue_ref(struct cfq_queue *cfqq)
- {
- 	struct cfq_data *cfqd = cfqq->cfqd;
- 	struct cfq_group *cfqg;
-@@ -2554,7 +2566,7 @@ static void cfq_put_queue(struct cfq_queue *cfqq)
- 
- 	BUG_ON(cfq_cfqq_on_rr(cfqq));
- 	kmem_cache_free(cfq_pool, cfqq);
--	cfq_put_cfqg(cfqg);
-+	cfq_put_group_ref(cfqg);
- }
- 
- /*
-@@ -2659,7 +2671,7 @@ static void cfq_put_cooperator(struct cfq_queue *cfqq)
- 			break;
- 		}
- 		next = __cfqq->new_cfqq;
--		cfq_put_queue(__cfqq);
-+		cfq_put_queue_ref(__cfqq);
- 		__cfqq = next;
- 	}
- }
-@@ -2673,7 +2685,7 @@ static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- 
- 	cfq_put_cooperator(cfqq);
- 
--	cfq_put_queue(cfqq);
-+	cfq_put_queue_ref(cfqq);
- }
- 
- static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
-@@ -2815,7 +2827,7 @@ static void changed_ioprio(struct io_context *ioc, struct cfq_io_context *cic)
- 						GFP_ATOMIC);
- 		if (new_cfqq) {
- 			cic->cfqq[BLK_RW_ASYNC] = new_cfqq;
--			cfq_put_queue(cfqq);
-+			cfq_put_queue_ref(cfqq);
- 		}
- 	}
- 
-@@ -2874,7 +2886,7 @@ static void changed_cgroup(struct io_context *ioc, struct cfq_io_context *cic)
- 		 */
- 		cfq_log_cfqq(cfqd, sync_cfqq, "changed cgroup");
- 		cic_set_cfqq(cic, NULL, 1);
--		cfq_put_queue(sync_cfqq);
-+		cfq_put_queue_ref(sync_cfqq);
- 	}
- 
- 	spin_unlock_irqrestore(q->queue_lock, flags);
-@@ -2975,11 +2987,11 @@ cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
- 	 * pin the queue now that it's allocated, scheduler exit will prune it
- 	 */
- 	if (!is_sync && !(*async_cfqq)) {
--		cfqq->ref++;
-+		cfq_get_queue_ref(cfqq);
- 		*async_cfqq = cfqq;
- 	}
- 
--	cfqq->ref++;
-+	cfq_get_queue_ref(cfqq);
- 	return cfqq;
- }
- 
-@@ -3604,10 +3616,10 @@ static void cfq_put_request(struct request *rq)
- 		rq->elevator_private[1] = NULL;
- 
- 		/* Put down rq reference on cfqg */
--		cfq_put_cfqg(RQ_CFQG(rq));
-+		cfq_put_group_ref(RQ_CFQG(rq));
- 		rq->elevator_private[2] = NULL;
- 
--		cfq_put_queue(cfqq);
-+		cfq_put_queue_ref(cfqq);
- 	}
- }
- 
-@@ -3618,7 +3630,7 @@ cfq_merge_cfqqs(struct cfq_data *cfqd, struct cfq_io_context *cic,
- 	cfq_log_cfqq(cfqd, cfqq, "merging with queue %p", cfqq->new_cfqq);
- 	cic_set_cfqq(cic, cfqq->new_cfqq, 1);
- 	cfq_mark_cfqq_coop(cfqq->new_cfqq);
--	cfq_put_queue(cfqq);
-+	cfq_put_queue_ref(cfqq);
- 	return cic_to_cfqq(cic, 1);
- }
- 
-@@ -3640,7 +3652,7 @@ split_cfqq(struct cfq_io_context *cic, struct cfq_queue *cfqq)
- 
- 	cfq_put_cooperator(cfqq);
- 
--	cfq_put_queue(cfqq);
-+	cfq_put_queue_ref(cfqq);
- 	return NULL;
- }
- /*
-@@ -3693,10 +3705,12 @@ new_queue:
- 
- 	cfqq->allocated[rw]++;
- 
--	cfqq->ref++;
-+	cfq_get_queue_ref(cfqq);
- 	rq->elevator_private[0] = cic;
- 	rq->elevator_private[1] = cfqq;
--	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
-+
-+	cfq_get_group_ref(cfqq->cfqg);
-+	rq->elevator_private[2] = cfqq->cfqg;
- 	spin_unlock_irqrestore(q->queue_lock, flags);
- 	return 0;
- 
-@@ -3789,13 +3803,13 @@ static void cfq_put_async_queues(struct cfq_data *cfqd)
- 
- 	for (i = 0; i < IOPRIO_BE_NR; i++) {
- 		if (cfqd->async_cfqq[0][i])
--			cfq_put_queue(cfqd->async_cfqq[0][i]);
-+			cfq_put_queue_ref(cfqd->async_cfqq[0][i]);
- 		if (cfqd->async_cfqq[1][i])
--			cfq_put_queue(cfqd->async_cfqq[1][i]);
-+			cfq_put_queue_ref(cfqd->async_cfqq[1][i]);
- 	}
- 
- 	if (cfqd->async_idle_cfqq)
--		cfq_put_queue(cfqd->async_idle_cfqq);
-+		cfq_put_queue_ref(cfqd->async_idle_cfqq);
- }
- 
- static void cfq_cfqd_free(struct rcu_head *head)
-@@ -3893,9 +3907,10 @@ static void *cfq_init_queue(struct request_queue *q)
- #ifdef CONFIG_CFQ_GROUP_IOSCHED
- 	/*
- 	 * Take a reference to root group which we never drop. This is just
--	 * to make sure that cfq_put_cfqg() does not try to kfree root group
-+	 * to make sure that cfq_put_group_ref() does not try to kfree
-+	 * root group
- 	 */
--	cfqg->ref = 1;
-+	cfq_get_group_ref(cfqg);
- 	rcu_read_lock();
- 	cfq_blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg,
- 					(void *)cfqd, 0);
+ #include <asm/io.h>
+ #include <asm/system.h>
+
+
 -- 
-1.7.3.1
-
+Jean Delvare
