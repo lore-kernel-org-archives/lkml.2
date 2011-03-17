@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1CQTdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 15:33:37 -0400
-Received: from www.tglx.de ([62.245.132.106]:44837 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755359Ab1CQTdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 15:33:35 -0400
-Message-Id: <20110317192449.543350238@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 17 Mar 2011 19:32:49 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Feng Tang <feng.tang@intel.com>,
-        Alek Du <alek.du@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	id S1755378Ab1CQTgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 15:36:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56108 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab1CQTgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 15:36:47 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=XYJHFtupD_QA:10 a=cjxWWOd7KoAA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=J5U1FVrK8QhXG97FSOoA:9 a=UTfNkxfrOrUh_EbeD3MA:7 a=lHXlGb4uG0vSEh179T3Qj9gsrocA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 17 Mar 2011 15:36:45 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch 2/5] gpio-langwell-fix-crap.patch
-References: <20110317192247.722047296@linutronix.de>
-Content-Disposition: inline; filename=gpio-langwell-fix-crap.patch
+Subject: Re: make checkpatch warn about memset with swapped arguments.
+Message-ID: <20110317193645.GD14675@home.goodmis.org>
+References: <20110317045209.GA18656@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110317045209.GA18656@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0766d20fd (langwell_gpio: modify EOI handling following change
-of kernel irq subsystem)  changes
+On Thu, Mar 17, 2011 at 12:52:09AM -0400, Dave Jones wrote:
+> Because the second and third arguments of memset have the same type,
+> it turns out to be really easy to mix them up.
+> 
+> This bug comes up time after time, so checkpatch should really
+> be checking for it at patch submission time.
+> 
+> Signed-off-by: Dave Jones <davej@redhat.com>
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 58848e3..421b3e69 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2902,6 +2902,11 @@ sub process {
+>  		    $line =~ /DEVICE_ATTR.*S_IWUGO/ ) {
+>  			WARN("Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+>  		}
+> +
+> +		# Check for memset with swapped arguments
+> +		if ($line =~ /memset.*\,(\ |)(0x|)0(\ |0|)\);/) {
 
- -   desc->chip->eoi(irq);
- +
- +   if (desc->chip->irq_eoi)
- +           desc->chip->irq_eoi(irq_get_irq_data(irq));
- +   else
- +           dev_warn(pg->chip.dev, "missing EOI handler for irq %d\n", irq);
+Wouldn't this be a better regex:
 
-With the following explanation:
+	if ($line =~ /memset.*\,\s*(0x)?0\s*\)\s*;/)
 
- "Latest kernel has many changes in IRQ subsystem and its interfaces,
-  like adding irq_eoi" for struct irq_chip, this patch will make it
-  support both the new and old interface."
+-- Steve
 
-This is completely bogus.
-
- #1) The changelog does not match the patch at all
-
- #2) This driver relies on the assumption that it sits behind an eoi
-     capable interrupt line. If the implementation of the underlying
-     chip changes from eoi to irq_eoi then this driver has to follow
-     that change and not add a total bogosity.
-
- #3) Just mechanically changing eoi to irq_eoi without checking the
-     background of that change is sloppy at best.
-
-Remove the sillyness and retrieve the interrupt data from irq_desc
-directly. No need to go through a sparse irq lookup.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Feng Tang <feng.tang@intel.com>
-Cc: Alek Du <alek.du@intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- drivers/gpio/langwell_gpio.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
-
-Index: linux-2.6-tip/drivers/gpio/langwell_gpio.c
-===================================================================
---- linux-2.6-tip.orig/drivers/gpio/langwell_gpio.c
-+++ linux-2.6-tip/drivers/gpio/langwell_gpio.c
-@@ -187,10 +187,11 @@ MODULE_DEVICE_TABLE(pci, lnw_gpio_ids);
- 
- static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
- {
--	struct lnw_gpio *lnw = get_irq_data(irq);
--	u32 base, gpio;
-+	struct irq_data *data = irq_desc_get_irq_data(desc);
-+	struct lnw_gpio *lnw = irq_data_get_irq_handler_data(data);
-+	struct irq_chip *chip = irq_data_get_irq_chip(data);
-+	u32 base, gpio, gedr_v;
- 	void __iomem *gedr;
--	u32 gedr_v;
- 
- 	/* check GPIO controller to check which pin triggered the interrupt */
- 	for (base = 0; base < lnw->chip.ngpio; base += 32) {
-@@ -207,11 +208,7 @@ static void lnw_irq_handler(unsigned irq
- 		writel(gedr_v, gedr);
- 	}
- 
--	if (desc->chip->irq_eoi)
--		desc->chip->irq_eoi(irq_get_irq_data(irq));
--	else
--		dev_warn(lnw->chip.dev, "missing EOI handler for irq %d\n", irq);
--
-+	chip->irq_eoi(data);
- }
- 
- static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
-
-
+> +			ERROR("memset size is 3rd argument, not the second.\n" . $herecurr);
+> +		}
+>  	}
+>  
+>  	# If we have no input at all, then there is nothing to report on
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
