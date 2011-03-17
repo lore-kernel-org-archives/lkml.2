@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab1CQRqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:46:25 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:47272 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751576Ab1CQRqX (ORCPT
+	id S1754938Ab1CQRrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:47:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53500 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab1CQRrL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:46:23 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: W3WjOxAVM1mY672z3PxRNcytRo8cwUymFVETRNf5v5sqw5j
- 6f_bhTZgv9FATLecHlcn8Y5V.tvZwVBA4YkKcWyfOn_w4AvmwPsDFJnV2uP9
- agNvgf2wwynV7vpGoO3NTnxUJ6AnpV9PZ0zFtLX7TuEO0ZG6dwzzgm46dgZT
- 79o30UVyxQFLNNTD8ijlxK5N9DUq6UAXZJMatIrvcqIpv5OGYLK._Ipi9bhO
- cf3embovQ37laCa4WtxI.y7pgMZapf0HPX3iC1_632TE1twRhW6WE56mTnHg
- LJ5vssUSSujZAVESPNEQEa3qFnknBDFrYafy5H_fkC6u.VMiM
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 17 Mar 2011 12:46:18 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: Poll about irqsafe_cpu_add and others
-In-Reply-To: <1300380801.6315.306.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1103171245430.16620@router.home>
-References: <1300371834.6315.93.camel@edumazet-laptop>  <20110317.081420.71114992.davem@davemloft.net>  <alpine.DEB.2.00.1103171016270.12540@router.home> <1300380801.6315.306.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Mar 2011 13:47:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=pM4i76KXsdiEbo5hRwwMbLkVgFsnP0keDDSd/94lCzpia1q0/LSWZP9HX5E2PiGZMA
+         Dw5uEP08lMIcDjJh9O19WV8eaEnh80L441OG3br8/9V+1GhVhVO1cevHocwIeS6XHaaF
+         4IQaCASNW/IAnNIQA5co51VdhmGV4wOfi/IB0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1300381340.6315.323.camel@edumazet-laptop>
+References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+	<1300370936.16880.96.camel@gandalf.stny.rr.com>
+	<AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
+	<1300380909.16880.264.camel@gandalf.stny.rr.com>
+	<1300381340.6315.323.camel@edumazet-laptop>
+Date: Thu, 17 Mar 2011 18:43:05 +0100
+X-Google-Sender-Auth: gSYew6l-ATD7lQN7YhFjfHQIfH8
+Message-ID: <AANLkTik6oHOOk+1paSmCs=0c03_J10wGBFrRMQw-Jo86@mail.gmail.com>
+Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, Eric Dumazet wrote:
+On Thu, Mar 17, 2011 at 18:02, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 17 mars 2011 à 12:55 -0400, Steven Rostedt a écrit :
+>> Here, test this patch. I'm in the process of committing it now.
+>> It will be two patches, one for the WARN_ON_SMP() change, the other for
+>> the futex change.
+>>
+>> -- Steve
+>>
+>> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+>> index c2c9ba0..25f1e9e 100644
+>> --- a/include/asm-generic/bug.h
+>> +++ b/include/asm-generic/bug.h
+>> @@ -168,7 +168,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+>>  #ifdef CONFIG_SMP
+>>  # define WARN_ON_SMP(x)                      WARN_ON(x)
+>>  #else
+>> -# define WARN_ON_SMP(x)                      do { } while (0)
+>> +# define WARN_ON_SMP(x)                      ({0;})
+>>  #endif
+>>
+>
+> You meant :
+>
+> # define WARN_ON_SMP(x)                 ({x;})
+>
+> or
+>
+> # define WARN_ON_SMP(x)   do { } while (x, 0)
+>
+> ?
 
-> When we know we run from BH context, we can use __this_cpu_inc(), but if
-> we dont know or run from user/process context, we would need irqsafe_inc
-> variant.
+I don't know. It's not clear to me if "WARN_ON_SMP(x)" should always return "x",
+or only on SMP?
 
-If the BH context is the only one where we care about performance then its
-ok I would think.
+E.g.
+
+    if (WARN_ON_SMP(x)) {
+       // Should we get here if "x" is true?
+       // Or only if CONFIG_SMP and "x" are both true?
+    }
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
