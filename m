@@ -1,85 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1CQUR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 16:17:26 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:50076 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755375Ab1CQURX (ORCPT
+	id S1755446Ab1CQUS0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 16:18:26 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62665 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab1CQUSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 16:17:23 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=K3BSTa83NmUylzIh2ZyuT0UgvWrgXbT54a+yDFmtJAMYAa1uuY3I7nAFBBGI7XSOTCxXYZs1VA8n1PDLVvSxSlTf6O7o2MnJF7I9iemgWicvJOEoAuziIIdeFCTkIVt1;
-Date: Thu, 17 Mar 2011 13:17:21 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Greg KH <greg@kroah.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        devel@linuxdriverproject.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PATCH] STAGING patches for .39
-Message-Id: <20110317131721.0c439788.rdunlap@xenotime.net>
-In-Reply-To: <20110317200448.GA17827@kroah.com>
-References: <20110316210300.GA3311@kroah.com>
-	<AANLkTim13aZ0Mr5RrOeQizHGY3jhf97x8v9mznY8RqgE@mail.gmail.com>
-	<20110317002818.GA19812@kroah.com>
-	<AANLkTikEEDDFxZQtvV46JJRU1NAtiXh_N4onJ1jwKHaF@mail.gmail.com>
-	<AANLkTinznDAXuxv8AU=tZpTq81f_S8vTyAqRMm=nfAKS@mail.gmail.com>
-	<20110317015239.GB31754@kroah.com>
-	<20110317020212.GA2115@kroah.com>
-	<20110317125538.791c26d9.rdunlap@xenotime.net>
-	<20110317200448.GA17827@kroah.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
+	Thu, 17 Mar 2011 16:18:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=bPu9qi6yGm0igvb7y6APNM7ZUdq957MjXY3+9yTsl5UE/GeTxVY8aEXy1Wr8okKx0E
+         BsGBbgl/dhTatxTIH4b8AggM7J14yA8VRbo25mpC+XHNHpTRJd4OudQh/rSx/KEAZJu0
+         BH8go19/paQifsR7Ip8V6ufylYigTc2GuiOTs=
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+To: mjg@redhat.com
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: [PATCH] platform-drivers: x86: fix common misspellings
+Date: Thu, 17 Mar 2011 17:18:22 -0300
+Message-Id: <1300393102-1509-1-git-send-email-lucas.demarchi@profusion.mobi>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011 13:04:48 -0700 Greg KH wrote:
-
-> On Thu, Mar 17, 2011 at 12:55:38PM -0700, Randy Dunlap wrote:
-> > On Wed, 16 Mar 2011 19:02:12 -0700 Greg KH wrote:
-> > 
-> > > On Wed, Mar 16, 2011 at 06:52:39PM -0700, Greg KH wrote:
-> > > > On Wed, Mar 16, 2011 at 05:34:08PM -0700, Linus Torvalds wrote:
-> > > > > On Wed, Mar 16, 2011 at 5:32 PM, Linus Torvalds
-> > > > > <torvalds@linux-foundation.org> wrote:
-> > > > > >
-> > > > > > The one with inifinite errors was vt6655.
-> > > > > 
-> > > > > vt6656 had same/similar issues. In fact, maybe it's simply because I
-> > > > > built both of them in, and get infinite "multiple definitions" because
-> > > > > they are the same driver with small differences?
-> > > > 
-> > > > Ah, probably, if they are both built into the kernel that might happen
-> > > > due to the global symbols in them.  Actually that's odd, Randy's usual
-> > > > 'randconfig' tester usually catches these, I'll make the Kconfig files
-> > > > force them to be modules to keep this from happening in the future.
-> > > 
-> > > Yes, that looks like the problem, as building them as modules in your
-> > > tree right now works just fine.
-> > > 
-> > > This patch below should solve your build issue, let me know if it
-> > > doesn't.
-> > 
-> > Thanks for the patch.  You had suggested 1-2 months ago that someone do
-> > this, so I was waiting to see if someone would actually do it.
-> 
-> Ah, sorry about that, I forgot about it.
-> 
-> > I was hoping that a staging developer would do it (not the staging
-> > maintainer).
-> 
-> Heh, well, these drivers are just "placeholders" as the "real" in-kernel
-> drivers are being developed for this hardware, so I don't expect to see
-> much, if any development happening on them.
-
-oh well, rm -rf them then.
-
+Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+Hi Matthew,
+
+please consider applying the following patch to fix common misspellings. It was
+generated by 'codespell' tool and then manually reviewed.
+
+
+regards,
+Lucas De Marchi
+
+
+ drivers/platform/x86/asus-laptop.c        |    2 +-
+ drivers/platform/x86/compal-laptop.c      |    2 +-
+ drivers/platform/x86/eeepc-laptop.c       |    2 +-
+ drivers/platform/x86/intel_rar_register.c |    2 +-
+ drivers/platform/x86/intel_scu_ipc.c      |    2 +-
+ drivers/platform/x86/sony-laptop.c        |    6 +++---
+ drivers/platform/x86/thinkpad_acpi.c      |    4 ++--
+ 7 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index f3aa6a7..c300cb5 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -29,7 +29,7 @@
+  *  John Belmonte  - ACPI code for Toshiba laptop was a good starting point.
+  *  Eric Burghard  - LED display support for W1N
+  *  Josh Green     - Light Sens support
+- *  Thomas Tuttle  - His first patch for led support was very helpfull
++ *  Thomas Tuttle  - His first patch for led support was very helpful
+  *  Sam Lin        - GPS support
+  */
+ 
+diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
+index 034572b..5d02947 100644
+--- a/drivers/platform/x86/compal-laptop.c
++++ b/drivers/platform/x86/compal-laptop.c
+@@ -201,7 +201,7 @@ static bool extra_features;
+  * into 0x4F and read a few bytes from the output, like so:
+  *	u8 writeData = 0x33;
+  *	ec_transaction(0x4F, &writeData, 1, buffer, 32, 0);
+- * That address is labled "fan1 table information" in the service manual.
++ * That address is labelled "fan1 table information" in the service manual.
+  * It should be clear which value in 'buffer' changes). This seems to be
+  * related to fan speed. It isn't a proper 'realtime' fan speed value
+  * though, because physically stopping or speeding up the fan doesn't
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index 49d9ad7..9098077 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -1321,7 +1321,7 @@ static void cmsg_quirk(struct eeepc_laptop *eeepc, int cm, const char *name)
+ {
+ 	int dummy;
+ 
+-	/* Some BIOSes do not report cm although it is avaliable.
++	/* Some BIOSes do not report cm although it is available.
+ 	   Check if cm_getv[cm] works and, if yes, assume cm should be set. */
+ 	if (!(eeepc->cm_supported & (1 << cm))
+ 	    && !read_acpi_int(eeepc->handle, cm_getv[cm], &dummy)) {
+diff --git a/drivers/platform/x86/intel_rar_register.c b/drivers/platform/x86/intel_rar_register.c
+index 2b11a333..bde47e9 100644
+--- a/drivers/platform/x86/intel_rar_register.c
++++ b/drivers/platform/x86/intel_rar_register.c
+@@ -485,7 +485,7 @@ EXPORT_SYMBOL(rar_lock);
+  *
+  *	The register_rar function is to used by other device drivers
+  *	to ensure that this driver is ready. As we cannot be sure of
+- *	the compile/execute order of drivers in ther kernel, it is
++ *	the compile/execute order of drivers in the kernel, it is
+  *	best to give this driver a callback function to call when
+  *	it is ready to give out addresses. The callback function
+  *	would have those steps that continue the initialization of
+diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
+index a91d510..940accb 100644
+--- a/drivers/platform/x86/intel_scu_ipc.c
++++ b/drivers/platform/x86/intel_scu_ipc.c
+@@ -9,7 +9,7 @@
+  * as published by the Free Software Foundation; version 2
+  * of the License.
+  *
+- * SCU runing in ARC processor communicates with other entity running in IA
++ * SCU running in ARC processor communicates with other entity running in IA
+  * core through IPC mechanism which in turn messaging between IA core ad SCU.
+  * SCU has two IPC mechanism IPC-1 and IPC-2. IPC-1 is used between IA32 and
+  * SCU where IPC-2 is used between P-Unit and SCU. This driver delas with
+diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
+index 5e83370..d09be525 100644
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -591,7 +591,7 @@ struct sony_nc_value {
+ 	int value;		/* current setting */
+ 	int valid;		/* Has ever been set */
+ 	int debug;		/* active only in debug mode ? */
+-	struct device_attribute devattr;	/* sysfs atribute */
++	struct device_attribute devattr;	/* sysfs attribute */
+ };
+ 
+ #define SNC_HANDLE_NAMES(_name, _values...) \
+@@ -2828,7 +2828,7 @@ static int sony_pic_add(struct acpi_device *device)
+ 	/* request io port */
+ 	list_for_each_entry_reverse(io, &spic_dev.ioports, list) {
+ 		if (request_region(io->io1.minimum, io->io1.address_length,
+-					"Sony Programable I/O Device")) {
++					"Sony Programmable I/O Device")) {
+ 			dprintk("I/O port1: 0x%.4x (0x%.4x) + 0x%.2x\n",
+ 					io->io1.minimum, io->io1.maximum,
+ 					io->io1.address_length);
+@@ -2836,7 +2836,7 @@ static int sony_pic_add(struct acpi_device *device)
+ 			if (io->io2.minimum) {
+ 				if (request_region(io->io2.minimum,
+ 						io->io2.address_length,
+-						"Sony Programable I/O Device")) {
++						"Sony Programmable I/O Device")) {
+ 					dprintk("I/O port2: 0x%.4x (0x%.4x) + 0x%.2x\n",
+ 							io->io2.minimum, io->io2.maximum,
+ 							io->io2.address_length);
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index eb99223..3b33884 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -2407,7 +2407,7 @@ static void hotkey_compare_and_issue_event(struct tp_nvram_state *oldn,
+ 	 * This code is supposed to duplicate the IBM firmware behaviour:
+ 	 * - Pressing MUTE issues mute hotkey message, even when already mute
+ 	 * - Pressing Volume up/down issues volume up/down hotkey messages,
+-	 *   even when already at maximum or minumum volume
++	 *   even when already at maximum or minimum volume
+ 	 * - The act of unmuting issues volume up/down notification,
+ 	 *   depending which key was used to unmute
+ 	 *
+@@ -2990,7 +2990,7 @@ static void tpacpi_send_radiosw_update(void)
+ 	 * rfkill input events, or we will race the rfkill core input
+ 	 * handler.
+ 	 *
+-	 * tpacpi_inputdev_send_mutex works as a syncronization point
++	 * tpacpi_inputdev_send_mutex works as a synchronization point
+ 	 * for the above.
+ 	 *
+ 	 * We optimize to avoid numerous calls to hotkey_get_wlsw.
+-- 
+1.7.4.1
+
