@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab1CQFp4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 01:45:56 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:44208 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576Ab1CQFpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 01:45:50 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: X32 psABI status update
-Date: Thu, 17 Mar 2011 01:45:45 -0400
-User-Agent: KMail/1.13.6 (Linux/2.6.37.3; KDE/4.6.0; x86_64; ; )
-Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
-References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com> <201103162257.10440.vapier@gentoo.org> <AANLkTikfiVvxrxakH-_pch6v0jkT1yZstw4kXShyx+Sd@mail.gmail.com>
-In-Reply-To: <AANLkTikfiVvxrxakH-_pch6v0jkT1yZstw4kXShyx+Sd@mail.gmail.com>
+	id S1751604Ab1CQFuC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 01:50:02 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40102 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab1CQFuA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 01:50:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=ZKnW5yOyvtzzkDNwIDA+T11DpmHcdwmXTRzb6TUUKt2NbTu0k0uveXM4KszOLC5yw2
+         wweSw4VeUyi+Hb/pPFFGSnZP6VuOsxL8xEST4J1rP9tghNNztX47YI9US3Cqa6K/RYfG
+         2bdhPRT4mOZHhRr/cGTu2GAfjVylUyw6TEUEc=
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1704446.IzFq2RYmyt";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103170145.46326.vapier@gentoo.org>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <694698.37646.qm@web120506.mail.ne1.yahoo.com>
+References: <694698.37646.qm@web120506.mail.ne1.yahoo.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 17 Mar 2011 13:49:28 +0800
+Message-ID: <AANLkTimzto6-fhgH25bh09DfReuTawXR9V_9PZMx9djA@mail.gmail.com>
+Subject: Re: [PATCH] rtc: rtc-ds1390/rtc-ds3234/rtc-m41t94: eliminate compile warning
+To: Dennis Aberilla <denzzzhome@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, Mark Jackson <mpfj@mimc.co.uk>,
+        "Kim B. Heino" <Kim.Heino@bluegiga.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1704446.IzFq2RYmyt
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+hi Dennis,
 
-On Thursday, March 17, 2011 01:21:16 H.J. Lu wrote:
-> On Wed, Mar 16, 2011 at 7:57 PM, Mike Frysinger <vapier@gentoo.org> wrote:
-> > ok, took long enough, but that answers most things.  your usage of "x32=
-=2D"
-> > prefixed binaries in the documentation seems to imply a lot more than t=
-he
-> > fact you just picked those locally to avoid system collisions.  this
-> > isnt a wiki page, otherwise i'd clean things up for you.
->=20
-> Any suggestion how to create a wiki page for x32?
+2011/3/17 Dennis Aberilla <denzzzhome@yahoo.com>:
+> Hi Axel, that doesn't seem to make sense to me since "platform_get_drvdata" is (from include/linux/platform_device.h):
+>
+> #define platform_get_drvdata(_dev)      dev_get_drvdata(&(_dev)->dev)
 
-seems like the sites.google.com documentation says it includes wiki support.
-	http://sites.google.com/site/projectwikitemplate_en/
+These drivers are registered as spi drivers, not platform drivers.
+How about using spi_get_drvdata instead.
 
-ive never used google sites before, so i dont know how to actually enable i=
-t=20
-on the admin side of things.
-
-> > in looking at the gcc files, it doesnt seem like there's any defines
-> > setup to declare x32 directly.  instead, you'd have to do something
-> > like: #ifdef __x86_64__
-> > # if __SIZEOF_LONG__ =3D=3D 8
-> > /* x86_64 */
-> > # else
-> > /* x32 */
-> > # endif
-> > #endif
-> >=20
-> > any plans on adding an __x32__ (or whatever) cpp symbol to keep people
-> > from coming up with their own special/broken crap ?  or are there some
-> > already that i'm not seeing ?
->=20
-> The idea is in most cases, you only need to check __x86_64__ since x32 and
-> x86-64 are very close.  In some cases, x32 is very different from x86_64,
-> like assembly codes on long and pointer, you can check __x86_64__ and
-> __LP64__. In glibc, I used a different approach by using macros REG_RAX,
-> .., MOV_LP, ADD_LP, SUB_LP and CMP_LP in assembly codes.
-
-arm/mips/ppc sets up explicit ABI defines to clearly differentiate between=
-=20
-things.  while __LP64__ should work here, it seems like a poor substitute. =
-=20
-how about builtin_define("__X32__") ?  or __ABI_X32__ ?  doesnt seem like i=
-386=20
-has a standard in this regard to piggy off of.
-=2Dmike
-
---nextPart1704446.IzFq2RYmyt
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJNgaAKAAoJEEFjO5/oN/WBeaUQAJDL6HRSRh3OT884mVHGzzG/
-ndVupj9BUnqtPCrwN4XKS/S1wiF1oKQAoulP8MCHTo8FhojjU5/kFiFLnsuuNd2s
-8a00IBKavJgSAJv2bYzjJKaZ/sFH5mM77d8SoLZPtQuXnREtTjwhZ3jgKd0SbsIX
-ltTyGFWkslZefh+5N5T64w0m9UuotHOQViUECmbr9j+3lsAvoISoDv5B6xHoLftX
-dwFfvQPMV+6rFMZgcLt5214hGHAZ4oN+KUv8Nk+O6/dRENhxt1uTg6mT7uEeTEGu
-aEM6m56peuzHNM0NJmPkMdDaXamlfCNca75UtHFro8UEBHyXGdErdr2FBHA1QZK9
-XSyib7SW4Y5fgU6PcdjSimDmzLErR5EclP66XjVvquVml7+qPAnAMfcrlpJWgvc+
-tS9UoVpqOqIAn0ashxx83hZXoM4WAy0L7NjSYWAL/7bJS4Zhl9vRoCdGDoT59JAc
-mL8u0yfzoKZtGh3RO7LlV00VGgoPpoO7MAur4xeTrrFMh9e9KOcZrP5gr7EGT4Fp
-0w4fJd+5p1WUQpIvvDDs7piXlqXJd/VW5cm8b+tTFloNXDjk2vlogRUoqXHuHdfB
-HyZOiZrU6j4SxKqAG2Ds6R3eFmLtEhP1z+VYBaOxzwG2M/hyJn9k0JAaFyiCBV1A
-gkU0BdVc++t+Nft7p64X
-=g7zi
------END PGP SIGNATURE-----
-
---nextPart1704446.IzFq2RYmyt--
+Regards,
+Axel
