@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab1CQLqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:46:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55127 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910Ab1CQLqe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:46:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=LAVSPWyawAMKeQiLxnSNcxBMq382uaZJubH0H1NOFrMNwaQIPv3VT8YnrWOy1GdkKj
-         AKPfOUzs7jf1FxzyCLE/sqmecJAlDs5ysXq0rLnLodGARwuGikzXrnmyzjcjN4JRmo2N
-         3nBc/qx1iDAWWEy1Nx5rhpZ0tkghPgf9d5k5E=
+	id S1754112Ab1CQLrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:47:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752910Ab1CQLrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 07:47:07 -0400
+Message-ID: <4D81F4B3.4000004@redhat.com>
+Date: Thu, 17 Mar 2011 08:46:59 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D80C47C.80300@draigBrady.com>
-References: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com>
- <20110315091412.de6eb63c.rdunlap@xenotime.net> <AANLkTikU_kPOoNv6gJiPOsmrkFDddTLQ-0--wViYyFxj@mail.gmail.com>
- <4D80C47C.80300@draigBrady.com>
-From: Aneesh Bhasin <contact.aneesh@gmail.com>
-Date: Thu, 17 Mar 2011 17:16:13 +0530
-Message-ID: <AANLkTi=gN=DOU9bQtqdr1s44y5QgLn0W9_oRb9JTMWNa@mail.gmail.com>
-Subject: Re: smap output - unnamed entries and heap
-To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigbrady.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        linux-newbie <linux-newbie@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Greg KH <greg@kroah.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [ANNOUNCE] usbmon capture and parser script
+References: <4D8102A9.9080202@redhat.com> <20110316194758.GA32557@kroah.com> <1300306845.1954.7.camel@t41.thuisdomein>
+In-Reply-To: <1300306845.1954.7.camel@t41.thuisdomein>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/16 Pádraig Brady <P@draigbrady.com>:
-> On 16/03/11 05:19, Aneesh Bhasin wrote:
->> Also, is there a way in linux (without using
->> dedicated tools like valgrind), to see how much heap or anonymous
->> memory is attributed to code arising from a particular library/binary
->
-> You might find ps_mem.py useful.
-> If parses smaps and reports RAM usage of a program
->
-> http://www.pixelbeat.org/scripts/ps_mem.py
->
-> cheers,
-> Pádraig.
+Em 16-03-2011 17:20, Paul Bolle escreveu:
+> On Wed, 2011-03-16 at 12:47 -0700, Greg KH wrote:
+>> Very cool stuff.  You are away of:
+>> 	http://vusb-analyzer.sourceforge.net/
+>> right?
 
-I did try that script. Unfortunately, I not only want the memory used
-for my program but also, which library is contributing to that memory.
-To that end, I have written a small script which parses the smap
-output in a format more suitable for my analysis.
+Thanks for pointing it. It seems very interesting.
 
-However, as I wrote earlier, there a lot of anonymous memory regions
-listed in smap output (with permission rwxp) - and I do not know of
-any way in which I could associate these memory mapping to a
-particular library..
+Paul, 
 
-Any pointers in this regard will be highly appreciated :)
+On a quick test, it seems that it doesn't recognize the tcpdump file 
+format (at least, it was not able to capture the dump files I got 
+with the beagleboard). Adding support for it could be an interesting 
+addition to your code. 
 
-Regards,
-Aneesh
+Btw, it seems that most of your work is focused on getting VMware logs.
+Most USB adapters I handle are USB 2.0 only, and have very high 
+bandwidth requirements (something like 40%-60% of the total bandwidth
+available at the USB bus). It would be nice to be capable of using a
+VM on some cases, but the last time I tested VMWare, kvm, etc, none 
+of them were capable of properly support USB 2.0 with isoc data transfers.
+
+Do you know if any of them are now capable of properly emulate USB 2.0
+isoc transfers and give enough performance for the devices to actually
+work with such high-bandwidth requirements?
+
+>> I know you are doing this in console mode, but it looks close to the
+>> same idea.
+
+Yes, there are some similarities, although I think that the tools
+complement each other.
+
+Doing it via console is nice, as I can just use the serial interface of
+the beagleboard to capture and parse data in real time.
+
+An offline graphic analyser is interesting, especially when you need to
+filter data and check event timings.
+
+> Perhaps there should be some references to vusb-analyzer and similar
+> tools in Documentation/usb/usbmon.txt (it now only mentions "usbdump"
+> and "USBMon"). I remember looking for a tool like that (ie, a parser)
+> for quite some time before stumbling onto vusb-analyzer.
+
+Yeah, that seems a good idea to me too.
+
+Cheers,
+Mauro
