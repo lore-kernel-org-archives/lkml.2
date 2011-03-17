@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab1CQTz6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 15:55:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57205 "EHLO mx2.suse.de"
+	id S1755225Ab1CQUAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 16:00:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14776 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208Ab1CQTz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 15:55:56 -0400
-Date: Thu, 17 Mar 2011 20:55:54 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: [PULL REQUEST] Ext3, jbd, and quota fixes for 2.6.39-rc1
-Message-ID: <20110317195554.GA13136@quack.suse.cz>
+	id S1755154Ab1CQUAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 16:00:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,201,1299484800"; 
+   d="scan'208";a="721315966"
+Message-ID: <4D826863.2040406@linux.intel.com>
+Date: Thu, 17 Mar 2011 13:00:35 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH 2/2] futex: Fix WARN_ON() test for UP
+References: <20110317192105.308382309@goodmis.org> <20110317192208.682654502@goodmis.org>
+In-Reply-To: <20110317192208.682654502@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+On 03/17/2011 12:21 PM, Steven Rostedt wrote:
+> From: Steven Rostedt<srostedt@redhat.com>
+>
+> An update of the futex code had a
+>
+> 	WARN_ON(!spin_is_locked(q->lock_ptr))
+>
+> But on UP, spin_is_locked() is always false, and will
+> trigger this warning, and even worse, it will exit the function
+> without doing the necessary work.
+>
+> Converting this to a WARN_ON_SMP() fixes the problem.
+>
+> Reported-by: Richard Weinberger<richard@nod.at>
+> Tested-by: Richard Weinberger<richard@nod.at>
+> Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
 
-  could you please pull from
+Acked-by: Darren Hart <dvhart@linux.intel.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
 
-The branch contains several ext3, jbd, and quota fixes.
+> ---
+>   kernel/futex.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 9fe9131..850d00b 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -785,8 +785,8 @@ static void __unqueue_futex(struct futex_q *q)
+>   {
+>   	struct futex_hash_bucket *hb;
+>
+> -	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
+> -			|| plist_node_empty(&q->list)))
+> +	if (WARN_ON_SMP(!q->lock_ptr || !spin_is_locked(q->lock_ptr))
+> +	    || WARN_ON(plist_node_empty(&q->list)))
+>   		return;
+>
+>   	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
+> -- 1.7.2.3 -- To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in the body of a message to majordomo@vger.kernel.org More
+> majordomo info at http://vger.kernel.org/majordomo-info.html Please read
+> the FAQ at http://www.tux.org/lkml/
 
-The full shortlog is:
-
-Amir Goldstein (1):
-      ext3: skip orphan cleanup on rocompat fs
-
-Davidlohr Bueso (1):
-      quota: return -ENOMEM when memory allocation fails
-
-Eric Sandeen (1):
-      ext3: Always set dx_node's fake_dirent explicitly.
-
-Justin P. Mattock (1):
-      jbd: Remove one to many n's in a word.
-
-Tao Ma (3):
-      ext3: Adjust trim start with first_data_block.
-      ext3: speed up group trim with the right free block count.
-      ext3: Fix an overflow in ext3_trim_fs.
-
-The diffstat is
-
- fs/ext3/balloc.c    |   21 ++++++++++++---------
- fs/ext3/namei.c     |    2 +-
- fs/ext3/super.c     |    7 +++++++
- fs/jbd/journal.c    |    2 +-
- fs/jbd2/journal.c   |    2 +-
- fs/quota/quota_v2.c |    2 +-
- 6 files changed, 23 insertions(+), 13 deletions(-)
-
-							Thanks
-								Honza
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
