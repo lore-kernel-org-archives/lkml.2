@@ -1,119 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab1CQDFC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 23:05:02 -0400
-Received: from nm23.bullet.mail.ne1.yahoo.com ([98.138.90.86]:21167 "HELO
-	nm23.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751202Ab1CQDFA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 23:05:00 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 881431.13225.bm@omp1002.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=bSPWX1kd0Wa6qicd3Y9QQN1y17Vb3KatyYbwHJOw5whyfbjoofFmiKWRFveTP0/GIqZ8PtwIUWEbzypToihZnEkrn3s9lvEcpOng8vYlz4QCkVREiRgfkQ+S23L+MI02YRKQavHkVPA7lrfUio8L1c+hmff17C5tnp+Grd0aHI8=;
-Message-ID: <694698.37646.qm@web120506.mail.ne1.yahoo.com>
-X-YMail-OSG: VHmwbccVM1kseHMMjlSeUJQolTNe.o2QdUvlLuR9Z0CHGiE
- OaJqqUPhQfTZZL4fnivIjLmkp3dB98plW3ijyc5g3xdn9mJ9Ce.IwbZx1DC6
- 2fVjb5NqZRDwS2Rt5zTRNSwHXOYtlYa33_a32UBDmobSyZOT.DIjW9QumMxh
- 72zxkDn.6gmjqkiIPrjAOzrLrpw8W26cjN6JIK1A1CAOoand6d8MixP_hMuB
- ouTwZRNNtxBoTgYi9RowFmPs.RsHokcJPeATdupvKfZuBhnWgbrsjIm45324
- IYsBxQ8NiNnc0AY2q33b54FxCji55ug8SUx6uJaoBKRR5PGvfpoGxfvY.54e
- lxHes0Rz8BwMyPMm9hkgF7IWXNF8-
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.295617
-Date: Wed, 16 Mar 2011 20:04:59 -0700 (PDT)
-From: Dennis Aberilla <denzzzhome@yahoo.com>
-Subject: Re: [PATCH] rtc: rtc-ds1390/rtc-ds3234/rtc-m41t94: eliminate compile warning
-To: linux-kernel@vger.kernel.org, Axel Lin <axel.lin@gmail.com>
-Cc: Mark Jackson <mpfj@mimc.co.uk>, "Kim B. Heino" <Kim.Heino@bluegiga.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754524Ab1CQDGC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 23:06:02 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39928
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752452Ab1CQDGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 23:06:00 -0400
+Date: Wed, 16 Mar 2011 20:06:38 -0700 (PDT)
+Message-Id: <20110316.200638.189689580.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel, that doesn't seem to make sense to me since "platform_get_drvdata" is (from include/linux/platform_device.h):
 
-#define platform_get_drvdata(_dev)      dev_get_drvdata(&(_dev)->dev)
+Several small fixes, and a series of cleanups to the IRQ
+handling code of sparc32 to get us ready for a full generic
+IRQ conversion.
 
-|Dennis
+Please pull, thanks a lot!
 
+The following changes since commit 4c5811bf463b0ef82fabbd1708f8bb2d753aeb18:
 
---- On Thu, 24/2/11, Axel Lin <axel.lin@gmail.com> wrote:
+  Merge branch 'devicetree/next' of git://git.secretlab.ca/git/linux-2.6 (2011-03-16 17:28:10 -0700)
 
-From: Axel Lin <axel.lin@gmail.com>
-Subject: [PATCH] rtc: rtc-ds1390/rtc-ds3234/rtc-m41t94: eliminate compile warning
-To: linux-kernel@vger.kernel.org
-Cc: "Mark Jackson" <mpfj@mimc.co.uk>, "Dennis Aberilla" <denzzzhome@yahoo.com>, "Kim B. Heino" <Kim.Heino@bluegiga.com>, "Alessandro Zummo" <a.zummo@towertech.it>, "Thomas Gleixner" <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Received: Thursday, 24 February, 2011, 9:28 AM
+are available in the git repository at:
 
-Eliminate the following compile warning:
-drivers/rtc/rtc-ds1390.c: In function 'ds1390_remove':
-drivers/rtc/rtc-ds1390.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
-drivers/rtc/rtc-ds3234.c: In function 'ds3234_remove':
-drivers/rtc/rtc-ds3234.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
-drivers/rtc/rtc-m41t94.c: In function 'm41t94_remove':
-drivers/rtc/rtc-m41t94.c:139: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-next-2.6.git master
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Mark Jackson <mpfj@mimc.co.uk>
-Cc: Dennis Aberilla <denzzzhome@yahoo.com>
-Cc: Kim B. Heino <Kim.Heino@bluegiga.com>
----
- drivers/rtc/rtc-ds1390.c |    2 +-
- drivers/rtc/rtc-ds3234.c |    2 +-
- drivers/rtc/rtc-m41t94.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Ben Hutchings (1):
+      sparc: Fix .size directive for do_int_load
 
-diff --git a/drivers/rtc/rtc-ds1390.c b/drivers/rtc/rtc-ds1390.c
-index 26a86d2..4832248 100644
---- a/drivers/rtc/rtc-ds1390.c
-+++ b/drivers/rtc/rtc-ds1390.c
-@@ -158,7 +158,7 @@ static int __devinit ds1390_probe(struct spi_device *spi)
- 
- static int __devexit ds1390_remove(struct spi_device *spi)
- {
--    struct ds1390 *chip = platform_get_drvdata(spi);
-+    struct ds1390 *chip = dev_get_drvdata(&spi->dev);
- 
-     rtc_device_unregister(chip->rtc);
-     kfree(chip);
-diff --git a/drivers/rtc/rtc-ds3234.c b/drivers/rtc/rtc-ds3234.c
-index a774ca3..07a558e 100644
---- a/drivers/rtc/rtc-ds3234.c
-+++ b/drivers/rtc/rtc-ds3234.c
-@@ -158,7 +158,7 @@ static int __devinit ds3234_probe(struct spi_device *spi)
- 
- static int __devexit ds3234_remove(struct spi_device *spi)
- {
--    struct rtc_device *rtc = platform_get_drvdata(spi);
-+    struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
- 
-     rtc_device_unregister(rtc);
-     return 0;
-diff --git a/drivers/rtc/rtc-m41t94.c b/drivers/rtc/rtc-m41t94.c
-index c8c97a4..21e6091 100644
---- a/drivers/rtc/rtc-m41t94.c
-+++ b/drivers/rtc/rtc-m41t94.c
-@@ -136,7 +136,7 @@ static int __devinit m41t94_probe(struct spi_device *spi)
- 
- static int __devexit m41t94_remove(struct spi_device *spi)
- {
--    struct rtc_device *rtc = platform_get_drvdata(spi);
-+    struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
- 
-     if (rtc)
-         rtc_device_unregister(rtc);
--- 
-1.7.2
+Daniel Hellstrom (3):
+      sparc32: added U-Boot build target: uImage
+      SPARC/LEON: power down instruction different of different LEONs
+      sparc32/leon: FPU-FSR only available when FPU present
 
+David S. Miller (3):
+      sparc64: Sharpen address space randomization calculations.
+      sparc64: Fix build errors with gcc-4.6.0
+      sparc32: Fix might-be-used-uninitialized warning in do_sparc_fault().
 
+John Stultz (1):
+      sparc: convert to clocksource_register_hz/khz
 
+Kristoffer Glembo (6):
+      sparc: Replace open coded page alignment with PAGE_ALIGN macro.
+      sparc: Add pci32_unmap_page.
+      sparc/leon: Add LEON dma_ops.
+      sparc/leon: Make mmu_inval_dma_area flush dcache for LEONs without snooping enabled.
+      sparc: Make mmu_inval_dma_area take void * instead of unsigned long to minimize casts.
+      sparc: Fix sbus_alloc_coherent error handling.
 
+Sam Ravnborg (19):
+      sparc64: fix direct access to irq_desc
+      sparc: in handler_irq() rename irq parameter to pil
+      sparc64: all pointers to irq_handler_data renamed to handler_data
+      sparc64: use {get,set}_irq_data for handler_data
+      sparc64: use up-to-data genirq functions
+      sparc64: rename virt_irq => irq - I
+      sparc64: rename virt_irq => irq - II
+      sparc32: remove tick14.c
+      sparc32: add irq + smp declarations to headers
+      sparc32,sun4c: irq file cleanup
+      sparc32,sun4m: irq, smp files cleanup
+      sparc32,sun4d: irq, smp files cleanup
+      sparc32,sun4d: drop unused code in sun4d_distribute_irqs()
+      sparc32, sun4d: add comment in empty statement in sun4d_request_irq()
+      sparc32: irq_32.c cleanup
+      sparc32: fix build with leon or floppy enabled
+      sparc32: introduce sparc_irq_config
+      sparc32: introduce build_device_irq
+      sparc32,sun4m: percpu and global register definitions moved to irq.h
 
-
-      
+ arch/sparc/Kconfig                 |   34 ++++
+ arch/sparc/Makefile                |    3 +-
+ arch/sparc/boot/Makefile           |   31 ++++
+ arch/sparc/include/asm/irq_64.h    |   18 +-
+ arch/sparc/include/asm/leon.h      |    3 -
+ arch/sparc/include/asm/leon_amba.h |    6 +
+ arch/sparc/include/asm/mmu_32.h    |    3 +
+ arch/sparc/include/asm/smp_32.h    |    6 +
+ arch/sparc/kernel/Makefile         |    2 +-
+ arch/sparc/kernel/cpu.c            |    2 +-
+ arch/sparc/kernel/entry.h          |    4 +-
+ arch/sparc/kernel/iommu.c          |    3 -
+ arch/sparc/kernel/ioport.c         |  108 +++++++-----
+ arch/sparc/kernel/irq.h            |   42 ++++-
+ arch/sparc/kernel/irq_32.c         |  260 +++++++++++++-----------------
+ arch/sparc/kernel/irq_64.c         |  312 ++++++++++++++++++------------------
+ arch/sparc/kernel/kernel.h         |   49 ++++++
+ arch/sparc/kernel/ldc.c            |   28 ++--
+ arch/sparc/kernel/leon_kernel.c    |   11 +-
+ arch/sparc/kernel/leon_pmc.c       |   82 ++++++++++
+ arch/sparc/kernel/leon_smp.c       |   36 ++---
+ arch/sparc/kernel/of_device_32.c   |   59 +------
+ arch/sparc/kernel/pci.c            |   11 +-
+ arch/sparc/kernel/pci_common.c     |   11 +-
+ arch/sparc/kernel/pci_fire.c       |   10 +-
+ arch/sparc/kernel/pci_impl.h       |    4 +-
+ arch/sparc/kernel/pci_msi.c        |   44 +++---
+ arch/sparc/kernel/pci_schizo.c     |    4 +-
+ arch/sparc/kernel/pci_sun4v.c      |    9 +-
+ arch/sparc/kernel/pcr.c            |    2 +-
+ arch/sparc/kernel/prom_irqtrans.c  |   16 +-
+ arch/sparc/kernel/ptrace_64.c      |    3 +-
+ arch/sparc/kernel/setup_32.c       |   19 +--
+ arch/sparc/kernel/smp_64.c         |   11 +-
+ arch/sparc/kernel/sun4c_irq.c      |   85 ++++++-----
+ arch/sparc/kernel/sun4d_irq.c      |  298 +++++++++++++++++++---------------
+ arch/sparc/kernel/sun4d_smp.c      |  176 ++++++++-------------
+ arch/sparc/kernel/sun4m_irq.c      |  202 +++++++++++------------
+ arch/sparc/kernel/sun4m_smp.c      |   91 +++--------
+ arch/sparc/kernel/sys_sparc_64.c   |   21 ++-
+ arch/sparc/kernel/tick14.c         |   39 -----
+ arch/sparc/kernel/time_32.c        |    2 +-
+ arch/sparc/kernel/time_64.c        |    4 +-
+ arch/sparc/kernel/traps_64.c       |    3 +-
+ arch/sparc/kernel/una_asm_64.S     |    2 +-
+ arch/sparc/mm/fault_32.c           |    3 +-
+ arch/sparc/prom/misc_32.c          |    4 -
+ 47 files changed, 1117 insertions(+), 1059 deletions(-)
+ create mode 100644 arch/sparc/kernel/leon_pmc.c
+ delete mode 100644 arch/sparc/kernel/tick14.c
