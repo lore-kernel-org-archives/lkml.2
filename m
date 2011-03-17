@@ -1,50 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1CQMkB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 08:40:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37143 "EHLO mx2.suse.de"
+	id S1753681Ab1CQMoR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 08:44:17 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:45457 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab1CQMj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 08:39:59 -0400
-Date: Thu, 17 Mar 2011 13:39:58 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] modpost: fix trailing comma
-Message-ID: <20110317123958.GA30807@sepie.suse.cz>
-References: <20110315141347.d4ee75d3.randy.dunlap@oracle.com>
+	id S1752016Ab1CQMoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 08:44:14 -0400
+Date: Thu, 17 Mar 2011 13:43:50 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Jan Kara <jack@suse.cz>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Curt Wohlgemuth <curtw@google.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-ID: <20110317124350.GQ2140@cmpxchg.org>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <20110311171006.ec0d9c37.akpm@linux-foundation.org>
+ <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+ <20110314202324.GG31120@redhat.com>
+ <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+ <20110315184839.GB5740@redhat.com>
+ <20110316131324.GM2140@cmpxchg.org>
+ <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
+ <20110316215214.GO2140@cmpxchg.org>
+ <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110315141347.d4ee75d3.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 02:13:47PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, Mar 16, 2011 at 09:41:48PM -0700, Greg Thelen wrote:
+> In '[PATCH v6 8/9] memcg: check memcg dirty limits in page writeback' Jan and
+> Vivek have had some discussion around how memcg and writeback mesh.
+> In my mind, the
+> discussions in 8/9 are starting to blend with this thread.
 > 
-> Consolidate locations that print a section whitelist into
-> calls to print_section_list().
+> I have been thinking about Johannes' struct memcg_mapping.  I think the idea
+> may address several of the issues being discussed, especially
+> interaction between
+> IO-less balance_dirty_pages() and memcg writeback.
 > 
-> Fix print_section_list() so that it does not print a trailing
-> comma & space:
+> Here is my thinking.  Feedback is most welcome!
 > 
-> If the reference is valid then annotate the
-> variable with __init* or __refdata (see linux/init.h) or name the variable:
-> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console, 
-> 
-> becomes:
-> If the reference is valid then annotate the
-> variable with __init* or __refdata (see linux/init.h) or name the variable:
-> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  scripts/mod/modpost.c |   23 +++++++++++++++--------
->  1 file changed, 15 insertions(+), 8 deletions(-)
+> The data structures:
+> - struct memcg_mapping {
+>        struct address_space *mapping;
+>        struct mem_cgroup *memcg;
+>        int refcnt;
+>   };
+> - each memcg contains a (radix, hash_table, etc.) mapping from bdi to memcg_bdi.
+> - each memcg_bdi contains a mapping from inode to memcg_mapping.  This may be a
+>   very large set representing many cached inodes.
+> - each memcg_mapping represents all pages within an bdi,inode,memcg.  All
+>   corresponding cached inode pages point to the same memcg_mapping via
+>   pc->mapping.  I assume that all pages of inode belong to no more than one bdi.
+> - manage a global list of memcg that are over their respective background dirty
+>   limit.
+> - i_mapping continues to point to a traditional non-memcg mapping (no change
+>   here).
+> - none of these memcg_* structures affect root cgroup or kernels with memcg
+>   configured out.
 
-Applied to kbuild-2.6.git#kbuild, thanks.
+So structures roughly like this:
 
-Michal
+struct mem_cgroup {
+	...
+	/* key is struct backing_dev_info * */
+	struct rb_root memcg_bdis;
+};
+
+struct memcg_bdi {
+	/* key is struct address_space * */
+	struct rb_root memcg_mappings;
+	struct rb_node node;
+};
+
+struct memcg_mapping {
+	struct address_space *mapping;
+	struct mem_cgroup *memcg;
+	struct rb_node node;
+	atomic_t count;
+};
+
+struct page_cgroup {
+	...
+	struct memcg_mapping *memcg_mapping;
+};
+
+> The routines under discussion:
+> - memcg charging a new inode page to a memcg: will use inode->mapping and inode
+>   to walk memcg -> memcg_bdi -> memcg_mapping and lazily allocating missing
+>   levels in data structure.
+> 
+> - Uncharging a inode page from a memcg: will use pc->mapping->memcg to locate
+>   memcg.  If refcnt drops to zero, then remove memcg_mapping from the memcg_bdi.
+>   Also delete memcg_bdi if last memcg_mapping is removed.
+> 
+> - account_page_dirtied(): nothing new here, continue to set the per-page flags
+>   and increment the memcg per-cpu dirty page counter.  Same goes for routines
+>   that mark pages in writeback and clean states.
+
+We may want to remember the dirty memcg_mappings so that on writeback
+we don't have to go through every single one that the memcg refers to?
+
+> - mem_cgroup_balance_dirty_pages(): if memcg dirty memory usage if above
+>   background limit, then add memcg to global memcg_over_bg_limit list and use
+>   memcg's set of memcg_bdi to wakeup each(?) corresponding bdi flusher.  If over
+>   fg limit, then use IO-less style foreground throttling with per-memcg per-bdi
+>   (aka memcg_bdi) accounting structure.
+
+I wonder if we could just schedule a for_background work manually in
+the memcg case that writes back the corresponding memcg_bdi set (and
+e.g. having it continue until either the memcg is below bg thresh OR
+the global bg thresh is exceeded OR there is other work scheduled)?
+Then we would get away without the extra list, and it doesn't sound
+overly complex to implement.
