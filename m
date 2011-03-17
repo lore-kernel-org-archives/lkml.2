@@ -1,63 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab1CQVDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:03:23 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62760 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab1CQVDU (ORCPT
+	id S1755573Ab1CQVEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:04:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52711 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755196Ab1CQVES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:03:20 -0400
-Date: Thu, 17 Mar 2011 17:03:17 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Greg KH <greg@kroah.com>
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-In-Reply-To: <20110317201320.GB4035@kroah.com>
-Message-ID: <alpine.LFD.2.00.1103171647560.26889@xanadu.home>
-References: <201103111654.04089.arnd@arndb.de> <20110311160308.GQ1760@opensource.wolfsonmicro.com> <20110311161421.GA7843@kroah.com> <20110311162759.GS1760@opensource.wolfsonmicro.com> <20110311163522.GA9291@kroah.com> <20110311164850.GT1760@opensource.wolfsonmicro.com>
- <20110311165642.GA9996@kroah.com> <20110311170807.GV1760@opensource.wolfsonmicro.com> <20110311172345.GA10876@kroah.com> <alpine.LFD.2.00.1103162207130.26889@xanadu.home> <20110317201320.GB4035@kroah.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 17 Mar 2011 17:04:18 -0400
+Date: Thu, 17 Mar 2011 14:04:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?ISO-8859-1?Q? "Andreas_Bie=DFmann" ?= 
+	<andreas.devel@googlemail.com>
+Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+        Anton Altaparmakov <aia21@cantab.net>,
+        George Spelvin <linux@horizon.com>
+Subject: Re: [PATCH] fs-writeback: fix NULL pointer dereference in
+ __mark_inode_dirty
+Message-Id: <20110317140401.4f06793e.akpm@linux-foundation.org>
+In-Reply-To: <4D6E016B.50600@gmail.com>
+References: <1298906733-31427-1-git-send-email-biessmann@corscience.de>
+	<20110228154314.GA4675@swordfish.minsk.epam.com>
+	<4D6BC666.4010603@gmail.com>
+	<20110228162909.GB4675@swordfish.minsk.epam.com>
+	<AANLkTimARkrtmBBgtXmNA=MOD94FWQ8x-qcmLJ8mdQ6o@mail.gmail.com>
+	<4D6E016B.50600@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, Greg KH wrote:
+On Wed, 02 Mar 2011 09:35:55 +0100
+"Andreas Bie__mann" <andreas.devel@googlemail.com> wrote:
 
-> On Wed, Mar 16, 2011 at 10:14:01PM -0400, Nicolas Pitre wrote:
-> > > What drivers need this?  Specifics please.
-> > 
-> > Let me quote Arnd Bergmann:
-> > 
-> > |I have just verified with my Pandaboard that the pins on the SMSC9514
-> > |usb ethernet that are meant to be connected to a serial EEPROM are
-> > |indeed not connected anywhere.
-> > 
-> > > Anyway, specifics are the best way forward if anyone has such a messed
-> > > up system.
-> > 
-> > PandaBoards are becoming quite popular.
+> Dear Jason A. Donenfeld,
 > 
-> I have one right here.
+> Am 01.03.2011 10:00, schrieb Jason A. Donenfeld:
+> > Can you make an isolated test case to trigger this bug?
 > 
-> But can't this device be detected by the usb device id and the quirk
-> added that way?  Like all other "odd" USB devices are currently handled?
+> in my case it is easily reproduceable. I have an SD-card in our embedded
+> device (AVR32 AP7000). Some random data is continuously written to an
+> FAT filesystem on that device. When you pull the card out of the slot
+> you trigger that NULL pointer dereference.
+> 
+> I will try to reproduce that error on my workstation but this will need
+> some time. Maybe I can not hit that race on my quad core workstation but
+> I will give it a try.
+> 
 
-It is not the device which is odd, but rather the environment in which 
-it is being used for this specific case.  I'd expect to see the same 
-SMSC9514 chip also used in off-the-shelf USB-to-Ethernet dongles with no 
-quirks needed.
+afaik this regression didn't get fixed.  Jens put out a patch for
+George to test but there hasn't been any feedback on that yet.  Could
+you guys please give it a spin?
 
-However, a different part of the kernel knows already perfectly well 
-when it is actually running on that specific board.  Hence the desire to 
-come up with a mechanism allowing to tell the driver about a quirk for 
-the particular device instance on this board without having to do the 
-heavy round trip through user space.
+From: Jens Axboe <axboe@kernel.dk>
+
+When we move the potential dirty list entries to the
+default_backing_dev_info, reassign the sb->s_bdi as well. 
+default_backing_dev_info will always be around.  I hope this can fix it up
+for 2.6.38 and we can add the proper ref counting for .39.
+
+Cc: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: George Spelvin <linux@horizon.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Andreas Biemann <biessmann@corscience.de>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Cc: <stable@kernel.org>		[2.6.38.x]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/super.c       |    2 ++
+ fs/sync.c        |    4 ++--
+ mm/backing-dev.c |    2 +-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
+
+diff -puN fs/super.c~vfs-fix-null-pointer-oops-in-sync_inodes_sb fs/super.c
+--- a/fs/super.c~vfs-fix-null-pointer-oops-in-sync_inodes_sb
++++ a/fs/super.c
+@@ -72,6 +72,7 @@ static struct super_block *alloc_super(s
+ #else
+ 		INIT_LIST_HEAD(&s->s_files);
+ #endif
++		s->s_bdi = &default_backing_dev_info;
+ 		INIT_LIST_HEAD(&s->s_instances);
+ 		INIT_HLIST_BL_HEAD(&s->s_anon);
+ 		INIT_LIST_HEAD(&s->s_inodes);
+@@ -1006,6 +1007,7 @@ vfs_kern_mount(struct file_system_type *
+ 	}
+ 	BUG_ON(!mnt->mnt_sb);
+ 	WARN_ON(!mnt->mnt_sb->s_bdi);
++	WARN_ON(mnt->mnt_sb->s_bdi == &default_backing_dev_info);
+ 	mnt->mnt_sb->s_flags |= MS_BORN;
+ 
+ 	error = security_sb_kern_mount(mnt->mnt_sb, flags, secdata);
+diff -puN fs/sync.c~vfs-fix-null-pointer-oops-in-sync_inodes_sb fs/sync.c
+--- a/fs/sync.c~vfs-fix-null-pointer-oops-in-sync_inodes_sb
++++ a/fs/sync.c
+@@ -33,7 +33,7 @@ static int __sync_filesystem(struct supe
+ 	 * This should be safe, as we require bdi backing to actually
+ 	 * write out data in the first place
+ 	 */
+-	if (!sb->s_bdi || sb->s_bdi == &noop_backing_dev_info)
++	if (sb->s_bdi == &noop_backing_dev_info)
+ 		return 0;
+ 
+ 	if (sb->s_qcop && sb->s_qcop->quota_sync)
+@@ -79,7 +79,7 @@ EXPORT_SYMBOL_GPL(sync_filesystem);
+ 
+ static void sync_one_sb(struct super_block *sb, void *arg)
+ {
+-	if (!(sb->s_flags & MS_RDONLY) && sb->s_bdi)
++	if (!(sb->s_flags & MS_RDONLY))
+ 		__sync_filesystem(sb, *(int *)arg);
+ }
+ /*
+diff -puN mm/backing-dev.c~vfs-fix-null-pointer-oops-in-sync_inodes_sb mm/backing-dev.c
+--- a/mm/backing-dev.c~vfs-fix-null-pointer-oops-in-sync_inodes_sb
++++ a/mm/backing-dev.c
+@@ -598,7 +598,7 @@ static void bdi_prune_sb(struct backing_
+ 	spin_lock(&sb_lock);
+ 	list_for_each_entry(sb, &super_blocks, s_list) {
+ 		if (sb->s_bdi == bdi)
+-			sb->s_bdi = NULL;
++			sb->s_bdi = &default_backing_dev_info;
+ 	}
+ 	spin_unlock(&sb_lock);
+ }
+_
 
 
-Nicolas
+btw, Christoph: would this not have been be a less hacky hack?
+
+--- a/fs/fs-writeback.c~a
++++ a/fs/fs-writeback.c
+@@ -73,7 +73,7 @@ static inline struct backing_dev_info *i
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 
+-	if (strcmp(sb->s_type->name, "bdev") == 0)
++	if (sb == blockdev_superblock)
+ 		return inode->i_mapping->backing_dev_info;
+ 
+ 	return sb->s_bdi;
+_
+
