@@ -1,108 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab1CQQoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:44:21 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:3811 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924Ab1CQQoQ convert rfc822-to-8bit (ORCPT
+	id S1754705Ab1CQQpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 12:45:46 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:42973 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760Ab1CQQpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:44:16 -0400
-X-IronPort-AV: E=Sophos;i="4.63,200,1299484800"; 
-   d="scan'208";a="531447898"
-Subject: Re: [PATCH] RPC: killing RPC tasks races fixed
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "skinsbursky@openvz.org" <skinsbursky@openvz.org>
-In-Reply-To: <4D822C3C.9090100@parallels.com>
-References: <20110317121638.15035.39410.stgit@localhost6.localdomain6>
-	 <1300366904.9654.13.camel@lade.trondhjem.org>
-	 <4D822C3C.9090100@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 17 Mar 2011 12:44:14 -0400
-Message-ID: <1300380254.28305.1.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 17 Mar 2011 16:44:15.0446 (UTC) FILETIME=[8D3B6760:01CBE4C2]
+	Thu, 17 Mar 2011 12:45:44 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D823AF8.8070408@cam.ac.uk>
+Date: Thu, 17 Mar 2011 16:46:48 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Kay Sievers <kay.sievers@vrfy.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: IIO comments
+References: <201103152215.20059.arnd@arndb.de> <201103171447.17960.arnd@arndb.de> <4D821DE2.4050707@cam.ac.uk> <201103171603.35700.arnd@arndb.de>
+In-Reply-To: <201103171603.35700.arnd@arndb.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 18:43 +0300, Stanislav Kinsbursky wrote:
-> 17.03.2011 16:01, Trond Myklebust пишет:
-> > On Thu, 2011-03-17 at 15:16 +0300, Stanislav Kinsbursky wrote:
-> >> task->tk_waitqueue must be checked for NULL before trying to wake up task in
-> >> rpc_killall_tasks() because it can be NULL.
-> >>
-> >> Here is an example:
-> >>
-> >> CPU 0               	CPU 1				CPU 2
-> >> --------------------	---------------------	--------------------------
-> >> nfs4_run_open_task
-> >> rpc_run_task
-> >> rpc_execute
-> >> rpc_set_active
-> >> rpc_make_runnable
-> >> (waiting)
-> >> 			rpc_async_schedule
-> >> 			nfs4_open_prepare
-> >> 			nfs_wait_on_sequence
-> >> 						nfs_umount_begin
-> >> 						rpc_killall_tasks
-> >> 						rpc_wake_up_task
-> >> 						rpc_wake_up_queued_task
-> >> 						spin_lock(tk_waitqueue == NULL)
-> >> 						BUG()
-> >> 			rpc_sleep_on
-> >> 			spin_lock(&q->lock)
-> >> 			__rpc_sleep_on
-> >> 			task->tk_waitqueue = q
-> >>
-> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@openvz.org>
-> >>
-> >> ---
-> >>   net/sunrpc/clnt.c |    4 +++-
-> >>   1 files changed, 3 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-> >> index 57d344c..24039fe 100644
-> >> --- a/net/sunrpc/clnt.c
-> >> +++ b/net/sunrpc/clnt.c
-> >> @@ -436,7 +436,9 @@ void rpc_killall_tasks(struct rpc_clnt *clnt)
-> >>   		if (!(rovr->tk_flags&  RPC_TASK_KILLED)) {
-> >>   			rovr->tk_flags |= RPC_TASK_KILLED;
-> >>   			rpc_exit(rovr, -EIO);
-> >> -			rpc_wake_up_queued_task(rovr->tk_waitqueue, rovr);
-> >> +			if (rovr->tk_waitqueue)
-> >> +				rpc_wake_up_queued_task(rovr->tk_waitqueue,
-> >> +							rovr);
-> >
-> > Testing for RPC_IS_QUEUED(rovr) would be better, since that would
-> > optimise away the call to rpc_wake_up_queued_task() altogether for those
-> > tasks that aren't queued.
-> >
+On 03/17/11 15:03, Arnd Bergmann wrote:
+> On Thursday 17 March 2011, Jonathan Cameron wrote:
+>> On 03/17/11 13:47, Arnd Bergmann wrote:
 > 
-> Yes, I agree with testing RPC_IS_QUEUED(rovr) since such approach looks
-> clearer and in 2.6.38 tk_waitqueue is initialized prior to set
-> RPC_TASK_QUEUED bit.
-> But I found this problem in 2.6.32 rhel kernel where this set sequence is inversed.
-> Will send fixed version soon.
+>>> What about hardware devices that have multiple unrelated streams
+>>> of buffered input data?
+>>
+>> Certainly plausible, but so far the only ones I've seen that actually
+>> do this are really just two bits of silicon in the same plastic
+>> package.  They tend to use different i2c addresses or spi chip
+>> selects anyway so as far as the kernel is concerned are completely
+>> separate.  You are correct that any device which truly has different
+>> streams of data would indeed need more than one device.
+> 
+> Ok.
+> 
+>>>>> * One chardev for each iio device
+>>>>
+>>>> currently 1-3. (event line, buffer access, buffer event)
+>>>
+>>> It would be really nice to unify this, as I said. What
+>>> are the reasons why you think it cannot or should not be
+>>> done?
+>>
+>> Simplicity perhaps, but I'll definitely give your suggestions
+>> a go and see where we end up. 
+> 
+> Since I haven't fully understood the distinction between the
+> three chardevs, it may of course turn out a bad idea, but I
+> think it would simplify the core code if you could assume
+> that every iio device has exactly one chardev interface,
+> so you could give them the same unique number and manage
+> the life time together.
+It simplifies that corner, but I'm a little worried that it
+will add a lot of interlinks between the currently fairly
+disconnected elements that go through a character device.
 
-Are you sure? Why would the 2.6.32 rhel kernel differ from the mainline
-2.6.32 kernel in this respect?
+If we can keep those links to a minimum (which I think
+we can, but haven't tried yet!) it will be a sensible move.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+> 
+>>>>> * Use epoll to wait for data and/or out-of-band messages
+>>>>> * Use chrdev read to get events from the buffer
+>>>>
+>>>> and data?
+>>>
+>>> I mean get the data associated with the event. The event
+>>> itself as you said does not have any data, so we would not
+>>> need to read it, just to use poll()/epoll() in order to
+>>> wait for it.
+>>
+>> Sure. But devices can do a heck of a lot of different events.
+>> (certainly 10's or maybe more).  I'm not immediately clear
+>> on how to handle this via poll etc.  This is probably just
+>> because I've never tried though!
+> 
+> (e)poll can generally distinguish between very few types of
+> activity: data for reading available, space for writing available,
+> out-of-band events (to be read with e.g. ioctl) and errors.
+> 
+> If you want to wait for multiple equal types of events for
+> one hardware device, it would be logical to have multiple 
+> character devices for them, so a user could open and wait
+> for some of them independent of the others.
+> 
+> Intuitively, I would also expect these to be separate iio
+> devices for the same hardware (each with one chardev), but
+> there may be good reasons why that is not possible.
+For reasons above, there can only be one iio device per
+physical hardware.  We could define some other intermediate
+representation similar to the bus structure we currently have,
+but then I'm not sure where we gain.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+As we only care about single reader cases here,
+the reader can simply configure which events it is interested
+in to be the only ones produced.  A good chunk of the sysfs
+interface is concerned with doing this.
+
+The ioctl approach you suggest can then be used to query what
+actually occurred.
 
