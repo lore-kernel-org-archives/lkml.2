@@ -1,106 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab1CQXQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 19:16:21 -0400
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:40036 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab1CQXQR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 19:16:17 -0400
-Date: Fri, 18 Mar 2011 00:16:13 +0100
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: 2.6.38: Quota over NFS4
-Message-ID: <20110317231613.GC2445@os.inf.tu-dresden.de>
-References: <20110317133247.GB6424@os.inf.tu-dresden.de>
- <20110317173805.GB30180@fieldses.org>
- <20110317213302.GA2445@os.inf.tu-dresden.de>
- <20110317222732.GC31845@fieldses.org>
- <20110317225908.GB2445@os.inf.tu-dresden.de>
- <20110317230315.GG31845@fieldses.org>
+	id S1756210Ab1CQXQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 19:16:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754283Ab1CQXQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 19:16:42 -0400
+Date: Fri, 18 Mar 2011 00:16:35 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: PageBuddy and mapcount underflows robustness
+Message-ID: <20110317231635.GC10696@random.random>
+References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
+ <20110314155232.GB10696@random.random>
+ <alpine.LSU.2.00.1103140910570.2601@sister.anvils>
+ <20110314165922.GE10696@random.random>
+ <AANLkTikWh5tFUZuALYRP3Dx2Zcs33u0UVdjf4d_7KhPJ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110317230315.GG31845@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikWh5tFUZuALYRP3Dx2Zcs33u0UVdjf4d_7KhPJ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu Mar 17, 2011 at 19:03:15 -0400, J. Bruce Fields wrote:
-> On Thu, Mar 17, 2011 at 11:59:08PM +0100, Adam Lackorzynski wrote:
-> > 
-> > On Thu Mar 17, 2011 at 18:27:32 -0400, J. Bruce Fields wrote:
-> > > On Thu, Mar 17, 2011 at 10:33:03PM +0100, Adam Lackorzynski wrote:
-> > > > 
-> > > > On Thu Mar 17, 2011 at 13:38:05 -0400, J. Bruce Fields wrote:
-> > > > > On Thu, Mar 17, 2011 at 02:32:47PM +0100, Adam Lackorzynski wrote:
-> > > > > > Hello,
-> > > > > > 
-> > > > > > I'm seeing a problem with quotas in a system where the server running
-> > > > > > 2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
-> > > > > > version does not seem to play a role, checked with 2.6.38, 2.6.37 and
-> > > > > > 2.6.36. The following script and output show the problem:
-> > > > > > 
-> > > > > > #! /bin/sh
-> > > > > > 
-> > > > > > quota | grep home
-> > > > > > du
-> > > > > > cp /bin/ls x1
-> > > > > > du
-> > > > > > cat x1 > /dev/null
-> > > > > > rm x1
-> > > > > > du
-> > > > > > quota | grep home
-> > > > > > 
-> > > > > > Output:
-> > > > > > 
-> > > > > >    homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
-> > > > > > 0       .
-> > > > > > 96      .
-> > > > > > 0       .
-> > > > > >    homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
-> > > > > > 
-> > > > > > 
-> > > > > > As can be seen the 96 kb are still accounted on the quota of the user.
-> > > > > > Removing the 'cat' command from the script makes the quota be ok again
-> > > > > > (original value). Also mounting via nfs3 does not exhibit it, same for running
-> > > > > > the script on the nfs-server directly.
-> > > > > 
-> > > > > Does "df" show the same problem?
-> > > > 
-> > > > With '/bin/ls' it does not change at all, so I took a bigger binary
-> > > > which yields to:
-> > > > 
-> > > >    homes:/home/ 8203780  9072000 9174400          403688  500000  550000        
-> > > > 0       .
-> > > > Filesystem           1K-blocks      Used Available Use% Mounted on
-> > > >   homes:/home        513671168 335251456 178419712  66% /tmp/xx
-> > > > 4592    .
-> > > > Filesystem           1K-blocks      Used Available Use% Mounted on
-> > > >   homes:/home        513671168 335256576 178414592  66% /tmp/xx
-> > > > 0       .
-> > > > Filesystem           1K-blocks      Used Available Use% Mounted on
-> > > >   homes:/home        513671168 335256576 178414592  66% /tmp/xx
-> > > >    homes:/home/ 8208372  9072000 9174400          403689  500000  550000        
-> > > > 
-> > > > So yes, it seems to be there as well.
-> > > 
-> > > It might be easier to see with "df -i" (assuming we're leaking an
-> > > inode).
-> > 
-> > Result is as expected, inode goes one up and not down again.
+On Mon, Mar 14, 2011 at 10:30:11AM -0700, Linus Torvalds wrote:
+> On Mon, Mar 14, 2011 at 9:59 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> >
+> > +#define PAGE_BUDDY_MAPCOUNT_VALUE (-1024*1024)
 > 
-> Is this something special about binaries?  If you copy something other
-> than a binary, do you not see the bug?
+> I realize that this is a nitpick, but from a code generation
+> standpoint, large random constants like these are just nasty.
+> 
+> I would suggest aiming for constants that are easy to generate and/or
+> fit better in the code stream. In many encoding schemes (eg x86), -128
+> is much easier to generate, since it fits in a signed byte and allows
+> small instructions etc. And in most RISC encodings, 8- or 16-bit
+> constants can be encoded much more easily than something like your
+> current one, and bigger ones often end up resulting in a load from
+> memory or at least several immediate-building instructions.
 
-No change when using a plain text file instead of a binary.
+-128 sure is ok with me. It's extremely unlikely to be off by 127
+times, if we're off by more than 127 times we're still going to detect
+the error.
 
+> Also, this is just disgusting. It adds no safety here to have that
+> VM_BUG_ON(), so it's just unnecessary code generation to do this.
+> Also, we don't even WANT to do that stupid "__ClearPageBuddy()" in the
+> first place! What those two code-sites actually want are just a simple
+> 
+>     reset_page_mapcount(page);
+> 
+> which does the right thing in _general_, and not just for the buddy
+> case - we want to reset the mapcount for other reasons than just
+> pagebuddy (ie the underflow/overflow case).
 
-Adam
--- 
-Adam                 adam@os.inf.tu-dresden.de
-  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
+Agreed.
+
+> And it avoids the VM_BUG_ON() too, making the crazy conditionals be not needed.
+
+Well using reset_page_mapcount in the two error sites, didn't require
+me to remove the VM_BUG_ON from __ClearPageBuddy so I left it
+there...
+
+===
+Subject: mm: PageBuddy and mapcount robustness
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+Change the _mapcount value indicating PageBuddy from -2 to -128 for
+more robusteness against page_mapcount() undeflows.
+
+Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
+ignore the previous retval of PageBuddy().
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Reported-by: Hugh Dickins <hughd@google.com>
+---
+ include/linux/mm.h |   11 +++++++++--
+ mm/page_alloc.c    |    4 ++--
+ 2 files changed, 11 insertions(+), 4 deletions(-)
+
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -402,16 +402,23 @@ static inline void init_page_count(struc
+ /*
+  * PageBuddy() indicate that the page is free and in the buddy system
+  * (see mm/page_alloc.c).
++ *
++ * PAGE_BUDDY_MAPCOUNT_VALUE must be <= -2 but better not too close to
++ * -2 so that an underflow of the page_mapcount() won't be mistaken
++ * for a genuine PAGE_BUDDY_MAPCOUNT_VALUE. -128 can be created very
++ * efficiently by most CPU architectures.
+  */
++#define PAGE_BUDDY_MAPCOUNT_VALUE (-128)
++
+ static inline int PageBuddy(struct page *page)
+ {
+-	return atomic_read(&page->_mapcount) == -2;
++	return atomic_read(&page->_mapcount) == PAGE_BUDDY_MAPCOUNT_VALUE;
+ }
+ 
+ static inline void __SetPageBuddy(struct page *page)
+ {
+ 	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
+-	atomic_set(&page->_mapcount, -2);
++	atomic_set(&page->_mapcount, PAGE_BUDDY_MAPCOUNT_VALUE);
+ }
+ 
+ static inline void __ClearPageBuddy(struct page *page)
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -286,7 +286,7 @@ static void bad_page(struct page *page)
+ 
+ 	/* Don't complain about poisoned pages */
+ 	if (PageHWPoison(page)) {
+-		__ClearPageBuddy(page);
++		reset_page_mapcount(page); /* remove PageBuddy */
+ 		return;
+ 	}
+ 
+@@ -317,7 +317,7 @@ static void bad_page(struct page *page)
+ 	dump_stack();
+ out:
+ 	/* Leave bad fields for debug, except PageBuddy could make trouble */
+-	__ClearPageBuddy(page);
++	reset_page_mapcount(page); /* remove PageBuddy */
+ 	add_taint(TAINT_BAD_PAGE);
+ }
+ 
