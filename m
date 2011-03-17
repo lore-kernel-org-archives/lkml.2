@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab1CQTQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 15:16:08 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:51995 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab1CQTQF convert rfc822-to-8bit (ORCPT
+	id S1755246Ab1CQTVZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 15:21:25 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45003 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab1CQTVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 15:16:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=TKssw81Gdng6Crk7MyreeQARjdWGINICq/qBp/p/AQJsdQMKxsisQ/zfi9iXqaaCrJ
-         5VX32D/D2b3bQTlNSBiXhISC5eltYQUkkvXjzkLbh40QxPQ+S1vdndqtD49Xkh2Ebbqi
-         IarNVpwoLY+ezfP/n0CxnYVYC3mX8ICwGKgCY=
+	Thu, 17 Mar 2011 15:21:23 -0400
+Date: Thu, 17 Mar 2011 13:21:16 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Scott Wood <scottwood@freescale.com>, Mike Frysinger <vapier@gentoo.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Peter Zijlstra <peterz@infradead.org>, linux-api@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Paul Mackerras <paulus@samba.org>,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rodolfo Giometti <giometti@linux.it>, Christoph Lameter <cl@linux.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found on
+ the MPC85xx.
+Message-ID: <20110317192116.GC12824@angua.secretlab.ca>
+References: <cover.1298447722.git.richard.cochran@omicron.at>
+ <be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
+ <20110223165058.GE14597@angua.secretlab.ca>
+ <20110223112612.30071995@schlenkerla>
+ <20110223175459.GH14597@angua.secretlab.ca>
+ <20110223132444.65dfdda4@schlenkerla>
+ <20110224165004.GB15234@riccoc20.at.omicron.at>
+ <20110224112731.2d9bf080@schlenkerla>
+ <20110225075320.GA4032@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-In-Reply-To: <20110317114140.GA31407@erda.amd.com>
-References: <1300298305-9164-1-git-send-email-robert.richter@amd.com>
- <1300298305-9164-3-git-send-email-robert.richter@amd.com> <AANLkTi=g-Dd957gPxCUfRxVw52T2m6GbswapEAJLnBtP@mail.gmail.com>
- <20110317114140.GA31407@erda.amd.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 17 Mar 2011 15:15:43 -0400
-Message-ID: <AANLkTikp1Jrn-yx_=W-d4Lpz+d1+4EMJJho7ACu9UVhT@mail.gmail.com>
-Subject: Re: [PATCH 2/2] oprofile: Add __exit attibute to oprofile_arch_exit() functions
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110225075320.GA4032@riccoc20.at.omicron.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 07:41, Robert Richter wrote:
-> On 16.03.11 16:15:49, Mike Frysinger wrote:
->> On Wed, Mar 16, 2011 at 13:58, Robert Richter wrote:
->> >  979048e oprofile: don't call arch exit code from init code on failure
->> >
->> > we may add __exit attibutes to oprofile_arch_exit() functions.
->>
->> i dont think this the way to go.  how about updating one place
->> (include/linux/oprofile.h:oprofile_arch_exit) and making sure all arch
->> files are including that header if they arent already ?  after all, if
->> they arent including that header, the arch code could break without
->> noticing.
->
-> do you mean we specify the __exit attribute in the function
-> declaration of the header file and make sure it is included
-> everythere? I was looking at current implementations in the kernel and
-> this is not common. Mostly the attributes are set in the function
-> definition.
+On Fri, Feb 25, 2011 at 08:53:20AM +0100, Richard Cochran wrote:
+> On Thu, Feb 24, 2011 at 11:27:31AM -0600, Scott Wood wrote:
+> 
+> > My vote, if it goes in a separate node at all, is "fsl,etsec-ptp",
+> 
+> So, that is what the patch does.
+> 
+> > and let the driver use SVR.
+> 
+> What is SVR?
 
-i think that's because for most functions, there is no matching
-prototype in common code.  drivers themselves have no reason to create
-such prototypes.
+An on chip register that provides the exact version of the SoC.  (As
+opposed to PVR which is the version of the cpu core).
 
-> So I was not sure if that would work. If so, may we skip
-> then the __exit attribute in the definition?
->
-> GCC doc states: "The keyword __attribute__ allows you to specify
-> special attributes when making a declaration."
->
->  http://gcc.gnu.org/onlinedocs/gcc-4.5.1/gcc/Function-Attributes.html#Function%20Attributes
->
-> but nothing about that happens if it is in the function definition and
-> this is different from the declaration.
-
-if the function prototype is seen in the same file as the function
-definition, attributes are carried over.  if it isnt (because the
-oprofile header isnt being included), then the attribute will be
-ignored for the function definition.
--mike
+g.
