@@ -1,105 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab1CQU1a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 16:27:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60814 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab1CQU11 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 16:27:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6288"; a="80399000"
-Message-ID: <4D826EAA.3070807@codeaurora.org>
-Date: Thu, 17 Mar 2011 13:27:22 -0700
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
+	id S1755523Ab1CQU1p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 16:27:45 -0400
+Received: from smtp.tele.fi ([192.89.123.25]:45365 "EHLO smtp.tele.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755405Ab1CQU13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 16:27:29 -0400
+X-Originating-Ip: [194.89.68.22]
+Date: Thu, 17 Mar 2011 22:27:12 +0200
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "andi.kleen@intel.com" <andi.kleen@intel.com>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        "wdauchy@gmail.com" <wdauchy@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Bootup fix for _brk_end being != _end
+Message-ID: <20110317202712.GB32595@reaktio.net>
+References: <20110308214429.GA27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091359290.2968@kaball-desktop> <20110315142957.GB12730@router-fw-old.local.net-space.pl> <20110315144821.GA11586@dumpdata.com> <20110315153001.GD12730@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103151530290.3382@kaball-desktop> <20110315154024.GA14100@router-fw-old.local.net-space.pl> <20110317085118.GA11346@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103171504200.3382@kaball-desktop>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: davidb@codeaurora.org, dwalker@fifo99.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        Thomas Glexiner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PM8921 MFD V3 3/6] gpio: pm8xxx-gpio: Add pm8xxx gpio driver
-References: <1300328641-3855-1-git-send-email-adharmap@codeaurora.org> <1300328641-3855-4-git-send-email-adharmap@codeaurora.org> <20110317180013.GJ9597@angua.secretlab.ca>
-In-Reply-To: <20110317180013.GJ9597@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1103171504200.3382@kaball-desktop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> On Wed, Mar 16, 2011 at 07:23:58PM -0700, adharmap@codeaurora.org wrote:
->> Add support for GPIO on Qualcomm PM8xxx PMIC chips.
->>
->> Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-> 
-> Minor points below, but otherwise:
-> 
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+On Thu, Mar 17, 2011 at 03:07:05PM +0000, Stefano Stabellini wrote:
+> On Thu, 17 Mar 2011, Daniel Kiper wrote:
+> > > > > > Details? Can you provide the 'xenctx' output of where it crashed?
+> > > > >
+> > > > > As I wrote above domain is dying and I am not able to connect to it using
+> > > > > xenctx after crash :-(((. I do not know how to do that in another way.
+> > > >
+> > > > try adding:
+> > > >
+> > > > extra = "loglevel=9 debug earlyprintk=xenboot"
+> > >
+> > > (XEN) d55:v0: unhandled page fault (ec=0002)
+> > > (XEN) Pagetable walk from 000000000000000c:
+> > > (XEN)  L4[0x000] = 000000010bebc027 0000000000024d28
+> > > (XEN)  L3[0x000] = 0000000000000000 ffffffffffffffff
+> > > (XEN) domain_crash_sync called from entry.S
+> > > (XEN) Domain 55 (vcpu#0) crashed on cpu#3:
+> > > (XEN) ----[ Xen-4.1.0-rc2-pre  x86_64  debug=y  Not tainted ]----
+> > > (XEN) CPU:    3
+> > > (XEN) RIP:    e019:[<00000000c1001180>]
+> > > (XEN) RFLAGS: 0000000000000282   EM: 1   CONTEXT: pv guest
+> > > (XEN) rax: 000000000000000c   rbx: 000000000000000c   rcx: 00000000c1371fd0
+> > > (XEN) rdx: 00000000c1371fd0   rsi: 00000000c1742000   rdi: 00000000a5c03d70
+> > > (XEN) rbp: 00000000c1371fc8   rsp: 00000000c1371fa8   r8: 0000000000000000
+> > > (XEN) r9:  0000000000000000   r10: 0000000000000000   r11: 0000000000000000
+> > > (XEN) r12: 0000000000000000   r13: 0000000000000000   r14: 0000000000000000
+> > > (XEN) r15: 0000000000000000   cr0: 000000008005003b   cr4: 00000000000026f4
+> > > (XEN) cr3: 0000000129b6e000   cr2: 000000000000000c
+> > > (XEN) ds: e021   es: e021   fs: e021   gs: e021   ss: e021   cs: e019
+> > > (XEN) Guest stack trace from esp=c1371fa8:
+> > > (XEN)   00000002 c1001180 0001e019 00010082 c10037af deadbeef c1742000 a5c03d70
+> > > (XEN)   c1371fdc c13a4aa8 00000000 00000000 00000000 c1371ffc c13a3ff2 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 deadbeef c1753000 013fe001 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 013fe001 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > 
+> > Any progress ??? Can I help you in something ???
+> > 
+>  
+> Unfortunately unless you are able to resolve the IP of the crash these
+> logs don't tell me much.
+> Alternatively you can try to get more infos using /usr/lib/xen/bin/xenctx
+> like Konrad suggested.
+>
 
-Thanks Grant, can you review (and ack) drivers/mfd/pm8xxx-mpp.c? Now 
-that I think, mpp is basically a gpio device, so should I move it to 
-drivers/gpio?
+More info/help about xenctx usage available here:
+http://wiki.xen.org/xenwiki/XenCommonProblems#head-61843b32f0243b5ad0e17850f9493bffd80f8c17
 
-mpp is the 4th patch in this series and can be found here.
-https://patchwork.kernel.org/patch/640891/
+-- Pasi
 
->> diff --git a/drivers/gpio/pm8xxx-gpio.c b/drivers/gpio/pm8xxx-gpio.c
->> new file mode 100644
->> index 0000000..8995764
->> --- /dev/null
->> +++ b/drivers/gpio/pm8xxx-gpio.c
->> @@ -0,0 +1,455 @@
->> +/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-> 
-> Nit: first line should be '/*' and start the comments on the second
-> line.  It also helps for the first line of the comment block to be a
-> single line description of what the driver actually is.  (a
-> description, not a filename).
-> 
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 and
->> + * only version 2 as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +/*
->> + * Qualcomm PMIC8XXX GPIO driver
-> 
-> Heh, this is the line I just was talking about should appear at the
-> top of the file.  :-)
-
-Ok I will make this change for all the files in the patchset.
-
->> +
->> +static int __init pm_gpio_init(void)
->> +{
->> +	int rc = platform_driver_register(&pm_gpio_driver);
->> +
->> +	return rc;
->> +}
-> 
-> Or simply:
-> 
-> 	return platform_driver_register(&pm_gpio_driver);
-
-yes  will do.
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc. is a member of the Code Aurora Forum.
