@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab1CQAEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:04:50 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:55221 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab1CQAEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:04:45 -0400
-Date: Wed, 16 Mar 2011 17:04:41 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Sridhar Samudrala <sri@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: No iproute2 for 2.6.38
-Message-ID: <20110316170441.351efba7@nehalam>
-In-Reply-To: <4D804EBD.4030904@us.ibm.com>
-References: <20110315195534.0cc43032@nehalam>
-	<4D804EBD.4030904@us.ibm.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752125Ab1CQAGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 20:06:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22541 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab1CQAGq (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 16 Mar 2011 20:06:46 -0400
+Date: Wed, 16 Mar 2011 20:00:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Mike Waychison <mikew@google.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        linux-watchdog@vger.kernel.org, Priyanka Gupta <priyankag@google.com>
+Subject: Re: [PATCH] watchdog, SP5100: Check if firmware has set correct
+ value in tcobase.
+Message-ID: <20110317000035.GA3613@dumpdata.com>
+References: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop>
+ <20110311222129.GA3168@dumpdata.com>
+ <alpine.DEB.2.00.1103161150010.3382@kaball-desktop>
+ <alpine.DEB.2.00.1103161442210.3382@kaball-desktop>
+ <4D80F992.10603@kernel.org>
+ <alpine.DEB.2.00.1103161757040.3382@kaball-desktop>
+ <4D812180.5030102@kernel.org>
+ <AANLkTimNva3c_-kGA+JLCPZgrKAbwqLKaN559cwTh7cq@mail.gmail.com>
+ <4D812919.30706@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D812919.30706@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D81505D.0098,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 22:46:37 -0700
-Sridhar Samudrala <sri@us.ibm.com> wrote:
-
-> On 3/15/2011 7:55 PM, Stephen Hemminger wrote:
-> > I am not going to bother releasing for 2.6.38 the only changes
-> > were later reverted.
-> 2.6.38 includes support for macvlan/macvtap 'passthru' mode that allows 
-> assigning
-> SR-IOV VFs to a KVM guest via macvtap/virtio.
-> It is not possible to support live migration using direct assignment of 
-> VF's to a guest,
-> but 'passthu' assignment makes this possible.
+On Wed, Mar 16, 2011 at 02:18:17PM -0700, Yinghai Lu wrote:
 > 
-> Enabling this feature requires the following patch to iproute2 that 
-> allows creating macvlan
-> device in 'passthru' mode.
->      http://patchwork.ozlabs.org/patch/69515/
-> Looks like this patch is still marked as 'Awaiting upstream'.
 > 
-> Could you apply this patch and it would be great if a version of 
-> iproute2 is released for 2.6.38.
+> Stefano found SP5100 TCO watchdog driver using wrong address.
 > 
-> Thanks
-> Sridhar
+> [    9.148536] SP5100 TCO timer: SP5100 TCO WatchDog Timer Driver v0.01
+> [    9.148628] DEBUG __ioremap_caller WARNING address=b8fe00 size=8 valid=1 reserved=1
 > 
+> and e820 said that range is RAM.
+> 
+> We should check if we can use that reading out. BIOS could just program wrong address there.
+> 
+> -v2: Mike pointed out one path need one release.
+> 
+> Reported-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Signed-off-by:Yinghai Lu <yinghai@kernel.org>
+> Acked-by: Mike Waychison <mikew@google.com>
 
-Sorry missed it applied to repository, still not sure worth a new release.
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
+Stefano,
 
--- 
+this fixes my bootup issues with your:
+xen: set max_pfn_mapped to the last pfn mapped
+patch. Will try the full patchset tomorrow.
