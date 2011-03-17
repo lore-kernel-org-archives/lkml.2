@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab1CQVdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:33:10 -0400
-Received: from kroah.org ([198.145.64.141]:51909 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755674Ab1CQVdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:33:03 -0400
-Date: Thu, 17 Mar 2011 14:32:45 -0700
-From: Greg KH <greg@kroah.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110317213245.GB16065@kroah.com>
-References: <20110311161421.GA7843@kroah.com>
- <20110311162759.GS1760@opensource.wolfsonmicro.com>
- <20110311163522.GA9291@kroah.com>
- <20110311164850.GT1760@opensource.wolfsonmicro.com>
- <20110311165642.GA9996@kroah.com>
- <20110311170807.GV1760@opensource.wolfsonmicro.com>
- <20110311172345.GA10876@kroah.com>
- <alpine.LFD.2.00.1103162207130.26889@xanadu.home>
- <20110317201320.GB4035@kroah.com>
- <alpine.LFD.2.00.1103171647560.26889@xanadu.home>
+	id S1755800Ab1CQVdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:33:13 -0400
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:47178 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab1CQVdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:33:08 -0400
+Date: Thu, 17 Mar 2011 22:33:03 +0100
+From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: 2.6.38: Quota over NFS4
+Message-ID: <20110317213302.GA2445@os.inf.tu-dresden.de>
+References: <20110317133247.GB6424@os.inf.tu-dresden.de>
+ <20110317173805.GB30180@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103171647560.26889@xanadu.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110317173805.GB30180@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 05:03:17PM -0400, Nicolas Pitre wrote:
-> On Thu, 17 Mar 2011, Greg KH wrote:
-> 
-> > On Wed, Mar 16, 2011 at 10:14:01PM -0400, Nicolas Pitre wrote:
-> > > > What drivers need this?  Specifics please.
-> > > 
-> > > Let me quote Arnd Bergmann:
-> > > 
-> > > |I have just verified with my Pandaboard that the pins on the SMSC9514
-> > > |usb ethernet that are meant to be connected to a serial EEPROM are
-> > > |indeed not connected anywhere.
-> > > 
-> > > > Anyway, specifics are the best way forward if anyone has such a messed
-> > > > up system.
-> > > 
-> > > PandaBoards are becoming quite popular.
+
+On Thu Mar 17, 2011 at 13:38:05 -0400, J. Bruce Fields wrote:
+> On Thu, Mar 17, 2011 at 02:32:47PM +0100, Adam Lackorzynski wrote:
+> > Hello,
 > > 
-> > I have one right here.
+> > I'm seeing a problem with quotas in a system where the server running
+> > 2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
+> > version does not seem to play a role, checked with 2.6.38, 2.6.37 and
+> > 2.6.36. The following script and output show the problem:
 > > 
-> > But can't this device be detected by the usb device id and the quirk
-> > added that way?  Like all other "odd" USB devices are currently handled?
+> > #! /bin/sh
+> > 
+> > quota | grep home
+> > du
+> > cp /bin/ls x1
+> > du
+> > cat x1 > /dev/null
+> > rm x1
+> > du
+> > quota | grep home
+> > 
+> > Output:
+> > 
+> >    homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
+> > 0       .
+> > 96      .
+> > 0       .
+> >    homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
+> > 
+> > 
+> > As can be seen the 96 kb are still accounted on the quota of the user.
+> > Removing the 'cat' command from the script makes the quota be ok again
+> > (original value). Also mounting via nfs3 does not exhibit it, same for running
+> > the script on the nfs-server directly.
 > 
-> It is not the device which is odd, but rather the environment in which 
-> it is being used for this specific case.  I'd expect to see the same 
-> SMSC9514 chip also used in off-the-shelf USB-to-Ethernet dongles with no 
-> quirks needed.
-> 
-> However, a different part of the kernel knows already perfectly well 
-> when it is actually running on that specific board.  Hence the desire to 
-> come up with a mechanism allowing to tell the driver about a quirk for 
-> the particular device instance on this board without having to do the 
-> heavy round trip through user space.
+> Does "df" show the same problem?
 
-It's not "heavy" at all, as it happens today, for every device found in
-the system.
+With '/bin/ls' it does not change at all, so I took a bigger binary
+which yields to:
 
-Again, we have this infrastructure to do this, in place, for this very
-reason, why else would we have created it, to ignore it?
+   homes:/home/ 8203780  9072000 9174400          403688  500000  550000        
+0       .
+Filesystem           1K-blocks      Used Available Use% Mounted on
+  homes:/home        513671168 335251456 178419712  66% /tmp/xx
+4592    .
+Filesystem           1K-blocks      Used Available Use% Mounted on
+  homes:/home        513671168 335256576 178414592  66% /tmp/xx
+0       .
+Filesystem           1K-blocks      Used Available Use% Mounted on
+  homes:/home        513671168 335256576 178414592  66% /tmp/xx
+   homes:/home/ 8208372  9072000 9174400          403689  500000  550000        
 
-Anyway, as stated before, if someone has a specific patch for the
-pandaboard, send it on, and I'll consider it.  Extra bonus points for
-curse words describing the hardware people who are causing this to be
-required.
+So yes, it seems to be there as well.
 
-thanks,
+> And does unmounting/remounting on the
+> client clear the problem?
 
-greg k-h
+No.
+
+> (Or that, in combination with stopping the
+> server, unmounting the xfs export, remounting it, and restarting?)
+
+I rebooted once, got a recovery and then the quotas were ok again (and
+supposedly the used blocks as well). I assume a unmount/mount would show
+the same behaviour but requires a bit of preparation to try out.
+
+> Was there an earlier server version that didn't exhibit this problem?
+
+Had 2.6.37 on the server before and that was fine regarding this.
+
+> > Client mount options are:
+> > homes:/home/ /home nfs4 rw,nosuid,nodev,relatime,vers=4,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=1.2.3.3,minorversion=0,local_lock=none,addr=1.2.3.4 0 0
+> > 
+> > Server mount options are:
+> > /dev/mapper/vg-homefs /home xfs rw,nosuid,nodev,relatime,attr2,usrquota 0 0
+
+Adam
+-- 
+Adam                 adam@os.inf.tu-dresden.de
+  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
