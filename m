@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab1CQVqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:46:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49817 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755677Ab1CQVqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:46:10 -0400
-Date: Thu, 17 Mar 2011 14:45:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: Valdis.Kletnieks@vt.edu
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: Re: [PATCH 00/12] Staging: hv: Cleanup vmbus driver - Phase II
-Message-ID: <20110317214537.GA28608@suse.de>
-References: <1300226527-26933-1-git-send-email-kys@microsoft.com>
- <20110315220454.GC30390@suse.de>
- <30255.1300397967@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755850Ab1CQVrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:47:52 -0400
+Received: from que02.suddenlink.net ([208.180.40.87]:57944 "EHLO
+	que02.suddenlink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755673Ab1CQVrt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:47:49 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Mar 2011 17:47:49 EDT
+From: Curt Howland <Howland@priss.com>
+Organization: Acolytes of the Goddess Priss
+To: linux-kernel@vger.kernel.org
+Subject: Compile error: arch/x86/kernel/entry_32.S:1422: Error: .size expression does not evaluate to a constant
+Date: Thu, 17 Mar 2011 17:41:39 -0400
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <30255.1300397967@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201103171741.39876.Howland@priss.com>
+X-Cloudmark-Analysis: v=1.1 cv=1ySWNNja79c/jgOHmXRKbmV/BjW144TMdFddqTN+fW0= c=1 sm=0 a=BeJfjmuleZIA:10 a=ejar3VpVzU4A:10 a=kj9zAlcOel0A:10 a=YgUFFZ79AAAA:8 a=GQzCuT0m0PncxsiD-JkA:9 a=IiV9v4vQ8Y8Ci2ounkRw9JtqDlUA:4 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 05:39:27PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 15 Mar 2011 15:04:54 PDT, Greg KH said:
-> 
-> > Thanks for the patches, but as the .39 merge window is closed, I'll be
-> > holding on to these until after .39-rc1 is out before I can do anything
-> > with them.
-> 
-> Is that Linus's merge window, or your window to freeze a for-linus tree?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-My window.
 
-Linus's merge window is for the subsystem maintainers.  Everything that
-is to be sent during Linus's merge window had to be in the linux-next
-tree for a bit of time before the merge window opens.
+2.6.38-rc6 compiled just fine, 2.6.38-rc7, -rc8 and the released 
+2.6.38 all got this error, with gcc 4.4 and after Debian Unstable 
+updated to gcc 4.5:
 
-It's been this way for a number of years now, nothing new happening
-here...
+arch/x86/kernel/entry_32.S: Assembler messages: 
+arch/x86/kernel/entry_32.S:1422: Error: .size expression does not 
+evaluate to a constant make[3]: *** [arch/x86/kernel/entry_32.o] 
+Error 1
 
-I also posted the "my tree is now closed for .39 stuff" message to the
-devel mailing list, so there shouldn't have been any questions about
-this.
+I searched for this error and saw this had been posted to the LKML:
 
-thanks,
+http://www.gossamer-threads.com/lists/linux/kernel/1347760
 
-greg k-h
+This was when the error happened in -rc7, but it was not fixed 
+for -rc8 or the released stable.
+
+I'm just a user, not a developer, but I figure if its happening to me 
+with very generic tools it may be happening to other people who don't 
+use git, who don't apply patches, and such.
+
+I don't have the warewithall to subscribe to the LKML, so I would be 
+obliged if you would copy me on any replies. I would be glad to 
+supply any further information if needed.
+
+Curt-
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEVAwUBTYKAEy9Y35yItIgBAQKijQf9EMM/9GhAc8q20ANAfiNmWFjkxNLGmpMr
+oTg0pTs07YHF/TNmbTH65OP4nI7uLTEKBD+LLZ0xy5GIqEdFi0rjLKf1SIp0qLbu
+4jWicMrhd4gN/FijJl/BoYEJ+LiRYNtZcySVr1p9TCmh0IBsWbMpM05sxBCvHBIg
+EzMKhYHIQ/h24gsTpLqrWE2pv/BjFofzb6rzNkAuzG6PVlcBsdbRjBDhTriQgZeO
+krtOMPQHGX3ZMYkpNqIwHvf6nVlVUhMQlOLs/Uuii//N2Rke38/a35NN+XlywcC7
+bok2n0frIMxoaYzGezGlFXRYpjImRe9DrmlOr4xeiafFkBNaLLMxFw==
+=VOjl
+-----END PGP SIGNATURE-----
