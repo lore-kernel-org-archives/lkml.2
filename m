@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab1CQMSF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 08:18:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45146 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118Ab1CQMSC convert rfc822-to-8bit (ORCPT
+	id S1754278Ab1CQMS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 08:18:57 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53068 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754118Ab1CQMSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 08:18:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=YVlcHl0zsEq6v5ePS9Wx98m/HeyGYoZpQYTovYUQa1PAicFLpXPJJlD9hmABqt49DO
-         d0r5CWUNmxq6qEUetvFfNMwsp/DYz+HBcNOPPZ7reqvGB8kMqfw6cpxlSLED3EAt5pRH
-         w6IPfST2TJbHMyrxKr7K1dCbyxWWd9W9L3h14=
-MIME-Version: 1.0
-In-Reply-To: <20110315212226.7e940b51.sfr@canb.auug.org.au>
-References: <20110315192428.ce74a177.sfr@canb.auug.org.au>
-	<4D7F2609.3080508@redhat.com>
-	<20110315103228.30233acc@endymion.delvare>
-	<20110315212226.7e940b51.sfr@canb.auug.org.au>
-Date: Thu, 17 Mar 2011 13:18:00 +0100
-X-Google-Sender-Auth: ip2sOxI8Qp25Qn-3A1ORjnWOYbc
-Message-ID: <AANLkTin46NLhP+0mmYELkD8zeC5o32H=-jXkySZ4R_dj@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (jdelvare-hwmon tree related)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jean Delvare <khali@linux-fr.org>, Hans de Goede <hdegoede@redhat.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Mar 2011 08:18:54 -0400
+Date: Thu, 17 Mar 2011 12:18:49 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-serial@vger.kernel.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
+Subject: Re: [RFC PATCH 1/2] serial: 8250: Add a notifier chain for driver
+ registration.
+Message-ID: <20110317121849.49d7c425@lxorguk.ukuu.org.uk>
+In-Reply-To: <1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com>
+References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
+	<1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 11:22, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Tue, 15 Mar 2011 10:32:28 +0100 Jean Delvare <khali@linux-fr.org> wrote:
->> Stephen, sorry for the inconvenience, both Hans and myself build-tested
->> the new code on an architecture where <linux/delay.h> gets included
->> implicitly, so we didn't notice it was missing.
->
-> It happens.  It seems that delay.h is almost always the one that is
-> forgotten.  X86 builds include it implicitly but powerpc doesn't.
->
-> I wonder if we could concoct a nice checkpatch test for it.
+On Wed, 16 Mar 2011 18:26:06 -0700
+David Daney <ddaney@caviumnetworks.com> wrote:
 
-Or remove the implicit includes on x86...
+> The 8250 driver is a bit weird in that in addition to supporting
+> platform devices, extra devices can be added by calling
+> serial8250_register_port().
+> 
+> The problem is that if we call serial8250_register_port() before the
+> driver is initialized Bad Things happen (we dereference NULL
+> pointers).
+> 
+> There doesn't seem to be a general way to know if a driver has been
+> initialized
 
-$ git grep delay\\.h arch/x86/include/
-arch/x86/include/asm/apic.h:#include <linux/delay.h>
-arch/x86/include/asm/dma.h:#include <linux/delay.h>
-arch/x86/include/asm/i8259.h:#include <linux/delay.h>
-$
+I've had a bigger dig into this. I think the correct answer is probably
+"always go via platform devices or similar". That *is* the notifier in
+the kernel of today. serial8250_register_port ultimately should I think
+ultimatly become an internal helper.
 
-At first sight, apic.h and dmah.h don't seem to need it.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Alan
