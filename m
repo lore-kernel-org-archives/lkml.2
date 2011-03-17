@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab1CQR7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:59:09 -0400
-Received: from mail1.nippynetworks.com ([91.220.24.129]:54610 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab1CQR7H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:59:07 -0400
-Message-ID: <4D824BEA.70502@wildgooses.com>
-Date: Thu, 17 Mar 2011 17:59:06 +0000
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1755157Ab1CQR7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:59:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39928 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755171Ab1CQR7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:59:14 -0400
+Date: Thu, 17 Mar 2011 18:59:08 +0100
+From: Jan Kara <jack@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Curt Wohlgemuth <curtw@google.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-ID: <20110317175908.GH4116@quack.suse.cz>
+References: <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+ <20110314202324.GG31120@redhat.com>
+ <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+ <20110315184839.GB5740@redhat.com>
+ <20110316131324.GM2140@cmpxchg.org>
+ <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
+ <20110316215214.GO2140@cmpxchg.org>
+ <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+ <20110317144641.GC4116@quack.suse.cz>
+ <20110317171219.GD32392@redhat.com>
 MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Grant Likely <grant.likely@secretlab.ca>, rpurdie@rpsys.net,
-        linux-geode@lists.infradead.org, const@mimas.ru,
-        linux-kernel@vger.kernel.org
-Subject: Re: Feedback please: [PATCH] leds: New PCEngines Alix LED driver
- using gpio interface
-References: <4D81D7FD.1040602@wildgooses.com>	<20110317084328.41831b4c@debxo>	<AANLkTikga=zrNgfsuN4=8tCfZz0n7vkk6i0xW-zj6zSD@mail.gmail.com>	<4D8243E7.7030309@wildgooses.com> <20110317105210.420e55c4@queued.net>
-In-Reply-To: <20110317105210.420e55c4@queued.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110317171219.GD32392@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/03/2011 17:52, Andres Salomon wrote:
-> OLPC stuff lives in arch/x86/platform/olpc; if there was more
-> alix-specific stuff, I'd suggest moving it into something similar.
-> However, I didn't find any.  Maybe an arch/x86/platform/geode as a
-> place to collect platform drivers for the various geode-based machines
-> out there (alix, soekris, etc)?  Though honestly, I'm not that
-> interested in doing the work to migrate stuff over to there.
+On Thu 17-03-11 13:12:19, Vivek Goyal wrote:
+> On Thu, Mar 17, 2011 at 03:46:41PM +0100, Jan Kara wrote:
+> [..]
+> > > - bdi writeback: will revert some of the mmotm memcg dirty limit changes to
+> > >   fs-writeback.c so that wb_do_writeback() will return to checking
+> > >   wb_check_background_flush() to check background limits and being
+> > > interruptible if
+> > >   sync flush occurs.  wb_check_background_flush() will check the global
+> > >   memcg_over_bg_limit list for memcg that are over their dirty limit.
+> > >   wb_writeback() will either (I am not sure):
+> > >   a) scan memcg's bdi_memcg list of inodes (only some of them are dirty)
+> > >   b) scan bdi dirty inode list (only some of them in memcg) using
+> > >      inode_in_memcg() to identify inodes to write.  inode_in_memcg(inode,memcg),
+> > >      would walk memcg- -> memcg_bdi -> memcg_mapping to determine if the memcg
+> > >      is caching pages from the inode.
+> > Hmm, both has its problems. With a) we could queue all the dirty inodes
+> > from the memcg for writeback but then we'd essentially write all dirty data
+> > for a memcg, not only enough data to get below bg limit. And if we started
+> > skipping inodes when memcg(s) inode belongs to get below bg limit, we'd
+> > risk copying inodes there and back without reason, cases where some inodes
+> > never get written because they always end up skipped etc. Also the question
+> > whether some of the memcgs inode belongs to is still over limit is the
+> > hardest part of solution b) so we wouldn't help ourselves much.
+> 
+> May be I am missing something but can't we just start traversing
+> through list of memcg_over_bg_list and take option a) to traverse
+> through list of inodes and write them till we are below limit of
+> that group. We of course skip inodes which are not dirty.
+> 
+> This is assuming that root group is also part of that list so that
+> inodes in root group do not starve writeback.
+> 
+> We still continue to have all the inodes on bdi wb structure and
+> memcg will just give us pointers to those inodes. So for background
+> write, instead of going serially through dirty inodes list, we
+> will first pick the cgroup to write and then inode to write. As
+> we will be doing round robin among cgroup list, it will make sure
+> that none of the cgroups (including root) as well as inode are not
+> starved.
+  I was considering this as well and didn't quite like it but on a second
+thought it need not be that bad. If we wrote MAX_WRITEBACK_PAGES from one
+memcg, then switched to another one while keeping pointers to per-memcg inode
+list (for the time when we return to this memcg), it could work just fine.
 
-
-As this is my first stab at this, I think you are agreeing that the
-current change is ok as a first step at least?  (I can have a go at a
-larger code re-org later...)
-
-Can I get your final opinion on what should be in the code Copyright
-statement before I resubmit with the module_init change? To recap I
-don't want to alienate anyone, but the code is now based on a) leds-5501
-and b) a patch from someone not currently credited in the file copyright
-statement?  I have stated this origin in the commit log and noted the
-derivation in the code itself. What to do..?
-
-Thanks
-
-Ed W
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
