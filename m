@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1CQLTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:19:21 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39237 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab1CQLTS convert rfc822-to-8bit (ORCPT
+	id S1753974Ab1CQLUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:20:22 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46802 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab1CQLUT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:19:18 -0400
+	Thu, 17 Mar 2011 07:20:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=oVSUBqhMdl5j0ixldGweEMzuwyPFRTJJwbsoVrFYnfJUG72HXoWVh3oL9SL1qznjoG
-         o6fR6t3sC5z/Au8qqEU6Gh1Lc6FhTAtL8DcD981x+2UHjc+tzayrFUPpzAFM0tQDWQZz
-         TfuNu1u73Fuc3/EEG9aV98yhHU4s9T24dKo/w=
+        b=tntmFARyj5LTOKTw1QLNGbB4VZHxj2LhAvu3nHOa4+SkTlam3j4oFGipIZQmO1COop
+         bvTCaYxQadR5f7H17xrWG3C3VJQ1oOA2ZgSQb7Cvj7pz73Lam0JTr6spRl5VdtFiblu8
+         3PVOCcvxGnnUxGC6ibtYMrY1CaKb7PIDaRXog=
 MIME-Version: 1.0
 In-Reply-To: <20110317104903.153050@gmx.net>
 References: <20110317074356.231320@gmx.net>
 	<AANLkTim2cggAu6o7iU74S47xyFfOqrSiUPOfo+2XoidB@mail.gmail.com>
 	<20110317104903.153050@gmx.net>
-Date: Thu, 17 Mar 2011 12:19:17 +0100
-Message-ID: <AANLkTik9pQgeiKYha5mnUEFQugFwYKsHo9JZ6ZpYQhYb@mail.gmail.com>
+Date: Thu, 17 Mar 2011 12:20:18 +0100
+Message-ID: <AANLkTi=yN2MtaOwUQsKmYaYxfkc0+mKtZiDeJ=r-KACK@mail.gmail.com>
 Subject: Re: sctp panic
 From: richard -rw- weinberger <richard.weinberger@gmail.com>
 To: walter schloegl <sctp@muskelshirt.de>
-Cc: linux-kernel@vger.kernel.org, linux-netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
