@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab1CQLBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:01:52 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:45612 "EHLO mgw-sa01.nokia.com"
+	id S1753883Ab1CQLE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:04:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60721 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab1CQLBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:01:49 -0400
-Date: Thu, 17 Mar 2011 12:59:24 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-X-X-Sender: aakoskin@esdhcp041196.research.nokia.com
-To: Darek Iwanski <darekiwanski13@gmail.com>
-cc: gregkh@suse.de, apatard@mandriva.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: xgifb: fixed spaces coding style issue in
- vb_ext.h
-In-Reply-To: <1300335784-23495-1-git-send-email-darekiwanski13@gmail.com>
-Message-ID: <alpine.DEB.1.10.1103171253040.2634@esdhcp041196.research.nokia.com>
-References: <1300335784-23495-1-git-send-email-darekiwanski13@gmail.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1753257Ab1CQLEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 07:04:25 -0400
+Date: Thu, 17 Mar 2011 11:03:53 GMT
+From: tip-bot for Josh Hunt <johunt@akamai.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        tdhimant@akamai.com, johunt@akamai.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, johunt@akamai.com,
+        tdhimant@akamai.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        acme@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1300241800-30281-1-git-send-email-johunt@akamai.com>
+References: <1300241800-30281-1-git-send-email-johunt@akamai.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools: Version incorrect with some versions of grep
+Message-ID: <tip-58d406ed6a5f1ca4bc1dba5390b718c67847fa5f@git.kernel.org>
+Git-Commit-ID: 58d406ed6a5f1ca4bc1dba5390b718c67847fa5f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 17 Mar 2011 11:03:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  58d406ed6a5f1ca4bc1dba5390b718c67847fa5f
+Gitweb:     http://git.kernel.org/tip/58d406ed6a5f1ca4bc1dba5390b718c67847fa5f
+Author:     Josh Hunt <johunt@akamai.com>
+AuthorDate: Tue, 15 Mar 2011 19:16:40 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 16 Mar 2011 08:59:50 -0300
 
-On Thu, 17 Mar 2011, Darek Iwanski wrote:
-> This is a patch to the vb_ext.h file that fixes up spaces warning
-> found by the checkpatch.pl tool. It still has a typedef warning that I
-> do not understand how to fix.
+perf tools: Version incorrect with some versions of grep
 
-The patch is against the wrong tree, it won't apply anymore.
+Some versions of grep don't treat '\s' properly. When building perf on such
+systems and using a kernel tarball the perf version is unable to be determined
+from the main kernel Makefile and the user is left with a version of '..'.
+Replacing the use of '\s' with '[[:space:]]', which should work in all grep
+versions, gives a usable version number.
 
-Anyway, all that x86 register stuff should be deleted. There should be
-nothing x86 specific in this driver.
+Reported-by: Tapan Dhimant <tdhimant@akamai.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tapan Dhimant <tdhimant@akamai.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: stable@kernel.org
+LKML-Reference: <1300241800-30281-1-git-send-email-johunt@akamai.com>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/PERF-VERSION-GEN |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-> Signed-off-by: Darek Iwanski <darekiwanski13$Gmail.com>
-> ---
-> drivers/staging/xgifb/vb_ext.h |   37 ++++++++++++++++++++-----------------
-> 1 files changed, 20 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/staging/xgifb/vb_ext.h b/drivers/staging/xgifb/vb_ext.h
-> index 5cc4d12..a3ec4ee 100644
-> --- a/drivers/staging/xgifb/vb_ext.h
-> +++ b/drivers/staging/xgifb/vb_ext.h
-> @@ -1,34 +1,37 @@
-> -#ifndef  _VBEXT_
-> -#define  _VBEXT_
-> +#ifndef _VBEXT_
-> +#define _VBEXT_
->
-> struct DWORDREGS {
-> -    unsigned long    Eax, Ebx, Ecx, Edx, Esi, Edi, Ebp;
-> +	unsigned long Eax, Ebx, Ecx, Edx, Esi, Edi, Ebp;
-> };
->
-> struct WORDREGS {
-> -    unsigned short ax, hi_ax, bx, hi_bx, cx, hi_cx, dx, hi_dx, si,
-> -	    hi_si, di, hi_di, bp, hi_bp;
-> +	unsigned short ax, hi_ax, bx, hi_bx, cx, hi_cx, dx, hi_dx, si,
-> +		hi_si, di, hi_di, bp, hi_bp;
-> };
->
-> struct BYTEREGS {
-> -     unsigned char al, ah, hi_al, hi_ah, bl, bh, hi_bl, hi_bh, cl, ch,
-> -	     hi_cl, hi_ch, dl, dh, hi_dl, hi_dh;
-> +	unsigned char al, ah, hi_al, hi_ah, bl, bh, hi_bl, hi_bh, cl, ch,
-> +		hi_cl, hi_ch, dl, dh, hi_dl, hi_dh;
-> };
->
-> -typedef union   _X86_REGS    {
-> -    struct  DWORDREGS e;
-> -    struct  WORDREGS x;
-> -    struct  BYTEREGS h;
-> +typedef union _X86_REGS {
-> +	struct DWORDREGS e;
-> +	struct WORDREGS x;
-> +	struct BYTEREGS h;
-> } X86_REGS, *PX86_REGS;
->
-> -extern   void     XGI_XG21Fun14(struct xgi_hw_device_info *pXGIHWDE, PX86_REGS pBiosArguments);
-> +extern void XGI_XG21Fun14(struct xgi_hw_device_info *pXGIHWDE,
-> +	PX86_REGS pBiosArguments);
-> extern void XGISetDPMS(struct xgi_hw_device_info *pXGIHWDE,
-> -		       unsigned long VESA_POWER_STATE);
-> -extern   void     XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo);
-> -extern   void     XGINew_SetModeScratch(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo) ;
-> +	unsigned long VESA_POWER_STATE);
-> +extern void XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension,
-> +	struct vb_device_info *pVBInfo);
-> +extern void XGINew_SetModeScratch(struct xgi_hw_device_info *HwDeviceExtension,
-> +	struct vb_device_info *pVBInfo) ;
-> extern void ReadVBIOSTablData(unsigned char ChipType,
-> -			      struct vb_device_info *pVBInfo);
-> +	struct vb_device_info *pVBInfo);
-> extern unsigned short XGINew_SenseLCD(struct xgi_hw_device_info *,
-> -				      struct vb_device_info *pVBInfo);
-> +	struct vb_device_info *pVBInfo);
->
-> #endif
-> -- 
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 97d7656..26d4d3f 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -23,10 +23,10 @@ if test -d ../../.git -o -f ../../.git &&
+ then
+ 	VN=$(echo "$VN" | sed -e 's/-/./g');
+ else
+-	eval `grep '^VERSION\s*=' ../../Makefile|tr -d ' '`
+-	eval `grep '^PATCHLEVEL\s*=' ../../Makefile|tr -d ' '`
+-	eval `grep '^SUBLEVEL\s*=' ../../Makefile|tr -d ' '`
+-	eval `grep '^EXTRAVERSION\s*=' ../../Makefile|tr -d ' '`
++	eval $(grep '^VERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
++	eval $(grep '^PATCHLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
++	eval $(grep '^SUBLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
++	eval $(grep '^EXTRAVERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
+ 
+ 	VN="${VERSION}.${PATCHLEVEL}.${SUBLEVEL}${EXTRAVERSION}"
+ fi
