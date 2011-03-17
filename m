@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab1CQV3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:29:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:16221 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593Ab1CQV3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:29:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=tVKURBPM+4jCDbUvV9wx4SeglkR55qJsEX0ifN7KOT1jG0KNQ52haeMAb6KXKNQDU4
-         C/WhXscEOgMFa8ewx6Ow==
+	id S1755761Ab1CQVdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:33:07 -0400
+Received: from kroah.org ([198.145.64.141]:51904 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755662Ab1CQVdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:33:02 -0400
+Date: Thu, 17 Mar 2011 14:31:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        andy.green@linaro.org, Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+Message-ID: <20110317213108.GA16065@kroah.com>
+References: <20110311163522.GA9291@kroah.com>
+ <20110311164850.GT1760@opensource.wolfsonmicro.com>
+ <20110311165642.GA9996@kroah.com>
+ <20110311170807.GV1760@opensource.wolfsonmicro.com>
+ <20110311172345.GA10876@kroah.com>
+ <alpine.LFD.2.00.1103162207130.26889@xanadu.home>
+ <20110317201320.GB4035@kroah.com>
+ <20110317201835.GM31411@opensource.wolfsonmicro.com>
+ <20110317202614.GA3155@kroah.com>
+ <20110317212449.GO31411@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Date: Thu, 17 Mar 2011 14:29:32 -0700
-Message-ID: <AANLkTimXUDcD5YWAcR=SGa3EBM3+TaMRL1UtF4epxNaP@mail.gmail.com>
-Subject: [RFC] tracing: a proc file to automatically release ring buffer memory
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: rostedt@goodmis.org, mingo@elte.hu, fweisbec@gmail.com,
-        lizf@cn.fujitsu.com
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110317212449.GO31411@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All
+On Thu, Mar 17, 2011 at 09:24:49PM +0000, Mark Brown wrote:
+> On Thu, Mar 17, 2011 at 01:26:14PM -0700, Greg KH wrote:
+> > On Thu, Mar 17, 2011 at 08:18:35PM +0000, Mark Brown wrote:
+> 
+> > > It's going to be an off the shelf USB ethernet controller.  I'd be
+> > > astonished if the board-configurable device IDs weren't set from the
+> > > same SEPROM that the MAC address is so it'd just show up as a generic
+> > > chip of whatever kind.
+> 
+> > Huh?  All USB controllers you buy have the ability to set the vendor and
+> > product id, so you should always be able to key off of that.
+> 
+> > Isn't that the case here?
+> 
+> They generally the same facility that includes the ability to set the
+> MAC address so if one's not been provided it seems optimistic to expect
+> the other.
 
-The current way to release memory from ftrace ring buffer is to:
-echo 0 > /sys/kernel/debug/tracing/buffer_size_kb
+{sigh}  You are probably right :(
 
-Consider a scenario where ftrace is handled by a user space
-process. Normally, this tracing is done as a low priority task on the
-system. Under memory pressure for high priority tasks, tracing should
-be turned off and the trace ring buffer memory released. The buffer
-allocated is kernel memory and under OOM condition if the user space
-process is oom-killed, there is no way to release the ring buffer
-memory.
-
-The proposal is to add a proc entry
-/sys/kernel/debug/tracing/buffer_free. Its .release() fileops function
-executes tracing_stop() and then resizes the global trace buffer to
-minimum size (2*BUF_PAGE_SIZE). The user space process opens this file
-and keeps it open. When the process gets killed, the fd gets closed
-and .release() is called. This automatically stops the tracing and
-frees up the ring buffer memory.
-
-It is optional to use this functionality, since it won't affect
-tracing for current programs. But it provides a way to automatically
-free up memory, if needed. It can also be used on the command line to
-stop tracing and free up memory as a single operation as:
-echo > /sys/kernel/debug/tracing/buffer_free
+> The way this is normally done is that the ethernet controller can be
+> attached to a SEPROM which it reads when it powers on.  This will
+> contain a number of device configuration parameters, including the
+> vendor IDs and the MAC address, which will be configured before the
+> device makes itself available on the bus.  If the system integrator has
+> omitted the SEPROM then the device will come up with defaults, usually
+> something like all zeros.
 
 
-Vaibhav Nagarnaik
+Ok, then again, let's deal with this on a case-by-case basis please, as
+this is going to be a "rare" thing in the real world.  I don't want to
+encourage _any_ engineers to think that this is ok to do for USB
+devices.
+
+Patches to fix this, for this specific PandaBoard controller are gladly
+accepted.  What's odd is this is explicitly a Linux development board,
+so you would think that this could have been caught, and fixed, in the
+hardware a long time ago, right?
+
+Heck, it could be fixed today on future versions of this board, if
+anyone from TI actually cared :(
+
+thanks,
+
+greg k-h
