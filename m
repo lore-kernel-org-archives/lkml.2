@@ -1,157 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab1CQFQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 01:16:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50267 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab1CQFQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 01:16:04 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-To: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] dm: improve read performance
-Date: Thu, 17 Mar 2011 10:42:52 +0530
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Neil Brown <neilb@suse.de>, akpm@linux-foundation.org, snitzer@redhat.com,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, cotte@de.ibm.com,
-        ehrhardt@linux.vnet.ibm.com, hare@suse.de
-References: <201012271219.56476.mume@linux.vnet.ibm.com> <201012271323.13406.mume@linux.vnet.ibm.com> <4D74AEF9.7050108@linux.vnet.ibm.com>
-In-Reply-To: <4D74AEF9.7050108@linux.vnet.ibm.com>
+	id S1751317Ab1CQFVM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 01:21:12 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37080 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab1CQFVJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 01:21:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4D819A2A.8050606@jp.fujitsu.com>
+Date: Thu, 17 Mar 2011 14:20:42 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
+References: <4D817234.9070106@jp.fujitsu.com> <4D8172D7.3040201@jp.fujitsu.com> <20110317041424.GD11094@one.firstfloor.org>
+In-Reply-To: <20110317041424.GD11094@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103171042.52792.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 07, 2011 03:40:01 pm Mustafa Mesanovic wrote:
-> On 12/27/2010 01:23 PM, Mustafa Mesanovic wrote:
-> > On Mon December 27 2010 12:54:59 Neil Brown wrote:
-> >> On Mon, 27 Dec 2010 12:19:55 +0100 Mustafa Mesanovic
-> >> 
-> >> <mume@linux.vnet.ibm.com>  wrote:
-> >>> From: Mustafa Mesanovic<mume@linux.vnet.ibm.com>
-> >>> 
-> >>> A short explanation in prior: in this case we have "stacked" dm
-> >>> devices. Two multipathed luns combined together to one striped logical
-> >>> volume.
-> >>> 
-> >>> I/O throughput degradation happens at __bio_add_page when bio's get
-> >>> checked upon max_sectors. In this setup max_sectors is always set to 8
-> >>> ->  what is 4KiB.
-> >>> A standalone striped logical volume on luns which are not multipathed
-> >>> do not have the problem: the logical volume will take over the
-> >>> max_sectors from luns below.
+(2011/03/17 13:14), Andi Kleen wrote:
+> On Thu, Mar 17, 2011 at 11:32:55AM +0900, Hidetoshi Seto wrote:
+>> So to avoid the above problem, add poison checks for both of 4K pages
+>> and the THP before copying in __collapse_huge_page_copy().
 > 
-> [...]
-> 
-> >>> Using the patch improves read I/O up to 3x. In this specific case from
-> >>> 600MiB/s up to 1800MiB/s.
-> >> 
-> >> and using this patch will cause IO to fail sometimes.
-> >> If an IO request which is larger than a page crosses a device boundary
-> >> in the underlying e.g. RAID0, the RAID0 will return an error as such
-> >> things should not happen - they are prevented by merge_bvec_fn.
-> >> 
-> >> If merge_bvec_fn is not being honoured, then you MUST limit requests to
-> >> a single entry iovec of at most one page.
-> >> 
-> >> NeilBrown
-> > 
-> > Thank you for that hint, I will try to write a merge_bvec_fn for
-> > dm-stripe.c which solves the problem, if that is ok?
-> > 
-> > Mustafa Mesanovic
-> 
-> Now here my new suggestion to fix this issue, what is your opinion?
-> I tested this with different setups, and it worked fine and I had
-> very good performance improvements.
-> 
+> I don't think you need the check for the huge page -- it should not be allocated
+> in this case.
 
-Some minor style nitpicks.
+Is there no case that the THP is once allocated but poison flag
+is set before copy?  Though I know it is one of corner cases,
+having this check for THP is worse than nothing.
 
-> [RFC][PATCH] dm: improve read performance - v2
-> 
-> This patch adds a merge_fn for the dm stripe target. This merge_fn
-> prevents dm_set_device_limits() setting the max_sectors to 4KiB
-> (PAGE_SIZE). (As in a prior patch already mentioned.)
-> Now the read performance improved up to 3x higher compared to before.
-> 
-> What happened before:
-> I/O throughput degradation happened at __bio_add_page() when bio's got
-> checked at the very beginning upon max_sectors. In this setup max_sectors
-> is always set to 8. So bio's entered the dm target with a max of 4KiB.
-> 
-> Now dm-stripe target will have its own merge_fn so max_sectors will not
-> pushed down to 8 (4KiB), and bio's can get bigger than 4KiB.
-> 
-> Signed-off-by: Mustafa Mesanovic<mume@linux.vnet.ibm.com>
-> ---
-> 
->   dm-stripe.c |   24 ++++++++++++++++++++++++
->   1 file changed, 24 insertions(+)
-> 
-> Index: linux-2.6/drivers/md/dm-stripe.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/md/dm-stripe.c	2011-02-28 10:23:37.000000000
-> +0100 +++ linux-2.6/drivers/md/dm-stripe.c	2011-02-28 10:24:29.000000000
-> +0100 @@ -396,6 +396,29 @@
->   	blk_limits_io_opt(limits, chunk_size * sc->stripes);
->   }
-> 
-> +static int stripe_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
-> +			struct bio_vec *biovec, int max_size)
-> +{
-> +	struct stripe_c *sc = (struct stripe_c *) ti->private;
-> +	sector_t offset, chunk;
-> +	uint32_t stripe;
-> +	struct request_queue *q;
-> +
-> +	offset = bvm->bi_sector - ti->begin;
-> +	chunk = offset>>  sc->chunk_shift;
-> +	stripe = sector_div(chunk, sc->stripes);
-> +
-> +	if (!bdev_get_queue(sc->stripe[stripe].dev->bdev)->merge_bvec_fn)
-> +			return max_size;
-> +
-> +	bvm->bi_bdev = sc->stripe[stripe].dev->bdev;
-> +	q = bdev_get_queue(bvm->bi_bdev);
+Thanks,
+H.Seto
 
-Initializing q at the top would simplify the check fro merge_bvec_fn above.
-
-> +	bvm->bi_sector = sc->stripe[stripe].physical_start +
-> +			(chunk<<  sc->chunk_shift) + (offset&  sc->chunk_mask);
-> +
-
-Can this be written as
-
-bvm->bi_sector = sc->stripe[stripe].physical_start +
-			bvm->bi_sector - ti->begin;
-
-or even better
-bvm->bi_sector = sc->stripe[stripe].physical_start +
-			dm_target_offset(ti, bvm->bi_sector);
-
->
-> +	return min(max_size, q->merge_bvec_fn(q, bvm, biovec));
-> +}
-> +
->   static struct target_type stripe_target = {
->   	.name   = "striped",
->   	.version = {1, 3, 1},
-> @@ -403,6 +426,7 @@
->   	.ctr    = stripe_ctr,
->   	.dtr    = stripe_dtr,
->   	.map    = stripe_map,
-> +	.merge  = stripe_merge,
->   	.end_io = stripe_end_io,
->   	.status = stripe_status,
->   	.iterate_devices = stripe_iterate_devices,
-> 
-> 
-> 
-
-
-Reviewed-by: Nikanth Karthikesan <knikanth@suse.de>
