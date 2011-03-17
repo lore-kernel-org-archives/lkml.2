@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab1CQWzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 18:55:45 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:43265 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab1CQWzn (ORCPT
+	id S1755957Ab1CQW4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 18:56:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35154 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab1CQW4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 18:55:43 -0400
-Date: Thu, 17 Mar 2011 23:55:41 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
-Message-ID: <20110317225541.GK11094@one.firstfloor.org>
-References: <4D8172D7.3040201@jp.fujitsu.com> <20110317041424.GD11094@one.firstfloor.org> <4D819A2A.8050606@jp.fujitsu.com> <20110317062612.GE11094@one.firstfloor.org> <4D81BB87.10803@jp.fujitsu.com> <20110317140401.GX10696@random.random> <20110317152559.GG11094@one.firstfloor.org> <20110317161219.GZ10696@random.random> <20110317162710.GH11094@one.firstfloor.org> <20110317164726.GA10696@random.random>
-Mime-Version: 1.0
+	Thu, 17 Mar 2011 18:56:07 -0400
+Date: Thu, 17 Mar 2011 22:56:03 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Xiaotian Feng <xtfeng@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Some fixes for pstore (Was Re: [git pull] mnt_devname queue)
+Message-ID: <20110317225603.GD22723@ZenIV.linux.org.uk>
+References: <20110316235608.GY22723@ZenIV.linux.org.uk>
+ <AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
+ <20110317072344.GZ22723@ZenIV.linux.org.uk>
+ <AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
+ <20110317104434.GB22723@ZenIV.linux.org.uk>
+ <4d827eae305473e2bf@agluck-desktop.sc.intel.com>
+ <20110317224252.GC22723@ZenIV.linux.org.uk>
+ <AANLkTim5pj0J4VaYRzK8_8fpb0=hO5yxhAL48egiTE2e@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110317164726.GA10696@random.random>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <AANLkTim5pj0J4VaYRzK8_8fpb0=hO5yxhAL48egiTE2e@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I meant the testsuite using MCE injection, called mce-test. I've run
-> it a couple of times for some hugetlbfs collision with THP (solved
-> some time ago).
+On Thu, Mar 17, 2011 at 03:48:13PM -0700, Tony Luck wrote:
+> On Thu, Mar 17, 2011 at 3:42 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >> + ? ? memcpy(private->data, data, size);
+> >> + ? ? inode->i_size = private->size = size;
+> >>
+> >> ? ? ? inode->i_private = private;
+> >
+> > Better move that before d_add()
+> 
+> Will do.
+> 
+> > *blink*
+> > ? ? ? ?if (IS_ERR(root))
+> > ? ? ? ? ? ? ? ?return root;
+> > ? ? ? ?return root;
+> >
+> > ... or am I misreading the patch?
+> 
+> Your patch reading skills are fine ... the code deserves more than a *blink*.
+> Will fix.
 
-This won't hit small code windows like that.
-
-> I'm unsure if there's already coverage for it in mce-test yet, the
-> biggest test I run was hugetlbfs related (MAP_ANONYMOUS|MAP_HUGETLB or
-> filebacked or still shm). Surely it'd be good idea to add THP
-> coverage.
-
-Sounds like a good idea. Feel free to contribute a test case.
--Andi
+Send the updated patch my way, please.
