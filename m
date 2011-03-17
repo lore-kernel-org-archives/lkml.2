@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab1CQQeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:34:10 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39647 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab1CQQeI (ORCPT
+	id S1754119Ab1CQQm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 12:42:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:64339 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab1CQQmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:34:08 -0400
-Date: Thu, 17 Mar 2011 10:34:04 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH] rtc-{ds1390,ds3234,m41t94}: Use spi_get_drvdata() for
- SPI devices
-Message-ID: <20110317163404.GA9597@angua.secretlab.ca>
-References: <alpine.DEB.2.00.1103171446130.23741@ayla.of.borg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.00.1103171446130.23741@ayla.of.borg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Mar 2011 12:42:25 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=YyZjyzKDLagA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=pnrHqt6JrD814hP00-MA:9 a=UrJ6aDChuKYS0YzSNOyyzip0vS4A:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110317164148.550876008@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 17 Mar 2011 12:41:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/4] [GIT PULL] jump label: Cleanups for 2.6.39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 02:47:56PM +0100, Geert Uytterhoeven wrote:
-> The recently increased type checking in platform_get_drvdata() reveals a few
-> offenders:
-> 
-> drivers/rtc/rtc-ds1390.c:161: warning: passing argument 1 of ‘platform_get_drvdata’ from incompatible pointer type
-> drivers/rtc/rtc-ds3234.c:161: warning: passing argument 1 of ‘platform_get_drvdata’ from incompatible pointer type
-> drivers/rtc/rtc-m41t94.c:139: warning: passing argument 1 of ‘platform_get_drvdata’ from incompatible pointer type
-> 
-> Use spi_get_drvdata() instead of platform_get_drvdata().
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Obviously correct, thanks.
+Ingo,
 
-Merged.
+Please pull the latest tip/perf/urgent tree, which can be found at:
 
-g.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent
 
-> ---
->  drivers/rtc/rtc-ds1390.c |    2 +-
->  drivers/rtc/rtc-ds3234.c |    2 +-
->  drivers/rtc/rtc-m41t94.c |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-ds1390.c b/drivers/rtc/rtc-ds1390.c
-> index 26a86d2..b038d2c 100644
-> --- a/drivers/rtc/rtc-ds1390.c
-> +++ b/drivers/rtc/rtc-ds1390.c
-> @@ -158,7 +158,7 @@ static int __devinit ds1390_probe(struct spi_device *spi)
->  
->  static int __devexit ds1390_remove(struct spi_device *spi)
->  {
-> -	struct ds1390 *chip = platform_get_drvdata(spi);
-> +	struct ds1390 *chip = spi_get_drvdata(spi);
->  
->  	rtc_device_unregister(chip->rtc);
->  	kfree(chip);
-> diff --git a/drivers/rtc/rtc-ds3234.c b/drivers/rtc/rtc-ds3234.c
-> index a774ca3..bbd2622 100644
-> --- a/drivers/rtc/rtc-ds3234.c
-> +++ b/drivers/rtc/rtc-ds3234.c
-> @@ -158,7 +158,7 @@ static int __devinit ds3234_probe(struct spi_device *spi)
->  
->  static int __devexit ds3234_remove(struct spi_device *spi)
->  {
-> -	struct rtc_device *rtc = platform_get_drvdata(spi);
-> +	struct rtc_device *rtc = spi_get_drvdata(spi);
->  
->  	rtc_device_unregister(rtc);
->  	return 0;
-> diff --git a/drivers/rtc/rtc-m41t94.c b/drivers/rtc/rtc-m41t94.c
-> index c8c97a4..e259ed7 100644
-> --- a/drivers/rtc/rtc-m41t94.c
-> +++ b/drivers/rtc/rtc-m41t94.c
-> @@ -136,7 +136,7 @@ static int __devinit m41t94_probe(struct spi_device *spi)
->  
->  static int __devexit m41t94_remove(struct spi_device *spi)
->  {
-> -	struct rtc_device *rtc = platform_get_drvdata(spi);
-> +	struct rtc_device *rtc = spi_get_drvdata(spi);
->  
->  	if (rtc)
->  		rtc_device_unregister(rtc);
-> -- 
-> 1.7.0.4
-> 
-> 
-> Gr{oetje,eeting}s,
-> 
-> 						Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
-> 							    -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+Jan Glauber (1):
+      jump label: Add s390 support
+
+Jason Baron (3):
+      jump label: Introduce static_branch() interface
+      dynamic debug: Add jump label support
+      jump label: Add _ASM_ALIGN for x86 and x86_64
+
+----
+ arch/mips/include/asm/jump_label.h  |   22 +-
+ arch/s390/Kconfig                   |    1 +
+ arch/s390/include/asm/jump_label.h  |   37 +++
+ arch/s390/kernel/Makefile           |    2 +-
+ arch/s390/kernel/jump_label.c       |   59 ++++
+ arch/sparc/include/asm/jump_label.h |   25 +-
+ arch/x86/include/asm/alternative.h  |    3 +-
+ arch/x86/include/asm/jump_label.h   |   27 +-
+ arch/x86/kernel/alternative.c       |    2 +-
+ arch/x86/kernel/module.c            |    1 +
+ include/asm-generic/vmlinux.lds.h   |   14 +-
+ include/linux/dynamic_debug.h       |   44 +++-
+ include/linux/jump_label.h          |   89 ++++---
+ include/linux/jump_label_ref.h      |   44 ---
+ include/linux/perf_event.h          |   26 +-
+ include/linux/tracepoint.h          |   22 +-
+ kernel/jump_label.c                 |  539 ++++++++++++++---------------------
+ kernel/perf_event.c                 |    4 +-
+ kernel/tracepoint.c                 |   23 +-
+ lib/dynamic_debug.c                 |    4 +-
+ 20 files changed, 494 insertions(+), 494 deletions(-)
