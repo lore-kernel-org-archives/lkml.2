@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1CQAxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:53:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab1CQAxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:53:19 -0400
-Date: Wed, 16 Mar 2011 20:53:05 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org
-Subject: Re: Regression from 2.6.36
-Message-ID: <20110317005304.GA1992@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
-	azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org
-References: <20110315132527.130FB80018F1@mail1005.cent>
- <20110317001519.GB18911@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317001519.GB18911@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752684Ab1CQA5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 20:57:50 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:47479 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab1CQA5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 20:57:41 -0400
+Subject: Re: [PATCH 21/21] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
+	module
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <20110315101838.GB23623@lst.de>
+References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
+	 <1300100775-10012-22-git-send-email-nab@linux-iscsi.org>
+	 <20110314145808.GA28480@lst.de>
+	 <1300140175.28255.156.camel@haakon2.linux-iscsi.org>
+	 <20110315101838.GB23623@lst.de>
+Content-Type: text/plain
+Date: Wed, 16 Mar 2011 17:50:36 -0700
+Message-Id: <1300323036.28255.480.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 05:15:19PM -0700, Greg Kroah-Hartman wrote:
+On Tue, 2011-03-15 at 11:18 +0100, Christoph Hellwig wrote:
+> On Mon, Mar 14, 2011 at 03:02:55PM -0700, Nicholas A. Bellinger wrote:
+> > > Please descide on a naming scheme for the frontend modules.  You have
+> > > tcm_loop for thise one, and just iscsi for the iscsi frontend.
+> > 
+> > Ok, curently everything that appears under drivers/target/ beside
+> > iscsi_target_mod.ko is using a matching drivers/target/$FABRIC_MOD/ and
+> > $FABRIC_MOD.ko naming scheme.
+> > 
+> > I would prefer to keep iscsi_target_mod.ko for the software iSCSI case
+> > in order to prevent chaos with existing userspace tools and prevent
+> > breakage with existing other iSCSI target modules (IET is using
+> > iscsi_trgt.ko IIRC).
+> > 
+> > How about dropping the 'tcm_' prefix from the drivers/target/tcm_subdir/
+> > to follow how the fabric module actually appears once loaded under
+> > /sys/kernel/config/target/$FABRIC/..?  We will need to keep the common
+> > 'tcm_' prefix for the actual target fabric modules (or choose a
+> > different one) to handle those that interface with existing SCSI LLD
+> > code.
+> 
+> Dropping the tcm sounds fine to me.
+> 
 
- > > Do you need any other information from me ? I'm able to try other versions or
- > > patches but, please, take into account that I have to do this on _production_
- > > server (I failed to reproduce it in testing environment). Also, I'm able to try
- > > only one kernel per day.
- > 
- > Ick, one kernel per day might make this a bit difficult, but if there
- > was any way you could use 'git bisect' to try to narrow this down to the
- > patch that caused this problem, it would be great.
- > 
- > You can mark 2.6.35 as working and 2.6.36 as bad and git will go from
- > there and try to offer you different chances to find the problem.
+<nod>
 
-Comparing the output of a perf profile between the good/bad kernels might
-narrow it down faster than a bisect if something obvious sticks out.
+> > This makes it a bit easier to grok as a reference for newcomers by
+> > having seperate sections for configfs control plane, struct
+> > target_core_fabric_ops API callers, and Linux/SCSI LLD specific glue.
+> 
+> I don't think it's a very good reference, though.  E.g. currently the
+> fabric ops methods are implemented in tcm_loop_fabric.c, and all need
+> non-static scope because they are assigned in tcm_loop_configfs.c, which
+> creates a lot of global scope and pointless prototypes.  Either one
+> could clean all that up or just merge the files into one which would
+> be a lot easier.  Especiall as the way the target_fabric_configfs structure
+> and the fabric ops are structured will get a big overhaul from me soon.
+> 
 
-	Dave
+Ok, fair enough..  I will go ahead and look at getting this cleaned up.
+
+In the mean time, James please go ahead and apply patches #1 -> #20 from
+this target core series to scsi-misc as I have no futher changes to
+report at this time.  I will send out an updated PATCH 21/21 addressing
+Christoph's comments for merging tcm_loop.ko shortly, and another RFC-v3
+series addressing his comments for the initial iscsi_target_mod merge in
+the next 24 hours.
+
+--nab
 
