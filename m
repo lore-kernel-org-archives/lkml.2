@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab1CQLrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:47:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab1CQLrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:47:07 -0400
-Message-ID: <4D81F4B3.4000004@redhat.com>
-Date: Thu, 17 Mar 2011 08:46:59 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1754108Ab1CQLtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:49:13 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:47183 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752910Ab1CQLtM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 07:49:12 -0400
+X-Sasl-enc: MAOUuDj6dHzejRuC261TEY0VdeAl5UF1dkSRIf/FeiIc 1300362551
+From: Roberto Sassu <roberto.sassu@polito.it>
+To: tyhicks@linux.vnet.ibm.com
+Cc: kirkland@canonical.com, dhowells@redhat.com, jmorris@namei.org,
+        linux-fsdevel@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, Roberto Sassu <roberto.sassu@polito.it>
+Subject: [PATCH 0/5] eCryptfs key locking patches
+Date: Thu, 17 Mar 2011 12:48:49 +0100
+Message-Id: <1300362538-11502-1-git-send-email-roberto.sassu@polito.it>
+X-Mailer: git-send-email 1.7.4
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Greg KH <greg@kroah.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [ANNOUNCE] usbmon capture and parser script
-References: <4D8102A9.9080202@redhat.com> <20110316194758.GA32557@kroah.com> <1300306845.1954.7.camel@t41.thuisdomein>
-In-Reply-To: <1300306845.1954.7.camel@t41.thuisdomein>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----2844D5E66462F4FE54E268C6BCBA0FCA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 16-03-2011 17:20, Paul Bolle escreveu:
-> On Wed, 2011-03-16 at 12:47 -0700, Greg KH wrote:
->> Very cool stuff.  You are away of:
->> 	http://vusb-analyzer.sourceforge.net/
->> right?
+This is an S/MIME signed message
 
-Thanks for pointing it. It seems very interesting.
+------2844D5E66462F4FE54E268C6BCBA0FCA
 
-Paul, 
+This patch set modifies the eCryptfs code in order to lock requested keys while
+authentication tokens are used to encrypt or decrypt files.
 
-On a quick test, it seems that it doesn't recognize the tcpdump file 
-format (at least, it was not able to capture the dump files I got 
-with the beagleboard). Adding support for it could be an interesting 
-addition to your code. 
+Roberto Sassu
 
-Btw, it seems that most of your work is focused on getting VMware logs.
-Most USB adapters I handle are USB 2.0 only, and have very high 
-bandwidth requirements (something like 40%-60% of the total bandwidth
-available at the USB bus). It would be nice to be capable of using a
-VM on some cases, but the last time I tested VMWare, kvm, etc, none 
-of them were capable of properly support USB 2.0 with isoc data transfers.
 
-Do you know if any of them are now capable of properly emulate USB 2.0
-isoc transfers and give enough performance for the devices to actually
-work with such high-bandwidth requirements?
+Roberto Sassu (5):
+  eCryptfs: ecryptfs_keyring_auth_tok_for_sig() bug fix
+  eCryptfs: modified size of keysig in the ecryptfs_key_sig structure
+  eCryptfs: verify authentication tokens before their use
+  eCryptfs: move ecryptfs_find_auth_tok_for_sig() call before
+    mutex_lock
+  eCryptfs: write lock requested keys
 
->> I know you are doing this in console mode, but it looks close to the
->> same idea.
+ fs/ecryptfs/ecryptfs_kernel.h |    5 +-
+ fs/ecryptfs/keystore.c        |  170 +++++++++++++++++++++++++++--------------
+ fs/ecryptfs/main.c            |    8 +-
+ 3 files changed, 122 insertions(+), 61 deletions(-)
 
-Yes, there are some similarities, although I think that the tools
-complement each other.
+-- 
+1.7.4
 
-Doing it via console is nice, as I can just use the serial interface of
-the beagleboard to capture and parse data in real time.
 
-An offline graphic analyser is interesting, especially when you need to
-filter data and check event timings.
+------2844D5E66462F4FE54E268C6BCBA0FCA
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
 
-> Perhaps there should be some references to vusb-analyzer and similar
-> tools in Documentation/usb/usbmon.txt (it now only mentions "usbdump"
-> and "USBMon"). I remember looking for a tool like that (ie, a parser)
-> for quite some time before stumbling onto vusb-analyzer.
+MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
+VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
+Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
+HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
+MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
+ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
+NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
+TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
+XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
+da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
+yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
+BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
+BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
+HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
+GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
+qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
+cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
+CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
+BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
+AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
+NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
+X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
+LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
+S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
+oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
+JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
+YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
+MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
+aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
+Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAzMTcxMTQ4NThaMCMGCSqG
+SIb3DQEJBDEWBBTohle4Lxl4rvuwfEMkFhHxR+k8JzB5BgkqhkiG9w0BCQ8xbDBq
+MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
+DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBL/EMSakzA5ElqaRTxmD/FOZgQ
+mKtcvf8SsXDuL3xBDz2u0UQ15XuHS5B51ANDxio7EN0SjoT3LHGZRzg59DvQlOa+
+9Gl/HnEUpuoKgaadxcHDaRehiWmwEHRx5VMH/YZrOjMQIbby9fEYeYotgEmsYnHG
+8eINu8tsaaoygAMws/kMm11XoJs30Up6mgL2wexNlGta8emPpweYZuGtEsaVGXmy
+spPuWePqEBXHRm8qpCWPvDIj+G9VWAkBywDXYUAIcTKr1LP3oGoa7pd8Sj2dranH
+69dOjK4ZxUIzFBiD/RsrpPcmm8aCt0eERmZQEinG9VuK2o2I2moh+OXnJegQ
 
-Yeah, that seems a good idea to me too.
+------2844D5E66462F4FE54E268C6BCBA0FCA--
 
-Cheers,
-Mauro
+
