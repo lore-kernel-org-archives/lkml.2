@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1CQPH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 11:07:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36297 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab1CQPHW convert rfc822-to-8bit (ORCPT
+	id S1754639Ab1CQPHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 11:07:40 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:44816 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279Ab1CQPHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 11:07:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=p/Y+wRtoePazmBDHxdk4xCJ4byMuoBdF5TnSjylYDok1GQ8aDnGFB3lp3MzEKD7WQ/
-         1LodBUPrc+4qN/Dc3ztWlEbhGKb2KVfBfd8Rs0ZNwiJEgIy63JM99Z2Sg1TtDLqidCXP
-         8qpBIZ8jIqFVcjqIvaN4quRJA7S808hJQLwWw=
+	Thu, 17 Mar 2011 11:07:37 -0400
+X-IronPort-AV: E=Sophos;i="4.63,199,1299456000"; 
+   d="scan'208";a="4843709"
+Date: Thu, 17 Mar 2011 15:07:05 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Daniel Kiper <dkiper@net-space.pl>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "andi.kleen@intel.com" <andi.kleen@intel.com>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
+        "pasik@iki.fi" <pasik@iki.fi>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        "wdauchy@gmail.com" <wdauchy@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Bootup fix for _brk_end being != _end
+In-Reply-To: <20110317085118.GA11346@router-fw-old.local.net-space.pl>
+Message-ID: <alpine.DEB.2.00.1103171504200.3382@kaball-desktop>
+References: <20110308214429.GA27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091359290.2968@kaball-desktop> <20110315142957.GB12730@router-fw-old.local.net-space.pl> <20110315144821.GA11586@dumpdata.com> <20110315153001.GD12730@router-fw-old.local.net-space.pl>
+ <alpine.DEB.2.00.1103151530290.3382@kaball-desktop> <20110315154024.GA14100@router-fw-old.local.net-space.pl> <20110317085118.GA11346@router-fw-old.local.net-space.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1299477315.10486.1.camel@mola>
-References: <1299477315.10486.1.camel@mola>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 17 Mar 2011 23:07:02 +0800
-Message-ID: <AANLkTimvx4xkk=HyO_nv+zOiWrZhtgWvAzzjuxYin8Uy@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [ARM] am200epd: fix resource leak in
- am200_init_gpio_regs error path
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jaya Kumar <jayakumar.lkml@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied.
-
-On Mon, Mar 7, 2011 at 1:55 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> If gpio_request fails when i > 0, gpios[0] is not freed in current
-> implementation.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  arch/arm/mach-pxa/am200epd.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-pxa/am200epd.c b/arch/arm/mach-pxa/am200epd.c
-> index 3499fad..811d797 100644
-> --- a/arch/arm/mach-pxa/am200epd.c
-> +++ b/arch/arm/mach-pxa/am200epd.c
-> @@ -128,8 +128,8 @@ static int am200_init_gpio_regs(struct metronomefb_par *par)
->        return 0;
->
->  err_req_gpio:
-> -       while (i > 0)
-> -               gpio_free(gpios[i--]);
-> +       while (--i >= 0)
-> +               gpio_free(gpios[i]);
->
->        return err;
->  }
-> --
-> 1.7.2
->
->
->
->
+On Thu, 17 Mar 2011, Daniel Kiper wrote:
+> > > > > Details? Can you provide the 'xenctx' output of where it crashed?
+> > > >
+> > > > As I wrote above domain is dying and I am not able to connect to it using
+> > > > xenctx after crash :-(((. I do not know how to do that in another way.
+> > >
+> > > try adding:
+> > >
+> > > extra = "loglevel=9 debug earlyprintk=xenboot"
+> >
+> > (XEN) d55:v0: unhandled page fault (ec=0002)
+> > (XEN) Pagetable walk from 000000000000000c:
+> > (XEN)  L4[0x000] = 000000010bebc027 0000000000024d28
+> > (XEN)  L3[0x000] = 0000000000000000 ffffffffffffffff
+> > (XEN) domain_crash_sync called from entry.S
+> > (XEN) Domain 55 (vcpu#0) crashed on cpu#3:
+> > (XEN) ----[ Xen-4.1.0-rc2-pre  x86_64  debug=y  Not tainted ]----
+> > (XEN) CPU:    3
+> > (XEN) RIP:    e019:[<00000000c1001180>]
+> > (XEN) RFLAGS: 0000000000000282   EM: 1   CONTEXT: pv guest
+> > (XEN) rax: 000000000000000c   rbx: 000000000000000c   rcx: 00000000c1371fd0
+> > (XEN) rdx: 00000000c1371fd0   rsi: 00000000c1742000   rdi: 00000000a5c03d70
+> > (XEN) rbp: 00000000c1371fc8   rsp: 00000000c1371fa8   r8: 0000000000000000
+> > (XEN) r9:  0000000000000000   r10: 0000000000000000   r11: 0000000000000000
+> > (XEN) r12: 0000000000000000   r13: 0000000000000000   r14: 0000000000000000
+> > (XEN) r15: 0000000000000000   cr0: 000000008005003b   cr4: 00000000000026f4
+> > (XEN) cr3: 0000000129b6e000   cr2: 000000000000000c
+> > (XEN) ds: e021   es: e021   fs: e021   gs: e021   ss: e021   cs: e019
+> > (XEN) Guest stack trace from esp=c1371fa8:
+> > (XEN)   00000002 c1001180 0001e019 00010082 c10037af deadbeef c1742000 a5c03d70
+> > (XEN)   c1371fdc c13a4aa8 00000000 00000000 00000000 c1371ffc c13a3ff2 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 deadbeef c1753000 013fe001 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 013fe001 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> 
+> Any progress ??? Can I help you in something ???
+> 
+ 
+Unfortunately unless you are able to resolve the IP of the crash these
+logs don't tell me much.
+Alternatively you can try to get more infos using /usr/lib/xen/bin/xenctx
+like Konrad suggested.
