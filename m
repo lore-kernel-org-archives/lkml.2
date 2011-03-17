@@ -1,48 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab1CQWU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 18:20:26 -0400
-Received: from kroah.org ([198.145.64.141]:38320 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143Ab1CQWUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 18:20:24 -0400
-Date: Thu, 17 Mar 2011 15:20:20 -0700
-From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110317222020.GA30486@kroah.com>
-References: <20110311161421.GA7843@kroah.com>
- <20110317201835.GM31411@opensource.wolfsonmicro.com>
- <20110317202614.GA3155@kroah.com>
- <201103172311.36246.arnd@arndb.de>
+	id S1755412Ab1CQWWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 18:22:52 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11448 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab1CQWWt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 18:22:49 -0400
+Date: Thu, 17 Mar 2011 23:22:33 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [RFC-v3 03/12] iscsi-target: Add TCM v4 compatiable ConfigFS
+ control plane
+In-Reply-To: <1300398797-24536-4-git-send-email-nab@linux-iscsi.org>
+Message-ID: <alpine.LNX.2.00.1103172307510.1980@swampdragon.chaosbits.net>
+References: <1300398797-24536-1-git-send-email-nab@linux-iscsi.org> <1300398797-24536-4-git-send-email-nab@linux-iscsi.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103172311.36246.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 11:11:36PM +0100, Arnd Bergmann wrote:
-> On Thursday 17 March 2011 21:26:14 Greg KH wrote:
-> > > It's going to be an off the shelf USB ethernet controller.  I'd be
-> > > astonished if the board-configurable device IDs weren't set from the
-> > > same SEPROM that the MAC address is so it'd just show up as a generic
-> > > chip of whatever kind.
-> > 
-> > Huh?  All USB controllers you buy have the ability to set the vendor and
-> > product id, so you should always be able to key off of that.
-> > 
-> > Isn't that the case here?
+On Thu, 17 Mar 2011, Nicholas A. Bellinger wrote:
+
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> The same EEPROM that is missing here carries both the MAC address and
-> the vendor/product ID overrides.
+> This patch adds support for /sys/kernel/config/target/iscsi using
+> TCM v4.0 compatiable calls following target_core_fabric_configfs.c
+> 
+> This includes a number of iSCSI fabric dependent attributes upon
+> target_core_fabric_configfs.c provided struct config_item_types from
+> include/target/target_core_configfs.hstruct target_fabric_configfs_template
+> 
+> It also includes iscsi_target_nodeattrib.[c,h] for handling the
+> lio_target_nacl_attrib_attrs[] store/show for iSCSI fabric dependent
+> attributes.
+> 
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  drivers/target/iscsi/iscsi_target_configfs.c   | 1593 ++++++++++++++++++++++++
+>  drivers/target/iscsi/iscsi_target_configfs.h   |    7 +
+>  drivers/target/iscsi/iscsi_target_nodeattrib.c |  264 ++++
+>  drivers/target/iscsi/iscsi_target_nodeattrib.h |   14 +
+>  4 files changed, 1878 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/target/iscsi/iscsi_target_configfs.c
+>  create mode 100644 drivers/target/iscsi/iscsi_target_configfs.h
+>  create mode 100644 drivers/target/iscsi/iscsi_target_nodeattrib.c
+>  create mode 100644 drivers/target/iscsi/iscsi_target_nodeattrib.h
+> 
+> diff --git a/drivers/target/iscsi/iscsi_target_configfs.c b/drivers/target/iscsi/iscsi_target_configfs.c
+> new file mode 100644
+> index 0000000..ae88092
+> --- /dev/null
+> +++ b/drivers/target/iscsi/iscsi_target_configfs.c
+> @@ -0,0 +1,1593 @@
+> +/*******************************************************************************
+> + * This file contains the configfs implementation for iSCSI Target mode
+> + * from the LIO-Target Project.
+> + *
+> + * ?? Copyright 2007-2011 RisingTide Systems LLC.
 
-{sigh}
+"??" ?
+You have this in other files as well - what's the point of those two 
+question marks?
 
-It's as if BIOS programmers are now laying out board designs...
+
+> +struct se_tpg_np *lio_target_call_addnptotpg(
+> +	struct se_portal_group *se_tpg,
+> +	struct config_group *group,
+> +	const char *name)
+> +{
+> +	struct iscsi_portal_group *tpg;
+> +	struct iscsi_tpg_np *tpg_np;
+> +	char *str, *str2, *end_ptr, *ip_str, *port_str;
+> +	struct iscsi_np_addr np_addr;
+> +	u32 ipv4 = 0;
+> +	int ret;
+> +	char buf[MAX_PORTAL_LEN + 1];
+> +
+> +	if (strlen(name) > MAX_PORTAL_LEN) {
+> +		printk(KERN_ERR "strlen(name): %d exceeds MAX_PORTAL_LEN: %d\n",
+> +			(int)strlen(name), MAX_PORTAL_LEN);
+> +		return ERR_PTR(-EOVERFLOW);
+> +	}
+> +	memset(buf, 0, MAX_PORTAL_LEN);
+
+memset(buf, 0, MAX_PORTAL_LEN + 1);
+
+
+> +#define DEF_NACL_ATTRIB(name)						\
+> +static ssize_t iscsi_nacl_attrib_show_##name(				\
+> +	struct se_node_acl *se_nacl,					\
+> +	char *page)							\
+> +{									\
+> +	struct iscsi_node_acl *nacl = container_of(se_nacl, struct iscsi_node_acl, \
+> +					se_node_acl);			\
+> +	ssize_t rb;							\
+> +									\
+> +	rb = sprintf(page, "%u\n", ISCSI_NODE_ATTRIB(nacl)->name);	\
+> +	return rb;							\
+
+Why the 'rb' variable? Why not just
+
+return sprintf(page, "%u\n", ISCSI_NODE_ATTRIB(nacl)->name);
+
+?
+
+
+> +#define __DEF_NACL_AUTH_STR(prefix, name, flags)			\
+> +static ssize_t __iscsi_##prefix##_show_##name(				\
+> +	struct iscsi_node_acl *nacl,					\
+> +	char *page)							\
+> +{									\
+> +	struct iscsi_node_auth *auth = &nacl->node_auth;		\
+> +	ssize_t rb;							\
+> +									\
+> +	if (!capable(CAP_SYS_ADMIN))					\
+> +		return -EPERM;						\
+> +	rb = snprintf(page, PAGE_SIZE, "%s\n", auth->name);		\
+> +	return rb;							\
+
+Kill 'rb' and just 
+
+  return snprintf(page, PAGE_SIZE, "%s\n", auth->name);
+
+I'd say.
+
+
+> +#define __DEF_NACL_AUTH_INT(prefix, name)				\
+> +static ssize_t __iscsi_##prefix##_show_##name(				\
+> +	struct iscsi_node_acl *nacl,					\
+> +	char *page)							\
+> +{									\
+> +	struct iscsi_node_auth *auth = &nacl->node_auth;		\
+> +	ssize_t rb;							\
+> +									\
+> +	if (!capable(CAP_SYS_ADMIN))					\
+> +		return -EPERM;						\
+> +									\
+> +	rb = snprintf(page, PAGE_SIZE, "%d\n", auth->name);		\
+> +	return rb;							\
+
+Just kill that pointless 'rb' variable..
+
+
+> +static ssize_t lio_target_nacl_show_info(
+> +	struct se_node_acl *se_nacl,
+> +	char *page)
+> +{
+> +	struct iscsi_session *sess;
+> +	struct iscsi_conn *conn;
+> +	struct se_session *se_sess;
+> +	unsigned char *ip, buf_ipv4[IPV4_BUF_SIZE];
+> +	ssize_t rb = 0;
+> +
+> +	spin_lock_bh(&se_nacl->nacl_sess_lock);
+> +	se_sess = se_nacl->nacl_sess;
+> +	if (!se_sess) {
+> +		rb += sprintf(page+rb, "No active iSCSI Session for Initiator"
+> +			" Endpoint: %s\n", se_nacl->initiatorname);
+> +	} else {
+> +		sess = (struct iscsi_session *)se_sess->fabric_sess_ptr;
+> +
+
+Is this cast needed?
+
+
+> +static ssize_t iscsi_tpg_param_store_##name(				\
+> +	struct se_portal_group *se_tpg,				\
+> +	const char *page,						\
+> +	size_t count)							\
+> +{									\
+> +	struct iscsi_portal_group *tpg = container_of(se_tpg,		\
+> +			struct iscsi_portal_group, tpg_se_tpg);		\
+> +	char *buf;							\
+> +	int ret;							\
+> +									\
+> +	buf = kzalloc(PAGE_SIZE, GFP_KERNEL);				\
+> +	if (!buf)							\
+> +		return -ENOMEM;						\
+> +	snprintf(buf, PAGE_SIZE, "%s=%s", __stringify(name), page);	\
+> +	buf[strlen(buf)-1] = '\0'; /* Kill newline */			\
+> +									\
+> +	if (iscsi_get_tpg(tpg) < 0)					\
+> +		return -EINVAL;						\
+
+You just leaked "buf".
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
