@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab1CQVYy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:24:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42878 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755664Ab1CQVYv (ORCPT
+	id S1755715Ab1CQV0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:26:16 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53210 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755650Ab1CQV0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:24:51 -0400
-Date: Thu, 17 Mar 2011 21:24:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <greg@kroah.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        andy.green@linaro.org, Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110317212449.GO31411@opensource.wolfsonmicro.com>
-References: <20110311162759.GS1760@opensource.wolfsonmicro.com>
- <20110311163522.GA9291@kroah.com>
- <20110311164850.GT1760@opensource.wolfsonmicro.com>
- <20110311165642.GA9996@kroah.com>
- <20110311170807.GV1760@opensource.wolfsonmicro.com>
- <20110311172345.GA10876@kroah.com>
- <alpine.LFD.2.00.1103162207130.26889@xanadu.home>
- <20110317201320.GB4035@kroah.com>
- <20110317201835.GM31411@opensource.wolfsonmicro.com>
- <20110317202614.GA3155@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317202614.GA3155@kroah.com>
-X-Cookie: Be careful!  Is it classified?
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 17 Mar 2011 17:26:13 -0400
+Subject: Re: [GIT PULL] First round of SCSI updates for 2.6.38 merge window
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1300392635.17266.5.camel@mulgrave.site>
+References: <1300392635.17266.5.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Thu, 17 Mar 2011 14:19:09 -0700
+Message-Id: <1300396749.28255.554.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 01:26:14PM -0700, Greg KH wrote:
-> On Thu, Mar 17, 2011 at 08:18:35PM +0000, Mark Brown wrote:
+On Thu, 2011-03-17 at 16:10 -0400, James Bottomley wrote:
+> This represents the usual round of driver updates (fcoe, lpfc, qla2xxx,
+> zfcp, bnx2i, mpt2sas, megaraid_sas, iscsi, cxgbi and hpsa) plus one new
+> driver (bnx2fc) and as a bonus we move libsas from the old libata eh to
+> the new one paving the way for junking the old one (once we can get ipr
+> converted).
+> 
+> The patch is available here:
+> 
+> master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git
+> 
 
-> > It's going to be an off the shelf USB ethernet controller.  I'd be
-> > astonished if the board-configurable device IDs weren't set from the
-> > same SEPROM that the MAC address is so it'd just show up as a generic
-> > chip of whatever kind.
+<SNIP>
 
-> Huh?  All USB controllers you buy have the ability to set the vendor and
-> product id, so you should always be able to key off of that.
+> 
+> Nicholas Bellinger (1):
+>       target: Fix volume size misreporting for volumes > 2TB
 
-> Isn't that the case here?
+James,
 
-They generally the same facility that includes the ability to set the
-MAC address so if one's not been provided it seems optimistic to expect
-the other.
+Just as a heads up I have pushed the deferred 'for-38' target core fixes
+you requested previously and the new 'for-39' target_core_stat.c
+configfs statistics group code, which was posted to linux-scsi here:
 
-The way this is normally done is that the ethernet controller can be
-attached to a SEPROM which it reads when it powers on.  This will
-contain a number of device configuration parameters, including the
-vendor IDs and the MAC address, which will be configured before the
-device makes itself available on the bus.  If the system integrator has
-omitted the SEPROM then the device will come up with defaults, usually
-something like all zeros.
+[PATCH 00/21] target patches for .39 scsi-misc (v3)
+
+http://marc.info/?l=linux-scsi&m=130010108521141&w=2
+
+into a branch available here:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-misc-v4
+
+Please make sure these are picked up for target core going to mainline
+ASAP.
+
+The RFC-v3 for iscsi_target_mod will be going out shortly.
+
+Thanks,
+
+--nab
+
