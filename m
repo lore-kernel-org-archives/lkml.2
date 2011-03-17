@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab1CQAdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:33:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59502 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752242Ab1CQAc6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:32:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110317002818.GA19812@kroah.com>
-References: <20110316210300.GA3311@kroah.com> <AANLkTim13aZ0Mr5RrOeQizHGY3jhf97x8v9mznY8RqgE@mail.gmail.com>
- <20110317002818.GA19812@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Mar 2011 17:32:00 -0700
-Message-ID: <AANLkTikEEDDFxZQtvV46JJRU1NAtiXh_N4onJ1jwKHaF@mail.gmail.com>
-Subject: Re: [GIT PATCH] STAGING patches for .39
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752617Ab1CQAeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 20:34:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59560 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752260Ab1CQAeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 20:34:02 -0400
+Date: Thu, 17 Mar 2011 11:33:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Igor M. Liplianin" <liplianin@me.by>
+Subject: linux-next: build warnings after merge of the v4l-dvb tree
+Message-Id: <20110317113351.9cd177e0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__17_Mar_2011_11_33_51_+1100_byjG=F8QQUC_XSu4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 5:28 PM, Greg KH <greg@kroah.com> wrote:
->>
->> Aren't those things supposed to at least compile? What's going on?
->
-> The gma500 driver will not build until you pull the drm tree into yours
-> as that is an api dependancy it needs.  I didn't think you build staging
-> drivers, so I didn't think I needed to call this one out.  I was wrong :)
+--Signature=_Thu__17_Mar_2011_11_33_51_+1100_byjG=F8QQUC_XSu4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't try to compile the staging tree all the time, but I do tend to
-try to check it every once in a while. So yes, let me know if there
-are dependencies.
+Hi Mauro,
 
-> As for the others, I don't know of any build problems, what one did you
-> have a problem with?
+After merging the v4l-dvb tree, today's linux-next build (x86_64
+allmodconfig) produced these warnings:
 
-The one with inifinite errors was vt6655.
+drivers/media/video/cx23885/altera-ci.c: In function 'altera_hw_filt_init':
+drivers/media/video/cx23885/altera-ci.c:671: warning: cast from pointer to =
+integer of different size
+drivers/media/video/cx23885/altera-ci.c: In function 'altera_ci_init':
+drivers/media/video/cx23885/altera-ci.c:739: warning: cast from pointer to =
+integer of different size
 
-It may be due to network layer changes. I had some other drivers with
-conflicts. Maybe this one didn't have content conflicts, but ended up
-having conflicts due to changed semantics etc.
+Introduced by commit 1b47d80abafb ("[media] Altera FPGA based CI driver
+module").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-                 Linus
+--Signature=_Thu__17_Mar_2011_11_33_51_+1100_byjG=F8QQUC_XSu4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNgVbvAAoJEDMEi1NhKgbskiUH/it56jlSCJpkeNTZTyKwjzFH
+zoZ3dV7jw72fIp+TwmMh/TXcd6eGe1rQrI2w9oL7ijmMQBSMzFWl9Nodot+06z7a
+xMYVRLE6uxI3mevQ4r/PerdopmzYdOMgZWw0yzJDv3g8jUypYjL6IaKWMmDWomEj
+241ayCCPUIkVvMZmzxYNnJG1KoURE7kalmFWvk23iiRWHh1a6NZ7tpkqHLyvIjCw
+RFUW27CGmWziwDnCHQQ5vxJcO15WhLBC3J8M8FJo8mo3wG8DmwpBc/xF++goM/Fg
+v+gHq6fzD05Yo9mDeecfcw53CJ1EowZ85jHqMqG1Z+4ivEhWBqACYuXlD0LGX+Y=
+=xmf2
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Mar_2011_11_33_51_+1100_byjG=F8QQUC_XSu4--
