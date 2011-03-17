@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab1CQRjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:39:01 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:53398 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab1CQRi7 (ORCPT
+	id S1754879Ab1CQRjz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:39:55 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41324 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab1CQRjw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:38:59 -0400
-X-IronPort-AV: E=Sophos;i="4.63,200,1299456000"; 
-   d="scan'208";a="4847203"
-Date: Thu, 17 Mar 2011 17:38:27 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [GIT PULL tip/x86/mm] xen/x86 fixes
-In-Reply-To: <4D8243F6.4030105@kernel.org>
-Message-ID: <alpine.DEB.2.00.1103171737550.3382@kaball-desktop>
-References: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop> <20110311222129.GA3168@dumpdata.com> <alpine.DEB.2.00.1103161150010.3382@kaball-desktop> <alpine.DEB.2.00.1103171237190.3382@kaball-desktop> <4D8243F6.4030105@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Mar 2011 13:39:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HMZr5AGffda2SK5jJ/y7Y4/F72kDLJihaqhNfFBYzbtewLZI0YqYyVGTjjBnPoDE4N
+         eGb/P67IliKvbEwoBE2kZC68z2mcXTiI6F/bAYXYxMN9Dq97+5/WxQhsSUAiADh0WClj
+         gAbkAR/GVpUGRBGeluhyV8p/yScdvOBvq4D/Q=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <alpine.LFD.2.00.1103171301030.26889@xanadu.home>
+References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com>
+	<1300169637-1628-1-git-send-email-ratbert.chuang@gmail.com>
+	<alpine.LFD.2.00.1103171301030.26889@xanadu.home>
+Date: Thu, 17 Mar 2011 13:37:49 -0400
+Message-ID: <AANLkTik1oEkLX3R-adK9-_2W+ku4j9YDikr+Z4vzfGtb@mail.gmail.com>
+Subject: Re: [PATCH v2] arm: cmpxchg syscall should data abort if page not write
+From: Ashwin Chaugule <ashbertslists@gmail.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Po-Yu Chuang <ratbert.chuang@gmail.com>, linux@arm.linux.org.uk,
+        Po-Yu Chuang <ratbert@faraday-tech.com>, tony@atomide.com,
+        linux-kernel@vger.kernel.org, joe@perches.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, Yinghai Lu wrote:
-> > Should I send another git pull request for tip even though the two
-> > patches on linux-tip that this series was depending on have gone
-> > upstream?
-> >
-> > x86-64: Move out cleanup higmap [_brk_end, _end) out of init_memory_mapping()
-> > x86-64, mm: Put early page table high
-> >
-> > Should I send the git pull request to Linus instead?
-> 
-> can you please resend the pull request to Ingo and HPA?
-> 
-> better to make those patches go through tip and pass Ingo's test matrix.
+On Thu, Mar 17, 2011 at 1:01 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Tue, 15 Mar 2011, Po-Yu Chuang wrote:
+>
+>> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+>>
+>> If the page to cmpxchg is user mode read only (not write),
+>> we should simulate a data abort first.
+>>
+>> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+>
+> Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+>
+>> ---
+>> v2:
+>> remove !pte_young() check
+>>
+>>  arch/arm/kernel/traps.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+>> index 446aee9..eac7c05 100644
+>> --- a/arch/arm/kernel/traps.c
+>> +++ b/arch/arm/kernel/traps.c
+>> @@ -563,7 +563,7 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+>>               if (!pmd_present(*pmd))
+>>                       goto bad_access;
+>>               pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+>> -             if (!pte_present(*pte) || !pte_dirty(*pte)) {
+>> +             if (!pte_present(*pte) || !pte_write(*pte) || !pte_dirty(*pte)) {
+>>                       pte_unmap_unlock(pte, ptl);
+>>                       goto bad_access;
+>>               }
+>> --
+>> 1.6.3.3
+>>
 
-OK, I'll send another pull request.
+
+Just beginning to understand the subtleties involved, so please
+correct me if I'm wrong.
+Wont this patch also fix the problem that was brought up with futexes
+on ARM SMP ?
+
+http://lists.infradead.org/pipermail/linux-arm-kernel/2010-June/017374.html
+
+Cheers,
+Ashwin
