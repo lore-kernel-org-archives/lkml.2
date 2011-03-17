@@ -1,233 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab1CQVfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:35:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30220 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755676Ab1CQVfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:35:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,201,1299484800"; 
-   d="scan'208";a="614351455"
-In-Reply-To: <20110317104434.GB22723@ZenIV.linux.org.uk>
-References: <20110316235608.GY22723@ZenIV.linux.org.uk>
-	<AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
-	<20110317072344.GZ22723@ZenIV.linux.org.uk>
-	<AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
-	<20110317104434.GB22723@ZenIV.linux.org.uk>
-Subject: Some fixes for pstore (Was Re: [git pull] mnt_devname queue)
-From: Tony Luck <tony.luck@intel.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Xiaotian Feng <xtfeng@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Thu, 17 Mar 2011 14:35:42 -0700
-Message-Id: <4d827eae305473e2bf@agluck-desktop.sc.intel.com>
+	id S1755834Ab1CQVgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:36:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:49031 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab1CQVgW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:36:22 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=eM3C8kFhov8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=l_Fkke-JbmfrEdolC5gA:9 a=psYsXYnvTj1x4d6M13DLE9xf3FYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC] tracing: a proc file to automatically release ring
+ buffer memory
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: mingo@elte.hu, fweisbec@gmail.com, lizf@cn.fujitsu.com,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTimXUDcD5YWAcR=SGa3EBM3+TaMRL1UtF4epxNaP@mail.gmail.com>
+References: <AANLkTimXUDcD5YWAcR=SGa3EBM3+TaMRL1UtF4epxNaP@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 17:36:20 -0400
+Message-ID: <1300397780.16880.579.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al,
+On Thu, 2011-03-17 at 14:29 -0700, Vaibhav Nagarnaik wrote:
+> All
+> 
+> The current way to release memory from ftrace ring buffer is to:
+> echo 0 > /sys/kernel/debug/tracing/buffer_size_kb
+> 
+> Consider a scenario where ftrace is handled by a user space
+> process. Normally, this tracing is done as a low priority task on the
+> system. Under memory pressure for high priority tasks, tracing should
+> be turned off and the trace ring buffer memory released. The buffer
+> allocated is kernel memory and under OOM condition if the user space
+> process is oom-killed, there is no way to release the ring buffer
+> memory.
+> 
+> The proposal is to add a proc entry
+> /sys/kernel/debug/tracing/buffer_free. Its .release() fileops function
+> executes tracing_stop() and then resizes the global trace buffer to
+> minimum size (2*BUF_PAGE_SIZE). The user space process opens this file
+> and keeps it open. When the process gets killed, the fd gets closed
+> and .release() is called. This automatically stops the tracing and
+> frees up the ring buffer memory.
+> 
+> It is optional to use this functionality, since it won't affect
+> tracing for current programs. But it provides a way to automatically
+> free up memory, if needed. It can also be used on the command line to
+> stop tracing and free up memory as a single operation as:
+> echo > /sys/kernel/debug/tracing/buffer_free
 
-I haven't got all your suggestions implemented yet - but thought I'd do
-a quick direction check to see if I understood your e-mail.
+I don't like adding new files to debug/tracing. If we do add this
+feature, I rather have it done with the buffer_size_kb directly. Perhaps
+add an ioctl() to the file that will do this.
 
-Fixes below:
-1) Change from ->get_sb() to ->mount()
-2) Use mount_single() instead of mount_nodev()
-3) Pulled in ramfs_get_inode() & trimmed to what I need for pstore
-4) Drop the ugly pstore_writefile() Just save data using kmalloc() and
-   provide a pstore_file_read() that uses simple_read_from_buffer().
+You can open it and then ioctl(RINGBUF_FREE_ON_CLOSE);
 
-Still todo:
-1) Handle multiple mounts
-2) Use simple_pin_fs/mntput to prevent races
-3) Move cleanup from unlink to evict_inode
-4) Stop it from saving dmesg on a clean "reboot" [!! Not sure when it started doing this !!]
+If the process dies, it closes the buffer_size_kb and frees the memory.
+
+-- Steve
 
 
--Tony
-
----
-
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 549d245..7d848b1 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -40,9 +40,29 @@
- struct pstore_private {
- 	u64	id;
- 	int	(*erase)(u64);
-+	ssize_t	size;
-+	char	data[];
- };
- 
--#define pstore_get_inode ramfs_get_inode
-+static int pstore_file_open(struct inode *inode, struct file *file)
-+{
-+	file->private_data = inode->i_private;
-+	return 0;
-+}
-+
-+static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
-+						size_t count, loff_t *ppos)
-+{
-+	struct pstore_private *ps = file->private_data;
-+
-+	return simple_read_from_buffer(userbuf, count, ppos, ps->data, ps->size);
-+}
-+
-+static const struct file_operations pstore_file_operations = {
-+	.open	= pstore_file_open,
-+	.read	= pstore_file_read,
-+	.llseek	= default_llseek,
-+};
- 
- /*
-  * When a file is unlinked from our file system we call the
-@@ -63,6 +83,30 @@ static const struct inode_operations pstore_dir_inode_operations = {
- 	.unlink		= pstore_unlink,
- };
- 
-+static struct inode *pstore_get_inode(struct super_block *sb,
-+					const struct inode *dir, int mode, dev_t dev)
-+{
-+	struct inode *inode = new_inode(sb);
-+
-+	if (inode) {
-+		inode->i_ino = get_next_ino();
-+		inode->i_uid = inode->i_gid = 0;
-+		inode->i_mode = mode;
-+		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-+		switch (mode & S_IFMT) {
-+		case S_IFREG:
-+			inode->i_fop = &pstore_file_operations;
-+			break;
-+		case S_IFDIR:
-+			inode->i_op = &pstore_dir_inode_operations;
-+			inode->i_fop = &simple_dir_operations;
-+			inc_nlink(inode);
-+			break;
-+		}
-+	}
-+	return inode;
-+}
-+
- static const struct super_operations pstore_ops = {
- 	.statfs		= simple_statfs,
- 	.drop_inode	= generic_delete_inode,
-@@ -70,37 +114,10 @@ static const struct super_operations pstore_ops = {
- };
- 
- static struct super_block *pstore_sb;
--static struct vfsmount *pstore_mnt;
- 
- int pstore_is_mounted(void)
- {
--	return pstore_mnt != NULL;
--}
--
--/*
-- * Set up a file structure as if we had opened this file and
-- * write our data to it.
-- */
--static int pstore_writefile(struct inode *inode, struct dentry *dentry,
--	char *data, size_t size)
--{
--	struct file f;
--	ssize_t n;
--	mm_segment_t old_fs = get_fs();
--
--	memset(&f, '0', sizeof f);
--	f.f_mapping = inode->i_mapping;
--	f.f_path.dentry = dentry;
--	f.f_path.mnt = pstore_mnt;
--	f.f_pos = 0;
--	f.f_op = inode->i_fop;
--	set_fs(KERNEL_DS);
--	n = do_sync_write(&f, data, size, &f.f_pos);
--	set_fs(old_fs);
--
--	fsnotify_modify(&f);
--
--	return n == size;
-+	return pstore_sb != NULL;
- }
- 
- /*
-@@ -123,8 +140,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 	inode = pstore_get_inode(pstore_sb, root->d_inode, S_IFREG | 0444, 0);
- 	if (!inode)
- 		goto fail;
--	inode->i_uid = inode->i_gid = 0;
--	private = kmalloc(sizeof *private, GFP_KERNEL);
-+	private = kmalloc(sizeof *private + size, GFP_KERNEL);
- 	if (!private)
- 		goto fail_alloc;
- 	private->id = id;
-@@ -156,8 +172,8 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 
- 	mutex_unlock(&root->d_inode->i_mutex);
- 
--	if (!pstore_writefile(inode, dentry, data, size))
--		goto fail_write;
-+	memcpy(private->data, data, size);
-+	inode->i_size = private->size = size;
- 
- 	inode->i_private = private;
- 
-@@ -166,15 +182,6 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 
- 	return 0;
- 
--fail_write:
--	kfree(private);
--	inode->i_nlink--;
--	mutex_lock(&root->d_inode->i_mutex);
--	d_delete(dentry);
--	dput(dentry);
--	mutex_unlock(&root->d_inode->i_mutex);
--	goto fail;
--
- fail_lockedalloc:
- 	mutex_unlock(&root->d_inode->i_mutex);
- 	kfree(private);
-@@ -225,32 +232,27 @@ fail:
- 	return err;
- }
- 
--static int pstore_get_sb(struct file_system_type *fs_type,
--	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
-+static struct dentry *pstore_mount(struct file_system_type *fs_type,
-+	int flags, const char *dev_name, void *data)
- {
- 	struct dentry *root;
- 
--	root = mount_nodev(fs_type, flags, data, pstore_fill_super);
-+	root = mount_single(fs_type, flags, data, pstore_fill_super);
- 	if (IS_ERR(root))
--		return -ENOMEM;
--
--	mnt->mnt_root = root;
--	mnt->mnt_sb = root->d_sb;
--	pstore_mnt = mnt;
-+		return root;
- 
--	return 0;
-+	return root;
- }
- 
- static void pstore_kill_sb(struct super_block *sb)
- {
- 	kill_litter_super(sb);
- 	pstore_sb = NULL;
--	pstore_mnt = NULL;
- }
- 
- static struct file_system_type pstore_fs_type = {
- 	.name		= "pstore",
--	.get_sb		= pstore_get_sb,
-+	.mount		= pstore_mount,
- 	.kill_sb	= pstore_kill_sb,
- };
- 
