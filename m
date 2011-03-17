@@ -1,262 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab1CQWqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 18:46:33 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11770 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab1CQWq3 (ORCPT
+	id S1755846Ab1CQWrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 18:47:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43194 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755787Ab1CQWrG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 18:46:29 -0400
-Date: Thu, 17 Mar 2011 23:46:13 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [RFC-v3 07/12] iscsi-target: Add CHAP Authentication support
- using libcrypto
-In-Reply-To: <1300398797-24536-8-git-send-email-nab@linux-iscsi.org>
-Message-ID: <alpine.LNX.2.00.1103172331160.1980@swampdragon.chaosbits.net>
-References: <1300398797-24536-1-git-send-email-nab@linux-iscsi.org> <1300398797-24536-8-git-send-email-nab@linux-iscsi.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 17 Mar 2011 18:47:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex =?utf-8?q?Villac=C3=AD=C2=ADs_Lasso?= 
+	<avillaci@fiec.espol.edu.ec>
+Subject: Re: [Bug #28522] Unable to mount FAT-formatted floppy on /dev/fd0, plus WARN_ON when using /dev/fd0u1440
+Date: Thu, 17 Mar 2011 23:47:12 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+References: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera> <GTlFTeOGjrB.A.hEF.Or3cNB@chimera> <4D822129.1030000@fiec.espol.edu.ec>
+In-Reply-To: <4D822129.1030000@fiec.espol.edu.ec>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103172347.12346.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, Nicholas A. Bellinger wrote:
+On Thursday, March 17, 2011, Alex Villací­s Lasso wrote:
+> El 06/03/11 07:10, Rafael J. Wysocki escribió:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.37.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28522
+> > Subject		: Unable to mount FAT-formatted floppy on /dev/fd0, plus WARN_ON when using /dev/fd0u1440
+> > Submitter	: Alex Villacis Lasso<avillaci@ceibo.fiec.espol.edu.ec>
+> > Date		: 2011-02-07 17:21 (28 days old)
+> >
+> >
+> >
+> Still present in 2.6.38 .
 
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
+Thanks for the update.
 
-Minor nitpicks below.
-
-
-> This patch adds support for libcrypto md5 based iSCSI CHAP authentication
-> support for iscsi_target_mod.  This includes support for mutual and one-way
-> NodeACL authentication for SessionType=Normal and SessionType=Discovery
-> via /sys/kernel/config/target/iscsi.
-> 
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/target/iscsi/iscsi_target_auth.c |  500 ++++++++++++++++++++++++++++++
->  drivers/target/iscsi/iscsi_target_auth.h |   33 ++
->  2 files changed, 533 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/target/iscsi/iscsi_target_auth.c
->  create mode 100644 drivers/target/iscsi/iscsi_target_auth.h
-> 
-> diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
-> new file mode 100644
-> index 0000000..d3711f4
-> --- /dev/null
-> +++ b/drivers/target/iscsi/iscsi_target_auth.c
-> @@ -0,0 +1,500 @@
-> +/*******************************************************************************
-> + * This file houses the main functions for the iSCSI CHAP support
-> + *
-> + * ?? Copyright 2007-2011 RisingTide Systems LLC.
-
-"??" ?
-
-
-> +int chap_string_to_hex(unsigned char *dst, unsigned char *src, int len)
-> +{
-> +	int i = 0, j = 0;
-> +
-> +	for (i = 0; i < len; i += 2)
-
-Initializing 'i' to zero twice is a little needless.
-
-
-> +void chap_binaryhex_to_asciihex(char *dst, char *src, int src_len)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < src_len; i++)
-
-Do we still support compiler versions that don't understand 'for-scope'?
-
-for (int i = 0; ...
-
-
-> +void chap_set_random(char *data, int length)
-> +{
-> +	long r;
-> +	unsigned n;
-> +
-> +	while (length > 0) {
-> +
-
-Pointless newline IMHO.
-
-> +		get_random_bytes(&r, sizeof(long));
-> +		r = r ^ (r >> 8);
-> +		r = r ^ (r >> 4);
-> +		n = r & 0x7;
-> +
-> +		get_random_bytes(&r, sizeof(long));
-> +		r = r ^ (r >> 8);
-> +		r = r ^ (r >> 5);
-> +		n = (n << 3) | (r & 0x7);
-> +
-> +		get_random_bytes(&r, sizeof(long));
-> +		r = r ^ (r >> 8);
-> +		r = r ^ (r >> 5);
-> +		n = (n << 2) | (r & 0x3);
-> +
-> +		*data++ = n;
-> +		 length--;
-
-Mixing space and tab in indentation here.
-
-
-> +int chap_gen_challenge(
-> +	struct iscsi_conn *conn,
-> +	int caller,
-> +	char *C_str,
-> +	unsigned int *C_len)
-> +{
-> +	unsigned char challenge_asciihex[CHAP_CHALLENGE_LENGTH * 2 + 1];
-> +	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
-> +
-> +	memset(challenge_asciihex, 0, CHAP_CHALLENGE_LENGTH * 2 + 1);
-> +
-> +	chap_set_random(chap->challenge, CHAP_CHALLENGE_LENGTH);
-> +	chap_binaryhex_to_asciihex(challenge_asciihex, chap->challenge,
-> +					CHAP_CHALLENGE_LENGTH);
-> +	/*
-> +	 * Set CHAP_C, and copy the generated challenge into C_str.
-> +	 */
-> +	*C_len += sprintf(C_str + *C_len, "CHAP_C=0x%s", challenge_asciihex);
-> +	*C_len += 1;
-> +
-> +	PRINT("[%s] Sending CHAP_C=0x%s\n\n", (caller) ? "server" : "client",
-> +			challenge_asciihex);
-> +	return 0;
-
-You only ever return '0', so why couldn't this function just return 
-'void'?  - sorry, didn't bother to actually check how its used :-/
-
-
-> +int chap_server_compute_md5(
-> +	struct iscsi_conn *conn,
-> +	struct iscsi_node_auth *auth,
-> +	char *NR_in_ptr,
-> +	char *NR_out_ptr,
-> +	unsigned int *NR_out_len)
-> +{
-> +	char *endptr;
-> +	unsigned char id, digest[MD5_SIGNATURE_SIZE];
-> +	unsigned char type, response[MD5_SIGNATURE_SIZE * 2 + 2];
-> +	unsigned char identifier[10], *challenge, *challenge_binhex;
-
-If you changed the above line to 
-
-	unsigned char identifier[10], *challenge;
-	unsigned char *challenge_binhex = 0;
-
-> +	unsigned char client_digest[MD5_SIGNATURE_SIZE];
-> +	unsigned char server_digest[MD5_SIGNATURE_SIZE];
-> +	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
-> +	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
-> +	struct crypto_hash *tfm;
-> +	struct hash_desc desc;
-> +	struct scatterlist sg;
-> +	int auth_ret = -1, ret, challenge_len;
-> +
-> +	memset(identifier, 0, 10);
-> +	memset(chap_n, 0, MAX_CHAP_N_SIZE);
-> +	memset(chap_r, 0, MAX_RESPONSE_LENGTH);
-> +	memset(digest, 0, MD5_SIGNATURE_SIZE);
-> +	memset(response, 0, MD5_SIGNATURE_SIZE * 2 + 2);
-> +	memset(client_digest, 0, MD5_SIGNATURE_SIZE);
-> +	memset(server_digest, 0, MD5_SIGNATURE_SIZE);
-> +
-> +	challenge = kzalloc(CHAP_CHALLENGE_STR_LEN, GFP_KERNEL);
-> +	if (!(challenge)) {
-> +		printk(KERN_ERR "Unable to allocate challenge buffer\n");
-> +		return -1;
-
-this could become "goto out;"
-
-> +	}
-> +
-> +	challenge_binhex = kzalloc(CHAP_CHALLENGE_STR_LEN, GFP_KERNEL);
-> +	if (!(challenge_binhex)) {
-> +		printk(KERN_ERR "Unable to allocate challenge_binhex buffer\n");
-> +		kfree(challenge);
-> +		return -1;
-
-and here the kfree() call could go away and the return be converted to 
-"goto out;".
-kfree(0) is a no-op.
-
-...
-> +	 * One way authentication has succeeded, return now if mutual
-> +	 * authentication is not enabled.
-> +	 */
-> +	if (!auth->authenticate_target) {
-> +		kfree(challenge);
-> +		kfree(challenge_binhex);
-> +		return 0;
-
-and here the two kfree() calls would also go away and "return 0" would be 
-replaced with 
-
-	auth_ret = 0;
-	goto out;
-
-...
-> +out:
-> +	kfree(challenge);
-> +	kfree(challenge_binhex);
-> +	return auth_ret;
-> +}
-
-That would nicely consolidate *all* exits from the function in one
-place.
-
-
-
-> +
-> +int chap_got_response(
-> +	struct iscsi_conn *conn,
-> +	struct iscsi_node_auth *auth,
-> +	char *NR_in_ptr,
-> +	char *NR_out_ptr,
-> +	unsigned int *NR_out_len)
-> +{
-> +	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
-> +
-> +	switch (chap->digest_type) {
-> +	case CHAP_DIGEST_MD5:
-> +		if (chap_server_compute_md5(conn, auth, NR_in_ptr,
-> +				NR_out_ptr, NR_out_len) < 0)
-> +			return -1;
-> +		break;
-> +	default:
-> +		printk(KERN_ERR "Unknown CHAP digest type %d!\n",
-> +				chap->digest_type);
-> +		return -1;
-> +	}
-> +
-> +	return 0;
-
-You could kill the 'return 0' and replace the 'break' above with 'return 
-0'. No difference in behaviour, but you'd save a few lines and it would be 
-just as readable IMHO.
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Rafael
