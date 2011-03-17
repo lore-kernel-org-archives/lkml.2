@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab1CQGCA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 02:02:00 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:32820 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab1CQGB4 convert rfc822-to-8bit (ORCPT
+	id S1751708Ab1CQGNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 02:13:15 -0400
+Received: from a.relay.invitel.net ([62.77.203.3]:57126 "EHLO
+	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab1CQGNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 02:01:56 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [BUG] usb_wwan: build error
-Date: Thu, 17 Mar 2011 07:02:28 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <1300341100.10164.523.camel@edumazet-laptop>
-In-Reply-To: <1300341100.10164.523.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103170702.28752.oliver@neukum.org>
+	Thu, 17 Mar 2011 02:13:10 -0400
+Date: Thu, 17 Mar 2011 07:12:56 +0100
+From: Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH 3/4 v5] video, sm501: add OF binding to support SM501
+In-reply-to: <20110316153601.GA13315@linux-sh.org>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@ozlabs.org, Ben Dooks <ben@simtec.co.uk>,
+        Vincent Sanders <vince@simtec.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Wolfgang Denk <wd@denx.de>
+Reply-to: hs@denx.de
+Message-id: <4D81A668.8060500@denx.de>
+Organization: DENX Software Engineering
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+References: <1291451028-22532-1-git-send-email-hs@denx.de>
+ <1296026490-14665-1-git-send-email-hs@denx.de> <4D7F14B0.1030008@denx.de>
+ <20110316153601.GA13315@linux-sh.org>
+User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 17. März 2011, 06:51:40 schrieb Eric Dumazet:
-> commit 16871dcac74c (usb_wwan: error case of resume) added a build error
-> if CONFIG_PM_RUNTIME is not defined.
-> 
->   CC [M]  drivers/usb/serial/usb_wwan.o
-> drivers/usb/serial/usb_wwan.c: In function ‘play_delayed’:
-> drivers/usb/serial/usb_wwan.c:702: error: ‘struct dev_pm_info’ has no
-> member named ‘usage_count’
-> 
-> I suspect we should use pm_runtime_put_noidle() instead
+Hello Paul,
 
-Yes. I don't understand why it compiled for me. Has it been removed?
+Paul Mundt schrieb:
+> On Tue, Mar 15, 2011 at 08:26:40AM +0100, Heiko Schocher wrote:
+>>> 0003-video-sm501-add-OF-binding-to-support-SM501.patch has no obvious style problems and is ready for submission.
+>>>
+>>>  Documentation/powerpc/dts-bindings/sm501.txt |   34 +++++++++++++++++++++
+>>>  drivers/mfd/sm501.c                          |    9 +++++-
+>>>  drivers/video/sm501fb.c                      |   42 ++++++++++++++++++++++++--
+>>>  3 files changed, 81 insertions(+), 4 deletions(-)
+>>>  create mode 100644 Documentation/powerpc/dts-bindings/sm501.txt
+>> This patchset is pending know for a while. I got Acked by from
+>>
+>> Samuel Ortiz for the mfd part, see here:
+>>
+>> http://www.spinics.net/lists/linux-fbdev/msg02550.html
+>> http://linux.derkeiler.com/Mailing-Lists/Kernel/2011-01/msg11798.html
+>>
+>> and for the DTS part from Benjamin Herrenschmidt:
+>>
+>> http://lists.ozlabs.org/pipermail/linuxppc-dev/2011-February/088279.html
+>>
+>> Are there some more issues?
+>>
+> Not that I remember off the top of my head, but I think they've been lost
+> in my backlog. Could you re-send the current series with the appropriate
+> acked-bys? If there's nothing else obvious outstanding I'll roll them in.
 
-	Regards
-		Oliver
+Ok, I resend them (I also rebase them to current tree, ok?)
 
-PS: patch about to follow
+bye,
+Heiko
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
