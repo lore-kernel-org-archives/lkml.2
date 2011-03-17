@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab1CQRwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:52:39 -0400
-Received: from fieldses.org ([174.143.236.118]:59566 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754715Ab1CQRwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:52:37 -0400
-Date: Thu, 17 Mar 2011 13:52:29 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Cc: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: wrong index used in inner loop
-Message-ID: <20110317175229.GE30180@fieldses.org>
-References: <4D76A06A.4090405@gmail.com>
- <20110309004955.GD15814@fieldses.org>
- <4D79A183.8090306@cn.fujitsu.com>
- <20110314222229.GJ25442@fieldses.org>
- <4D7ECF91.2030308@cn.fujitsu.com>
+	id S1755096Ab1CQRxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:53:14 -0400
+Received: from outmail014.snc4.facebook.com ([66.220.144.146]:57691 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754898Ab1CQRxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:53:12 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Mar 2011 13:53:11 EDT
+Date: Wed, 16 Mar 2011 17:59:44 -0700
+From: Arun Sharma <asharma@fb.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-perf-user@vger.kernel.org
+Subject: Re: perf, x86: Fix PEBS enable/disable vs cpuc->enabled
+Message-ID: <20110317005944.GA13308@dev1756.snc6.facebook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D7ECF91.2030308@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 10:31:45AM +0800, Mi Jinlong wrote:
-> 
-> 
-> J. Bruce Fields:
-> > Actually, wait, this is kind of silly.  I don't see why we couldn't just
-> > skip the loop and do
-> > 
-> > 	p += dummy;
-> > 
-> > Also, your new test is still failing with a BAD_XDR error.  Well, maybe
-> > the test should fail--we don't really implement this yet anyway--but it
-> > should at least be getting past the xdr decoding.  So something else is
-> > still wrong.
-> 
->   How did you modify it??
-> 
->   When testing it, I modify as 
->  
->     -                       for (j = 0; j < dummy; ++j)
->     -                               READ32(dummy);
->     +                       p += dummy;
-> 
->   or
->     
->     -                       for (j = 0; j < dummy; ++j)
->     -                               READ32(dummy);
-> 
->   Test case CSESS16 and CSESS16a are PASS, 
->   I can't get BAD_XDR error as you said.
 
-Yes, I thought I had the former, but perhaps I had the wrong kernel
-running on my test server.  I've confirmed those tests pass after the
-following patch.
+This commit:
 
---b.
+commit 4807e3d5dc7bb7057dd6ca3abb09f3da2eb8c323
+Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date:   Sat Mar 6 13:47:07 2010 +0100
 
-commit 5a02ab7c3c4580f94d13c683721039855b67cda6
-Author: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Date:   Fri Mar 11 12:13:55 2011 +0800
+    perf, x86: Fix PEBS enable/disable vs cpuc->enabled
 
-    nfsd: wrong index used in inner loop
-    
-    We must not use dummy for index.
-    After the first index, READ32(dummy) will change dummy!!!!
-    
-    Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-    [bfields@redhat.com: Trond points out READ_BUF alone is sufficient.]
-    Cc: stable@kernel.org
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+    We should never call ->enable with the pmu enabled, and we _can_ have
+    ->disable called with the pmu enabled.
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 615f0a9..c6766af 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
- 
- 	u32 dummy;
- 	char *machine_name;
--	int i, j;
-+	int i;
- 	int nr_secflavs;
- 
- 	READ_BUF(16);
-@@ -1215,8 +1215,6 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
- 			READ_BUF(4);
- 			READ32(dummy);
- 			READ_BUF(dummy * 4);
--			for (j = 0; j < dummy; ++j)
--				READ32(dummy);
- 			break;
- 		case RPC_AUTH_GSS:
- 			dprintk("RPC_AUTH_GSS callback secflavor "
-@@ -1232,7 +1230,6 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
- 			READ_BUF(4);
- 			READ32(dummy);
- 			READ_BUF(dummy);
--			p += XDR_QUADLEN(dummy);
- 			break;
- 		default:
- 			dprintk("Illegal callback secflavor\n");
+introduced a new warning that's triggering on one of my test machines when I tried
+counter multiplexing (more events than number of general purpose counters):
+
+perf stat -e cycles,instructions,cache-misses,cache-misses,cache-misses,cache-misses,branch-misses -a -- sleep 10
+
+The trace looks as follows:
+
+WARNING: at arch/x86/kernel/cpu/perf_event_intel_ds.c:499 intel_pmu_enable_event+0x18f/0x2bc()
+Pid: 0, comm: kworker/0:1 Not tainted 2.6.38-00029-g0d3bcb8 #12
+Call Trace:
+<IRQ> [<ffffffff8103c810>] ? warn_slowpath_common+0x80/0x98
+[<ffffffff8103c83d>] ? warn_slowpath_null+0x15/0x17
+[<ffffffff8100f3cb>] ? intel_pmu_enable_event+0x18f/0x2bc
+[<ffffffff8100f939>] ? x86_pmu_start+0xf7/0x108
+[<ffffffff8109dd33>] ? perf_adjust_period+0x141/0x15c
+[<ffffffff810a44ce>] ? perf_ctx_adjust_freq+0xd2/0x10a
+[<ffffffff810a45f0>] ? perf_event_task_tick+0xea/0x1f0
+[<ffffffff810389e9>] ? scheduler_tick+0xc8/0x258
+[<ffffffff8104920f>] ? update_process_times+0x62/0x72
+[<ffffffff810628bd>] ? tick_nohz_handler+0x8d/0xd6
+[<ffffffff8101bfbc>] ? smp_apic_timer_interrupt+0x83/0x96
+[<ffffffff81003253>] ? apic_timer_interrupt+0x13/0x20
+<EOI> [<ffffffff81209eb5>] ? intel_idle+0xc3/0xe9
+[<ffffffff81209e98>] ? intel_idle+0xa6/0xe9
+[<ffffffff81375a12>] ? cpuidle_idle_call+0x112/0x1b8
+[<ffffffff81001c15>] ? cpu_idle+0x5a/0x91
+[<ffffffff8143168b>] ? start_secondary+0x180/0x184
+---[ end trace 0717acdc46c926b2 ]---
+
+This was 2.6.38 + a few perf patches from the x86 tip. I believe stock 2.6.38 will behave similarly.
+
+static void x86_pmu_start(struct perf_event *event, int flags)
+{
+...
+       if (flags & PERF_EF_RELOAD) {
+                WARN_ON_ONCE(!(event->hw.state & PERF_HES_UPTODATE));
+                x86_perf_event_set_period(event); 
+		// missing return here?
+        }
+	..
+}
+
+I wonder if the code should return for the PERF_EF_RELOAD case, rather than falling through.
+
+ -Arun
