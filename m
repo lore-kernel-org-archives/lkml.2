@@ -1,94 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1CQR5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:57:34 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40221 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949Ab1CQR5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:57:32 -0400
-Date: Thu, 17 Mar 2011 13:57:25 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Ashwin Chaugule <ashbertslists@gmail.com>
-cc: Po-Yu Chuang <ratbert.chuang@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Po-Yu Chuang <ratbert@faraday-tech.com>, tony@atomide.com,
-        lkml <linux-kernel@vger.kernel.org>, joe@perches.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] arm: cmpxchg syscall should data abort if page not
- write
-In-Reply-To: <AANLkTik1oEkLX3R-adK9-_2W+ku4j9YDikr+Z4vzfGtb@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1103171344270.26889@xanadu.home>
-References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com> <1300169637-1628-1-git-send-email-ratbert.chuang@gmail.com> <alpine.LFD.2.00.1103171301030.26889@xanadu.home> <AANLkTik1oEkLX3R-adK9-_2W+ku4j9YDikr+Z4vzfGtb@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755075Ab1CQR6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:58:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52087 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754870Ab1CQR6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:58:01 -0400
+Date: Thu, 17 Mar 2011 13:56:08 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
+        Greg Banks <gnb@fmeh.org>, Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        mingo@elte.hu, akpm@linux-foundation.org
+Subject: Re: [PATCH 05/50] Dynamic debug: Add more flags
+Message-ID: <20110317175607.GD2648@redhat.com>
+References: <20110316205204.GA2686@kroah.com>
+ <1300309888-5028-1-git-send-email-gregkh@suse.de>
+ <1300309888-5028-5-git-send-email-gregkh@suse.de>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2030911445-1300384649=:26889"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300309888-5028-5-git-send-email-gregkh@suse.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-2030911445-1300384649=:26889
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 17 Mar 2011, Ashwin Chaugule wrote:
-
-> On Thu, Mar 17, 2011 at 1:01 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > On Tue, 15 Mar 2011, Po-Yu Chuang wrote:
-> >
-> >> From: Po-Yu Chuang <ratbert@faraday-tech.com>
-> >>
-> >> If the page to cmpxchg is user mode read only (not write),
-> >> we should simulate a data abort first.
-> >>
-> >> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
-> >
-> > Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> >
-> >> ---
-> >> v2:
-> >> remove !pte_young() check
-> >>
-> >>  arch/arm/kernel/traps.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-> >> index 446aee9..eac7c05 100644
-> >> --- a/arch/arm/kernel/traps.c
-> >> +++ b/arch/arm/kernel/traps.c
-> >> @@ -563,7 +563,7 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
-> >>               if (!pmd_present(*pmd))
-> >>                       goto bad_access;
-> >>               pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> >> -             if (!pte_present(*pte) || !pte_dirty(*pte)) {
-> >> +             if (!pte_present(*pte) || !pte_write(*pte) || !pte_dirty(*pte)) {
-> >>                       pte_unmap_unlock(pte, ptl);
-> >>                       goto bad_access;
-> >>               }
-> >> --
-> >> 1.6.3.3
-> >>
+On Wed, Mar 16, 2011 at 02:10:43PM -0700, Greg Kroah-Hartman wrote:
+> Add flags that allow the user to specify via debugfs whether or not the
+> module name, function name, line number and/or thread ID have to be
+> included in the printed message.
 > 
+> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+> Cc: Greg Banks <gnb@fmeh.org>
+> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> ---
+>  Documentation/dynamic-debug-howto.txt |   12 +++++-
+>  include/linux/dynamic_debug.h         |    8 ++++-
+>  lib/dynamic_debug.c                   |   60 ++++++++++++++++++++++++++++-----
+>  3 files changed, 68 insertions(+), 12 deletions(-)
 > 
-> Just beginning to understand the subtleties involved, so please
-> correct me if I'm wrong.
-> Wont this patch also fix the problem that was brought up with futexes
-> on ARM SMP ?
+> diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+> index 58ea64a..e6c4b75 100644
+> --- a/Documentation/dynamic-debug-howto.txt
+> +++ b/Documentation/dynamic-debug-howto.txt
+> @@ -205,12 +205,20 @@ of the characters:
+>  
+>  The flags are:
+>  
+> +f
+> +    Include the function name in the printed message
+> +l
+> +    Include line number in the printed message
+> +m
+> +    Include module name in the printed message
+>  p
+>      Causes a printk() message to be emitted to dmesg
+> +t
+> +    Include thread ID in messages not generated from interrupt context
+>  
+> -Note the regexp ^[-+=][scp]+$ matches a flags specification.
+> +Note the regexp ^[-+=][flmpt]+$ matches a flags specification.
+>  Note also that there is no convenient syntax to remove all
+> -the flags at once, you need to use "-psc".
+> +the flags at once, you need to use "-flmpt".
+>  
+>  
+>  Debug messages during boot process
+> diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+> index 1c70028..0c9653f 100644
+> --- a/include/linux/dynamic_debug.h
+> +++ b/include/linux/dynamic_debug.h
+> @@ -31,6 +31,10 @@ struct _ddebug {
+>  	 * writes commands to <debugfs>/dynamic_debug/control
+>  	 */
+>  #define _DPRINTK_FLAGS_PRINT   (1<<0)  /* printk() a message using the format */
+> +#define _DPRINTK_FLAGS_INCL_MODNAME	(1<<1)
+> +#define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
+> +#define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
+> +#define _DPRINTK_FLAGS_INCL_TID		(1<<4)
+>  #define _DPRINTK_FLAGS_DEFAULT 0
+>  	unsigned int flags:8;
+>  	char enabled;
+> @@ -42,6 +46,8 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+>  
+>  #if defined(CONFIG_DYNAMIC_DEBUG)
+>  extern int ddebug_remove_module(const char *mod_name);
+> +extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+> +	__attribute__ ((format (printf, 2, 3)));
+>  
+>  #define dynamic_pr_debug(fmt, ...) do {					\
+>  	static struct _ddebug descriptor				\
+> @@ -50,7 +56,7 @@ extern int ddebug_remove_module(const char *mod_name);
+>  	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+>  		_DPRINTK_FLAGS_DEFAULT };				\
+>  	if (unlikely(descriptor.enabled))				\
+> -		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
+> +		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
+>  	} while (0)
+>  
 
-Nope.  The code being fixed here was suptly broken so it needs fixing.  
-However this code is almost never used, if at all, as it is a fall-back 
-solution for when all the better alternatives are not available for some 
-reasons (and I'm still wondering what those reasons are for Po-Yu Chuang 
-to actually use that code).  In practice this bug should have affected 
-no one.
+This piece is going to conflict with the jump label update patches, I'm
+trying to get into .39. The 'if (unlikely(descriptor.enabled))' bit is
+now: 'if (DDEBUG_BRANCH(descriptor.enabled))'. So its a small conflict,
+but they wouldn't merge together. So we need to adjust either one (and
+make sure they're applied in the correct orer), or drop one.
 
-If you have SMP then this code is definitively not what you should be 
-using.
+thanks,
+
+-Jason
 
 
-Nicolas
---8323328-2030911445-1300384649=:26889--
