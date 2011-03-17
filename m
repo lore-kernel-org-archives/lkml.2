@@ -1,87 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab1CQA5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:57:50 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:47479 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab1CQA5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:57:41 -0400
-Subject: Re: [PATCH 21/21] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
-	module
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>, Joel Becker <jlbec@evilplan.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>
-In-Reply-To: <20110315101838.GB23623@lst.de>
-References: <1300100775-10012-1-git-send-email-nab@linux-iscsi.org>
-	 <1300100775-10012-22-git-send-email-nab@linux-iscsi.org>
-	 <20110314145808.GA28480@lst.de>
-	 <1300140175.28255.156.camel@haakon2.linux-iscsi.org>
-	 <20110315101838.GB23623@lst.de>
-Content-Type: text/plain
-Date: Wed, 16 Mar 2011 17:50:36 -0700
-Message-Id: <1300323036.28255.480.camel@haakon2.linux-iscsi.org>
+	id S1753431Ab1CQBAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 21:00:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33108 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753288Ab1CQBAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 21:00:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,196,1299484800"; 
+   d="scan'208";a="613939296"
+Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task
+ plugging
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+In-Reply-To: <20110316173148.GC13562@redhat.com>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+	 <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
+	 <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
+	 <20110316173148.GC13562@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Mar 2011 09:00:09 +0800
+Message-ID: <1300323609.2337.117.camel@sli10-conroe>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-15 at 11:18 +0100, Christoph Hellwig wrote:
-> On Mon, Mar 14, 2011 at 03:02:55PM -0700, Nicholas A. Bellinger wrote:
-> > > Please descide on a naming scheme for the frontend modules.  You have
-> > > tcm_loop for thise one, and just iscsi for the iscsi frontend.
-> > 
-> > Ok, curently everything that appears under drivers/target/ beside
-> > iscsi_target_mod.ko is using a matching drivers/target/$FABRIC_MOD/ and
-> > $FABRIC_MOD.ko naming scheme.
-> > 
-> > I would prefer to keep iscsi_target_mod.ko for the software iSCSI case
-> > in order to prevent chaos with existing userspace tools and prevent
-> > breakage with existing other iSCSI target modules (IET is using
-> > iscsi_trgt.ko IIRC).
-> > 
-> > How about dropping the 'tcm_' prefix from the drivers/target/tcm_subdir/
-> > to follow how the fabric module actually appears once loaded under
-> > /sys/kernel/config/target/$FABRIC/..?  We will need to keep the common
-> > 'tcm_' prefix for the actual target fabric modules (or choose a
-> > different one) to handle those that interface with existing SCSI LLD
-> > code.
+On Thu, 2011-03-17 at 01:31 +0800, Vivek Goyal wrote:
+> On Wed, Mar 16, 2011 at 04:18:30PM +0800, Shaohua Li wrote:
+> > 2011/1/22 Jens Axboe <jaxboe@fusionio.com>:
+> > > Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> > > ---
+> > >  block/blk-core.c          |  357 ++++++++++++++++++++++++++++++++------------
+> > >  block/elevator.c          |    6 +-
+> > >  include/linux/blk_types.h |    2 +
+> > >  include/linux/blkdev.h    |   30 ++++
+> > >  include/linux/elevator.h  |    1 +
+> > >  include/linux/sched.h     |    6 +
+> > >  kernel/exit.c             |    1 +
+> > >  kernel/fork.c             |    3 +
+> > >  kernel/sched.c            |   11 ++-
+> > >  9 files changed, 317 insertions(+), 100 deletions(-)
+> > >
+> > > diff --git a/block/blk-core.c b/block/blk-core.c
+> > > index 960f12c..42dbfcc 100644
+> > > --- a/block/blk-core.c
+> > > +++ b/block/blk-core.c
+> > > @@ -27,6 +27,7 @@
+> > >  #include <linux/writeback.h>
+> > >  #include <linux/task_io_accounting_ops.h>
+> > >  #include <linux/fault-inject.h>
+> > > +#include <linux/list_sort.h>
+> > >
+> > >  #define CREATE_TRACE_POINTS
+> > >  #include <trace/events/block.h>
+> > > @@ -213,7 +214,7 @@ static void blk_delay_work(struct work_struct *work)
+> > >
+> > >        q = container_of(work, struct request_queue, delay_work.work);
+> > >        spin_lock_irq(q->queue_lock);
+> > > -       q->request_fn(q);
+> > > +       __blk_run_queue(q);
+> > >        spin_unlock_irq(q->queue_lock);
+> > >  }
+> > Hi Jens,
+> > I have some questions about the per-task plugging. Since the request
+> > list is per-task, and each task delivers its requests at finish flush
+> > or schedule. But when one cpu delivers requests to global queue, other
+> > cpus don't know. This seems to have problem. For example:
+> > 1. get_request_wait() can only flush current task's request list,
+> > other cpus/tasks might still have a lot of requests, which aren't sent
+> > to request_queue.
 > 
-> Dropping the tcm sounds fine to me.
+> But very soon these requests will be sent to request queue as soon task
+> is either scheduled out or task explicitly flushes the plug? So we might
+> wait a bit longer but that might not matter in general, i guess. 
+Yes, I understand there is just a bit delay. I don't know how severe it
+is, but this still could be a problem, especially for fast storage or
+random I/O. My current tests show slight regression (3% or so) with
+Jens's for 2.6.39/core branch. I'm still checking if it's caused by the
+per-task plug, but the per-task plug is highly suspected.
+
+> > your ioc-rq-alloc branch is for this, right? Will it
+> > be pushed to 2.6.39 too? I'm wondering if we should limit per-task
+> > queue length. If there are enough requests there, we force a flush
+> > plug.
 > 
-
-<nod>
-
-> > This makes it a bit easier to grok as a reference for newcomers by
-> > having seperate sections for configfs control plane, struct
-> > target_core_fabric_ops API callers, and Linux/SCSI LLD specific glue.
+> That's the idea jens had. But then came the question of maintaining
+> data structures per task per disk. That makes it complicated.
 > 
-> I don't think it's a very good reference, though.  E.g. currently the
-> fabric ops methods are implemented in tcm_loop_fabric.c, and all need
-> non-static scope because they are assigned in tcm_loop_configfs.c, which
-> creates a lot of global scope and pointless prototypes.  Either one
-> could clean all that up or just merge the files into one which would
-> be a lot easier.  Especiall as the way the target_fabric_configfs structure
-> and the fabric ops are structured will get a big overhaul from me soon.
+> Even if we move the accounting out of request queue and do it say at
+> bdi, ideally we shall to do per task per bdi accounting.
 > 
+> Jens seemed to be suggesting that generally fluser threads are the
+> main cluprit for submitting large amount of IO. They are already per
+> bdi. So probably just maintain a per task limit for flusher threads.
+Yep, flusher is the main spot in my mind. We need call more flush plug
+for flusher thread. 
 
-Ok, fair enough..  I will go ahead and look at getting this cleaned up.
+> I am not sure what happens to direct reclaim path, AIO deep queue 
+> paths etc.
+direct reclaim path could build deep write queue too. It
+uses .writepage, currently there is no flush plug there. Maybe we need
+add flush plug in shrink_inactive_list too.
 
-In the mean time, James please go ahead and apply patches #1 -> #20 from
-this target core series to scsi-misc as I have no futher changes to
-report at this time.  I will send out an updated PATCH 21/21 addressing
-Christoph's comments for merging tcm_loop.ko shortly, and another RFC-v3
-series addressing his comments for the initial iscsi_target_mod merge in
-the next 24 hours.
+> > 2. some APIs like blk_delay_work, which call __blk_run_queue() might
+> > not work. because other CPUs might not dispatch their requests to
+> > request queue. So __blk_run_queue will eventually find no requests,
+> > which might stall devices.
+> > Since one cpu doesn't know other cpus' request list, I'm wondering if
+> > there are other similar issues.
+> 
+> So again in this case if queue is empty at the time of __blk_run_queue(),
+> then we will probably just experinece little more delay then intended
+> till some task flushes. But should not stall the system?
+not stall the system, but device stalls a little time.
 
---nab
+Thanks,
+Shaohua
 
