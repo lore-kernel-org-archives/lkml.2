@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab1CQKbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 06:31:40 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:51469 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab1CQKbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 06:31:38 -0400
-Message-ID: <19841.58100.335014.234927@ipc1.ka-ro>
-Date: Thu, 17 Mar 2011 11:31:16 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: <Dinh.Nguyen@freescale.com>
-Cc: <linux-kernel@vger.kernel.org>, linux@arm.linux.org.uk,
-        s.hauer@pengutronix.de, ra5478@freescale.com,
-        linux-arm-kernel@lists.infradead.org, u.kleine-koenig@pengutronix.de,
-        xiao-lizhang@freescale.com, festevam@gmail.com,
-        arnaud.patard@rtp-net.org
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCHv3 3/3] ARM: mx51: Add support for low power suspend on MX51
-In-Reply-To: <1300305787-7970-3-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1300305787-7970-1-git-send-email-Dinh.Nguyen@freescale.com>
-	<1300305787-7970-2-git-send-email-Dinh.Nguyen@freescale.com>
-	<1300305787-7970-3-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	id S1753713Ab1CQKgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 06:36:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:4406 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752614Ab1CQKgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 06:36:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,198,1299484800"; 
+   d="scan'208";a="668241517"
+Subject: Re: linux-next: build failure after merge of the block tree
+From: David Woodhouse <david.woodhouse@intel.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>
+In-Reply-To: <4D81E010.1090808@kernel.dk>
+References: <20110314161919.15e6d983.sfr@canb.auug.org.au>
+	 <20110317103218.ca7f63bf.sfr@canb.auug.org.au> <4D81E010.1090808@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation. Pipers Way, Swindon, Wiltshire, SN3 1RJ,
+ UK.
+Date: Thu, 17 Mar 2011 10:36:10 +0000
+Message-ID: <1300358170.2589.50.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Dinh.Nguyen@freescale.com writes:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On Thu, 2011-03-17 at 10:18 +0000, Jens Axboe wrote:
 > 
-> Adds initial low power suspend functionality to MX51.
-> Supports "mem" and "standby" modes.
-> 
-> Tested on mx51-babbage.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/mach-mx5/Makefile   |    1 +
->  arch/arm/mach-mx5/pm-imx51.c |   69 ++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 70 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-mx5/pm-imx51.c
-> 
-> diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
-> index 0b9338c..787cb80 100644
-> --- a/arch/arm/mach-mx5/Makefile
-> +++ b/arch/arm/mach-mx5/Makefile
-> @@ -6,6 +6,7 @@
->  obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
->  obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
->  
-> +obj-$(CONFIG_PM) += pm-imx51.o
->  obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
->  obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
->  obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
-> diff --git a/arch/arm/mach-mx5/pm-imx51.c b/arch/arm/mach-mx5/pm-imx51.c
-> new file mode 100644
-> index 0000000..4a1d915
-> --- /dev/null
-> +++ b/arch/arm/mach-mx5/pm-imx51.c
-> @@ -0,0 +1,69 @@
-> +/*
-> + *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +#include <linux/suspend.h>
-> +#include <linux/clk.h>
-> +#include <asm/mach/map.h>
-> +#include <asm/cacheflush.h>
-> +#include <asm/tlb.h>
-> +#include <mach/system.h>
-> +#include "crm_regs.h"
-> +
-> +struct clk *gpc_dvfs_clk;
-> +
-static?
+> Can you point me at the commit in question? Generally,
+> elv_queue_empty()
+> can be replaced by blk_peek_request(). 
 
-> +static int mx5_suspend_enter(suspend_state_t state)
-> +{
-> +	if (gpc_dvfs_clk == NULL)
-> +		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs_clk");
-> +
-> +	clk_enable(gpc_dvfs_clk);
->
-error check?
+The interesting commit is this one:
+http://git.infradead.org/mtd-2.6.git/commitdiff/c7519dbf6
 
+The point of it is to enable this
+http://git.infradead.org/mtd-2.6.git/commitdiff/a32159024
 
-Lothar Waßmann
 -- 
-___________________________________________________________
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
