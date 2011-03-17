@@ -1,105 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab1CQW1h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 18:27:37 -0400
-Received: from fieldses.org ([174.143.236.118]:48179 "EHLO fieldses.org"
+	id S1755626Ab1CQW3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 18:29:06 -0400
+Received: from sysmic.org ([88.191.45.54]:56858 "EHLO draco.sysmic.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754107Ab1CQW1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 18:27:35 -0400
-Date: Thu, 17 Mar 2011 18:27:32 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: 2.6.38: Quota over NFS4
-Message-ID: <20110317222732.GC31845@fieldses.org>
-References: <20110317133247.GB6424@os.inf.tu-dresden.de>
- <20110317173805.GB30180@fieldses.org>
- <20110317213302.GA2445@os.inf.tu-dresden.de>
+	id S1754717Ab1CQW3E convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 18:29:04 -0400
+From: =?iso-8859-1?q?J=E9r=F4me_Pouiller?= <jerome@sysmic.org>
+To: Aneesh Bhasin <contact.aneesh@gmail.com>
+Subject: Re: smap output - unnamed entries and heap
+Date: Thu, 17 Mar 2011 23:22:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.32-28-generic; KDE/4.5.3; x86_64; ; )
+Cc: =?iso-8859-1?q?P=E1draig_Brady?= <P@draigbrady.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-newbie" <linux-newbie@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <AANLkTik3N5j74eWastminNZLevPqoSCEiVCrX1vP66_k@mail.gmail.com> <4D80C47C.80300@draigBrady.com> <AANLkTi=gN=DOU9bQtqdr1s44y5QgLn0W9_oRb9JTMWNa@mail.gmail.com>
+In-Reply-To: <AANLkTi=gN=DOU9bQtqdr1s44y5QgLn0W9_oRb9JTMWNa@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317213302.GA2445@os.inf.tu-dresden.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103172322.49055.jerome@sysmic.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 10:33:03PM +0100, Adam Lackorzynski wrote:
-> 
-> On Thu Mar 17, 2011 at 13:38:05 -0400, J. Bruce Fields wrote:
-> > On Thu, Mar 17, 2011 at 02:32:47PM +0100, Adam Lackorzynski wrote:
-> > > Hello,
-> > > 
-> > > I'm seeing a problem with quotas in a system where the server running
-> > > 2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
-> > > version does not seem to play a role, checked with 2.6.38, 2.6.37 and
-> > > 2.6.36. The following script and output show the problem:
-> > > 
-> > > #! /bin/sh
-> > > 
-> > > quota | grep home
-> > > du
-> > > cp /bin/ls x1
-> > > du
-> > > cat x1 > /dev/null
-> > > rm x1
-> > > du
-> > > quota | grep home
-> > > 
-> > > Output:
-> > > 
-> > >    homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
-> > > 0       .
-> > > 96      .
-> > > 0       .
-> > >    homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
-> > > 
-> > > 
-> > > As can be seen the 96 kb are still accounted on the quota of the user.
-> > > Removing the 'cat' command from the script makes the quota be ok again
-> > > (original value). Also mounting via nfs3 does not exhibit it, same for running
-> > > the script on the nfs-server directly.
-> > 
-> > Does "df" show the same problem?
-> 
-> With '/bin/ls' it does not change at all, so I took a bigger binary
-> which yields to:
-> 
->    homes:/home/ 8203780  9072000 9174400          403688  500000  550000        
-> 0       .
-> Filesystem           1K-blocks      Used Available Use% Mounted on
->   homes:/home        513671168 335251456 178419712  66% /tmp/xx
-> 4592    .
-> Filesystem           1K-blocks      Used Available Use% Mounted on
->   homes:/home        513671168 335256576 178414592  66% /tmp/xx
-> 0       .
-> Filesystem           1K-blocks      Used Available Use% Mounted on
->   homes:/home        513671168 335256576 178414592  66% /tmp/xx
->    homes:/home/ 8208372  9072000 9174400          403689  500000  550000        
-> 
-> So yes, it seems to be there as well.
+On Thursday 17 March 2011 12:46:13 Aneesh Bhasin wrote:
+[..]
+> However, as I wrote earlier, there a lot of anonymous memory regions
+> listed in smap output (with permission rwxp) - and I do not know of
+> any way in which I could associate these memory mapping to a
+> particular library..
+A few years ago, I had a similar need. I made a small library which overload 
+malloc (and free) and display caller (using backtrace_symbols function). 
+Next I loaded it using LD_PRELOAD. The main problems are :
+  * it only work for malloced memory (not mmaped memory)
+  * It is difficult to interpred efficiently information provided. Name of 
+caller may not be sufficient to understand why memory is allocated.
 
-It might be easier to see with "df -i" (assuming we're leaking an
-inode).
-
-> > And does unmounting/remounting on the
-> > client clear the problem?
-> 
-> No.
-> 
-> > (Or that, in combination with stopping the
-> > server, unmounting the xfs export, remounting it, and restarting?)
-> 
-> I rebooted once, got a recovery and then the quotas were ok again (and
-> supposedly the used blocks as well). I assume a unmount/mount would show
-> the same behaviour but requires a bit of preparation to try out.
-> 
-> > Was there an earlier server version that didn't exhibit this problem?
-> 
-> Had 2.6.37 on the server before and that was fine regarding this.
-
-OK, thanks.  Sounds like a server bug, but I'm not managing to reproduce
-it here yet....
-
---b.
+--
+Jérôme Pouiller <jezz@sysmic.org>
