@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1CQK7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 06:59:12 -0400
-Received: from lo.gmane.org ([80.91.229.12]:58980 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab1CQK7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 06:59:10 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: reboot/kexec in 2.6.38
-Date: Thu, 17 Mar 2011 10:58:55 +0000 (UTC)
-Message-ID: <ilsphf$vm1$1@dough.gmane.org>
+	id S1753900Ab1CQK7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 06:59:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49658 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab1CQK7O convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 06:59:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=G/WSNhuhwClE4Zra6HUeXX2mQ0T1EshHq+bjavRfARWo7TxYkAHB3LsPt2kSJnoWC4
+         pWvkbq4sEtaw98YJqtNVnY07V69WvDCKSsR7I3o5ci/jpkDO/+MWO/83Sstx0lTtYBsD
+         CMPeRWQkrb0JXC1SrJopoy9TvQewDoTcXJK3k=
+MIME-Version: 1.0
+In-Reply-To: <20110317064523.GA1995@ucw.cz>
 References: <20110317064523.GA1995@ucw.cz>
-Mime-Version: 1.0
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 17 Mar 2011 18:58:11 +0800
+Message-ID: <AANLkTik1CdT4k8SJop7b-MjR27RzF7a=i7WuodNKJi+J@mail.gmail.com>
+Subject: Re: reboot/kexec in 2.6.38
+To: Pavel Machek <pavel@ucw.cz>
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, utx@penguin.cz,
+        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 121.227.147.194
-User-Agent: Pan/0.133 (House of Butterflies)
-Cc: zaurus-devel@www.linuxtogo.org
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011 07:45:23 +0100, Pavel Machek wrote:
-
+On Thu, Mar 17, 2011 at 2:45 PM, Pavel Machek <pavel@ucw.cz> wrote:
 > Hi!
-> 
-> I got report that  reboot/kexec does not work in recent kernels.
-> 
-> I tried both kexec and reboot in 2.6.38, and it worked ok. Maybe config
-> issue?
+>
+> I got report that  reboot/kexec does not work in recent kernels.
+>
+> I tried both kexec and reboot in 2.6.38, and it worked ok. Maybe
+> config issue?
 
-By "does not work", what is the behavior?
+I think it's config issue. Never heard of this.
 
+>                                                                        Pavel
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>
