@@ -1,132 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab1CQMoR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 08:44:17 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:45457 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab1CQMoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 08:44:14 -0400
-Date: Thu, 17 Mar 2011 13:43:50 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Jan Kara <jack@suse.cz>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>,
-        Curt Wohlgemuth <curtw@google.com>
-Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
-Message-ID: <20110317124350.GQ2140@cmpxchg.org>
-References: <1299869011-26152-1-git-send-email-gthelen@google.com>
- <20110311171006.ec0d9c37.akpm@linux-foundation.org>
- <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
- <20110314202324.GG31120@redhat.com>
- <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
- <20110315184839.GB5740@redhat.com>
- <20110316131324.GM2140@cmpxchg.org>
- <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
- <20110316215214.GO2140@cmpxchg.org>
- <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+	id S1753907Ab1CQMpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 08:45:19 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20134 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab1CQMpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 08:45:17 -0400
+X-IronPort-AV: E=Sophos;i="4.63,199,1299456000"; 
+   d="scan'208";a="4839913"
+Date: Thu, 17 Mar 2011 12:44:45 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Yinghai Lu <yinghai@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [GIT PULL tip/x86/mm] xen/x86 fixes
+In-Reply-To: <alpine.DEB.2.00.1103161150010.3382@kaball-desktop>
+Message-ID: <alpine.DEB.2.00.1103171237190.3382@kaball-desktop>
+References: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop> <20110311222129.GA3168@dumpdata.com> <alpine.DEB.2.00.1103161150010.3382@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 09:41:48PM -0700, Greg Thelen wrote:
-> In '[PATCH v6 8/9] memcg: check memcg dirty limits in page writeback' Jan and
-> Vivek have had some discussion around how memcg and writeback mesh.
-> In my mind, the
-> discussions in 8/9 are starting to blend with this thread.
+On Wed, 16 Mar 2011, Stefano Stabellini wrote:
+> On Fri, 11 Mar 2011, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Mar 11, 2011 at 01:17:23PM +0000, Stefano Stabellini wrote:
+> > > Hello,
+> > > recently we had a couple of long discussions with Yinghai about boot
+> > > crashes on xen, related to pagetable initialization.
+> > > As a result we came up with three patches, two of them fix the first [1]
+> > > boot crash and provide a nice cleanup on native:
+> > 
+> > I don't know why this is happening now, but it could be very well
+> > related to the build config. Smaller builds don't seem to encounter this, while
+> > this is a distro type build. If I use:
+> > 
+> > > Stefano Stabellini (1):
+> > >       xen: set max_pfn_mapped to the last pfn mapped
+> > 
+> > it hangs during bootup. The machine hangs during the box (no keyboard interaction)
+> > and I can see this in the bootup.
 > 
-> I have been thinking about Johannes' struct memcg_mapping.  I think the idea
-> may address several of the issues being discussed, especially
-> interaction between
-> IO-less balance_dirty_pages() and memcg writeback.
+> Konrad sent me few other logs offline: log1 is the log of the hang and
+> log2 is a successful boot (reverting the problematic patch).
+> It looks like the SP5100 TCO WatchDog Timer Driver is using ioremap on
+> an address (0xb8fe00) that belongs to the memory range used for the
+> pagetable (0x9fc000-0xf43fff).
+> In the succesful case max_pfn_mapped is higher so the pagetable is
+> located at an higher address (0x16dfb000-0x17342fff) so the problem
+> doesn't occur.
 > 
-> Here is my thinking.  Feedback is most welcome!
+> I still have few unaswered questions on this issue: if we assume that
+> the ioremap address is the same in the two cases (0xb8fe00), how is it
+> possible that in the first case it is ram (page_is_ram returns true)
+> while in the second case it is not (otherwise we would still get a
+> warning from ioremap): page_is_ram shouldn't be affected by the position
+> of the kernel pagetable, and the e820 is still the same.
+> In any case if 0xb8fe00 is really an MMIO address memblock_find_in_range
+> shouldn't have returned the range (0x9fc000-0xf43fff) in
+> find_early_table_space.
 > 
-> The data structures:
-> - struct memcg_mapping {
->        struct address_space *mapping;
->        struct mem_cgroup *memcg;
->        int refcnt;
->   };
-> - each memcg contains a (radix, hash_table, etc.) mapping from bdi to memcg_bdi.
-> - each memcg_bdi contains a mapping from inode to memcg_mapping.  This may be a
->   very large set representing many cached inodes.
-> - each memcg_mapping represents all pages within an bdi,inode,memcg.  All
->   corresponding cached inode pages point to the same memcg_mapping via
->   pc->mapping.  I assume that all pages of inode belong to no more than one bdi.
-> - manage a global list of memcg that are over their respective background dirty
->   limit.
-> - i_mapping continues to point to a traditional non-memcg mapping (no change
->   here).
-> - none of these memcg_* structures affect root cgroup or kernels with memcg
->   configured out.
 
-So structures roughly like this:
+The issue is due to a bug in the TCO driver and has been fixed thanks
+to Yinghai.
 
-struct mem_cgroup {
-	...
-	/* key is struct backing_dev_info * */
-	struct rb_root memcg_bdis;
-};
 
-struct memcg_bdi {
-	/* key is struct address_space * */
-	struct rb_root memcg_mappings;
-	struct rb_node node;
-};
+Peter, can I add your ack to "Cleanup highmap after brk is concluded" by
+Yinghai?
 
-struct memcg_mapping {
-	struct address_space *mapping;
-	struct mem_cgroup *memcg;
-	struct rb_node node;
-	atomic_t count;
-};
+Should I send another git pull request for tip even though the two
+patches on linux-tip that this series was depending on have gone
+upstream?
 
-struct page_cgroup {
-	...
-	struct memcg_mapping *memcg_mapping;
-};
+x86-64: Move out cleanup higmap [_brk_end, _end) out of init_memory_mapping()
+x86-64, mm: Put early page table high
 
-> The routines under discussion:
-> - memcg charging a new inode page to a memcg: will use inode->mapping and inode
->   to walk memcg -> memcg_bdi -> memcg_mapping and lazily allocating missing
->   levels in data structure.
-> 
-> - Uncharging a inode page from a memcg: will use pc->mapping->memcg to locate
->   memcg.  If refcnt drops to zero, then remove memcg_mapping from the memcg_bdi.
->   Also delete memcg_bdi if last memcg_mapping is removed.
-> 
-> - account_page_dirtied(): nothing new here, continue to set the per-page flags
->   and increment the memcg per-cpu dirty page counter.  Same goes for routines
->   that mark pages in writeback and clean states.
-
-We may want to remember the dirty memcg_mappings so that on writeback
-we don't have to go through every single one that the memcg refers to?
-
-> - mem_cgroup_balance_dirty_pages(): if memcg dirty memory usage if above
->   background limit, then add memcg to global memcg_over_bg_limit list and use
->   memcg's set of memcg_bdi to wakeup each(?) corresponding bdi flusher.  If over
->   fg limit, then use IO-less style foreground throttling with per-memcg per-bdi
->   (aka memcg_bdi) accounting structure.
-
-I wonder if we could just schedule a for_background work manually in
-the memcg case that writes back the corresponding memcg_bdi set (and
-e.g. having it continue until either the memcg is below bg thresh OR
-the global bg thresh is exceeded OR there is other work scheduled)?
-Then we would get away without the extra list, and it doesn't sound
-overly complex to implement.
+Should I send the git pull request to Linus instead?
