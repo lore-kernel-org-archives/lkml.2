@@ -1,36 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab1CQBqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 21:46:20 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57707 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752654Ab1CQBqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 21:46:15 -0400
-Date: Thu, 17 Mar 2011 01:46:11 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-serial@vger.kernel.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
-Subject: Re: [RFC PATCH 0/2] serial: Hack up 8520.c for evil device tree
- hookin.
-Message-ID: <20110317014611.67d360b5@lxorguk.ukuu.org.uk>
-In-Reply-To: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753732Ab1CQBvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 21:51:46 -0400
+Received: from kroah.org ([198.145.64.141]:38445 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752763Ab1CQBvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 21:51:42 -0400
+Date: Wed, 16 Mar 2011 18:51:26 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [GIT PATCH] STAGING patches for .39
+Message-ID: <20110317015126.GA31754@kroah.com>
+References: <20110316210300.GA3311@kroah.com>
+ <AANLkTim13aZ0Mr5RrOeQizHGY3jhf97x8v9mznY8RqgE@mail.gmail.com>
+ <20110317002818.GA19812@kroah.com>
+ <AANLkTikEEDDFxZQtvV46JJRU1NAtiXh_N4onJ1jwKHaF@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikEEDDFxZQtvV46JJRU1NAtiXh_N4onJ1jwKHaF@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> is correct.  When I put the code in my board's serial.c file, I am not
-> so lucky.  To get the initialization order correct, I add a notifier
-> chain to 8250.c
+On Wed, Mar 16, 2011 at 05:32:00PM -0700, Linus Torvalds wrote:
+> On Wed, Mar 16, 2011 at 5:28 PM, Greg KH <greg@kroah.com> wrote:
+> >>
+> >> Aren't those things supposed to at least compile? What's going on?
+> >
+> > The gma500 driver will not build until you pull the drm tree into yours
+> > as that is an api dependancy it needs.  I didn't think you build staging
+> > drivers, so I didn't think I needed to call this one out.  I was wrong :)
+> 
+> I don't try to compile the staging tree all the time, but I do tend to
+> try to check it every once in a while. So yes, let me know if there
+> are dependencies.
+> 
+> > As for the others, I don't know of any build problems, what one did you
+> > have a problem with?
+> 
+> The one with inifinite errors was vt6655.
 
-Can't you use a late_initcall ? or indeed we could make the 8250 core
-functionality only init first ?
+Wierd, it builds for me in my branch that you pulled from.
 
-Alan
+I just tested it with my 'test merge' from earlier today to verify that
+there were no merge issues, which was with your tree as of commit
+0bbf211975addc2963b63a41a2eac99928365996 "Merge branch 'for-linus' of
+git://android.git.kernel.org/kernel/tegra" and it builds there as well.
+
+> It may be due to network layer changes. I had some other drivers with
+> conflicts. Maybe this one didn't have content conflicts, but ended up
+> having conflicts due to changed semantics etc.
+
+Ah, perhaps, I don't know what changed with wireless recently, maybe
+something broke them from that tree.  If so, I normally fix them up
+right after -rc1 happens and will do so here as well, or earlier if you
+push this merge out so I can see the problems.
+
+thanks,
+
+greg k-h
