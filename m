@@ -1,96 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1CQJkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 05:40:12 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:45228 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241Ab1CQJjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 05:39:52 -0400
-Message-ID: <4D81D6E4.6050505@fusionio.com>
-Date: Thu, 17 Mar 2011 10:39:48 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753417Ab1CQJk1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 05:40:27 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:46419 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752890Ab1CQJkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 05:40:22 -0400
+From: <philippe.langlais@stericsson.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <rostedt@goodmis.org>, <STEricsson_nomadik_linux@list.st.com>,
+        <pierre.peiffer@stericsson.com>, <lee.jones@linaro.org>,
+        Philippe Langlais <philippe.langlais@linaro.org>
+Subject: [PATCH 3/3] trace: add STM trace hooks for printk, trace_printk, trace_function, stack trace and scheduler wakeup/context switch tracing
+Date: Thu, 17 Mar 2011 10:36:54 +0100
+Message-ID: <1300354614-24056-4-git-send-email-philippe.langlais@stericsson.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1300354614-24056-1-git-send-email-philippe.langlais@stericsson.com>
+References: <1300354614-24056-1-git-send-email-philippe.langlais@stericsson.com>
 MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>
-Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task  plugging
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	<1295659049-2688-5-git-send-email-jaxboe@fusionio.com> <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
-In-Reply-To: <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-16 09:18, Shaohua Li wrote:
-> 2011/1/22 Jens Axboe <jaxboe@fusionio.com>:
->> Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
->> ---
->>  block/blk-core.c          |  357 ++++++++++++++++++++++++++++++++------------
->>  block/elevator.c          |    6 +-
->>  include/linux/blk_types.h |    2 +
->>  include/linux/blkdev.h    |   30 ++++
->>  include/linux/elevator.h  |    1 +
->>  include/linux/sched.h     |    6 +
->>  kernel/exit.c             |    1 +
->>  kernel/fork.c             |    3 +
->>  kernel/sched.c            |   11 ++-
->>  9 files changed, 317 insertions(+), 100 deletions(-)
->>
->> diff --git a/block/blk-core.c b/block/blk-core.c
->> index 960f12c..42dbfcc 100644
->> --- a/block/blk-core.c
->> +++ b/block/blk-core.c
->> @@ -27,6 +27,7 @@
->>  #include <linux/writeback.h>
->>  #include <linux/task_io_accounting_ops.h>
->>  #include <linux/fault-inject.h>
->> +#include <linux/list_sort.h>
->>
->>  #define CREATE_TRACE_POINTS
->>  #include <trace/events/block.h>
->> @@ -213,7 +214,7 @@ static void blk_delay_work(struct work_struct *work)
->>
->>        q = container_of(work, struct request_queue, delay_work.work);
->>        spin_lock_irq(q->queue_lock);
->> -       q->request_fn(q);
->> +       __blk_run_queue(q);
->>        spin_unlock_irq(q->queue_lock);
->>  }
-> Hi Jens,
-> I have some questions about the per-task plugging. Since the request
-> list is per-task, and each task delivers its requests at finish flush
-> or schedule. But when one cpu delivers requests to global queue, other
-> cpus don't know. This seems to have problem. For example:
-> 1. get_request_wait() can only flush current task's request list,
-> other cpus/tasks might still have a lot of requests, which aren't sent
-> to request_queue. your ioc-rq-alloc branch is for this, right? Will it
-> be pushed to 2.6.39 too? I'm wondering if we should limit per-task
-> queue length. If there are enough requests there, we force a flush
-> plug.
+From: Philippe Langlais <philippe.langlais@linaro.org>
 
-Any task plug is by definition short lived, since it only persists while
-someone is submitting IO or if the task ends up blocking. It's not like
-right now where a plug can persist for some time.
+Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
+---
+ kernel/printk.c                   |    4 ++++
+ kernel/trace/trace.c              |   10 ++++++++++
+ kernel/trace/trace_events.c       |    3 +++
+ kernel/trace/trace_sched_switch.c |   10 ++++++++++
+ 4 files changed, 27 insertions(+), 0 deletions(-)
 
-I don't plan on submitting the ioc-rq-alloc for 2.6.39, it needs more
-work. I think we'll end up dropping the limits completely and just
-ensuring that the flusher thread doesn't push out too much.
-
-> 2. some APIs like blk_delay_work, which call __blk_run_queue() might
-> not work. because other CPUs might not dispatch their requests to
-> request queue. So __blk_run_queue will eventually find no requests,
-> which might stall devices.
-> Since one cpu doesn't know other cpus' request list, I'm wondering if
-> there are other similar issues.
-
-If you call blk_run_queue(), it's to kick something of that you
-submitted (and that should already be on the queue). So I don't think
-this is an issue.
-
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 3623152..e36d0e4 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -40,6 +40,7 @@
+ #include <linux/cpu.h>
+ #include <linux/notifier.h>
+ #include <linux/rculist.h>
++#include <trace/stm.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -776,6 +777,9 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+ 
+ 	p = printk_buf;
+ 
++	/* Send printk buffer to MIPI STM trace hardware too if enable */
++	stm_dup_printk(printk_buf, printed_len);
++
+ 	/* Do we have a loglevel in the string? */
+ 	if (p[0] == '<') {
+ 		unsigned char c = p[1];
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index dc53ecb..fac980b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -37,6 +37,7 @@
+ #include <linux/init.h>
+ #include <linux/poll.h>
+ #include <linux/fs.h>
++#include <trace/stm.h>
+ 
+ #include "trace.h"
+ #include "trace_output.h"
+@@ -1214,6 +1215,8 @@ trace_function(struct trace_array *tr,
+ 
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		ring_buffer_unlock_commit(buffer, event);
++
++	stm_ftrace(ip, parent_ip);
+ }
+ 
+ void
+@@ -1248,8 +1251,11 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
+ 	trace.entries		= entry->caller;
+ 
+ 	save_stack_trace(&trace);
++
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		ring_buffer_unlock_commit(buffer, event);
++
++	stm_stack_trace(trace.entries);
+ }
+ 
+ void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+@@ -1405,6 +1411,8 @@ int trace_vbprintk(unsigned long ip, const char *fmt, va_list args)
+ 		ftrace_trace_stack(buffer, flags, 6, pc);
+ 	}
+ 
++	stm_trace_bprintk_buf(ip, fmt, trace_buf, sizeof(u32) * len);
++
+ out_unlock:
+ 	arch_spin_unlock(&trace_buf_lock);
+ 	local_irq_restore(flags);
+@@ -1481,6 +1489,8 @@ int trace_array_vprintk(struct trace_array *tr,
+ 		ftrace_trace_stack(buffer, irq_flags, 6, pc);
+ 	}
+ 
++	stm_trace_printk_buf(ip, trace_buf, len);
++
+  out_unlock:
+ 	arch_spin_unlock(&trace_buf_lock);
+ 	raw_local_irq_restore(irq_flags);
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5f499e0..be9223a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -19,6 +19,7 @@
+ #include <linux/delay.h>
+ 
+ #include <asm/setup.h>
++#include <trace/stm.h>
+ 
+ #include "trace_output.h"
+ 
+@@ -1644,6 +1645,8 @@ function_test_events_call(unsigned long ip, unsigned long parent_ip)
+ 
+ 	trace_nowake_buffer_unlock_commit(buffer, event, flags, pc);
+ 
++	stm_ftrace(ip, parent_ip);
++
+  out:
+ 	atomic_dec(&per_cpu(ftrace_test_event_disable, cpu));
+ 	preempt_enable_notrace();
+diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
+index 8f758d0..1c8eb37 100644
+--- a/kernel/trace/trace_sched_switch.c
++++ b/kernel/trace/trace_sched_switch.c
+@@ -11,6 +11,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/ftrace.h>
+ #include <trace/events/sched.h>
++#include <trace/stm.h>
+ 
+ #include "trace.h"
+ 
+@@ -47,6 +48,10 @@ tracing_sched_switch_trace(struct trace_array *tr,
+ 
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		trace_buffer_unlock_commit(buffer, event, flags, pc);
++
++	stm_sched_switch(entry->prev_pid, entry->prev_prio, entry->prev_state,
++			entry->next_pid, entry->next_prio, entry->next_state,
++			entry->next_cpu);
+ }
+ 
+ static void
+@@ -103,6 +108,11 @@ tracing_sched_wakeup_trace(struct trace_array *tr,
+ 
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		ring_buffer_unlock_commit(buffer, event);
++
++	stm_sched_wakeup(entry->prev_pid, entry->prev_prio, entry->prev_state,
++			entry->next_pid, entry->next_prio, entry->next_state,
++			entry->next_cpu);
++
+ 	ftrace_trace_stack(tr->buffer, flags, 6, pc);
+ 	ftrace_trace_userstack(tr->buffer, flags, pc);
+ }
 -- 
-Jens Axboe
+1.7.3.1
 
