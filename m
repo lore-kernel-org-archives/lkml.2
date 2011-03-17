@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1CQMwg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 08:52:36 -0400
-Received: from lo.gmane.org ([80.91.229.12]:33308 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab1CQMwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 08:52:34 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] um: Remove file pointer from ioctl
-Date: Thu, 17 Mar 2011 12:52:20 +0000 (UTC)
-Message-ID: <ilt063$vm1$4@dough.gmane.org>
-References: <1300365449-12548-1-git-send-email-richard@nod.at>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1753956Ab1CQM6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 08:58:45 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:54238 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753738Ab1CQM6l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 08:58:41 -0400
+Date: Thu, 17 Mar 2011 13:58:39 +0100
+From: Cyril Hrubis <metan@ucw.cz>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, utx@penguin.cz,
+        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>
+Subject: Re: reboot/kexec in 2.6.38
+Message-ID: <20110317125839.GB21290@atrey.karlin.mff.cuni.cz>
+References: <20110317064523.GA1995@ucw.cz> <AANLkTik1CdT4k8SJop7b-MjR27RzF7a=i7WuodNKJi+J@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 121.227.147.194
-User-Agent: Pan/0.133 (House of Butterflies)
-Cc: user-mode-linux-devel@lists.sourceforge.net
+In-Reply-To: <AANLkTik1CdT4k8SJop7b-MjR27RzF7a=i7WuodNKJi+J@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011 13:37:29 +0100, Richard Weinberger wrote:
-
-> Commit 6caa76b (tty: now phase out the ioctl file pointer for good)
-> removed the ioctl file pointer.
-> User Mode Linux's line driver uses this ioctl and needs a signature
-> update too.
+Hi!
+> > I got report that  reboot/kexec does not work in recent kernels.
+> >
+> > I tried both kexec and reboot in 2.6.38, and it worked ok. Maybe
+> > config issue?
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+> I think it's config issue. Never heard of this.
+>
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+I've seen that on my zaurus a month or two ago. When kexeced to pxa-linux-2.6
+then tried to kexec again. The last thing I've seen was Bye on the framebuffer
+console and the machine freezed.
 
-Thanks.
-
+-- 
+metan 
