@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab1CQVk5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:40:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36813 "EHLO
+	id S1755743Ab1CQVmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:42:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36823 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932094Ab1CQVkz (ORCPT
+	by vger.kernel.org with ESMTP id S1755662Ab1CQVmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:40:55 -0400
+	Thu, 17 Mar 2011 17:42:33 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Remove copy from WM831x I2C write function
-Date: Thu, 17 Mar 2011 21:40:51 +0000
-Message-Id: <1300398051-11238-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] mfd: Avoid copying data in WM8994 I2C write
+Date: Thu, 17 Mar 2011 21:42:28 +0000
+Message-Id: <1300398150-11834-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This saves us allocating an array on the stack, giving a meaningless
-performance improvement and ensuring that if drivers ever do large writes
-we'll not allocate large arrays on the stack.
+As well as providing a trivial performance optimisation this also avoids
+allocating a copy of the message on the stack which is beneficial when
+doing large transfers.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/wm831x-i2c.c |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/mfd/wm8994-core.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-i2c.c b/drivers/mfd/wm831x-i2c.c
-index 3853fa8..a06cbc7 100644
---- a/drivers/mfd/wm831x-i2c.c
-+++ b/drivers/mfd/wm831x-i2c.c
-@@ -51,17 +51,25 @@ static int wm831x_i2c_write_device(struct wm831x *wm831x, unsigned short reg,
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 749c31d..ce93796 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -580,25 +580,29 @@ static int wm8994_i2c_read_device(struct wm8994 *wm8994, unsigned short reg,
+ 	return 0;
+ }
+ 
+-/* Currently we allocate the write buffer on the stack; this is OK for
+- * small writes - if we need to do large writes this will need to be
+- * revised.
+- */
+ static int wm8994_i2c_write_device(struct wm8994 *wm8994, unsigned short reg,
  				   int bytes, void *src)
  {
- 	struct i2c_client *i2c = wm831x->control_data;
+ 	struct i2c_client *i2c = wm8994->control_data;
 -	unsigned char msg[bytes + 2];
 +	struct i2c_msg xfer[2];
  	int ret;
