@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab1CQIAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 04:00:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56545 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab1CQIAd (ORCPT
+	id S1752373Ab1CQIBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 04:01:47 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:50709 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961Ab1CQIBp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 04:00:33 -0400
-Date: Thu, 17 Mar 2011 09:00:31 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
-        arnaud.patard@rtp-net.org, ra5478@freescale.com,
-        xiao-lizhang@freescale.com, festevam@gmail.com
-Subject: Re: [PATCHv3 1/3] ARM: mx51: Add entry for gpc_dvfs_clk
-Message-ID: <20110317080031.GR29521@pengutronix.de>
-References: <1300305787-7970-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Thu, 17 Mar 2011 04:01:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=jWQDBeHGfI+dsmF67Bc36IlC8/krO2OE8NDilNTsO9LQp+GLvsafzdj1Cla7xOYm+l
+         2n0M9uWrJPDU4S09H6kTLMxp3QcNOIQWbvdfkyxs7/+1aVXOtq/hkfgFWWO+nZ0OMXBv
+         qzmqbt1gOwp+IAeP/u4vMbJVir3Ty7z2hNiw4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300305787-7970-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:59:46 up 28 days, 19:57, 27 users,  load average: 0.54, 0.30,
- 0.12
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110317070705.15100.qmail@science.horizon.com>
+References: <AANLkTikDAEuTcrgo0YcUO40A9x5jaL-d+ZPviCXANe3r@mail.gmail.com>
+	<20110317070705.15100.qmail@science.horizon.com>
+Date: Thu, 17 Mar 2011 10:01:44 +0200
+X-Google-Sender-Auth: T46cGFNYmO0n4O7tlWkW25F80wo
+Message-ID: <AANLkTinsiWXHtrU0aN1Fsavs-2M2VD=vRYLjNhLQiO0s@mail.gmail.com>
+Subject: Re: [PATCH 5/8] mm/slub: Factor out some common code.
+From: Pekka Enberg <penberg@kernel.org>
+To: George Spelvin <linux@horizon.com>
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, mpm@selenic.com, penberg@cs.helsinki.fi,
+        rientjes@google.com, Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 03:03:05PM -0500, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> For MX51 SRPG, we need to turn on the GPC clock in order to set the
-> SRPG registers.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/mach-mx5/clock-mx51-mx53.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mx5/clock-mx51-mx53.c b/arch/arm/mach-mx5/clock-mx51-mx53.c
-> index 652ace4..18492fa 100644
-> --- a/arch/arm/mach-mx5/clock-mx51-mx53.c
-> +++ b/arch/arm/mach-mx5/clock-mx51-mx53.c
-> @@ -865,6 +865,13 @@ static struct clk aips_tz2_clk = {
->  	.disable = _clk_ccgr_disable_inwait,
->  };
->  
-> +static struct clk gpc_dvfs_clk = {
-> +	.enable_reg = MXC_CCM_CCGR5,
-> +	.enable_shift = MXC_CCM_CCGRx_CG12_OFFSET,
-> +	.enable = _clk_ccgr_enable,
-> +	.disable = _clk_ccgr_disable,
-> +};
-> +
->  static struct clk gpt_32k_clk = {
->  	.id = 0,
->  	.parent = &ckil_clk,
-> @@ -1448,6 +1455,7 @@ static struct clk_lookup mx51_lookups[] = {
->  	_REGISTER_CLOCK("imx-ipuv3", NULL, ipu_clk)
->  	_REGISTER_CLOCK("imx-ipuv3", "di0", ipu_di0_clk)
->  	_REGISTER_CLOCK("imx-ipuv3", "di1", ipu_di1_clk)
-> +	_REGISTER_CLOCK(NULL, "gpc_dvfs_clk", gpc_dvfs_clk)
+On Thu, Mar 17, 2011 at 9:07 AM, George Spelvin <linux@horizon.com> wrote:
+>> I certainly don't but I'd still like to ask you to change it to
+>> 'unsigned long'. That's a Linux kernel idiom and we're not going to
+>> change the whole kernel.
+>
+> Damn, and I just prepared the following patch.  Should I, instead, do
+>
+> --- a/include/linux/slab_def.h
+> +++ b/include/linux/slab_def.h
+> @@ -62,5 +62,5 @@ struct kmem_cache {
+>  /* 3) touched by every alloc & free from the backend */
+>
+> -       unsigned int flags;             /* constant flags */
+> +       unsigned long flags;            /* constant flags */
+>        unsigned int num;               /* # of objs per slab */
+>
+> ... because the original slab code uses an unsigned int.
 
-Please remove the _clk. The context makes it clear already that it's a
-clock.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Looks good to me.
