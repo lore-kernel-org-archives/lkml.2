@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab1CQRHe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:07:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33824 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab1CQRHa (ORCPT
+	id S1754872Ab1CQRLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:11:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36872 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab1CQRLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:07:30 -0400
-Date: Thu, 17 Mar 2011 10:07:18 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-Subject: Re: [BUG] usb_wwan: build error
-Message-Id: <20110317100718.6f4d6fe3.randy.dunlap@oracle.com>
-In-Reply-To: <201103170702.28752.oliver@neukum.org>
-References: <1300341100.10164.523.camel@edumazet-laptop>
-	<201103170702.28752.oliver@neukum.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 17 Mar 2011 13:11:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=iUH426JzDs2WrFahyfBQFki0fKIEg0oY3lEhkRLhDi0OBfkopQr7y+mgwKzD9OFs5O
+         P/MJzOer1HRStmPj9B0tlLQ/Ior4uNnM/2Syt0V9dTc97tbN4yo1UHw19OxfO/6Fmf6h
+         1qpkDkgoqIqBp+gM2WDdvJ3cT+vt/Llp5C7cs=
+Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
+In-Reply-To: <1300380909.16880.264.camel@gandalf.stny.rr.com>
+References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+	 <1300370936.16880.96.camel@gandalf.stny.rr.com>
+	 <AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
+	 <1300380909.16880.264.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Mar 2011 18:02:20 +0100
+Message-ID: <1300381340.6315.323.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D823FCB.00B1,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011 07:02:28 +0100 Oliver Neukum wrote:
-
-> Am Donnerstag, 17. März 2011, 06:51:40 schrieb Eric Dumazet:
-> > commit 16871dcac74c (usb_wwan: error case of resume) added a build error
-> > if CONFIG_PM_RUNTIME is not defined.
-> > 
-> >   CC [M]  drivers/usb/serial/usb_wwan.o
-> > drivers/usb/serial/usb_wwan.c: In function ‘play_delayed’:
-> > drivers/usb/serial/usb_wwan.c:702: error: ‘struct dev_pm_info’ has no
-> > member named ‘usage_count’
-> > 
-> > I suspect we should use pm_runtime_put_noidle() instead
+Le jeudi 17 mars 2011 à 12:55 -0400, Steven Rostedt a écrit :
+> Here, test this patch. I'm in the process of committing it now.
+> It will be two patches, one for the WARN_ON_SMP() change, the other for
+> the futex change.
 > 
-> Yes. I don't understand why it compiled for me. Has it been removed?
-
-usage_count is only there when CONFIG_PM_RUNTIME is enabled.
-Building with CONFIG_PM_RUNTIME disabled produces a build error.
-
-
-> 	Regards
-> 		Oliver
+> -- Steve
 > 
-> PS: patch about to follow
+> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> index c2c9ba0..25f1e9e 100644
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -168,7 +168,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+>  #ifdef CONFIG_SMP
+>  # define WARN_ON_SMP(x)			WARN_ON(x)
+>  #else
+> -# define WARN_ON_SMP(x)			do { } while (0)
+> +# define WARN_ON_SMP(x)			({0;})
+>  #endif
+>  
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+You meant :
+
+# define WARN_ON_SMP(x)			({x;})
+
+or
+
+# define WARN_ON_SMP(x)	  do { } while (x, 0)
+
+?
+
+
