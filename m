@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1CQOtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 10:49:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7238 "EHLO mx1.redhat.com"
+	id S1754235Ab1CQOxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 10:53:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43717 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab1CQOtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 10:49:36 -0400
-Date: Thu, 17 Mar 2011 10:49:07 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
+	id S1751900Ab1CQOxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 10:53:07 -0400
+Date: Thu, 17 Mar 2011 15:53:01 +0100
+From: Jan Kara <jack@suse.cz>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Vivek Goyal <vgoyal@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
@@ -25,7 +26,7 @@ Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
         Justin TerAvest <teravest@google.com>,
         Curt Wohlgemuth <curtw@google.com>
 Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
-Message-ID: <20110317144907.GC32392@redhat.com>
+Message-ID: <20110317145301.GD4116@quack.suse.cz>
 References: <20110311171006.ec0d9c37.akpm@linux-foundation.org>
  <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
  <20110314202324.GG31120@redhat.com>
@@ -40,86 +41,12 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20110317124350.GQ2140@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 01:43:50PM +0100, Johannes Weiner wrote:
-> On Wed, Mar 16, 2011 at 09:41:48PM -0700, Greg Thelen wrote:
-> > In '[PATCH v6 8/9] memcg: check memcg dirty limits in page writeback' Jan and
-> > Vivek have had some discussion around how memcg and writeback mesh.
-> > In my mind, the
-> > discussions in 8/9 are starting to blend with this thread.
-> > 
-> > I have been thinking about Johannes' struct memcg_mapping.  I think the idea
-> > may address several of the issues being discussed, especially
-> > interaction between
-> > IO-less balance_dirty_pages() and memcg writeback.
-> > 
-> > Here is my thinking.  Feedback is most welcome!
-> > 
-> > The data structures:
-> > - struct memcg_mapping {
-> >        struct address_space *mapping;
-> >        struct mem_cgroup *memcg;
-> >        int refcnt;
-> >   };
-> > - each memcg contains a (radix, hash_table, etc.) mapping from bdi to memcg_bdi.
-> > - each memcg_bdi contains a mapping from inode to memcg_mapping.  This may be a
-> >   very large set representing many cached inodes.
-> > - each memcg_mapping represents all pages within an bdi,inode,memcg.  All
-> >   corresponding cached inode pages point to the same memcg_mapping via
-> >   pc->mapping.  I assume that all pages of inode belong to no more than one bdi.
-> > - manage a global list of memcg that are over their respective background dirty
-> >   limit.
-> > - i_mapping continues to point to a traditional non-memcg mapping (no change
-> >   here).
-> > - none of these memcg_* structures affect root cgroup or kernels with memcg
-> >   configured out.
-> 
-> So structures roughly like this:
-> 
-> struct mem_cgroup {
-> 	...
-> 	/* key is struct backing_dev_info * */
-> 	struct rb_root memcg_bdis;
-> };
-> 
-> struct memcg_bdi {
-> 	/* key is struct address_space * */
-> 	struct rb_root memcg_mappings;
-> 	struct rb_node node;
-> };
-> 
-> struct memcg_mapping {
-> 	struct address_space *mapping;
-> 	struct mem_cgroup *memcg;
-> 	struct rb_node node;
-> 	atomic_t count;
-> };
-> 
-> struct page_cgroup {
-> 	...
-> 	struct memcg_mapping *memcg_mapping;
-> };
-> 
-> > The routines under discussion:
-> > - memcg charging a new inode page to a memcg: will use inode->mapping and inode
-> >   to walk memcg -> memcg_bdi -> memcg_mapping and lazily allocating missing
-> >   levels in data structure.
-> > 
-> > - Uncharging a inode page from a memcg: will use pc->mapping->memcg to locate
-> >   memcg.  If refcnt drops to zero, then remove memcg_mapping from the memcg_bdi.
-> >   Also delete memcg_bdi if last memcg_mapping is removed.
-> > 
-> > - account_page_dirtied(): nothing new here, continue to set the per-page flags
-> >   and increment the memcg per-cpu dirty page counter.  Same goes for routines
-> >   that mark pages in writeback and clean states.
-> 
-> We may want to remember the dirty memcg_mappings so that on writeback
-> we don't have to go through every single one that the memcg refers to?
-> 
+On Thu 17-03-11 13:43:50, Johannes Weiner wrote:
 > > - mem_cgroup_balance_dirty_pages(): if memcg dirty memory usage if above
 > >   background limit, then add memcg to global memcg_over_bg_limit list and use
 > >   memcg's set of memcg_bdi to wakeup each(?) corresponding bdi flusher.  If over
@@ -132,17 +59,17 @@ On Thu, Mar 17, 2011 at 01:43:50PM +0100, Johannes Weiner wrote:
 > the global bg thresh is exceeded OR there is other work scheduled)?
 > Then we would get away without the extra list, and it doesn't sound
 > overly complex to implement.
+  But then when you stop background writeback because of other work, you
+have to know you should restart it after that other work is done. For this
+you basically need the list. With this approach of one-work-per-memcg
+you also get into problems that one cgroup can livelock the flusher thread
+and thus other memcgs won't get writeback. So you have to switch between
+memcgs once in a while.
 
-Jan tought that design of maintaining a list of memocy groups (memcg_bdi)
-in this case is cleaner. So he preferred that let the queuing of work be
-for sync work and all this background writeout and IO less throttling
-stuff can be covered through background writeout logic.
+We've tried several approaches with global background writeback before we
+arrived at what we have now and what seems to work at least reasonably...
 
-I think I tend to agree that keeping a list is a clean design as bdi
-is shared medium and now flusher thread can decide how to divide the
-bandwidth of shared bdi among the queued memory cgroups. So as long as
-it does not turn out to be complex, I think maintaining a separate list
-of cgroups waiting for writeback on this bdi is not a bad idea.
-
-Thanks
-Vivek
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
