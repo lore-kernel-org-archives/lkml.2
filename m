@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab1CQXth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 19:49:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7674 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755787Ab1CQXtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 19:49:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,202,1299484800"; 
-   d="scan'208";a="898464751"
-Date: Fri, 18 Mar 2011 00:49:34 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/3] mfd: Avoid copying data in WM8994 I2C write
-Message-ID: <20110317234933.GG32172@sortiz-mobl>
-References: <1300398150-11834-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1756006Ab1CQXvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 19:51:12 -0400
+Received: from exprod8ob104.obsmtp.com ([64.18.3.87]:60924 "HELO
+	exprod8ob104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755787Ab1CQXvJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 19:51:09 -0400
+From: "Culberson, Tyler" <tj16culb@siena.edu>
+Date: Thu, 17 Mar 2011 19:34:00 -0400
+Subject: Your mailbox has exceeded its limit
+Thread-Topic: Your mailbox has exceeded its limit
+Thread-Index: AQHL5PvLpHx07Jikmk+nVC0sg+NTmw==
+Message-ID: <3898DEB8D4D8E34EB622AC53CEFFA268017616ECFCB0@mb-1.siena.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300398150-11834-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 17 Mar 2011 23:34:02.0534 (UTC) FILETIME=[CC474C60:01CBE4FB]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
 
-On Thu, Mar 17, 2011 at 09:42:28PM +0000, Mark Brown wrote:
-> As well as providing a trivial performance optimisation this also avoids
-> allocating a copy of the message on the stack which is beneficial when
-> doing large transfers.
-All 3 patches applied, thanks.
 
-Cheers,
-Samuel.
+Your mailbox has exceeded its limit. Your webmail is currently running 99.7% of its Quota limit of 100%. You cannot send or receive email until you have updated your webmail account. To update your webmail account, copy the link below and paste in your browser to request for upgrade.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+http://upgradeportal20111.media.officelive.com/default.aspx
+
+We are sincerely sorry for any inconvenience this might cause you; we tend to serve you better.
+Thanks for your co-operation.
+Webmail Update Team
