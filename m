@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1CQUN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 16:13:26 -0400
-Received: from kroah.org ([198.145.64.141]:52604 "EHLO coco.kroah.org"
+	id S1755451Ab1CQUNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 16:13:41 -0400
+Received: from kroah.org ([198.145.64.141]:52613 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755190Ab1CQUNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 16:13:24 -0400
-Date: Thu, 17 Mar 2011 13:04:48 -0700
+	id S1755190Ab1CQUN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 16:13:27 -0400
+Date: Thu, 17 Mar 2011 13:13:20 -0700
 From: Greg KH <greg@kroah.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        devel@linuxdriverproject.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PATCH] STAGING patches for .39
-Message-ID: <20110317200448.GA17827@kroah.com>
-References: <20110316210300.GA3311@kroah.com>
- <AANLkTim13aZ0Mr5RrOeQizHGY3jhf97x8v9mznY8RqgE@mail.gmail.com>
- <20110317002818.GA19812@kroah.com>
- <AANLkTikEEDDFxZQtvV46JJRU1NAtiXh_N4onJ1jwKHaF@mail.gmail.com>
- <AANLkTinznDAXuxv8AU=tZpTq81f_S8vTyAqRMm=nfAKS@mail.gmail.com>
- <20110317015239.GB31754@kroah.com>
- <20110317020212.GA2115@kroah.com>
- <20110317125538.791c26d9.rdunlap@xenotime.net>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+Message-ID: <20110317201320.GB4035@kroah.com>
+References: <201103111654.04089.arnd@arndb.de>
+ <20110311160308.GQ1760@opensource.wolfsonmicro.com>
+ <20110311161421.GA7843@kroah.com>
+ <20110311162759.GS1760@opensource.wolfsonmicro.com>
+ <20110311163522.GA9291@kroah.com>
+ <20110311164850.GT1760@opensource.wolfsonmicro.com>
+ <20110311165642.GA9996@kroah.com>
+ <20110311170807.GV1760@opensource.wolfsonmicro.com>
+ <20110311172345.GA10876@kroah.com>
+ <alpine.LFD.2.00.1103162207130.26889@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110317125538.791c26d9.rdunlap@xenotime.net>
+In-Reply-To: <alpine.LFD.2.00.1103162207130.26889@xanadu.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 12:55:38PM -0700, Randy Dunlap wrote:
-> On Wed, 16 Mar 2011 19:02:12 -0700 Greg KH wrote:
+On Wed, Mar 16, 2011 at 10:14:01PM -0400, Nicolas Pitre wrote:
+> > What drivers need this?  Specifics please.
 > 
-> > On Wed, Mar 16, 2011 at 06:52:39PM -0700, Greg KH wrote:
-> > > On Wed, Mar 16, 2011 at 05:34:08PM -0700, Linus Torvalds wrote:
-> > > > On Wed, Mar 16, 2011 at 5:32 PM, Linus Torvalds
-> > > > <torvalds@linux-foundation.org> wrote:
-> > > > >
-> > > > > The one with inifinite errors was vt6655.
-> > > > 
-> > > > vt6656 had same/similar issues. In fact, maybe it's simply because I
-> > > > built both of them in, and get infinite "multiple definitions" because
-> > > > they are the same driver with small differences?
-> > > 
-> > > Ah, probably, if they are both built into the kernel that might happen
-> > > due to the global symbols in them.  Actually that's odd, Randy's usual
-> > > 'randconfig' tester usually catches these, I'll make the Kconfig files
-> > > force them to be modules to keep this from happening in the future.
-> > 
-> > Yes, that looks like the problem, as building them as modules in your
-> > tree right now works just fine.
-> > 
-> > This patch below should solve your build issue, let me know if it
-> > doesn't.
+> Let me quote Arnd Bergmann:
 > 
-> Thanks for the patch.  You had suggested 1-2 months ago that someone do
-> this, so I was waiting to see if someone would actually do it.
+> |I have just verified with my Pandaboard that the pins on the SMSC9514
+> |usb ethernet that are meant to be connected to a serial EEPROM are
+> |indeed not connected anywhere.
+> 
+> > I would brand these types of systems "extremely broken" :)
+> 
+> Indeed.  But to hardware people, modifying the software is always cheaper.
 
-Ah, sorry about that, I forgot about it.
+Oh, I know this all too well.  I have lost months of my life to replace
+a $0.05 part in a device in a past job :(
 
-> I was hoping that a staging developer would do it (not the staging
-> maintainer).
+> > Anyway, specifics are the best way forward if anyone has such a messed
+> > up system.
+> 
+> PandaBoards are becoming quite popular.
 
-Heh, well, these drivers are just "placeholders" as the "real" in-kernel
-drivers are being developed for this hardware, so I don't expect to see
-much, if any development happening on them.
+I have one right here.
+
+But can't this device be detected by the usb device id and the quirk
+added that way?  Like all other "odd" USB devices are currently handled?
 
 thanks,
 
