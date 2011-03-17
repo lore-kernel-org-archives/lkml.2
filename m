@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1CQAfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:35:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34673 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751202Ab1CQAfA (ORCPT
+	id S1752409Ab1CQAti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 20:49:38 -0400
+Received: from wnl.lk ([203.143.12.196]:49288 "HELO mail.wnl.lk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751132Ab1CQAtf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:35:00 -0400
+	Wed, 16 Mar 2011 20:49:35 -0400
+Message-ID: <2957.82.128.17.72.1300322697.squirrel@sundaytimes.wnl.lk>
+Date: Thu, 17 Mar 2011 06:14:57 +0530 (IST)
+Subject: Update Account!!!
+From: "ONLINE TEAM" <info@web.com>
+Reply-To: upgraden_account@hotmail.com
+User-Agent: SquirrelMail/1.4.8-4.0.1.el5
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikEEDDFxZQtvV46JJRU1NAtiXh_N4onJ1jwKHaF@mail.gmail.com>
-References: <20110316210300.GA3311@kroah.com> <AANLkTim13aZ0Mr5RrOeQizHGY3jhf97x8v9mznY8RqgE@mail.gmail.com>
- <20110317002818.GA19812@kroah.com> <AANLkTikEEDDFxZQtvV46JJRU1NAtiXh_N4onJ1jwKHaF@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Mar 2011 17:34:08 -0700
-Message-ID: <AANLkTinznDAXuxv8AU=tZpTq81f_S8vTyAqRMm=nfAKS@mail.gmail.com>
-Subject: Re: [GIT PATCH] STAGING patches for .39
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=iso-8859-1
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 5:32 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> The one with inifinite errors was vt6655.
+Dear 'WEBMAIL ACCOUNT USER',
 
-vt6656 had same/similar issues. In fact, maybe it's simply because I
-built both of them in, and get infinite "multiple definitions" because
-they are the same driver with small differences?
+We are currrently upgrading our database and all account need to be verified.
+To complete your account activation with us,you are required to reply to this
+message and enter correctly the information's that is required from you.
 
-                       Linus
+Fill in your User Name and Password in the space provided (********)You are
+required to reply to this e-mail within the next 48 hours.
+
+Failure to get back to us, your Webmail account will be de-activated from our
+database.
+
+FULL NAME;
+USERNAME;
+PASSWORD;
+RE-TYPE PASSWORD;
+DATE OF BIRTH;
+
+
+Thank you for using  Webmail Copyright 2011 ©  Web Team.
+
+19X45HANJ4453VXTM334M
+     10-01-2011
+
