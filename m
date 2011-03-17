@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab1CQFVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 01:21:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41491 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab1CQFVR convert rfc822-to-8bit (ORCPT
+	id S1751537Ab1CQFXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 01:23:35 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39345 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1CQFXe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 01:21:17 -0400
+	Thu, 17 Mar 2011 01:23:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ukxr5UmBzs/MmHIesxIziHpK5C+6BZg9z8aPNQw2rKWHUO3+ZVpMGa0agonLmXfBPB
-         PkPfKYIR4uCDWC32+VnJfH1vZd4E8IezrgwHlASuVPdvOk4wAqs4njuTMde+as2cZQUW
-         C2Ds1/3WTAxjW86NbdrIDjtqVGXZZhu1iNCc4=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=fziraKiHU8kJ5jrNd7/CtQwwgPT+KDlqVf9c4KC9LaNrixsz01yx3Lgf5+FGHKpAif
+         EHZXR/FrTpMQj9WBFUitB46q3+RGL5XraRE38DHMvBxHQNRwlK05iKvhhWHH7OlpANKk
+         KHlGVF3oqnreAHT7PsZVZueXc2bhPAiJuDRVU=
 MIME-Version: 1.0
-In-Reply-To: <201103162257.10440.vapier@gentoo.org>
-References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
-	<201103160124.42939.vapier@gentoo.org>
-	<AANLkTim4w7zBBnsu+A1TMtb-wv60urDiSk5T0qbg7Oze@mail.gmail.com>
-	<201103162257.10440.vapier@gentoo.org>
-Date: Wed, 16 Mar 2011 22:21:16 -0700
-Message-ID: <AANLkTikfiVvxrxakH-_pch6v0jkT1yZstw4kXShyx+Sd@mail.gmail.com>
-Subject: Re: X32 psABI status update
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+In-Reply-To: <201103170119.17647.rjw@sisk.pl>
+References: <201103052254.48515.rjw@sisk.pl>
+	<201103150100.17501.rjw@sisk.pl>
+	<20110315190545.GA4165@xanatos>
+	<201103170119.17647.rjw@sisk.pl>
+Date: Wed, 16 Mar 2011 22:23:32 -0700
+X-Google-Sender-Auth: eWLyjdWwlo0ytLjJIAhNBnYfLA0
+Message-ID: <AANLkTim39fjrAp4OW_MfpbZkz-YYW5E2NOHuo1j=svmW@mail.gmail.com>
+Subject: Re: [RFT][PATCH] PCI / ACPI: Do not require MSI support for PCIe
+ native features
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 16, 2011 at 7:57 PM, Mike Frysinger <vapier@gentoo.org> wrote:
-> On Wednesday, March 16, 2011 08:39:57 H.J. Lu wrote:
->> On Tue, Mar 15, 2011 at 10:24 PM, Mike Frysinger wrote:
->> > so we get back to my original e-mail:
->> >        are you getting a unique host tuple for this ?  or are you
->> > extending x86_64-linux-gnu ?  so the only way of knowing which ABI is to
->> > check for the output of the compiler+compiler flags ?
+2011/3/16 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Tuesday, March 15, 2011, Sarah Sharp wrote:
+>> On Tue, Mar 15, 2011 at 01:00:17AM +0100, Rafael J. Wysocki wrote:
+>> > Well, I must admit I have no idea what the problem is.  OK, in addition to the
+>> > above changes, please replace the "pci_ext_cfg_avail(root->bus->self)" in the
+>> > same file with "true" and see if _that_ helps.
 >>
->> As I said, the target is x86_64- linux-gnu and you just add -mx32 to
->> CFLAGS. The x86_64- linux-gnu binutils and GCC support  x32.
+>> Yay, that worked!  dmesg is attached.
 >
-> ok, took long enough, but that answers most things.  your usage of "x32-"
-> prefixed binaries in the documentation seems to imply a lot more than the fact
-> you just picked those locally to avoid system collisions.  this isnt a wiki
-> page, otherwise i'd clean things up for you.
-
-Any suggestion how to create a wiki page for x32?
-
-> in looking at the gcc files, it doesnt seem like there's any defines setup to
-> declare x32 directly.  instead, you'd have to do something like:
-> #ifdef __x86_64__
-> # if __SIZEOF_LONG__ == 8
-> /* x86_64 */
-> # else
-> /* x32 */
-> # endif
-> #endif
+> Good, at least we know what the problem is, now we only have to find the root
+> cause. ;-)
 >
-> any plans on adding an __x32__ (or whatever) cpp symbol to keep people from
-> coming up with their own special/broken crap ?  or are there some already that
-> i'm not seeing ?
+> So, pci_ext_cfg_avail(root->bus->self) returns 0 on your machine, which is kind
+> of unexpected (to put it lightly), so very likely we have uncovered a bug
+> in the init code.
+>
+> Unfortunately, I may not be able to take care of this issue for the next few
+> days, I'll let you know when I get back to it.
 
-The idea is in most cases, you only need to check __x86_64__ since x32 and
-x86-64 are very close.  In some cases, x32 is very different from x86_64, like
-assembly codes on long and pointer, you can check __x86_64__ and __LP64__.
-In glibc, I used a different approach by using macros REG_RAX, .., MOV_LP,
-ADD_LP, SUB_LP and CMP_LP in assembly codes.
+her .config does not define PCI_MMCONFIG
 
-I added a simple howto for x32 compiling to
+#
+# Bus options (PCI etc.)
+#
+CONFIG_PCI=y
+CONFIG_PCI_DIRECT=y
+# CONFIG_PCI_MMCONFIG is not set
 
-https://sites.google.com/site/x32abi/
-
-Thanks.
-
--- 
-H.J.
+Yinghai
