@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab1CQFhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 01:37:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38970 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822Ab1CQFhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 01:37:20 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] Silence "ldm_validate_partition_table(): Disk read failed" when booting with "quiet"
-Date: Thu, 17 Mar 2011 11:04:14 +0530
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Anton Altaparmakov <aia21@cam.ac.uk>, Jiri Kosina <trivial@kernel.org>,
-        linux-ntfs-dev@lists.sourceforge.net,
-        "Richard Russon (FlatCap)" <ldm@flatcap.org>,
-        Klaus Hartmann <Klaus.Hartmann@ts.fujitsu.com>,
-        Andries Brouwer <aeb@cwi.nl>, linux-kernel@vger.kernel.org
-References: <201101121633.48567.knikanth@suse.de> <201103151125.05809.knikanth@suse.de> <68B01298-2FC4-4BA3-B76D-50BABA32AC4E@cam.ac.uk>
-In-Reply-To: <68B01298-2FC4-4BA3-B76D-50BABA32AC4E@cam.ac.uk>
+	id S1751551Ab1CQFpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 01:45:39 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63333 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab1CQFpf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 01:45:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Z6jfeK606UpgGM2ocFOvjOXlqnXYjc2pXh1GrOrfmm/WpU9rqD+vgaVCrqGbBZt5cC
+         UsW9vkmY1Zky2CtAN9RHPrpAOkS71T5xStmHUxivmH5GVE9oF+DlUcq3vaLqi4+sPqni
+         ioO47MUSE7nGTeW3m+uIYscKfOarJAkfBHQpk=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103171104.15086.knikanth@suse.de>
+In-Reply-To: <20110316235608.GY22723@ZenIV.linux.org.uk>
+References: <20110316235608.GY22723@ZenIV.linux.org.uk>
+Date: Thu, 17 Mar 2011 13:45:33 +0800
+Message-ID: <AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
+Subject: Re: [git pull] mnt_devname queue
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikanth Karthikesan <knikanth@suse.de>
-Subject: Silence "ldm_validate_partition_table(): Disk read failed" when booting with "quiet"
+On Thu, Mar 17, 2011 at 7:56 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>        Kills ->mnt_devname mangling in NFS, completes switch from ->get_sb()
+> to ->mount() (and kills the remnants of ->get_sb() helpers), makes /proc/mounts
+> and /proc/*/mountinfo show the right thing after mount --bind on NFS.  Trond
+> has ACKed the nfs side of things and suggested to push through the vfs tree,
+> so please pull from
+> git:git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ mnt_devname
+>
+> Shortlog:
+> Al Viro (8):
+>      nfs: propagate devname to nfs{,4}_get_root()
+>      nfs: store devname at disconnected NFS roots
+>      nfs: make nfs_path() work without vfsmount
+>      nfs: nfs_do_{ref,sub}mount() superblock argument is redundant
+>      vfs: new superblock methods to override /proc/*/mount{s,info}
+>      nfs: stop mangling ->mnt_devname on NFS
+>      nfs: switch NFS from ->get_sb() to ->mount()
+>      vfs: bury ->get_sb()
 
-When the kernel does partition detection, on certain configurations with
-external fibre channel raid systems (e.g. clariion from EMC) the read
-would fail. And "ldm_validate_partition_table(): Disk read failed"
-messages are printed to the console.
+I guess we need also switch pstore from ->get_sb() to ->mount()
 
-But the failure to read is not a critical error. Now since the message
-is flagged as KERN_CRIT, it gets printed even when booting with the
-"quiet" kernel parameter. Fix it by using KERN_INFO, as the failure to
-read here is not really an error.
+fs/pstore/inode.c:253: error: unknown field ‘get_sb’ specified in initializer
+fs/pstore/inode.c:253: warning: initialization makes integer from
+pointer without a cast
+fs/pstore/inode.c:253: error: initializer element is not computable at load time
+fs/pstore/inode.c:253: error: (near initialization for
+‘pstore_fs_type.fs_flags’)
 
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-Reported-by : Klaus Hartmann <Klaus.Hartmann@ts.fujitsu.com>
-Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
-
----
-
-diff --git a/fs/partitions/ldm.c b/fs/partitions/ldm.c
-index b10e354..ea648b9 100644
---- a/fs/partitions/ldm.c
-+++ b/fs/partitions/ldm.c
-@@ -565,7 +565,7 @@ static bool ldm_validate_partition_table(struct parsed_partitions *state)
- 
- 	data = read_part_sector(state, 0, &sect);
- 	if (!data) {
--		ldm_crit ("Disk read failed.");
-+		ldm_info ("Disk read failed.");
- 		return false;
- 	}
- 
+>
+> Diffstat:
+>  Documentation/filesystems/Locking |    6 +-
+>  Documentation/filesystems/porting |    7 ++
+>  Documentation/filesystems/vfs.txt |   56 ++++++-----
+>  fs/namespace.c                    |   39 ++++++--
+>  fs/nfs/dir.c                      |   13 +++
+>  fs/nfs/getroot.c                  |   42 +++++++-
+>  fs/nfs/internal.h                 |   21 ++--
+>  fs/nfs/namespace.c                |   66 ++++++++-----
+>  fs/nfs/nfs4namespace.c            |   41 +++-----
+>  fs/nfs/super.c                    |  194 +++++++++++++++++++------------------
+>  fs/nfs/unlink.c                   |   20 ++++
+>  fs/super.c                        |   67 +------------
+>  include/linux/fs.h                |   16 +---
+>  13 files changed, 316 insertions(+), 272 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
