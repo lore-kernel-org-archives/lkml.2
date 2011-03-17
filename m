@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab1CQNsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 09:48:03 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:58299 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab1CQNsB convert rfc822-to-8bit (ORCPT
+	id S1751719Ab1CQNyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 09:54:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53851 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1CQNyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 09:48:01 -0400
-Date: Thu, 17 Mar 2011 14:47:56 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alessandro Zummo <a.zummo@towertech.it>
-cc: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net
-Subject: [PATCH] rtc-{ds1390,ds3234,m41t94}: Use spi_get_drvdata() for SPI
- devices
-Message-ID: <alpine.DEB.2.00.1103171446130.23741@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Mar 2011 09:54:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Waldemar.Rymarkiewicz@tieto.com
+Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Date: Thu, 17 Mar 2011 14:54:42 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1299766808-2535-1-git-send-email-waldemar.rymarkiewicz@tieto.com> <201103171407.58164.arnd@arndb.de> <99B09243E1A5DA4898CDD8B70011144810830AB18B@EXMB04.eu.tieto.com>
+In-Reply-To: <99B09243E1A5DA4898CDD8B70011144810830AB18B@EXMB04.eu.tieto.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103171454.42838.arnd@arndb.de>
+X-Provags-ID: V02:K0:hInXbPfTG3ABeU/pnW8O+d++acuLekelfhSY3XFN1bp
+ 9NfZMZKAAWIFJRPCu3NWxIOCTF3ULZXJMaC7Muwv+wBBKYilqd
+ FR1YPF09Vh3OatmzOTdbeQ3qfe2dOv7ktjGqN9OqxovJ0jKIS1
+ x5sN2cky/aalIX/+aMsGK3mXQmrjSc3xUk8ExpUFx2cXk+1FWY
+ voCIm36XL+6xO7wdNy/Fw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recently increased type checking in platform_get_drvdata() reveals a few
-offenders:
+On Thursday 17 March 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
+> >This is not very different from opening the file descriptor in 
+> >multiple processes, which you prevent using your logic.
+> 
+> but in the case when two independent applications try to open 
+> my device I can't let the second to access. They obviously won't
+> synch the access.
 
-drivers/rtc/rtc-ds1390.c:161: warning: passing argument 1 of ¡platform_get_drvdata¢ from incompatible pointer type
-drivers/rtc/rtc-ds3234.c:161: warning: passing argument 1 of ¡platform_get_drvdata¢ from incompatible pointer type
-drivers/rtc/rtc-m41t94.c:139: warning: passing argument 1 of ¡platform_get_drvdata¢ from incompatible pointer type
-
-Use spi_get_drvdata() instead of platform_get_drvdata().
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/rtc/rtc-ds1390.c |    2 +-
- drivers/rtc/rtc-ds3234.c |    2 +-
- drivers/rtc/rtc-m41t94.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/rtc/rtc-ds1390.c b/drivers/rtc/rtc-ds1390.c
-index 26a86d2..b038d2c 100644
---- a/drivers/rtc/rtc-ds1390.c
-+++ b/drivers/rtc/rtc-ds1390.c
-@@ -158,7 +158,7 @@ static int __devinit ds1390_probe(struct spi_device *spi)
+My point was that you don't need to worry.
  
- static int __devexit ds1390_remove(struct spi_device *spi)
- {
--	struct ds1390 *chip = platform_get_drvdata(spi);
-+	struct ds1390 *chip = spi_get_drvdata(spi);
- 
- 	rtc_device_unregister(chip->rtc);
- 	kfree(chip);
-diff --git a/drivers/rtc/rtc-ds3234.c b/drivers/rtc/rtc-ds3234.c
-index a774ca3..bbd2622 100644
---- a/drivers/rtc/rtc-ds3234.c
-+++ b/drivers/rtc/rtc-ds3234.c
-@@ -158,7 +158,7 @@ static int __devinit ds3234_probe(struct spi_device *spi)
- 
- static int __devexit ds3234_remove(struct spi_device *spi)
- {
--	struct rtc_device *rtc = platform_get_drvdata(spi);
-+	struct rtc_device *rtc = spi_get_drvdata(spi);
- 
- 	rtc_device_unregister(rtc);
- 	return 0;
-diff --git a/drivers/rtc/rtc-m41t94.c b/drivers/rtc/rtc-m41t94.c
-index c8c97a4..e259ed7 100644
---- a/drivers/rtc/rtc-m41t94.c
-+++ b/drivers/rtc/rtc-m41t94.c
-@@ -136,7 +136,7 @@ static int __devinit m41t94_probe(struct spi_device *spi)
- 
- static int __devexit m41t94_remove(struct spi_device *spi)
- {
--	struct rtc_device *rtc = platform_get_drvdata(spi);
-+	struct rtc_device *rtc = spi_get_drvdata(spi);
- 
- 	if (rtc)
- 		rtc_device_unregister(rtc);
--- 
-1.7.0.4
+> >You can of course argue that you try your best to prevent the 
+> >race. Traditionally, e.g. on serial ports and the like, we 
+> >don't do this but instead rely on user space synchronizing the 
+> >access. What you have to make sure of course is that multiple 
+> >threads calling read on the same file can never bring the 
+> >kernel driver into an invalid state.
+> 
+> I assume, if an application shares the file pointer deliberately
+> it have to sync the access. In other cases, the driver needs to
+> secure it.
 
+As I said, it's not important if you do it and it certainly doesn't
+cause harm to prevent multiple open. It's just that generally
+we don't care too much about this problem.
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+	Arnd
