@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab1CQARV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:17:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:22187 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab1CQARQ (ORCPT
+	id S1752318Ab1CQAS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 20:18:28 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55806 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab1CQASY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:17:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=e19v/yCakitBKnA47ziWUAVFPGQCUN3kFB4ZO855V1bFiRVoxuvalv/GE8lG/r4Sy7
-         iNnCSYjanbllCTFfbisw==
-Date: Wed, 16 Mar 2011 17:17:08 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@elte.hu>
-cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [patch] trace: fix branch profiling location in debugfs
-Message-ID: <alpine.DEB.2.00.1103161716320.11407@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 16 Mar 2011 20:18:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: rcu_sched_state detected stall on CPU issue
+Cc: kosaki.motohiro@jp.fujitsu.com, mel@csn.ul.ie, akpm@linux-foundation.org,
+        -c@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20110316101820.GA17540@linux.vnet.ibm.com>
+References: <20110316101820.GA17540@linux.vnet.ibm.com>
+Message-Id: <20110317085938.C938.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 17 Mar 2011 09:18:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debugfs interface for branch profiling is through
+Hi Paul,
 
-	/sys/kernel/debug/tracing/trace_stat/branch_annotated
-	/sys/kernel/debug/tracing/trace_stat/branch_all
+> Hello!
+> 
+> It looks like Preeti found a way to loop in kswapd with preemption
+> disabled, please see attached dmesg.   This is using 2.6.35-45.fc14.
+> 
+> Any thoughts or recent patches that might help?
 
-so update the Kconfig accordingly.
+We fixed a kswapd infinite loop issue when memory is fragmented at 2.6.38.
+Could you please try following commits? (all are mm/vmscan.c change)
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- kernel/trace/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+commit dc83edd941f412e938841b4989be24aa288a1aa6
+commit 355b09c47a0cbb73b3e65a57c03f157f2e7ddb0b
+commit 4d40502ea580c35414a1466d86f96484910ebaec
+commit 0abdee2bd4118366c62349a304f81537be69af33
+commit 1741c87757448cedd03224f01586504f9256415d
+commit 9950474883e027e6e728cbcff25f7f2bf0c96530
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -275,7 +275,7 @@ config PROFILE_ANNOTATED_BRANCHES
- 	  This tracer profiles all the the likely and unlikely macros
- 	  in the kernel. It will display the results in:
- 
--	  /sys/kernel/debug/tracing/profile_annotated_branch
-+	  /sys/kernel/debug/tracing/trace_stat/branch_annotated
- 
- 	  Note: this will add a significant overhead; only turn this
- 	  on if you need to profile the system's use of these macros.
-@@ -288,7 +288,7 @@ config PROFILE_ALL_BRANCHES
- 	  taken in the kernel is recorded whether it hit or miss.
- 	  The results will be displayed in:
- 
--	  /sys/kernel/debug/tracing/profile_branch
-+	  /sys/kernel/debug/tracing/trace_stat/branch_all
- 
- 	  This option also enables the likely/unlikely profiler.
- 
+
+And, your attached file and your quoted mail don't have /proc/zoneinfo
+information. then I have no way to confirn his environment is heavy
+fragmented or not. If possible, could you please get /proc/zoneinfo
+info?
+
+
+
+
