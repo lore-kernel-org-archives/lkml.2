@@ -1,199 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045Ab1CQB1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 21:27:47 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:13790 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757211Ab1CQB0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 21:26:42 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-serial@vger.kernel.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
-Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [RFC PATCH 2/2] MIPS: Octeon: Use device tree to register serial ports.
-Date: Wed, 16 Mar 2011 18:26:07 -0700
-Message-Id: <1300325167-26433-3-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
-X-OriginalArrivalTime: 17 Mar 2011 01:26:18.0020 (UTC) FILETIME=[50872640:01CBE442]
+	id S1757558Ab1CQB2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 21:28:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46147 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757313Ab1CQB2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 21:28:44 -0400
+Date: Thu, 17 Mar 2011 12:28:33 +1100
+From: NeilBrown <neilb@suse.de>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        device-mapper development <dm-devel@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] Fix over-zealous flush_disk when changing
+ device size.
+Message-ID: <20110317122833.30077397@notabene.brown>
+In-Reply-To: <x49pqpq95b5.fsf@segfault.boston.devel.redhat.com>
+References: <20110217165057.5c50e566@notabene.brown>
+	<20110303143120.GA8134@infradead.org>
+	<20110304111624.4be27aaf@notabene.brown>
+	<1299259506.2118.24.camel@grinch>
+	<20110306174755.49404c8e@notabene.brown>
+	<1299471771.2228.11.camel@grinch>
+	<1299516418.15258.4.camel@mulgrave.site>
+	<20110308094412.1c45b277@notabene.brown>
+	<1299538572.15955.90.camel@mulgrave.site>
+	<20110308110453.0047307d@notabene.brown>
+	<x49pqpq95b5.fsf@segfault.boston.devel.redhat.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to using the device tree to register serial ports.
+On Wed, 16 Mar 2011 16:30:22 -0400 Jeff Moyer <jmoyer@redhat.com> wrote:
 
-After the serial8250 driver indicates that it is initialized, add all
-the ports with compatible = "cavium,octeon-3860-uart".  Octeon serial
-ports have their own device type, required port flags, and I/O
-functions, so using of_serial.c is not indicated.
+> NeilBrown <neilb@suse.de> writes:
+> 
+> >> Synchronous notification of errors.  If we don't try to write everything
+> >> back immediately after the size change, we don't see dirty pages in
+> >> zapped regions until the writeout/page cache management takes it into
+> >> its head to try to clean the pages.
+> >> 
+> >
+> > So if you just want synchronous errors, I think you want:
+> >     fsync_bdev()
+> >
+> > which calls sync_filesystem() if it can find a filesystem, else
+> > sync_blockdev();  (sync_filesystem itself calls sync_blockdev too).
+> 
+> ... which deadlocks md.  ;-)  writeback_inodes_sb_nr is waiting for the
+> flusher thread to write back the dirty data.  The flusher thread is
+> stuck in md_write_start, here:
+> 
+>         wait_event(mddev->sb_wait,
+>                    !test_bit(MD_CHANGE_PENDING, &mddev->flags));
+> 
+> This is after reverting your change, and replacing the flush_disk call
+> in check_disk_size_change with a call to fsync_bdev.  I'm not familiar
+> enough with md to really suggest a way forward.  Neil?
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- arch/mips/cavium-octeon/serial.c |  140 ++++++++++++++++----------------------
- 1 files changed, 60 insertions(+), 80 deletions(-)
+That would be quite easy to avoid.
+Just call
+   md_write_start()
+before revalidate_disk, and
+   md_write_end()
+afterwards.
+You wouldn't have a 'bio' to pass in - but it is rather ugly requiring
+one anyway - I should fix that.
+For testing, just pass in NULL, and change
+	if (bio_data_dir(bi) != WRITE)
+		return;
+to
+	if (bi && bio_data_dir(bi) != WRITE)
+		return;
 
-diff --git a/arch/mips/cavium-octeon/serial.c b/arch/mips/cavium-octeon/serial.c
-index 057f0ae..28cacac 100644
---- a/arch/mips/cavium-octeon/serial.c
-+++ b/arch/mips/cavium-octeon/serial.c
-@@ -43,95 +43,75 @@ void octeon_serial_out(struct uart_port *up, int offset, int value)
- 	cvmx_write_csr((uint64_t)(up->membase + (offset << 3)), (u8)value);
- }
- 
--/*
-- * Allocated in .bss, so it is all zeroed.
-- */
--#define OCTEON_MAX_UARTS 3
--static struct plat_serial8250_port octeon_uart8250_data[OCTEON_MAX_UARTS + 1];
--static struct platform_device octeon_uart8250_device = {
--	.name			= "serial8250",
--	.id			= PLAT8250_DEV_PLATFORM,
--	.dev			= {
--		.platform_data	= octeon_uart8250_data,
--	},
--};
--
--static void __init octeon_uart_set_common(struct plat_serial8250_port *p)
-+static int __devinit octeon_serial_probe(struct platform_device *pdev)
- {
--	p->flags = ASYNC_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
--	p->type = PORT_OCTEON;
--	p->iotype = UPIO_MEM;
--	p->regshift = 3;	/* I/O addresses are every 8 bytes */
-+	int irq, res;
-+	struct resource *res_mem;
-+	struct uart_port port;
-+
-+	/* All adaptors have an irq.  */
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0)
-+		return irq;
-+
-+	memset(&port, 0, sizeof(port));
-+
-+	port.flags = ASYNC_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
-+	port.type = PORT_OCTEON;
-+	port.iotype = UPIO_MEM;
-+	port.regshift = 3;
-+	port.dev = &pdev->dev;
-+
- 	if (octeon_is_simulation())
- 		/* Make simulator output fast*/
--		p->uartclk = 115200 * 16;
-+		port.uartclk = 115200 * 16;
- 	else
--		p->uartclk = octeon_get_io_clock_rate();
--	p->serial_in = octeon_serial_in;
--	p->serial_out = octeon_serial_out;
--}
-+		port.uartclk = octeon_get_io_clock_rate();
- 
--static int __init octeon_serial_init(void)
--{
--	int enable_uart0;
--	int enable_uart1;
--	int enable_uart2;
--	struct plat_serial8250_port *p;
-+	port.serial_in = octeon_serial_in;
-+	port.serial_out = octeon_serial_out;
-+	port.irq = irq;
- 
--#ifdef CONFIG_CAVIUM_OCTEON_2ND_KERNEL
--	/*
--	 * If we are configured to run as the second of two kernels,
--	 * disable uart0 and enable uart1. Uart0 is owned by the first
--	 * kernel
--	 */
--	enable_uart0 = 0;
--	enable_uart1 = 1;
--#else
--	/*
--	 * We are configured for the first kernel. We'll enable uart0
--	 * if the bootloader told us to use 0, otherwise will enable
--	 * uart 1.
--	 */
--	enable_uart0 = (octeon_get_boot_uart() == 0);
--	enable_uart1 = (octeon_get_boot_uart() == 1);
--#ifdef CONFIG_KGDB
--	enable_uart1 = 1;
--#endif
--#endif
--
--	/* Right now CN52XX is the only chip with a third uart */
--	enable_uart2 = OCTEON_IS_MODEL(OCTEON_CN52XX);
--
--	p = octeon_uart8250_data;
--	if (enable_uart0) {
--		/* Add a ttyS device for hardware uart 0 */
--		octeon_uart_set_common(p);
--		p->membase = (void *) CVMX_MIO_UARTX_RBR(0);
--		p->mapbase = CVMX_MIO_UARTX_RBR(0) & ((1ull << 49) - 1);
--		p->irq = OCTEON_IRQ_UART0;
--		p++;
-+	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res_mem == NULL) {
-+		dev_err(&pdev->dev, "found no memory resource\n");
-+		return -ENXIO;
- 	}
-+	port.mapbase = res_mem->start;
-+	port.membase = ioremap(res_mem->start, resource_size(res_mem));
- 
--	if (enable_uart1) {
--		/* Add a ttyS device for hardware uart 1 */
--		octeon_uart_set_common(p);
--		p->membase = (void *) CVMX_MIO_UARTX_RBR(1);
--		p->mapbase = CVMX_MIO_UARTX_RBR(1) & ((1ull << 49) - 1);
--		p->irq = OCTEON_IRQ_UART1;
--		p++;
--	}
--	if (enable_uart2) {
--		/* Add a ttyS device for hardware uart 2 */
--		octeon_uart_set_common(p);
--		p->membase = (void *) CVMX_MIO_UART2_RBR;
--		p->mapbase = CVMX_MIO_UART2_RBR & ((1ull << 49) - 1);
--		p->irq = OCTEON_IRQ_UART2;
--		p++;
--	}
-+	res = serial8250_register_port(&port);
-+
-+	return res >= 0 ? 0 : res;
-+}
-+
-+static struct of_device_id octeon_serial_match[] = {
-+	{
-+		.compatible = "cavium,octeon-3860-uart",
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, octeon_serial_match);
- 
--	BUG_ON(p > &octeon_uart8250_data[OCTEON_MAX_UARTS]);
-+static struct platform_driver octeon_serial_driver = {
-+	.probe		= octeon_serial_probe,
-+	.driver		= {
-+		.owner	= THIS_MODULE,
-+		.name	= "octeon_serial",
-+		.of_match_table = octeon_serial_match,
-+	},
-+};
- 
--	return platform_device_register(&octeon_uart8250_device);
-+static int octeon_serial_register_driver(struct notifier_block *nb,
-+					 unsigned long code, void *arg)
-+{
-+	if (code == SERIAL8250_DRIVER_ADD)
-+		platform_driver_register(&octeon_serial_driver);
-+	return NOTIFY_OK;
- }
- 
--device_initcall(octeon_serial_init);
-+static int __init octeon_serial_init(void)
-+{
-+	return serial8250_notifier(octeon_serial_register_driver, 0);
-+}
-+arch_initcall(octeon_serial_init);
--- 
-1.7.2.3
+NeilBrown
 
