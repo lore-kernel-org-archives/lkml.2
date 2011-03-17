@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab1CQViV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:38:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:50567 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673Ab1CQViT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:38:19 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=cjxWWOd7KoAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1ytC9bRqbYksj9LWoTYA:9 a=HYbRRt7QFdCknNbxn1HgRNqGKiMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: make checkpatch warn about memset with swapped arguments.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110317141108.52697d81.akpm@linux-foundation.org>
-References: <20110317045209.GA18656@redhat.com>
-	 <20110317193645.GD14675@home.goodmis.org>
-	 <20110317200215.GA4084@redhat.com>
-	 <1300394224.16880.518.camel@gandalf.stny.rr.com>
-	 <20110317141108.52697d81.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 17 Mar 2011 17:38:16 -0400
-Message-ID: <1300397896.16880.584.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755826Ab1CQVio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:38:44 -0400
+Received: from www.tglx.de ([62.245.132.106]:34471 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755673Ab1CQVin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:38:43 -0400
+Date: Thu, 17 Mar 2011 22:38:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/5] gpio: langwell: Cleanup the interrupt mess
+In-Reply-To: <20110317195112.GE12824@angua.secretlab.ca>
+Message-ID: <alpine.LFD.2.00.1103172236530.2787@localhost6.localdomain6>
+References: <20110317192247.722047296@linutronix.de> <20110317195112.GE12824@angua.secretlab.ca>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 14:11 -0700, Andrew Morton wrote:
-> On Thu, 17 Mar 2011 16:37:04 -0400
+On Thu, 17 Mar 2011, Grant Likely wrote:
 
+> On Thu, Mar 17, 2011 at 07:32:43PM -0000, Thomas Gleixner wrote:
+> > The langwell interrupt handler is interesting and breaks when an
+> > architecture enables GENERIC_HARDIRQS_NO_DEPRECATED.
+> > 
+> > Also this driver along with the other intel ones should depend on x86.
+> > 
+> > The series cleans that up. The last patch 5/5 is RFC and needs a
+> > close look and testing by folks at Intel.
 > 
-> Dave's patch is tested (I assume), so it wins ;)
+> Applied first 4, thanks.  Will apply last one when I get acks from the
+> Intel folks.
 
-I did test mine :) Checked it out before posting. Although I didn't make
-a patch out of it.
+Fair enough.
 
-> 
-> Maybe it's just me, but I think it would be better to use bzero() for
-> this operation - it's more readable and it can't be screwed up.  Then
-> checkpatch checks for memset(xxx, 0, xxx) and for memset(xxx, xxx, 0)
-> and says "hey, use bzero".  
+You should also poke those folks why they did write another driver for
+the same gpio IP block. Though I wouldn't be surprised if we have more
+than one copy of this in the tree. :(
 
-Honestly, I've never had the issues with memset. Maybe back in college.
-But heh, whatever.
+Thanks,
 
--- Steve
-
-
+	tglx
