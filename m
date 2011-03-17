@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab1CQS3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:29:31 -0400
-Received: from 6.26.mail-out.ovh.net ([46.105.35.144]:49794 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1755071Ab1CQS33 (ORCPT
+	id S1755165Ab1CQSai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:30:38 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46724 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754975Ab1CQSae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:29:29 -0400
-X-Greylist: delayed 3599 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Mar 2011 14:29:28 EDT
-Message-ID: <4D8244F4.3020500@example.com>
-Date: Thu, 17 Mar 2011 18:29:24 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
-MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>, benh@debian.org
-Subject: Re: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
-References: <201103101209.p2AC9YdZ014233@violet.fr.zoreil.com> <20110316202220.GA14741@electric-eye.fr.zoreil.com>
-In-Reply-To: <20110316202220.GA14741@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+	Thu, 17 Mar 2011 14:30:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=DVV1b5gtHsmc4uAqPz1QirSrZwArS6gkGSsxfejYnZ0B4zDoo9KQMk4wklPg2cfuB1
+         9LqF5U2CawKrRJrEaU7gLJ/dM1/p9pKV8YEWo4CnOBUzQ0zBmG6OyCxsHhbmRa/PyNyO
+         bjEs6jLYfxFkVM+8CtmlRQ50v/PkCr5s8lj8E=
+Subject: Re: Poll about irqsafe_cpu_add and others
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1103171245430.16620@router.home>
+References: <1300371834.6315.93.camel@edumazet-laptop>
+	 <20110317.081420.71114992.davem@davemloft.net>
+	 <alpine.DEB.2.00.1103171016270.12540@router.home>
+	 <1300380801.6315.306.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1103171245430.16620@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Mar 2011 19:29:29 +0100
+Message-ID: <1300386569.6315.404.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 4968877765255786906
-X-Ovh-Remote: 178.36.240.135 (178-36-240-135.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.03.2011 21:22, Francois Romieu wrote:
-> You can get it there:
->
-> http://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.git
-> git://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.git
->
-> It has already been submitted to the maintainer of linux-firmware.
+Le jeudi 17 mars 2011 Ã  12:46 -0500, Christoph Lameter a Ã©crit :
+> On Thu, 17 Mar 2011, Eric Dumazet wrote:
+> 
+> > When we know we run from BH context, we can use __this_cpu_inc(), but if
+> > we dont know or run from user/process context, we would need irqsafe_inc
+> > variant.
+> 
+> If the BH context is the only one where we care about performance then its
+> ok I would think.
 
-Hello,
+Hmm... yes.
 
-The problem persists, I have on disk:
+By the way, I noticed :
 
-# ls /lib/firmware/rtl_nic/
-rtl8105e-1.fw  rtl8168d-1.fw  rtl8168d-2.fw  rtl8168e-1.fw  rtl8168e-2.fw
+DECLARE_PER_CPU(u64, xt_u64);
+__this_cpu_add(xt_u64, 2) translates to following x86_32 code :
 
-And my NIC doesn't work. What do you mean saying that I can get it 
-there? How can I contact the maintainer?
+	mov	$xt_u64,%eax
+	add	%fs:0x0,%eax
+	addl	$0x2,(%eax)
+	adcl	$0x0,0x4(%eax)
 
-Please, help, I cannot test new kernels.
 
-Regards,
+I wonder why we dont use :
 
-Piotr Hosowicz
+	addl	$0x2,%fs:xt_u64
+	addcl	$0x0,%fs:xt_u64+4
 
--- 
-Na przyjêciu ch³opak pyta blondynkê:
-- Czy mogê ciê prosiæ do walca?
-- Zg³upia³e¶? To ju¿ nie mia³e¶ czym przyjechaæ?
-NP: Banda Do Sol - Fabito
-NB: 2.6.38-git3
+
+
