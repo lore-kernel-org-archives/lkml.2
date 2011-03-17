@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab1CQUfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 16:35:52 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41625 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041Ab1CQUfu (ORCPT
+	id S1755447Ab1CQUhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 16:37:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43841 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab1CQUhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 16:35:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=eJjtGqo0SEXq/ZYMsyM3z9Sb2o7LadNTUHxzdfWhW7IBcFL2YC8Q/SXuX4up53XczI
-         BIz/2iy5C2QeY3/lRnZlPzYkOmJxiZ4x42Yfwb771jCB6uIgZz9AKTrQUWiajxXDIauk
-         Mj/1m6efJuxS3ouzqrWee87FM8x8eo6Pb9C9A=
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-To: malattia@linux.it
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-kernel@vger.kernel.org, trivial@vger.kernel.org
-Subject: [PATCH] sonypi: fix common misspellings
-Date: Thu, 17 Mar 2011 17:35:40 -0300
-Message-Id: <1300394140-2116-1-git-send-email-lucas.demarchi@profusion.mobi>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 17 Mar 2011 16:37:06 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=cjxWWOd7KoAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Qj5cvEdX0C3vHeXm78sA:9 a=Lz18qa7JarDe-N7M8EYK1ZCCGRkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: make checkpatch warn about memset with swapped arguments.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110317200215.GA4084@redhat.com>
+References: <20110317045209.GA18656@redhat.com>
+	 <20110317193645.GD14675@home.goodmis.org>
+	 <20110317200215.GA4084@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 16:37:04 -0400
+Message-ID: <1300394224.16880.518.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
----
- drivers/char/sonypi.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Thu, 2011-03-17 at 16:02 -0400, Dave Jones wrote:
+> On Thu, Mar 17, 2011 at 03:36:45PM -0400, Steven Rostedt wrote:
+> 
+>  > > +		if ($line =~ /memset.*\,(\ |)(0x|)0(\ |0|)\);/) {
+>  > 
+>  > Wouldn't this be a better regex:
+>  > 
+>  > 	if ($line =~ /memset.*\,\s*(0x)?0\s*\)\s*;/)
+> 
+> I dunno, regexps are all gobble-de-gook to me.  Why is it better ?
 
-diff --git a/drivers/char/sonypi.c b/drivers/char/sonypi.c
-index 79e36c8..1ee8ce7 100644
---- a/drivers/char/sonypi.c
-+++ b/drivers/char/sonypi.c
-@@ -1241,7 +1241,7 @@ static int __devinit sonypi_setup_ioports(struct sonypi_device *dev,
- 	while (check_ioport && check->port1) {
- 		if (!request_region(check->port1,
- 				   sonypi_device.region_size,
--				   "Sony Programable I/O Device Check")) {
-+				   "Sony Programmable I/O Device Check")) {
- 			printk(KERN_ERR "sonypi: ioport 0x%.4x busy, using sony-laptop? "
- 					"if not use check_ioport=0\n",
- 					check->port1);
-@@ -1255,7 +1255,7 @@ static int __devinit sonypi_setup_ioports(struct sonypi_device *dev,
- 
- 		if (request_region(ioport_list->port1,
- 				   sonypi_device.region_size,
--				   "Sony Programable I/O Device")) {
-+				   "Sony Programmable I/O Device")) {
- 			dev->ioport1 = ioport_list->port1;
- 			dev->ioport2 = ioport_list->port2;
- 			return 0;
--- 
-1.7.4.1
+:) I love regex :)
+
+But the reason for better is more robust. This will catch other bad
+things users may do, like having tabs and such instead of spaces. Or
+they may have more than one space. Although this should be caught by
+other errors or warnings in checkpatch.
+
+\s stands for any whitespace, 
+so ",\s*x" is ,[any-amount-of-white-space]x"
+
+The (0x)? is common for (0x|) in perl, but either is fine. I'm just use
+to the '?' one.
+
+-- Steve
+
 
