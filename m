@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab1CQCOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 22:14:14 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55883 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab1CQCOG (ORCPT
+	id S1752995Ab1CQCXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 22:23:44 -0400
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:42180 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab1CQCXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 22:14:06 -0400
-Date: Wed, 16 Mar 2011 22:14:01 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Greg KH <greg@kroah.com>
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-In-Reply-To: <20110311172345.GA10876@kroah.com>
-Message-ID: <alpine.LFD.2.00.1103162207130.26889@xanadu.home>
-References: <201103111331.13932.arnd@arndb.de> <20110311152938.GB29920@sirena.org.uk> <201103111654.04089.arnd@arndb.de> <20110311160308.GQ1760@opensource.wolfsonmicro.com> <20110311161421.GA7843@kroah.com> <20110311162759.GS1760@opensource.wolfsonmicro.com>
- <20110311163522.GA9291@kroah.com> <20110311164850.GT1760@opensource.wolfsonmicro.com> <20110311165642.GA9996@kroah.com> <20110311170807.GV1760@opensource.wolfsonmicro.com> <20110311172345.GA10876@kroah.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 16 Mar 2011 22:23:37 -0400
+Message-ID: <4D81708D.5090607@linux.vnet.ibm.com>
+Date: Wed, 16 Mar 2011 23:23:09 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: James Morris <jmorris@namei.org>
+CC: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Peter Huewe <huewe.external.infineon@googlemail.com>
+Subject: [GIT PULL] TPM driver robustness fixes
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11031702-2362-0000-0000-00000234E10E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Mar 2011, Greg KH wrote:
-
-> On Fri, Mar 11, 2011 at 05:08:07PM +0000, Mark Brown wrote:
-> > On Fri, Mar 11, 2011 at 08:56:42AM -0800, Greg KH wrote:
-> > > On Fri, Mar 11, 2011 at 04:48:50PM +0000, Mark Brown wrote:
-> > 
-> > > > USB itself is discoverable but the when the USB bus you're looking at is
-> > > > one that's soldered down onto a board in a specific design all bets are
-> > > > off regarding how complete the information you get will be.  On a basic
-> > > > level the designers may have done things like omit the configuration
-> > > > EEPROMs that would set the device IDs that the driver should be relying
-> > > > on to identify the hardware configuration.  There may be other, nastier,
-> > > > things going on.
-> > 
-> > > Then you use the existing platform data for your USB host controller
-> > > driver.  Doesn't that work today just fine?
-> > 
-> > Wrong end of the bus.  This stuff is simple enough to deal with in a
-> > system specific fashion, the standard solution would be to patch the
-> > relevant drivers to hard code whatever is required.
-> 
-> What drivers need this?  Specifics please.
-
-Let me quote Arnd Bergmann:
-
-|I have just verified with my Pandaboard that the pins on the SMSC9514
-|usb ethernet that are meant to be connected to a serial EEPROM are
-|indeed not connected anywhere.
-
-> I would brand these types of systems "extremely broken" :)
-
-Indeed.  But to hardware people, modifying the software is always cheaper.
-
-> Anyway, specifics are the best way forward if anyone has such a messed
-> up system.
-
-PandaBoards are becoming quite popular.
+Hi James,
 
 
-Nicolas
+The following changes since commit 2e270d84223262a38d4755c61d55f5c73ea89e56:
+
+   Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2011-03-16 13:26:17 -0700)
+
+are available in the git repository at:
+
+   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+
+Peter Huewe (3):
+
+       This patch changes the call of tpm_transmit by supplying the size of the userspace buffer instead of TPM_BUFSIZE
+
+       This patch fixes information leakage to the userspace by initializing the data buffer to zero
+
+       Since the buffer might contain security related data it might be a good idea to zero the buffer after we have copied it to userspace.
+
+  drivers/char/tpm/tpm.c |    7 ++++---
+
+  1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+
+index 1f46f1c..c6d2cde 100644
+
+--- a/drivers/char/tpm/tpm.c
+
++++ b/drivers/char/tpm/tpm.c
+
+@@ -427,7 +427,7 @@ static ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+
+      goto out;
+
+  
+
+  out_recv:
+
+-    rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
+
++    rc = chip->vendor.recv(chip, (u8 *) buf, TPM_BUFSIZE);
+
+      if (rc<  0)
+
+          dev_err(chip->dev,
+
+              "tpm_transmit: tpm_recv: error %zd\n", rc);
+
+@@ -980,7 +980,7 @@ int tpm_open(struct inode *inode, struct file *file)
+
+          return -EBUSY;
+
+      }
+
+  
+
+-    chip->data_buffer = kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
+
++    chip->data_buffer = kzalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
+
+      if (chip->data_buffer == NULL) {
+
+          clear_bit(0,&chip->is_open);
+
+          put_device(chip->dev);
+
+@@ -1035,7 +1035,7 @@ ssize_t tpm_write(struct file *file, const char __user *buf,
+
+      }
+
+  
+
+      /* atomic tpm command send and result receive */
+
+-    out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
+
++    out_size = tpm_transmit(chip, chip->data_buffer, in_size);
+
+  
+
+      atomic_set(&chip->data_pending, out_size);
+
+      mutex_unlock(&chip->buffer_mutex);
+
+@@ -1064,6 +1064,7 @@ ssize_t tpm_read(struct file *file, char __user *buf,
+
+          mutex_lock(&chip->buffer_mutex);
+
+          if (copy_to_user(buf, chip->data_buffer, ret_size))
+
+              ret_size = -EFAULT;
+
++        memset(chip->data_buffer, 0, ret_size);
+
+          mutex_unlock(&chip->buffer_mutex);
+
+      }
+
+  
+
