@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1CQLE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:04:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60721 "EHLO hera.kernel.org"
+	id S1753958Ab1CQLEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:04:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60734 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab1CQLEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:04:25 -0400
-Date: Thu, 17 Mar 2011 11:03:53 GMT
-From: tip-bot for Josh Hunt <johunt@akamai.com>
+	id S1753851Ab1CQLEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 07:04:44 -0400
+Date: Thu, 17 Mar 2011 11:04:18 GMT
+From: tip-bot for Marcin Slusarz <marcin.slusarz@gmail.com>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        tdhimant@akamai.com, johunt@akamai.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, johunt@akamai.com,
-        tdhimant@akamai.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        acme@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1300241800-30281-1-git-send-email-johunt@akamai.com>
-References: <1300241800-30281-1-git-send-email-johunt@akamai.com>
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        mitake@dcl.info.waseda.ac.jp, marcin.slusarz@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        mitake@dcl.info.waseda.ac.jp, marcin.slusarz@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110222174715.GC9687@joi.lan>
+References: <20110222174715.GC9687@joi.lan>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Version incorrect with some versions of grep
-Message-ID: <tip-58d406ed6a5f1ca4bc1dba5390b718c67847fa5f@git.kernel.org>
-Git-Commit-ID: 58d406ed6a5f1ca4bc1dba5390b718c67847fa5f
+Subject: [tip:perf/urgent] perf lock: Fix sorting by wait_min
+Message-ID: <tip-9df03abeda3d928ecdedc0f427336931eac0a477@git.kernel.org>
+Git-Commit-ID: 9df03abeda3d928ecdedc0f427336931eac0a477
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 17 Mar 2011 11:03:55 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 17 Mar 2011 11:04:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  58d406ed6a5f1ca4bc1dba5390b718c67847fa5f
-Gitweb:     http://git.kernel.org/tip/58d406ed6a5f1ca4bc1dba5390b718c67847fa5f
-Author:     Josh Hunt <johunt@akamai.com>
-AuthorDate: Tue, 15 Mar 2011 19:16:40 -0700
+Commit-ID:  9df03abeda3d928ecdedc0f427336931eac0a477
+Gitweb:     http://git.kernel.org/tip/9df03abeda3d928ecdedc0f427336931eac0a477
+Author:     Marcin Slusarz <marcin.slusarz@gmail.com>
+AuthorDate: Tue, 22 Feb 2011 18:47:15 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 16 Mar 2011 08:59:50 -0300
+CommitDate: Wed, 16 Mar 2011 09:05:58 -0300
 
-perf tools: Version incorrect with some versions of grep
+perf lock: Fix sorting by wait_min
 
-Some versions of grep don't treat '\s' properly. When building perf on such
-systems and using a kernel tarball the perf version is unable to be determined
-from the main kernel Makefile and the user is left with a version of '..'.
-Replacing the use of '\s' with '[[:space:]]', which should work in all grep
-versions, gives a usable version number.
+If lock was uncontended, wait_time_min == ULLONG_MAX, so we need to
+handle this case differently to show high wait times first
 
-Reported-by: Tapan Dhimant <tdhimant@akamai.com>
+Acked-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tapan Dhimant <tdhimant@akamai.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: stable@kernel.org
-LKML-Reference: <1300241800-30281-1-git-send-email-johunt@akamai.com>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
+LKML-Reference: <20110222174715.GC9687@joi.lan>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/PERF-VERSION-GEN |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/builtin-lock.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 97d7656..26d4d3f 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -23,10 +23,10 @@ if test -d ../../.git -o -f ../../.git &&
- then
- 	VN=$(echo "$VN" | sed -e 's/-/./g');
- else
--	eval `grep '^VERSION\s*=' ../../Makefile|tr -d ' '`
--	eval `grep '^PATCHLEVEL\s*=' ../../Makefile|tr -d ' '`
--	eval `grep '^SUBLEVEL\s*=' ../../Makefile|tr -d ' '`
--	eval `grep '^EXTRAVERSION\s*=' ../../Makefile|tr -d ' '`
-+	eval $(grep '^VERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
-+	eval $(grep '^PATCHLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
-+	eval $(grep '^SUBLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
-+	eval $(grep '^EXTRAVERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 2e93f99..7a2a79d 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -202,9 +202,20 @@ static struct thread_stat *thread_stat_findnew_first(u32 tid)
+ SINGLE_KEY(nr_acquired)
+ SINGLE_KEY(nr_contended)
+ SINGLE_KEY(wait_time_total)
+-SINGLE_KEY(wait_time_min)
+ SINGLE_KEY(wait_time_max)
  
- 	VN="${VERSION}.${PATCHLEVEL}.${SUBLEVEL}${EXTRAVERSION}"
- fi
++static int lock_stat_key_wait_time_min(struct lock_stat *one,
++					struct lock_stat *two)
++{
++	u64 s1 = one->wait_time_min;
++	u64 s2 = two->wait_time_min;
++	if (s1 == ULLONG_MAX)
++		s1 = 0;
++	if (s2 == ULLONG_MAX)
++		s2 = 0;
++	return s1 > s2;
++}
++
+ struct lock_key {
+ 	/*
+ 	 * name: the value for specify by user
