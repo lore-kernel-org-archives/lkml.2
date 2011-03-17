@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab1CQIJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 04:09:59 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52918 "EHLO mx2.mail.elte.hu"
+	id S1752335Ab1CQIMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 04:12:21 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53269 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000Ab1CQIJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 04:09:56 -0400
-Date: Thu, 17 Mar 2011 09:09:42 +0100
+	id S1750851Ab1CQIMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 04:12:19 -0400
+Date: Thu, 17 Mar 2011 09:11:34 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/2] oprofile cleanups
-Message-ID: <20110317080942.GA26190@elte.hu>
-References: <1300298305-9164-1-git-send-email-robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Josh Hunt <johunt@akamai.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, stable@kernel.org,
+        Tapan Dhimant <tdhimant@akamai.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 0/2] perf/urgent fixes
+Message-ID: <20110317081134.GB26190@elte.hu>
+References: <1300304899-21920-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300298305-9164-1-git-send-email-robert.richter@amd.com>
+In-Reply-To: <1300304899-21920-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -32,19 +37,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Robert Richter <robert.richter@amd.com> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> These 2 patches contain some cleanups I made while reviewing oprofile
-> s390 code. I already applied them to my oprofile git tree, but please
-> take a look at it anyway.
+> Hi Ingo,
 > 
-> Ingo, since the patches are cleanups, I think it is ok to add them to
-> my oprofile pull request for .39 for you that I will send out soon.
-> All other patches are already in linux-next for several weeks. Is this
-> ok for you too?
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Josh Hunt (1):
+>   perf tools: Version incorrect with some versions of grep
+> 
+> Marcin Slusarz (1):
+>   perf lock: Fix sorting by wait_min
+> 
+>  tools/perf/builtin-lock.c        |   13 ++++++++++++-
+>  tools/perf/util/PERF-VERSION-GEN |    8 ++++----
+>  2 files changed, 16 insertions(+), 5 deletions(-)
 
-Yeah, assuming Mike's remarks have been addressed.
-
-Thanks,
+Pulled, thanks Arnaldo!
 
 	Ingo
