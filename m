@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab1CQKYZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 06:24:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60777 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab1CQKYX (ORCPT
+	id S1753679Ab1CQK0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 06:26:04 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:6769 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab1CQK0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 06:24:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=FhTrJJ6LMapa1h6PjPjZvHfOrOGtoTa84OPLhuBBRGHRsrXyiTRxiuDGOCz09Joy8a
-         Kj9fB1NxtOEkS6EVXCEtlGpXy4WMTk/9IzKMygRYR/6rfT+zdEE6BQjisghb8KgaNWtG
-         AOu9m1QW8UojxaRcCTcT65fepBK2bJ9b/tzms=
-Subject: Re: [PATCH v2] net: add Faraday FTGMAC100 Gigabit Ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ratbert@faraday-tech.com
-In-Reply-To: <1300355238-1619-1-git-send-email-ratbert.chuang@gmail.com>
-References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1300355238-1619-1-git-send-email-ratbert.chuang@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Mar 2011 11:24:17 +0100
-Message-ID: <1300357457.3133.92.camel@edumazet-laptop>
+	Thu, 17 Mar 2011 06:26:01 -0400
+Date: Thu, 17 Mar 2011 11:25:30 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Dirk Eibach <eibach@gdsys.de>,
+        devicetree-discuss@lists.ozlabs.org, rdunlap@xenotime.net,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] hwmon: (ads1015) Add devicetree documentation
+Message-ID: <20110317112530.50dc4915@endymion.delvare>
+In-Reply-To: <AANLkTikXzJEAYg7+5ekMzTj_V-Hs63Psgru4Vc_QGhRy@mail.gmail.com>
+References: <1299143805-13133-1-git-send-email-eibach@gdsys.de>
+	<20110303115151.GF3649@pengutronix.de>
+	<20110303132025.51e0d92e@endymion.delvare>
+	<20110303132549.GG3649@pengutronix.de>
+	<20110303172653.GB22940@angua.secretlab.ca>
+	<20110303230253.0e8455c2@endymion.delvare>
+	<AANLkTikXzJEAYg7+5ekMzTj_V-Hs63Psgru4Vc_QGhRy@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 17 mars 2011 à 17:47 +0800, Po-Yu Chuang a écrit :
-> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+On Thu, 3 Mar 2011 15:09:28 -0700, Grant Likely wrote:
+> On Thu, Mar 3, 2011 at 3:02 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> > I will leave it up to Dirk to decide how much time he wants to spend on
+> > this. He has already been very patient with the driver review process
+> > and I do not want to abuse his patience.
 > 
-> FTGMAC100 Ethernet Media Access Controller supports 10/100/1000 Mbps
-> and MII/GMII.  This driver has been working on some ARM/NDS32 SoC's
-> including Faraday A369 and Andes AG102.
-> 
-> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
-> ---
+> BTW Dirk, I'm happy to help show how to write the parser code for the
+> sub-node approach if you need it.
 
-Did you tried GRO support ?
+Grant, Wolfram, how are such patches committed? Documentation/devicetree/
+isn't listed in MAINTAINERS. Is it OK for me to commit it once Dirk gets
+your approval? Or do you prefer to commit it yourself?
 
-
+-- 
+Jean Delvare
