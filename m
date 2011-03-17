@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab1CQXDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 19:03:20 -0400
-Received: from fieldses.org ([174.143.236.118]:50280 "EHLO fieldses.org"
+	id S1756085Ab1CQXEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 19:04:30 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58291 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754971Ab1CQXDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 19:03:17 -0400
-Date: Thu, 17 Mar 2011 19:03:15 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: 2.6.38: Quota over NFS4
-Message-ID: <20110317230315.GG31845@fieldses.org>
-References: <20110317133247.GB6424@os.inf.tu-dresden.de>
- <20110317173805.GB30180@fieldses.org>
- <20110317213302.GA2445@os.inf.tu-dresden.de>
- <20110317222732.GC31845@fieldses.org>
- <20110317225908.GB2445@os.inf.tu-dresden.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317225908.GB2445@os.inf.tu-dresden.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754971Ab1CQXE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 19:04:28 -0400
+Date: Fri, 18 Mar 2011 10:04:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Changli Gao <xiaosuo@gmail.com>, linux-rdma@vger.kernel.org
+Subject: linux-next: build warning in Linus' tree
+Message-Id: <20110318100418.6556c92c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__18_Mar_2011_10_04_18_+1100_Q7uStZrPoxj+6nhz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 11:59:08PM +0100, Adam Lackorzynski wrote:
-> 
-> On Thu Mar 17, 2011 at 18:27:32 -0400, J. Bruce Fields wrote:
-> > On Thu, Mar 17, 2011 at 10:33:03PM +0100, Adam Lackorzynski wrote:
-> > > 
-> > > On Thu Mar 17, 2011 at 13:38:05 -0400, J. Bruce Fields wrote:
-> > > > On Thu, Mar 17, 2011 at 02:32:47PM +0100, Adam Lackorzynski wrote:
-> > > > > Hello,
-> > > > > 
-> > > > > I'm seeing a problem with quotas in a system where the server running
-> > > > > 2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
-> > > > > version does not seem to play a role, checked with 2.6.38, 2.6.37 and
-> > > > > 2.6.36. The following script and output show the problem:
-> > > > > 
-> > > > > #! /bin/sh
-> > > > > 
-> > > > > quota | grep home
-> > > > > du
-> > > > > cp /bin/ls x1
-> > > > > du
-> > > > > cat x1 > /dev/null
-> > > > > rm x1
-> > > > > du
-> > > > > quota | grep home
-> > > > > 
-> > > > > Output:
-> > > > > 
-> > > > >    homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
-> > > > > 0       .
-> > > > > 96      .
-> > > > > 0       .
-> > > > >    homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
-> > > > > 
-> > > > > 
-> > > > > As can be seen the 96 kb are still accounted on the quota of the user.
-> > > > > Removing the 'cat' command from the script makes the quota be ok again
-> > > > > (original value). Also mounting via nfs3 does not exhibit it, same for running
-> > > > > the script on the nfs-server directly.
-> > > > 
-> > > > Does "df" show the same problem?
-> > > 
-> > > With '/bin/ls' it does not change at all, so I took a bigger binary
-> > > which yields to:
-> > > 
-> > >    homes:/home/ 8203780  9072000 9174400          403688  500000  550000        
-> > > 0       .
-> > > Filesystem           1K-blocks      Used Available Use% Mounted on
-> > >   homes:/home        513671168 335251456 178419712  66% /tmp/xx
-> > > 4592    .
-> > > Filesystem           1K-blocks      Used Available Use% Mounted on
-> > >   homes:/home        513671168 335256576 178414592  66% /tmp/xx
-> > > 0       .
-> > > Filesystem           1K-blocks      Used Available Use% Mounted on
-> > >   homes:/home        513671168 335256576 178414592  66% /tmp/xx
-> > >    homes:/home/ 8208372  9072000 9174400          403689  500000  550000        
-> > > 
-> > > So yes, it seems to be there as well.
-> > 
-> > It might be easier to see with "df -i" (assuming we're leaking an
-> > inode).
-> 
-> Result is as expected, inode goes one up and not down again.
+--Signature=_Fri__18_Mar_2011_10_04_18_+1100_Q7uStZrPoxj+6nhz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is this something special about binaries?  If you copy something other
-than a binary, do you not see the bug?
+Hi all,
 
---b.
+After merging the Linus' tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
+
+drivers/infiniband/core/addr.c: In function 'addr4_resolve':
+drivers/infiniband/core/addr.c:188: warning: 'ret' may be used uninitialize=
+d in this function
+
+I didn't notice this one before, sorry.
+
+I don't know what introduced it, but the third if statement in the
+function will make us use "ret" uninitialised.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__18_Mar_2011_10_04_18_+1100_Q7uStZrPoxj+6nhz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNgpNyAAoJEDMEi1NhKgbsvJ8H/RG5X3ZUgtexwYrofgyqw4YU
+kRROlLz9Dy/CH0v9rV+S/xLvnxSGume1XjOEVVT/LI4bA5NbeSDwpZ55ZlJ/DyCi
+cYnGC+4GrLvUDqJ9zA5ekP93MBbevzq9icaZDa9ndZiA5o+QAh53rwShieZd25Rw
+6vc1gbYJ2boYLuSEzWF5VPpWaevvblpYMd7EuFbqBTvoGARu1yogUraKQsmLGGp8
++EQ0lHOZutWe8sDTVwuoZkGQ/MHQYq1JpGl95pNgEo6X0ekulXtuH0LHmqPff38D
+aTI6SpkpSxJqxKUFicHGO8gdBkF6AShekxJP15cE77wUEutNFSixDfi4upFOTEs=
+=X7KB
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__18_Mar_2011_10_04_18_+1100_Q7uStZrPoxj+6nhz--
