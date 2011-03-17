@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab1CQVmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:42:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36836 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755728Ab1CQVmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:42:54 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3] mfd: Constify WM8994 write path
-Date: Thu, 17 Mar 2011 21:42:30 +0000
-Message-Id: <1300398150-11834-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300398150-11834-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1300398150-11834-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1755865Ab1CQVqg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:46:36 -0400
+Received: from kroah.org ([198.145.64.141]:49998 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755673Ab1CQVqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:46:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Mar 17 14:29:26 2011
+Message-Id: <20110317212926.781310275@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Thu, 17 Mar 2011 14:27:51 -0700
+From: Greg KH <gregkh@suse.de>
+To: stable-review@kernel.org, stable@kernel.org
+Cc: greg@kroah.com, benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        anton@samba.org, Matt Evans <matt@ozlabs.org>,
+        Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
+Subject: [421/474] powerpc/kexec: Fix orphaned offline CPUs across kexec
+In-Reply-To: <20110317213822.GA27980@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow const buffers to be passed in without type safety issues.
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+------------------
+Content-Length: 2566
+Lines: 74
+
+From: Matt Evans <matt@ozlabs.org>
+
+Commit: e8e5c2155b0035b6e04f29be67f6444bc914005b upstream
+
+When CPU hotplug is used, some CPUs may be offline at the time a kexec is
+performed.  The subsequent kernel may expect these CPUs to be already running,
+and will declare them stuck.  On pseries, there's also a soft-offline (cede)
+state that CPUs may be in; this can also cause problems as the kexeced kernel
+may ask RTAS if they're online -- and RTAS would say they are.  The CPU will
+either appear stuck, or will cause a crash as we replace its cede loop beneath
+it.
+
+This patch kicks each present offline CPU awake before the kexec, so that
+none are forever lost to these assumptions in the subsequent kernel.
+
+Now, the behaviour is that all available CPUs that were offlined are now
+online & usable after the kexec.  This mimics the behaviour of a full reboot
+(on which all CPUs will be restarted).
+
+Signed-off-by: Matt Evans <matt@ozlabs.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
+cc: Anton Blanchard <anton@samba.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/mfd/wm8994-core.c       |    8 ++++----
- include/linux/mfd/wm8994/core.h |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/machine_kexec_64.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 475bd50..3f5b7cc 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -97,9 +97,9 @@ int wm8994_bulk_read(struct wm8994 *wm8994, unsigned short reg,
- EXPORT_SYMBOL_GPL(wm8994_bulk_read);
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -15,6 +15,7 @@
+ #include <linux/thread_info.h>
+ #include <linux/init_task.h>
+ #include <linux/errno.h>
++#include <linux/cpu.h>
  
- static int wm8994_write(struct wm8994 *wm8994, unsigned short reg,
--			int bytes, void *src)
-+			int bytes, const void *src)
- {
--	u16 *buf = src;
-+	const u16 *buf = src;
- 	int i;
- 
- 	BUG_ON(bytes % 2);
-@@ -146,7 +146,7 @@ EXPORT_SYMBOL_GPL(wm8994_reg_write);
-  * @buf: Buffer to write from.  Data must be big-endian formatted.
-  */
- int wm8994_bulk_write(struct wm8994 *wm8994, unsigned short reg,
--		      int count, u16 *buf)
-+		      int count, const u16 *buf)
- {
- 	int ret;
- 
-@@ -583,7 +583,7 @@ static int wm8994_i2c_read_device(struct wm8994 *wm8994, unsigned short reg,
+ #include <asm/page.h>
+ #include <asm/current.h>
+@@ -169,10 +170,34 @@ static void kexec_smp_down(void *arg)
+ 	/* NOTREACHED */
  }
  
- static int wm8994_i2c_write_device(struct wm8994 *wm8994, unsigned short reg,
--				   int bytes, void *src)
-+				   int bytes, const void *src)
++/*
++ * We need to make sure each present CPU is online.  The next kernel will scan
++ * the device tree and assume primary threads are online and query secondary
++ * threads via RTAS to online them if required.  If we don't online primary
++ * threads, they will be stuck.  However, we also online secondary threads as we
++ * may be using 'cede offline'.  In this case RTAS doesn't see the secondary
++ * threads as offline -- and again, these CPUs will be stuck.
++ *
++ * So, we online all CPUs that should be running, including secondary threads.
++ */
++static void wake_offline_cpus(void)
++{
++	int cpu = 0;
++
++	for_each_present_cpu(cpu) {
++		if (!cpu_online(cpu)) {
++			printk(KERN_INFO "kexec: Waking offline cpu %d.\n",
++					cpu);
++			cpu_up(cpu);
++		}
++	}
++}
++
+ static void kexec_prepare_cpus(void)
  {
- 	struct i2c_client *i2c = wm8994->control_data;
- 	struct i2c_msg xfer[2];
-diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
-index cb7d3ae..f0b69cd 100644
---- a/include/linux/mfd/wm8994/core.h
-+++ b/include/linux/mfd/wm8994/core.h
-@@ -59,7 +59,7 @@ struct wm8994 {
- 	int (*read_dev)(struct wm8994 *wm8994, unsigned short reg,
- 			int bytes, void *dest);
- 	int (*write_dev)(struct wm8994 *wm8994, unsigned short reg,
--			 int bytes, void *src);
-+			 int bytes, const void *src);
+ 	int my_cpu, i, notified=-1;
  
- 	void *control_data;
++	wake_offline_cpus();
+ 	smp_call_function(kexec_smp_down, NULL, /* wait */0);
+ 	my_cpu = get_cpu();
  
-@@ -89,7 +89,7 @@ int wm8994_set_bits(struct wm8994 *wm8994, unsigned short reg,
- int wm8994_bulk_read(struct wm8994 *wm8994, unsigned short reg,
- 		     int count, u16 *buf);
- int wm8994_bulk_write(struct wm8994 *wm8994, unsigned short reg,
--		     int count, u16 *buf);
-+		     int count, const u16 *buf);
- 
- 
- /* Helper to save on boilerplate */
--- 
-1.7.4.1
+
 
