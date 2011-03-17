@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab1CQTI3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 15:08:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41327 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab1CQTI0 (ORCPT
+	id S1755091Ab1CQTJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 15:09:32 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37836 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751924Ab1CQTJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 15:08:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=S4upRmfkhkjVrIOg1trJSpforj85lUZyMutcaAZcGJ2reQjOO2ro9ao5kRxcbNaBAr
-         h5WKk+FoOfPtyq+YEMom2UiL5//pmZE91AaQW2Usszl+PvwhZDb/Oa7kVEGjnTisG8Od
-         /BUvIYqIt/ibOgO49dE2TMFKSLAGtTQ63LodU=
-MIME-Version: 1.0
-In-Reply-To: <20110317104434.GB22723@ZenIV.linux.org.uk>
-References: <20110316235608.GY22723@ZenIV.linux.org.uk>
-	<AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
-	<20110317072344.GZ22723@ZenIV.linux.org.uk>
-	<AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
-	<20110317104434.GB22723@ZenIV.linux.org.uk>
-Date: Thu, 17 Mar 2011 12:08:25 -0700
-X-Google-Sender-Auth: J7RLnQoI7i86zTxCNQ6jMtbwjH4
-Message-ID: <AANLkTi=rjVcEE8o-yDWma9G973kd4ikWLm+-cd3emwCO@mail.gmail.com>
-Subject: Re: [git pull] mnt_devname queue
-From: Tony Luck <tony.luck@intel.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Xiaotian Feng <xtfeng@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Mar 2011 15:09:29 -0400
+Date: Thu, 17 Mar 2011 19:09:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com
+Subject: Re: [PATCH]: SMBIOS: Add initial code and export version via sysfs
+Message-ID: <20110317190932.074949b4@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110317135754.25241.88177.sendpatchset@prarit.bos.redhat.com>
+References: <20110317135754.25241.88177.sendpatchset@prarit.bos.redhat.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 3:44 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Thu, Mar 17, 2011 at 03:28:47PM +0800, Xiaotian Feng wrote:
+> +static struct class smbios_class = {
+> +	.name = "smbios",
+> +	.dev_release = (void(*)(struct device *)) kfree,
+> +};
 
-Thanks for all the tips - I'll work on fixing (re-writing :-) pstore
+I thought the policy was no new classes- Greg ?
 
--Tony
+> +		smbios_iounmap(buf, sizeof(*smbios_step));
+> +		printk(KERN_INFO "SMBIOS: Invalid STEP table checksum = %u\n",
+> +		       chksum1);
+
+Surely this isn't INFO ?
+
