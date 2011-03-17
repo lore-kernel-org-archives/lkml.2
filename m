@@ -1,137 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab1CQLtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:49:40 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50428 "EHLO
+	id S1754286Ab1CQLty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:49:54 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38945 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754070Ab1CQLte (ORCPT
+	by vger.kernel.org with ESMTP id S1754218Ab1CQLtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:49:34 -0400
-X-Sasl-enc: h4jqcZ/2xyiBsmc27nMwMSvoabjDK+2+WkYU5cF/P+iH 1300362573
+	Thu, 17 Mar 2011 07:49:39 -0400
+X-Sasl-enc: UDcI+6B/tUsLhVX9vWOo9YhGLergi0X9wuBCzWrRe423 1300362578
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: tyhicks@linux.vnet.ibm.com
 Cc: kirkland@canonical.com, dhowells@redhat.com, jmorris@namei.org,
         linux-fsdevel@vger.kernel.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org, Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH 4/5] eCryptfs: move ecryptfs_find_auth_tok_for_sig() call before mutex_lock
-Date: Thu, 17 Mar 2011 12:48:53 +0100
-Message-Id: <1300362538-11502-5-git-send-email-roberto.sassu@polito.it>
+Subject: [PATCH 5/5] eCryptfs: write lock requested keys
+Date: Thu, 17 Mar 2011 12:48:54 +0100
+Message-Id: <1300362538-11502-6-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1300362538-11502-1-git-send-email-roberto.sassu@polito.it>
 References: <1300362538-11502-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----CA2C7867156BEA1DCB39980552E23B53"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----471AFFEEC2D498EF26DA2D8C4A4E8024"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------CA2C7867156BEA1DCB39980552E23B53
+------471AFFEEC2D498EF26DA2D8C4A4E8024
 
-The ecryptfs_find_auth_tok_for_sig() call is moved before the
-mutex_lock(s->tfm_mutex) instruction in order to avoid possible deadlocks
-that may occur by holding the lock on the two semaphores 'key->sem' and
-'s->tfm_mutex' in reverse order.
+A requested key is write locked in order to prevent modifications on the
+authentication token while it is being used.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- fs/ecryptfs/keystore.c |   42 +++++++++++++++++++++++-------------------
- 1 files changed, 23 insertions(+), 19 deletions(-)
+ fs/ecryptfs/keystore.c |   23 ++++++++++++++++++-----
+ fs/ecryptfs/main.c     |    4 +++-
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index e35d745..d066217 100644
+index d066217..3eac4ba 100644
 --- a/fs/ecryptfs/keystore.c
 +++ b/fs/ecryptfs/keystore.c
-@@ -538,6 +538,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
- 			     char *filename, size_t filename_size)
- {
- 	struct ecryptfs_write_tag_70_packet_silly_stack *s;
-+	struct ecryptfs_auth_tok *auth_tok;
- 	struct key *auth_tok_key = NULL;
- 	int rc = 0;
+@@ -428,6 +428,7 @@ ecryptfs_find_global_auth_tok_for_sig(
+ 			if (rc)
+ 				goto out;
  
-@@ -550,6 +551,16 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
- 	}
- 	s->desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
- 	(*packet_size) = 0;
-+	rc = ecryptfs_find_auth_tok_for_sig(
-+		&auth_tok_key,
-+		&auth_tok, mount_crypt_stat,
-+		mount_crypt_stat->global_default_fnek_sig);
-+	if (rc) {
-+		printk(KERN_ERR "%s: Error attempting to find auth tok for "
-+		       "fnek sig [%s]; rc = [%d]\n", __func__,
-+		       mount_crypt_stat->global_default_fnek_sig, rc);
-+		goto out;
++			down_write(&(walker->global_auth_tok_key->sem));
+ 			rc = ecryptfs_verify_auth_tok_from_key(
+ 					walker->global_auth_tok_key, auth_tok);
+ 			if (rc) {
+@@ -435,6 +436,7 @@ ecryptfs_find_global_auth_tok_for_sig(
+ 				      "Invalidating auth tok with sig = [%s]\n",
+ 				      sig);
+ 				walker->flags |= ECRYPTFS_AUTH_TOK_INVALID;
++				up_write(&(walker->global_auth_tok_key->sem));
+ 				key_put(walker->global_auth_tok_key);
+ 				walker->global_auth_tok_key = NULL;
+ 				mount_crypt_stat->num_global_auth_toks--;
+@@ -786,8 +788,10 @@ out_free_unlock:
+ out_unlock:
+ 	mutex_unlock(s->tfm_mutex);
+ out:
+-	if (auth_tok_key)
++	if (auth_tok_key) {
++		up_write(&(auth_tok_key->sem));
+ 		key_put(auth_tok_key);
 +	}
- 	rc = ecryptfs_get_tfm_and_mutex_for_cipher_name(
- 		&s->desc.tfm,
- 		&s->tfm_mutex, mount_crypt_stat->global_default_fn_cipher_name);
-@@ -635,16 +646,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
- 		goto out_free_unlock;
+ 	kfree(s);
+ 	return rc;
+ }
+@@ -1025,8 +1029,10 @@ out:
+ 		(*filename_size) = 0;
+ 		(*filename) = NULL;
  	}
- 	dest[s->i++] = s->cipher_code;
--	rc = ecryptfs_find_auth_tok_for_sig(
--		&auth_tok_key,
--		&s->auth_tok, mount_crypt_stat,
--		mount_crypt_stat->global_default_fnek_sig);
--	if (rc) {
--		printk(KERN_ERR "%s: Error attempting to find auth tok for "
--		       "fnek sig [%s]; rc = [%d]\n", __func__,
--		       mount_crypt_stat->global_default_fnek_sig, rc);
--		goto out_free_unlock;
--	}
-+	s->auth_tok = auth_tok;
- 	/* TODO: Support other key modules than passphrase for
- 	 * filename encryption */
- 	if (s->auth_tok->token_type != ECRYPTFS_PASSWORD) {
-@@ -831,6 +833,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
- 			     char *data, size_t max_packet_size)
- {
- 	struct ecryptfs_parse_tag_70_packet_silly_stack *s;
-+	struct ecryptfs_auth_tok *auth_tok;
- 	struct key *auth_tok_key = NULL;
- 	int rc = 0;
- 
-@@ -898,6 +901,15 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
- 		       __func__, s->cipher_code);
+-	if (auth_tok_key)
++	if (auth_tok_key) {
++		up_write(&(auth_tok_key->sem));
+ 		key_put(auth_tok_key);
++	}
+ 	kfree(s);
+ 	return rc;
+ }
+@@ -1589,9 +1595,10 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
+ 		(*auth_tok_key) = NULL;
  		goto out;
  	}
-+	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
-+					    &auth_tok, mount_crypt_stat,
-+					    s->fnek_sig_hex);
-+	if (rc) {
-+		printk(KERN_ERR "%s: Error attempting to find auth tok for "
-+		       "fnek sig [%s]; rc = [%d]\n", __func__, s->fnek_sig_hex,
-+		       rc);
-+		goto out;
+-
++	down_write(&(*auth_tok_key)->sem);
+ 	rc = ecryptfs_verify_auth_tok_from_key(*auth_tok_key, auth_tok);
+ 	if (rc) {
++		up_write(&(*auth_tok_key)->sem);
+ 		key_put(*auth_tok_key);
+ 		(*auth_tok_key) = NULL;
+ 		goto out;
+@@ -1844,6 +1851,7 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_stat *crypt_stat,
+ find_next_matching_auth_tok:
+ 	found_auth_tok = 0;
+ 	if (auth_tok_key) {
++		up_write(&(auth_tok_key->sem));
+ 		key_put(auth_tok_key);
+ 		auth_tok_key = NULL;
+ 	}
+@@ -1930,8 +1938,10 @@ found_matching_auth_tok:
+ out_wipe_list:
+ 	wipe_auth_tok_list(&auth_tok_list);
+ out:
+-	if (auth_tok_key)
++	if (auth_tok_key) {
++		up_write(&(auth_tok_key->sem));
+ 		key_put(auth_tok_key);
 +	}
- 	rc = ecryptfs_get_tfm_and_mutex_for_cipher_name(&s->desc.tfm,
- 							&s->tfm_mutex,
- 							s->cipher_string);
-@@ -944,15 +956,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
- 	 * >= ECRYPTFS_MAX_IV_BYTES. */
- 	memset(s->iv, 0, ECRYPTFS_MAX_IV_BYTES);
- 	s->desc.info = s->iv;
--	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
--					    &s->auth_tok, mount_crypt_stat,
--					    s->fnek_sig_hex);
--	if (rc) {
--		printk(KERN_ERR "%s: Error attempting to find auth tok for "
--		       "fnek sig [%s]; rc = [%d]\n", __func__, s->fnek_sig_hex,
--		       rc);
--		goto out_free_unlock;
--	}
-+	s->auth_tok = auth_tok;
- 	/* TODO: Support other key modules than passphrase for
- 	 * filename encryption */
- 	if (s->auth_tok->token_type != ECRYPTFS_PASSWORD) {
+ 	return rc;
+ }
+ 
+@@ -2428,6 +2438,7 @@ ecryptfs_generate_key_packet_set(char *dest_base,
+ 			rc = -EINVAL;
+ 			goto out_release_key;
+ 		}
++		up_write(&(auth_tok_key->sem));
+ 		key_put(auth_tok_key);
+ 	}
+ 	if (!auth_tok_count) {
+@@ -2444,8 +2455,10 @@ ecryptfs_generate_key_packet_set(char *dest_base,
+ 		rc = -EIO;
+ 	}
+ out_release_key:
+-	if (rc)
++	if (rc) {
++		up_write(&(auth_tok_key->sem));
+ 		key_put(auth_tok_key);
++	}
+ out_free:
+ 	kmem_cache_free(ecryptfs_key_record_cache, key_rec);
+ out:
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index f079473..ada50a3 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -256,8 +256,10 @@ static int ecryptfs_init_global_auth_toks(
+ 			       "option: [%s]\n", global_auth_tok->sig);
+ 			global_auth_tok->flags |= ECRYPTFS_AUTH_TOK_INVALID;
+ 			goto out;
+-		} else
++		} else {
+ 			global_auth_tok->flags &= ~ECRYPTFS_AUTH_TOK_INVALID;
++			up_write(&(global_auth_tok->global_auth_tok_key)->sem);
++		}
+ 	}
+ out:
+ 	return rc;
 -- 
 1.7.4
 
 
-------CA2C7867156BEA1DCB39980552E23B53
+------471AFFEEC2D498EF26DA2D8C4A4E8024
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -169,17 +192,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAzMTcxMTQ5MzBaMCMGCSqG
-SIb3DQEJBDEWBBQzwvaiNKDaK2/C3kKkiilLJZZ/iDB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAzMTcxMTQ5MzZaMCMGCSqG
+SIb3DQEJBDEWBBSeaXKGXIRl2uZpmHrwGHbxvDmO0TB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQC1B3Dl0cy7lEs8AW9kjDrTzIWC
-TFMOBy0weruA3pT2zhdjDikKOr7I3cLl/Zjs36oKf0H8e4rySIzf8tyWgZf+LolD
-5rS9jPSW5sboA6Onnju3k7CrFKoNWrotgugRraOMqf6LCfPOVDkJn90wOYHzkvff
-NZF0ur+XAtEpj5p+bCcASYeY6o1Z8EoqJn5YPpnHDV8aonsFRHPLh7g+dCFD7fVs
-mXnSzVdUicEye9Qq7b8XtGvz+6nw9LX4LzWc36Y+CAJPZ5ZDVuOse+PbhVew2htU
-rGgTHFrX/4KKIZDs/Lo6qCOfMKuOC8oCB/L+V7JwEkysvXeuzg3YavHpv1J5
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBK+pBbxPo2/jR3wKVjLUk6yFLQ
+8wL6dB4CLHCEBSbGg1sqO3fBgXwFwkGfoIIcWx9xMU0y8wVPwkdEf7HkIjuQtx4d
+yDl6F5AaVMw6C/7AafiUqSWV0d5H80ujhDykSWV8OP0Z+3D8un8UD5eRbGRINj/x
+igb9Gn6BtssaDuAYEB7LFEH6yGuMqnPbr2Tp6xA2+DAUfGt4Sd6Q9U+2clAqpOeo
+ABqxaBf8MUEFGPUSpanHqBnGZsLsGMOhpxC2OKyUuoa2HFspEgKBVEfW8V9543X0
+z1K2F9mR82cjh2b78kwed8jggfHIwApT58Eo0Kvl9fWCuZamTRtB8Fm9AtDr
 
-------CA2C7867156BEA1DCB39980552E23B53--
+------471AFFEEC2D498EF26DA2D8C4A4E8024--
 
 
