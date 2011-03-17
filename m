@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab1CQCd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 22:33:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41417 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab1CQCdt (ORCPT
+	id S1753015Ab1CQChE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 22:37:04 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:41169 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753092Ab1CQCg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 22:33:49 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4D817300.80102@jp.fujitsu.com>
-Date: Thu, 17 Mar 2011 11:33:36 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Wed, 16 Mar 2011 22:36:56 -0400
+Date: Wed, 16 Mar 2011 22:36:54 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Mihai =?utf-8?q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
+cc: =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-wireless@vger.kernel.org>
+Subject: Re: [b43] usb device disconnects automatically after 1s
+In-Reply-To: <201103170106.58746.mihai.dontu@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1103162235400.2388-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>, Andi Kleen <andi@firstfloor.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] Check whether the new THP is poisoned before it is mapped
- to APL.
-References: <4D817234.9070106@jp.fujitsu.com>
-In-Reply-To: <4D817234.9070106@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the new THP is poisoned after the 4K pages are copied to it
-and mapped to APL, APL will be killed by kernel with SIGBUS signal.
+On Thu, 17 Mar 2011, Mihai Donțu wrote:
 
-There is not much doubt that it is a right behavior. But we can
-do our best to reduce the impact of the poisoned THP to the least.
+> On Thursday 17 March 2011 00:35:02 Rafał Miłecki wrote:
+> > 2011/3/16 Mihai Donțu <mihai.dontu@gmail.com>:
+> > > Added linux-usb and linux-wireless to CC.
+> > > 
+> > > On Thursday 17 March 2011 00:18:31 Mihai Donțu wrote:
+> > >> Hi,
+> > >> 
+> > >> I have just upgraded to 2.6.38 and discovered that I can't use my
+> > >> wireless device (BCM4312 802.11a/b/g). I press Fn + F2, the bluetooth
+> > >> led lights and after a second it turns off by itself. In dmesg I'm
+> > >> seeing the following:
+> > >> 
+> > >> [   88.167212] usb 1-2.2: new full speed USB device using ehci_hcd and
+> > >> address 5
+> > >> [   88.782330] usb 1-2.2: USB disconnect, address 5
+> > >> 
+> > >> I switched to 2.6.37 until I'll have some time to bisect this. In the
+> > >> mean time I have attached the output of lspci, interrupts and dmesg.
+> > 
+> > I suspect it's WMI related. What is your machine?
+> 
+> It's a Dell Latitude D520 but I can't find a link with full specs (in 
+> English).
+> 
+> > Please check:
+> > https://bugzilla.kernel.org/show_bug.cgi?id=31002
+> > http://comments.gmane.org/gmane.linux.acpi.devel/49577
+> > 
+> > I can't help you more, I just noticed such a issue reported on ACPI
+> > ML, you have to dig into this yourself (or someone else may help you).
+> 
+> Thanks for the links. I'll see if I can get anywhere from there.
 
-So add final poison check for the new THP before the THP is mapped
-to APL. If check find a poison, back to 4K pages and trash the THP.
+Another thing you can try is to get usbmon traces under both 2.6.37 and 
+2.6.38.  Instructions are in the kernel source file 
+Documentation/usb/usbmon.txt.
 
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
----
- mm/huge_memory.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 6345279..9aed3a8 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1776,13 +1776,14 @@ static void collapse_huge_page(struct mm_struct *mm,
- {
- 	pgd_t *pgd;
- 	pud_t *pud;
--	pmd_t *pmd, _pmd;
-+	pmd_t *pmd, _pmd, old_pmd;
- 	pte_t *pte;
- 	pgtable_t pgtable;
- 	struct page *new_page;
- 	spinlock_t *ptl;
- 	int isolated;
- 	unsigned long hstart, hend;
-+	struct page *p;
- 
- 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
- #ifndef CONFIG_NUMA
-@@ -1873,6 +1874,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 * to avoid the risk of CPU bugs in that area.
- 	 */
- 	_pmd = pmdp_clear_flush_notify(vma, address, pmd);
-+	old_pmd = _pmd;
- 	spin_unlock(&mm->page_table_lock);
- 
- 	spin_lock(ptl);
-@@ -1904,7 +1906,6 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	if (__collapse_huge_page_copy(pte, new_page, vma, address) == 0)
- 		goto out_poison;
- 
--	pte_unmap(pte);
- 	__SetPageUptodate(new_page);
- 	pgtable = pmd_pgtable(_pmd);
- 	VM_BUG_ON(page_count(pgtable) != 1);
-@@ -1921,6 +1922,15 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 */
- 	smp_wmb();
- 
-+	for (p = new_page; p < new_page + HPAGE_PMD_NR; p++) {
-+		if (PageHWPoison(p)) {
-+			_pmd = old_pmd;
-+			goto out_poison;
-+		}
-+	}
-+
-+	pte_unmap(pte);
-+
- 	spin_lock(&mm->page_table_lock);
- 	BUG_ON(!pmd_none(*pmd));
- 	page_add_new_anon_rmap(new_page, vma, address);
--- 
-1.7.1
-
+Alan Stern
 
