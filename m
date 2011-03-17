@@ -1,98 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266Ab1CQEX0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 00:23:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43388 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab1CQEXY (ORCPT
+	id S1751293Ab1CQEmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 00:42:18 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:20430 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1CQEmP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 00:23:24 -0400
+	Thu, 17 Mar 2011 00:42:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=TB+RATA7NZkORa/RaKCM7kbxH+kOa5qdJM9BtXutCTWaYX/wutc8hAjyBS2ijryYxF
-         g0W8ee8JinGnWOhhONKgfgNYtzhnC/Hpf0WsjblwSlx9OSTJewXFXAOaqpqIFrv4Fg/B
-         yhgjNLMggC8ztB7PjNYq8yfSE7GFX8KHucvJI=
-From: Darek Iwanski <darekiwanski13@gmail.com>
-To: gregkh@suse.de, apatard@mandriva.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Darek Iwanski <darekiwanski13@gmail.com>
-Subject: [PATCH] Staging: xgifb: fixed spaces coding style issue in vb_ext.h
-Date: Thu, 17 Mar 2011 00:23:04 -0400
-Message-Id: <1300335784-23495-1-git-send-email-darekiwanski13@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=PHeXoDPNBrkBSzDr7/JOSnHf3SxCf1PKbBQ2QR/EfqIqR9C1i1fkn79ThxZIr5oObJ
+         2D8NvdRrd2MMIdubFQmA==
+MIME-Version: 1.0
+In-Reply-To: <20110316215214.GO2140@cmpxchg.org>
+References: <1299869011-26152-1-git-send-email-gthelen@google.com>
+ <20110311171006.ec0d9c37.akpm@linux-foundation.org> <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+ <20110314202324.GG31120@redhat.com> <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+ <20110315184839.GB5740@redhat.com> <20110316131324.GM2140@cmpxchg.org>
+ <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com> <20110316215214.GO2140@cmpxchg.org>
+From: Greg Thelen <gthelen@google.com>
+Date: Wed, 16 Mar 2011 21:41:48 -0700
+Message-ID: <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+To: Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Curt Wohlgemuth <curtw@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the vb_ext.h file that fixes up spaces warning
-found by the checkpatch.pl tool. It still has a typedef warning that I
-do not understand how to fix.
+On Wed, Mar 16, 2011 at 2:52 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Wed, Mar 16, 2011 at 02:19:26PM -0700, Greg Thelen wrote:
+>> On Wed, Mar 16, 2011 at 6:13 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> > On Tue, Mar 15, 2011 at 02:48:39PM -0400, Vivek Goyal wrote:
+>> >> I think even for background we shall have to implement some kind of logic
+>> >> where inodes are selected by traversing memcg->lru list so that for
+>> >> background write we don't end up writting too many inodes from other
+>> >> root group in an attempt to meet the low background ratio of memcg.
+>> >>
+>> >> So to me it boils down to coming up a new inode selection logic for
+>> >> memcg which can be used both for background as well as foreground
+>> >> writes. This will make sure we don't end up writting pages from the
+>> >> inodes we don't want to.
+>> >
+>> > Originally for struct page_cgroup reduction, I had the idea of
+>> > introducing something like
+>> >
+>> >        struct memcg_mapping {
+>> >                struct address_space *mapping;
+>> >                struct mem_cgroup *memcg;
+>> >        };
+>> >
+>> > hanging off page->mapping to make memcg association no longer per-page
+>> > and save the pc->memcg linkage (it's not completely per-inode either,
+>> > multiple memcgs can still refer to a single inode).
+>> >
+>> > We could put these descriptors on a per-memcg list and write inodes
+>> > from this list during memcg-writeback.
+>> >
+>> > We would have the option of extending this structure to contain hints
+>> > as to which subrange of the inode is actually owned by the cgroup, to
+>> > further narrow writeback to the right pages - iff shared big files
+>> > become a problem.
+>> >
+>> > Does that sound feasible?
+>>
+>> If I understand your memcg_mapping proposal, then each inode could
+>> have a collection of memcg_mapping objects representing the set of
+>> memcg that were charged for caching pages of the inode's data.  When a
+>> new file page is charged to a memcg, then the inode's set of
+>> memcg_mapping would be scanned to determine if current's memcg is
+>> already in the memcg_mapping set.  If this is the first page for the
+>> memcg within the inode, then a new memcg_mapping would be allocated
+>> and attached to the inode.  The memcg_mapping may be reference counted
+>> and would be deleted when the last inode page for a particular memcg
+>> is uncharged.
+>
+> Dead-on.  Well, on which side you put the list - a per-memcg list of
+> inodes, or a per-inode list of memcgs - really depends on which way
+> you want to do the lookups.  But this is the idea, yes.
+>
+>>   page->mapping = &memcg_mapping
+>>   inode->i_mapping = collection of memcg_mapping, grows/shrinks with [un]charge
+>
+> If the memcg_mapping list (or hash-table for quick find-or-create?)
+> was to be on the inode side, I'd put it in struct address_space, since
+> this is all about page cache, not so much an fs thing.
+>
+> Still, correct in general.
+>
 
-Signed-off-by: Darek Iwanski <darekiwanski13$Gmail.com>
----
- drivers/staging/xgifb/vb_ext.h |   37 ++++++++++++++++++++-----------------
- 1 files changed, 20 insertions(+), 17 deletions(-)
+In '[PATCH v6 8/9] memcg: check memcg dirty limits in page writeback' Jan and
+Vivek have had some discussion around how memcg and writeback mesh.
+In my mind, the
+discussions in 8/9 are starting to blend with this thread.
 
-diff --git a/drivers/staging/xgifb/vb_ext.h b/drivers/staging/xgifb/vb_ext.h
-index 5cc4d12..a3ec4ee 100644
---- a/drivers/staging/xgifb/vb_ext.h
-+++ b/drivers/staging/xgifb/vb_ext.h
-@@ -1,34 +1,37 @@
--#ifndef  _VBEXT_
--#define  _VBEXT_
-+#ifndef _VBEXT_
-+#define _VBEXT_
- 
- struct DWORDREGS {
--    unsigned long    Eax, Ebx, Ecx, Edx, Esi, Edi, Ebp;
-+	unsigned long Eax, Ebx, Ecx, Edx, Esi, Edi, Ebp;
- };
- 
- struct WORDREGS {
--    unsigned short ax, hi_ax, bx, hi_bx, cx, hi_cx, dx, hi_dx, si,
--	    hi_si, di, hi_di, bp, hi_bp;
-+	unsigned short ax, hi_ax, bx, hi_bx, cx, hi_cx, dx, hi_dx, si,
-+		hi_si, di, hi_di, bp, hi_bp;
- };
- 
- struct BYTEREGS {
--     unsigned char al, ah, hi_al, hi_ah, bl, bh, hi_bl, hi_bh, cl, ch,
--	     hi_cl, hi_ch, dl, dh, hi_dl, hi_dh;
-+	unsigned char al, ah, hi_al, hi_ah, bl, bh, hi_bl, hi_bh, cl, ch,
-+		hi_cl, hi_ch, dl, dh, hi_dl, hi_dh;
- };
- 
--typedef union   _X86_REGS    {
--    struct  DWORDREGS e;
--    struct  WORDREGS x;
--    struct  BYTEREGS h;
-+typedef union _X86_REGS {
-+	struct DWORDREGS e;
-+	struct WORDREGS x;
-+	struct BYTEREGS h;
- } X86_REGS, *PX86_REGS;
- 
--extern   void     XGI_XG21Fun14(struct xgi_hw_device_info *pXGIHWDE, PX86_REGS pBiosArguments);
-+extern void XGI_XG21Fun14(struct xgi_hw_device_info *pXGIHWDE,
-+	PX86_REGS pBiosArguments);
- extern void XGISetDPMS(struct xgi_hw_device_info *pXGIHWDE,
--		       unsigned long VESA_POWER_STATE);
--extern   void     XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo);
--extern   void     XGINew_SetModeScratch(struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo) ;
-+	unsigned long VESA_POWER_STATE);
-+extern void XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension,
-+	struct vb_device_info *pVBInfo);
-+extern void XGINew_SetModeScratch(struct xgi_hw_device_info *HwDeviceExtension,
-+	struct vb_device_info *pVBInfo) ;
- extern void ReadVBIOSTablData(unsigned char ChipType,
--			      struct vb_device_info *pVBInfo);
-+	struct vb_device_info *pVBInfo);
- extern unsigned short XGINew_SenseLCD(struct xgi_hw_device_info *,
--				      struct vb_device_info *pVBInfo);
-+	struct vb_device_info *pVBInfo);
- 
- #endif
--- 
-1.7.4.1
+I have been thinking about Johannes' struct memcg_mapping.  I think the idea
+may address several of the issues being discussed, especially
+interaction between
+IO-less balance_dirty_pages() and memcg writeback.
 
+Here is my thinking.  Feedback is most welcome!
+
+The data structures:
+- struct memcg_mapping {
+       struct address_space *mapping;
+       struct mem_cgroup *memcg;
+       int refcnt;
+  };
+- each memcg contains a (radix, hash_table, etc.) mapping from bdi to memcg_bdi.
+- each memcg_bdi contains a mapping from inode to memcg_mapping.  This may be a
+  very large set representing many cached inodes.
+- each memcg_mapping represents all pages within an bdi,inode,memcg.  All
+  corresponding cached inode pages point to the same memcg_mapping via
+  pc->mapping.  I assume that all pages of inode belong to no more than one bdi.
+- manage a global list of memcg that are over their respective background dirty
+  limit.
+- i_mapping continues to point to a traditional non-memcg mapping (no change
+  here).
+- none of these memcg_* structures affect root cgroup or kernels with memcg
+  configured out.
+
+The routines under discussion:
+- memcg charging a new inode page to a memcg: will use inode->mapping and inode
+  to walk memcg -> memcg_bdi -> memcg_mapping and lazily allocating missing
+  levels in data structure.
+
+- Uncharging a inode page from a memcg: will use pc->mapping->memcg to locate
+  memcg.  If refcnt drops to zero, then remove memcg_mapping from the memcg_bdi.
+  Also delete memcg_bdi if last memcg_mapping is removed.
+
+- account_page_dirtied(): nothing new here, continue to set the per-page flags
+  and increment the memcg per-cpu dirty page counter.  Same goes for routines
+  that mark pages in writeback and clean states.
+
+- mem_cgroup_balance_dirty_pages(): if memcg dirty memory usage if above
+  background limit, then add memcg to global memcg_over_bg_limit list and use
+  memcg's set of memcg_bdi to wakeup each(?) corresponding bdi flusher.  If over
+  fg limit, then use IO-less style foreground throttling with per-memcg per-bdi
+  (aka memcg_bdi) accounting structure.
+
+- bdi writeback: will revert some of the mmotm memcg dirty limit changes to
+  fs-writeback.c so that wb_do_writeback() will return to checking
+  wb_check_background_flush() to check background limits and being
+interruptible if
+  sync flush occurs.  wb_check_background_flush() will check the global
+  memcg_over_bg_limit list for memcg that are over their dirty limit.
+  wb_writeback() will either (I am not sure):
+  a) scan memcg's bdi_memcg list of inodes (only some of them are dirty)
+  b) scan bdi dirty inode list (only some of them in memcg) using
+     inode_in_memcg() to identify inodes to write.  inode_in_memcg(inode,memcg),
+     would walk memcg- -> memcg_bdi -> memcg_mapping to determine if the memcg
+     is caching pages from the inode.
+
+- over_bground_thresh() will determine if memcg is still over bg limit.
+  If over limit, then it per bdi per memcg background flushing will continue.
+  If not over limit then memcg will be removed from memcg_over_bg_limit list.
