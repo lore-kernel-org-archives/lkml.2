@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab1CQAS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:18:28 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55806 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab1CQASY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:18:24 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: rcu_sched_state detected stall on CPU issue
-Cc: kosaki.motohiro@jp.fujitsu.com, mel@csn.ul.ie, akpm@linux-foundation.org,
-        -c@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20110316101820.GA17540@linux.vnet.ibm.com>
-References: <20110316101820.GA17540@linux.vnet.ibm.com>
-Message-Id: <20110317085938.C938.A69D9226@jp.fujitsu.com>
+	id S1752345Ab1CQATW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 20:19:22 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40094 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920Ab1CQATQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 20:19:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: [RFT][PATCH] PCI / ACPI: Do not require MSI support for PCIe native features
+Date: Thu, 17 Mar 2011 01:19:17 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+References: <201103052254.48515.rjw@sisk.pl> <201103150100.17501.rjw@sisk.pl> <20110315190545.GA4165@xanatos>
+In-Reply-To: <20110315190545.GA4165@xanatos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 17 Mar 2011 09:18:19 +0900 (JST)
+Message-Id: <201103170119.17647.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-
-> Hello!
+On Tuesday, March 15, 2011, Sarah Sharp wrote:
+> On Tue, Mar 15, 2011 at 01:00:17AM +0100, Rafael J. Wysocki wrote:
+> > Well, I must admit I have no idea what the problem is.  OK, in addition to the
+> > above changes, please replace the "pci_ext_cfg_avail(root->bus->self)" in the
+> > same file with "true" and see if _that_ helps.
 > 
-> It looks like Preeti found a way to loop in kswapd with preemption
-> disabled, please see attached dmesg.   This is using 2.6.35-45.fc14.
-> 
-> Any thoughts or recent patches that might help?
+> Yay, that worked!  dmesg is attached.
 
-We fixed a kswapd infinite loop issue when memory is fragmented at 2.6.38.
-Could you please try following commits? (all are mm/vmscan.c change)
+Good, at least we know what the problem is, now we only have to find the root
+cause. ;-)
 
-commit dc83edd941f412e938841b4989be24aa288a1aa6
-commit 355b09c47a0cbb73b3e65a57c03f157f2e7ddb0b
-commit 4d40502ea580c35414a1466d86f96484910ebaec
-commit 0abdee2bd4118366c62349a304f81537be69af33
-commit 1741c87757448cedd03224f01586504f9256415d
-commit 9950474883e027e6e728cbcff25f7f2bf0c96530
+So, pci_ext_cfg_avail(root->bus->self) returns 0 on your machine, which is kind
+of unexpected (to put it lightly), so very likely we have uncovered a bug
+in the init code.
 
+Unfortunately, I may not be able to take care of this issue for the next few
+days, I'll let you know when I get back to it.
 
-And, your attached file and your quoted mail don't have /proc/zoneinfo
-information. then I have no way to confirn his environment is heavy
-fragmented or not. If possible, could you please get /proc/zoneinfo
-info?
-
-
-
-
+Thanks,
+Rafael
