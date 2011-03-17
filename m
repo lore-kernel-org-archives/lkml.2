@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab1CQAti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 20:49:38 -0400
-Received: from wnl.lk ([203.143.12.196]:49288 "HELO mail.wnl.lk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751132Ab1CQAtf convert rfc822-to-8bit (ORCPT
+	id S1752521Ab1CQAvB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 20:51:01 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50192 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab1CQAu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 20:49:35 -0400
-Message-ID: <2957.82.128.17.72.1300322697.squirrel@sundaytimes.wnl.lk>
-Date: Thu, 17 Mar 2011 06:14:57 +0530 (IST)
-Subject: Update Account!!!
-From: "ONLINE TEAM" <info@web.com>
-Reply-To: upgraden_account@hotmail.com
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
+	Wed, 16 Mar 2011 20:50:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [172.22.72.22]
+Date: Wed, 16 Mar 2011 17:50:55 -0700
+Message-ID: <AANLkTimXUSi6aEd97XSxsVguX926VPdbyhYEvBbL+wRD@mail.gmail.com>
+Subject: [ANNOUNCE] Upstart 1.1 released
+From: Scott James Remnant <scott@netsplit.com>
+To: upstart-devel@upstart.at, upstart-release@upstart.at,
+        Upstart Dev List <upstart-devel@lists.ubuntu.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear 'WEBMAIL ACCOUNT USER',
-
-We are currrently upgrading our database and all account need to be verified.
-To complete your account activation with us,you are required to reply to this
-message and enter correctly the information's that is required from you.
-
-Fill in your User Name and Password in the space provided (********)You are
-required to reply to this e-mail within the next 48 hours.
-
-Failure to get back to us, your Webmail account will be de-activated from our
-database.
-
-FULL NAME;
-USERNAME;
-PASSWORD;
-RE-TYPE PASSWORD;
-DATE OF BIRTH;
+Nothing says "stable release" like a merry round of bug fixes,
+including the file descriptor leak when the "script" keyword is used.
 
 
-Thank you for using  Webmail Copyright 2011 ©  Web Team.
+1.1  2011-03-16  "It's probably 'cause you think you're cooler than me"
 
-19X45HANJ4453VXTM334M
-     10-01-2011
+	* When /sbin/halt is called (without -p), this now results in the
+	  system being halted and not powered down. If you meant it to be
+	  powered down, use /sbin/poweroff.  (Bug: #532366)
 
+	* Fixed file descriptor leak of /proc/self/fd/NN to shell scripts
+	  executed by Upstart.  (Bug: #619269)
+
+	* Fixed bug where console was closed too early, causing loss of error
+	  messages and non-functioning keyboard-request event,
+	  (Bug: #707151)
+
+	* Fixed bug where environment variables containing unusual characters
+	  were not accepted due to a mis-reading of POSIX.  (Bug: #567068).
+
+	* Fixed non-removal of symlinks on "make uninstall".  (Bug: #604227)
+
+	* Reduced priority of job termination messages from warn to info
+	  if the exit status or signal is listed in "normal exit".
+	  (Bug: #522197)
+
+
+
+The tarball can be found here:
+
+       https://launchpad.net/upstart/1.x/1.1
+
+For more information on upstart:
+
+       http://upstart.at/
+
+
+Scott
