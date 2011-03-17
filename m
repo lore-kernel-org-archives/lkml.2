@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab1CQWLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 18:11:46 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51259 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab1CQWLn (ORCPT
+	id S1755445Ab1CQWN2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 18:13:28 -0400
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:44536 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754926Ab1CQWN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 18:11:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: RFC: Platform data for onboard USB assets
-Date: Thu, 17 Mar 2011 23:11:36 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, andy.green@linaro.org,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <20110311161421.GA7843@kroah.com> <20110317201835.GM31411@opensource.wolfsonmicro.com> <20110317202614.GA3155@kroah.com>
-In-Reply-To: <20110317202614.GA3155@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 17 Mar 2011 18:13:26 -0400
+X-Greylist: delayed 1484 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Mar 2011 18:13:26 EDT
+Subject: Re: known vboxgetty/isdn issue in 2.6.35.3?
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Udo van den Heuvel <udovdh@xs4all.nl>, Karsten Keil <isdn@linux-pingi.de>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Tilman Schmidt <tilman@imap.cc>
+In-Reply-To: <201011091115.16351.arnd@arndb.de>
+References: <4C864143.5090803@xs4all.nl> <201009072145.10946.arnd@arndb.de>
+	 <4CD56087.9000009@xs4all.nl>  <201011091115.16351.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Mar 2011 22:48:41 +0100
+Message-ID: <1300398521.16073.60.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103172311.36246.arnd@arndb.de>
-X-Provags-ID: V02:K0:XU2SrH7kx3lMz4X6KFklVyr4siN0nDfCtOavMoublnB
- ow5TzEDtDClM61cxmrYEwZM7qMuABTbNO28BicvQfermNFLeud
- roznG5L2bUbBhW00Bi/1V4NSogZLY2qAROS2QJ39vltg/ws5NC
- m11ZLGp3c6HPIH4qYJp48Pg2tUSkEIt9yTuZYOm54Iog+SNTav
- I3JnqfoeUWYACLHnxKxig==
+X-Originating-IP: 87.123.84.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 March 2011 21:26:14 Greg KH wrote:
-> > It's going to be an off the shelf USB ethernet controller.  I'd be
-> > astonished if the board-configurable device IDs weren't set from the
-> > same SEPROM that the MAC address is so it'd just show up as a generic
-> > chip of whatever kind.
+Am Dienstag, den 09.11.2010, 11:15 +0100 schrieb Arnd Bergmann:
+> On Saturday 06 November 2010, Udo van den Heuvel wrote:
+> > ==> /proc/16758/stack <==
+> > [<c118731a>] tty_unthrottle+0x13/0x3a
+> > [<c1185f4e>] reset_buffer_flags+0xd4/0xd9
+> > [<c1185f60>] n_tty_flush_buffer+0xd/0x63
+> > [<c11888a7>] tty_ldisc_flush+0x1f/0x34
+> > [<c120797c>] isdn_tty_modem_result+0x342/0x37c
+> > [<c1209c5e>] isdn_tty_modem_hup+0x76/0x176
+> > [<c120a66b>] isdn_tty_change_speed+0xa2/0xd4
+> > [<c120a6da>] isdn_tty_set_termios+0x3d/0x5a
+> > [<c118789b>] set_termios+0x318/0x397
+> > [<c1187b41>] tty_mode_ioctl+0x178/0x2db
+> > [<c1187de8>] n_tty_ioctl_helper+0x144/0x154
+> > [<c11854d9>] n_tty_ioctl+0x97/0xa0
+> > [<c1183ccd>] tty_ioctl+0x699/0x6d3
+> > [<c108557c>] vfs_ioctl+0x27/0x91
+> > [<c1085ade>] do_vfs_ioctl+0x44b/0x47f
+> > [<c1085b53>] sys_ioctl+0x41/0x61
+> > [<c10027d3>] sysenter_do_call+0x12/0x2d
+> > [<ffffffff>] 0xffffffff
 > 
-> Huh?  All USB controllers you buy have the ability to set the vendor and
-> product id, so you should always be able to key off of that.
-> 
-> Isn't that the case here?
+> Ok, so it seems that set_termios calls change_termios, which holds the
+> termios_mutex while calling isdn_tty_set_termios. This ends up
+> calling tty_unthrottle, which tries to take the same mutex, and that fails.
+[...]
+> Please apply the patch below to see if it helps. We should probably
+> have it in 2.6.32-stable and 2.6.35-stable, if there is another one.
 
-The same EEPROM that is missing here carries both the MAC address and
-the vendor/product ID overrides.
+The same issue happened on our system. Sometimes vboxgetty gets stuck in
+state D on a debian stable system (2.6.32). I just applied your patch to
+that kernel and hope the problem went away. Please remind me to report
+back in one to two weeks if I didn't already report whether the hangs
+are fixed. Is something except for a test on a productive system missing
+to get this fix into 32-stable?
 
-	Arnd
+Regards,
+  Michael Karcher
+
