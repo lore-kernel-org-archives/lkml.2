@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab1CQXQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 19:16:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754283Ab1CQXQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 19:16:42 -0400
-Date: Fri, 18 Mar 2011 00:16:35 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: PageBuddy and mapcount underflows robustness
-Message-ID: <20110317231635.GC10696@random.random>
-References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils>
- <20110314155232.GB10696@random.random>
- <alpine.LSU.2.00.1103140910570.2601@sister.anvils>
- <20110314165922.GE10696@random.random>
- <AANLkTikWh5tFUZuALYRP3Dx2Zcs33u0UVdjf4d_7KhPJ@mail.gmail.com>
+	id S1756230Ab1CQXSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 19:18:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49360 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab1CQXSs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 19:18:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=Ii5f35vLrSbdaL51ww4pano6XZQfrgBlT6ByLDcbVzgMA1jrylM3OqmWHA4KepLLGb
+         E3nTt5ech2+zxvUQnxlUr19qsqinVAOFha/Mu3kPRmHf1TNKCpV58L1+EkpywKR5Oepj
+         6RPOgcrDXABsBC417Xsmc5YPUOriXAFDzfsew=
+Message-ID: <4D8296D1.9060106@linaro.org>
+Date: Thu, 17 Mar 2011 23:18:41 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikWh5tFUZuALYRP3Dx2Zcs33u0UVdjf4d_7KhPJ@mail.gmail.com>
+To: Greg KH <greg@kroah.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <20110311165642.GA9996@kroah.com> <20110317214042.GQ31411@opensource.wolfsonmicro.com> <20110317214736.GA29014@kroah.com> <201103172333.01474.arnd@arndb.de> <20110317225328.GB31581@kroah.com>
+In-Reply-To: <20110317225328.GB31581@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 14, 2011 at 10:30:11AM -0700, Linus Torvalds wrote:
-> On Mon, Mar 14, 2011 at 9:59 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> >
-> > +#define PAGE_BUDDY_MAPCOUNT_VALUE (-1024*1024)
-> 
-> I realize that this is a nitpick, but from a code generation
-> standpoint, large random constants like these are just nasty.
-> 
-> I would suggest aiming for constants that are easy to generate and/or
-> fit better in the code stream. In many encoding schemes (eg x86), -128
-> is much easier to generate, since it fits in a signed byte and allows
-> small instructions etc. And in most RISC encodings, 8- or 16-bit
-> constants can be encoded much more easily than something like your
-> current one, and bigger ones often end up resulting in a load from
-> memory or at least several immediate-building instructions.
+On 03/17/2011 10:53 PM, Somebody in the thread at some point said:
 
--128 sure is ok with me. It's extremely unlikely to be off by 127
-times, if we're off by more than 127 times we're still going to detect
-the error.
+>> Not tested!
+>>
+>> Signed-off-by: Arnd Bergmann<arnd.bergmann@linaro.org>
+>
+> <snip>
+>
+> Very nice.
+>
+> Andy and Mark, would this patch work for you?
 
-> Also, this is just disgusting. It adds no safety here to have that
-> VM_BUG_ON(), so it's just unnecessary code generation to do this.
-> Also, we don't even WANT to do that stupid "__ClearPageBuddy()" in the
-> first place! What those two code-sites actually want are just a simple
-> 
->     reset_page_mapcount(page);
-> 
-> which does the right thing in _general_, and not just for the buddy
-> case - we want to reset the mapcount for other reasons than just
-> pagebuddy (ie the underflow/overflow case).
+You do realize this untested patch depends on 13 year old vapour 
+definition of general usb device tagging in Device Tree that does not 
+exist yet?
 
-Agreed.
-
-> And it avoids the VM_BUG_ON() too, making the crazy conditionals be not needed.
-
-Well using reset_page_mapcount in the two error sites, didn't require
-me to remove the VM_BUG_ON from __ClearPageBuddy so I left it
-there...
-
-===
-Subject: mm: PageBuddy and mapcount robustness
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-Change the _mapcount value indicating PageBuddy from -2 to -128 for
-more robusteness against page_mapcount() undeflows.
-
-Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
-ignore the previous retval of PageBuddy().
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reported-by: Hugh Dickins <hughd@google.com>
----
- include/linux/mm.h |   11 +++++++++--
- mm/page_alloc.c    |    4 ++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
-
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -402,16 +402,23 @@ static inline void init_page_count(struc
- /*
-  * PageBuddy() indicate that the page is free and in the buddy system
-  * (see mm/page_alloc.c).
-+ *
-+ * PAGE_BUDDY_MAPCOUNT_VALUE must be <= -2 but better not too close to
-+ * -2 so that an underflow of the page_mapcount() won't be mistaken
-+ * for a genuine PAGE_BUDDY_MAPCOUNT_VALUE. -128 can be created very
-+ * efficiently by most CPU architectures.
-  */
-+#define PAGE_BUDDY_MAPCOUNT_VALUE (-128)
-+
- static inline int PageBuddy(struct page *page)
- {
--	return atomic_read(&page->_mapcount) == -2;
-+	return atomic_read(&page->_mapcount) == PAGE_BUDDY_MAPCOUNT_VALUE;
- }
- 
- static inline void __SetPageBuddy(struct page *page)
- {
- 	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
--	atomic_set(&page->_mapcount, -2);
-+	atomic_set(&page->_mapcount, PAGE_BUDDY_MAPCOUNT_VALUE);
- }
- 
- static inline void __ClearPageBuddy(struct page *page)
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -286,7 +286,7 @@ static void bad_page(struct page *page)
- 
- 	/* Don't complain about poisoned pages */
- 	if (PageHWPoison(page)) {
--		__ClearPageBuddy(page);
-+		reset_page_mapcount(page); /* remove PageBuddy */
- 		return;
- 	}
- 
-@@ -317,7 +317,7 @@ static void bad_page(struct page *page)
- 	dump_stack();
- out:
- 	/* Leave bad fields for debug, except PageBuddy could make trouble */
--	__ClearPageBuddy(page);
-+	reset_page_mapcount(page); /* remove PageBuddy */
- 	add_taint(TAINT_BAD_PAGE);
- }
- 
+-Andy
