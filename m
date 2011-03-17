@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab1CQQ4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:56:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51609 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751924Ab1CQQ4i convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:56:38 -0400
+	id S1754819Ab1CQRB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:01:58 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44614 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab1CQRB5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:01:57 -0400
+Date: Thu, 17 Mar 2011 13:01:53 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, tony@atomide.com, joe@perches.com,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Subject: Re: [PATCH v2] arm: cmpxchg syscall should data abort if page not
+ write
+In-Reply-To: <1300169637-1628-1-git-send-email-ratbert.chuang@gmail.com>
+Message-ID: <alpine.LFD.2.00.1103171301030.26889@xanadu.home>
+References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com> <1300169637-1628-1-git-send-email-ratbert.chuang@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4D81D6F9.3040304@t-online.de>
-References: <4D81D6F9.3040304@t-online.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Mar 2011 09:55:47 -0700
-Message-ID: <AANLkTim=R7GVDY0Nt-6q1mjO3vas-qRy7=VxqgWWtz_s@mail.gmail.com>
-Subject: Re: [BUG][2.6.38] IRQ Lock Inversion / i915 fails
-To: Knut Petersen <Knut_Petersen@t-online.de>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, jesse.barnes@intel.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?David_M=FCller?= <d.mueller@elsoft.ch>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 2:40 AM, Knut Petersen
-<Knut_Petersen@t-online.de> wrote:
->
-> Well, I updated my test partition to opensuse 11.4.
->
-> The opensuse standard kernel is unusable for me, booting hangs
-> most of the time, the same is true for shutdown. If booting succeeds the
-> system will fail after a short time of usage.
->
-> So I installed kernel 2.6.38.  That helped a lot ... for a few minutes.
->
-> A possible irq lock inversion is detected during boot, after a short time
-> X fails, restarting the X server does not work, a reboot is necessary.
+On Tue, 15 Mar 2011, Po-Yu Chuang wrote:
 
-Ok, so the lock inversion seems to be due to the sound/drivers/aloop.c
-file, where the function "loopback_pos_update()" gets called from
-within a softirq context. And it takes a lock (cable->lock) that is
-also taken unprotected by loopback_trigger(). So that's liable to
-deadlock as per lockdep. Jaroslav? Takashi?
+> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+> 
+> If the page to cmpxchg is user mode read only (not write),
+> we should simulate a data abort first.
+> 
+> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
 
-The X problem seems to be something unrelated. You have those "GPU
-hung" messages, along with i2c/EDID problems. But the actual oops is
-at the very beginning of intel_release_load_detect_pipe(), here:
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-   0:	55                   	push   %ebp
-   1:	89 e5                	mov    %esp,%ebp
-   3:	57                   	push   %edi
-   4:	89 cf                	mov    %ecx,%edi
-   6:	56                   	push   %esi
-   7:	53                   	push   %ebx
-   8:	89 c3                	mov    %eax,%ebx
-   a:	83 ec 0c             	sub    $0xc,%esp
-   d:	8b 00                	mov    (%eax),%eax
-   f:	8b 73 20             	mov    0x20(%ebx),%esi
-  12:	80 7b 30 00          	cmpb   $0x0,0x30(%ebx)
-  16:	8b 4b 28             	mov    0x28(%ebx),%ecx
-  19:	89 45 f0             	mov    %eax,-0x10(%ebp)
-  1c:*	8b 86 e0 01 00 00    	mov    0x1e0(%esi),%eax     <-- trapping
-instruction
-  22:	89 45 ec             	mov    %eax,-0x14(%ebp)
-  25:	74 2d                	je     0x54
-  27:	c7 43 20 00 00 00 00 	movl   $0x0,0x20(%ebx)
-  2e:	89 f0                	mov    %esi,%eax
-
-where %esi is NULL. I think that is the "crtc->helper_private" load,
-and crtc is NULL.
-
-That code does look broken. The very same function explicitly sets
-crtc to NULL, so clearly it _can_ be NULL. That said, this is all old
-code. I suspect the thing that made it start trigger may be commit
-f5afcd3dd0dc ("drm/i915/crt: Check for a analog monitor in case of
-DVI-I"), which is the only real change to the crt_detect logic I can
-see.
-
-Jesse? Chris? Ideas?
-
-                            Linus
+> ---
+> v2:
+> remove !pte_young() check
+> 
+>  arch/arm/kernel/traps.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index 446aee9..eac7c05 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -563,7 +563,7 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+>  		if (!pmd_present(*pmd))
+>  			goto bad_access;
+>  		pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+> -		if (!pte_present(*pte) || !pte_dirty(*pte)) {
+> +		if (!pte_present(*pte) || !pte_write(*pte) || !pte_dirty(*pte)) {
+>  			pte_unmap_unlock(pte, ptl);
+>  			goto bad_access;
+>  		}
+> -- 
+> 1.6.3.3
+> 
