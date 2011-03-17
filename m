@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab1CQRwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:52:31 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:34023 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754971Ab1CQRw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:52:27 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ngDl27IVM1lGWwUBJp2QfWtKY8Hub7VqmhdeObj7bduvR37
- AoT3joHZ7DOEQ_6PR1dY.2dsZsZETP_rYI5c3wLL4AUoqgbkb38KisxlxDj8
- pHTRNAKURLH0rtIhnH9KPcPxaySm0gzvedDFCSXH3o98T2sB.iPR_qpOFLUU
- 7BieldmxpTFM5pSX2mBYoDmM1duaMPstjc607lzMURR2nQz9wegLrd5tAits
- UvC.A7mZDAH1xaAve0tfvxzPSrYhS2tWErCArlUbI8KldeAcJ8_NVXmwRW0N
- YTYkqV5qGAjTxYJbuw9fprAuTI0Ko_n6x_7YV6F02NKhW6IIL
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 17 Mar 2011 09:40:33 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
-        Netfilter Development Mailinglist 
-	<netfilter-devel@vger.kernel.org>
-Subject: Re: Poll about irqsafe_cpu_add and others
-In-Reply-To: <1300371834.6315.93.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1103170932430.12540@router.home>
-References: <1300371834.6315.93.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755063Ab1CQRwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:52:39 -0400
+Received: from fieldses.org ([174.143.236.118]:59566 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754715Ab1CQRwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:52:37 -0400
+Date: Thu, 17 Mar 2011 13:52:29 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Cc: roel <roel.kluin@gmail.com>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: wrong index used in inner loop
+Message-ID: <20110317175229.GE30180@fieldses.org>
+References: <4D76A06A.4090405@gmail.com>
+ <20110309004955.GD15814@fieldses.org>
+ <4D79A183.8090306@cn.fujitsu.com>
+ <20110314222229.GJ25442@fieldses.org>
+ <4D7ECF91.2030308@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7ECF91.2030308@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, Eric Dumazet wrote:
+On Tue, Mar 15, 2011 at 10:31:45AM +0800, Mi Jinlong wrote:
+> 
+> 
+> J. Bruce Fields:
+> > Actually, wait, this is kind of silly.  I don't see why we couldn't just
+> > skip the loop and do
+> > 
+> > 	p += dummy;
+> > 
+> > Also, your new test is still failing with a BAD_XDR error.  Well, maybe
+> > the test should fail--we don't really implement this yet anyway--but it
+> > should at least be getting past the xdr decoding.  So something else is
+> > still wrong.
+> 
+>   How did you modify it??
+> 
+>   When testing it, I modify as 
+>  
+>     -                       for (j = 0; j < dummy; ++j)
+>     -                               READ32(dummy);
+>     +                       p += dummy;
+> 
+>   or
+>     
+>     -                       for (j = 0; j < dummy; ++j)
+>     -                               READ32(dummy);
+> 
+>   Test case CSESS16 and CSESS16a are PASS, 
+>   I can't get BAD_XDR error as you said.
 
-> irqsafe_cpu_{dec|inc} are used in network stack since 2.6.37 (commit
-> 29b4433d991c88), and I would like to use irqsafe_cpu_add() in netfilter
-> fast path too, and SNMP counters eventually (to lower ram needs by 50%)
->
-> Initial support of irqsafe_ was given by Christoph in 2.6.34
->
-> It seems only x86 arch is using a native and efficient implementation.
+Yes, I thought I had the former, but perhaps I had the wrong kernel
+running on my test server.  I've confirmed those tests pass after the
+following patch.
 
-I have some draft(y old) patches for IA64 that use fetchadd together with
-a per cpu virtual address range mapped differently for each processor but
-in general the problem with other arches is that they do not have
-instructions that avoid the expensive bus arbitration for a cacheline nor
-do they have segment overrides.
+--b.
 
-The segment override effect of implicit relocation of the address to the
-correct percpu area within one instruction can also be accomplished (like
-in the IA64 case) if we have per cpu page tables for the kernel and map
-the same virtual addres to different physical addresses for each cpu. Then
-the address given to a percpu instruction is constant and the relocation
-is performed implicitly by the MMU. Thus the relocation and the RMW
-operation are "atomic". Either both occur or none.
+commit 5a02ab7c3c4580f94d13c683721039855b67cda6
+Author: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Date:   Fri Mar 11 12:13:55 2011 +0800
 
-The other aspect is that the arch must have cheap increment (and other
-RMW) instructions that avoids expensive in cpu processing to establish a
-coherent state of the cacheline.
+    nfsd: wrong index used in inner loop
+    
+    We must not use dummy for index.
+    After the first index, READ32(dummy) will change dummy!!!!
+    
+    Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+    [bfields@redhat.com: Trond points out READ_BUF alone is sufficient.]
+    Cc: stable@kernel.org
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
-> What about defining a HAVE_FAST_IRQSAFE_ADD ?
-
-Useful at some point I think.
-
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 615f0a9..c6766af 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1142,7 +1142,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ 
+ 	u32 dummy;
+ 	char *machine_name;
+-	int i, j;
++	int i;
+ 	int nr_secflavs;
+ 
+ 	READ_BUF(16);
+@@ -1215,8 +1215,6 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy * 4);
+-			for (j = 0; j < dummy; ++j)
+-				READ32(dummy);
+ 			break;
+ 		case RPC_AUTH_GSS:
+ 			dprintk("RPC_AUTH_GSS callback secflavor "
+@@ -1232,7 +1230,6 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
+ 			READ_BUF(4);
+ 			READ32(dummy);
+ 			READ_BUF(dummy);
+-			p += XDR_QUADLEN(dummy);
+ 			break;
+ 		default:
+ 			dprintk("Illegal callback secflavor\n");
