@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab1CQUqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 16:46:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27858 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab1CQUqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 16:46:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,201,1299484800"; 
-   d="scan'208";a="614329788"
-Message-ID: <4D827326.1040208@linux.intel.com>
-Date: Thu, 17 Mar 2011 13:46:30 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1755545Ab1CQVDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:03:23 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62760 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab1CQVDU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:03:20 -0400
+Date: Thu, 17 Mar 2011 17:03:17 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Greg KH <greg@kroah.com>
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, andy.green@linaro.org,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+In-Reply-To: <20110317201320.GB4035@kroah.com>
+Message-ID: <alpine.LFD.2.00.1103171647560.26889@xanadu.home>
+References: <201103111654.04089.arnd@arndb.de> <20110311160308.GQ1760@opensource.wolfsonmicro.com> <20110311161421.GA7843@kroah.com> <20110311162759.GS1760@opensource.wolfsonmicro.com> <20110311163522.GA9291@kroah.com> <20110311164850.GT1760@opensource.wolfsonmicro.com>
+ <20110311165642.GA9996@kroah.com> <20110311170807.GV1760@opensource.wolfsonmicro.com> <20110311172345.GA10876@kroah.com> <alpine.LFD.2.00.1103162207130.26889@xanadu.home> <20110317201320.GB4035@kroah.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] WARN_ON_SMP(): Allow use in if statements on UP
-References: <20110317192105.308382309@goodmis.org> <20110317192208.444147791@goodmis.org>
-In-Reply-To: <20110317192208.444147791@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 17 Mar 2011, Greg KH wrote:
+
+> On Wed, Mar 16, 2011 at 10:14:01PM -0400, Nicolas Pitre wrote:
+> > > What drivers need this?  Specifics please.
+> > 
+> > Let me quote Arnd Bergmann:
+> > 
+> > |I have just verified with my Pandaboard that the pins on the SMSC9514
+> > |usb ethernet that are meant to be connected to a serial EEPROM are
+> > |indeed not connected anywhere.
+> > 
+> > > Anyway, specifics are the best way forward if anyone has such a messed
+> > > up system.
+> > 
+> > PandaBoards are becoming quite popular.
+> 
+> I have one right here.
+> 
+> But can't this device be detected by the usb device id and the quirk
+> added that way?  Like all other "odd" USB devices are currently handled?
+
+It is not the device which is odd, but rather the environment in which 
+it is being used for this specific case.  I'd expect to see the same 
+SMSC9514 chip also used in off-the-shelf USB-to-Ethernet dongles with no 
+quirks needed.
+
+However, a different part of the kernel knows already perfectly well 
+when it is actually running on that specific board.  Hence the desire to 
+come up with a mechanism allowing to tell the driver about a quirk for 
+the particular device instance on this board without having to do the 
+heavy round trip through user space.
 
 
-On 03/17/2011 12:21 PM, Steven Rostedt wrote:
-> From: Steven Rostedt<srostedt@redhat.com>
->
-> Both WARN_ON() and WARN_ON_SMP() should be able to be used in
-> an if statement.
->
-> 	if (WARN_ON_SMP(foo)) { ... }
->
-> Because WARN_ON_SMP() is defined as a do { } while (0) on UP,
-> it can not be used this way.
->
-> Convert it to the same form that WARN_ON() is, even when
-> CONFIG_SMP is off.
->
-> Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
-> ---
->   include/asm-generic/bug.h |   28 +++++++++++++++++++++++++++-
->   1 files changed, 27 insertions(+), 1 deletions(-)
->
-> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-> index c2c9ba0..ac2f48a 100644
-> --- a/include/asm-generic/bug.h
-> +++ b/include/asm-generic/bug.h
-> @@ -165,10 +165,36 @@ extern void warn_slowpath_null(const char *file, const int line);
->   #define WARN_ON_RATELIMIT(condition, state)			\
->   		WARN_ON((condition)&&  __ratelimit(state))
->
-> +/*
-> + * WARN_ON_SMP() is for cases that the warning is either
-> + * meaningless for !SMP or may even cause failures.
-> + * This is usually used for cases that we have
-> + * WARN_ON(!spin_is_locked(&lock)) checks, as spin_is_locked()
-> + * returns 0 for uniprocessor settings.
-> + * It can be also be used with values that are only defined
-
-Typo: can be also be
-
---
-Darren
-
-> + * on SMP:
-> + *
-> + * struct foo {
-> + *  [...]
-> + * #ifdef CONFIG_SMP
-> + *	int bar;
-> + * #endif
-> + * };
-> + *
-> + * void func(struct foo *zoot)
-> + * {
-> + *	WARN_ON_SMP(!zoot->bar);
-> + *
-> + * For CONFIG_SMP, WARN_ON_SMP() should act the same as WARN_ON(),
-> + * and should be a nop and return false for uniprocessor.
-> + *
-> + * if (WARN_ON_SMP(x)) returns true only when CONFIG_SMP is set
-> + * and x is true.
-> + */
->   #ifdef CONFIG_SMP
->   # define WARN_ON_SMP(x)			WARN_ON(x)
->   #else
-> -# define WARN_ON_SMP(x)			do { } while (0)
-> +# define WARN_ON_SMP(x)			({0;})
->   #endif
->
->   #endif
-> -- 1.7.2.3
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Nicolas
