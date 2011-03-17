@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab1CQMQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 08:16:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9482 "EHLO relay.sw.ru"
+	id S1754239Ab1CQMRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 08:17:12 -0400
+Received: from lo.gmane.org ([80.91.229.12]:34720 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab1CQMQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 08:16:56 -0400
-Subject: [PATCH] RPC: killing RPC tasks races fixed
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net, skinsbursky@openvz.org
-Date: Thu, 17 Mar 2011 15:16:55 +0300
-Message-ID: <20110317121638.15035.39410.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753846Ab1CQMRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 08:17:10 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: WANG Cong <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH 2/2 v2] watchdog:  Always return NOTIFY_OK during cpu
+ up/down events
+Date: Thu, 17 Mar 2011 12:16:55 +0000 (UTC)
+Message-ID: <ilsu3n$vm1$3@dough.gmane.org>
+References: <1299533860-1642-1-git-send-email-dzickus@redhat.com>
+	<1299533860-1642-2-git-send-email-dzickus@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 121.227.147.194
+User-Agent: Pan/0.133 (House of Butterflies)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task->tk_waitqueue must be checked for NULL before trying to wake up task in
-rpc_killall_tasks() because it can be NULL.
+On Mon, 07 Mar 2011 16:37:40 -0500, Don Zickus wrote:
 
-Here is an example:
+> This patch addresses a couple of problems.  One was the case when the
+> hardlockup failed to start, it also failed to start the softlockup.
+> There were valid cases when the hardlockup shouldn't start and that
+> shouldn't block the softlockup (no lapic, bios controls perf counters).
+> 
+> The second problem was when the hardlockup failed to start on boxes
+> (from a no lapic or bios controlled perf counter case), it reported
+> failure to the cpu notifier chain.  This blocked the notifier from
+> continuing to start other more critical pieces of cpu bring-up (in our
+> case based on a 2.6.32 fork, it was the mce).  As a result, during soft
+> cpu online/offline testing, the system would panic when a cpu was
+> offlined because the cpu notifier would succeed in processing a watchdog
+> disable cpu event and would panic in the mce case as a result of
+> un-initialized variables from a never executed cpu up event.
 
-CPU 0               	CPU 1				CPU 2
---------------------	---------------------	--------------------------
-nfs4_run_open_task
-rpc_run_task
-rpc_execute
-rpc_set_active
-rpc_make_runnable
-(waiting)
-			rpc_async_schedule
-			nfs4_open_prepare
-			nfs_wait_on_sequence
-						nfs_umount_begin
-						rpc_killall_tasks
-						rpc_wake_up_task
-						rpc_wake_up_queued_task
-						spin_lock(tk_waitqueue == NULL)
-						BUG()
-			rpc_sleep_on
-			spin_lock(&q->lock)
-			__rpc_sleep_on
-			task->tk_waitqueue = q
+What I saw is microcode, its /sys entries failed to come up and this
+triggers a warning when these entries are removed when the CPU became 
+offline again.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@openvz.org>
+> 
+> I realized the hardlockup/softlockup cases are really just debugging
+> aids and should never impede the progress of a cpu up/down event.
+> Therefore I modified the code to always return NOTIFY_OK and instead
+> rely on printks to inform the user of problems.
+> 
 
----
- net/sunrpc/clnt.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Yeah, it should also fix the problem I saw.
 
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index 57d344c..24039fe 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -436,7 +436,9 @@ void rpc_killall_tasks(struct rpc_clnt *clnt)
- 		if (!(rovr->tk_flags & RPC_TASK_KILLED)) {
- 			rovr->tk_flags |= RPC_TASK_KILLED;
- 			rpc_exit(rovr, -EIO);
--			rpc_wake_up_queued_task(rovr->tk_waitqueue, rovr);
-+			if (rovr->tk_waitqueue)
-+				rpc_wake_up_queued_task(rovr->tk_waitqueue, 
-+							rovr);
- 		}
- 	}
- 	spin_unlock(&clnt->cl_lock);
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+Thanks.
 
