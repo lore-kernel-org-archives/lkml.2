@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab1CQTCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 15:02:24 -0400
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:45233 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754725Ab1CQTCV (ORCPT
+	id S1754735Ab1CQTI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 15:08:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41327 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab1CQTI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 15:02:21 -0400
-Message-ID: <4D825AB9.4030406@example.com>
-Date: Thu, 17 Mar 2011 20:02:17 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	Thu, 17 Mar 2011 15:08:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=S4upRmfkhkjVrIOg1trJSpforj85lUZyMutcaAZcGJ2reQjOO2ro9ao5kRxcbNaBAr
+         h5WKk+FoOfPtyq+YEMom2UiL5//pmZE91AaQW2Usszl+PvwhZDb/Oa7kVEGjnTisG8Od
+         /BUvIYqIt/ibOgO49dE2TMFKSLAGtTQ63LodU=
 MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>, benh@debian.org
-Subject: Re: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
-References: <201103101209.p2AC9YdZ014233@violet.fr.zoreil.com> <20110316202220.GA14741@electric-eye.fr.zoreil.com>
-In-Reply-To: <20110316202220.GA14741@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 6537537811197948314
-X-Ovh-Remote: 178.36.24.230 (178-36-24-230.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+In-Reply-To: <20110317104434.GB22723@ZenIV.linux.org.uk>
+References: <20110316235608.GY22723@ZenIV.linux.org.uk>
+	<AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
+	<20110317072344.GZ22723@ZenIV.linux.org.uk>
+	<AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
+	<20110317104434.GB22723@ZenIV.linux.org.uk>
+Date: Thu, 17 Mar 2011 12:08:25 -0700
+X-Google-Sender-Auth: J7RLnQoI7i86zTxCNQ6jMtbwjH4
+Message-ID: <AANLkTi=rjVcEE8o-yDWma9G973kd4ikWLm+-cd3emwCO@mail.gmail.com>
+Subject: Re: [git pull] mnt_devname queue
+From: Tony Luck <tony.luck@intel.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Xiaotian Feng <xtfeng@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.03.2011 21:22, Francois Romieu wrote:
-> You can get it there:
->
-> http://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.git
-> git://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.git
->
-> It has already been submitted to the maintainer of linux-firmware.
+On Thu, Mar 17, 2011 at 3:44 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Thu, Mar 17, 2011 at 03:28:47PM +0800, Xiaotian Feng wrote:
 
-Hello,
+Thanks for all the tips - I'll work on fixing (re-writing :-) pstore
 
-The problem persists, I have on disk:
-
-# ls /lib/firmware/rtl_nic/
-rtl8105e-1.fw  rtl8168d-1.fw  rtl8168d-2.fw  rtl8168e-1.fw  rtl8168e-2.fw
-
-And my NIC doesn't work. What do you mean saying that I can get it 
-there? How can I contact the maintainer?
-
-Please, help, I cannot test new kernels.
-
-Regards,
-
-Piotr Hosowicz
-
--- 
-Na przyjêciu ch³opak pyta blondynkê:
-- Czy mogê ciê prosiæ do walca?
-- Zg³upia³e¶? To ju¿ nie mia³e¶ czym przyjechaæ?
-NP: Banda Do Sol - Fabito
-NB: 2.6.38-git3
+-Tony
