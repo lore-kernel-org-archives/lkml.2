@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab1CQLlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:41:51 -0400
-Received: from mail-tx2.bigfish.com ([65.55.88.10]:18044 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752910Ab1CQLlu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:41:50 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i637h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LI79TM-01-7YE-02
-X-M-MSG: 
-Date: Thu, 17 Mar 2011 12:41:40 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] oprofile: Add __exit attibute to
- oprofile_arch_exit() functions
-Message-ID: <20110317114140.GA31407@erda.amd.com>
-References: <1300298305-9164-1-git-send-email-robert.richter@amd.com>
- <1300298305-9164-3-git-send-email-robert.richter@amd.com>
- <AANLkTi=g-Dd957gPxCUfRxVw52T2m6GbswapEAJLnBtP@mail.gmail.com>
+	id S1754066Ab1CQLnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:43:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43626 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab1CQLnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 07:43:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :user-agent;
+        b=jgL7G+W46qyuRbmk3btjtk0XA0pxyFGjFivwlTJ7EfJXIYvQBZ0SbyazLHqUFl/Q+0
+         ef9HB9rrZiAXxOVrrRVavPlETf4SVSflqfdXmF3lnirNqTfA+W+pRs4PlAdTshDJqjxk
+         chyLqrG7UezBZKFwu/GnbKR8K7TLyg8V4+JxE=
+Date: Thu, 17 Mar 2011 14:43:07 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] genirq: incorrect unlock in __setup_irq()
+Message-ID: <20110317114307.GJ2008@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=g-Dd957gPxCUfRxVw52T2m6GbswapEAJLnBtP@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.03.11 16:15:49, Mike Frysinger wrote:
-> On Wed, Mar 16, 2011 at 13:58, Robert Richter wrote:
-> > �979048e oprofile: don't call arch exit code from init code on failure
-> >
-> > we may add __exit attibutes to oprofile_arch_exit() functions.
-> 
-> i dont think this the way to go.  how about updating one place
-> (include/linux/oprofile.h:oprofile_arch_exit) and making sure all arch
-> files are including that header if they arent already ?  after all, if
-> they arent including that header, the arch code could break without
-> noticing.
+goto out_thread is called before we take the lock.  It causes a gcc
+warning: "kernel/irq/manage.c:858: warning: ‘flags’ may be used
+uninitialized in this function"
 
-Mike,
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-do you mean we specify the __exit attribute in the function
-declaration of the header file and make sure it is included
-everythere? I was looking at current implementations in the kernel and
-this is not common. Mostly the attributes are set in the function
-definition. So I was not sure if that would work. If so, may we skip
-then the __exit attribute in the definition?
-
-GCC doc states: "The keyword __attribute__ allows you to specify
-special attributes when making a declaration."
-
- http://gcc.gnu.org/onlinedocs/gcc-4.5.1/gcc/Function-Attributes.html#Function%20Attributes
-
-but nothing about that happens if it is in the function definition and
-this is different from the declaration.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index acd599a..cdcdf13 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1065,9 +1065,9 @@ mismatch:
+ 
+ out_mask:
+ 	free_cpumask_var(mask);
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 
+ out_thread:
+-	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	if (new->thread) {
+ 		struct task_struct *t = new->thread;
+ 
