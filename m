@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab1CQSMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:12:16 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52423 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab1CQSMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:12:08 -0400
-Date: Thu, 17 Mar 2011 12:12:03 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ed W <lists@wildgooses.com>
-Cc: Andres Salomon <dilinger@queued.net>, rpurdie@rpsys.net,
-        linux-geode@lists.infradead.org, const@mimas.ru,
-        linux-kernel@vger.kernel.org
-Subject: Re: Feedback please: [PATCH] leds: New PCEngines Alix LED driver
- using gpio interface
-Message-ID: <20110317181203.GL9597@angua.secretlab.ca>
-References: <4D81D7FD.1040602@wildgooses.com>
- <20110317084328.41831b4c@debxo>
- <AANLkTikga=zrNgfsuN4=8tCfZz0n7vkk6i0xW-zj6zSD@mail.gmail.com>
- <4D8243E7.7030309@wildgooses.com>
+	id S1754943Ab1CQSQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:16:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753529Ab1CQSQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 14:16:13 -0400
+Date: Thu, 17 Mar 2011 14:15:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Curt Wohlgemuth <curtw@google.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-ID: <20110317181543.GA10482@redhat.com>
+References: <20110314202324.GG31120@redhat.com>
+ <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+ <20110315184839.GB5740@redhat.com>
+ <20110316131324.GM2140@cmpxchg.org>
+ <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
+ <20110316215214.GO2140@cmpxchg.org>
+ <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+ <20110317144641.GC4116@quack.suse.cz>
+ <20110317171219.GD32392@redhat.com>
+ <20110317175908.GH4116@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D8243E7.7030309@wildgooses.com>
+In-Reply-To: <20110317175908.GH4116@quack.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 05:24:55PM +0000, Ed W wrote:
-> On 17/03/2011 16:08, Grant Likely wrote:
-> > Actually, it looks like with your changes this isn't even a driver
-> > anymore.  It is merely code to register a device on a specific
-> > platform.  Is there any other alix-specific initialization code in the
-> > kernel?  If so, you should consider relocating the device registration
-> > with the rest of the alix setup code.
-> 
-> Agreed.  I confess that I don't understand the linux driver structure
-> enough to shift the code further though
-> 
-> What I observe is that there is a lot of arch specific setup for ARM,
-> etc, however, this is not currently done at all for x86 (which is Alix),
-> so at the moment this would seem to sit slightly awkwardly with current
-> x86 arch code?
-> 
-> Instead I found leds-net5501.c, which is for a very similar platform to
-> the Alix (not quite similar enough that I could combine the files) and I
-> used that as my prototype for this driver.
-> 
-> I think given that we already have a similar driver in the leds area
-> which does platform alike setup, this gives some justification for doing
-> the same with the Alix leds?
-
-No, that's bad practise.  You should have one Alix setup file,
-probably in arch/x86/platform, that takes care of all Alix specific
-setup registrations.  Right now that only consists of gpio leds, but
-it could potentially grow.  Note that this is only for on-time setup
-and registrations.  Actual device drivers still belong under drivers/
-
-> Additionally if we ever find we need Alix
-> specific setup code then the code is ready to be used as is by the
-> platform code?
-> 
-> 
-> >>> -module_init(alix_led_init);
-> >>> -module_exit(alix_led_exit);
-> >>> +arch_initcall(alix_init);
-> >>
-> >> Why is this arch_initcall rather than module_init?   If possible, it
-> >> would be good to have an unload hook as well.
+On Thu, Mar 17, 2011 at 06:59:08PM +0100, Jan Kara wrote:
+> On Thu 17-03-11 13:12:19, Vivek Goyal wrote:
+> > On Thu, Mar 17, 2011 at 03:46:41PM +0100, Jan Kara wrote:
+> > [..]
+> > > > - bdi writeback: will revert some of the mmotm memcg dirty limit changes to
+> > > >   fs-writeback.c so that wb_do_writeback() will return to checking
+> > > >   wb_check_background_flush() to check background limits and being
+> > > > interruptible if
+> > > >   sync flush occurs.  wb_check_background_flush() will check the global
+> > > >   memcg_over_bg_limit list for memcg that are over their dirty limit.
+> > > >   wb_writeback() will either (I am not sure):
+> > > >   a) scan memcg's bdi_memcg list of inodes (only some of them are dirty)
+> > > >   b) scan bdi dirty inode list (only some of them in memcg) using
+> > > >      inode_in_memcg() to identify inodes to write.  inode_in_memcg(inode,memcg),
+> > > >      would walk memcg- -> memcg_bdi -> memcg_mapping to determine if the memcg
+> > > >      is caching pages from the inode.
+> > > Hmm, both has its problems. With a) we could queue all the dirty inodes
+> > > from the memcg for writeback but then we'd essentially write all dirty data
+> > > for a memcg, not only enough data to get below bg limit. And if we started
+> > > skipping inodes when memcg(s) inode belongs to get below bg limit, we'd
+> > > risk copying inodes there and back without reason, cases where some inodes
+> > > never get written because they always end up skipped etc. Also the question
+> > > whether some of the memcgs inode belongs to is still over limit is the
+> > > hardest part of solution b) so we wouldn't help ourselves much.
 > > 
-> > Yes, unless you've got specific ordering constraints this should
-> > definitely be module_init().
-> 
-> I'm out of my depth here.  I would be very happy to resubmit either way?
-> 
-> However, is there not a potential ordering issue if leds-alix2 is loaded
-> *before* leds-gpio? Is this not the reason for making it an arch_initcall?
+> > May be I am missing something but can't we just start traversing
+> > through list of memcg_over_bg_list and take option a) to traverse
+> > through list of inodes and write them till we are below limit of
+> > that group. We of course skip inodes which are not dirty.
+> > 
+> > This is assuming that root group is also part of that list so that
+> > inodes in root group do not starve writeback.
+> > 
+> > We still continue to have all the inodes on bdi wb structure and
+> > memcg will just give us pointers to those inodes. So for background
+> > write, instead of going serially through dirty inodes list, we
+> > will first pick the cgroup to write and then inode to write. As
+> > we will be doing round robin among cgroup list, it will make sure
+> > that none of the cgroups (including root) as well as inode are not
+> > starved.
+>   I was considering this as well and didn't quite like it but on a second
+> thought it need not be that bad. If we wrote MAX_WRITEBACK_PAGES from one
+> memcg, then switched to another one while keeping pointers to per-memcg inode
+> list (for the time when we return to this memcg), it could work just fine.
 
-Nope.  It does not matter if the driver gets registered first or the
-device.
+Yes, we can write MAX_WRITEBACK_PAGES from each memcg and then move on to
+next one. In fact memcg_bdi should have list of memcg_mapping. So once we
+select the inode (memcg_mapping) from cgroup for writeout (move inode
+on ->b_io list), we can also shuffle the position of memcg_mapping with-in
+memory cgroup so that inodes with-in a cgroup get fair share of writeout in
+a round robin manner.
 
-> Also the same code is used in leds-5501.c - would you like me to submit
-> a patch to change that also (if you confirm it should become a
-> module_init call?).
+As you said in other mail, we probably will keep MEMCG_BDI_WRITTEN count
+so that IO less throttling can distribute the pages completed to right
+cgroup. 
 
-Unless you've got the hardware to test, probably not.
-
-> Thanks for final confirmation on this and I will quickly resubmit the patch?
+Down the line we can probably also maintain MEMCG_BDI_WRITEBACK to keep track
+how many pages are already under writeout from a cgroup and skip that cgroup
+if too many pages are already in-flight. This might help us push more
+WRITES for higher weight IO cgroup as compared to lower weight IO cgroup.
 
 Thanks
-
-g.
-
+Vivek
