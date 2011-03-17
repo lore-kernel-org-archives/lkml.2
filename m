@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab1CQTVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 15:21:40 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:20790 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755286Ab1CQTVi (ORCPT
+	id S1755386Ab1CQTWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 15:22:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:42816 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab1CQTWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 15:21:38 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: _Aaw_ZoVM1m4xHWQImFfMeEQ3QzLEHeAuOPr6qboweIvnR.
- ha7tnmlhjauzIU8xwyLlfJcQEdCBB_W9CODUFkoT_lb4woGFBva_sVY0Vn70
- vnZLncQkixqYd0Q5G9t00lwid_wugUJl1mBasqPr0DtIxotl2_rBUUfw5pHi
- JPQg_Mlk1A_CEoYSQiVboeJB0SqbSzj34MXMyQ8UnSLkMfZFpuYnPrTgrdfT
- g6InEDx_WEIUgqXQXiA7QxFW169ypcw59YODH8kcRwvylF5d1NWBJTHBoc_z
- snVnzKd1Q2H4JL9Koctth96hrC7U13bMt9GoMsFhzDab8lvK2
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 17 Mar 2011 14:21:33 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: Poll about irqsafe_cpu_add and others
-In-Reply-To: <1300388139.6315.418.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1103171419280.18529@router.home>
-References: <1300371834.6315.93.camel@edumazet-laptop>  <20110317.081420.71114992.davem@davemloft.net>  <alpine.DEB.2.00.1103171016270.12540@router.home>  <1300380801.6315.306.camel@edumazet-laptop>  <alpine.DEB.2.00.1103171245430.16620@router.home> 
- <1300386569.6315.404.camel@edumazet-laptop>  <alpine.DEB.2.00.1103171338350.18529@router.home> <1300388139.6315.418.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 17 Mar 2011 15:22:11 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=vhdKIqpQuCYA:10 a=VaamVk2hSJcA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=1u61OwtPzuoNe0j5qtkA:9 a=l0yaV7v8XoZ75eKzE0QA:7 a=MTf0buV7ctRNEKomNkRFJ360IPgA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110317192208.444147791@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 17 Mar 2011 15:21:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: [PATCH 1/2] WARN_ON_SMP(): Allow use in if statements on UP
+References: <20110317192105.308382309@goodmis.org>
+Content-Disposition: inline; filename=0001-WARN_ON_SMP-Allow-use-in-if-statements-on-UP.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, Eric Dumazet wrote:
+From: Steven Rostedt <srostedt@redhat.com>
 
-> > > I wonder why we dont use :
-> > >
-> > > 	addl	$0x2,%fs:xt_u64
-> > > 	addcl	$0x0,%fs:xt_u64+4
-> >
-> > The compiler is fed the following
-> >
-> > 	*__this_cpu_ptr(xt_u64) += 2
-> >
-> > __this_cpu_ptr makes it:
-> >
-> > 	*(xt_u64 + __my_cpu_offset) += 2
-> >
-> > So the compiler calculates the address first and then increments it.
-> >
-> > The compiler could optimize this I think. Wonder why that does not happen.
->
-> Compiler is really forced to compute addr, thats why.
->
-> Hmm, we should not fallback to generic ops I think, but tweak
->
-> percpu_add_op() {
+Both WARN_ON() and WARN_ON_SMP() should be able to be used in
+an if statement.
 
-percpu_add_op() is not used. This is a 64 bit operation on a 32 bit
-machine thus we fall back to this_cpu_generic_to_op()
+	if (WARN_ON_SMP(foo)) { ... }
 
-#define __this_cpu_generic_to_op(pcp, val, op)                          \
-do {                                                                    \
-        *__this_cpu_ptr(&(pcp)) op val;                                 \
-} while (0)
+Because WARN_ON_SMP() is defined as a do { } while (0) on UP,
+it can not be used this way.
+
+Convert it to the same form that WARN_ON() is, even when
+CONFIG_SMP is off.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/asm-generic/bug.h |   28 +++++++++++++++++++++++++++-
+ 1 files changed, 27 insertions(+), 1 deletions(-)
+
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index c2c9ba0..ac2f48a 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -165,10 +165,36 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #define WARN_ON_RATELIMIT(condition, state)			\
+ 		WARN_ON((condition) && __ratelimit(state))
+ 
++/*
++ * WARN_ON_SMP() is for cases that the warning is either
++ * meaningless for !SMP or may even cause failures.
++ * This is usually used for cases that we have
++ * WARN_ON(!spin_is_locked(&lock)) checks, as spin_is_locked()
++ * returns 0 for uniprocessor settings.
++ * It can be also be used with values that are only defined
++ * on SMP:
++ *
++ * struct foo {
++ *  [...]
++ * #ifdef CONFIG_SMP
++ *	int bar;
++ * #endif
++ * };
++ *
++ * void func(struct foo *zoot)
++ * {
++ *	WARN_ON_SMP(!zoot->bar);
++ *
++ * For CONFIG_SMP, WARN_ON_SMP() should act the same as WARN_ON(),
++ * and should be a nop and return false for uniprocessor.
++ *
++ * if (WARN_ON_SMP(x)) returns true only when CONFIG_SMP is set
++ * and x is true.
++ */
+ #ifdef CONFIG_SMP
+ # define WARN_ON_SMP(x)			WARN_ON(x)
+ #else
+-# define WARN_ON_SMP(x)			do { } while (0)
++# define WARN_ON_SMP(x)			({0;})
+ #endif
+ 
+ #endif
+-- 
+1.7.2.3
 
 
