@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab1CQXfa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 19:35:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34792 "EHLO mga09.intel.com"
+	id S932069Ab1CQXfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 19:35:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16188 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755182Ab1CQXf1 convert rfc822-to-8bit (ORCPT
+	id S1755816Ab1CQXfm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 19:35:27 -0400
+	Thu, 17 Mar 2011 19:35:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.63,202,1299484800"; 
-   d="scan'208";a="721388241"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
+   d="scan'208";a="614397544"
+From: "Hefty, Sean" <sean.hefty@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Roland Dreier <roland@kernel.org>
 CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Thu, 17 Mar 2011 16:35:25 -0700
-Subject: RE: linux-next: build failure in Linus' tree
-Thread-Topic: linux-next: build failure in Linus' tree
-Thread-Index: Acvk+5+2t68LLuLBTE2pjEj3BsOJVgAAA+oQ
-Message-ID: <987664A83D2D224EAE907B061CE93D53019DCA3AD8@orsmsx505.amr.corp.intel.com>
-References: <20110318102950.aee6f0bb.sfr@canb.auug.org.au>
-In-Reply-To: <20110318102950.aee6f0bb.sfr@canb.auug.org.au>
+        "David S. Miller" <davem@davemloft.net>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Changli Gao <xiaosuo@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Date: Thu, 17 Mar 2011 16:35:39 -0700
+Subject: [PATCH] rdma/addr: Initialize ret to fix build warning
+Thread-Topic: [PATCH] rdma/addr: Initialize ret to fix build warning
+Thread-Index: Acvk98IjBDuhv7TdS6mcFzXI6vJBqgAAbKBw
+Message-ID: <CF9C39F99A89134C9CF9C4CCB68B8DDF25CCC10249@orsmsx501.amr.corp.intel.com>
+References: <20110318100418.6556c92c.sfr@canb.auug.org.au>
+In-Reply-To: <20110318100418.6556c92c.sfr@canb.auug.org.au>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -35,11 +38,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->I have reverted the merge commit afe997a183ec ("Pull pstorev4 into
-> release branch") for today.
+Commit b23dd4fe42b455af5c6e20966b7d6959fa8352ea (ipv4: Make output
+route lookup return rtable directly) resulted in leaving
+ret uninitialized, where it may later be returned.
 
-Ok.  I'm working with Al on fixing the pstore code.  I have a patch
-that makes it buildable - but there are many more changes needed to
-cure the rest of the problems that Al pointed out.
+Signed-off-by: Sean Hefty <sean.hefty@intel.com>
+---
+I didn't actually test this, but it looks correct.
 
--Tony
+ drivers/infiniband/core/addr.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/infiniband/core/addr.c b/drivers/infiniband/core/addr.c
+index e0ef5fd..4ffc224 100644
+--- a/drivers/infiniband/core/addr.c
++++ b/drivers/infiniband/core/addr.c
+@@ -204,7 +204,7 @@ static int addr4_resolve(struct sockaddr_in *src_in,
+ 
+ 	/* If the device does ARP internally, return 'done' */
+ 	if (rt->dst.dev->flags & IFF_NOARP) {
+-		rdma_copy_addr(addr, rt->dst.dev, NULL);
++		ret = rdma_copy_addr(addr, rt->dst.dev, NULL);
+ 		goto put;
+ 	}
+ 
+
+
