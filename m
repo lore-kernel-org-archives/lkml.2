@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab1CQLci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 07:32:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63897 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763Ab1CQLcf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 07:32:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=V+QnGPbB6rvHg1skhZK5+iqdjMtlqJKj0JWaSym1qYCuTjbI+wj/4ciFGm9cpLaAIx
-         JksF0vCf0aC2mmihi4zouodhDq8kpwcHWLREnZs6PTDrmhtqp8TZU2+V0WZpVOy2mOWj
-         atrW+UbNVo0gW6cmdL/0ygWxEdxJ5lsHZgn/I=
-Date: Thu, 17 Mar 2011 14:32:29 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Changli Gao <xiaosuo@gmail.com>, linux-kernel@vger.kernel.org,
-        security@kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org
-Subject: [PATCH v2] ipv4: netfilter: ipt_CLUSTERIP: fix buffer overflow
-Message-ID: <20110317113229.GA7710@albatros>
-References: <1299780740-32652-1-git-send-email-segoon@openwall.com>
- <AANLkTimPZJoCzz386e-4m0Y4khWGZirZguGFmuFYCrry@mail.gmail.com>
- <4D7F5CAC.6070006@trash.net>
+	id S1754054Ab1CQLc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 07:32:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33620 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754000Ab1CQLc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 07:32:57 -0400
+Date: Thu, 17 Mar 2011 12:32:55 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KBuild: silence "'scripts/unifdef' is up to date."
+Message-ID: <20110317113255.GA28330@sepie.suse.cz>
+References: <20110315063425.9538.11565.stgit@mike.mtv.corp.google.com>
+ <ilnq8l$rjj$1@dough.gmane.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D7F5CAC.6070006@trash.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <ilnq8l$rjj$1@dough.gmane.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'buffer' string is copied from userspace.  It is not checked whether it is
-zero terminated.  This may lead to overflow inside of simple_strtoul().
-Changli Gao suggested to copy not more than user supplied 'size' bytes.
+On Tue, Mar 15, 2011 at 01:40:37PM +0000, WANG Cong wrote:
+> On Mon, 14 Mar 2011 23:34:25 -0700, Mike Waychison wrote:
+> 
+> > Patch applies to 2.6.38-rc8.
+> > 
+> > While changing our build system over to use the headers_install target
+> > as part of our klibc build, the following message started showing up in
+> > our logs:
+> > 
+> > make[2]: `scripts/unifdef' is up to date.
+> > 
+> > It turns out that the build blindly invokes a recursive make on this
+> > target, which causes make to emit this message when the target is
+> > already up to date.  This isn't seen for most targets as the rest of the
+> > build relies primarily on the default target and on PHONY targets when
+> > invoking make recursively.
+> > 
+> > Silence the above message when building unifdef as part of
+> > headers_install by hiding it behind a new PHONY target called
+> > "build_unifdef" that has an empty recipe.
+> > 
+> > Signed-off-by: Mike Waychison <mikew@google.com> ---
+> 
+> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-It was introduced before the git epoch.  Files "ipt_CLUSTERIP/*" are
-root writable only by default, however, on some setups permissions might be
-relaxed to e.g. network admin user.
+Applied to kbuild-2.6.git#kbuild, thanks.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- net/ipv4/netfilter/ipt_CLUSTERIP.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-index 1e26a48..af7dec6 100644
---- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
-+++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-@@ -669,8 +669,11 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
- 	char buffer[PROC_WRITELEN+1];
- 	unsigned long nodenum;
- 
--	if (copy_from_user(buffer, input, PROC_WRITELEN))
-+	if (size > PROC_WRITELEN)
-+		return -EIO;
-+	if (copy_from_user(buffer, input, size))
- 		return -EFAULT;
-+	buffer[size] = 0;
- 
- 	if (*buffer == '+') {
- 		nodenum = simple_strtoul(buffer+1, NULL, 10);
--- 
-1.7.0.4
+Michal
