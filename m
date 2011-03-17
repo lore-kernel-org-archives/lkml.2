@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003Ab1CQSQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:16:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:39900 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab1CQSQp (ORCPT
+	id S1754973Ab1CQSSC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:18:02 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:63410 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab1CQSSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:16:45 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=MpKEIbNVzpcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=JdiTLEUdHxpx7JvBJyQA:9 a=xK0yCpzSZx3Xi7HWWNcA:7 a=JJZiMWjrrj9WT1Zq3-4FaH0On4wA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
-In-Reply-To: <1300381340.6315.323.camel@edumazet-laptop>
-References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
-	 <1300370936.16880.96.camel@gandalf.stny.rr.com>
-	 <AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
-	 <1300380909.16880.264.camel@gandalf.stny.rr.com>
-	 <1300381340.6315.323.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 17 Mar 2011 14:16:42 -0400
-Message-ID: <1300385802.16880.348.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 17 Mar 2011 14:18:00 -0400
+Date: Thu, 17 Mar 2011 12:17:57 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ed W <lists@wildgooses.com>
+Cc: Andres Salomon <dilinger@queued.net>, rpurdie@rpsys.net,
+        linux-geode@lists.infradead.org, const@mimas.ru,
+        linux-kernel@vger.kernel.org
+Subject: Re: Feedback please: [PATCH] leds: New PCEngines Alix LED driver
+ using gpio interface
+Message-ID: <20110317181757.GM9597@angua.secretlab.ca>
+References: <4D81D7FD.1040602@wildgooses.com>
+ <20110317084328.41831b4c@debxo>
+ <AANLkTikga=zrNgfsuN4=8tCfZz0n7vkk6i0xW-zj6zSD@mail.gmail.com>
+ <4D8243E7.7030309@wildgooses.com>
+ <20110317105210.420e55c4@queued.net>
+ <4D824BEA.70502@wildgooses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D824BEA.70502@wildgooses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 18:02 +0100, Eric Dumazet wrote:
-> Le jeudi 17 mars 2011 à 12:55 -0400, Steven Rostedt a écrit :
-> > Here, test this patch. I'm in the process of committing it now.
-> > It will be two patches, one for the WARN_ON_SMP() change, the other for
-> > the futex change.
-> > 
-> > -- Steve
-> > 
-> > diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-> > index c2c9ba0..25f1e9e 100644
-> > --- a/include/asm-generic/bug.h
-> > +++ b/include/asm-generic/bug.h
-> > @@ -168,7 +168,7 @@ extern void warn_slowpath_null(const char *file, const int line);
-> >  #ifdef CONFIG_SMP
-> >  # define WARN_ON_SMP(x)			WARN_ON(x)
-> >  #else
-> > -# define WARN_ON_SMP(x)			do { } while (0)
-> > +# define WARN_ON_SMP(x)			({0;})
-> >  #endif
-> >  
+On Thu, Mar 17, 2011 at 05:59:06PM +0000, Ed W wrote:
+> On 17/03/2011 17:52, Andres Salomon wrote:
+> > OLPC stuff lives in arch/x86/platform/olpc; if there was more
+> > alix-specific stuff, I'd suggest moving it into something similar.
+> > However, I didn't find any.  Maybe an arch/x86/platform/geode as a
+> > place to collect platform drivers for the various geode-based machines
+> > out there (alix, soekris, etc)?  Though honestly, I'm not that
+> > interested in doing the work to migrate stuff over to there.
 > 
-> You meant :
 > 
-> # define WARN_ON_SMP(x)			({x;})
-> 
-> or
-> 
-> # define WARN_ON_SMP(x)	  do { } while (x, 0)
-> 
-> ?
-> 
+> As this is my first stab at this, I think you are agreeing that the
+> current change is ok as a first step at least?  (I can have a go at a
+> larger code re-org later...)
 
-Does if (do { } while (x, 0)) work?
+It is actually really easy.  You just need to move the file into
+arch/x86/platform/geode, add a Makefile, and add a line to
+arch/x86/platform/Makefile to include it.  In this particular case,
+since so much code is sliced out, the patch will actually be easier to
+review if the file is moved at the same time.
 
-And no, on SMP it should always return false. The point is, the warning
-is only valid if we are on an SMP box, this is useful for spin_locks()
-
-if (WARN_ON_SMP(!spin_is_locked(lock)))
-	fail();
-
-We don't want to fail.
-
-That spin_is_locked(lock) on !SMP returns 0 every time.
-
--- Steve
-
-
+g.
