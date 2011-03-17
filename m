@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab1CQFXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 01:23:35 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39345 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab1CQFXe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 01:23:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=fziraKiHU8kJ5jrNd7/CtQwwgPT+KDlqVf9c4KC9LaNrixsz01yx3Lgf5+FGHKpAif
-         EHZXR/FrTpMQj9WBFUitB46q3+RGL5XraRE38DHMvBxHQNRwlK05iKvhhWHH7OlpANKk
-         KHlGVF3oqnreAHT7PsZVZueXc2bhPAiJuDRVU=
+	id S1751425Ab1CQFhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 01:37:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38970 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822Ab1CQFhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 01:37:20 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] Silence "ldm_validate_partition_table(): Disk read failed" when booting with "quiet"
+Date: Thu, 17 Mar 2011 11:04:14 +0530
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Anton Altaparmakov <aia21@cam.ac.uk>, Jiri Kosina <trivial@kernel.org>,
+        linux-ntfs-dev@lists.sourceforge.net,
+        "Richard Russon (FlatCap)" <ldm@flatcap.org>,
+        Klaus Hartmann <Klaus.Hartmann@ts.fujitsu.com>,
+        Andries Brouwer <aeb@cwi.nl>, linux-kernel@vger.kernel.org
+References: <201101121633.48567.knikanth@suse.de> <201103151125.05809.knikanth@suse.de> <68B01298-2FC4-4BA3-B76D-50BABA32AC4E@cam.ac.uk>
+In-Reply-To: <68B01298-2FC4-4BA3-B76D-50BABA32AC4E@cam.ac.uk>
 MIME-Version: 1.0
-In-Reply-To: <201103170119.17647.rjw@sisk.pl>
-References: <201103052254.48515.rjw@sisk.pl>
-	<201103150100.17501.rjw@sisk.pl>
-	<20110315190545.GA4165@xanatos>
-	<201103170119.17647.rjw@sisk.pl>
-Date: Wed, 16 Mar 2011 22:23:32 -0700
-X-Google-Sender-Auth: eWLyjdWwlo0ytLjJIAhNBnYfLA0
-Message-ID: <AANLkTim39fjrAp4OW_MfpbZkz-YYW5E2NOHuo1j=svmW@mail.gmail.com>
-Subject: Re: [RFT][PATCH] PCI / ACPI: Do not require MSI support for PCIe
- native features
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103171104.15086.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/16 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Tuesday, March 15, 2011, Sarah Sharp wrote:
->> On Tue, Mar 15, 2011 at 01:00:17AM +0100, Rafael J. Wysocki wrote:
->> > Well, I must admit I have no idea what the problem is.  OK, in addition to the
->> > above changes, please replace the "pci_ext_cfg_avail(root->bus->self)" in the
->> > same file with "true" and see if _that_ helps.
->>
->> Yay, that worked!  dmesg is attached.
->
-> Good, at least we know what the problem is, now we only have to find the root
-> cause. ;-)
->
-> So, pci_ext_cfg_avail(root->bus->self) returns 0 on your machine, which is kind
-> of unexpected (to put it lightly), so very likely we have uncovered a bug
-> in the init code.
->
-> Unfortunately, I may not be able to take care of this issue for the next few
-> days, I'll let you know when I get back to it.
+From: Nikanth Karthikesan <knikanth@suse.de>
+Subject: Silence "ldm_validate_partition_table(): Disk read failed" when booting with "quiet"
 
-her .config does not define PCI_MMCONFIG
+When the kernel does partition detection, on certain configurations with
+external fibre channel raid systems (e.g. clariion from EMC) the read
+would fail. And "ldm_validate_partition_table(): Disk read failed"
+messages are printed to the console.
 
-#
-# Bus options (PCI etc.)
-#
-CONFIG_PCI=y
-CONFIG_PCI_DIRECT=y
-# CONFIG_PCI_MMCONFIG is not set
+But the failure to read is not a critical error. Now since the message
+is flagged as KERN_CRIT, it gets printed even when booting with the
+"quiet" kernel parameter. Fix it by using KERN_INFO, as the failure to
+read here is not really an error.
 
-Yinghai
+Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+Reported-by : Klaus Hartmann <Klaus.Hartmann@ts.fujitsu.com>
+Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
+
+---
+
+diff --git a/fs/partitions/ldm.c b/fs/partitions/ldm.c
+index b10e354..ea648b9 100644
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -565,7 +565,7 @@ static bool ldm_validate_partition_table(struct parsed_partitions *state)
+ 
+ 	data = read_part_sector(state, 0, &sect);
+ 	if (!data) {
+-		ldm_crit ("Disk read failed.");
++		ldm_info ("Disk read failed.");
+ 		return false;
+ 	}
+ 
