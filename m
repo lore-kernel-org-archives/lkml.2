@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1CQQNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:13:51 -0400
-Received: from kroah.org ([198.145.64.141]:37690 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439Ab1CQQNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:13:48 -0400
-Date: Thu, 17 Mar 2011 09:13:08 -0700
-From: Greg KH <greg@kroah.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jean-philippe.menil@univ-nantes.fr, stable@kernel.org,
-        Jason Wang <jasowang@redhat.com>
-Subject: Re: [stable] [PATCH] kvm: fix crash on irqfd deassign
-Message-ID: <20110317161308.GA12740@kroah.com>
-References: <20110317085333.GA7336@redhat.com>
-MIME-Version: 1.0
+	id S1752198Ab1CQQ1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 12:27:14 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57041 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab1CQQ1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 12:27:12 -0400
+Date: Thu, 17 Mar 2011 17:27:10 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
+Message-ID: <20110317162710.GH11094@one.firstfloor.org>
+References: <4D817234.9070106@jp.fujitsu.com> <4D8172D7.3040201@jp.fujitsu.com> <20110317041424.GD11094@one.firstfloor.org> <4D819A2A.8050606@jp.fujitsu.com> <20110317062612.GE11094@one.firstfloor.org> <4D81BB87.10803@jp.fujitsu.com> <20110317140401.GX10696@random.random> <20110317152559.GG11094@one.firstfloor.org> <20110317161219.GZ10696@random.random>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110317085333.GA7336@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110317161219.GZ10696@random.random>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 10:53:33AM +0200, Michael S. Tsirkin wrote:
-> irqfd in kvm used flush_work incorrectly:
-> it assumed that work scheduled previously can't run
-> after flush_work, but since kvm uses a non-reentrant
-> workqueue (by means of schedule_work)
-> we need flush_work_sync to get that guarantee.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Reported-by: Jean-Philippe Menil <jean-philippe.menil@univ-nantes.fr>
-> Tested-by: Jean-Philippe Menil <jean-philippe.menil@univ-nantes.fr>
-> ---
-> 
-> Note: this is needed for kernel 2.6.39 and earlier.
+> What I can tell is with the default khugepaged scan rate, the
+> collapse_huge_page will have an impact much smaller than KSM. It could
+> have more impact than KSM if you increase khugepaged load to 100% with
+> sysfs (because of the more memory that is covered by khugepaged
+> compared to only the shared portion of KSM). Then the window gets much
+> bigger, but still minor, if you can't trigger it with the testsuite
+> it's even less likely to ever happen in practice.
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+You mean randomly injecting errors?
+That tends to be hard and unreliable -- usually we try to have a 
+specific tester that is not random.
 
-thanks,
+> Did you try the testsuite with khugepaged at 100% load? I think that's
+> good indication if this window has any practical significance.
 
-greg k-h
+The measurement is simple: run the workloads and do some dumps
+with pagetypes and check if the memory with lots of pages 
+has a state that can be handled by memory_failure()
+
+AFAIK  this hasn't been done so far with THP.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
