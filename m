@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab1CQOFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 10:05:08 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38609 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1CQOFF (ORCPT
+	id S1752816Ab1CQOJB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 10:09:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41294 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab1CQOI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 10:05:05 -0400
-Date: Thu, 17 Mar 2011 15:04:56 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] amd64_edac pile for 39
-Message-ID: <20110317140456.GA17574@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 17 Mar 2011 10:08:59 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=MpKEIbNVzpcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=CdYqGkZsO4NgjcsSJgAA:9 a=21QOces148NqF1O3X6jEqYBUhpQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: Steven Rostedt <rostedt@goodmis.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
+In-Reply-To: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 10:08:56 -0400
+Message-ID: <1300370936.16880.96.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2011-03-17 at 13:25 +0100, richard -rw- weinberger wrote:
+> Lai,
+> 
+> Your commit 2e12978a
+> (futex,plist: Pass the real head of the priority list to plist_del())
+> triggers gazillions warnings on User Mode Linux (x86, Linus' tree as of today):
+> 
+> ------------[ cut here ]------------
+> WARNING: at kernel/futex.c:786 __unqueue_futex+0x12/0x16()
+> Modules linked in:
+> 27d4cce8:  [<081c13fe>] dump_stack+0x1c/0x20
+> 27d4cd00:  [<08071aa0>] warn_slowpath_common+0x49/0x5f
+> 27d4cd18:  [<08071acb>] warn_slowpath_null+0x15/0x19
+> 27d4cd28:  [<0808fdb8>] __unqueue_futex+0x12/0x16
+> 27d4cd38:  [<0808fef3>] futex_wait+0x137/0x1ed
+> 27d4cdd0:  [<080910c3>] do_futex+0x78/0x7c4
+> 27d4cedc:  [<080918e6>] sys_futex+0xd7/0xed
+> 27d4cf28:  [<0805abf6>] handle_syscall+0x7a/0x98
+> 27d4cf78:  [<080685d9>] userspace+0x2c9/0x370
+> 27d4cfe0:  [<08058be5>] fork_handler+0x53/0x5b
+> 27d4cffc:  [<00000000>] 0x0
+> 
+> ---[ end trace ed7709f235f82328 ]---
+> 
+> !spin_is_locked(q->lock_ptr) in the WARN_ON() at line 786
+> triggers the warnings.
 
-please pull from the branch below to receive my latest pile. This
-patchset adds support for the memory controller on a new CPU family.
-Also, it removes and cleans up a bunch of crap resulting in a diffstat
-which gives me a warm and fuzzy feeling:
+Crap, I bet you are running CONFIG_SMP=n. I'll test this. We may need to
+make that a WARN_ON_SMP().
 
- 8 files changed, 842 insertions(+), 1043 deletions(-)
+-- Steve
 
-Thanks.
+> 
+> I'm not sure whether this shows a bug within UML
+> or the WARN_ON() is wrong.
+> 
+> What do you think?
+> 
 
-The following changes since commit 521cb40b0c44418a4fd36dc633f575813d59a43d:
 
-  Linux 2.6.38 (2011-03-14 18:20:32 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
-
-Borislav Petkov (38):
-      EDAC: Shut up sysfs registration debug code
-      amd64_edac: Add support for F15h DCT PCI config accesses
-      amd64_edac: Remove DRAM base/limit subfields caching
-      amd64_edac: Cleanup DHAR handling
-      amd64_edac: Cleanup chipselect handling
-      amd64_edac: Sanitize channel extraction
-      amd64_edac: Sanitize f10_get_base_addr_offset
-      amd64_edac: Replace huge bitmasks with a macro
-      amd64_edac: Cleanup DBAM handling
-      amd64_edac: Cleanup Dram Configuration registers handling
-      amd64_edac: Cleanup DCT Select Low/High code
-      amd64_edac: Cleanup NBCTL code
-      amd64_edac: Cleanup NBCFG handling
-      amd64_edac: Cleanup NBSH cruft
-      amd64_edac: Cleanup old defines cruft
-      amd64_edac: Adjust channel counting to F15h
-      amd64_edac: Simplify decoding path
-      amd64_edac: Unify get_error_address
-      amd64_edac: Add support for interleaved region swapping
-      amd64_edac: Correct node interleaving removal
-      amd64_edac: Fix channel interleave removal
-      amd64_edac: Revamp online spare handling
-      amd64_edac: Beef up early exit reporting
-      amd64_edac: Adjust sys_addr to chip select conversion routine to F15h
-      amd64_edac: Sanitize ->read_dram_ctl_register
-      amd64_edac: Improve DRAM address mapping
-      PCI: Rename CPU PCI id define
-      amd64_edac: Simplify scrubrate setting
-      amd64_edac: Adjust ECC symbol size to F15h
-      amd64_edac: Enable driver on F15h
-      amd64_edac: Drop redundant declarations
-      amd64_edac: Fix node id signedness
-      amd64_edac: Fix DRAM base macros
-      amd64_edac: Fix PCI config addressing types
-      amd64_edac: Drop local variable
-      amd64_edac: Fix ranges signedness
-      amd64_edac: Fix DCT argument type
-      amd64_edac: Fix decode_syndrome types
-
- arch/x86/kernel/amd_nb.c      |    2 +-
- drivers/edac/amd64_edac.c     | 1442 +++++++++++++++++++----------------------
- drivers/edac/amd64_edac.h     |  369 ++++-------
- drivers/edac/amd64_edac_inj.c |    8 +-
- drivers/edac/edac_mc_sysfs.c  |   26 +-
- drivers/edac/mce_amd.c        |    8 +-
- drivers/edac/mce_amd.h        |   28 +-
- include/linux/pci_ids.h       |    2 +-
- 8 files changed, 842 insertions(+), 1043 deletions(-)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
