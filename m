@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab1CQQm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:42:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58266 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab1CQQmZ (ORCPT
+	id S1754691Ab1CQQmo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 12:42:44 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15242 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab1CQQmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:42:25 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=01NgLs0ohDAA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=ZinbF3C8ry2xIi5dHagA:9 a=ziopsANK_EirX6SLZIe2SPu49doA:4 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110317164223.478456189@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 17 Mar 2011 12:41:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 3/4] jump label: Add _ASM_ALIGN for x86 and x86_64
-References: <20110317164148.550876008@goodmis.org>
-Content-Disposition: inline; filename=0003-jump-label-Add-_ASM_ALIGN-for-x86-and-x86_64.patch
+	Thu, 17 Mar 2011 12:42:40 -0400
+Message-ID: <4D8239FA.50208@caviumnetworks.com>
+Date: Thu, 17 Mar 2011 09:42:34 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-serial@vger.kernel.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
+Subject: Re: [RFC PATCH 1/2] serial: 8250: Add a notifier chain for driver
+ registration.
+References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>	<1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com> <20110317121849.49d7c425@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110317121849.49d7c425@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Mar 2011 16:42:39.0363 (UTC) FILETIME=[53F64D30:01CBE4C2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Baron <jbaron@redhat.com>
+On 03/17/2011 05:18 AM, Alan Cox wrote:
+> On Wed, 16 Mar 2011 18:26:06 -0700
+> David Daney<ddaney@caviumnetworks.com>  wrote:
+>
+>> The 8250 driver is a bit weird in that in addition to supporting
+>> platform devices, extra devices can be added by calling
+>> serial8250_register_port().
+>>
+>> The problem is that if we call serial8250_register_port() before the
+>> driver is initialized Bad Things happen (we dereference NULL
+>> pointers).
+>>
+>> There doesn't seem to be a general way to know if a driver has been
+>> initialized
+>
+> I've had a bigger dig into this. I think the correct answer is probably
+> "always go via platform devices or similar". That *is* the notifier in
+> the kernel of today. serial8250_register_port ultimately should I think
+> ultimatly become an internal helper.
+>
 
-The linker should not be adding holes to word size aligned pointers, but
-out of paranoia we are explicitly specifying that alignment. I have not
-seen any holes in the jump label section in practice.
+That was kind of my thought too.  However we have all sorts of things 
+calling serial8250_register_port(). Things like:
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-LKML-Reference: <e119fbd060c9452c56063ea6148ba1070e7434cc.1300299760.git.jbaron@redhat.com>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/include/asm/jump_label.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+8250_pci.c
+of_serial.c
+8250_acorn.c
+8250_gsc.c
+.
+.
+.
 
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-index f217cee..a32b18c 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -16,6 +16,7 @@ static __always_inline bool arch_static_branch(struct jump_label_key *key)
- 	asm goto("1:"
- 		JUMP_LABEL_INITIAL_NOP
- 		".pushsection __jump_table,  \"aw\" \n\t"
-+		_ASM_ALIGN "\n\t"
- 		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
- 		".popsection \n\t"
- 		: :  "i" (key) : : l_yes);
--- 
-1.7.2.3
+The resulting view of the drivers in sysfs is that the little stub code 
+that calls serial8250_register_port() is shown as the driver rather than 
+serial8250.  But I suppose that is a matter of aesthetics more than 
+function.
 
+All those 'stub drivers' are relying on the ordering of module_init 
+calls caused indirectly by the Makefile layout.  The path of least 
+resistance is your suggestion that I use late_initcall() in my driver 
+stub.  I actually tried that before hacking up this patch, but didn't 
+like the idea of relying on *_initcall() ordering being necessary for 
+correct initialization.
 
+David Daney
