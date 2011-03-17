@@ -1,153 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1CQTaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 15:30:46 -0400
-Received: from kroah.org ([198.145.64.141]:56355 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754937Ab1CQTaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 15:30:35 -0400
-Date: Thu, 17 Mar 2011 12:30:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com
-Subject: Re: [PATCH]: SMBIOS: Add initial code and export version via sysfs
-Message-ID: <20110317193023.GA16790@kroah.com>
-References: <20110317135754.25241.88177.sendpatchset@prarit.bos.redhat.com>
+	id S1755358Ab1CQTbz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 15:31:55 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62824 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab1CQTbw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 15:31:52 -0400
+Date: Thu, 17 Mar 2011 13:31:49 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: David Daney <ddaney@caviumnetworks.com>, linux-serial@vger.kernel.org,
+        gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC PATCH 1/2] serial: 8250: Add a notifier chain for driver
+ registration.
+Message-ID: <20110317193149.GD12824@angua.secretlab.ca>
+References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
+ <1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com>
+ <20110317121849.49d7c425@lxorguk.ukuu.org.uk>
+ <20110317182510.GN9597@angua.secretlab.ca>
+ <4D82560B.4090800@caviumnetworks.com>
+ <20110317184723.GQ9597@angua.secretlab.ca>
+ <20110317192441.69c699b1@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110317135754.25241.88177.sendpatchset@prarit.bos.redhat.com>
+In-Reply-To: <20110317192441.69c699b1@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 09:57:54AM -0400, Prarit Bhargava wrote:
-> The existing DMI code, drivers/firmware/dmi.c, is not really parsing DMI.  It
-> is actually SMBIOS code that is using the old DMI infrastructure to expose
-> SMBIOS entries.
+On Thu, Mar 17, 2011 at 07:24:41PM +0000, Alan Cox wrote:
+> > > If we did that, serial8250_probe() would automatically do the right thing.
+> > 
+> > Take a look at the way arch/powerpc/platforms/512x/pdm360ng.c uses a
+> > notifier for amending a platform_device with additional data..
 > 
-> We should be doing the following:
+> I tend to view arch specific embedded code as rather like very dubious
+> parties. What goes on in other peoples' house out of sight is none of my
+> business.
 > 
-> 1.  Looking for SMBIOS (either EFI or mapped to it's standard location,
->     0xF0000)
-> 2.  If found, look for the SMBIOS' Intermediate Structure (aka "DMI" entry)
-> 3.  If not found, look for an "old" DMI structure.
+> The 8250 however is core code so it should keep its clothers on and behave
+> in a manner befitting its status.
 > 
-> DMI is a predecessor of SMBIOS, so we should start treating it as such.
+> What part of the problem can't be solved by doing it properly using the
+> device registration interfaces we have today ?
 
-Why?  What is this change going to buy us in the end?  Heck, right now,
-what's the benefit?
+Device registration isn't the problem.  The problem is supplying
+machine-specific callbacks from the board support code to the
+drivers.  When devices are sourced from a device tree, it is easy to
+get data about the device out of the tree, but it is really hard to
+get callback pointers.  To make it all work without this fiddling
+about, the octeon serial_{in,out} implementation would need to be
+rolled into of_serial.c (which FWIW, I have absolutely no problem
+with).
 
-> For this patch I have introduced drivers/firmware/smbios.c, exported the
-> SMBIOS version through sysfs, and modified the DMI code such that
-> 
-> a) dmi_scan_machine() is now called from init_smbios(), and
-> b) if an SMBIOS is found, the values in the SMBIOS STEP structure are used
-> in dmi_scan_machine().
-> 
-> Right now, removing the DMI code is not an option.  It is used by common
-> initscripts, etc., to bringup the system.  Later modifications in this area will
-> include additional parsing of the SMBIOS structs and a simultaneous cleanup
-> of the DMI code.
+g.
 
-Care to show follow-on patches that convert things to a manner which you
-think it should look like?
-
-> --- /dev/null
-> +++ b/drivers/firmware/smbios.c
-> @@ -0,0 +1,175 @@
-> +#include <linux/dmi.h>
-> +#include <linux/efi.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/smbios.h>
-> +
-> +#include <asm/setup.h>
-> +
-> +int smbios_present = 0;
-> +struct smbios_step *smbios_step;
-> +static struct device *smbios_dev;
-
-A "raw" struct device?  Why?  You should never do this, that's not the
-way to use a 'struct device'.
-
-Let's back up here, what exactly are you trying to show in sysfs?  Where
-are your Documentation/ABI/ entries that show these new files, what they
-contain, and how to use them?
-
-> +/* The actual address of the SMBIOS */
-> +static unsigned long smbios_addr = 0;
-> +
-> +#ifdef CONFIG_SYSFS
-
-You should never need this in your .c file.
-
-> +static ssize_t version_show(struct device *dev,
-> +			    struct device_attribute *attr, char *buf)
-> +{
-> +	return snprintf(buf, PAGE_SIZE, "%u.%u\n", smbios_step->major,
-> +		       smbios_step->minor);
-
-As you "know" you are only returning a simple value, why the snprintf()?
-Hint, don't, it's overkill and how do you "know" that the buffer is
-PAGE_SIZE big?  Hint, you don't, so stick to a small buffer like you
-are, and all is fine.
-
-> +}
-> +
-> +/* add additional sysfs files here */
-> +static struct device_attribute smbios_attrs[] = {
-> +	__ATTR_RO(version),
-> +};
-
-So a whole new class just for a single version file in sysfs?
-
-I'm confused, what exactly are you trying to show here that you can't
-show in the existing device/class structure?
-
-> +
-> +static struct class smbios_class = {
-> +	.name = "smbios",
-> +	.dev_release = (void(*)(struct device *)) kfree,
-
-As stated before, nice try, but no. :)
-
-
-> +};
-> +
-> +static struct device *smbios_dev;
-> +
-> +static int __init smbios_setup_sysfs(void)
-> +{
-> +	int attr, i, ret = 0;
-> +
-> +	ret = class_register(&smbios_class);
-> +	if (ret)
-> +		goto out;
-> +
-> +	smbios_dev = kzalloc(sizeof(*smbios_dev), GFP_KERNEL);
-> +	if (!smbios_dev) {
-> +		ret = -ENOMEM;
-> +		goto out_cleanup_class;
-> +	}
-> +
-> +	smbios_dev->class = &smbios_class;
-> +	dev_set_name(smbios_dev, "id");
-> +
-> +	ret = device_register(smbios_dev);
-> +	if (ret)
-> +		goto out_cleanup_smbios_dev;
-> +
-> +	for (attr = 0; attr < ARRAY_SIZE(smbios_attrs); attr++) {
-> +		ret = device_create_file(smbios_dev, &smbios_attrs[attr]);
-
-You just raced userspace when you created this file, causing it massive
-problems if it was expecting when the hotplug event happened that this
-file would be present.  Please don't do that, we have the infrastructure
-to do this properly, please use it.
-
-thanks,
-
-greg k-h
