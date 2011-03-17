@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab1CQFuC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 01:50:02 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40102 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab1CQFuA convert rfc822-to-8bit (ORCPT
+	id S1751585Ab1CQFvs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 01:51:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64737 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab1CQFvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 01:50:00 -0400
+	Thu, 17 Mar 2011 01:51:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=ZKnW5yOyvtzzkDNwIDA+T11DpmHcdwmXTRzb6TUUKt2NbTu0k0uveXM4KszOLC5yw2
-         wweSw4VeUyi+Hb/pPFFGSnZP6VuOsxL8xEST4J1rP9tghNNztX47YI9US3Cqa6K/RYfG
-         2bdhPRT4mOZHhRr/cGTu2GAfjVylUyw6TEUEc=
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <694698.37646.qm@web120506.mail.ne1.yahoo.com>
-References: <694698.37646.qm@web120506.mail.ne1.yahoo.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 17 Mar 2011 13:49:28 +0800
-Message-ID: <AANLkTimzto6-fhgH25bh09DfReuTawXR9V_9PZMx9djA@mail.gmail.com>
-Subject: Re: [PATCH] rtc: rtc-ds1390/rtc-ds3234/rtc-m41t94: eliminate compile warning
-To: Dennis Aberilla <denzzzhome@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, Mark Jackson <mpfj@mimc.co.uk>,
-        "Kim B. Heino" <Kim.Heino@bluegiga.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=SU3mpq9E6WzBQ+2psRnf1VLuvprNdpvIIZqK8IVoHxdKkZViz8j2HKrDl0dDwukDOY
+         TN31DlFsSfI2ohBFoITzwe5e/6G+V3inG3KvXjrc81OqK+WEmHAoEuUoSEG8I4R0/V4H
+         vYY9eUqEKAypX9cVXSVVi+VUPtZh91wtr2JDQ=
+Subject: [BUG] usb_wwan: build error
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Mar 2011 06:51:40 +0100
+Message-ID: <1300341100.10164.523.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Dennis,
+commit 16871dcac74c (usb_wwan: error case of resume) added a build error
+if CONFIG_PM_RUNTIME is not defined.
 
-2011/3/17 Dennis Aberilla <denzzzhome@yahoo.com>:
-> Hi Axel, that doesn't seem to make sense to me since "platform_get_drvdata" is (from include/linux/platform_device.h):
->
-> #define platform_get_drvdata(_dev) � � �dev_get_drvdata(&(_dev)->dev)
+  CC [M]  drivers/usb/serial/usb_wwan.o
+drivers/usb/serial/usb_wwan.c: In function ‘play_delayed’:
+drivers/usb/serial/usb_wwan.c:702: error: ‘struct dev_pm_info’ has no
+member named ‘usage_count’
 
-These drivers are registered as spi drivers, not platform drivers.
-How about using spi_get_drvdata instead.
+I suspect we should use pm_runtime_put_noidle() instead
 
-Regards,
-Axel
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ drivers/usb/serial/usb_wwan.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index a65ddd5..916405c 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -698,8 +698,7 @@ static void play_delayed(struct usb_serial_port *port)
+ 			/* we have to throw away the rest */
+ 			do {
+ 				unbusy_queued_urb(urb, portdata);
+-				//extremely dirty
+-				atomic_dec(&port->serial->interface->dev.power.usage_count);
++				pm_runtime_put_noidle(&port->serial->interface->dev);
+ 			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+ 			break;
+ 		}
+
+
