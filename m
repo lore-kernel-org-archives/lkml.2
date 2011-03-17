@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab1CQMhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 08:37:45 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:56721 "EHLO radon.swed.at"
+	id S1754444Ab1CQMkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 08:40:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37143 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab1CQMhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 08:37:43 -0400
-From: Richard Weinberger <richard@nod.at>
-To: akpm@linux-foundation.org
-Cc: alan@linux.intel.com, gregkh@suse.de,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, jdike@addtoit.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] um: Remove file pointer from ioctl
-Date: Thu, 17 Mar 2011 13:37:29 +0100
-Message-Id: <1300365449-12548-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.6.6.1
+	id S1753257Ab1CQMj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 08:39:59 -0400
+Date: Thu, 17 Mar 2011 13:39:58 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] modpost: fix trailing comma
+Message-ID: <20110317123958.GA30807@sepie.suse.cz>
+References: <20110315141347.d4ee75d3.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110315141347.d4ee75d3.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6caa76b (tty: now phase out the ioctl file pointer for good)
-removed the ioctl file pointer.
-User Mode Linux's line driver uses this ioctl and needs a
-signature update too.
+On Tue, Mar 15, 2011 at 02:13:47PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Consolidate locations that print a section whitelist into
+> calls to print_section_list().
+> 
+> Fix print_section_list() so that it does not print a trailing
+> comma & space:
+> 
+> If the reference is valid then annotate the
+> variable with __init* or __refdata (see linux/init.h) or name the variable:
+> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console, 
+> 
+> becomes:
+> If the reference is valid then annotate the
+> variable with __init* or __refdata (see linux/init.h) or name the variable:
+> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> ---
+>  scripts/mod/modpost.c |   23 +++++++++++++++--------
+>  1 file changed, 15 insertions(+), 8 deletions(-)
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/drivers/line.c        |    4 ++--
- arch/um/include/shared/line.h |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Applied to kbuild-2.6.git#kbuild, thanks.
 
-diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
-index 050e4dd..35dd0b8 100644
---- a/arch/um/drivers/line.c
-+++ b/arch/um/drivers/line.c
-@@ -255,8 +255,8 @@ static const struct {
- 	{ KDSIGACCEPT, KERN_INFO,  "KDSIGACCEPT" },
- };
- 
--int line_ioctl(struct tty_struct *tty, struct file * file,
--	       unsigned int cmd, unsigned long arg)
-+int line_ioctl(struct tty_struct *tty, unsigned int cmd,
-+				unsigned long arg)
- {
- 	int ret;
- 	int i;
-diff --git a/arch/um/include/shared/line.h b/arch/um/include/shared/line.h
-index 311a0d3..72f4f25 100644
---- a/arch/um/include/shared/line.h
-+++ b/arch/um/include/shared/line.h
-@@ -77,8 +77,8 @@ extern int line_chars_in_buffer(struct tty_struct *tty);
- extern void line_flush_buffer(struct tty_struct *tty);
- extern void line_flush_chars(struct tty_struct *tty);
- extern int line_write_room(struct tty_struct *tty);
--extern int line_ioctl(struct tty_struct *tty, struct file * file,
--		      unsigned int cmd, unsigned long arg);
-+extern int line_ioctl(struct tty_struct *tty, unsigned int cmd,
-+				unsigned long arg);
- extern void line_throttle(struct tty_struct *tty);
- extern void line_unthrottle(struct tty_struct *tty);
- 
--- 
-1.6.6.1
-
+Michal
