@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab1CQPV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 11:21:57 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:50052 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165Ab1CQPVz (ORCPT
+	id S1754721Ab1CQPWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 11:22:14 -0400
+Received: from mail.palosanto.com ([200.93.199.101]:37925 "EHLO
+	pbx.palosanto.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754165Ab1CQPWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 11:21:55 -0400
-Date: Thu, 17 Mar 2011 16:21:50 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
-Message-ID: <20110317152150.GF11094@one.firstfloor.org>
-References: <4D817234.9070106@jp.fujitsu.com> <4D8172D7.3040201@jp.fujitsu.com> <20110317041424.GD11094@one.firstfloor.org> <4D819A2A.8050606@jp.fujitsu.com> <20110317062612.GE11094@one.firstfloor.org> <4D81BB87.10803@jp.fujitsu.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D81BB87.10803@jp.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 17 Mar 2011 11:22:11 -0400
+X-Greylist: delayed 1469 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Mar 2011 11:22:10 EDT
+Message-ID: <4D822129.1030000@fiec.espol.edu.ec>
+Date: Thu, 17 Mar 2011 09:56:41 -0500
+From: =?UTF-8?B?QWxleCBWaWxsYWPDrcKtcyBMYXNzbw==?= 
+	<avillaci@fiec.espol.edu.ec>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+Subject: Re: [Bug #28522] Unable to mount FAT-formatted floppy on /dev/fd0,
+ plus WARN_ON when using /dev/fd0u1440
+References: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera> <GTlFTeOGjrB.A.hEF.Or3cNB@chimera>
+In-Reply-To: <GTlFTeOGjrB.A.hEF.Or3cNB@chimera>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> At least copy to the last page of the huge page is performed after
-> all preceding copies are finished.  So I'm not sure it is really
-> "a few" or not.
-> Still I think making the window smaller than now is worthwhile,
-> no matter it is change from 0.1% to 0.01%, or from 0.01% to 0.001%.
-
-Note that hwpoison will never reach 100% coverage. That's impossible.
-But to get nearer to 100% it's better to concentrate of the paths
-that affect long time windows and significant amounts of memory.
-What those are is often non-obvious and needs measurements.
-
-> 
-> Or did you find the downside of the check here?
-
-The usual problem is how to test it. That tends to be harder 
-than just writing the code. If it's not tested it's probably 
-not worth having.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+El 06/03/11 07:10, Rafael J. Wysocki escribió:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.37.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28522
+> Subject		: Unable to mount FAT-formatted floppy on /dev/fd0, plus WARN_ON when using /dev/fd0u1440
+> Submitter	: Alex Villacis Lasso<avillaci@ceibo.fiec.espol.edu.ec>
+> Date		: 2011-02-07 17:21 (28 days old)
+>
+>
+>
+Still present in 2.6.38 .
