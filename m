@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab1CQNbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 09:31:38 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56082 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab1CQNbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 09:31:36 -0400
-Message-ID: <4D820D35.600@suse.cz>
-Date: Thu, 17 Mar 2011 14:31:33 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1751647Ab1CQNcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 09:32:53 -0400
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:37111 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1CQNcv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 09:32:51 -0400
+Date: Thu, 17 Mar 2011 14:32:47 +0100
+From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: 2.6.38: Quota over NFS4
+Message-ID: <20110317133247.GB6424@os.inf.tu-dresden.de>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: matt mooney <mfm@muteddisk.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH 00/27] update makefiles to use the newer flag variables
-References: <cover.1295006561.git.mfm@muteddisk.com>	<20110317131508.GB30807@sepie.suse.cz> <AANLkTikiBgigwOkXbYpTqr-4ihVYrmYB49pvh7k2toLz@mail.gmail.com>
-In-Reply-To: <AANLkTikiBgigwOkXbYpTqr-4ihVYrmYB49pvh7k2toLz@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.3.2011 14:19, Geert Uytterhoeven wrote:
-> On Thu, Mar 17, 2011 at 14:15, Michal Marek <mmarek@suse.cz> wrote:
->> On Fri, Jan 14, 2011 at 06:12:23AM -0800, matt mooney wrote:
->>> These are the patches that never made their way into the linux-next tree.
->>> I have added all of the acks that came through.
-> 
->>>   m68k: change to new flag variables
-> 
->> I committed these to kbuild.2.6.git#trivial and will send a pull request
->> to Linus.
-> 
-> JFYI, the m68k one went in last night through the m68k tree.
+Hello,
 
-I did a rebase onto linux-next and back, so that I don't duplicate
-patches that have been picked up by subsystem maintainers already. This
-is the resulting shortlog, m68k is not there:
+I'm seeing a problem with quotas in a system where the server running
+2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
+version does not seem to play a role, checked with 2.6.38, 2.6.37 and
+2.6.36. The following script and output show the problem:
 
-matt mooney (25):
-      kernel: change to new flag variable
-      arm: change to new flag variables
-      h8300: change to new flag variable
-      ia64: change to new flag variables
-      microblaze: change to new flag variable
-      mips: change to new flag variable
-      s390: change to new flag variable
-      um: change to new flag variables
-      xtensa: change to new flag variable
-      fs: change to new flag variable
-      char: change to new flag variable
-      dma: change to new flag variable
-      hwmon: change to new flag variable
-      ide: change to new flag variable
-      ieee802154: change to new flag variable
-      isdn: change to new flag variable
-      memstick: change to new flag variable
-      message: change to new flag variable
-      misc: change to new flag variable
-      net: change to new flag variable
-      pps: change to new flag variable
-      rapidio: change to new flag variable
-      rtc: change to new flag variable
-      scsi: change to new flag variable
-      video: change to new flag variable
+#! /bin/sh
 
-I guess I should be more verbose than "thanks, applied" next time :).
+quota | grep home
+du
+cp /bin/ls x1
+du
+cat x1 > /dev/null
+rm x1
+du
+quota | grep home
 
-Michal
+Output:
+
+   homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
+0       .
+96      .
+0       .
+   homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
+
+
+As can be seen the 96 kb are still accounted on the quota of the user.
+Removing the 'cat' command from the script makes the quota be ok again
+(original value). Also mounting via nfs3 does not exhibit it, same for running
+the script on the nfs-server directly.
+
+Client mount options are:
+homes:/home/ /home nfs4 rw,nosuid,nodev,relatime,vers=4,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=1.2.3.3,minorversion=0,local_lock=none,addr=1.2.3.4 0 0
+
+Server mount options are:
+/dev/mapper/vg-homefs /home xfs rw,nosuid,nodev,relatime,attr2,usrquota 0 0
+
+
+
+
+Thanks,
+Adam
+-- 
+Adam                 adam@os.inf.tu-dresden.de
+  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
