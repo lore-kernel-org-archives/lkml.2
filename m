@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab1CQSr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:47:28 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:64717 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab1CQSrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:47:25 -0400
-Date: Thu, 17 Mar 2011 12:47:23 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
-        gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC PATCH 1/2] serial: 8250: Add a notifier chain for driver
- registration.
-Message-ID: <20110317184723.GQ9597@angua.secretlab.ca>
-References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
- <1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com>
- <20110317121849.49d7c425@lxorguk.ukuu.org.uk>
- <20110317182510.GN9597@angua.secretlab.ca>
- <4D82560B.4090800@caviumnetworks.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D82560B.4090800@caviumnetworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755255Ab1CQSt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:49:58 -0400
+Received: from setoy.chost.de ([217.160.209.225]:58392 "EHLO smtp.chost.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754961Ab1CQSt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 14:49:56 -0400
+From: Sascha Silbe <sascha-ml-reply-to-2011-2@silbe.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: [PATCH] mmc: enable ERASE caps for mvsdio host
+Date: Thu, 17 Mar 2011 19:42:26 +0100
+Message-Id: <1300387346-1938-1-git-send-email-sascha-ml-reply-to-2011-2@silbe.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 11:42:19AM -0700, David Daney wrote:
-> On 03/17/2011 11:25 AM, Grant Likely wrote:
-> >On Thu, Mar 17, 2011 at 12:18:49PM +0000, Alan Cox wrote:
-> >>On Wed, 16 Mar 2011 18:26:06 -0700
-> >>David Daney<ddaney@caviumnetworks.com>  wrote:
-> >>
-> >>>The 8250 driver is a bit weird in that in addition to supporting
-> >>>platform devices, extra devices can be added by calling
-> >>>serial8250_register_port().
-> >>>
-> >>>The problem is that if we call serial8250_register_port() before the
-> >>>driver is initialized Bad Things happen (we dereference NULL
-> >>>pointers).
-> >>>
-> >>>There doesn't seem to be a general way to know if a driver has been
-> >>>initialized
-> >>
-> >>I've had a bigger dig into this. I think the correct answer is probably
-> >>"always go via platform devices or similar". That *is* the notifier in
-> >>the kernel of today. serial8250_register_port ultimately should I think
-> >>ultimatly become an internal helper.
-> >
-> >+1
-> >
-> >Depending on serial8250_register_port() definitely the wrong thing to
-> >do for platform support code.  It would be better to figure out how to
-> >get the dt bits you need into 8250.c or of_serial.c.
-> >
-> 
-> IMHO, of_serial.c is no better than my board/chip specific code that
-> calls serial8250_register_port().
-> 
-> Really what would be ideal would be a hook to add a
-> dev.platform_data pointer to the appropriate struct
-> plat_serial8250_port when the platform device is created.  It is
-> possible that the platform bus notifiers could be used for this.  We
-> would also want to have a way to add an of_device_id to those
-> recognized by 8250.c
-> 
-> If we did that, serial8250_probe() would automatically do the right thing.
+From: Sascha Silbe <sascha-pgp@silbe.org>
 
-Take a look at the way arch/powerpc/platforms/512x/pdm360ng.c uses a
-notifier for amending a platform_device with additional data..
+The Marvell SDIO host controller can transmit Erase commands to the card quite
+fine.
 
-g.
+Signed-off-by: Sascha Silbe <sascha-pgp@silbe.org>
+---
+ drivers/mmc/host/mvsdio.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+Tested on OpenRD-Base using a SanDisk 4GB class 4 card (retail). The
+BLKDISCARD ioctl returned immediately, no timeout issue encountered.
+I had to remove and reinsert the card to read the new (i.e. erased) data, but
+that's most likely either by design or a bug on a different layer.
+
+
+diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+index eeb1147..758251d 100644
+--- a/drivers/mmc/host/mvsdio.c
++++ b/drivers/mmc/host/mvsdio.c
+@@ -735,7 +735,8 @@ static int __init mvsd_probe(struct platform_device *pdev)
+
+ 	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+ 	mmc->caps = MMC_CAP_4_BIT_DATA | MMC_CAP_SDIO_IRQ |
+-		    MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
++		    MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED |
++		    MMC_CAP_ERASE;
+
+ 	mmc->f_min = DIV_ROUND_UP(host->base_clock, MVSD_BASE_DIV_MAX);
+ 	mmc->f_max = maxfreq;
+--
+1.7.4.1
 
