@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab1CQNiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 09:38:19 -0400
-Received: from ebb05.tieto.com ([131.207.168.36]:55717 "EHLO ebb05.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab1CQNiR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 09:38:17 -0400
-X-AuditID: 83cfa824-b7b21ae000000a96-39-4d820ec7033d
-From: <Waldemar.Rymarkiewicz@tieto.com>
-To: <arnd@arndb.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 17 Mar 2011 15:38:07 +0200
-Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Thread-Index: AcvkpFgpIJuUQa7hQLS0UGw2gwrUUgAAEAIg
-Message-ID: <99B09243E1A5DA4898CDD8B70011144810830AB18B@EXMB04.eu.tieto.com>
-References: <1299766808-2535-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <201103101720.53782.arnd@arndb.de>
- <99B09243E1A5DA4898CDD8B70011144810830AB119@EXMB04.eu.tieto.com>
- <201103171407.58164.arnd@arndb.de>
-In-Reply-To: <201103171407.58164.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751951Ab1CQNlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 09:41:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21857 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab1CQNlG (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 17 Mar 2011 09:41:06 -0400
+Date: Thu, 17 Mar 2011 09:40:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: rshriram@cs.ubc.ca, Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        wkenji@jp.fujitsu.com, kaz@jp.fujitsu.com, rjw@sisk.pl
+Subject: [GIT PULL] (xen) stable/xen.pm.bug-fixes for 2.6.39
+Message-ID: <20110317134039.GB6120@dumpdata.com>
 MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D820F5C.0108,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, 
+Hey Linus,
 
->An application can open the device, and then do a 
->pthread_create() or a fork(). In either case, you have two 
->concurrent threads that have access to the file pointer and 
->can read from it concurrently, which is inherently racy 
->regarding which of the processes gets the data.
+This should be the last git pull for 2.6.39 for the Xen components
+(barring bug-fixes naturally).
 
-In that case I would relay on the application to synchronise the access.
+Please pull
 
->This is not very different from opening the file descriptor in 
->multiple processes, which you prevent using your logic.
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/xen.pm.bug-fixes
 
-but in the case when two independent applications try to open my device I can't let the second to access. They obviously won't synch the access.
 
->You can of course argue that you try your best to prevent the 
->race. Traditionally, e.g. on serial ports and the like, we 
->don't do this but instead rely on user space synchronizing the 
->access. What you have to make sure of course is that multiple 
->threads calling read on the same file can never bring the 
->kernel driver into an invalid state.
+#stable/xen.pm.bug-fixes is based off 76ca07832842100b14a31ad8996dab7b0c28aa42
+"Merge branch 'for-linus' of git://xenbits.xen.org/people/sstabellini/linux-pvhvm"
 
-I assume, if an application shares the file pointer deliberately it have to sync the access. In other cases, the driver needs to secure it.
+The reason behind basing this branch on this specific git commit is that these patches
+depend on the fixes provided by Stefano's linux-pvhvm.
 
-Waldek
+The patches in this branch were posted and Ack-ed some time earlier but had this
+complicated dependency chart (Rafeal's, mine and Stefano's were all involved) and
+we simplified it just now by jettisoning some of those patches. Will revisit those
+that we jettisoned in 2.6.40 time-frame.
+
+Anyhow these two patches fix a bug where checkpoint-ing would utterly fail
+and they do that by swapping over to use the Hibernate API instead of the older
+PM sleep API, which just meant using a new set of  arguments for the thaw/unfreeze/
+resume/suspend/etc calls.
+
+The diffstat:
+
+ drivers/xen/manage.c                       |   16 ++++++++--------
+ drivers/xen/xenbus/xenbus_probe.c          |   12 ++++++++++--
+ drivers/xen/xenbus/xenbus_probe.h          |    3 ++-
+ drivers/xen/xenbus/xenbus_probe_frontend.c |   11 +++++++++--
+ include/xen/xenbus.h                       |    2 +-
+ 5 files changed, 30 insertions(+), 14 deletions(-)
+
+
+Kazuhiro SUZUKI (1):
+      xen: xenbus PM events support
+
+Shriram Rajagopalan (1):
+      xen: use freeze/restore/thaw PM events for suspend/resume/chkpt
+
