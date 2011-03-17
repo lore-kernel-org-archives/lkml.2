@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab1CQNcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 09:32:53 -0400
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:37111 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab1CQNcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 09:32:51 -0400
-Date: Thu, 17 Mar 2011 14:32:47 +0100
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: 2.6.38: Quota over NFS4
-Message-ID: <20110317133247.GB6424@os.inf.tu-dresden.de>
+	id S1751743Ab1CQNfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 09:35:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30968 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab1CQNfv (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 17 Mar 2011 09:35:51 -0400
+Date: Thu, 17 Mar 2011 09:35:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
+Subject: [GIT PULL] (xen) stable/irq.fairness and
+ stable/irq.ween_of_nr_irqs for 2.6.39
+Message-ID: <20110317133532.GA6120@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D820E27.0042,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hey Linus,
 
-I'm seeing a problem with quotas in a system where the server running
-2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
-version does not seem to play a role, checked with 2.6.38, 2.6.37 and
-2.6.36. The following script and output show the problem:
+This pull request is coming in a bit late b/c it utilizes a lot
+of the functionality provided by "genirq: Make nr_irqs runtime expandable"
+(e7bcecb7b1d29b9ad5af939149a945658620ca8f) 
 
-#! /bin/sh
+It also brings in conflict that is easy to solve. I've put the merge
+and the conflict resolution in the for-2.6.39/irq.phase.two branch to make
+it easier to visualize (I rebased it on your latest master just to show the commit
+fix - also Stephen's #linux-next carries a similar commit solution).
 
-quota | grep home
-du
-cp /bin/ls x1
-du
-cat x1 > /dev/null
-rm x1
-du
-quota | grep home
+Please pull these two branches:
 
-Output:
+  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/irq.fairness stable/irq.ween_of_nr_irqs
 
-   homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
-0       .
-96      .
-0       .
-   homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
+I tried doing it in one swoop and hit an extra commit error with
+"static struct cpu_evtchn_s.." b/c that particular piece of code gets removed
+by the stable/irq.ween_of_nr_irqs code.
+
+If you do it with two git pulls it works out nicely with just one conflict.
 
 
-As can be seen the 96 kb are still accounted on the quota of the user.
-Removing the 'cat' command from the script makes the quota be ok again
-(original value). Also mounting via nfs3 does not exhibit it, same for running
-the script on the nfs-server directly.
+Back to the description.
 
-Client mount options are:
-homes:/home/ /home nfs4 rw,nosuid,nodev,relatime,vers=4,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=1.2.3.3,minorversion=0,local_lock=none,addr=1.2.3.4 0 0
+#stable/irq.fairness is based off stable/irq.cleanup (which you pulled on Monday)
 
-Server mount options are:
-/dev/mapper/vg-homefs /home xfs rw,nosuid,nodev,relatime,attr2,usrquota 0 0
+.. which allows the event nr->IRQ dispatch code to go round-robin across the events.
+Previously it would always start at zero causing starvation issues when there were lots
+of guests running. With this patchset we go fairly across the full spectrum of events
+and execute in a fair fashion the IRQ handlers that are tied in with the event channel.
 
+#stable/irq.ween_of_nr_irqs is also based off stable/irq.cleanup
 
+.. and it does a nice job of cleaning up the IRQ code further and collapsing a lot
+functionality in common code. It also allows us now to grow dynamically
+the IRQ limit by using Thomas's "genirq: Make nr_irqs runtime expandable"
+functionality. Really neat!
 
+The diffstat:
 
-Thanks,
-Adam
--- 
-Adam                 adam@os.inf.tu-dresden.de
-  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
+ arch/x86/pci/xen.c   |   41 ++++--
+ drivers/xen/events.c |  439 ++++++++++++++++++++++++++++++--------------------
+ include/xen/events.h |   24 ++--
+ 3 files changed, 300 insertions(+), 204 deletions(-)
+
+And the full log:
+
+Ian Campbell (16):
+      xen: events: Make last processed event channel a per-cpu variable.
+      xen: events: separate two unrelated halves of if condition
+      xen: events: simplify comment
+      xen: events: fix xen_map_pirq_gsi error return
+      xen: events: remove unused public functions
+      xen: events: rename restore_cpu_pirqs -> restore_pirqs
+      xen: events: refactor GSI pirq bindings functions
+      xen: events: use per-cpu variable for cpu_evtchn_mask
+      xen: events: turn irq_info constructors into initialiser functions
+      xen: events: push setup of irq<->{evtchn,ipi,virq,pirq} maps into irq_info init functions
+      xen: events: maintain a list of Xen interrupts
+      xen: events: dynamically allocate irq info structures
+      xen: events: remove use of nr_irqs as upper bound on number of pirqs
+      xen: events: do not workaround too-small nr_irqs
+      xen: events: propagate irq allocation failure instead of panicking
+      xen: events: correct locking in xen_irq_from_pirq
+
+Keir Fraser (3):
+      xen: events: Clean up round-robin evtchn scan.
+      xen: events: Make round-robin scan fairer by snapshotting each l2 word once only
+      xen: events: Remove redundant clear of l2i at end of round-robin loop
+
+Konrad Rzeszutek Wilk (1):
+      xen: events: Fix compile error if CONFIG_SMP is not defined.
+
+Scott Rixner (1):
+      xen: events: Process event channels notifications in round-robin order.
+
