@@ -1,187 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab1CQQnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:43:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:64339 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab1CQQmZ (ORCPT
+	id S1754455Ab1CQQoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 12:44:21 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:3811 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751924Ab1CQQoQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:42:25 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=djBn2BlVee0A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Mc-_X80uJyPRC93ysRcA:9 a=MsmttncK34YbfjpuqkAA:7 a=N_9okJ8NxBtNaBSf5o2L6EyLEr4A:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110317164223.734998786@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 17 Mar 2011 12:41:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 4/4] jump label: Add s390 support
-References: <20110317164148.550876008@goodmis.org>
-Content-Disposition: inline; filename=0004-jump-label-Add-s390-support.patch
+	Thu, 17 Mar 2011 12:44:16 -0400
+X-IronPort-AV: E=Sophos;i="4.63,200,1299484800"; 
+   d="scan'208";a="531447898"
+Subject: Re: [PATCH] RPC: killing RPC tasks races fixed
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "skinsbursky@openvz.org" <skinsbursky@openvz.org>
+In-Reply-To: <4D822C3C.9090100@parallels.com>
+References: <20110317121638.15035.39410.stgit@localhost6.localdomain6>
+	 <1300366904.9654.13.camel@lade.trondhjem.org>
+	 <4D822C3C.9090100@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Thu, 17 Mar 2011 12:44:14 -0400
+Message-ID: <1300380254.28305.1.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 17 Mar 2011 16:44:15.0446 (UTC) FILETIME=[8D3B6760:01CBE4C2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Glauber <jang@linux.vnet.ibm.com>
+On Thu, 2011-03-17 at 18:43 +0300, Stanislav Kinsbursky wrote:
+> 17.03.2011 16:01, Trond Myklebust пишет:
+> > On Thu, 2011-03-17 at 15:16 +0300, Stanislav Kinsbursky wrote:
+> >> task->tk_waitqueue must be checked for NULL before trying to wake up task in
+> >> rpc_killall_tasks() because it can be NULL.
+> >>
+> >> Here is an example:
+> >>
+> >> CPU 0               	CPU 1				CPU 2
+> >> --------------------	---------------------	--------------------------
+> >> nfs4_run_open_task
+> >> rpc_run_task
+> >> rpc_execute
+> >> rpc_set_active
+> >> rpc_make_runnable
+> >> (waiting)
+> >> 			rpc_async_schedule
+> >> 			nfs4_open_prepare
+> >> 			nfs_wait_on_sequence
+> >> 						nfs_umount_begin
+> >> 						rpc_killall_tasks
+> >> 						rpc_wake_up_task
+> >> 						rpc_wake_up_queued_task
+> >> 						spin_lock(tk_waitqueue == NULL)
+> >> 						BUG()
+> >> 			rpc_sleep_on
+> >> 			spin_lock(&q->lock)
+> >> 			__rpc_sleep_on
+> >> 			task->tk_waitqueue = q
+> >>
+> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@openvz.org>
+> >>
+> >> ---
+> >>   net/sunrpc/clnt.c |    4 +++-
+> >>   1 files changed, 3 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+> >> index 57d344c..24039fe 100644
+> >> --- a/net/sunrpc/clnt.c
+> >> +++ b/net/sunrpc/clnt.c
+> >> @@ -436,7 +436,9 @@ void rpc_killall_tasks(struct rpc_clnt *clnt)
+> >>   		if (!(rovr->tk_flags&  RPC_TASK_KILLED)) {
+> >>   			rovr->tk_flags |= RPC_TASK_KILLED;
+> >>   			rpc_exit(rovr, -EIO);
+> >> -			rpc_wake_up_queued_task(rovr->tk_waitqueue, rovr);
+> >> +			if (rovr->tk_waitqueue)
+> >> +				rpc_wake_up_queued_task(rovr->tk_waitqueue,
+> >> +							rovr);
+> >
+> > Testing for RPC_IS_QUEUED(rovr) would be better, since that would
+> > optimise away the call to rpc_wake_up_queued_task() altogether for those
+> > tasks that aren't queued.
+> >
+> 
+> Yes, I agree with testing RPC_IS_QUEUED(rovr) since such approach looks
+> clearer and in 2.6.38 tk_waitqueue is initialized prior to set
+> RPC_TASK_QUEUED bit.
+> But I found this problem in 2.6.32 rhel kernel where this set sequence is inversed.
+> Will send fixed version soon.
 
-Implement the architecture backend for jump label support on s390.
+Are you sure? Why would the 2.6.32 rhel kernel differ from the mainline
+2.6.32 kernel in this respect?
 
-For a shared kernel booted from a NSS silently disable jump labels
-because the NSS is read-only. Therefore jump labels will be disabled
-in a shared kernel and can't be activated.
-
-Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
-LKML-Reference: <6935d2c41ce111e1719176ed4bbd3dbe4de80855.1300299760.git.jbaron@redhat.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/s390/Kconfig                  |    1 +
- arch/s390/include/asm/jump_label.h |   37 ++++++++++++++++++++++
- arch/s390/kernel/Makefile          |    2 +-
- arch/s390/kernel/jump_label.c      |   59 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 98 insertions(+), 1 deletions(-)
- create mode 100644 arch/s390/include/asm/jump_label.h
- create mode 100644 arch/s390/kernel/jump_label.c
-
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 636bcb8..0739c8b 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -87,6 +87,7 @@ config S390
- 	select HAVE_KERNEL_LZO
- 	select HAVE_GET_USER_PAGES_FAST
- 	select HAVE_ARCH_MUTEX_CPU_RELAX
-+	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
- 	select ARCH_INLINE_SPIN_TRYLOCK
- 	select ARCH_INLINE_SPIN_TRYLOCK_BH
- 	select ARCH_INLINE_SPIN_LOCK
-diff --git a/arch/s390/include/asm/jump_label.h b/arch/s390/include/asm/jump_label.h
-new file mode 100644
-index 0000000..95a6cf2
---- /dev/null
-+++ b/arch/s390/include/asm/jump_label.h
-@@ -0,0 +1,37 @@
-+#ifndef _ASM_S390_JUMP_LABEL_H
-+#define _ASM_S390_JUMP_LABEL_H
-+
-+#include <linux/types.h>
-+
-+#define JUMP_LABEL_NOP_SIZE 6
-+
-+#ifdef CONFIG_64BIT
-+#define ASM_PTR ".quad"
-+#define ASM_ALIGN ".balign 8"
-+#else
-+#define ASM_PTR ".long"
-+#define ASM_ALIGN ".balign 4"
-+#endif
-+
-+static __always_inline bool arch_static_branch(struct jump_label_key *key)
-+{
-+	asm goto("0:	brcl 0,0\n"
-+		".pushsection __jump_table, \"aw\"\n"
-+		ASM_ALIGN "\n"
-+		ASM_PTR " 0b, %l[label], %0\n"
-+		".popsection\n"
-+		: : "X" (key) : : label);
-+	return false;
-+label:
-+	return true;
-+}
-+
-+typedef unsigned long jump_label_t;
-+
-+struct jump_entry {
-+	jump_label_t code;
-+	jump_label_t target;
-+	jump_label_t key;
-+};
-+
-+#endif
-diff --git a/arch/s390/kernel/Makefile b/arch/s390/kernel/Makefile
-index 64230bc..5ff15da 100644
---- a/arch/s390/kernel/Makefile
-+++ b/arch/s390/kernel/Makefile
-@@ -23,7 +23,7 @@ CFLAGS_sysinfo.o += -Iinclude/math-emu -Iarch/s390/math-emu -w
- obj-y	:=  bitmap.o traps.o time.o process.o base.o early.o setup.o \
- 	    processor.o sys_s390.o ptrace.o signal.o cpcmd.o ebcdic.o \
- 	    s390_ext.o debug.o irq.o ipl.o dis.o diag.o mem_detect.o \
--	    vdso.o vtime.o sysinfo.o nmi.o sclp.o
-+	    vdso.o vtime.o sysinfo.o nmi.o sclp.o jump_label.o
- 
- obj-y	+= $(if $(CONFIG_64BIT),entry64.o,entry.o)
- obj-y	+= $(if $(CONFIG_64BIT),reipl64.o,reipl.o)
-diff --git a/arch/s390/kernel/jump_label.c b/arch/s390/kernel/jump_label.c
-new file mode 100644
-index 0000000..44cc06b
---- /dev/null
-+++ b/arch/s390/kernel/jump_label.c
-@@ -0,0 +1,59 @@
-+/*
-+ * Jump label s390 support
-+ *
-+ * Copyright IBM Corp. 2011
-+ * Author(s): Jan Glauber <jang@linux.vnet.ibm.com>
-+ */
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+#include <linux/stop_machine.h>
-+#include <linux/jump_label.h>
-+#include <asm/ipl.h>
-+
-+#ifdef HAVE_JUMP_LABEL
-+
-+struct insn {
-+	u16 opcode;
-+	s32 offset;
-+} __packed;
-+
-+struct insn_args {
-+	unsigned long *target;
-+	struct insn *insn;
-+	ssize_t size;
-+};
-+
-+static int __arch_jump_label_transform(void *data)
-+{
-+	struct insn_args *args = data;
-+	int rc;
-+
-+	rc = probe_kernel_write(args->target, args->insn, args->size);
-+	WARN_ON_ONCE(rc < 0);
-+	return 0;
-+}
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
-+	struct insn_args args;
-+	struct insn insn;
-+
-+	if (type == JUMP_LABEL_ENABLE) {
-+		/* brcl 15,offset */
-+		insn.opcode = 0xc0f4;
-+		insn.offset = (entry->target - entry->code) >> 1;
-+	} else {
-+		/* brcl 0,0 */
-+		insn.opcode = 0xc004;
-+		insn.offset = 0;
-+	}
-+
-+	args.target = (void *) entry->code;
-+	args.insn = &insn;
-+	args.size = JUMP_LABEL_NOP_SIZE;
-+
-+	stop_machine(__arch_jump_label_transform, &args, NULL);
-+}
-+
-+#endif
 -- 
-1.7.2.3
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
