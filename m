@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab1CQIt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 04:49:26 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60115 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab1CQItX (ORCPT
+	id S1752714Ab1CQIxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 04:53:15 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:36067 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab1CQIxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 04:49:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=JZGPxhSeZu6J6vO32Q/32ahRoeHXvPPZo/DizUBVvYVhGEmxszX1xs72IeVFOpl/dx
-         pSk0C6q/xuT2gBZ39Y1v5wTNq/3ofpW/UKPu6E0ywRSQcY8E+WC5UHfa33s++/8L1GmH
-         X+ZYxZFCk66nCMDfYBS2R007GKFGOMEEeSys4=
-MIME-Version: 1.0
-In-Reply-To: <20110316125052.GB8369@sirena.org.uk>
-References: <1299857178-5221-1-git-send-email-linus.walleij@stericsson.com>
-	<20110311153134.GO1760@opensource.wolfsonmicro.com>
-	<AANLkTinD9fO9Tyft0CQABMea2SbcHexNmYT9_ND_Yb-M@mail.gmail.com>
-	<20110314181531.GA32434@opensource.wolfsonmicro.com>
-	<AANLkTi=W980GYHVxdYPV3xNKcdGpjAewKssoUc3ZoEDi@mail.gmail.com>
-	<1300275412.3432.46.camel@odin>
-	<AANLkTiks-D6QfoXmsJv_VPh-v4kZfjR29c6gpG5bW_vk@mail.gmail.com>
-	<20110316125052.GB8369@sirena.org.uk>
-Date: Thu, 17 Mar 2011 09:49:23 +0100
-X-Google-Sender-Auth: 4RuqXn-OzIEmKpENuKsPEi2t30w
-Message-ID: <AANLkTin7iZ6B2d=PfangmOLOrSgPSjxrAm5drP0fOfyA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: switch the ab3100 to use enable_time()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Mar 2011 04:53:10 -0400
+Date: Thu, 17 Mar 2011 09:51:18 +0100
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "andi.kleen@intel.com" <andi.kleen@intel.com>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
+        "pasik@iki.fi" <pasik@iki.fi>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        "wdauchy@gmail.com" <wdauchy@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Bootup fix for _brk_end being != _end
+Message-ID: <20110317085118.GA11346@router-fw-old.local.net-space.pl>
+References: <20110308214429.GA27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091359290.2968@kaball-desktop> <20110315142957.GB12730@router-fw-old.local.net-space.pl> <20110315144821.GA11586@dumpdata.com> <20110315153001.GD12730@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103151530290.3382@kaball-desktop> <20110315154024.GA14100@router-fw-old.local.net-space.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110315154024.GA14100@router-fw-old.local.net-space.pl>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/16 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Wed, Mar 16, 2011 at 01:43:25PM +0100, Linus Walleij wrote:
->> 2011/3/16 Liam Girdwood <lrg@slimlogic.co.uk>:
+On Tue, Mar 15, 2011 at 04:40:24PM +0100, Daniel Kiper wrote:
+> On Tue, Mar 15, 2011 at 03:31:47PM +0000, Stefano Stabellini wrote:
+> > On Tue, 15 Mar 2011, Daniel Kiper wrote:
+> > > On Tue, Mar 15, 2011 at 10:48:21AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > > > > Additionally, I suggest to apply patch prepared by Steffano Stabellini
+> > > > > > > (https://lkml.org/lkml/2011/1/31/232) which fixes memory management
+> > > > > > > issue in Xen guest. I was not able boot guest machine without
+> > > > > > > above mentioned patch.
+> > > > > >
+> > > > > > after some discussions we came up with a different approach to fix the
+> > > > > > issue; I sent a couple of patches a little while ago:
+> > > > > >
+> > > > > > https://lkml.org/lkml/2011/2/28/410
+> > > > >
+> > > > > I tested git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-tip-fixes
+> > > > > and it works on x86_64, however, it does not work on i386. Tested as
+> > > > > unprivileged guest on Xen Ver. 4.1.0-rc2-pre. On i386 domain crashes
+> > > > > silently at early boot stage :-(((.
+> > > >
+> > > > Details? Can you provide the 'xenctx' output of where it crashed?
+> > >
+> > > As I wrote above domain is dying and I am not able to connect to it using
+> > > xenctx after crash :-(((. I do not know how to do that in another way.
+> >
+> > try adding:
+> >
+> > extra = "loglevel=9 debug earlyprintk=xenboot"
 >
->> > Btw, you have a few other regulator patches recently in amongst MFD and
->> > ARM updates. I assume these will go via MFD ?
->
->> The TPS6105x stuff will go through MFD, hopefully.
->
-> Note that this isn't 100% required for new drivers - since you have a
-> dependency on the MFD you can merge subdevices through their own trees
-> and they won't cause problems as they can't be built until the MFD is
-> merged and makes the core symbol available.
+> (XEN) d55:v0: unhandled page fault (ec=0002)
+> (XEN) Pagetable walk from 000000000000000c:
+> (XEN)  L4[0x000] = 000000010bebc027 0000000000024d28
+> (XEN)  L3[0x000] = 0000000000000000 ffffffffffffffff
+> (XEN) domain_crash_sync called from entry.S
+> (XEN) Domain 55 (vcpu#0) crashed on cpu#3:
+> (XEN) ----[ Xen-4.1.0-rc2-pre  x86_64  debug=y  Not tainted ]----
+> (XEN) CPU:    3
+> (XEN) RIP:    e019:[<00000000c1001180>]
+> (XEN) RFLAGS: 0000000000000282   EM: 1   CONTEXT: pv guest
+> (XEN) rax: 000000000000000c   rbx: 000000000000000c   rcx: 00000000c1371fd0
+> (XEN) rdx: 00000000c1371fd0   rsi: 00000000c1742000   rdi: 00000000a5c03d70
+> (XEN) rbp: 00000000c1371fc8   rsp: 00000000c1371fa8   r8: 0000000000000000
+> (XEN) r9:  0000000000000000   r10: 0000000000000000   r11: 0000000000000000
+> (XEN) r12: 0000000000000000   r13: 0000000000000000   r14: 0000000000000000
+> (XEN) r15: 0000000000000000   cr0: 000000008005003b   cr4: 00000000000026f4
+> (XEN) cr3: 0000000129b6e000   cr2: 000000000000000c
+> (XEN) ds: e021   es: e021   fs: e021   gs: e021   ss: e021   cs: e019
+> (XEN) Guest stack trace from esp=c1371fa8:
+> (XEN)   00000002 c1001180 0001e019 00010082 c10037af deadbeef c1742000 a5c03d70
+> (XEN)   c1371fdc c13a4aa8 00000000 00000000 00000000 c1371ffc c13a3ff2 00000000
+> (XEN)   00000000 00000000 00000000 00000000 deadbeef c1753000 013fe001 00000000
+> (XEN)   00000000 00000000 00000000 00000000 013fe001 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
 
-Yep that's true in general, in this case the regulator driver is
-extending a header file provided by the MFD core, so they need
-to be kept in succession...
+Any progress ??? Can I help you in something ???
 
-Linus Walleij
+Daniel
