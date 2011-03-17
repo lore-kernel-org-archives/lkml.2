@@ -1,126 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab1CQCXo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 22:23:44 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:42180 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab1CQCXh (ORCPT
+	id S1753045Ab1CQCYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 22:24:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:14953 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab1CQCYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 22:23:37 -0400
-Message-ID: <4D81708D.5090607@linux.vnet.ibm.com>
-Date: Wed, 16 Mar 2011 23:23:09 -0300
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Peter Huewe <huewe.external.infineon@googlemail.com>
-Subject: [GIT PULL] TPM driver robustness fixes
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11031702-2362-0000-0000-00000234E10E
+	Wed, 16 Mar 2011 22:24:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6287"; a="80214580"
+From: adharmap@codeaurora.org
+To: davidb@codeaurora.org, dwalker@fifo99.com
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linux.walleij@linaro.org>,
+        Thomas Glexiner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PM8921 MFD V3 0/6]  pmic8921 core and subdevices
+Date: Wed, 16 Mar 2011 19:23:55 -0700
+Message-Id: <1300328641-3855-1-git-send-email-adharmap@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+This patch series adds support for pmic 8921 chip and its subdevices.
+The pmic 8921 chip is used as a power management ic for 8960 based boards. It
+communicates over the ssbi bus, ssbi bus can be found here
+
+https://patchwork.kernel.org/patch/601771/
+
+The patch set contains support for interrupt, gpio and mpp (multi purpose pin)
+subdevices.
+
+Note that gpio and mpp subdevices need the interrupt subdevice to
+be operational, this is becuase the reading the the value of gpio/mpp lines
+happens by doing a transaction over registers managed by the interrupt subdev.
+The code invokes a call on interrupt subdevice, rather than writing to those
+registers directly, avoiding race conditions.
+
+Upates from v2
+Thomas Gleixner's code cleanup comments, use of IRQCHIP_MASK_ON_SUSPEND.
+Randy Dunlap's Kconfig cleanup comments.
+Mark Brown's suggestion to move pm8921.h in include/linux/mfd/pm8xxx/pm8921.h
+Grant Likely's suggestion of locking around the chip's list.
+
+Thanks a lot for reviewing these patches.
 
 
-The following changes since commit 2e270d84223262a38d4755c61d55f5c73ea89e56:
+Abhijeet Dharmapurikar (5):
+  mfd: pm8921: Add PMIC 8921 core driver
+  mfd: pm8xxx: Add irq support
+  gpio: pm8xxx-gpio: Add pm8xxx gpio driver
+  MAINTAINERS: Add patterns for pmic 8921 files to MSM subsystem
+  msm: board-8960: Add support for pm8921
 
-   Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2011-03-16 13:26:17 -0700)
+David Collins (1):
+  mfd: pm8xxx-mpp: Add pm8xxx MPP driver
 
-are available in the git repository at:
+ MAINTAINERS                                |    2 +
+ arch/arm/mach-msm/board-msm8960.c          |   47 +++-
+ arch/arm/mach-msm/include/mach/irqs-8960.h |    9 +-
+ drivers/gpio/Kconfig                       |    8 +
+ drivers/gpio/Makefile                      |    1 +
+ drivers/gpio/pm8xxx-gpio.c                 |  455 ++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig                        |   36 +++
+ drivers/mfd/Makefile                       |    3 +
+ drivers/mfd/pm8921-core.c                  |  278 +++++++++++++++++
+ drivers/mfd/pm8xxx-irq.c                   |  436 ++++++++++++++++++++++++++
+ drivers/mfd/pm8xxx-mpp.c                   |  327 ++++++++++++++++++++
+ include/linux/mfd/pm8xxx/core.h            |   75 +++++
+ include/linux/mfd/pm8xxx/gpio.h            |  132 ++++++++
+ include/linux/mfd/pm8xxx/irq.h             |   69 +++++
+ include/linux/mfd/pm8xxx/mpp.h             |  233 ++++++++++++++
+ include/linux/mfd/pm8xxx/pm8921.h          |   48 +++
+ 16 files changed, 2144 insertions(+), 15 deletions(-)
+ create mode 100644 drivers/gpio/pm8xxx-gpio.c
+ create mode 100644 drivers/mfd/pm8921-core.c
+ create mode 100644 drivers/mfd/pm8xxx-irq.c
+ create mode 100644 drivers/mfd/pm8xxx-mpp.c
+ create mode 100644 include/linux/mfd/pm8xxx/core.h
+ create mode 100644 include/linux/mfd/pm8xxx/gpio.h
+ create mode 100644 include/linux/mfd/pm8xxx/irq.h
+ create mode 100644 include/linux/mfd/pm8xxx/mpp.h
+ create mode 100644 include/linux/mfd/pm8xxx/pm8921.h
 
-   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
-
-Peter Huewe (3):
-
-       This patch changes the call of tpm_transmit by supplying the size of the userspace buffer instead of TPM_BUFSIZE
-
-       This patch fixes information leakage to the userspace by initializing the data buffer to zero
-
-       Since the buffer might contain security related data it might be a good idea to zero the buffer after we have copied it to userspace.
-
-  drivers/char/tpm/tpm.c |    7 ++++---
-
-  1 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-
-index 1f46f1c..c6d2cde 100644
-
---- a/drivers/char/tpm/tpm.c
-
-+++ b/drivers/char/tpm/tpm.c
-
-@@ -427,7 +427,7 @@ static ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
-
-      goto out;
-
-  
-
-  out_recv:
-
--    rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
-
-+    rc = chip->vendor.recv(chip, (u8 *) buf, TPM_BUFSIZE);
-
-      if (rc<  0)
-
-          dev_err(chip->dev,
-
-              "tpm_transmit: tpm_recv: error %zd\n", rc);
-
-@@ -980,7 +980,7 @@ int tpm_open(struct inode *inode, struct file *file)
-
-          return -EBUSY;
-
-      }
-
-  
-
--    chip->data_buffer = kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-
-+    chip->data_buffer = kzalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-
-      if (chip->data_buffer == NULL) {
-
-          clear_bit(0,&chip->is_open);
-
-          put_device(chip->dev);
-
-@@ -1035,7 +1035,7 @@ ssize_t tpm_write(struct file *file, const char __user *buf,
-
-      }
-
-  
-
-      /* atomic tpm command send and result receive */
-
--    out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
-
-+    out_size = tpm_transmit(chip, chip->data_buffer, in_size);
-
-  
-
-      atomic_set(&chip->data_pending, out_size);
-
-      mutex_unlock(&chip->buffer_mutex);
-
-@@ -1064,6 +1064,7 @@ ssize_t tpm_read(struct file *file, char __user *buf,
-
-          mutex_lock(&chip->buffer_mutex);
-
-          if (copy_to_user(buf, chip->data_buffer, ret_size))
-
-              ret_size = -EFAULT;
-
-+        memset(chip->data_buffer, 0, ret_size);
-
-          mutex_unlock(&chip->buffer_mutex);
-
-      }
-
-  
+ --
+ Sent by an employee of the Qualcomm Innovation Center, Inc.
+ The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
