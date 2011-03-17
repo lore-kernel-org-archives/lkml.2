@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab1CQKwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 06:52:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53677 "EHLO
+	id S1753620Ab1CQK4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 06:56:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61834 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab1CQKwN convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751846Ab1CQK4v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 06:52:13 -0400
+	Thu, 17 Mar 2011 06:56:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=wmnDBrJIIyO/baedAvkDxz8+J6frxNbMcH1TZY+d4tbxMgKksKMO0ylHWshTEOMhXF
-         FvPbMsm2voeQPc5UMU0S+lgMtlvB/VNWlr0nU5RDfFuK8PQF/MCVPvjjJ7pnMHL49xAn
-         MoiJiv+qCf9Ke1ZTITtTqmOePj/ZaTJDKvzVQ=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=q9H4fANHoUVYSgtuSQLDPI9L97GrzuXzkyNtgbBC3Mgu6i6ppuoCJiYIbH0HVJ+ti2
+         P771JniJydl21O4qbZ+Qlof8+uOnDXhL+T5Te4Ae11wSB66yAPIw5j/MRAgrrqoKycyn
+         pUyF2ranbI4Ts+63dUuALohZJp5XE99U8VSa8=
 MIME-Version: 1.0
-In-Reply-To: <20110317104618.095f16ba@lxorguk.ukuu.org.uk>
-References: <AANLkTi=+ckqwFUH-4U3hyj=FDM7oNtBO9TOPTT3MAwDC@mail.gmail.com>
-	<20110317104618.095f16ba@lxorguk.ukuu.org.uk>
-Date: Thu, 17 Mar 2011 11:52:12 +0100
-X-Google-Sender-Auth: VFXGqeO1RQ4SsnlyCCb6ytOz8ok
-Message-ID: <AANLkTimek6P--jzpPHVe=V8UUo9Qmm9AYL3CF5fLaW9O@mail.gmail.com>
-Subject: Re: serial167 (was: Re: [RFC 0/5] tty: move stuff around)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
-        "Michael H. Warfield" <mhw@wittsend.com>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
+In-Reply-To: <1300357457.3133.92.camel@edumazet-laptop>
+References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
+ <1300355238-1619-1-git-send-email-ratbert.chuang@gmail.com> <1300357457.3133.92.camel@edumazet-laptop>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Thu, 17 Mar 2011 18:56:30 +0800
+Message-ID: <AANLkTino6LzGTZF4fNSkV9pbAfnmAc8wJjk0L8HfHDiJ@mail.gmail.com>
+Subject: Re: [PATCH v2] net: add Faraday FTGMAC100 Gigabit Ethernet driver
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ratbert@faraday-tech.com
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Hi Eric,
 
-On Thu, Mar 17, 2011 at 11:46, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> As serial167 is now in staging in Linus tree...
+On Thu, Mar 17, 2011 at 6:24 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 17 mars 2011 à 17:47 +0800, Po-Yu Chuang a écrit :
+>> From: Po-Yu Chuang <ratbert@faraday-tech.com>
 >>
->> It still builds in 2.6.38. What is unsecure about it? If nothing,
->> please move it back,
->> as the whole MVME167 platform is pretty useless without its console driver.
+>> FTGMAC100 Ethernet Media Access Controller supports 10/100/1000 Mbps
+>> and MII/GMII.  This driver has been working on some ARM/NDS32 SoC's
+>> including Faraday A369 and Andes AG102.
+>>
+>> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+>> ---
 >
-> It has no reference counting and it doesn't use tty_port objects.
+> Did you tried GRO support ?
 
-[...]
+No, I don't understand how to do that yet. Let me do some study first.
+I'd really appreciate it if you could provide me some pointers about GRO. :-)
+Is there any document about it?
 
-Many thanks for your elaborate (and valid) explanation!
-I'll let the VME users sort it out...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+best regards,
+Po-Yu Chuang
