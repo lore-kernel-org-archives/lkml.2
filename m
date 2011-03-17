@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1CQOMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 10:12:54 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:48775 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab1CQOMt (ORCPT
+	id S1753172Ab1CQOPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 10:15:03 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:60171 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752001Ab1CQOO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 10:12:49 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] VFS: remove warning about invalid s_maxbytes values
-Date: Thu, 17 Mar 2011 10:12:43 -0400
-Message-Id: <1300371163-23923-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.4
+	Thu, 17 Mar 2011 10:14:59 -0400
+X-Sasl-enc: DpwBz+xxHyNbO9sRGGKXP5x37F89fpGU0XaY4/8bWa09 1300371298
+Date: Thu, 17 Mar 2011 11:14:55 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: No iproute2 for 2.6.38
+Message-ID: <20110317141455.GE1724@khazad-dum.debian.net>
+References: <20110315195534.0cc43032@nehalam>
+ <4D804EBD.4030904@us.ibm.com>
+ <20110316170441.351efba7@nehalam>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110316170441.351efba7@nehalam>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This warning should have been removed in 2.6.34. We missed that by a
-few releases, so we should be OK to remove this now.
+On Wed, 16 Mar 2011, Stephen Hemminger wrote:
+> > 2.6.38 includes support for macvlan/macvtap 'passthru' mode that allows 
+> > assigning
+> > SR-IOV VFs to a KVM guest via macvtap/virtio.
+> > It is not possible to support live migration using direct assignment of 
+> > VF's to a guest,
+> > but 'passthu' assignment makes this possible.
+> > 
+> > Enabling this feature requires the following patch to iproute2 that 
+> > allows creating macvlan
+> > device in 'passthru' mode.
+> >      http://patchwork.ozlabs.org/patch/69515/
+> > Looks like this patch is still marked as 'Awaiting upstream'.
+> > 
+> > Could you apply this patch and it would be great if a version of 
+> > iproute2 is released for 2.6.38.
+> 
+> Sorry missed it applied to repository, still not sure worth a new release.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/super.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+Release early, release often.  And someone actually bothered asking you to
+specifically, so it clearly is going to be useful to that someone.
 
-diff --git a/fs/super.c b/fs/super.c
-index 7e9dd4c..2ed4a88 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1009,16 +1009,6 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
- 	if (error)
- 		goto out_sb;
- 
--	/*
--	 * filesystems should never set s_maxbytes larger than MAX_LFS_FILESIZE
--	 * but s_maxbytes was an unsigned long long for many releases. Throw
--	 * this warning for a little while to try and catch filesystems that
--	 * violate this rule. This warning should be either removed or
--	 * converted to a BUG() in 2.6.34.
--	 */
--	WARN((mnt->mnt_sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
--		"negative value (%lld)\n", type->name, mnt->mnt_sb->s_maxbytes);
--
- 	mnt->mnt_mountpoint = mnt->mnt_root;
- 	mnt->mnt_parent = mnt;
- 	up_write(&mnt->mnt_sb->s_umount);
+So, why not do a 2.6.38 release?
+
 -- 
-1.7.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
