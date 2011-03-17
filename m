@@ -1,156 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab1CQCZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 22:25:52 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:39202 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab1CQCYP (ORCPT
+	id S1753972Ab1CQC0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 22:26:15 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:39716 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073Ab1CQC0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 22:24:15 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6287"; a="80414084"
-From: adharmap@codeaurora.org
-To: davidb@codeaurora.org, dwalker@fifo99.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        Thomas Glexiner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PM8921 MFD V3 6/6] msm: board-8960: Add support for pm8921
-Date: Wed, 16 Mar 2011 19:24:01 -0700
-Message-Id: <1300328641-3855-7-git-send-email-adharmap@codeaurora.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1300328641-3855-1-git-send-email-adharmap@codeaurora.org>
-References: <1300328641-3855-1-git-send-email-adharmap@codeaurora.org>
+	Wed, 16 Mar 2011 22:26:09 -0400
+Message-ID: <4D81713B.2060001@linux.vnet.ibm.com>
+Date: Wed, 16 Mar 2011 23:26:03 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: James Morris <jmorris@namei.org>
+CC: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Peter Huewe <huewe.external.infineon@googlemail.com>
+Subject: Re: [GIT PULL] TPM driver robustness fixes
+References: <4D81708D.5090607@linux.vnet.ibm.com>
+In-Reply-To: <4D81708D.5090607@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11031702-9254-0000-0000-0000011CE05B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device structure declarations to the msm8960 board file
-for PMIC 8921 chip and its subdevices.
 
-Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Signed-off-by: David Collins <collinsd@codeaurora.org>
----
- arch/arm/mach-msm/board-msm8960.c          |   47 ++++++++++++++++++++++------
- arch/arm/mach-msm/include/mach/irqs-8960.h |    9 ++---
- 2 files changed, 41 insertions(+), 15 deletions(-)
 
-diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
-index bf1a24b..1c90789 100644
---- a/arch/arm/mach-msm/board-msm8960.c
-+++ b/arch/arm/mach-msm/board-msm8960.c
-@@ -8,19 +8,15 @@
-  * but WITHOUT ANY WARRANTY; without even the implied warranty of
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- *
-  */
-+
- #include <linux/kernel.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/clkdev.h>
- #include <linux/msm_ssbi.h>
-+#include <linux/mfd/pm8xxx/pm8921.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -28,9 +24,18 @@
- 
- #include <mach/board.h>
- #include <mach/msm_iomap.h>
-+#include <mach/irqs.h>
- 
- #include "devices.h"
- 
-+/* Macros assume PMIC GPIOs and MPPs start at 1 */
-+#define PM8921_GPIO_BASE		NR_GPIO_IRQS
-+#define PM8921_GPIO_PM_TO_SYS(pm_gpio)	(pm_gpio - 1 + PM8921_GPIO_BASE)
-+#define PM8921_MPP_BASE			(PM8921_GPIO_BASE + PM8921_NR_GPIOS)
-+#define PM8921_MPP_PM_TO_SYS(pm_gpio)	(pm_gpio - 1 + PM8921_MPP_BASE)
-+#define PM8921_IRQ_BASE			(NR_MSM_IRQS + NR_GPIO_IRQS)
-+#define PM8921_MPP_IRQ_BASE		(PM8921_IRQ_BASE + NR_GPIO_IRQS)
-+
- static void __init msm8960_map_io(void)
- {
- 	msm_map_msm8960_io();
-@@ -65,12 +70,34 @@ static struct platform_device *sim_devices[] __initdata = {
- 
- static struct platform_device *rumi3_devices[] __initdata = {
- 	&msm8960_device_uart_gsbi5,
-+	&msm8960_device_ssbi_pm8921,
-+};
-+
-+static struct pm8xxx_irq_platform_data pm8xxx_irq_pdata __devinitdata = {
-+	.irq_base		= PM8921_IRQ_BASE,
-+	.devirq			= MSM_GPIO_TO_INT(104),
-+	.irq_trigger_flag	= IRQF_TRIGGER_LOW,
-+};
-+
-+static struct pm8xxx_gpio_platform_data pm8xxx_gpio_pdata __devinitdata = {
-+	.gpio_base	= PM8921_GPIO_PM_TO_SYS(1),
-+};
-+
-+static struct pm8xxx_mpp_platform_data pm8xxx_mpp_pdata __devinitdata = {
-+	.mpp_base	= PM8921_MPP_PM_TO_SYS(1),
-+};
-+
-+static struct pm8921_platform_data pm8921_platform_data __devinitdata = {
-+	.irq_pdata		= &pm8xxx_irq_pdata,
-+	.gpio_pdata		= &pm8xxx_gpio_pdata,
-+	.mpp_pdata		= &pm8xxx_mpp_pdata,
- };
- 
--static struct msm_ssbi_platform_data msm8960_ssbi_pm8921_pdata = {
--	.controller_type = MSM_SBI_CTRL_PMIC_ARBITER,
--	.slave	= {
--		.name		= "pm8921-core",
-+static struct msm_ssbi_platform_data msm8960_ssbi_pm8921_pdata __initdata = {
-+	.controller_type	= MSM_SBI_CTRL_PMIC_ARBITER,
-+	.slave			= {
-+		.name			= "pm8921-core",
-+		.platform_data		= &pm8921_platform_data,
- 	},
- };
- 
-diff --git a/arch/arm/mach-msm/include/mach/irqs-8960.h b/arch/arm/mach-msm/include/mach/irqs-8960.h
-index 81ab2a6..0a5b9c5 100644
---- a/arch/arm/mach-msm/include/mach/irqs-8960.h
-+++ b/arch/arm/mach-msm/include/mach/irqs-8960.h
-@@ -267,11 +267,10 @@
- #define PM8921_SEC_IRQ_104			(GIC_SPI_START + 225)
- #define PM8018_SEC_IRQ_107			(GIC_SPI_START + 226)
- 
--/* For now, use the maximum number of interrupts until a pending GIC issue
-- * is sorted out */
--#define NR_MSM_IRQS 1020
--#define NR_BOARD_IRQS 0
--#define NR_GPIO_IRQS 0
-+#define NR_MSM_IRQS 256
-+#define NR_GPIO_IRQS 150
-+#define NR_PM8921_IRQS 256
-+#define NR_BOARD_IRQS (NR_PM8921_IRQS)
- 
- #endif
- 
--- 
-1.7.1
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+On 03/16/2011 11:23 PM, Rajiv Andrade wrote:
+> Hi James,
+>
+>
+> The following changes since commit 
+> 2e270d84223262a38d4755c61d55f5c73ea89e56:
+>
+>   Merge branch 'for-linus' of 
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2011-03-16 
+> 13:26:17 -0700)
+>
+> are available in the git repository at:
+>
+>   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+>
+> Peter Huewe (3):
+>
+>       This patch changes the call of tpm_transmit by supplying the 
+> size of the userspace buffer instead of TPM_BUFSIZE
+>
+>       This patch fixes information leakage to the userspace by 
+> initializing the data buffer to zero
+>
+>       Since the buffer might contain security related data it might be 
+> a good idea to zero the buffer after we have copied it to userspace.
+
+Given the nature of these changes, they should go to current linus as 
+bug fixes.
+
+Thanks,
+Rajiv
 
