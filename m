@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1CQRiK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:38:10 -0400
-Received: from fieldses.org ([174.143.236.118]:37883 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754850Ab1CQRiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:38:08 -0400
-Date: Thu, 17 Mar 2011 13:38:05 -0400
-To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: 2.6.38: Quota over NFS4
-Message-ID: <20110317173805.GB30180@fieldses.org>
-References: <20110317133247.GB6424@os.inf.tu-dresden.de>
+	id S1754891Ab1CQRjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:39:01 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:53398 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab1CQRi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:38:59 -0400
+X-IronPort-AV: E=Sophos;i="4.63,200,1299456000"; 
+   d="scan'208";a="4847203"
+Date: Thu, 17 Mar 2011 17:38:27 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [GIT PULL tip/x86/mm] xen/x86 fixes
+In-Reply-To: <4D8243F6.4030105@kernel.org>
+Message-ID: <alpine.DEB.2.00.1103171737550.3382@kaball-desktop>
+References: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop> <20110311222129.GA3168@dumpdata.com> <alpine.DEB.2.00.1103161150010.3382@kaball-desktop> <alpine.DEB.2.00.1103171237190.3382@kaball-desktop> <4D8243F6.4030105@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317133247.GB6424@os.inf.tu-dresden.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 02:32:47PM +0100, Adam Lackorzynski wrote:
-> Hello,
+On Thu, 17 Mar 2011, Yinghai Lu wrote:
+> > Should I send another git pull request for tip even though the two
+> > patches on linux-tip that this series was depending on have gone
+> > upstream?
+> >
+> > x86-64: Move out cleanup higmap [_brk_end, _end) out of init_memory_mapping()
+> > x86-64, mm: Put early page table high
+> >
+> > Should I send the git pull request to Linus instead?
 > 
-> I'm seeing a problem with quotas in a system where the server running
-> 2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
-> version does not seem to play a role, checked with 2.6.38, 2.6.37 and
-> 2.6.36. The following script and output show the problem:
+> can you please resend the pull request to Ingo and HPA?
 > 
-> #! /bin/sh
-> 
-> quota | grep home
-> du
-> cp /bin/ls x1
-> du
-> cat x1 > /dev/null
-> rm x1
-> du
-> quota | grep home
-> 
-> Output:
-> 
->    homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
-> 0       .
-> 96      .
-> 0       .
->    homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
-> 
-> 
-> As can be seen the 96 kb are still accounted on the quota of the user.
-> Removing the 'cat' command from the script makes the quota be ok again
-> (original value). Also mounting via nfs3 does not exhibit it, same for running
-> the script on the nfs-server directly.
+> better to make those patches go through tip and pass Ingo's test matrix.
 
-Does "df" show the same problem?  And does unmounting/remounting on the
-client clear the problem?  (Or that, in combination with stopping the
-server, unmounting the xfs export, remounting it, and restarting?)
-
-Was there an earlier server version that didn't exhibit this problem?
-
---b.
-
-> 
-> Client mount options are:
-> homes:/home/ /home nfs4 rw,nosuid,nodev,relatime,vers=4,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=1.2.3.3,minorversion=0,local_lock=none,addr=1.2.3.4 0 0
-> 
-> Server mount options are:
-> /dev/mapper/vg-homefs /home xfs rw,nosuid,nodev,relatime,attr2,usrquota 0 0
-> 
-> 
-> 
-> 
-> Thanks,
-> Adam
-> -- 
-> Adam                 adam@os.inf.tu-dresden.de
->   Lackorzynski         http://os.inf.tu-dresden.de/~adam/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+OK, I'll send another pull request.
