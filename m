@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1CQQqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 12:46:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53733 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab1CQQqv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 12:46:51 -0400
-Date: Thu, 17 Mar 2011 10:46:49 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Dirk Eibach <eibach@gdsys.de>,
-        devicetree-discuss@lists.ozlabs.org, rdunlap@xenotime.net,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] hwmon: (ads1015) Add devicetree documentation
-Message-ID: <20110317164649.GE9597@angua.secretlab.ca>
-References: <1299143805-13133-1-git-send-email-eibach@gdsys.de>
- <20110303115151.GF3649@pengutronix.de>
- <20110303132025.51e0d92e@endymion.delvare>
- <20110303132549.GG3649@pengutronix.de>
- <20110303172653.GB22940@angua.secretlab.ca>
- <20110303230253.0e8455c2@endymion.delvare>
- <AANLkTikXzJEAYg7+5ekMzTj_V-Hs63Psgru4Vc_QGhRy@mail.gmail.com>
- <20110317112530.50dc4915@endymion.delvare>
+	id S1754712Ab1CQQri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 12:47:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1639 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867Ab1CQQrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 12:47:36 -0400
+Date: Thu, 17 Mar 2011 17:47:26 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
+Message-ID: <20110317164726.GA10696@random.random>
+References: <4D817234.9070106@jp.fujitsu.com>
+ <4D8172D7.3040201@jp.fujitsu.com>
+ <20110317041424.GD11094@one.firstfloor.org>
+ <4D819A2A.8050606@jp.fujitsu.com>
+ <20110317062612.GE11094@one.firstfloor.org>
+ <4D81BB87.10803@jp.fujitsu.com>
+ <20110317140401.GX10696@random.random>
+ <20110317152559.GG11094@one.firstfloor.org>
+ <20110317161219.GZ10696@random.random>
+ <20110317162710.GH11094@one.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110317112530.50dc4915@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110317162710.GH11094@one.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 11:25:30AM +0100, Jean Delvare wrote:
-> On Thu, 3 Mar 2011 15:09:28 -0700, Grant Likely wrote:
-> > On Thu, Mar 3, 2011 at 3:02 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> > > I will leave it up to Dirk to decide how much time he wants to spend on
-> > > this. He has already been very patient with the driver review process
-> > > and I do not want to abuse his patience.
-> > 
-> > BTW Dirk, I'm happy to help show how to write the parser code for the
-> > sub-node approach if you need it.
+On Thu, Mar 17, 2011 at 05:27:10PM +0100, Andi Kleen wrote:
+> > What I can tell is with the default khugepaged scan rate, the
+> > collapse_huge_page will have an impact much smaller than KSM. It could
+> > have more impact than KSM if you increase khugepaged load to 100% with
+> > sysfs (because of the more memory that is covered by khugepaged
+> > compared to only the shared portion of KSM). Then the window gets much
+> > bigger, but still minor, if you can't trigger it with the testsuite
+> > it's even less likely to ever happen in practice.
 > 
-> Grant, Wolfram, how are such patches committed? Documentation/devicetree/
-> isn't listed in MAINTAINERS. Is it OK for me to commit it once Dirk gets
-> your approval? Or do you prefer to commit it yourself?
+> You mean randomly injecting errors?
+> That tends to be hard and unreliable -- usually we try to have a 
+> specific tester that is not random.
 
-Yup.  It makes sense for the documentation to be committed along side
-the driver changes.  I have no problem with you taking this patch.
+I meant the testsuite using MCE injection, called mce-test. I've run
+it a couple of times for some hugetlbfs collision with THP (solved
+some time ago).
 
-g.
+> The measurement is simple: run the workloads and do some dumps
+> with pagetypes and check if the memory with lots of pages 
+> has a state that can be handled by memory_failure()
+> 
+> AFAIK  this hasn't been done so far with THP.
 
+I'm unsure if there's already coverage for it in mce-test yet, the
+biggest test I run was hugetlbfs related (MAP_ANONYMOUS|MAP_HUGETLB or
+filebacked or still shm). Surely it'd be good idea to add THP
+coverage.
