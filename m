@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab1CQOBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 10:01:42 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:47371 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab1CQOBj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 10:01:39 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Jens Axboe <axboe@kernel.dk>
-Subject: Re: linux-next: build failure after merge of the final tree (block tree  related)
-Date: Thu, 17 Mar 2011 15:01:32 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; i686; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lars Ellenberg <lars.ellenberg@linbit.com>
-References: <20110311175830.29a387b2.sfr@canb.auug.org.au> <20110317103131.6c6be7a5.sfr@canb.auug.org.au> <4D81DFA4.7000204@kernel.dk>
-In-Reply-To: <4D81DFA4.7000204@kernel.dk>
-X-OTRS-FollowUp-SenderType: agent
+	id S1752578Ab1CQOEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 10:04:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27665 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751609Ab1CQOEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 10:04:41 -0400
+Date: Thu, 17 Mar 2011 15:04:01 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
+Message-ID: <20110317140401.GX10696@random.random>
+References: <4D817234.9070106@jp.fujitsu.com>
+ <4D8172D7.3040201@jp.fujitsu.com>
+ <20110317041424.GD11094@one.firstfloor.org>
+ <4D819A2A.8050606@jp.fujitsu.com>
+ <20110317062612.GE11094@one.firstfloor.org>
+ <4D81BB87.10803@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103171501.32703.philipp.reisner@linbit.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D81BB87.10803@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 17. März 2011, um 11:17:08 schrieb Jens Axboe:
-> On 2011-03-17 00:31, Stephen Rothwell wrote:
-> > Hi Jens,
-> > 
-> > On Fri, 11 Mar 2011 08:12:38 +0100 Jens Axboe <axboe@kernel.dk> wrote:
-> >> On 2011-03-11 07:58, Stephen Rothwell wrote:
-> >>> After merging the final tree, today's linux-next build (powerpc
-> >>> allyesconfig) failed like this:
-> >>> 
-> >>> drivers/char/tpm/tpm_tis.c:96: warning: 'is_itpm' defined but not used
-> >>> drivers/block/drbd/drbd_bitmap.c: In function '__bm_change_bits_to':
-> >>> drivers/block/drbd/drbd_bitmap.c:1287: error: implicit declaration of
-> >>> function 'generic___test_and_set_le_bit'
-> >>> drivers/block/drbd/drbd_bitmap.c:1289: error: implicit declaration of
-> >>> function 'generic___test_and_clear_le_bit'
-> >>> drivers/block/drbd/drbd_bitmap.c: In function 'drbd_bm_test_bit':
-> >>> drivers/block/drbd/drbd_bitmap.c:1438: error: implicit declaration of
-> >>> function 'generic_test_le_bit'
-> >>> 
-> >>> Caused by commit 4b0715f09655 ("drbd: allow petabyte storage on 64bit
-> >>> arch").
-> >> 
-> >>> I have applied this patch for today (surely there is a better way):
-> >> Thanks for not dropping it, I'll let the drbd guys send in a proper fix
-> >> and get it committed.
-> > 
-> > Ping?
+Hello Hidetoshi,
+
+On Thu, Mar 17, 2011 at 04:43:03PM +0900, Hidetoshi Seto wrote:
+> Still I think making the window smaller than now is worthwhile,
+> no matter it is change from 0.1% to 0.01%, or from 0.01% to 0.001%.
 > 
-> Lars, please send me a fix for this ASAP. It's holding up the block
-> merge.
+> Or did you find the downside of the check here?
 
-Hi Jens,
+Well it makes the code more a little more complicated for something
+that looks impossible to trigger in the first place.
 
-Please use Stephen's patch for the merge. It is perfectly valid.
+The slowdown of these changes is probably not significant because the
+2m copy should dominate the collapse_huge_page cost, but it still add
+locked ops and loops that weren't there before so technically it is a
+microslowdown.
 
-Lars is in the progress of preparing a suggestion for a much
-broader cleanup/fix for the little-endian bitops topic.
+NOTE: if this closed the race window 100% I would not disagree with
+this. If there's still a 0.001% chance of hitting the race like Andi
+hints, then I don't find it very attractive. I think memory failure
+isn't 100% correct and probably it's impossible to make it 100%
+correct across the whole kernel (for example the compound_head is safe
+for THP but it's still unsafe for hugetlbfs while the page is being
+tear down), so it's probably ok that it tends to work in practice 100%
+reliably when the task is running in userland but we leave holes when
+kernel is mangling the page structures and moving stuff around,
+otherwise we litter the kernel code without much practical benefit, I
+guess KSM has the same issues of khugepaged for example.
 
-But that should not delay the the block merge, nor is it necessary
-for the drbd updates. He plans to have that ready by tomorrow.
-
-Best,
- Phil
--- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
-
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
+So again, I'm not against making these changes, but I don't find them
+very attractive and I'm unsure if we should go down this route
+whenever the objective of the patch is only to reduce the race window
+(that is incredibly small and not reproducible to start with, and it's
+a theoretical race that hardly anybody could trigger) instead of
+actually closing the race completely. But thanks a lot for your
+effort, I see your point, I'm just not sure if it's worth it. I think
+I'll let other comments on this...
