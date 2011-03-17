@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab1CQFpj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 01:45:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63333 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab1CQFpf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 01:45:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Z6jfeK606UpgGM2ocFOvjOXlqnXYjc2pXh1GrOrfmm/WpU9rqD+vgaVCrqGbBZt5cC
-         UsW9vkmY1Zky2CtAN9RHPrpAOkS71T5xStmHUxivmH5GVE9oF+DlUcq3vaLqi4+sPqni
-         ioO47MUSE7nGTeW3m+uIYscKfOarJAkfBHQpk=
+	id S1751616Ab1CQFp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 01:45:56 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:44208 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576Ab1CQFpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 01:45:50 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: X32 psABI status update
+Date: Thu, 17 Mar 2011 01:45:45 -0400
+User-Agent: KMail/1.13.6 (Linux/2.6.37.3; KDE/4.6.0; x86_64; ; )
+Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
+        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com> <201103162257.10440.vapier@gentoo.org> <AANLkTikfiVvxrxakH-_pch6v0jkT1yZstw4kXShyx+Sd@mail.gmail.com>
+In-Reply-To: <AANLkTikfiVvxrxakH-_pch6v0jkT1yZstw4kXShyx+Sd@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110316235608.GY22723@ZenIV.linux.org.uk>
-References: <20110316235608.GY22723@ZenIV.linux.org.uk>
-Date: Thu, 17 Mar 2011 13:45:33 +0800
-Message-ID: <AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
-Subject: Re: [git pull] mnt_devname queue
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed;
+  boundary="nextPart1704446.IzFq2RYmyt";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103170145.46326.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 7:56 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->        Kills ->mnt_devname mangling in NFS, completes switch from ->get_sb()
-> to ->mount() (and kills the remnants of ->get_sb() helpers), makes /proc/mounts
-> and /proc/*/mountinfo show the right thing after mount --bind on NFS.  Trond
-> has ACKed the nfs side of things and suggested to push through the vfs tree,
-> so please pull from
-> git:git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ mnt_devname
->
-> Shortlog:
-> Al Viro (8):
->      nfs: propagate devname to nfs{,4}_get_root()
->      nfs: store devname at disconnected NFS roots
->      nfs: make nfs_path() work without vfsmount
->      nfs: nfs_do_{ref,sub}mount() superblock argument is redundant
->      vfs: new superblock methods to override /proc/*/mount{s,info}
->      nfs: stop mangling ->mnt_devname on NFS
->      nfs: switch NFS from ->get_sb() to ->mount()
->      vfs: bury ->get_sb()
+--nextPart1704446.IzFq2RYmyt
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-I guess we need also switch pstore from ->get_sb() to ->mount()
+On Thursday, March 17, 2011 01:21:16 H.J. Lu wrote:
+> On Wed, Mar 16, 2011 at 7:57 PM, Mike Frysinger <vapier@gentoo.org> wrote:
+> > ok, took long enough, but that answers most things.  your usage of "x32=
+=2D"
+> > prefixed binaries in the documentation seems to imply a lot more than t=
+he
+> > fact you just picked those locally to avoid system collisions.  this
+> > isnt a wiki page, otherwise i'd clean things up for you.
+>=20
+> Any suggestion how to create a wiki page for x32?
 
-fs/pstore/inode.c:253: error: unknown field ‘get_sb’ specified in initializer
-fs/pstore/inode.c:253: warning: initialization makes integer from
-pointer without a cast
-fs/pstore/inode.c:253: error: initializer element is not computable at load time
-fs/pstore/inode.c:253: error: (near initialization for
-‘pstore_fs_type.fs_flags’)
+seems like the sites.google.com documentation says it includes wiki support.
+	http://sites.google.com/site/projectwikitemplate_en/
 
->
-> Diffstat:
->  Documentation/filesystems/Locking |    6 +-
->  Documentation/filesystems/porting |    7 ++
->  Documentation/filesystems/vfs.txt |   56 ++++++-----
->  fs/namespace.c                    |   39 ++++++--
->  fs/nfs/dir.c                      |   13 +++
->  fs/nfs/getroot.c                  |   42 +++++++-
->  fs/nfs/internal.h                 |   21 ++--
->  fs/nfs/namespace.c                |   66 ++++++++-----
->  fs/nfs/nfs4namespace.c            |   41 +++-----
->  fs/nfs/super.c                    |  194 +++++++++++++++++++------------------
->  fs/nfs/unlink.c                   |   20 ++++
->  fs/super.c                        |   67 +------------
->  include/linux/fs.h                |   16 +---
->  13 files changed, 316 insertions(+), 272 deletions(-)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+ive never used google sites before, so i dont know how to actually enable i=
+t=20
+on the admin side of things.
+
+> > in looking at the gcc files, it doesnt seem like there's any defines
+> > setup to declare x32 directly.  instead, you'd have to do something
+> > like: #ifdef __x86_64__
+> > # if __SIZEOF_LONG__ =3D=3D 8
+> > /* x86_64 */
+> > # else
+> > /* x32 */
+> > # endif
+> > #endif
+> >=20
+> > any plans on adding an __x32__ (or whatever) cpp symbol to keep people
+> > from coming up with their own special/broken crap ?  or are there some
+> > already that i'm not seeing ?
+>=20
+> The idea is in most cases, you only need to check __x86_64__ since x32 and
+> x86-64 are very close.  In some cases, x32 is very different from x86_64,
+> like assembly codes on long and pointer, you can check __x86_64__ and
+> __LP64__. In glibc, I used a different approach by using macros REG_RAX,
+> .., MOV_LP, ADD_LP, SUB_LP and CMP_LP in assembly codes.
+
+arm/mips/ppc sets up explicit ABI defines to clearly differentiate between=
+=20
+things.  while __LP64__ should work here, it seems like a poor substitute. =
+=20
+how about builtin_define("__X32__") ?  or __ABI_X32__ ?  doesnt seem like i=
+386=20
+has a standard in this regard to piggy off of.
+=2Dmike
+
+--nextPart1704446.IzFq2RYmyt
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJNgaAKAAoJEEFjO5/oN/WBeaUQAJDL6HRSRh3OT884mVHGzzG/
+ndVupj9BUnqtPCrwN4XKS/S1wiF1oKQAoulP8MCHTo8FhojjU5/kFiFLnsuuNd2s
+8a00IBKavJgSAJv2bYzjJKaZ/sFH5mM77d8SoLZPtQuXnREtTjwhZ3jgKd0SbsIX
+ltTyGFWkslZefh+5N5T64w0m9UuotHOQViUECmbr9j+3lsAvoISoDv5B6xHoLftX
+dwFfvQPMV+6rFMZgcLt5214hGHAZ4oN+KUv8Nk+O6/dRENhxt1uTg6mT7uEeTEGu
+aEM6m56peuzHNM0NJmPkMdDaXamlfCNca75UtHFro8UEBHyXGdErdr2FBHA1QZK9
+XSyib7SW4Y5fgU6PcdjSimDmzLErR5EclP66XjVvquVml7+qPAnAMfcrlpJWgvc+
+tS9UoVpqOqIAn0ashxx83hZXoM4WAy0L7NjSYWAL/7bJS4Zhl9vRoCdGDoT59JAc
+mL8u0yfzoKZtGh3RO7LlV00VGgoPpoO7MAur4xeTrrFMh9e9KOcZrP5gr7EGT4Fp
+0w4fJd+5p1WUQpIvvDDs7piXlqXJd/VW5cm8b+tTFloNXDjk2vlogRUoqXHuHdfB
+HyZOiZrU6j4SxKqAG2Ds6R3eFmLtEhP1z+VYBaOxzwG2M/hyJn9k0JAaFyiCBV1A
+gkU0BdVc++t+Nft7p64X
+=g7zi
+-----END PGP SIGNATURE-----
+
+--nextPart1704446.IzFq2RYmyt--
