@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab1CQRQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:16:58 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:36931 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab1CQRQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:16:55 -0400
-Date: Thu, 17 Mar 2011 10:16:52 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute 2.6.38
-Message-ID: <20110317101652.27e68348@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754800Ab1CQRTC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:19:02 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:52898 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab1CQRTA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:19:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wJRP0sVbID0cq10sijyRtMNjgikRffYXzDB8doIokNRcXw+roc3Exg7IiJxyzSIK4n
+         S9y5CFNjRUTrhE8UamwidbUDuxhAuOEX0r7O8oZVMFtX3oAqCofYr/ygfcrAmkJ7rQV2
+         XTCf/11rRAozcHDj1BYnZaIwzwTszbFHdIgDs=
+MIME-Version: 1.0
+In-Reply-To: <1300380909.16880.264.camel@gandalf.stny.rr.com>
+References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+	<1300370936.16880.96.camel@gandalf.stny.rr.com>
+	<AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
+	<1300380909.16880.264.camel@gandalf.stny.rr.com>
+Date: Thu, 17 Mar 2011 18:18:59 +0100
+Message-ID: <AANLkTinOqxRTF0XqZEGxwyojeMhpdFr_yaPEcDtbADTk@mail.gmail.com>
+Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to popular demand, there is an iproute2 release for 2.6.38 after all. 
+On Thu, Mar 17, 2011 at 5:55 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Here, test this patch. I'm in the process of committing it now.
+> It will be two patches, one for the WARN_ON_SMP() change, the other for
+> the futex change.
+>
+> -- Steve
+>
+> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> index c2c9ba0..25f1e9e 100644
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -168,7 +168,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+>  #ifdef CONFIG_SMP
+>  # define WARN_ON_SMP(x)                        WARN_ON(x)
+>  #else
+> -# define WARN_ON_SMP(x)                        do { } while (0)
+> +# define WARN_ON_SMP(x)                        ({0;})
+>  #endif
+>
+>  #endif
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 9fe9131..850d00b 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -785,8 +785,8 @@ static void __unqueue_futex(struct futex_q *q)
+>  {
+>        struct futex_hash_bucket *hb;
+>
+> -       if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
+> -                       || plist_node_empty(&q->list)))
+> +       if (WARN_ON_SMP(!q->lock_ptr || !spin_is_locked(q->lock_ptr))
+> +           || WARN_ON(plist_node_empty(&q->list)))
+>                return;
+>
+>        hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
+>
+>
+>
 
-This version of iproute2 utilities intended for use with 2.6.38 or
-later kernel, but should be backward compatible with older releases.
-New features are support for macvlan passthru and xfrm security context.
+Tested-by: Richard Weinberger <richard@nod.at>
 
-Source: (note old developer.osdl.org address works as well)
-  http://devresources.linuxfoundation.org/dev/iproute2/download/iproute2-2.6.38.tar.bz2
-
-Repository:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
-
-For more info on iproute2 see:
-  http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
-
-Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
-
-Changelog:
-
-Gerrit Renker (3):
-      utils: get_jiffies always uses base=0
-      iproute: fix unit conversion of rtt/rttvar/rto_min
-      iproute: rename 'get_jiffies' since it uses msecs
-
-Joy Latten (3):
-      xfrm security context support
-      xfrm security context support
-      xfrm security context support
-
-Nicolas Dichtel (1):
-      iproute2: allow to specify truncation bits on auth algo
-
-Sridhar Samudrala (1):
-      macvlan/macvtap: support 'passthru' mode
-
-Stephen Hemminger (2):
-      Update to lasest kernel headers
-      v2.6.38.1
-
-Vlad Dogaru (1):
-      iproute2: fix man page whitespace
-
+-- 
+Thanks,
+//richard
