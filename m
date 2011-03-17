@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1CQWTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 18:19:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47302 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab1CQWTP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 18:19:15 -0400
-X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=XYJHFtupD_QA:10 a=9vjHhYGmBowA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=YgUFFZ79AAAA:8 a=DPBwiRG5LSrKnsrFpKkA:9 a=m5Z2RGGAlmKkdiwKJjeZ5_MLk5UA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Thu, 17 Mar 2011 18:19:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Curt Howland <Howland@priss.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Compile error: arch/x86/kernel/entry_32.S:1422: Error: .size
- expression does not evaluate to a constant
-Message-ID: <20110317221914.GG14675@home.goodmis.org>
-References: <201103171741.39876.Howland@priss.com>
+	id S1754578Ab1CQWU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 18:20:26 -0400
+Received: from kroah.org ([198.145.64.141]:38320 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752143Ab1CQWUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 18:20:24 -0400
+Date: Thu, 17 Mar 2011 15:20:20 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, andy.green@linaro.org,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+Message-ID: <20110317222020.GA30486@kroah.com>
+References: <20110311161421.GA7843@kroah.com>
+ <20110317201835.GM31411@opensource.wolfsonmicro.com>
+ <20110317202614.GA3155@kroah.com>
+ <201103172311.36246.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201103171741.39876.Howland@priss.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201103172311.36246.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 05:41:39PM -0400, Curt Howland wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
+On Thu, Mar 17, 2011 at 11:11:36PM +0100, Arnd Bergmann wrote:
+> On Thursday 17 March 2011 21:26:14 Greg KH wrote:
+> > > It's going to be an off the shelf USB ethernet controller.  I'd be
+> > > astonished if the board-configurable device IDs weren't set from the
+> > > same SEPROM that the MAC address is so it'd just show up as a generic
+> > > chip of whatever kind.
+> > 
+> > Huh?  All USB controllers you buy have the ability to set the vendor and
+> > product id, so you should always be able to key off of that.
+> > 
+> > Isn't that the case here?
 > 
-> arch/x86/kernel/entry_32.S: Assembler messages: 
-> arch/x86/kernel/entry_32.S:1422: Error: .size expression does not 
-> evaluate to a constant make[3]: *** [arch/x86/kernel/entry_32.o] 
-> Error 1
-> 
-> I searched for this error and saw this had been posted to the LKML:
-> 
-> http://www.gossamer-threads.com/lists/linux/kernel/1347760
-> 
-> This was when the error happened in -rc7, but it was not fixed 
-> for -rc8 or the released stable.
-> 
-> I'm just a user, not a developer, but I figure if its happening to me 
-> with very generic tools it may be happening to other people who don't 
-> use git, who don't apply patches, and such.
-> 
-> I don't have the warewithall to subscribe to the LKML, so I would be 
-> obliged if you would copy me on any replies. I would be glad to 
-> supply any further information if needed.
+> The same EEPROM that is missing here carries both the MAC address and
+> the vendor/product ID overrides.
 
-Thanks for reporting. This is a known problem. Unfortunately, it is due
-to the new binutils (version 2.21) that decided to make something that
-it use to ingore into something that is now an error.
+{sigh}
 
-The problem is that we have macros that create functions for us in
-assembly:
-
-ENTRY(foo)
-	[ body of foo ]
-END(foo)
-
-But there also are some areas where we had a typo:
-
-ENTRY(foo)
-	[ body of foo ]
-END(xfoo)
-
-binutils version 2.20 and before ignored this little bug. Version 2.21
-now fails with the error you get.
-
-Sure we can go about fixing this bug, but because of this stupid
-decision by the developers of binutils, older kernels will no longer
-build. The correct thing for them to have done, was just to make it into
-a warning and not fail the entire build.
-
--- Steve
-
+It's as if BIOS programmers are now laying out board designs...
