@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab1CQSSC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:18:02 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:63410 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab1CQSSA (ORCPT
+	id S1755051Ab1CQSWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:22:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45408 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500Ab1CQSWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:18:00 -0400
-Date: Thu, 17 Mar 2011 12:17:57 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ed W <lists@wildgooses.com>
-Cc: Andres Salomon <dilinger@queued.net>, rpurdie@rpsys.net,
-        linux-geode@lists.infradead.org, const@mimas.ru,
-        linux-kernel@vger.kernel.org
-Subject: Re: Feedback please: [PATCH] leds: New PCEngines Alix LED driver
- using gpio interface
-Message-ID: <20110317181757.GM9597@angua.secretlab.ca>
-References: <4D81D7FD.1040602@wildgooses.com>
- <20110317084328.41831b4c@debxo>
- <AANLkTikga=zrNgfsuN4=8tCfZz0n7vkk6i0xW-zj6zSD@mail.gmail.com>
- <4D8243E7.7030309@wildgooses.com>
- <20110317105210.420e55c4@queued.net>
- <4D824BEA.70502@wildgooses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D824BEA.70502@wildgooses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Mar 2011 14:22:04 -0400
+X-Authority-Analysis: v=1.1 cv=ZtuXOl23UuD1yoJUTgnZ6i6Z5VPlPhPMWCeUNtN8OGA= c=1 sm=0 a=MpKEIbNVzpcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2Gc2wcmVmPAQdWSx6JsA:9 a=NuE7lBTsRRVRLnjwsAfAv6xzxUYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
+In-Reply-To: <AANLkTik6oHOOk+1paSmCs=0c03_J10wGBFrRMQw-Jo86@mail.gmail.com>
+References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+	 <1300370936.16880.96.camel@gandalf.stny.rr.com>
+	 <AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
+	 <1300380909.16880.264.camel@gandalf.stny.rr.com>
+	 <1300381340.6315.323.camel@edumazet-laptop>
+	 <AANLkTik6oHOOk+1paSmCs=0c03_J10wGBFrRMQw-Jo86@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 14:22:01 -0400
+Message-ID: <1300386121.16880.359.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 05:59:06PM +0000, Ed W wrote:
-> On 17/03/2011 17:52, Andres Salomon wrote:
-> > OLPC stuff lives in arch/x86/platform/olpc; if there was more
-> > alix-specific stuff, I'd suggest moving it into something similar.
-> > However, I didn't find any.  Maybe an arch/x86/platform/geode as a
-> > place to collect platform drivers for the various geode-based machines
-> > out there (alix, soekris, etc)?  Though honestly, I'm not that
-> > interested in doing the work to migrate stuff over to there.
-> 
-> 
-> As this is my first stab at this, I think you are agreeing that the
-> current change is ok as a first step at least?  (I can have a go at a
-> larger code re-org later...)
+On Thu, 2011-03-17 at 18:43 +0100, Geert Uytterhoeven wrote:
 
-It is actually really easy.  You just need to move the file into
-arch/x86/platform/geode, add a Makefile, and add a line to
-arch/x86/platform/Makefile to include it.  In this particular case,
-since so much code is sliced out, the patch will actually be easier to
-review if the file is moved at the same time.
+> I don't know. It's not clear to me if "WARN_ON_SMP(x)" should always return "x",
+> or only on SMP?
+> 
+> E.g.
+> 
+>     if (WARN_ON_SMP(x)) {
+>        // Should we get here if "x" is true?
+>        // Or only if CONFIG_SMP and "x" are both true?
+>     }
+> 
 
-g.
+The "Or only if CONFIG_SMP and "x" are both true.
+
+I'll update the change to add a comment about that.
+
+-- Steve
+
+
