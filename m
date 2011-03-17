@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab1CQRrP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:47:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53500 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab1CQRrL convert rfc822-to-8bit (ORCPT
+	id S1754952Ab1CQRuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:50:51 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37209 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab1CQRur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:47:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=pM4i76KXsdiEbo5hRwwMbLkVgFsnP0keDDSd/94lCzpia1q0/LSWZP9HX5E2PiGZMA
-         Dw5uEP08lMIcDjJh9O19WV8eaEnh80L441OG3br8/9V+1GhVhVO1cevHocwIeS6XHaaF
-         4IQaCASNW/IAnNIQA5co51VdhmGV4wOfi/IB0=
+	Thu, 17 Mar 2011 13:50:47 -0400
+Date: Thu, 17 Mar 2011 10:50:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH V4 1/1] rcu: introduce kfree_rcu()
+Message-ID: <20110317175034.GJ2304@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4D7F356C.8020903@cn.fujitsu.com>
+ <1300194693.10062.15.camel@edumazet-laptop>
+ <20110316040308.GC2273@linux.vnet.ibm.com>
+ <4D81D451.4020203@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1300381340.6315.323.camel@edumazet-laptop>
-References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
-	<1300370936.16880.96.camel@gandalf.stny.rr.com>
-	<AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
-	<1300380909.16880.264.camel@gandalf.stny.rr.com>
-	<1300381340.6315.323.camel@edumazet-laptop>
-Date: Thu, 17 Mar 2011 18:43:05 +0100
-X-Google-Sender-Auth: gSYew6l-ATD7lQN7YhFjfHQIfH8
-Message-ID: <AANLkTik6oHOOk+1paSmCs=0c03_J10wGBFrRMQw-Jo86@mail.gmail.com>
-Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D81D451.4020203@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 18:02, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le jeudi 17 mars 2011 à 12:55 -0400, Steven Rostedt a écrit :
->> Here, test this patch. I'm in the process of committing it now.
->> It will be two patches, one for the WARN_ON_SMP() change, the other for
->> the futex change.
->>
->> -- Steve
->>
->> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
->> index c2c9ba0..25f1e9e 100644
->> --- a/include/asm-generic/bug.h
->> +++ b/include/asm-generic/bug.h
->> @@ -168,7 +168,7 @@ extern void warn_slowpath_null(const char *file, const int line);
->>  #ifdef CONFIG_SMP
->>  # define WARN_ON_SMP(x)                      WARN_ON(x)
->>  #else
->> -# define WARN_ON_SMP(x)                      do { } while (0)
->> +# define WARN_ON_SMP(x)                      ({0;})
->>  #endif
->>
->
-> You meant :
->
-> # define WARN_ON_SMP(x)                 ({x;})
->
-> or
->
-> # define WARN_ON_SMP(x)   do { } while (x, 0)
->
-> ?
+On Thu, Mar 17, 2011 at 05:28:49PM +0800, Lai Jiangshan wrote:
+> On 03/16/2011 12:03 PM, Paul E. McKenney wrote:
+> > On Tue, Mar 15, 2011 at 02:11:33PM +0100, Eric Dumazet wrote:
+> >> Le mardi 15 mars 2011 � 17:46 +0800, Lai Jiangshan a �crit :
+> >>
+> >>
+> >>> --- a/kernel/rcutiny.c
+> >>> +++ b/kernel/rcutiny.c
+> >>> @@ -167,7 +167,7 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+> >>>  		prefetch(next);
+> >>>  		debug_rcu_head_unqueue(list);
+> >>>  		local_bh_disable();
+> >>> -		list->func(list);
+> >>> +		__rcu_reclaim(list);
+> >>>  		local_bh_enable();
+> >>>  		list = next;
+> >>>  		RCU_TRACE(cb_count++);
+> >>
+> >> Paul, I am just wondering why we disable BH before calling list->func()
+> >>
+> >> This should be done in callbacks that really need it ?
+> >>
+> >> At least the disable/enable pair is not necessary before calling kfree()
+> > 
+> > Good point, we could bury the enable/disable pair in __rcu_reclaim().
+> > 
+> > Lai, am I forgetting any reason why we disable BH?
+> > 
+> > 							Thanx, Paul
+> > 
+> 
+> For many years, rcu callbacks are called on BH since rcu is added to kernel,
+> and someone assume they always called in BH. So we have to disable BH before
+> calling list->func() to avoid bad result. It's a *historical* reason.
+> 
+> I greed the disable/enable pair is not necessary before calling kfree(), but
+> __rcu_reclaim() is also called in rcutree which rcu_process_callbacks()
+> is in BH currently, I don't want to write 2 different version of
+> __rcu_reclaim()s (one for rcutree, another for rcutiny).
+> 
+> rcutree's rcu_process_callbacks() will be moved to process context, we may
+> remove disable/enable BH pair for kfree() then.
 
-I don't know. It's not clear to me if "WARN_ON_SMP(x)" should always return "x",
-or only on SMP?
+OK, so if I sequence your patches after the rcutree priority boosting,
+which threadifies rcutree's callback processing, I should be able to
+omit BH for the kfree() case.
 
-E.g.
-
-    if (WARN_ON_SMP(x)) {
-       // Should we get here if "x" is true?
-       // Or only if CONFIG_SMP and "x" are both true?
-    }
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+							Thanx, Paul
