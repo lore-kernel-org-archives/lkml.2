@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab1CQPST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 11:18:19 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:47778 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752955Ab1CQPSS (ORCPT
+	id S1754701Ab1CQPV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 11:21:57 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:50052 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165Ab1CQPVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 11:18:18 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: aM.k.IQVM1m0rm_vHKy4sbiQWXddJTh6ap1NlEhBVkN_TMB
- 2Cspx4IUrxTtqoWBQBOinkrmDap17KFWjrruUuurziHSx0hYCWLnAH7Cxj3s
- ZRB6zNktI12._DylAj68Er47GOqTwGmDVVmO2CSCngDWP0CMD4S4o3839Pva
- Rvuka14LyEKyyiWqRPYDKfsIpTZFUGjGKop_r_zS_AoETe19i.oz.aJZWDLV
- ppnV05euD2FJHP3WlQHnUxRZRyMNzXy1uc134488hl4oDbB_2kTYyvLVpP9m
- oQQoNe52I3cm2wm5eMh5SZEVyT5RwciRJsUKX16_5TOzSMsOM
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 17 Mar 2011 10:18:15 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Miller <davem@davemloft.net>
-cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: Poll about irqsafe_cpu_add and others
-In-Reply-To: <20110317.081420.71114992.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.00.1103171016270.12540@router.home>
-References: <1300371834.6315.93.camel@edumazet-laptop> <20110317.081420.71114992.davem@davemloft.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 17 Mar 2011 11:21:55 -0400
+Date: Thu, 17 Mar 2011 16:21:50 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
+Message-ID: <20110317152150.GF11094@one.firstfloor.org>
+References: <4D817234.9070106@jp.fujitsu.com> <4D8172D7.3040201@jp.fujitsu.com> <20110317041424.GD11094@one.firstfloor.org> <4D819A2A.8050606@jp.fujitsu.com> <20110317062612.GE11094@one.firstfloor.org> <4D81BB87.10803@jp.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D81BB87.10803@jp.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, David Miller wrote:
+> At least copy to the last page of the huge page is performed after
+> all preceding copies are finished.  So I'm not sure it is really
+> "a few" or not.
+> Still I think making the window smaller than now is worthwhile,
+> no matter it is change from 0.1% to 0.01%, or from 0.01% to 0.001%.
 
->
-> I had been meaning to bring this up from another perspective.
->
-> In networking, we often only ever access objects in base or
-> BH context.  Therefore in BH context cases we can do just
-> normal counter bumps without any of the special atomic or
-> IRQ disabling code at all.
+Note that hwpoison will never reach 100% coverage. That's impossible.
+But to get nearer to 100% it's better to concentrate of the paths
+that affect long time windows and significant amounts of memory.
+What those are is often non-obvious and needs measurements.
 
-We have the __ functions for that purpose. __this_cpu_inc f.e. falls back
-to a simply ++ operation if the arch cannot provide something better.
-irqsafe_xx are only used if the context does not provide any protection
-and if there is the potential of the counter being incremented from an
-interrupt context.
+> 
+> Or did you find the downside of the check here?
 
+The usual problem is how to test it. That tends to be harder 
+than just writing the code. If it's not tested it's probably 
+not worth having.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
