@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab1CQKgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 06:36:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4406 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab1CQKgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 06:36:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,198,1299484800"; 
-   d="scan'208";a="668241517"
-Subject: Re: linux-next: build failure after merge of the block tree
-From: David Woodhouse <david.woodhouse@intel.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jarkko Lavinen <jarkko.lavinen@nokia.com>
-In-Reply-To: <4D81E010.1090808@kernel.dk>
-References: <20110314161919.15e6d983.sfr@canb.auug.org.au>
-	 <20110317103218.ca7f63bf.sfr@canb.auug.org.au> <4D81E010.1090808@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation. Pipers Way, Swindon, Wiltshire, SN3 1RJ,
- UK.
-Date: Thu, 17 Mar 2011 10:36:10 +0000
-Message-ID: <1300358170.2589.50.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753822Ab1CQKoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 06:44:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53346 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab1CQKol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 06:44:41 -0400
+Date: Thu, 17 Mar 2011 10:44:34 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: tony.luck@intel.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] mnt_devname queue
+Message-ID: <20110317104434.GB22723@ZenIV.linux.org.uk>
+References: <20110316235608.GY22723@ZenIV.linux.org.uk>
+ <AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
+ <20110317072344.GZ22723@ZenIV.linux.org.uk>
+ <AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 10:18 +0000, Jens Axboe wrote:
+On Thu, Mar 17, 2011 at 03:28:47PM +0800, Xiaotian Feng wrote:
+> Cc'ed author ...
 > 
-> Can you point me at the commit in question? Generally,
-> elv_queue_empty()
-> can be replaced by blk_peek_request(). 
+> > a) What the hell would you expect to happen if userland mounts it twice
+> > and unmount the first one? ??pstore_sb = NULL, pstore_mnt = NULL, AFAICS.
 
-The interesting commit is this one:
-http://git.infradead.org/mtd-2.6.git/commitdiff/c7519dbf6
+BTW, you want
+	* mount_single(), not mount_nodev()
+	* simple_pin_fs()/mntput() around modifying that sucker from kernel
+(held across both the file creation and writing to it)
 
-The point of it is to enable this
-http://git.infradead.org/mtd-2.6.git/commitdiff/a32159024
+> > b) pstore_writefile() - struct file on stack? ??Really? ??Again, in the
+> > scenario above, what'll happen to you if pstore_mnt gets dropped and
+> > freed in the middle of all that?
+> >
+> > c) in the same function:
+> > + ?? ?? ?? memset(&f, '0', sizeof f);
+> > Ahem...
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+Aside of a new meaning given to "zero that structure out", why the devil
+are you doing it in such a convoluted way?  Note that you are using ramfs,
+so the mapping is unevictable.  Simple kmalloc() + memcpy() and
+simple_read_from_buffer() to implement ->read() would do nicely.
 
+And for fsck sake, copy ramfs_get_inode() and trim it.  You are overriding
+it for the single directory in there and you are only using it for regular
+files otherwise.  With wrong ->i_op and ->i_fop *and* irrelevant messing with
+->i_mapping.  Which leaves you with
+	inode->i_ino = get_next_ino();
+	inode_init_owner(inode, dir, mode);
+	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+as useful part.
+
+BTW, you want to make the contents visible before d_add().  You
+*definitely* want to finish setting it up before unlocking the parent,
+or you are asking for userland to come and unlink() it under you.
+
+Incidentally, you are leaking ->i_private on umount.  You want ->evict_inode()
+doing that kfree(), not ->unlink().  And possibly ->erase() as well, with
+check for zero i_nlink around it (in ->evict_inode()).
