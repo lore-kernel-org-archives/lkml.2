@@ -1,79 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab1CQSy3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:54:29 -0400
-Received: from smtp.opengridcomputing.com ([209.198.142.2]:40518 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754725Ab1CQSy1 (ORCPT
+	id S1755328Ab1CQSz5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:55:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46095 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173Ab1CQSzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:54:27 -0400
-Message-ID: <4D8258DF.3030302@opengridcomputing.com>
-Date: Thu, 17 Mar 2011 12:54:23 -0600
-From: Tom Tucker <tom@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Jesper Juhl <jj@chaosbits.net>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Chuck Lever <chuck.lever@oracle.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH] SUNRPC: Remove resource leak in svc_rdma_send_error()
-References: <alpine.LNX.2.00.1101222233260.7746@swampdragon.chaosbits.net> <20110317183752.GH30180@fieldses.org>
-In-Reply-To: <20110317183752.GH30180@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Mar 2011 14:55:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=BK8DuC9KDpj1M1xTL9i++PWTGjji1NLCR/vAm8E+hCYyLGzYWaW/GaRwwVVOVZPghM
+         GDAgEVeNJmENC7mO5YGw3bzVR1/241n9przAVIQjG5QB3tzeiUagu+2Emv9Zkd7btHZ5
+         Beq5jb328X79Q2nF+EkZqJbSUgd5Sgn9FwtDs=
+Subject: Re: Poll about irqsafe_cpu_add and others
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1103171338350.18529@router.home>
+References: <1300371834.6315.93.camel@edumazet-laptop>
+	 <20110317.081420.71114992.davem@davemloft.net>
+	 <alpine.DEB.2.00.1103171016270.12540@router.home>
+	 <1300380801.6315.306.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1103171245430.16620@router.home>
+	 <1300386569.6315.404.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1103171338350.18529@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Mar 2011 19:55:39 +0100
+Message-ID: <1300388139.6315.418.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bruce,
+Le jeudi 17 mars 2011 à 13:42 -0500, Christoph Lameter a écrit :
+> On Thu, 17 Mar 2011, Eric Dumazet wrote:
+> 
+> > By the way, I noticed :
+> >
+> > DECLARE_PER_CPU(u64, xt_u64);
+> > __this_cpu_add(xt_u64, 2) translates to following x86_32 code :
+> >
+> > 	mov	$xt_u64,%eax
+> > 	add	%fs:0x0,%eax
+> > 	addl	$0x2,(%eax)
+> > 	adcl	$0x0,0x4(%eax)
+> >
+> >
+> > I wonder why we dont use :
+> >
+> > 	addl	$0x2,%fs:xt_u64
+> > 	addcl	$0x0,%fs:xt_u64+4
+> 
+> The compiler is fed the following
+> 
+> 	*__this_cpu_ptr(xt_u64) += 2
+> 
+> __this_cpu_ptr makes it:
+> 
+> 	*(xt_u64 + __my_cpu_offset) += 2
+> 
+> So the compiler calculates the address first and then increments it.
+> 
+> The compiler could optimize this I think. Wonder why that does not happen.
 
-I believe this fix is correct.
+Compiler is really forced to compute addr, thats why.
 
-Tom
+Hmm, we should not fallback to generic ops I think, but tweak 
 
-On 3/17/11 12:37 PM, J. Bruce Fields wrote:
-> On Sat, Jan 22, 2011 at 10:40:20PM +0100, Jesper Juhl wrote:
->> We leak the memory allocated to 'ctxt' when we return after
->> 'ib_dma_mapping_error()' returns !=0.
->>
->> Signed-off-by: Jesper Juhl<jj@chaosbits.net>
-> I don't know this code, but I can't see how that could be wrong....
-> Applying unless Tom tells me otherwise.
->
-> --b.
->
->> ---
->>   svc_rdma_transport.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->>    compile tested only
->>
->> diff --git a/net/sunrpc/xprtrdma/svc_rdma_transport.c b/net/sunrpc/xprtrdma/svc_rdma_transport.c
->> index 9df1ead..1a10dcd 100644
->> --- a/net/sunrpc/xprtrdma/svc_rdma_transport.c
->> +++ b/net/sunrpc/xprtrdma/svc_rdma_transport.c
->> @@ -1335,6 +1335,7 @@ void svc_rdma_send_error(struct svcxprt_rdma *xprt, struct rpcrdma_msg *rmsgp,
->>   					    p, 0, length, DMA_FROM_DEVICE);
->>   	if (ib_dma_mapping_error(xprt->sc_cm_id->device, ctxt->sge[0].addr)) {
->>   		put_page(p);
->> +		svc_rdma_put_context(ctxt, 1);
->>   		return;
->>   	}
->>   	atomic_inc(&xprt->sc_dma_used);
->>
->>
->> -- 
->> Jesper Juhl<jj@chaosbits.net>             http://www.chaosbits.net/
->> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
->> Plain text mails only, please.
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+percpu_add_op() { 
+...
+	case 8: 
+#if CONFIG_X86_64_SMP
+                if (pao_ID__ == 1)                                      \
+                        asm("incq "__percpu_arg(0) : "+m" (var));       \
+                else if (pao_ID__ == -1)                                \
+                        asm("decq "__percpu_arg(0) : "+m" (var));       \
+                else                                                    \
+                        asm("addq %1, "__percpu_arg(0)                  \
+                            : "+m" (var)                                \
+                            : "re" ((pao_T__)(val)));                   \
+                break;                                                  \
+
+#else
+                asm("addl %1, "__percpu_arg(0)                  	\
+                            : "+m" (var)                                \
+                            : "ri" ((u32)(val)));                   	\
+		asm("adcl %1, "__percpu_arg(0) 				\
+			: "+m" ((char *)var+4)				\
+			: "ri" ((u32)(val>>32));			\
+                break;                                                  \
+
+#endif
+....
+}
+
+
+
+
+
 
