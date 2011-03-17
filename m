@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab1CQRwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:52:17 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:34084 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754898Ab1CQRwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:52:14 -0400
-Date: Thu, 17 Mar 2011 10:52:10 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Ed W <lists@wildgooses.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, rpurdie@rpsys.net,
-        linux-geode@lists.infradead.org, const@mimas.ru,
-        linux-kernel@vger.kernel.org
-Subject: Re: Feedback please: [PATCH] leds: New PCEngines Alix LED driver
- using gpio interface
-Message-ID: <20110317105210.420e55c4@queued.net>
-In-Reply-To: <4D8243E7.7030309@wildgooses.com>
-References: <4D81D7FD.1040602@wildgooses.com>
-	<20110317084328.41831b4c@debxo>
-	<AANLkTikga=zrNgfsuN4=8tCfZz0n7vkk6i0xW-zj6zSD@mail.gmail.com>
-	<4D8243E7.7030309@wildgooses.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755045Ab1CQRwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:52:31 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:34023 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754971Ab1CQRw1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:52:27 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: ngDl27IVM1lGWwUBJp2QfWtKY8Hub7VqmhdeObj7bduvR37
+ AoT3joHZ7DOEQ_6PR1dY.2dsZsZETP_rYI5c3wLL4AUoqgbkb38KisxlxDj8
+ pHTRNAKURLH0rtIhnH9KPcPxaySm0gzvedDFCSXH3o98T2sB.iPR_qpOFLUU
+ 7BieldmxpTFM5pSX2mBYoDmM1duaMPstjc607lzMURR2nQz9wegLrd5tAits
+ UvC.A7mZDAH1xaAve0tfvxzPSrYhS2tWErCArlUbI8KldeAcJ8_NVXmwRW0N
+ YTYkqV5qGAjTxYJbuw9fprAuTI0Ko_n6x_7YV6F02NKhW6IIL
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 17 Mar 2011 09:40:33 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>,
+        Netfilter Development Mailinglist 
+	<netfilter-devel@vger.kernel.org>
+Subject: Re: Poll about irqsafe_cpu_add and others
+In-Reply-To: <1300371834.6315.93.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1103170932430.12540@router.home>
+References: <1300371834.6315.93.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011 17:24:55 +0000
-Ed W <lists@wildgooses.com> wrote:
+On Thu, 17 Mar 2011, Eric Dumazet wrote:
 
-> On 17/03/2011 16:08, Grant Likely wrote:
-> > Actually, it looks like with your changes this isn't even a driver
-> > anymore.  It is merely code to register a device on a specific
-> > platform.  Is there any other alix-specific initialization code in
-> > the kernel?  If so, you should consider relocating the device
-> > registration with the rest of the alix setup code.
-> 
-> Agreed.  I confess that I don't understand the linux driver structure
-> enough to shift the code further though
-> 
-> What I observe is that there is a lot of arch specific setup for ARM,
-> etc, however, this is not currently done at all for x86 (which is
-> Alix), so at the moment this would seem to sit slightly awkwardly
-> with current x86 arch code?
-> 
-> Instead I found leds-net5501.c, which is for a very similar platform
-> to the Alix (not quite similar enough that I could combine the files)
-> and I used that as my prototype for this driver.
-> 
+> irqsafe_cpu_{dec|inc} are used in network stack since 2.6.37 (commit
+> 29b4433d991c88), and I would like to use irqsafe_cpu_add() in netfilter
+> fast path too, and SNMP counters eventually (to lower ram needs by 50%)
+>
+> Initial support of irqsafe_ was given by Christoph in 2.6.34
+>
+> It seems only x86 arch is using a native and efficient implementation.
 
-OLPC stuff lives in arch/x86/platform/olpc; if there was more
-alix-specific stuff, I'd suggest moving it into something similar.
-However, I didn't find any.  Maybe an arch/x86/platform/geode as a
-place to collect platform drivers for the various geode-based machines
-out there (alix, soekris, etc)?  Though honestly, I'm not that
-interested in doing the work to migrate stuff over to there.
+I have some draft(y old) patches for IA64 that use fetchadd together with
+a per cpu virtual address range mapped differently for each processor but
+in general the problem with other arches is that they do not have
+instructions that avoid the expensive bus arbitration for a cacheline nor
+do they have segment overrides.
 
+The segment override effect of implicit relocation of the address to the
+correct percpu area within one instruction can also be accomplished (like
+in the IA64 case) if we have per cpu page tables for the kernel and map
+the same virtual addres to different physical addresses for each cpu. Then
+the address given to a percpu instruction is constant and the relocation
+is performed implicitly by the MMU. Thus the relocation and the RMW
+operation are "atomic". Either both occur or none.
 
-> I think given that we already have a similar driver in the leds area
-> which does platform alike setup, this gives some justification for
-> doing the same with the Alix leds?  Additionally if we ever find we
-> need Alix specific setup code then the code is ready to be used as is
-> by the platform code?
-> 
-> 
-> >>> -module_init(alix_led_init);
-> >>> -module_exit(alix_led_exit);
-> >>> +arch_initcall(alix_init);
-> >>
-> >> Why is this arch_initcall rather than module_init?   If possible,
-> >> it would be good to have an unload hook as well.
-> > 
-> > Yes, unless you've got specific ordering constraints this should
-> > definitely be module_init().
-> 
-> I'm out of my depth here.  I would be very happy to resubmit either
-> way?
-> 
-> However, is there not a potential ordering issue if leds-alix2 is
-> loaded *before* leds-gpio? Is this not the reason for making it an
-> arch_initcall?
-> 
-> Also the same code is used in leds-5501.c - would you like me to
-> submit a patch to change that also (if you confirm it should become a
-> module_init call?).
+The other aspect is that the arch must have cheap increment (and other
+RMW) instructions that avoids expensive in cpu processing to establish a
+coherent state of the cacheline.
 
-Yes, it should be module_init.  There shouldn't be any issues with
-leds-gpio; the driver will only bind once a device is added (so long as
-nothing else named leds-gpio comes along before leds-alix2).
+> What about defining a HAVE_FAST_IRQSAFE_ADD ?
 
-> 
-> Thanks for final confirmation on this and I will quickly resubmit the
-> patch?
-> 
-> Ed W
+Useful at some point I think.
+
