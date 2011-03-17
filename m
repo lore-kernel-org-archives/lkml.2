@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab1CQH2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 03:28:49 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60114 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab1CQH2s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 03:28:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rvZ57+s0rFXkDLXeHn+7nj8HYXeF4KcIcsUgU2AjmvrEVP9pqQ3pTnex43S/FHQzOa
-         7pjXVDCT3VspMWKuX6LmdL107vwxXZ5sEmhKvSHzr7BnyLmTxX41Eu0P+esor99/0RPA
-         C1Pc5zOqVNLCuiuy0dS9tlOqKqhdfkwNNgRg0=
+	id S1752029Ab1CQHao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 03:30:44 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:50405 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751670Ab1CQHam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 03:30:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110317072344.GZ22723@ZenIV.linux.org.uk>
-References: <20110316235608.GY22723@ZenIV.linux.org.uk>
-	<AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
-	<20110317072344.GZ22723@ZenIV.linux.org.uk>
-Date: Thu, 17 Mar 2011 15:28:47 +0800
-Message-ID: <AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
-Subject: Re: [git pull] mnt_devname queue
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, tony.luck@intel.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Thu, 17 Mar 2011 09:30:35 +0200
+From: Richard Weinberger <richard@nod.at>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <serge@hallyn.com>, <eparis@redhat.com>, <jmorris@namei.org>,
+        <eugeneteo@kernel.org>, <drosenberg@vsecurity.com>
+Subject: Re: [PATCH] [RFC] Make it easier to harden /proc/
+In-Reply-To: <20110317064136.GD5466@outflux.net>
+References: <1300303907-22627-1-git-send-email-richard@nod.at>
+ <201103162108.17127.richard@nod.at> <201103162145.45772.arnd@arndb.de>
+ <201103162152.49615.richard@nod.at> <m1lj0eepe4.fsf@fess.ebiederm.org>
+ <20110317064136.GD5466@outflux.net>
+Message-ID: <599d83ea1ee667d747f3c863b98f40ef@radon2.swed.at>
+User-Agent: RoundCube Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 3:23 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Thu, Mar 17, 2011 at 01:45:33PM +0800, Xiaotian Feng wrote:
->
->> I guess we need also switch pstore from ->get_sb() to ->mount()
+On Wed, 16 Mar 2011 23:41:36 -0700, Kees Cook <kees.cook@canonical.com>
+wrote:
+> On Wed, Mar 16, 2011 at 02:17:39PM -0700, Eric W. Biederman wrote:
+>> Richard Weinberger <richard@nod.at> writes:
+>> 2> Am Mittwoch 16 März 2011, 21:45:45 schrieb Arnd Bergmann:
+>> >> On Wednesday 16 March 2011 21:08:16 Richard Weinberger wrote:
+>> >> > Am Mittwoch 16 März 2011, 20:55:49 schrieb Kees Cook:
+>> >> > > On Wed, Mar 16, 2011 at 08:31:47PM +0100, Richard Weinberger wrote:
+>> >> > > > When containers like LXC are used a unprivileged and jailed
+>> >> > > > root user can still write to critical files in /proc/.
+>> >> > > > E.g: /proc/sys/kernel/{sysrq, panic, panic_on_oops, ... }
+>> >> > > >
+>> >> > > > This new restricted attribute makes it possible to protect such
+>> >> > > > files. When restricted is set to true root needs CAP_SYS_ADMIN
+>> >> > > > to into the file.
+>> >> > >
+>> >> > > I was thinking about this too. I'd prefer more fine-grained control
+>> >> > > in this area, since some sysctl entries aren't strictly controlled by
+>> >> > > CAP_SYS_ADMIN (e.g. mmap_min_addr is already checking CAP_SYS_RAWIO).
+>> >> > >
+>> >> > > How about this instead?
+>> >> >
+>> >> > Good Idea.
+>> >> > May we should also consider a per-directory restriction.
+>> >> > Every file in /proc/sys/{kernel/, vm/, fs/, dev/} needs a protection.
+>> >> > It would be much easier to set the protection on the parent directory
+>> >> > instead of protecting file by file...
+>> >>
+>> >> How does this interact with the per-namespace sysctls that Eric
+>> >> Biederman added a few years ago?
+>> >
+>> > Do you mean CONFIG_{UTS, UPC, USER, NET,}_NS?
+>> >
+>> >> I had expected that any dangerous sysctl would not be visible in
+>> >> an unpriviledge container anyway.
+>> >
+>> > No way.
+>> > That's why it's currently a very good idea to mount /proc/ read-only
+>> > into a container.
 >>
->> fs/pstore/inode.c:253: error: unknown field ???get_sb??? specified in initializer
->> fs/pstore/inode.c:253: warning: initialization makes integer from
->> pointer without a cast
->> fs/pstore/inode.c:253: error: initializer element is not computable at load time
->> fs/pstore/inode.c:253: error: (near initialization for
->> ???pstore_fs_type.fs_flags???)
->
-> Yes.  I've just looked at that thing and I see several, er, issues.
->
+>> However it is in the architecture.  The problem is that the user
+>> namespace is not finished.  Once finished even root with all caps in a
+>> container will have no more permissions than the unprivileged user that
+>> created the user namespace.
+>>
+>> Essentially the change is to make permissions checks become a comparison
+>> of the tuple (user_ns, uid) instead of just comparisons by uid.  If we
+>> want to fix permission problems with proc and containers please let's
+>> focus on the completing the user namespace.
+> 
+> I actually think these are not mutually exclusive. Right now /proc/sys is
+> filled with ways to gain caps as a reduced-privilege uid 0 user. I don't
+> think containers are the only place where we want to be limiting /proc/sys.
+> (For example, core_pattern and modprobe entries can both be written by
+> root, regardless of cap, which can be directed to run arbitrary commands
+> with full caps. And yes, that's also being fixed separately, it's just an
+> example.)
+> 
+> I'd still like to see the sysctl table expanded to include caps to test.
 
-Cc'ed author ...
+I agree with you.
+Every writable file in /proc/ should have a check for at least one cap.
 
-> a) What the hell would you expect to happen if userland mounts it twice
-> and unmount the first one?  pstore_sb = NULL, pstore_mnt = NULL, AFAICS.
->
-> b) pstore_writefile() - struct file on stack?  Really?  Again, in the
-> scenario above, what'll happen to you if pstore_mnt gets dropped and
-> freed in the middle of all that?
->
-> c) in the same function:
-> +       memset(&f, '0', sizeof f);
-> Ahem...
->
-> d)
-> +               if (pstore_is_mounted())
-> +                       pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
-> +                                     psinfo->buf, hsize + l1_cpy + l2_cpy,
-> +                                     CURRENT_TIME, psinfo->erase);
->
-> And what happens if it's unmounted between the check and use?  pstore_mkfile()
-> pretty much starts with dereferencing pstore_sb...
->
-> e) as the matter of fact, what happens if it's unmounted in the _middle_ of
-> pstore_mkfile()?
->
-> f) in general it's a lousy policy to tie that kind of difference in behaviour
-> to "somebody has it mounted someplace at the moment", even without the races
-> a-la (a)...
->
+ 
+> -Kees
+
