@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab1CQRf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 13:35:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58967 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751576Ab1CQRf4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 13:35:56 -0400
+	id S1754887Ab1CQRiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 13:38:10 -0400
+Received: from fieldses.org ([174.143.236.118]:37883 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754850Ab1CQRiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 13:38:08 -0400
+Date: Thu, 17 Mar 2011 13:38:05 -0400
+To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: 2.6.38: Quota over NFS4
+Message-ID: <20110317173805.GB30180@fieldses.org>
+References: <20110317133247.GB6424@os.inf.tu-dresden.de>
 MIME-Version: 1.0
-In-Reply-To: <s5haagtvfc2.wl%tiwai@suse.de>
-References: <4D81D6F9.3040304@t-online.de> <AANLkTim=R7GVDY0Nt-6q1mjO3vas-qRy7=VxqgWWtz_s@mail.gmail.com>
- <s5haagtvfc2.wl%tiwai@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Mar 2011 10:33:04 -0700
-Message-ID: <AANLkTi=ZSS=gDtGOcKBdE0BfJLpu0Ye1UhuNcbkz70Vs@mail.gmail.com>
-Subject: Re: [BUG][2.6.38] IRQ Lock Inversion / i915 fails
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Chris Wilson <chris@chris-wilson.co.uk>, jesse.barnes@intel.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?David_M=FCller?= <d.mueller@elsoft.ch>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110317133247.GB6424@os.inf.tu-dresden.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 10:15 AM, Takashi Iwai <tiwai@suse.de> wrote:
->
-> The trigger callback should be called always in irq-disabled context,
-> so this should be OK.
+On Thu, Mar 17, 2011 at 02:32:47PM +0100, Adam Lackorzynski wrote:
+> Hello,
+> 
+> I'm seeing a problem with quotas in a system where the server running
+> 2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
+> version does not seem to play a role, checked with 2.6.38, 2.6.37 and
+> 2.6.36. The following script and output show the problem:
+> 
+> #! /bin/sh
+> 
+> quota | grep home
+> du
+> cp /bin/ls x1
+> du
+> cat x1 > /dev/null
+> rm x1
+> du
+> quota | grep home
+> 
+> Output:
+> 
+>    homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
+> 0       .
+> 96      .
+> 0       .
+>    homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
+> 
+> 
+> As can be seen the 96 kb are still accounted on the quota of the user.
+> Removing the 'cat' command from the script makes the quota be ok again
+> (original value). Also mounting via nfs3 does not exhibit it, same for running
+> the script on the nfs-server directly.
 
-Oh, ok. I missed the snd_pcm_action_lock_irq() thing disabling
-interrupts in that call sequence..
+Does "df" show the same problem?  And does unmounting/remounting on the
+client clear the problem?  (Or that, in combination with stopping the
+server, unmounting the xfs export, remounting it, and restarting?)
 
-> But loopback_pos_update() is called in the
-> timer callback, and this can be the issue.
+Was there an earlier server version that didn't exhibit this problem?
 
-Hmm. If the timer callback is the only other case doing that, then
-that should be ok.
+--b.
 
-In fact, now that I look at that lockdep thing, I'm confused. Where
-does the hard irq come in at all for that lock? It seems to come from
-self_group.lock, but I don't see why/how they nest.
-
-That said, the sound locking is odd, I'm sure you see it. But a
-commentary about how this came about in the changelog would be good.
-
-                     Linus
+> 
+> Client mount options are:
+> homes:/home/ /home nfs4 rw,nosuid,nodev,relatime,vers=4,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=1.2.3.3,minorversion=0,local_lock=none,addr=1.2.3.4 0 0
+> 
+> Server mount options are:
+> /dev/mapper/vg-homefs /home xfs rw,nosuid,nodev,relatime,attr2,usrquota 0 0
+> 
+> 
+> 
+> 
+> Thanks,
+> Adam
+> -- 
+> Adam                 adam@os.inf.tu-dresden.de
+>   Lackorzynski         http://os.inf.tu-dresden.de/~adam/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
