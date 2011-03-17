@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab1CQU1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 16:27:45 -0400
-Received: from smtp.tele.fi ([192.89.123.25]:45365 "EHLO smtp.tele.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab1CQU13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 16:27:29 -0400
-X-Originating-Ip: [194.89.68.22]
-Date: Thu, 17 Mar 2011 22:27:12 +0200
-From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
-        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
-        "wdauchy@gmail.com" <wdauchy@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Bootup fix for _brk_end being != _end
-Message-ID: <20110317202712.GB32595@reaktio.net>
-References: <20110308214429.GA27331@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103091359290.2968@kaball-desktop> <20110315142957.GB12730@router-fw-old.local.net-space.pl> <20110315144821.GA11586@dumpdata.com> <20110315153001.GD12730@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103151530290.3382@kaball-desktop> <20110315154024.GA14100@router-fw-old.local.net-space.pl> <20110317085118.GA11346@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1103171504200.3382@kaball-desktop>
+	id S1755375Ab1CQUcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 16:32:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53959 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab1CQUb6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 16:31:58 -0400
+Date: Thu, 17 Mar 2011 14:31:54 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
+        gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC PATCH 1/2] serial: 8250: Add a notifier chain for driver
+ registration.
+Message-ID: <20110317203154.GH12824@angua.secretlab.ca>
+References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
+ <1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com>
+ <20110317121849.49d7c425@lxorguk.ukuu.org.uk>
+ <20110317182510.GN9597@angua.secretlab.ca>
+ <4D82560B.4090800@caviumnetworks.com>
+ <20110317184723.GQ9597@angua.secretlab.ca>
+ <20110317192441.69c699b1@lxorguk.ukuu.org.uk>
+ <20110317193149.GD12824@angua.secretlab.ca>
+ <4D826B52.3060304@caviumnetworks.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103171504200.3382@kaball-desktop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D826B52.3060304@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 03:07:05PM +0000, Stefano Stabellini wrote:
-> On Thu, 17 Mar 2011, Daniel Kiper wrote:
-> > > > > > Details? Can you provide the 'xenctx' output of where it crashed?
-> > > > >
-> > > > > As I wrote above domain is dying and I am not able to connect to it using
-> > > > > xenctx after crash :-(((. I do not know how to do that in another way.
-> > > >
-> > > > try adding:
-> > > >
-> > > > extra = "loglevel=9 debug earlyprintk=xenboot"
-> > >
-> > > (XEN) d55:v0: unhandled page fault (ec=0002)
-> > > (XEN) Pagetable walk from 000000000000000c:
-> > > (XEN)  L4[0x000] = 000000010bebc027 0000000000024d28
-> > > (XEN)  L3[0x000] = 0000000000000000 ffffffffffffffff
-> > > (XEN) domain_crash_sync called from entry.S
-> > > (XEN) Domain 55 (vcpu#0) crashed on cpu#3:
-> > > (XEN) ----[ Xen-4.1.0-rc2-pre  x86_64  debug=y  Not tainted ]----
-> > > (XEN) CPU:    3
-> > > (XEN) RIP:    e019:[<00000000c1001180>]
-> > > (XEN) RFLAGS: 0000000000000282   EM: 1   CONTEXT: pv guest
-> > > (XEN) rax: 000000000000000c   rbx: 000000000000000c   rcx: 00000000c1371fd0
-> > > (XEN) rdx: 00000000c1371fd0   rsi: 00000000c1742000   rdi: 00000000a5c03d70
-> > > (XEN) rbp: 00000000c1371fc8   rsp: 00000000c1371fa8   r8: 0000000000000000
-> > > (XEN) r9:  0000000000000000   r10: 0000000000000000   r11: 0000000000000000
-> > > (XEN) r12: 0000000000000000   r13: 0000000000000000   r14: 0000000000000000
-> > > (XEN) r15: 0000000000000000   cr0: 000000008005003b   cr4: 00000000000026f4
-> > > (XEN) cr3: 0000000129b6e000   cr2: 000000000000000c
-> > > (XEN) ds: e021   es: e021   fs: e021   gs: e021   ss: e021   cs: e019
-> > > (XEN) Guest stack trace from esp=c1371fa8:
-> > > (XEN)   00000002 c1001180 0001e019 00010082 c10037af deadbeef c1742000 a5c03d70
-> > > (XEN)   c1371fdc c13a4aa8 00000000 00000000 00000000 c1371ffc c13a3ff2 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 deadbeef c1753000 013fe001 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 013fe001 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > > (XEN)   00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > 
-> > Any progress ??? Can I help you in something ???
-> > 
->  
-> Unfortunately unless you are able to resolve the IP of the crash these
-> logs don't tell me much.
-> Alternatively you can try to get more infos using /usr/lib/xen/bin/xenctx
-> like Konrad suggested.
->
+On Thu, Mar 17, 2011 at 01:13:06PM -0700, David Daney wrote:
+> On 03/17/2011 12:31 PM, Grant Likely wrote:
+> >On Thu, Mar 17, 2011 at 07:24:41PM +0000, Alan Cox wrote:
+> >>>>If we did that, serial8250_probe() would automatically do the right thing.
+> >>>
+> >>>Take a look at the way arch/powerpc/platforms/512x/pdm360ng.c uses a
+> >>>notifier for amending a platform_device with additional data..
+> >>
+> >>I tend to view arch specific embedded code as rather like very dubious
+> >>parties. What goes on in other peoples' house out of sight is none of my
+> >>business.
+> >>
+> >>The 8250 however is core code so it should keep its clothers on and behave
+> >>in a manner befitting its status.
+> >>
+> >>What part of the problem can't be solved by doing it properly using the
+> >>device registration interfaces we have today ?
+> >
+> >Device registration isn't the problem.  The problem is supplying
+> >machine-specific callbacks from the board support code to the
+> >drivers.  When devices are sourced from a device tree, it is easy to
+> >get data about the device out of the tree, but it is really hard to
+> >get callback pointers.  To make it all work without this fiddling
+> >about, the octeon serial_{in,out} implementation would need to be
+> >rolled into of_serial.c (which FWIW, I have absolutely no problem
+> >with).
+> >
+> 
+> The only problem I have with that is that it ends up moving chip
+> specific erratum workarounds into drivers/tty/serial instead of
+> arch/mips/cavium-octeon.
+> 
+> I will think about this more.
 
-More info/help about xenctx usage available here:
-http://wiki.xen.org/xenwiki/XenCommonProblems#head-61843b32f0243b5ad0e17850f9493bffd80f8c17
+arch/mips/cavium-octeon/serial.c appears to be void of any
+chip-specific errata at the moment.  :-)
 
--- Pasi
+g.
 
