@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab1CQSm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:42:27 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:1629 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab1CQSmZ (ORCPT
+	id S1755179Ab1CQSnm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:43:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:50701 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725Ab1CQSnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:42:25 -0400
-Message-ID: <4D82560B.4090800@caviumnetworks.com>
-Date: Thu, 17 Mar 2011 11:42:19 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
-        gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC PATCH 1/2] serial: 8250: Add a notifier chain for driver
- registration.
-References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com> <1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com> <20110317121849.49d7c425@lxorguk.ukuu.org.uk> <20110317182510.GN9597@angua.secretlab.ca>
-In-Reply-To: <20110317182510.GN9597@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 17 Mar 2011 14:43:39 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=MpKEIbNVzpcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2ZvwQofU_4GQ0dSiVv0A:9 a=RHrx6QgK_YYq_1HRUnBsiPuc72EA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        laijs@cn.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com
+In-Reply-To: <1300387122.6315.407.camel@edumazet-laptop>
+References: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+	 <1300370936.16880.96.camel@gandalf.stny.rr.com>
+	 <AANLkTi=Z_yYkdwzO7TMs7nSMOXR9wn_7BxtKjOKgS5HL@mail.gmail.com>
+	 <1300380909.16880.264.camel@gandalf.stny.rr.com>
+	 <1300381340.6315.323.camel@edumazet-laptop>
+	 <1300385802.16880.348.camel@gandalf.stny.rr.com>
+	 <AANLkTim4hY_HJrukNjVe5RDzBj7r547BcxKRozKcQ_uE@mail.gmail.com>
+	 <1300387122.6315.407.camel@edumazet-laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 14:43:37 -0400
+Message-ID: <1300387417.16880.399.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Mar 2011 18:42:24.0551 (UTC) FILETIME=[0EAAFB70:01CBE4D3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2011 11:25 AM, Grant Likely wrote:
-> On Thu, Mar 17, 2011 at 12:18:49PM +0000, Alan Cox wrote:
->> On Wed, 16 Mar 2011 18:26:06 -0700
->> David Daney<ddaney@caviumnetworks.com>  wrote:
->>
->>> The 8250 driver is a bit weird in that in addition to supporting
->>> platform devices, extra devices can be added by calling
->>> serial8250_register_port().
->>>
->>> The problem is that if we call serial8250_register_port() before the
->>> driver is initialized Bad Things happen (we dereference NULL
->>> pointers).
->>>
->>> There doesn't seem to be a general way to know if a driver has been
->>> initialized
->>
->> I've had a bigger dig into this. I think the correct answer is probably
->> "always go via platform devices or similar". That *is* the notifier in
->> the kernel of today. serial8250_register_port ultimately should I think
->> ultimatly become an internal helper.
->
-> +1
->
-> Depending on serial8250_register_port() definitely the wrong thing to
-> do for platform support code.  It would be better to figure out how to
-> get the dt bits you need into 8250.c or of_serial.c.
->
+On Thu, 2011-03-17 at 19:38 +0100, Eric Dumazet wrote:
+>  
+> 
+> My point was that WARN_ON(X) always evaluates X once
+> 
+> And apparently, WARN_ON_SMP(X) doesnt evaluates X iF !SMP
+> 
+> This should be documented, or fixed ;)
 
-IMHO, of_serial.c is no better than my board/chip specific code that 
-calls serial8250_register_port().
+My new patch has it documented. I even explain when to use the _SMP()
+version, which is mainly for !spin_is_locked() as spin_is_locked()
+always returns false, and !0 will trigger the warning.
 
-Really what would be ideal would be a hook to add a dev.platform_data 
-pointer to the appropriate struct plat_serial8250_port when the platform 
-device is created.  It is possible that the platform bus notifiers could 
-be used for this.  We would also want to have a way to add an 
-of_device_id to those recognized by 8250.c
+It can also be used to test values that only exist in SMP.
 
-If we did that, serial8250_probe() would automatically do the right thing.
+struct foo {
+	[...]
+#ifdef CONFIG_SMP
+	int bar;
+#endif
+};
 
-David Daney
+
+	WARN_ON_SMP(zoo->bar);
+
+We don't want that zoo->bar even evaluated for that case.
+
+-- Steve
+
+
 
