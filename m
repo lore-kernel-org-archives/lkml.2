@@ -1,92 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab1CQC5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Mar 2011 22:57:15 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:39931 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab1CQC5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Mar 2011 22:57:13 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: X32 psABI status update
-Date: Wed, 16 Mar 2011 22:57:08 -0400
-User-Agent: KMail/1.13.6 (Linux/2.6.37.3; KDE/4.6.0; x86_64; ; )
-Cc: libc-alpha@sourceware.org, GCC Development <gcc@gcc.gnu.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
-References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com> <201103160124.42939.vapier@gentoo.org> <AANLkTim4w7zBBnsu+A1TMtb-wv60urDiSk5T0qbg7Oze@mail.gmail.com>
-In-Reply-To: <AANLkTim4w7zBBnsu+A1TMtb-wv60urDiSk5T0qbg7Oze@mail.gmail.com>
+	id S1754532Ab1CQDBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Mar 2011 23:01:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27699 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab1CQDBh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Mar 2011 23:01:37 -0400
+Message-ID: <4D817973.7000407@kernel.org>
+Date: Wed, 16 Mar 2011 20:01:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart5282379.5kBbCvHj28";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Mike Waychison <mikew@google.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        linux-watchdog@vger.kernel.org, Priyanka Gupta <priyankag@google.com>
+Subject: [PATCH -v3] watchdog, SP5100: Check if firmware has set correct value
+ in tcobase.
+References: <alpine.DEB.2.00.1103111201470.2968@kaball-desktop> <20110311222129.GA3168@dumpdata.com> <alpine.DEB.2.00.1103161150010.3382@kaball-desktop> <alpine.DEB.2.00.1103161442210.3382@kaball-desktop> <4D80F992.10603@kernel.org> <alpine.DEB.2.00.1103161757040.3382@kaball-desktop> <4D812180.5030102@kernel.org> <AANLkTimNva3c_-kGA+JLCPZgrKAbwqLKaN559cwTh7cq@mail.gmail.com> <4D812919.30706@kernel.org> <20110317022331.GA3528@dumpdata.com>
+In-Reply-To: <20110317022331.GA3528@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103162257.10440.vapier@gentoo.org>
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D817986.0003,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5282379.5kBbCvHj28
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
 
-On Wednesday, March 16, 2011 08:39:57 H.J. Lu wrote:
-> On Tue, Mar 15, 2011 at 10:24 PM, Mike Frysinger wrote:
-> > so we get back to my original e-mail:
-> >        are you getting a unique host tuple for this ?  or are you
-> > extending x86_64-linux-gnu ?  so the only way of knowing which ABI is to
-> > check for the output of the compiler+compiler flags ?
->=20
-> As I said, the target is x86_64- linux-gnu and you just add -mx32 to
-> CFLAGS. The x86_64- linux-gnu binutils and GCC support  x32.
+Stefano found SP5100 TCO watchdog driver using wrong address.
 
-ok, took long enough, but that answers most things.  your usage of "x32-"=20
-prefixed binaries in the documentation seems to imply a lot more than the f=
-act=20
-you just picked those locally to avoid system collisions.  this isnt a wiki=
-=20
-page, otherwise i'd clean things up for you.
+[    9.148536] SP5100 TCO timer: SP5100 TCO WatchDog Timer Driver v0.01
+[    9.148628] DEBUG __ioremap_caller WARNING address=b8fe00 size=8 valid=1 reserved=1
 
-in looking at the gcc files, it doesnt seem like there's any defines setup =
-to=20
-declare x32 directly.  instead, you'd have to do something like:
-#ifdef __x86_64__
-# if __SIZEOF_LONG__ =3D=3D 8
-/* x86_64 */
-# else
-/* x32 */
-# endif
-#endif
+and e820 said that range is RAM.
 
-any plans on adding an __x32__ (or whatever) cpp symbol to keep people from=
-=20
-coming up with their own special/broken crap ?  or are there some already t=
-hat=20
-i'm not seeing ?
-=2Dmike
+We should check if we can use that reading out. BIOS could just program wrong address there.
 
---nextPart5282379.5kBbCvHj28
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+-v2: Mike pointed out one path need one release.
+-v3: corrected logic checking with request_mem_region_exclusive()
+      Found by Konrad.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIcBAABAgAGBQJNgXiGAAoJEEFjO5/oN/WBT4wP/2Ohc06NfWngBqGywlbyJRzn
-cPn8sJ4tCClDjhRMwDBwaW0U5kN5zN8ByFcvGKrT6pFtG5SW0XSSz4qvdwX4HyZO
-Zd4uGpDQiYir6Kc3jJ+TNPdpGCmIhmp9CU9NI+u6V8KuLH7NjktkPPQVp6AIXcx8
-1Yf0/IZYd0w3I+27swd24HNX5/WgrR+EaI9mAmVumtmtB8BSf21mZKalOrxHaJVl
-m5t/UvAHVfNgHf62uLk68Lz09vDjGDtuMc4NnEUO8kypPt3JasUH2GsLsIIg9Sw+
-fW86XOBnajLz8bzG+W6aVDt9ntD8bA9fjf7CfP3HIXRUTfnYw+T9of/DrogJp8h6
-QxImfitHCrm3D4qltqnV6G8Vol5+2rOVrL5PlbhAbq5k83B+B6ptCGwg5+aNteVD
-V8+noFI4MOXDM1FVIW5SbQS8XizPMFAtLMMmaBrjehNrLeIg1DhUkxZ7j1es9e9Y
-5kfUaQ5Oe3ZjXHMa0Dw4MU54S5ojN/07ruZ7xXA53C1Jm9nOVqg5bAcBYQSRbBt6
-tKzmzqMtVxY+r3dIVDyRPJ/yOeuxd3noxymW3w2r7VghD06zDKJfXVYzLlpZzeTN
-zaYLOqy1Dh9RZJ6LhE2HALPPNNxgFIepvixJtcC3vCyT8iJruIhPDzE+i/z7Fhsh
-Rp0VnlRJgPhZ0z+TzFE+
-=wkkI
------END PGP SIGNATURE-----
+Reported-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by:Yinghai Lu <yinghai@kernel.org>
+Acked-by: Mike Waychison <mikew@google.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
---nextPart5282379.5kBbCvHj28--
+---
+  drivers/watchdog/sp5100_tco.c |   14 ++++++++++++--
+  1 file changed, 12 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/drivers/watchdog/sp5100_tco.c
+===================================================================
+--- linux-2.6.orig/drivers/watchdog/sp5100_tco.c
++++ linux-2.6/drivers/watchdog/sp5100_tco.c
+@@ -42,6 +42,7 @@
+  #define PFX TCO_MODULE_NAME ": "
+  
+  /* internal variables */
++static u32 tcobase_phys;
+  static void __iomem *tcobase;
+  static unsigned int pm_iobase;
+  static DEFINE_SPINLOCK(tco_lock);	/* Guards the hardware */
+@@ -305,10 +306,16 @@ static unsigned char __devinit sp5100_tc
+  	/* Low three bits of BASE0 are reserved. */
+  	val = val << 8 | (inb(SP5100_IO_PM_DATA_REG) & 0xf8);
+  
++	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE, "SP5100 TCO")) {
++		printk(KERN_ERR PFX "mmio address 0x%04x already in use\n", val);
++		goto unreg_region;
++	}
++	tcobase_phys = val;
++
+  	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
+  	if (tcobase == 0) {
+  		printk(KERN_ERR PFX "failed to get tcobase address\n");
+-		goto unreg_region;
++		goto unreg_mem_region;
+  	}
+  
+  	/* Enable watchdog decode bit */
+@@ -346,7 +353,8 @@ static unsigned char __devinit sp5100_tc
+  	/* Done */
+  	return 1;
+  
+-	iounmap(tcobase);
++unreg_mem_region:
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+  unreg_region:
+  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+  exit:
+@@ -401,6 +409,7 @@ static int __devinit sp5100_tco_init(str
+  
+  exit:
+  	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+  	return ret;
+  }
+@@ -414,6 +423,7 @@ static void __devexit sp5100_tco_cleanup
+  	/* Deregister */
+  	misc_deregister(&sp5100_tco_miscdev);
+  	iounmap(tcobase);
++	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
+  	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+  }
+  
