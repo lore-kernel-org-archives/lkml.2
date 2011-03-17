@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab1CQSHP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 14:07:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38584 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab1CQSHM (ORCPT
+	id S1755168Ab1CQSHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 14:07:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37085 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab1CQSHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 14:07:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=wk6K7nEnsXavVJQQFbgQ9LSB0yh1FOJJ1e0dVOjAmcBzqCAiIZYx36NtexnwbFnjbr
-         72Tyw/ZJfv6efUBENs/shvO7rRu9khj4wZ7/2myIvxotRvwSfVUPQxZsethy8xeUURYf
-         Z8c3Z2n3bGTi59qSJN119bXvgPgs99wp5Ur7I=
-Subject: Re: New MSI support in sata_sil24 still broken in 2.6.33-rc3
-From: Tobias Karnat <tobias.karnat@googlemail.com>
-To: Leon Woestenberg <leon.woestenberg@gmail.com>
-Cc: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>,
-        Yinghai Lu <yinghai@kernel.org>, Robert Hancock <hancockrwd@gmail.com>,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Mar 2011 19:07:05 +0100
-Message-ID: <1300385225.13692.29.camel@Tobias-Karnat>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Mar 2011 14:07:33 -0400
+Date: Thu, 17 Mar 2011 12:07:28 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ed W <lists@wildgooses.com>
+Cc: Andres Salomon <dilinger@queued.net>, rpurdie@rpsys.net,
+        linux-geode@lists.infradead.org, const@mimas.ru,
+        linux-kernel@vger.kernel.org
+Subject: Re: Feedback please: [PATCH] leds: New PCEngines Alix LED driver
+ using gpio interface
+Message-ID: <20110317180728.GK9597@angua.secretlab.ca>
+References: <4D81D7FD.1040602@wildgooses.com>
+ <20110317084328.41831b4c@debxo>
+ <4D823F19.4070700@wildgooses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D823F19.4070700@wildgooses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leon,
+On Thu, Mar 17, 2011 at 05:04:25PM +0000, Ed W wrote:
+> Hi Andres
+> 
+> Thanks for your feedback!
+> 
+> >> Additionally it relies on parts of the patch: 7f131cf3ed
+> >> by: Daniel Mack <daniel@caiaq.de> to perform detection of the Alix
+> >> board
+> 
+> ..
+> >> - * Copyright (C) 2008 Constantin Baranov <const@mimas.ru>
+> > 
+> > This copyright line should not be removed, so long as parts of the
+> > original driver (such as alix_present) remain.
+> 
+> Thanks for guidance here.
+> 
+> Can I ask for further thought on this - there is very close to zero
+> original driver present, and although I had better do some more diffs to
+> be sure, I think you would see the only common code was the #includes, a
+> "force" param and a few other { }s?
+> 
+> I did deliberately reuse the "alix_present" function, but this appears
+> to be written by Daniel Mack and contributed in patch: 7f131cf3ed -
+> however, Daniel is not listed in the current copyright statement on the
+> module (I did copy him and Constantin in on this patch so that either
+> might object?).  Also I have tried to show this code attribution in the
+> commit statement?
+> 
+> I have also noted in the code that this is based on leds-net5501.c - is
+> this a sufficient and normal attribution?
+> 
+> Can someone offer a final "ruling" as to how I should state the
+> copyright line given that the code was written by taking the
+> leds-net5501.c skeleton and approximately applying the commit
+> 7f131cf3ed, to give the current code?
 
-I have the same problem with the sata_sil24 driver,
-using SiI 3132 and enabling msi causes an nmi.
+Use common sense.  It is always safe to leave copyright notices in
+place, but if it really does look like the old stuff is gone then go
+ahead and drop it.
 
-http://marc.info/?l=linux-ide&m=129138342901236&w=2
+Same goes when you clone a driver.  The original copyrights should not
+be stripped off unless there really is nothing left.
 
-Can't there be a workaround for this errata?
-
-The sata_sil24 interrupt is shared on my system with
-an cx88 tv card which often produces an irq storm.
-
--Tobias
+g.
 
