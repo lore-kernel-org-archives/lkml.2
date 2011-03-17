@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab1CQMS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 08:18:57 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53068 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754118Ab1CQMSy (ORCPT
+	id S1754203Ab1CQMZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 08:25:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40262 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab1CQMZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 08:18:54 -0400
-Date: Thu, 17 Mar 2011 12:18:49 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-serial@vger.kernel.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
-Subject: Re: [RFC PATCH 1/2] serial: 8250: Add a notifier chain for driver
- registration.
-Message-ID: <20110317121849.49d7c425@lxorguk.ukuu.org.uk>
-In-Reply-To: <1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com>
-References: <1300325167-26433-1-git-send-email-ddaney@caviumnetworks.com>
-	<1300325167-26433-2-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Mar 2011 08:25:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=RAu8flQHYEgQ24xmTNYEUex/iiUBFsMO6o5PXACu3Oavie6lFbEvuR8Bjgs/yZsLzT
+         K6j9eHr7wAERixLTEW4xL1tVc8utpu5NGHBAG3bDXzYKA7hFv13WlHdvRYS0RDI5Xoc8
+         hIViHWmVX9HGWBVtRPmnBxrbTGWm8TJoPUCGo=
+MIME-Version: 1.0
+Date: Thu, 17 Mar 2011 13:25:08 +0100
+Message-ID: <AANLkTi=e+tM-WTerLmkZfLTQqKCLsJHVBgQ5sj+TMjc4@mail.gmail.com>
+Subject: um: WARNING: at kernel/futex.c:786 __unqueue_futex
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: laijs@cn.fujitsu.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, dvhart@linux.intel.com,
+        rostedt@goodmis.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Mar 2011 18:26:06 -0700
-David Daney <ddaney@caviumnetworks.com> wrote:
+Lai,
 
-> The 8250 driver is a bit weird in that in addition to supporting
-> platform devices, extra devices can be added by calling
-> serial8250_register_port().
-> 
-> The problem is that if we call serial8250_register_port() before the
-> driver is initialized Bad Things happen (we dereference NULL
-> pointers).
-> 
-> There doesn't seem to be a general way to know if a driver has been
-> initialized
+Your commit 2e12978a
+(futex,plist: Pass the real head of the priority list to plist_del())
+triggers gazillions warnings on User Mode Linux (x86, Linus' tree as of today):
 
-I've had a bigger dig into this. I think the correct answer is probably
-"always go via platform devices or similar". That *is* the notifier in
-the kernel of today. serial8250_register_port ultimately should I think
-ultimatly become an internal helper.
+------------[ cut here ]------------
+WARNING: at kernel/futex.c:786 __unqueue_futex+0x12/0x16()
+Modules linked in:
+27d4cce8:  [<081c13fe>] dump_stack+0x1c/0x20
+27d4cd00:  [<08071aa0>] warn_slowpath_common+0x49/0x5f
+27d4cd18:  [<08071acb>] warn_slowpath_null+0x15/0x19
+27d4cd28:  [<0808fdb8>] __unqueue_futex+0x12/0x16
+27d4cd38:  [<0808fef3>] futex_wait+0x137/0x1ed
+27d4cdd0:  [<080910c3>] do_futex+0x78/0x7c4
+27d4cedc:  [<080918e6>] sys_futex+0xd7/0xed
+27d4cf28:  [<0805abf6>] handle_syscall+0x7a/0x98
+27d4cf78:  [<080685d9>] userspace+0x2c9/0x370
+27d4cfe0:  [<08058be5>] fork_handler+0x53/0x5b
+27d4cffc:  [<00000000>] 0x0
 
-Alan
+---[ end trace ed7709f235f82328 ]---
+
+!spin_is_locked(q->lock_ptr) in the WARN_ON() at line 786
+triggers the warnings.
+
+I'm not sure whether this shows a bug within UML
+or the WARN_ON() is wrong.
+
+What do you think?
+
+-- 
+Thanks,
+//richard
