@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab1CQVdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:33:13 -0400
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:47178 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755676Ab1CQVdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:33:08 -0400
-Date: Thu, 17 Mar 2011 22:33:03 +0100
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: 2.6.38: Quota over NFS4
-Message-ID: <20110317213302.GA2445@os.inf.tu-dresden.de>
-References: <20110317133247.GB6424@os.inf.tu-dresden.de>
- <20110317173805.GB30180@fieldses.org>
+	id S1755739Ab1CQVdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:33:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755660Ab1CQVdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:33:02 -0400
+Date: Thu, 17 Mar 2011 17:32:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: make checkpatch warn about memset with swapped arguments.
+Message-ID: <20110317213252.GB4084@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20110317045209.GA18656@redhat.com>
+ <20110317193645.GD14675@home.goodmis.org>
+ <20110317200215.GA4084@redhat.com>
+ <1300394224.16880.518.camel@gandalf.stny.rr.com>
+ <20110317141108.52697d81.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110317173805.GB30180@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110317141108.52697d81.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 17, 2011 at 02:11:08PM -0700, Andrew Morton wrote:
+ 
+ > Dave's patch is tested (I assume), so it wins ;)
 
-On Thu Mar 17, 2011 at 13:38:05 -0400, J. Bruce Fields wrote:
-> On Thu, Mar 17, 2011 at 02:32:47PM +0100, Adam Lackorzynski wrote:
-> > Hello,
-> > 
-> > I'm seeing a problem with quotas in a system where the server running
-> > 2.6.38 exports an XFS filesystem via NFS4 to a client. The client kernel
-> > version does not seem to play a role, checked with 2.6.38, 2.6.37 and
-> > 2.6.36. The following script and output show the problem:
-> > 
-> > #! /bin/sh
-> > 
-> > quota | grep home
-> > du
-> > cp /bin/ls x1
-> > du
-> > cat x1 > /dev/null
-> > rm x1
-> > du
-> > quota | grep home
-> > 
-> > Output:
-> > 
-> >    homes:/home/ 8194720  9072000 9174400          403670  500000  550000        
-> > 0       .
-> > 96      .
-> > 0       .
-> >    homes:/home/ 8194816  9072000 9174400          403671  500000  550000        
-> > 
-> > 
-> > As can be seen the 96 kb are still accounted on the quota of the user.
-> > Removing the 'cat' command from the script makes the quota be ok again
-> > (original value). Also mounting via nfs3 does not exhibit it, same for running
-> > the script on the nfs-server directly.
-> 
-> Does "df" show the same problem?
+indeed, it's the one I've been using for.. ages.
 
-With '/bin/ls' it does not change at all, so I took a bigger binary
-which yields to:
+ > Maybe it's just me, but I think it would be better to use bzero() for
+ > this operation - it's more readable and it can't be screwed up.  Then
+ > checkpatch checks for memset(xxx, 0, xxx) and for memset(xxx, xxx, 0)
+ > and says "hey, use bzero".  
 
-   homes:/home/ 8203780  9072000 9174400          403688  500000  550000        
-0       .
-Filesystem           1K-blocks      Used Available Use% Mounted on
-  homes:/home        513671168 335251456 178419712  66% /tmp/xx
-4592    .
-Filesystem           1K-blocks      Used Available Use% Mounted on
-  homes:/home        513671168 335256576 178414592  66% /tmp/xx
-0       .
-Filesystem           1K-blocks      Used Available Use% Mounted on
-  homes:/home        513671168 335256576 178414592  66% /tmp/xx
-   homes:/home/ 8208372  9072000 9174400          403689  500000  550000        
+god yes.  I don't know why it fell out of favor in userspace[*], but we
+don't have to follow suit in the kernel.  I thought we actually had
+a generic bzero, but it seems not from a quick grep.  I'll hack something up.
 
-So yes, it seems to be there as well.
+it only needs to be a #define bzero(x,y)	memset (x, 0, y);
 
-> And does unmounting/remounting on the
-> client clear the problem?
+where should it live, linux/kernel.h ?
 
-No.
+	Dave
 
-> (Or that, in combination with stopping the
-> server, unmounting the xfs export, remounting it, and restarting?)
 
-I rebooted once, got a recovery and then the quotas were ok again (and
-supposedly the used blocks as well). I assume a unmount/mount would show
-the same behaviour but requires a bit of preparation to try out.
-
-> Was there an earlier server version that didn't exhibit this problem?
-
-Had 2.6.37 on the server before and that was fine regarding this.
-
-> > Client mount options are:
-> > homes:/home/ /home nfs4 rw,nosuid,nodev,relatime,vers=4,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,port=0,timeo=600,retrans=2,sec=sys,clientaddr=1.2.3.3,minorversion=0,local_lock=none,addr=1.2.3.4 0 0
-> > 
-> > Server mount options are:
-> > /dev/mapper/vg-homefs /home xfs rw,nosuid,nodev,relatime,attr2,usrquota 0 0
-
-Adam
--- 
-Adam                 adam@os.inf.tu-dresden.de
-  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
+[*]  man bzero shows.. "This function is deprecated", which is possibly one
+     of the dumbest moves ever, given how commonplace this bug is.
