@@ -1,96 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab1CQPDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 11:03:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64641 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab1CQPDt (ORCPT
+	id S1754489Ab1CQPGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 11:06:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14618 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1CQPGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 11:03:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: IIO comments
-Date: Thu, 17 Mar 2011 16:03:35 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-References: <201103152215.20059.arnd@arndb.de> <201103171447.17960.arnd@arndb.de> <4D821DE2.4050707@cam.ac.uk>
-In-Reply-To: <4D821DE2.4050707@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103171603.35700.arnd@arndb.de>
-X-Provags-ID: V02:K0:4jLBD8tk/KzEWr+ioomts3XaO9CqTF6yP7Pp/Lq/t7n
- e+RN5ihuKK6OWKmwnx8GQeJA1SHjpPR3CMYbjHR41sAH6NdKtr
- mKAaQ6Hvac2PZNIDkLGtrSNpLpLwatnO0nUUsQ02hmpCroqgYf
- aV5Zvffn6TYRYHOvC2Tx0DYOfcBRNQzOC72qamizJw2ow6aEEw
- QmtBE8J5P4rcq+JV6HLjw==
+	Thu, 17 Mar 2011 11:06:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=oKzCMEko7HBH8ERn8Jd41rI4b4oYAr3pxvHd/he8xKaOo+7Yac4TUOyxDu2SMrseo
+	iPGGdgfjOoBrZYayqVnag==
+From: Justin TerAvest <teravest@google.com>
+To: jaxboe@fusionio.com, vgoyal@redhat.com
+Cc: linux-kernel@vger.kernel.org, Justin TerAvest <teravest@google.com>
+Subject: [PATCH v3] Don't update group weights when on service tree.
+Date: Thu, 17 Mar 2011 08:05:57 -0700
+Message-Id: <1300374357-30686-1-git-send-email-teravest@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 March 2011, Jonathan Cameron wrote:
-> On 03/17/11 13:47, Arnd Bergmann wrote:
+Version 3 is updated to apply to for-2.6.39/core.
 
-> > What about hardware devices that have multiple unrelated streams
-> > of buffered input data?
->
-> Certainly plausible, but so far the only ones I've seen that actually
-> do this are really just two bits of silicon in the same plastic
-> package.  They tend to use different i2c addresses or spi chip
-> selects anyway so as far as the kernel is concerned are completely
-> separate.  You are correct that any device which truly has different
-> streams of data would indeed need more than one device.
+For version 2, I took Vivek's advice and made sure we update the group
+weight from cfq_group_service_tree_add().
 
-Ok.
+If a weight was updated while a group is on the service tree, the
+calculation for the total weight of the service tree can be adjusted
+improperly, which either leads to bad service tree weights, or
+potentially crashes (if total_weight becomes 0).
 
-> >>> * One chardev for each iio device
-> >>
-> >> currently 1-3. (event line, buffer access, buffer event)
-> > 
-> > It would be really nice to unify this, as I said. What
-> > are the reasons why you think it cannot or should not be
-> > done?
->
-> Simplicity perhaps, but I'll definitely give your suggestions
-> a go and see where we end up. 
+This patch defers updates to the weight until a group is off the service
+tree.
 
-Since I haven't fully understood the distinction between the
-three chardevs, it may of course turn out a bad idea, but I
-think it would simplify the core code if you could assume
-that every iio device has exactly one chardev interface,
-so you could give them the same unique number and manage
-the life time together.
+Signed-off-by: Justin TerAvest <teravest@google.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |   53 +++++++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 41 insertions(+), 12 deletions(-)
 
-> >>> * Use epoll to wait for data and/or out-of-band messages
-> >>> * Use chrdev read to get events from the buffer
-> >>
-> >> and data?
-> > 
-> > I mean get the data associated with the event. The event
-> > itself as you said does not have any data, so we would not
-> > need to read it, just to use poll()/epoll() in order to
-> > wait for it.
->
-> Sure. But devices can do a heck of a lot of different events.
-> (certainly 10's or maybe more).  I'm not immediately clear
-> on how to handle this via poll etc.  This is probably just
-> because I've never tried though!
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 89e0d1c..12e380b 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -178,6 +178,8 @@ struct cfq_group {
+ 	/* group service_tree key */
+ 	u64 vdisktime;
+ 	unsigned int weight;
++	unsigned int new_weight;
++	bool needs_update;
+ 
+ 	/* number of cfqq currently on this group */
+ 	int nr_cfqq;
+@@ -853,7 +855,27 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ }
+ 
+ static void
+-cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
++cfq_update_group_weight(struct cfq_group *cfqg)
++{
++	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
++	if (cfqg->needs_update) {
++		cfqg->weight = cfqg->new_weight;
++		cfqg->needs_update = false;
++	}
++}
++
++static void
++cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
++{
++	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
++
++	cfq_update_group_weight(cfqg);
++	__cfq_group_service_tree_add(st, cfqg);
++	st->total_weight += cfqg->weight;
++}
++
++static void
++cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ {
+ 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+ 	struct cfq_group *__cfqg;
+@@ -874,13 +896,19 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+ 	} else
+ 		cfqg->vdisktime = st->min_vdisktime;
++	cfq_group_service_tree_add(st, cfqg);
++}
+ 
+-	__cfq_group_service_tree_add(st, cfqg);
+-	st->total_weight += cfqg->weight;
++static void
++cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
++{
++	st->total_weight -= cfqg->weight;
++	if (!RB_EMPTY_NODE(&cfqg->rb_node))
++		cfq_rb_erase(&cfqg->rb_node, st);
+ }
+ 
+ static void
+-cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
++cfq_group_notify_queue_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ {
+ 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+ 
+@@ -892,9 +920,7 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 		return;
+ 
+ 	cfq_log_cfqg(cfqd, cfqg, "del_from_rr group");
+-	st->total_weight -= cfqg->weight;
+-	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+-		cfq_rb_erase(&cfqg->rb_node, st);
++	cfq_group_service_tree_del(st, cfqg);
+ 	cfqg->saved_workload_slice = 0;
+ 	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+ }
+@@ -948,9 +974,10 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+ 		charge = cfqq->allocated_slice;
+ 
+ 	/* Can't update vdisktime while group is on service tree */
+-	cfq_rb_erase(&cfqg->rb_node, st);
++	cfq_group_service_tree_del(st, cfqg);
+ 	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
+-	__cfq_group_service_tree_add(st, cfqg);
++	/* If a new weight was requested, update now, off tree */
++	cfq_group_service_tree_add(st, cfqg);
+ 
+ 	/* This group is being expired. Save the context */
+ 	if (time_after(cfqd->workload_expires, jiffies)) {
+@@ -982,7 +1009,9 @@ static inline struct cfq_group *cfqg_of_blkg(struct blkio_group *blkg)
+ void cfq_update_blkio_group_weight(void *key, struct blkio_group *blkg,
+ 					unsigned int weight)
+ {
+-	cfqg_of_blkg(blkg)->weight = weight;
++	struct cfq_group *cfqg = cfqg_of_blkg(blkg);
++	cfqg->new_weight = weight;
++	cfqg->needs_update = true;
+ }
+ 
+ static struct cfq_group *
+@@ -1255,7 +1284,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	service_tree->count++;
+ 	if ((add_front || !new_cfqq) && !group_changed)
+ 		return;
+-	cfq_group_service_tree_add(cfqd, cfqq->cfqg);
++	cfq_group_notify_queue_add(cfqd, cfqq->cfqg);
+ }
+ 
+ static struct cfq_queue *
+@@ -1368,7 +1397,7 @@ static void cfq_del_cfqq_rr(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 		cfqq->p_root = NULL;
+ 	}
+ 
+-	cfq_group_service_tree_del(cfqd, cfqq->cfqg);
++	cfq_group_notify_queue_del(cfqd, cfqq->cfqg);
+ 	BUG_ON(!cfqd->busy_queues);
+ 	cfqd->busy_queues--;
+ 	if (cfq_cfqq_sync(cfqq))
+-- 
+1.7.3.1
 
-(e)poll can generally distinguish between very few types of
-activity: data for reading available, space for writing available,
-out-of-band events (to be read with e.g. ioctl) and errors.
-
-If you want to wait for multiple equal types of events for
-one hardware device, it would be logical to have multiple 
-character devices for them, so a user could open and wait
-for some of them independent of the others.
-
-Intuitively, I would also expect these to be separate iio
-devices for the same hardware (each with one chardev), but
-there may be good reasons why that is not possible.
-
-	Arnd
