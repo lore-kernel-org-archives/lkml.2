@@ -1,76 +1,605 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1CQV4T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 17:56:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33836 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755928Ab1CQV4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 17:56:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,201,1299484800"; 
-   d="scan'208";a="721352440"
-Date: Thu, 17 Mar 2011 14:56:09 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [RFT][PATCH] PCI / ACPI: Do not require MSI support for PCIe
- native features
-Message-ID: <20110317215609.GA5917@xanatos>
-References: <201103052254.48515.rjw@sisk.pl>
- <201103170119.17647.rjw@sisk.pl>
- <AANLkTim39fjrAp4OW_MfpbZkz-YYW5E2NOHuo1j=svmW@mail.gmail.com>
- <201103172222.33336.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103172222.33336.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755900Ab1CQVyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 17:54:32 -0400
+Received: from nm29.bullet.mail.ac4.yahoo.com ([98.139.52.226]:44320 "HELO
+	nm29.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755812Ab1CQVyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 17:54:22 -0400
+X-Yahoo-Newman-Id: 671985.70055.bm@omp1027.mail.ac4.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: LtEiIUkVM1kTsc3I3CwwbSuKZyKPM4ZbaQvwdEy00.LwJ5b
+ 5woNs1Vu8vnXKR7K1pJZNuCDooTw_f3G17gk_rhE6fcfE5q5SYvAgRIE3LzW
+ CqvIrA9Q9yePGBaNUMZv1jg3RC1f6GwUZ3.U5w3P6RcAKIpM4lOC3vqXUY0H
+ 2jS824bFQ7I66iSmPpKzx7XGf2ef2OPIYYGVyQB31i_BVwp4LhIYDSwUosCH
+ txcP6LwQxHl8QguO0ndhsxrtLTyJm1YO2kjp5AQxGTeWO7lFW.t5XsYtwni8
+ cdtAL4XDIcTO7LKoiQI5l70ZP.FlHuRJkFbNQ5xVaXLYPaGyA6iTqDHpK5In
+ 3gQzT5UT3ZXmtKFwEEaeINxNOr_0DAWWKoReXjRkbuUueMB6qBs.w9wvQLQY
+ Tl.VV6SzpOUNlwMJXBwEt.d8cvg--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFC-v3 07/12] iscsi-target: Add CHAP Authentication support using libcrypto
+Date: Thu, 17 Mar 2011 14:53:12 -0700
+Message-Id: <1300398797-24536-8-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1300398797-24536-1-git-send-email-nab@linux-iscsi.org>
+References: <1300398797-24536-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 10:22:33PM +0100, Rafael J. Wysocki wrote:
-> On Thursday, March 17, 2011, Yinghai Lu wrote:
-> > 2011/3/16 Rafael J. Wysocki <rjw@sisk.pl>:
-> > > On Tuesday, March 15, 2011, Sarah Sharp wrote:
-> > >> On Tue, Mar 15, 2011 at 01:00:17AM +0100, Rafael J. Wysocki wrote:
-> > >> > Well, I must admit I have no idea what the problem is.  OK, in addition to the
-> > >> > above changes, please replace the "pci_ext_cfg_avail(root->bus->self)" in the
-> > >> > same file with "true" and see if _that_ helps.
-> > >>
-> > >> Yay, that worked!  dmesg is attached.
-> > >
-> > > Good, at least we know what the problem is, now we only have to find the root
-> > > cause. ;-)
-> > >
-> > > So, pci_ext_cfg_avail(root->bus->self) returns 0 on your machine, which is kind
-> > > of unexpected (to put it lightly), so very likely we have uncovered a bug
-> > > in the init code.
-> > >
-> > > Unfortunately, I may not be able to take care of this issue for the next few
-> > > days, I'll let you know when I get back to it.
-> > 
-> > her .config does not define PCI_MMCONFIG
-> > 
-> > #
-> > # Bus options (PCI etc.)
-> > #
-> > CONFIG_PCI=y
-> > CONFIG_PCI_DIRECT=y
-> > # CONFIG_PCI_MMCONFIG is not set
-> 
-> Ah, good catch, thanks!
-> 
-> @Sarah: you need to set that for PCI Express to work in general.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Oh, man, sorry to cause so much work to figure that out. :)  I'll
-compile with that set and see if it helps.  Not sure why that config
-worked on 2.6.37, but not 2.6.38.  I usually just run `make -j4` with
-the old .config and basically pick the defaults, except for turning on
-the occasional new USB device driver.
+This patch adds support for libcrypto md5 based iSCSI CHAP authentication
+support for iscsi_target_mod.  This includes support for mutual and one-way
+NodeACL authentication for SessionType=Normal and SessionType=Discovery
+via /sys/kernel/config/target/iscsi.
 
-Sarah Sharp
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/iscsi/iscsi_target_auth.c |  500 ++++++++++++++++++++++++++++++
+ drivers/target/iscsi/iscsi_target_auth.h |   33 ++
+ 2 files changed, 533 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/iscsi/iscsi_target_auth.c
+ create mode 100644 drivers/target/iscsi/iscsi_target_auth.h
+
+diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
+new file mode 100644
+index 0000000..d3711f4
+--- /dev/null
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -0,0 +1,500 @@
++/*******************************************************************************
++ * This file houses the main functions for the iSCSI CHAP support
++ *
++ * © Copyright 2007-2011 RisingTide Systems LLC.
++ *
++ * Licensed to the Linux Foundation under the General Public License (GPL) version 2.
++ *
++ * Author: Nicholas A. Bellinger <nab@linux-iscsi.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ ******************************************************************************/
++
++#include <linux/string.h>
++#include <linux/crypto.h>
++#include <linux/err.h>
++#include <linux/scatterlist.h>
++
++#include "iscsi_target_core.h"
++#include "iscsi_target_nego.h"
++#include "iscsi_target_auth.h"
++
++#ifdef DEBUG_CHAP
++#define PRINT(x...)		printk(KERN_INFO x)
++#else
++#define PRINT(x...)
++#endif
++
++unsigned char chap_asciihex_to_binaryhex(unsigned char val[2])
++{
++	unsigned char result = 0;
++	/*
++	 * MSB
++	 */
++	if ((val[0] >= 'a') && (val[0] <= 'f'))
++		result = ((val[0] - 'a' + 10) & 0xf) << 4;
++	else
++		if ((val[0] >= 'A') && (val[0] <= 'F'))
++			result = ((val[0] - 'A' + 10) & 0xf) << 4;
++		else /* digit */
++			result = ((val[0] - '0') & 0xf) << 4;
++	/*
++	 * LSB
++	 */
++	if ((val[1] >= 'a') && (val[1] <= 'f'))
++		result |= ((val[1] - 'a' + 10) & 0xf);
++	else
++		if ((val[1] >= 'A') && (val[1] <= 'F'))
++			result |= ((val[1] - 'A' + 10) & 0xf);
++		else /* digit */
++			result |= ((val[1] - '0') & 0xf);
++
++	return result;
++}
++
++int chap_string_to_hex(unsigned char *dst, unsigned char *src, int len)
++{
++	int i = 0, j = 0;
++
++	for (i = 0; i < len; i += 2)
++		dst[j++] = (unsigned char) chap_asciihex_to_binaryhex(&src[i]);
++
++	dst[j] = '\0';
++	return j;
++}
++
++void chap_binaryhex_to_asciihex(char *dst, char *src, int src_len)
++{
++	int i;
++
++	for (i = 0; i < src_len; i++)
++		sprintf(&dst[i*2], "%02x", (int) src[i] & 0xff);
++}
++
++void chap_set_random(char *data, int length)
++{
++	long r;
++	unsigned n;
++
++	while (length > 0) {
++
++		get_random_bytes(&r, sizeof(long));
++		r = r ^ (r >> 8);
++		r = r ^ (r >> 4);
++		n = r & 0x7;
++
++		get_random_bytes(&r, sizeof(long));
++		r = r ^ (r >> 8);
++		r = r ^ (r >> 5);
++		n = (n << 3) | (r & 0x7);
++
++		get_random_bytes(&r, sizeof(long));
++		r = r ^ (r >> 8);
++		r = r ^ (r >> 5);
++		n = (n << 2) | (r & 0x3);
++
++		*data++ = n;
++		 length--;
++	}
++}
++
++static struct iscsi_chap *chap_server_open(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	const char *A_str,
++	char *AIC_str,
++	unsigned int *AIC_len)
++{
++	struct iscsi_chap *chap;
++	int ret;
++
++	if (!(auth->naf_flags & NAF_USERID_SET) ||
++	    !(auth->naf_flags & NAF_PASSWORD_SET)) {
++		printk(KERN_ERR "CHAP user or password not set for"
++				" Initiator ACL\n");
++		return NULL;
++	}
++
++	conn->auth_protocol = kzalloc(sizeof(struct iscsi_chap), GFP_KERNEL);
++	if (!(conn->auth_protocol))
++		return NULL;
++
++	chap = (struct iscsi_chap *) conn->auth_protocol;
++	/*
++	 * We only support MD5 MDA presently.
++	 */
++	if (strncmp(A_str, "CHAP_A=5", 8)) {
++		printk(KERN_ERR "CHAP_A is not MD5.\n");
++		return NULL;
++	}
++	PRINT("[server] Got CHAP_A=5\n");
++	/*
++	 * Send back CHAP_A set to MD5.
++	 */
++	*AIC_len = sprintf(AIC_str, "CHAP_A=5");
++	*AIC_len += 1;
++	chap->digest_type = CHAP_DIGEST_MD5;
++	PRINT("[server] Sending CHAP_A=%d\n", chap->digest_type);
++	/*
++	 * Set Identifier.
++	 */
++	chap->id = ISCSI_TPG_C(conn)->tpg_chap_id++;
++	*AIC_len += sprintf(AIC_str + *AIC_len, "CHAP_I=%d", chap->id);
++	*AIC_len += 1;
++	PRINT("[server] Sending CHAP_I=%d\n", chap->id);
++	/*
++	 * Generate Challenge.
++	 */
++	ret = chap_gen_challenge(conn, 1, AIC_str, AIC_len);
++	if (ret < 0)
++		return NULL;
++
++	return chap;
++}
++
++void chap_close(struct iscsi_conn *conn)
++{
++	kfree(conn->auth_protocol);
++	conn->auth_protocol = NULL;
++}
++
++int chap_gen_challenge(
++	struct iscsi_conn *conn,
++	int caller,
++	char *C_str,
++	unsigned int *C_len)
++{
++	unsigned char challenge_asciihex[CHAP_CHALLENGE_LENGTH * 2 + 1];
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
++
++	memset(challenge_asciihex, 0, CHAP_CHALLENGE_LENGTH * 2 + 1);
++
++	chap_set_random(chap->challenge, CHAP_CHALLENGE_LENGTH);
++	chap_binaryhex_to_asciihex(challenge_asciihex, chap->challenge,
++					CHAP_CHALLENGE_LENGTH);
++	/*
++	 * Set CHAP_C, and copy the generated challenge into C_str.
++	 */
++	*C_len += sprintf(C_str + *C_len, "CHAP_C=0x%s", challenge_asciihex);
++	*C_len += 1;
++
++	PRINT("[%s] Sending CHAP_C=0x%s\n\n", (caller) ? "server" : "client",
++			challenge_asciihex);
++	return 0;
++}
++
++int chap_server_compute_md5(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	char *NR_in_ptr,
++	char *NR_out_ptr,
++	unsigned int *NR_out_len)
++{
++	char *endptr;
++	unsigned char id, digest[MD5_SIGNATURE_SIZE];
++	unsigned char type, response[MD5_SIGNATURE_SIZE * 2 + 2];
++	unsigned char identifier[10], *challenge, *challenge_binhex;
++	unsigned char client_digest[MD5_SIGNATURE_SIZE];
++	unsigned char server_digest[MD5_SIGNATURE_SIZE];
++	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
++	struct crypto_hash *tfm;
++	struct hash_desc desc;
++	struct scatterlist sg;
++	int auth_ret = -1, ret, challenge_len;
++
++	memset(identifier, 0, 10);
++	memset(chap_n, 0, MAX_CHAP_N_SIZE);
++	memset(chap_r, 0, MAX_RESPONSE_LENGTH);
++	memset(digest, 0, MD5_SIGNATURE_SIZE);
++	memset(response, 0, MD5_SIGNATURE_SIZE * 2 + 2);
++	memset(client_digest, 0, MD5_SIGNATURE_SIZE);
++	memset(server_digest, 0, MD5_SIGNATURE_SIZE);
++
++	challenge = kzalloc(CHAP_CHALLENGE_STR_LEN, GFP_KERNEL);
++	if (!(challenge)) {
++		printk(KERN_ERR "Unable to allocate challenge buffer\n");
++		return -1;
++	}
++
++	challenge_binhex = kzalloc(CHAP_CHALLENGE_STR_LEN, GFP_KERNEL);
++	if (!(challenge_binhex)) {
++		printk(KERN_ERR "Unable to allocate challenge_binhex buffer\n");
++		kfree(challenge);
++		return -1;
++	}
++	/*
++	 * Extract CHAP_N.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_N", MAX_CHAP_N_SIZE, chap_n,
++				&type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_N.\n");
++		goto out;
++	}
++	if (type == HEX) {
++		printk(KERN_ERR "Could not find CHAP_N.\n");
++		goto out;
++	}
++
++	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
++		printk(KERN_ERR "CHAP_N values do not match!\n");
++		goto out;
++	}
++	PRINT("[server] Got CHAP_N=%s\n", chap_n);
++	/*
++	 * Extract CHAP_R.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_R", MAX_RESPONSE_LENGTH, chap_r,
++				&type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_R.\n");
++		goto out;
++	}
++	if (type != HEX) {
++		printk(KERN_ERR "Could not find CHAP_R.\n");
++		goto out;
++	}
++
++	PRINT("[server] Got CHAP_R=%s\n", chap_r);
++	chap_string_to_hex(client_digest, chap_r, strlen(chap_r));
++
++	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm)) {
++		printk(KERN_ERR "Unable to allocate struct crypto_hash\n");
++		goto out;
++	}
++	desc.tfm = tfm;
++	desc.flags = 0;
++
++	ret = crypto_hash_init(&desc);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_init() failed\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	sg_init_one(&sg, (void *)&chap->id, 1);
++	ret = crypto_hash_update(&desc, &sg, 1);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for id\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	sg_init_one(&sg, (void *)&auth->password, strlen(auth->password));
++	ret = crypto_hash_update(&desc, &sg, strlen(auth->password));
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for password\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	sg_init_one(&sg, (void *)chap->challenge, strlen(chap->challenge));
++	ret = crypto_hash_update(&desc, &sg, strlen(chap->challenge));
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for challenge\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	ret = crypto_hash_final(&desc, server_digest);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_final() failed for server digest\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++	crypto_free_hash(tfm);
++
++	chap_binaryhex_to_asciihex(response, server_digest, MD5_SIGNATURE_SIZE);
++	PRINT("[server] MD5 Server Digest: %s\n", response);
++
++	if (memcmp(server_digest, client_digest, MD5_SIGNATURE_SIZE) != 0) {
++		PRINT("[server] MD5 Digests do not match!\n\n");
++		goto out;
++	} else
++		PRINT("[server] MD5 Digests match, CHAP connetication"
++				" successful.\n\n");
++	/*
++	 * One way authentication has succeeded, return now if mutual
++	 * authentication is not enabled.
++	 */
++	if (!auth->authenticate_target) {
++		kfree(challenge);
++		kfree(challenge_binhex);
++		return 0;
++	}
++	/*
++	 * Get CHAP_I.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_I", 10, identifier, &type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_I.\n");
++		goto out;
++	}
++
++	if (type == HEX)
++		id = (unsigned char)simple_strtoul((char *)&identifier[2],
++					&endptr, 0);
++	else
++		id = (unsigned char)simple_strtoul(identifier, &endptr, 0);
++	/*
++	 * RFC 1994 says Identifier is no more than octet (8 bits).
++	 */
++	PRINT("[server] Got CHAP_I=%d\n", id);
++	/*
++	 * Get CHAP_C.
++	 */
++	if (extract_param(NR_in_ptr, "CHAP_C", CHAP_CHALLENGE_STR_LEN,
++			challenge, &type) < 0) {
++		printk(KERN_ERR "Could not find CHAP_C.\n");
++		goto out;
++	}
++
++	if (type != HEX) {
++		printk(KERN_ERR "Could not find CHAP_C.\n");
++		goto out;
++	}
++	PRINT("[server] Got CHAP_C=%s\n", challenge);
++	challenge_len = chap_string_to_hex(challenge_binhex, challenge,
++				strlen(challenge));
++	if (!(challenge_len)) {
++		printk(KERN_ERR "Unable to convert incoming challenge\n");
++		goto out;
++	}
++	/*
++	 * Generate CHAP_N and CHAP_R for mutual authentication.
++	 */
++	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm)) {
++		printk(KERN_ERR "Unable to allocate struct crypto_hash\n");
++		goto out;
++	}
++	desc.tfm = tfm;
++	desc.flags = 0;
++
++	ret = crypto_hash_init(&desc);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_init() failed\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	sg_init_one(&sg, (void *)&id, 1);
++	ret = crypto_hash_update(&desc, &sg, 1);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for id\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	sg_init_one(&sg, (void *)auth->password_mutual,
++				strlen(auth->password_mutual));
++	ret = crypto_hash_update(&desc, &sg, strlen(auth->password_mutual));
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for"
++				" password_mutual\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++	/*
++	 * Convert received challenge to binary hex.
++	 */
++	sg_init_one(&sg, (void *)challenge_binhex, challenge_len);
++	ret = crypto_hash_update(&desc, &sg, challenge_len);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_update() failed for ma challenge\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++
++	ret = crypto_hash_final(&desc, digest);
++	if (ret < 0) {
++		printk(KERN_ERR "crypto_hash_final() failed for ma digest\n");
++		crypto_free_hash(tfm);
++		goto out;
++	}
++	crypto_free_hash(tfm);
++	/*
++	 * Generate CHAP_N and CHAP_R.
++	 */
++	*NR_out_len = sprintf(NR_out_ptr, "CHAP_N=%s", auth->userid_mutual);
++	*NR_out_len += 1;
++	PRINT("[server] Sending CHAP_N=%s\n", auth->userid_mutual);
++	/*
++	 * Convert response from binary hex to ascii hext.
++	 */
++	chap_binaryhex_to_asciihex(response, digest, MD5_SIGNATURE_SIZE);
++	*NR_out_len += sprintf(NR_out_ptr + *NR_out_len, "CHAP_R=0x%s",
++			response);
++	*NR_out_len += 1;
++	PRINT("[server] Sending CHAP_R=0x%s\n", response);
++	auth_ret = 0;
++out:
++	kfree(challenge);
++	kfree(challenge_binhex);
++	return auth_ret;
++}
++
++int chap_got_response(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	char *NR_in_ptr,
++	char *NR_out_ptr,
++	unsigned int *NR_out_len)
++{
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
++
++	switch (chap->digest_type) {
++	case CHAP_DIGEST_MD5:
++		if (chap_server_compute_md5(conn, auth, NR_in_ptr,
++				NR_out_ptr, NR_out_len) < 0)
++			return -1;
++		break;
++	default:
++		printk(KERN_ERR "Unknown CHAP digest type %d!\n",
++				chap->digest_type);
++		return -1;
++	}
++
++	return 0;
++}
++
++u32 chap_main_loop(
++	struct iscsi_conn *conn,
++	struct iscsi_node_auth *auth,
++	char *in_text,
++	char *out_text,
++	int *in_len,
++	int *out_len)
++{
++	struct iscsi_chap *chap = (struct iscsi_chap *) conn->auth_protocol;
++
++	if (!(chap)) {
++		chap = chap_server_open(conn, auth, in_text, out_text, out_len);
++		if (!(chap))
++			return 2;
++		chap->chap_state = CHAP_STAGE_SERVER_AIC;
++		return 0;
++	} else if (chap->chap_state == CHAP_STAGE_SERVER_AIC) {
++		convert_null_to_semi(in_text, *in_len);
++		if (chap_got_response(conn, auth, in_text, out_text,
++				out_len) < 0) {
++			chap_close(conn);
++			return 2;
++		}
++		if (auth->authenticate_target)
++			chap->chap_state = CHAP_STAGE_SERVER_NR;
++		else
++			*out_len = 0;
++		chap_close(conn);
++		return 1;
++	}
++
++	return 2;
++}
+diff --git a/drivers/target/iscsi/iscsi_target_auth.h b/drivers/target/iscsi/iscsi_target_auth.h
+new file mode 100644
+index 0000000..a4492b6
+--- /dev/null
++++ b/drivers/target/iscsi/iscsi_target_auth.h
+@@ -0,0 +1,33 @@
++#ifndef _ISCSI_CHAP_H_
++#define _ISCSI_CHAP_H_
++
++#define CHAP_DIGEST_MD5		5
++#define CHAP_DIGEST_SHA		6
++
++#define CHAP_CHALLENGE_LENGTH	16
++#define CHAP_CHALLENGE_STR_LEN	4096
++#define MAX_RESPONSE_LENGTH	64	/* sufficient for MD5 */
++#define	MAX_CHAP_N_SIZE		512
++
++#define MD5_SIGNATURE_SIZE	16	/* 16 bytes in a MD5 message digest */
++
++#define CHAP_STAGE_CLIENT_A	1
++#define CHAP_STAGE_SERVER_AIC	2
++#define CHAP_STAGE_CLIENT_NR	3
++#define CHAP_STAGE_CLIENT_NRIC	4
++#define CHAP_STAGE_SERVER_NR	5
++
++extern int chap_gen_challenge(struct iscsi_conn *, int, char *, unsigned int *);
++extern u32 chap_main_loop(struct iscsi_conn *, struct iscsi_node_auth *, char *, char *,
++				int *, int *);
++
++struct iscsi_chap {
++	unsigned char	digest_type;
++	unsigned char	id;
++	unsigned char	challenge[CHAP_CHALLENGE_LENGTH];
++	unsigned int	challenge_len;
++	unsigned int	authenticate_target;
++	unsigned int	chap_state;
++} ____cacheline_aligned;
++
++#endif   /*** _ISCSI_CHAP_H_ ***/
+-- 
+1.7.4.1
+
