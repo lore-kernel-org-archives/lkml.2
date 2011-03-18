@@ -1,64 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab1CRCwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 22:52:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49828 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755987Ab1CRCw2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 22:52:28 -0400
-X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=Am4aEdVPdz0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=tIxMMX8wLqbJvhF53sYA:9 a=EVB_3QDeGsj_0RUaJz-iwjdQXGAA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andy Whitcroft <apw@shadowen.org>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 17 Mar 2011 22:52:24 -0400
-Message-ID: <1300416744.16880.904.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756056Ab1CRCzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 22:55:46 -0400
+Received: from virus.sdu.edu.tr ([193.140.181.25]:44541 "EHLO virus.sdu.edu.tr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755829Ab1CRCzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 22:55:41 -0400
+X-Greylist: delayed 8352 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Mar 2011 22:55:41 EDT
+Message-ID: <20110318020510.juzpjh3r4kcg0og8@mmfsrv.sdu.edu.tr>
+Date: Fri, 18 Mar 2011 02:05:10 +0200
+From: Wang Lei <wangll@yahoo.com>
+Reply-to: wanglei99@w.cn
+To: undisclosed-recipients:;
+Subject: IMPORTANT TRANSACTION!!!
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of kzalloc() is preferred over kmalloc/memset(0) pairs.
 
-When a match is made with "memset(p, 0, s);" a search back through the
-patch hunk is made looking for "p = kmalloc(s,". If that is found, then
-a warning is given, suggesting to use kzalloc() instead.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+  I'm Wang Lei, I have a deal worth 25 Million USD if interested,  
+please contact
+me via my personal email:  wanglei99@w.cn
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 58848e3..f28f0e3 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2902,6 +2902,22 @@ sub process {
- 		    $line =~ /DEVICE_ATTR.*S_IWUGO/ ) {
- 			WARN("Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
- 		}
-+
-+# The use of kzalloc() is preferred over kmalloc/memset(0) pairs.
-+		if ($line =~ /\smemset\s*\((\S*)\s*,\s*(?:0x0|0)\s*,\s*(\S*)\s*\);/) {
-+		    my $ptr = $1;
-+		    my $size = $2;
-+
-+		    for (my $i = $linenr-2; $i >= 0; $i--) {
-+			next if ($lines[$i] =~ /^-/); # ignore deletions
-+			last if ($lines[$i] =~ /^\@\@/);
-+			if ($lines[$i] =~ /\s(\S*)\s*=\s*kmalloc\((\S*)\,/ &&
-+			    $1 eq $ptr && $2 eq $size) {
-+			    WARN("use kzalloc() instead of kmalloc/memset(p,0,size) pair\n"
-+				 . $herecurr);
-+			}
-+		    }
-+		}
- 	}
- 
- 	# If we have no input at all, then there is nothing to report on
-
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
