@@ -1,94 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab1CRLtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 07:49:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48871 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab1CRLtg (ORCPT
+	id S1754138Ab1CRMAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 08:00:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49712 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753232Ab1CRL7z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 07:49:36 -0400
-Date: Fri, 18 Mar 2011 12:49:32 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
-Cc: linux-i2c@vger.kernel.org, arnd@arndb.de, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, hthebaud@insidefr.com,
-        matti.j.aaltonen@nokia.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Message-ID: <20110318114931.GA2155@pengutronix.de>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
+	Fri, 18 Mar 2011 07:59:55 -0400
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Mar 2011 17:29:39 +0530
+Subject: RE: [PATCH v3 1/7] mfd: add pruss mfd driver.
+Thread-Topic: [PATCH v3 1/7] mfd: add pruss mfd driver.
+Thread-Index: AcvdlpcsbEzELr1+QLaf4kif5wmnOQHw+vDA
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C3B85A5@dbde02.ent.ti.com>
+References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com>
+ <1299592667-21367-2-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <1299592667-21367-2-git-send-email-subhasish@mistralsolutions.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
-Content-Disposition: inline
-In-Reply-To: <1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Subhasish,
 
---J2SCkAp4GZ/dPZZf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 08, 2011 at 19:27:40, Subhasish Ghosh wrote:
+> This patch adds the pruss MFD driver and associated include files.
+> For details regarding the PRUSS please refer the folowing link:
+> http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
+> 
+> The rational behind the MFD driver being the fact that multiple devices can
+> be implemented on the cores independently. This is determined by the nature
+> of the program which is loaded into the PRU's instruction memory.
+> A device may be de-initialized and another loaded or two different devices
+> can be run simultaneously on the two cores.
+> It's also possible, as in our case, to implement a single device on both
+> the PRU's resulting in improved load sharing.
+> 
+> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+> ---
+>  drivers/mfd/Kconfig                     |   10 +
+>  drivers/mfd/Makefile                    |    1 +
+>  drivers/mfd/da8xx_pru.c                 |  560 +++++++++++++++++++++++++++++++
+>  include/linux/mfd/da8xx/da8xx_pru.h     |  135 ++++++++
+>  include/linux/mfd/da8xx/da8xx_prucore.h |  129 +++++++
+>  5 files changed, 835 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mfd/da8xx_pru.c
+>  create mode 100644 include/linux/mfd/da8xx/da8xx_pru.h
+>  create mode 100644 include/linux/mfd/da8xx/da8xx_prucore.h
 
-Hi Waldemar,
+PRUSS as an IP is not really tied to the DA8xx SoC architecture.
+So, can you please name the files ti-pruss* or even just pruss if
+MFD folks are okay with it?
 
-On Fri, Mar 18, 2011 at 11:40:24AM +0100, Waldemar Rymarkiewicz wrote:
-> Add new driver for MicroRead NFC chip connected to i2c bus.
->=20
-> See Documentation/nfc/nfc-microread.txt.
->=20
-> Signed-off-by: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index fd01836..6c437df 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -81,6 +81,16 @@ config MFD_DM355EVM_MSP
+>  	  boards.  MSP430 firmware manages resets and power sequencing,
+>  	  inputs from buttons and the IR remote, LEDs, an RTC, and more.
+>  
+> +config MFD_DA8XX_PRUSS
+> +	tristate "Texas Instruments DA8XX PRUSS support"
+> +	depends on ARCH_DAVINCI && ARCH_DAVINCI_DA850
 
-Besides the stuff Alan mentioned...
+Just ARCH_DAVINCI_DA850 should be okay since ARCH_DAVINCI_DA850
+Already depends on ARCH_DAVINCI
 
-> +struct microread_nfc_platform_data {
-> +	unsigned int rst_gpio;
-> +	unsigned int irq_gpio;
-> +	unsigned int ioh_gpio;
+> +	select MFD_CORE
+> +	help
+> +	  This driver provides support api's for the programmable
 
-=2E.. you should request and setup the GPIOs before using them.
+"API" would be preferred. Also please remove the apostrophe.
 
-
-> +free_irq:
-> +	free_irq(client->irq, info);
-> +free_buf:
-> +	kfree(info->buf);
-> +free_info:
-> +	kfree(info);
+> +	  realtime unit (PRU) present on TI's da8xx processors. It
+> +	  provides basic read, write, config, enable, disable
+> +	  routines to facilitate devices emulated on it.
 > +
-> +	dev_info(&client->dev, "Not probed.");
-> +	return ret;
+>  config HTC_EGPIO
+>  	bool "HTC EGPIO support"
+>  	depends on GENERIC_HARDIRQS && GPIOLIB && ARM
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index a54e2c7..670d6b0 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -13,6 +13,7 @@ obj-$(CONFIG_HTC_PASIC3)	+= htc-pasic3.o
+>  obj-$(CONFIG_HTC_I2CPLD)	+= htc-i2cpld.o
+>  
+>  obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
+> +obj-$(CONFIG_MFD_DA8XX_PRUSS)	+= da8xx_pru.o
+>  obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
+>  
+>  obj-$(CONFIG_MFD_STMPE)		+= stmpe.o
+> diff --git a/drivers/mfd/da8xx_pru.c b/drivers/mfd/da8xx_pru.c
+> new file mode 100644
+> index 0000000..0fd9bb2
+> --- /dev/null
+> +++ b/drivers/mfd/da8xx_pru.c
+> @@ -0,0 +1,560 @@
+> +/*
+> + * Copyright (C) 2011 Texas Instruments Incorporated
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as  published by the
+> + * Free Software Foundation version 2.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
+> + * whether express or implied; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/types.h>
+> +#include <linux/module.h>
+> +#include <linux/bitops.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/errno.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/clk.h>
+> +#include <linux/mfd/da8xx/da8xx_prucore.h>
+> +#include <linux/mfd/da8xx/da8xx_pru.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/io.h>
+> +#include <mach/da8xx.h>
+
+Hmm, this means the driver is tied to the platform.
+This should not be the case. 
+
+I was able to get this patch compiled even
+after removing this include. Please remove it
+in the next version.
+
+> +
+> +struct da8xx_pruss {
+
+I would prefer if the variables and data structures
+and includes are not pre-fixed with da8xx as well.
+
+> +	struct device *dev;
+> +	spinlock_t lock;
+> +	struct resource *res;
+> +	struct clk *clk;
+> +	u32 clk_freq;
+> +	void __iomem *ioaddr;
+> +};
+> +
+> +u32 pruss_get_clk_freq(struct device *dev)
+> +{
+> +	struct da8xx_pruss *pruss = dev_get_drvdata(dev->parent);
+> +
+> +	return pruss->clk_freq;
 > +}
+> +EXPORT_SYMBOL(pruss_get_clk_freq);
 
-When respinning, you could consider using managed devices (devm_*);
-this error path could completely go then.
+This looks strange. Why do we need this? There
+is clk_get_rate() API in the kernel would would
+seem more suitable.
 
-Regards,
+> +
+> +s32 pruss_disable(struct device *dev, u8 pruss_num)
+> +{
+> +	struct da8xx_pruss *pruss = dev_get_drvdata(dev->parent);
+> +	struct da8xx_prusscore_regs *h_pruss;
+> +	struct pruss_map *pruss_mmap = (struct pruss_map *)pruss->ioaddr;
+> +	u32 temp_reg;
+> +	u32 delay_cnt;
+> +
+> +	if ((pruss_num != DA8XX_PRUCORE_0) && (pruss_num != DA8XX_PRUCORE_1))
+> +		return -EINVAL;
+> +
+> +	spin_lock(&pruss->lock);
+> +	if (pruss_num == DA8XX_PRUCORE_0) {
+> +		/* pruss deinit */
+> +		__raw_writel(0xFFFFFFFF, (PRUSS_INTC_STATCLRINT0 & 0xFFFF));
 
-   Wolfram
+Why not use writel instead? Per my understanding
+The __raw_ variants are unsafe to use on ARMv6
+and above.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> +		/* Disable PRU0  */
+> +		h_pruss = (struct da8xx_prusscore_regs *)
+> +			&pruss_mmap->core[DA8XX_PRUCORE_0];
+> +
+> +		temp_reg = __raw_readl(&h_pruss->CONTROL);
+> +		temp_reg = (temp_reg &
+> +				~DA8XX_PRUCORE_CONTROL_COUNTENABLE_MASK) |
+> +				((DA8XX_PRUCORE_CONTROL_COUNTENABLE_DISABLE <<
+> +				DA8XX_PRUCORE_CONTROL_COUNTENABLE_SHIFT) &
+> +				DA8XX_PRUCORE_CONTROL_COUNTENABLE_MASK);
+> +		__raw_writel(temp_reg, &h_pruss->CONTROL);
+> +
+> +		for (delay_cnt = 0x10000; delay_cnt > 0; delay_cnt--) {
+> +
+> +			temp_reg = __raw_readl(&h_pruss->CONTROL);
+> +			temp_reg = (temp_reg &
+> +				~DA8XX_PRUCORE_CONTROL_ENABLE_MASK) |
+> +				((DA8XX_PRUCORE_CONTROL_ENABLE_DISABLE <<
+> +				DA8XX_PRUCORE_CONTROL_ENABLE_SHIFT) &
+> +				DA8XX_PRUCORE_CONTROL_ENABLE_MASK);
+> +			__raw_writel(temp_reg, &h_pruss->CONTROL);
+> +		}
+> +
+> +		/* Reset PRU0 */
+> +		for (delay_cnt = 0x10000; delay_cnt > 0; delay_cnt--)
+> +			__raw_writel(DA8XX_PRUCORE_CONTROL_RESETVAL,
+> +					&h_pruss->CONTROL);
+> +
+> +	} else if (pruss_num == DA8XX_PRUCORE_1) {
+> +		/* pruss deinit */
+> +		__raw_writel(0xFFFFFFFF, (PRUSS_INTC_STATCLRINT1 & 0xFFFF));
+> +		/* Disable PRU1 */
+> +		h_pruss = (struct da8xx_prusscore_regs *)
+> +			&pruss_mmap->core[DA8XX_PRUCORE_1];
+> +		temp_reg = __raw_readl(&h_pruss->CONTROL);
+> +		temp_reg = (temp_reg &
+> +				~DA8XX_PRUCORE_CONTROL_COUNTENABLE_MASK) |
+> +				((DA8XX_PRUCORE_CONTROL_COUNTENABLE_DISABLE <<
+> +				DA8XX_PRUCORE_CONTROL_COUNTENABLE_SHIFT) &
+> +				DA8XX_PRUCORE_CONTROL_COUNTENABLE_MASK);
+> +		__raw_writel(temp_reg, &h_pruss->CONTROL);
+> +
+> +		for (delay_cnt = 0x10000; delay_cnt > 0; delay_cnt--) {
+> +
+> +			temp_reg = __raw_readl(&h_pruss->CONTROL);
+> +			temp_reg = (temp_reg &
+> +				~DA8XX_PRUCORE_CONTROL_ENABLE_MASK) |
+> +				((DA8XX_PRUCORE_CONTROL_ENABLE_DISABLE <<
+> +				DA8XX_PRUCORE_CONTROL_ENABLE_SHIFT) &
+> +				DA8XX_PRUCORE_CONTROL_ENABLE_MASK);
+> +			__raw_writel(temp_reg, &h_pruss->CONTROL);
+> +		}
+> +
+> +		/* Reset PRU1 */
+> +		for (delay_cnt = 0x10000; delay_cnt > 0; delay_cnt--)
+> +			__raw_writel(DA8XX_PRUCORE_CONTROL_RESETVAL,
+> +							&h_pruss->CONTROL);
+> +	}
 
---J2SCkAp4GZ/dPZZf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+There is a lot of code repeated between the if and else and
+I am sure it will be possible to remove the if-else block
+altogether and use the pruss_num as an index know which
+core to operate on. Doing this will also help add more cores
+later.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I really couldn't complete this review (got to rush now),
+but I thought I will send you what I have. You can wait
+for review to complete before posting another version.
 
-iEYEARECAAYFAk2DRssACgkQD27XaX1/VRuPcgCgsux9JZGU4YdKQxrO5VrQCCS5
-v3gAoJiibsZy+ufsGGKqIrVmeU6TJTTt
-=M1jq
------END PGP SIGNATURE-----
-
---J2SCkAp4GZ/dPZZf--
+Thanks,
+Sekhar
