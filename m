@@ -1,481 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab1CRGTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 02:19:52 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:41794 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab1CRGTo (ORCPT
+	id S1756209Ab1CRGas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 02:30:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59459 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756149Ab1CRGal convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 02:19:44 -0400
-Date: Fri, 18 Mar 2011 02:19:38 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: linux-usb@vger.kernel.org
-Cc: Don Zickus <dzickus@redhat.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1130369577.497880.1300429178678.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1569207539.482477.1300353689147.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Subject: Kdump failed with Intel IOMMU  (WAS Re: kdump regression related to
- usb3 hub update)
+	Fri, 18 Mar 2011 02:30:41 -0400
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>
+Date: Fri, 18 Mar 2011 12:00:04 +0530
+Subject: RE: [PATCH v8 03/11] gpio: add ti-ssp gpio driver
+Thread-Topic: [PATCH v8 03/11] gpio: add ti-ssp gpio driver
+Thread-Index: Acvk03lBsqkjwknTRxu6xhjqKmko3wAWObqw
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C3B8330@dbde02.ent.ti.com>
+References: <1295378505-15221-1-git-send-email-cyril@ti.com>
+ <1295378505-15221-4-git-send-email-cyril@ti.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024BF35DAF@dbde02.ent.ti.com>
+ <20110317184514.GP9597@angua.secretlab.ca>
+In-Reply-To: <20110317184514.GP9597@angua.secretlab.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, this has nothing to do with usb3 hub update. I made a mistake that passed amd_iommu=on instead intel_iommu=on to the successful base kernel run. Hence, it passed once there and all testing for other kernels used the right parameters were failed.
+Hi Grant,
 
-The problem is still there though. Since this is the first time test this setup, not sure if this is regression or not.
+On Fri, Mar 18, 2011 at 00:15:14, Grant Likely wrote:
+> On Mon, Feb 28, 2011 at 06:04:32PM +0530, Nori, Sekhar wrote:
+> > Hi Grant,
+> > 
+> > On Wed, Jan 19, 2011 at 00:51:37, Chemparathy, Cyril wrote:
+> > > TI's SSP controller pins can be directly read and written to behave like a
+> > > GPIO.  This patch adds a GPIO driver that exposes such functionality.
+> > 
+> > Can you please review and ack the GPIO part of this
+> > series too?
+> > 
+> > I see that you have already acked the SPI part of this work.
+> 
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> 
+> Sorry for the delay on this.  I can take it through my tree if you
+> like.  It's a new driver, so I don't have any concerns about taking it
+> now even though the merge window is already open..
 
-CAI Qian
+Please queue this for the 2.6.40 cycle. I just noticed that with
+the 2.6.39 merge, the mfd portion of this needs a linux/sched.h
+include to build successfully. That would be fixed in the 2.6.39-rc cycle.
 
------ Original Message -----
-> Hello Sarah and others,
-> 
-> There is a regression using the latest Sarah's xhci hubs-v3-rebase
-> tree, kdump kernel reset itself (log at the end of email). The first
-> kernel also setup using IOMMU (intel_iommu=on). Removed intel_iommu=on
-> from the kdump kernel parameter alone did not solve the problem. This
-> is only reproducible when the first kernel is using IOMMU.
-> 
-> My environment setup is:
-> 
-> PCI-E card -> USB3 Disk
-> -> USB3 Hub -> USB3 Disk
-> -> USB2 Hub -> USB2 Disk
-> 
-> I have been identified one or a few of the following patches caused
-> the problem but need more time to narrow it down.
-> 
-> 288ead45fa6637e959015d055304f521cbbc0575
-> USB: remove bogus USB_PORT_FEAT_*_SPEED symbols
-> 
-> 0eadcc09203349b11ca477ec367079b23d32ab91
-> usb: USB3.0 ch11 definitions
-> 
-> b1a72b70bbb82237b1041c78edee305503f6da31
-> USB: Remove bitmap #define from hcd.h
-> 
-> 50e6c947c6340f7ba81deca99e8a37f458a00e49
-> USB: Fix usb_add_hcd() checkpatch errors.
-> 
-> 0abde136582234dd720270ec3d5aeba69eae4d03
-> xhci: Rework port suspend structures for limited ports.
-> 
-> 8c0d6f920004f065c2571f32b7c28e7f850e9810
-> xhci: Rename variables and reduce register reads.
-> 
-> ba764f4b37e2bcce069f6c9d96b8374ee85257ed
-> USB 3.0 Hub Changes
-> 
-> Loading usb-storage.ko module
-> Initializing USB Mass Storage driver...
-> usbcore: registered new interface driver usb-storage
-> USB Mass Storage support registered.
-> Waiting 8 seconds for driver initialization.
-> usb 7-1: New USB device found, idVendor=046d, idProduct=08af
-> usb 7-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-> usb 7-2: new low speed USB device number 3 using uhci_hcd
-> usb 7-2: New USB device found, idVendor=0624, idProduct=0307
-> usb 7-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-> usb 7-2: Product: Avocent DSRIQ-USB
-> usb 7-2: Manufacturer: Avocent
-> input: Avocent Avocent DSRIQ-USB as
-> /devices/pci0000:00/0000:00:1d.2/usb7/7-2/7-2:1.0/input/input1
-> generic-usb 0003:0624:0307.0001: input,hidraw0: USB HID v1.10 Keyboard
-> [Avocent Avocent DSRIQ-USB] on usb-0000:00:1d.2-2/input0
-> input: Avocent Avocent DSRIQ-USB as
-> /devices/pci0000:00/0000:00:1d.2/usb7/7-2/7-2:1.1/input/input2
-> generic-usb 0003:0624:0307.0002: input,hidraw1: USB HID v1.10 Mouse
-> [Avocent Avocent DSRIQ-USB] on usb-0000:00:1d.2-2/input1
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr ffbfb000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> Loading mii.ko module
-> Loading v4l2-compat-ioctl32.ko module
-> Loading mmicrocode: CPU0 sig=0x206c2, pf=0x1, revision=0xc
-> icrocode.ko module
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr ffbfa000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr ffbf9000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr ffbf8000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 402
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 502
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 602
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 702
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 2
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 102
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 202
-> DMAR:[DMA Write] Request device [0b:00.1] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> DRHD: handling fault status reg 302
-> DMAR:[DMA Write] Request device [0b:00.0] fault addr fffff000
-> DMAR:[fault reason 01] Present bit in root entry is clear
-> <reset>
-> Initializing cgroup subsys cpuset
-> Linux version 2.6.38-rc5+ ....
-> 
-> Thanks.
-> 
-> CAI Qian
+Thanks,
+Sekhar
+
