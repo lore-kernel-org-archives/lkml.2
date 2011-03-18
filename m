@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab1CRWke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:40:34 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:48712 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932733Ab1CRWk2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:40:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6289"; a="80858072"
-Message-ID: <4D83DF5B.1000006@codeaurora.org>
-Date: Fri, 18 Mar 2011 15:40:27 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-CC: akpm@linux-foundation.org, gregkh@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 0/4] Improve fallback LPJ calculation
-References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
-In-Reply-To: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932657Ab1CRWre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:47:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38479 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176Ab1CRWra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 18:47:30 -0400
+Subject: Re: RFC: Platform data for onboard USB assets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: andy.green@linaro.org, Greg KH <greg@kroah.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <201103182106.13888.arnd@arndb.de>
+References: <20110311165642.GA9996@kroah.com>
+	 <201103181600.09877.arnd@arndb.de> <4D839BCD.6030202@linaro.org>
+	 <201103182106.13888.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Mar 2011 09:47:09 +1100
+Message-ID: <1300488429.22236.1291.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2011 06:48 AM, Phil Carmody wrote:
-> Apologies for picking on you, Andrew, and sending this out of the blue,
-> but I didn't have much luck with my previous attempt, and I quite like
-> this patchset, so thought it was worth trying again.
-> (http://lkml.org/lkml/2010/9/28/121)
->
-> The guts of this patchset are in patch 2/4. The motivation for that patch
-> is that currently our OMAP calibrates itself using the trial-and-error 
-> binary chop fallback that some other architectures no longer need to 
-> perform. This is a lengthy process, taking 0.2s in an environment where 
-> boot time is of great interest.
->
->
-[snip]
-> 1/4 is simply cosmetic to prepare for 2/4. 
-> 4/4 is simply to assist testing and not intended for integration.
->
+On Fri, 2011-03-18 at 21:06 +0100, Arnd Bergmann wrote:
+> 
+> In a perfect world, we would need neither the device tree nor
+> any platform data at all, because we'd be able to ask the hardware
+> or the fictionary correct firmware about what the properties
+> of the hardware are. This works to a surprisingly large extent
+> on server hardware, but much less so on typical embedded systems.
 
-I tried this patch set out on an MSM7630.
+Properties of the HW per-se but also binding information, ie, what is
+connected to what outside of the main bus path (think clock/power
+control etc...). Even server / desktop is affected here, and nobody sane
+thinks ACPI is a -good- solution here tho it works mostly on x86 :-)
 
-Before:
+Cheers,
+Ben.
 
-Calibrating delay loop... 681.57 BogoMIPS (lpj=3407872)
-
-After:
-
-Calibrating delay loop... 680.75 BogoMIPS (lpj=3403776)
-
-But the really good news is calibration time dropped from ~247ms to
-~56ms. Sadly we won't be able to benefit from this should my udelay
-patches make it into ARM because we would be using
-calibrate_delay_direct() instead (at least on machines who choose to).
-Can we somehow reapply the logic behind this to
-calibrate_delay_direct()? That would be even better, but this is
-definitely a boot time improvement.
-
-Or maybe we could just replace calibrate_delay_direct() with this
-fallback calculation? If __delay() is a thin wrapper around
-read_current_timer() it should work just as well (plus patch 3 makes it
-handle SMIs). I'll try that out.
-
-You can add a
-
-Tested-by: Stephen Boyd <sboyd@codeaurora.org>
-
-to the first 3 patches.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
