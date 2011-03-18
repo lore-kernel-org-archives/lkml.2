@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab1CRX0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 19:26:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33641 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752488Ab1CRXZy (ORCPT
+	id S1757639Ab1CRX2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 19:28:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36348 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757585Ab1CRX22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 19:25:54 -0400
-Date: Fri, 18 Mar 2011 23:25:53 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: andy.green@linaro.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110318232553.GA11422@opensource.wolfsonmicro.com>
-References: <20110311165642.GA9996@kroah.com> <201103181600.09877.arnd@arndb.de> <4D839BCD.6030202@linaro.org> <201103182106.13888.arnd@arndb.de> <4D83CF8C.3020605@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D83CF8C.3020605@linaro.org>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Fri, 18 Mar 2011 19:28:28 -0400
+Date: Fri, 18 Mar 2011 16:28:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] headers: use __aligned_xx types for userspace
+Message-Id: <20110318162826.5295f130.akpm@linux-foundation.org>
+In-Reply-To: <1300474237-10980-1-git-send-email-vapier@gentoo.org>
+References: <1300474237-10980-1-git-send-email-vapier@gentoo.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 09:33:00PM +0000, Andy Green wrote:
+On Fri, 18 Mar 2011 14:50:37 -0400
+Mike Frysinger <vapier@gentoo.org> wrote:
 
-> Well: Greg was also reduced to explaining that device renaming in  
-> userland was decided "a long time ago".  It's not argumentation, it is  
-> an appeal to an alleged tradition.
+> Now that we finally have __aligned_xx exported to userspace, convert
+> the headers that get exported over to the proper type.
+> 
 
-The story with device renaming is fairly simple - nobody could agree on
-what the ideal names should be and different userlands ended up wanting
-different things so rather than try to keep everyone happy the kernel
-picked the simplest policy possible and let userland override it to its
-heart's content.
+Sob.  Please don't assume that because you're on top of an issue, all
+the rest of us are.
 
-> You think that striving away to create this Device Tree description of a  
-> specific board and maintaining it in a bootloader is LESS work somehow  
-> that registering platform devices in an array in the board definition  
-> file?  I think not.
+A bit of git-log grovelling turns up
 
-It's more the fact that it can be distributed separately to the kernel
-which reduces the pressure to mainline the basic board description stuff
-for ongoing maintinance.
+: commit 79b5dc0c64d88cda3da23b2e22a5cec0964372ac
+: Author: Eric Paris <eparis@redhat.com>
+: Date:   Fri Oct 15 14:34:14 2010 -0700                                          
+:     types.h: define __aligned_u64 and expose to userspace
+:     
+:     We currently have a kernel internal type called aligned_u64 which aligns
+:     __u64's on 8 bytes boundaries even on systems which would normally align
+:     them on 4 byte boundaries.  This patch creates a new type __aligned_u64
+:     which does the same thing but which is exposed to userspace rather than
+:     being kernel internal.                                                    
+
+but that really doesn't tell us why it was merged either.  Perhaps that
+came out in the followup discussion and I failed to fix the changelog.
+
+
+Still, it doesn't hurt to educate people.  Please explain why we are
+making this change?
+
+>  include/linux/if_ppp.h                    |   16 ++++++++--------
+>  include/linux/netfilter/nfnetlink_log.h   |    4 ++--
+>  include/linux/netfilter/nfnetlink_queue.h |    4 ++--
+>  include/linux/netfilter/xt_connbytes.h    |    4 ++--
+>  include/linux/netfilter/xt_quota.h        |    2 +-
+>  5 files changed, 15 insertions(+), 15 deletions(-)
+
+davem stuff :)
