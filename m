@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab1CRT1G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 15:27:06 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:58667 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756866Ab1CRT0x (ORCPT
+	id S1757261Ab1CRTdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 15:33:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52518 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756739Ab1CRTdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 15:26:53 -0400
-Date: Fri, 18 Mar 2011 15:26:52 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
+	Fri, 18 Mar 2011 15:33:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
 To: Justin Piszcz <jpiszcz@lucidpixels.com>
-cc: linux-usb@vger.kernel.org, <xfs@oss.sgi.com>,
-        <linux-kernel@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
 Subject: Re: 2.6.38: XFS/USB/HW issue, or failing USB stick?
-In-Reply-To: <alpine.DEB.2.02.1103181346340.21715@p34.internal.lan>
-Message-ID: <Pine.LNX.4.44L0.1103181523500.14876-100000@netrider.rowland.org>
+Date: Fri, 18 Mar 2011 20:33:02 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
+Cc: Tim Soderstrom <tim@moocowproductions.org>, linux-usb@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, flashbench-results@lists.linaro.org
+References: <alpine.DEB.2.02.1103181104020.30018@p34.internal.lan> <201103182010.37455.arnd@arndb.de> <alpine.DEB.2.02.1103181524400.21715@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1103181524400.21715@p34.internal.lan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103182033.02793.arnd@arndb.de>
+X-Provags-ID: V02:K0:qRZhx1/MvMNAMNOqzu24f28NDf3lhYLp35EJqN8D8hT
+ KDVODHPjteNn990G9iPD004yVyeoPhDy9gjsudUqGS/jwZe9ZH
+ B/KAXCvtfwJdQgeIttDESDCmeMkuQ3BrHqowjKBEewmZ0skcd/
+ BxJaAe2Lt3l8am/ySJmb9E1RG8s3UjrL5Dq7IIXW7UEeB1d46e
+ rNU0sWJ9O5cnwoi9V5PHw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011, Justin Piszcz wrote:
+On Friday 18 March 2011 20:26:46 Justin Piszcz wrote:
+> > The numbers are jumping around a bit with the incorrectly guessed erasesize.
+> > These values should be more like the ones in the first test. Can you rerun
+> > with --erasesize=$[4 * 1024 * 1024]?
+> Hi, I put the box back into production with ext2, if it fails again I can 
+> re-run.
 
-> > The stick didn't "fail" in any obvious way, but for some reason it was
-> > disconnected from the USB bus.  (If it initiated that disconnect by
-> > itself, I guess you could consider that a failure.)  Maybe it was
-> > something as simple as overheating causing a loss of electrical contact
-> > between the connector and the pins in the USB port.
+Ok. Did you make sure to get the partition table right? It's
+rather tricky with fdisk, since it normally doesn't align
+to 4 MB. You can see this using 'fdisk -l -u /dev/sda'.
+
+> > Also, what is the output of 'lsusb' for this stick? I'd like to add the
+> > data to https://wiki.linaro.org/WorkingGroups/KernelConsolidation/Projects/FlashCardSurvey
+> Sure,
+> Bus 001 Device 002: ID 0325:ac02 OCZ Technology Inc ATV Turbo / Rally2 Dual Channel USB 2.0 Flash Drive
 > 
-> It is possible, but the box is kept cool:
 
-Then something else caused the disconnection.  Maybe a bug in the USB 
-stick's firmware.
+Added now, thanks!
 
-> >> Mar 18 08:33:06 atom [ 2283.963059] usb 1-1: new high speed USB device using ehci_hcd and address 4
-> >> Mar 18 08:33:06 atom [ 2284.080647] usb 1-1: New USB device found, idVendor=0325, idProduct=ac02
-> >> Mar 18 08:33:06 atom [ 2284.080707] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-> >> Mar 18 08:33:06 atom [ 2284.080752] usb 1-1: Product: R2_TURBO
-> >> Mar 18 08:33:06 atom [ 2284.080794] usb 1-1: Manufacturer: OCZ Technology
-> >> Mar 18 08:33:06 atom [ 2284.080831] usb 1-1: SerialNumber: (removed)
-> >
-> > And then 22 seconds later it reconnected.
-> >
-> > Alan Stern
-> >
-> 
-> Very strange, could some USB option cause this?
+Do you also have the product name for this?
 
-No.
-
->  I guess next step is use
-> ext2 and a different stick in the same port to see if I can get it to recur.
-> Then if it happens again, try a different port.
-
-Okay, go ahead and see what happens.
-
-Alan Stern
-
+	Arnd
