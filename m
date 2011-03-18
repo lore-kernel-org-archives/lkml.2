@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab1CRAdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 20:33:16 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:56475 "EHLO lunge.queued.net"
+	id S1756097Ab1CRAsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 20:48:45 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39498 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755982Ab1CRAcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 20:32:46 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, Daniel Drake <dsd@laptop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] of/flattree: minor cleanups
-Date: Thu, 17 Mar 2011 17:32:35 -0700
-Message-Id: <1300408356-15253-4-git-send-email-dilinger@queued.net>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1300408356-15253-1-git-send-email-dilinger@queued.net>
-References: <1300408356-15253-1-git-send-email-dilinger@queued.net>
+	id S1751829Ab1CRAso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 20:48:44 -0400
+Date: Fri, 18 Mar 2011 11:48:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt mooney <mfm@muteddisk.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: linux-next: manual merge of the kbuild tree with the hwmon-staging
+ tree
+Message-Id: <20110318114836.04c76926.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - static-ize some functions
- - add some additional comments
+Hi Michal,
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/of/fdt.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+Today's linux-next merge of the kbuild tree got a conflict in
+drivers/hwmon/Makefile between commit 442aba78728e ("hwmon: PMBus device
+driver") from the hwmon-staging tree and commit 5c39e31195f4 ("hwmon:
+change to new flag variable") from the kbuild tree.
 
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index af824e7..c9db49c 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -139,12 +139,13 @@ static void *unflatten_dt_alloc(unsigned long *mem, unsigned long size,
- /**
-  * unflatten_dt_node - Alloc and populate a device_node from the flat tree
-  * @blob: The parent device tree blob
-+ * @mem: Memory chunk to use for allocating device nodes and properties
-  * @p: pointer to node in flat tree
-  * @dad: Parent struct device_node
-  * @allnextpp: pointer to ->allnext from last allocated device_node
-  * @fpsize: Size of the node path up at the current depth.
-  */
--unsigned long unflatten_dt_node(struct boot_param_header *blob,
-+static unsigned long unflatten_dt_node(struct boot_param_header *blob,
- 				unsigned long mem,
- 				unsigned long *p,
- 				struct device_node *dad,
-@@ -230,6 +231,7 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
- 		}
- 		kref_init(&np->kref);
- 	}
-+	/* process properties */
- 	while (1) {
- 		u32 sz, noff;
- 		char *pname;
-@@ -351,7 +353,7 @@ unsigned long unflatten_dt_node(struct boot_param_header *blob,
-  * @dt_alloc: An allocator that provides a virtual address to memory
-  * for the resulting tree
-  */
--void __unflatten_device_tree(struct boot_param_header *blob,
-+static void __unflatten_device_tree(struct boot_param_header *blob,
- 			     struct device_node **mynodes,
- 			     void * (*dt_alloc)(u64 size, u64 align))
- {
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 -- 
-1.7.2.3
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/hwmon/Makefile
+index aaf6ca9,974f9cc..0000000
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@@ -114,14 -112,5 +114,12 @@@ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l
+  obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+  obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
+  
+ +# PMBus drivers
+ +obj-$(CONFIG_PMBUS)		+= pmbus_core.o
+ +obj-$(CONFIG_SENSORS_PMBUS)	+= pmbus.o
+ +obj-$(CONFIG_SENSORS_MAX16064)	+= max16064.o
+ +obj-$(CONFIG_SENSORS_MAX34440)	+= max34440.o
+ +obj-$(CONFIG_SENSORS_MAX8688)	+= max8688.o
+ +
+- ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
+- EXTRA_CFLAGS += -DDEBUG
+- endif
++ ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
+  
