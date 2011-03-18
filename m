@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab1CRKXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 06:23:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36916 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750847Ab1CRKXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 06:23:32 -0400
-Date: Fri, 18 Mar 2011 11:22:32 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <gregkh@suse.de>
-Cc: Jason Baron <jbaron@redhat.com>, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
-        Greg Banks <gnb@fmeh.org>, Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 05/50] Dynamic debug: Add more flags
-Message-ID: <20110318102232.GA30751@elte.hu>
-References: <20110316205204.GA2686@kroah.com>
- <1300309888-5028-1-git-send-email-gregkh@suse.de>
- <1300309888-5028-5-git-send-email-gregkh@suse.de>
- <20110317175607.GD2648@redhat.com>
- <20110317180204.GA15205@suse.de>
+	id S1753029Ab1CRLBQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 07:01:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54285 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab1CRLBK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 07:01:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=f/f4O6id4Z2HFacO4yEaBVnLVBASNAZaF894wFe6+QPe/0rOHEbPOqpCrgSvTKnhIX
+         NYWH1c09oDODPOCZaCIrD6GQWRCkvYy6g/IY1RLtOLhELplrQFej/GR1aDoz9WgkHRTX
+         /FIsSnx6Zt96/sHPtwhkcNh8EIhGuWWmLVqiQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317180204.GA15205@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Date: Fri, 18 Mar 2011 17:01:08 +0600
+Message-ID: <AANLkTi=uysftkFdzEE2Xshg3br_tFB=hhZ4BwX-TzLm0@mail.gmail.com>
+Subject: [PATCH] fs,ocfs2: Move o2net_get_func_run_time under CONFIG_OCFS2_FS_STATS.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        Sunil Mushran <sunil.mushran@oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When CONFIG_DEBUG_FS=y and CONFIG_OCFS2_FS_STATS=n, we get the
+following warning:
 
-* Greg KH <gregkh@suse.de> wrote:
+fs/ocfs2/cluster/tcp.c:213:16: warning: ‘o2net_get_func_run_time’
+defined but not used
 
-> On Thu, Mar 17, 2011 at 01:56:08PM -0400, Jason Baron wrote:
-> > On Wed, Mar 16, 2011 at 02:10:43PM -0700, Greg Kroah-Hartman wrote:
-> > > Add flags that allow the user to specify via debugfs whether or not the
-> > > module name, function name, line number and/or thread ID have to be
-> > > included in the printed message.
-> > 
-> > This piece is going to conflict with the jump label update patches, I'm
-> > trying to get into .39. The 'if (unlikely(descriptor.enabled))' bit is
-> > now: 'if (DDEBUG_BRANCH(descriptor.enabled))'. So its a small conflict,
-> > but they wouldn't merge together. So we need to adjust either one (and
-> > make sure they're applied in the correct orer), or drop one.
-> 
-> This has been in linux-next for months now, [...]
+Since o2net_get_func_run_time is only called from
+o2net_update_recv_stats, so move it under CONFIG_OCFS2_FS_STATS.
 
-Btw, a workflow observation, i'd have expected such a commit:
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
 
- > Signed-off-by: Bart Van Assche <bvanassche@acm.org>
- > Cc: Greg Banks <gnb@fmeh.org>
- > Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
- > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
- > ---
- >  Documentation/dynamic-debug-howto.txt |   12 +++++-
- >  include/linux/dynamic_debug.h         |    8 ++++-
- >  lib/dynamic_debug.c                   |   60 ++++++++++++++++++++++++++++-----
- >  3 files changed, 68 insertions(+), 12 deletions(-)
+diff --git a/fs/ocfs2/cluster/tcp.c b/fs/ocfs2/cluster/tcp.c
+index 3b11cb1..ee04ff5 100644
+--- a/fs/ocfs2/cluster/tcp.c
++++ b/fs/ocfs2/cluster/tcp.c
+@@ -210,10 +210,6 @@ static inline void
+o2net_set_func_stop_time(struct o2net_sock_container *sc)
+ 	sc->sc_tv_func_stop = ktime_get();
+ }
 
-... to at least have the ack from Jason who is the author and maintainer of the 
-dyn-printk bits. You should at least have Cc:-ed him!
+-static ktime_t o2net_get_func_run_time(struct o2net_sock_container *sc)
+-{
+-	return ktime_sub(sc->sc_tv_func_stop, sc->sc_tv_func_start);
+-}
+ #else  /* CONFIG_DEBUG_FS */
+ # define o2net_init_nst(a, b, c, d, e)
+ # define o2net_set_nst_sock_time(a)
+@@ -227,10 +223,14 @@ static ktime_t o2net_get_func_run_time(struct
+o2net_sock_container *sc)
+ # define o2net_set_advance_stop_time(a)
+ # define o2net_set_func_start_time(a)
+ # define o2net_set_func_stop_time(a)
+-# define o2net_get_func_run_time(a)		(ktime_t)0
+ #endif /* CONFIG_DEBUG_FS */
 
-Preferably it should have been merged through him. That would also have alerted 
-him to the conflict potential and would have concentrated all changes in a 
-single tree, as it really should happen ...
-
-So could you *please* do such changes in a bit more organized fashion in the 
-future? Please use the get_maintainer script:
-
-  $ scripts/get_maintainer.pl -f lib/dynamic_debug.c 
-
-  Jason Baron <jbaron@redhat.com> (commit_signer:6/10=60%)
-  Thomas Renninger <trenn@suse.de> (commit_signer:3/10=30%)
-  Pekka Enberg <penberg@cs.helsinki.fi> (commit_signer:3/10=30%)
-  Greg Kroah-Hartman <gregkh@suse.de> (commit_signer:3/10=30%)
-  Steven Rostedt <rostedt@goodmis.org> (commit_signer:2/10=20%)
-  linux-kernel@vger.kernel.org (open list)
-
-The majority of those gents were not Cc:-ed to any of the submissions and 
-resubmissions.
-
-To answer your question, the in-flight changes Jason is talking about have not 
-touched linux-next yet because they went through several levels of review 
-feedback. Had your patches gone through a similar review process they might 
-still be in flight as well and we'd also have found out about any conflicts 
-sooner.
-
-Thanks,
-
-	Ingo
+ #ifdef CONFIG_OCFS2_FS_STATS
++static ktime_t o2net_get_func_run_time(struct o2net_sock_container *sc)
++{
++	return ktime_sub(sc->sc_tv_func_stop, sc->sc_tv_func_start);
++}
++
+ static void o2net_update_send_stats(struct o2net_send_tracking *nst,
+ 				    struct o2net_sock_container *sc)
+ {
