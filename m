@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab1CRDXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 23:23:46 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59800
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755759Ab1CRDXl (ORCPT
+	id S1756026Ab1CRDc5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 23:32:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57015 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab1CRDcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 23:23:41 -0400
-Date: Thu, 17 Mar 2011 20:24:19 -0700 (PDT)
-Message-Id: <20110317.202419.189703451.davem@davemloft.net>
-To: slapin@ossfans.org
-Cc: alan@lxorguk.ukuu.org.uk, linux-x25@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow LAPB users know which data were actually sent.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110318005220.GA9674@build.ihdev.net>
-References: <1300400422-8820-1-git-send-email-slapin@ossfans.org>
-	<20110317235532.44c0e202@lxorguk.ukuu.org.uk>
-	<20110318005220.GA9674@build.ihdev.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 17 Mar 2011 23:32:52 -0400
+X-Authority-Analysis: v=1.1 cv=pN6kzQkhXdmdOr6Akjoh3kGBD/S3UyPMKQp53EJY+ro= c=1 sm=0 a=d6KjmF4z1lEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=bDa5MmDnDYp2R_t6ggkA:9 a=Gz_JoXTBVXDBAhyzFLLqiKaJq8AA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@shadowen.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110317211548.646b04d2@tpl.lwn.net>
+References: <1300416744.16880.904.camel@gandalf.stny.rr.com>
+	 <20110317211548.646b04d2@tpl.lwn.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 23:32:50 -0400
+Message-ID: <1300419170.16880.956.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergey Lapin <slapin@ossfans.org>
-Date: Thu, 17 Mar 2011 20:52:20 -0400
+On Thu, 2011-03-17 at 21:15 -0600, Jonathan Corbet wrote:
+> On Thu, 17 Mar 2011 22:52:24 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > The use of kzalloc() is preferred over kmalloc/memset(0) pairs.
+> > 
+> > When a match is made with "memset(p, 0, s);" a search back through the
+> > patch hunk is made looking for "p = kmalloc(s,". If that is found, then
+> > a warning is given, suggesting to use kzalloc() instead.
+> 
+> The Coccinelle stuff already has a lot of this kind of test.  See, for
+> example, scripts/coccinelle/api/alloc/kzalloc-simple.cocci.  Suppose
+> there is some way all this nice analysis infrastructure could be
+> integrated instead of duplicated?  Or am I just a crazy dreamer?
+> 
 
-> I implement accessor for special equipment (acessing fiscal information)
-> which uses custom protocol over LAPB. As it is being implemented,
-> I actually wanted to know if this approach for using LAPB is good enough
-> for mainline submission, as I want to have kernel part to be in mainline.
-> I think I will have the rest of patches ready within two weeks.
+Hmm, to me Coccinelle is sorta the big hammer approach to this. It can
+be used to analyze the kernel code that exists. checkpatch is made to
+stop developers from adding new crap.
 
-Submit the infrastructure for inclusion when you're user is completed
-and submittable as well.
+That said, I wonder if there is a way to make one use information from
+the other. Perhaps we can make checkpatch read the Concinelle rules.
+Honestly, I've never used Concinelle and have no idea how to use it.
+Looking at their web site there's a PDF on how to use something called
+"spatch" but it seems more complex than checkpatch.
 
-Thanks.
+But if we can teach checkpatch to read the rule files, then maybe that
+would be beneficial.
+
+-- Steve
+
+
