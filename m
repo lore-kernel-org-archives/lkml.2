@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab1CRHM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 03:12:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54451 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab1CRHMx (ORCPT
+	id S1756322Ab1CRHRK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 03:17:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47838 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab1CRHQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 03:12:53 -0400
+	Fri, 18 Mar 2011 03:16:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=IiCnbsY4+U22vjpCDmCoWYOoyD+ql/Vj9PZTN9PdjSEsCjkLgLlL/l+MTlDGRnZeqG
-         IwOG3790Q6T5od7YqDI27PYdU3DPEhmJUcqX+HEq7uO2D5Xg22PziWT6pYZI+z7ScuBV
-         pduk4QIzh2hPBTumTwfO+d98AROqx6r4v9mFw=
-Date: Fri, 18 Mar 2011 10:12:38 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Mike Waychison <mikew@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        h=from:reply-to:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=pGtMCBF1a+60sVJy4pfedOuz8b6ULulGRDeBlybUpmpnss6/LtzDIMa77pTuAXuWea
+         8DTKrUtppfZBO5zAB9C5BC4TFHDAr1CmnNYa3buPV4M3GTW++WoE0y7wNAn5uulAQAev
+         fFoyhyclSfb+XPjOPnoOEdqvIGX6iWTtO7sgM=
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+Organization: Nanjing University
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte mapping to ksm pages
+Date: Fri, 18 Mar 2011 15:16:37 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.36.4; KDE/4.6.1; i686; ; )
+Cc: Izik Eidus <ieidus@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         kernel-janitors@vger.kernel.org
-Subject: [patch 2/2] efivars: handle errors from register_efivars()
-Message-ID: <20110318071238.GW2008@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Mike Waychison <mikew@google.com>,
-	Chris Wright <chrisw@sous-sol.org>, Tejun Heo <tj@kernel.org>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <201102262256.31565.nai.xia@gmail.com> <20110301154100.212c4ff9.akpm@linux-foundation.org>
+In-Reply-To: <20110301154100.212c4ff9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103181516.37671.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should unwind and return an error if register_efivars() fails.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+>On Wednesday 02 March 2011, at 07:41:00, <Andrew Morton <akpm@linux-foundation.org>> wrote
+> On Sat, 26 Feb 2011 22:56:31 +0800
+> Nai Xia <nai.xia@gmail.com> wrote:
+> 
+> > ksm_pages_sharing is updated by ksmd periodically.  In some cases, it cannot 
+> > reflect the actual savings and makes the benchmarks on volatile VMAs very 
+> > inaccurate.
+> > 
+> > This patch add a vm_stat entry and let the /proc/meminfo show information 
+> > about how much virutal address pte is being mapped to ksm pages.  With default 
+> > ksm paramters (pages_to_scan==100 && sleep_millisecs==20), this can result in 
+> > 50% more accurate averaged savings result for the following test program. 
+> > Bigger sleep_millisecs values will increase this deviation. 
+> 
+> So I think you're saying that the existing ksm_pages_sharing sysfs file
+> is no good.
+> 
+> You added a new entry to /proc/meminfo and left ksm_pages_sharing
+> as-is.  Why not leave /proc/meminfo alone, and fix up the existing
+> ksm_pages_sharing?
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index ff2fe40..5d1ec68 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -803,6 +803,8 @@ efivars_init(void)
- 	ops.set_variable = efi.set_variable;
- 	ops.get_next_variable = efi.get_next_variable;
- 	error = register_efivars(&__efivars, &ops, efi_kobj);
-+	if (error)
-+		goto err_put;
- 
- 	/* Don't forget the systab entry */
- 	error = sysfs_create_group(efi_kobj, &efi_subsys_attr_group);
-@@ -810,10 +812,15 @@ efivars_init(void)
- 		printk(KERN_ERR
- 		       "efivars: Sysfs attribute export failed with error %d.\n",
- 		       error);
--		unregister_efivars(&__efivars);
--		kobject_put(efi_kobj);
-+		goto err_unregister;
- 	}
- 
-+	return 0;
-+
-+err_unregister:
-+	unregister_efivars(&__efivars);
-+err_put:
-+	kobject_put(efi_kobj);
- 	return error;
- }
- 
+
+The ksm_pages_sharing is really a count for how many "rmap_item"s is currently
+linked in stable_nodes. ksmd updates ksm_pages_sharing whenever it's waken up.
+However, just during the time ksmd is sleeping, many shared KSM pages can be 
+broken because of page writes. So ksm_pages_sharing means much more an internal
+state for ksm than a real count for how much pages is being shared at some time
+point. Since the state of the internal data structures of ksm is only updated 
+by ksmd privately. I think it's hard to make it correctly reflect the real time
+memory saving. So I just added another count and let ksm_pages_sharing still 
+focus on it original role.
+
+> 
+> Also, the patch accumulates the NR_KSM_PAGES_SHARING counts on a
+> per-zone basis as well as on a global basis, but only provides the
+> global count to userspace.  The per-zone counts are potentially
+> interesting?  If not, maintaining the per-zone counters is wasted
+> overhead.
+
+Yes, I will make it to the zoneinfo, soon. 
+
+> 
+> > 
+> > --- test.c-----
+> >
+> 
+> The "^---" token conventionally means "end of changelog".  Please avoid
+> inserting it into the middle of the changelog.
+
+OK, I understand now. :)
+
+> 
+> > +++ b/mm/ksm.c
+> > @@ -897,6 +897,7 @@ static int try_to_merge_one_page(struct vm_area_struct 
+> > *vma,
+> 
+> Your email client wordwraps the patches.
+
+Oops, sorry for the crappy client it is also responsible for my late reply.
+I will fix it soon.
+
+Nai
+
+> 
