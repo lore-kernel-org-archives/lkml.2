@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab1CRUxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 16:53:42 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:37100 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756932Ab1CRUxg (ORCPT
+	id S1757449Ab1CRVCS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:02:18 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:35301 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756949Ab1CRVCM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 16:53:36 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Mike Waychison <mikew@google.com>
-Subject: Re: [PATCH 37/50] firmware: Add documentation for /sys/firmware/dmi
-In-Reply-To: Your message of "Wed, 16 Mar 2011 14:11:15 PDT."
-             <1300309888-5028-37-git-send-email-gregkh@suse.de>
-From: Valdis.Kletnieks@vt.edu
-References: <20110316205204.GA2686@kroah.com> <1300309888-5028-1-git-send-email-gregkh@suse.de>
-            <1300309888-5028-37-git-send-email-gregkh@suse.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1300481607_5145P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 18 Mar 2011 16:53:27 -0400
-Message-ID: <27993.1300481607@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4D83C649.000D,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 18 Mar 2011 17:02:12 -0400
+X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 17:02:12 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH -mm] RapidIO,powerpc/85xx: Fix configuration option
+Date: Fri, 18 Mar 2011 13:53:08 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201A587FE@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <8E8332C6-1F17-4EC1-BD04-7B93D7B49640@kernel.crashing.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH -mm] RapidIO,powerpc/85xx: Fix configuration option
+Thread-Index: AcvlrfMvK1H0atgRTnighylevmuhcwAACe1Q
+References: <1300468735-1158-1-git-send-email-alexandre.bounine@idt.com> <8E8332C6-1F17-4EC1-BD04-7B93D7B49640@kernel.crashing.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Kumar Gala" <galak@kernel.crashing.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        "Li Yang" <leoli@freescale.com>, "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1300481607_5145P
-Content-Type: text/plain; charset=us-ascii
+This patch has to be applied to -mm tree. Andrew already has set of
+patches that change RapidIO configuration.
+I think it will be better if it goes into -mm to keep things aligned
+properly.
 
-On Wed, 16 Mar 2011 14:11:15 PDT, Greg Kroah-Hartman said:
-> From: Mike Waychison <mikew@google.com>
+Alex.
+
+-----Original Message-----
+From: Kumar Gala [mailto:galak@kernel.crashing.org] 
+Sent: Friday, March 18, 2011 4:49 PM
+To: Bounine, Alexandre
+Cc: akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
+linuxppc-dev@lists.ozlabs.org; Matt Porter; Li Yang; Thomas Moll
+Subject: Re: [PATCH -mm] RapidIO,powerpc/85xx: Fix configuration option
+
+
+On Mar 18, 2011, at 12:18 PM, Alexandre Bounine wrote:
+
+> Follows set of patches in -mm tree. Replaces configuration option
+> missed in previous patches.
 > 
-> Document the new ABI added by the dmi-sysfs module.
+> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> ---
+> arch/powerpc/kernel/cpu_setup_fsl_booke.S |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> +		position: The position of the entry within the entirety
-> +			  of the entirety.
+Acked-by: Kumar Gala <galak@kernel.crashing.org>
 
-Say what? :)  
+Alex, I can push this via the powerpc.git tree route if you want.
 
---==_Exmh_1300481607_5145P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNg8ZHcC3lWbTT17ARAjs5AJ9jgsY0B0q/EHwB25s3j2zzgZIrIwCfT7PJ
-52DbBBxG4CGgccuPxbvuf2k=
-=m/yx
------END PGP SIGNATURE-----
-
---==_Exmh_1300481607_5145P--
-
+- k
