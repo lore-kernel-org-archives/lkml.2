@@ -1,238 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab1CRWdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:33:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4072 "EHLO mga09.intel.com"
+	id S1757518Ab1CRWiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:38:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51833 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757239Ab1CRWdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:33:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,207,1299484800"; 
-   d="scan'208";a="721765756"
-To: Christoph Hellwig <hch@infradead.org>
-From: "Luck, Tony" <tony.luck@intel.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Xiaotian Feng <xtfeng@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: pstore: use mount option instead sysfs to tweak kmsg_bytes
-In-Reply-To: <20110318184957.GA6979@infradead.org>
-References: <20110316235608.GY22723@ZenIV.linux.org.uk>
- <AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
- <20110317072344.GZ22723@ZenIV.linux.org.uk>
- <AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
- <4d83a82032021e2997@agluck-desktop.sc.intel.com>
-Date: Fri, 18 Mar 2011 15:33:43 -0700
-Message-Id: <4d83ddc7332d5473@agluck-desktop.sc.intel.com>
+	id S1757239Ab1CRWiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 18:38:10 -0400
+Subject: Re: RFC: Platform data for onboard USB assets
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: andy.green@linaro.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D82979B.2050003@linaro.org>
+References: <20110311165642.GA9996@kroah.com>
+	 <20110317214042.GQ31411@opensource.wolfsonmicro.com>
+	 <20110317214736.GA29014@kroah.com> <201103172333.01474.arnd@arndb.de>
+	 <4D82979B.2050003@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Mar 2011 09:37:43 +1100
+Message-ID: <1300487863.22236.1289.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/sys/fs is a somewhat strange way to tweak what could more
-obviously be tuned with a mount option.
+On Thu, 2011-03-17 at 23:22 +0000, Andy Green wrote:
+> 
+> Is there actually a need for sort of not platform_data but universal 
+> vid_pid_specific_usb_device_option_data coming from the board
+> definition 
+> file or bootloader for *pluggable* usb devices?  udev seems to be
+> well 
+> established doing that already in a generic, not-platform-specific
+> way 
+> that can go in all distros and so on nicely.  Maybe this is just my 
+> impoverished imagination and people do want, say, some kinds of USB
+> mice 
+> to operate at higher DPI or whatever when plugged in a specific board 
+> because it is that board. 
 
-Suggested-by: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Except that vid/pid are the -WRONG- way to do that. Your device is
+on-board, the proper way to identify it uniquely is it's topological
+location, ie path of HW port numbers.
 
----
+Cheers,
+Ben.
 
-Christoph Hellwig wrote:
->  - the kmsg_bytes attribute really should be a mount option.  no need
->    have this in a completely different namespace, and require all the
->    kobject mess around it.
 
-Al: If this looks OK, will you run it through your vfs tree please?
-
-diff --git a/Documentation/ABI/testing/pstore b/Documentation/ABI/testing/pstore
-index f1fb2a0..8232d2f 100644
---- a/Documentation/ABI/testing/pstore
-+++ b/Documentation/ABI/testing/pstore
-@@ -1,6 +1,6 @@
- Where:		/dev/pstore/...
--Date:		January 2011
--Kernel Version: 2.6.38
-+Date:		March 2011
-+Kernel Version: 2.6.39
- Contact:	tony.luck@intel.com
- Description:	Generic interface to platform dependent persistent storage.
- 
-@@ -11,7 +11,7 @@ Description:	Generic interface to platform dependent persistent storage.
- 		of the console log is captured, but other interesting
- 		data can also be saved.
- 
--		# mount -t pstore - /dev/pstore
-+		# mount -t pstore -o kmsg_bytes=8000 - /dev/pstore
- 
- 		$ ls -l /dev/pstore
- 		total 0
-@@ -33,3 +33,9 @@ Description:	Generic interface to platform dependent persistent storage.
- 		will be saved elsewhere and erased from persistent store
- 		soon after boot to free up space ready for the next
- 		catastrophe.
-+
-+		The 'kmsg_bytes' mount option changes the target amount of
-+		data saved on each oops/panic. Pstore saves (possibly
-+		multiple) files based on the record size of the underlying
-+		persistent storage until at least this amount is reached.
-+		Default is 10 Kbytes.
-diff --git a/Documentation/ABI/testing/sysfs-fs-pstore b/Documentation/ABI/testing/sysfs-fs-pstore
-deleted file mode 100644
-index 8e659d8..0000000
---- a/Documentation/ABI/testing/sysfs-fs-pstore
-+++ /dev/null
-@@ -1,7 +0,0 @@
--What:		/sys/fs/pstore/kmsg_bytes
--Date:		January 2011
--Kernel Version: 2.6.38
--Contact:	"Tony Luck" <tony.luck@intel.com>
--Description:
--		Controls amount of console log that will be saved
--		to persistent store on oops/panic.
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index f777f29..52cb6d4 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -27,6 +27,7 @@
- #include <linux/string.h>
- #include <linux/mount.h>
- #include <linux/ramfs.h>
-+#include <linux/parser.h>
- #include <linux/sched.h>
- #include <linux/magic.h>
- #include <linux/pstore.h>
-@@ -112,10 +113,52 @@ static struct inode *pstore_get_inode(struct super_block *sb,
- 	return inode;
- }
- 
-+enum {
-+	Opt_kmsg_bytes, Opt_err
-+};
-+
-+static const match_table_t tokens = {
-+	{Opt_kmsg_bytes, "kmsg_bytes=%u"},
-+	{Opt_err, NULL}
-+};
-+
-+static void parse_options(char *options)
-+{
-+	char		*p;
-+	substring_t	args[MAX_OPT_ARGS];
-+	int		option;
-+
-+	if (!options)
-+		return;
-+
-+	while ((p = strsep(&options, ",")) != NULL) {
-+		int token;
-+
-+		if (!*p)
-+			continue;
-+
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case Opt_kmsg_bytes:
-+			if (!match_int(&args[0], &option))
-+				pstore_set_kmsg_bytes(option);
-+			break;
-+		}
-+	}
-+}
-+
-+static int pstore_remount(struct super_block *sb, int *flags, char *data)
-+{
-+	parse_options(data);
-+
-+	return 0;
-+}
-+
- static const struct super_operations pstore_ops = {
- 	.statfs		= simple_statfs,
- 	.drop_inode	= generic_delete_inode,
- 	.evict_inode	= pstore_evict_inode,
-+	.remount_fs	= pstore_remount,
- 	.show_options	= generic_show_options,
- };
- 
-@@ -215,6 +258,8 @@ int pstore_fill_super(struct super_block *sb, void *data, int silent)
- 	sb->s_op		= &pstore_ops;
- 	sb->s_time_gran		= 1;
- 
-+	parse_options(data);
-+
- 	inode = pstore_get_inode(sb, NULL, S_IFDIR | 0755, 0);
- 	if (!inode) {
- 		err = -ENOMEM;
-@@ -258,28 +303,7 @@ static struct file_system_type pstore_fs_type = {
- 
- static int __init init_pstore_fs(void)
- {
--	int rc = 0;
--	struct kobject *pstorefs_kobj;
--
--	pstorefs_kobj = kobject_create_and_add("pstore", fs_kobj);
--	if (!pstorefs_kobj) {
--		rc = -ENOMEM;
--		goto done;
--	}
--
--	rc = sysfs_create_file(pstorefs_kobj, &pstore_kmsg_bytes_attr.attr);
--	if (rc)
--		goto done1;
--
--	rc = register_filesystem(&pstore_fs_type);
--	if (rc == 0)
--		goto done;
--
--	sysfs_remove_file(pstorefs_kobj, &pstore_kmsg_bytes_attr.attr);
--done1:
--	kobject_put(pstorefs_kobj);
--done:
--	return rc;
-+	return register_filesystem(&pstore_fs_type);
- }
- module_init(init_pstore_fs)
- 
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 76c26d2..8c9f23e 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -1,7 +1,6 @@
-+extern void	pstore_set_kmsg_bytes(int);
- extern void	pstore_get_records(void);
- extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
- 			      char *data, size_t size,
- 			      struct timespec time, int (*erase)(u64));
- extern int	pstore_is_mounted(void);
--
--extern struct kobj_attribute pstore_kmsg_bytes_attr;
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 705fdf8..ce9ad84 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -37,24 +37,14 @@
- static DEFINE_SPINLOCK(pstore_lock);
- static struct pstore_info *psinfo;
- 
--/* How much of the console log to snapshot. /sys/fs/pstore/kmsg_bytes */
-+/* How much of the console log to snapshot */
- static unsigned long kmsg_bytes = 10240;
- 
--static ssize_t b_show(struct kobject *kobj,
--		      struct kobj_attribute *attr, char *buf)
-+void pstore_set_kmsg_bytes(int bytes)
- {
--	return snprintf(buf, PAGE_SIZE, "%lu\n", kmsg_bytes);
-+	kmsg_bytes = bytes;
- }
- 
--static ssize_t b_store(struct kobject *kobj, struct kobj_attribute *attr,
--		       const char *buf, size_t count)
--{
--	return (sscanf(buf, "%lu", &kmsg_bytes) > 0) ? count : 0;
--}
--
--struct kobj_attribute pstore_kmsg_bytes_attr =
--	__ATTR(kmsg_bytes, S_IRUGO | S_IWUSR, b_show, b_store);
--
- /* Tag each group of saved records with a sequence number */
- static int	oopscount;
- 
