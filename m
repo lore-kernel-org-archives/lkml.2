@@ -1,137 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab1CRCwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 22:52:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:36030 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab1CRCwS (ORCPT
+	id S1756033Ab1CRCwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 22:52:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49828 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987Ab1CRCw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 22:52:18 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6288"; a="80457986"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH] ARM: Merge v6 and v7 DEBUG_LL DCC support
-Date: Thu, 17 Mar 2011 19:52:00 -0700
-Message-Id: <1300416720-16305-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.1.266.ga62ea
+	Thu, 17 Mar 2011 22:52:28 -0400
+X-Authority-Analysis: v=1.1 cv=qyUSAyc82z9xLljZQc9ErY9Tl2GSEfqK/XYZS35I9d8= c=1 sm=0 a=Am4aEdVPdz0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=tIxMMX8wLqbJvhF53sYA:9 a=EVB_3QDeGsj_0RUaJz-iwjdQXGAA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andy Whitcroft <apw@shadowen.org>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Mar 2011 22:52:24 -0400
+Message-ID: <1300416744.16880.904.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The inline assembly differences for v6 vs. v7 are purely
-optimizations. On a v7 processor, an mrc with the pc sets the
-condition codes to the 28-31 bits of the register being read. It
-just so happens that the TX/RX full bits the DCC support code is
-testing for are high enough in the register to be put into the
-condition codes. On a v6 processor, this "feature" isn't
-implemented and thus we have to do the usual read, mask, test
-operations to check for TX/RX full. Thus, we can drop the v7
-implementation and just use the v6 implementation for both.
+The use of kzalloc() is preferred over kmalloc/memset(0) pairs.
 
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/boot/compressed/head.S |   10 +---------
- arch/arm/boot/compressed/misc.c |   12 +-----------
- arch/arm/kernel/debug.S         |   19 +------------------
- 3 files changed, 3 insertions(+), 38 deletions(-)
+When a match is made with "memset(p, 0, s);" a search back through the
+patch hunk is made looking for "p = kmalloc(s,". If that is found, then
+a warning is given, suggesting to use kzalloc() instead.
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 7193884..01448ba 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -21,20 +21,12 @@
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 58848e3..f28f0e3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2902,6 +2902,22 @@ sub process {
+ 		    $line =~ /DEVICE_ATTR.*S_IWUGO/ ) {
+ 			WARN("Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+ 		}
++
++# The use of kzalloc() is preferred over kmalloc/memset(0) pairs.
++		if ($line =~ /\smemset\s*\((\S*)\s*,\s*(?:0x0|0)\s*,\s*(\S*)\s*\);/) {
++		    my $ptr = $1;
++		    my $size = $2;
++
++		    for (my $i = $linenr-2; $i >= 0; $i--) {
++			next if ($lines[$i] =~ /^-/); # ignore deletions
++			last if ($lines[$i] =~ /^\@\@/);
++			if ($lines[$i] =~ /\s(\S*)\s*=\s*kmalloc\((\S*)\,/ &&
++			    $1 eq $ptr && $2 eq $size) {
++			    WARN("use kzalloc() instead of kmalloc/memset(p,0,size) pair\n"
++				 . $herecurr);
++			}
++		    }
++		}
+ 	}
  
- #if defined(CONFIG_DEBUG_ICEDCC)
- 
--#ifdef CONFIG_CPU_V6
-+#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V7)
- 		.macro	loadsp, rb, tmp
- 		.endm
- 		.macro	writeb, ch, rb
- 		mcr	p14, 0, \ch, c0, c5, 0
- 		.endm
--#elif defined(CONFIG_CPU_V7)
--		.macro	loadsp, rb, tmp
--		.endm
--		.macro	writeb, ch, rb
--wait:		mrc	p14, 0, pc, c0, c1, 0
--		bcs	wait
--		mcr	p14, 0, \ch, c0, c5, 0
--		.endm
- #elif defined(CONFIG_CPU_XSCALE)
- 		.macro	loadsp, rb, tmp
- 		.endm
-diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
-index e653a6d..23c67af 100644
---- a/arch/arm/boot/compressed/misc.c
-+++ b/arch/arm/boot/compressed/misc.c
-@@ -36,7 +36,7 @@ extern void error(char *x);
- 
- #ifdef CONFIG_DEBUG_ICEDCC
- 
--#ifdef CONFIG_CPU_V6
-+#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V7)
- 
- static void icedcc_putc(int ch)
- {
-@@ -52,16 +52,6 @@ static void icedcc_putc(int ch)
- 	asm("mcr p14, 0, %0, c0, c5, 0" : : "r" (ch));
- }
- 
--#elif defined(CONFIG_CPU_V7)
--
--static void icedcc_putc(int ch)
--{
--	asm(
--	"wait:	mrc	p14, 0, pc, c0, c1, 0			\n\
--		bcs	wait					\n\
--		mcr     p14, 0, %0, c0, c5, 0			"
--	: : "r" (ch));
--}
- 
- #elif defined(CONFIG_CPU_XSCALE)
- 
-diff --git a/arch/arm/kernel/debug.S b/arch/arm/kernel/debug.S
-index a0f0752..50d86b6 100644
---- a/arch/arm/kernel/debug.S
-+++ b/arch/arm/kernel/debug.S
-@@ -25,7 +25,7 @@
- 		.macro	addruart, rp, rv
- 		.endm
- 
--#if defined(CONFIG_CPU_V6)
-+#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V7)
- 
- 		.macro	senduart, rd, rx
- 		mcr	p14, 0, \rd, c0, c5, 0
-@@ -49,23 +49,6 @@
- 1002:
- 		.endm
- 
--#elif defined(CONFIG_CPU_V7)
--
--		.macro	senduart, rd, rx
--		mcr	p14, 0, \rd, c0, c5, 0
--		.endm
--
--		.macro	busyuart, rd, rx
--busy:		mrc	p14, 0, pc, c0, c1, 0
--		bcs	busy
--		.endm
--
--		.macro	waituart, rd, rx
--wait:		mrc	p14, 0, pc, c0, c1, 0
--		bcs	wait
--
--		.endm
--
- #elif defined(CONFIG_CPU_XSCALE)
- 
- 		.macro	senduart, rd, rx
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+ 	# If we have no input at all, then there is nothing to report on
+
 
