@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab1CRTfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 15:35:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60233
+	id S1757336Ab1CRTj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 15:39:28 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60198
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932540Ab1CRTf2 (ORCPT
+	by vger.kernel.org with ESMTP id S932458Ab1CRTfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 15:35:28 -0400
-Date: Fri, 18 Mar 2011 12:36:05 -0700 (PDT)
-Message-Id: <20110318.123605.59683135.davem@davemloft.net>
+	Fri, 18 Mar 2011 15:35:17 -0400
+Date: Fri, 18 Mar 2011 12:35:53 -0700 (PDT)
+Message-Id: <20110318.123553.183052249.davem@davemloft.net>
 To: laijs@cn.fujitsu.com
 Cc: paulmck@linux.vnet.ibm.com, mingo@elte.hu, axboe@kernel.dk,
         robert.w.love@intel.com, James.Bottomley@suse.de,
@@ -17,13 +17,13 @@ Cc: paulmck@linux.vnet.ibm.com, mingo@elte.hu, axboe@kernel.dk,
         eric.dumazet@gmail.com, shemminger@vyatta.com, tj@kernel.org,
         jarkao2@gmail.com, linux-kernel@vger.kernel.org, devel@open-fcoe.org,
         linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 09/36] net,rcu: convert
- call_rcu(ip_mc_socklist_reclaim) to kfree_rcu()
+Subject: Re: [PATCH 07/36] net,rcu: convert call_rcu(ip_mc_list_reclaim) to
+ kfree_rcu()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D82D544.6090509@cn.fujitsu.com>
+In-Reply-To: <4D82D508.5080901@cn.fujitsu.com>
 References: <4D82D071.5020703@cn.fujitsu.com>
 	<4D82D3FF.2080303@cn.fujitsu.com>
-	<4D82D544.6090509@cn.fujitsu.com>
+	<4D82D508.5080901@cn.fujitsu.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -33,12 +33,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Fri, 18 Mar 2011 11:45:08 +0800
+Date: Fri, 18 Mar 2011 11:44:08 +0800
 
 > 
 > 
-> The rcu callback ip_mc_socklist_reclaim() just calls a kfree(),
-> so we use kfree_rcu() instead of the call_rcu(ip_mc_socklist_reclaim).
+> The rcu callback ip_mc_list_reclaim() just calls a kfree(),
+> so we use kfree_rcu() instead of the call_rcu(ip_mc_list_reclaim).
 > 
 > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
