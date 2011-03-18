@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab1CRMH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 08:07:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62373 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab1CRMHW (ORCPT
+	id S1756027Ab1CRMOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 08:14:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:56926 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab1CRMOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 08:07:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Subject: Re: [PATCH v3 7/7] tty: add pruss SUART driver
-Date: Fri, 18 Mar 2011 13:07:12 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
-        sachi@mistralsolutions.com,
-        "Andrew Morton \(commit_signer:1/4=25%\)" <akpm@linux-foundation.org>,
-        "Randy Dunlap \(commit_signer:1/4=25%\)" <randy.dunlap@oracle.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-References: <1299592667-21367-1-git-send-email-subhasish@mistralsolutions.com> <1299592667-21367-8-git-send-email-subhasish@mistralsolutions.com> <02A821E977914EF6B7B4BD36F07C1A2A@subhasishg>
-In-Reply-To: <02A821E977914EF6B7B4BD36F07C1A2A@subhasishg>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 18 Mar 2011 08:14:36 -0400
+X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=4eALSlNXjPcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=_8WHtZ0Gm0pIa7KuC38A:9 a=nSk_6Lzydzlfz-0wSlAB8ZaFgdMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/2 v2] WARN_ON_SMP(): Allow use in if statements on UP
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Darren Hart <dvhart@linux.intel.com>
+In-Reply-To: <1300439538.21794.18.camel@twins>
+References: <20110317215612.566569234@goodmis.org>
+	 <20110317215829.363324265@goodmis.org>  <1300439538.21794.18.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 18 Mar 2011 08:14:33 -0400
+Message-ID: <1300450473.16880.1476.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103181307.12699.arnd@arndb.de>
-X-Provags-ID: V02:K0:AVcdZlIslExT+GhUyI6hXYZY82Z3amlGlWXDYnNQ91B
- WkZqXaKPzbtnegFlUU56nUFSiJemCtgfUosOewkVAHpKuSpd/A
- nDgNIgYpTQe91Rqq2RwZPwveXhwcvJ7FQvgW+/PENnvIGLBvdC
- AuZhAC5CYVuIIqv2Y8V6tDLfPA8v+Kc9GUIA+1VGAWHJS8NkHn
- pMeOxx9FZJ1jDjkKP8RLw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 March 2011, Subhasish Ghosh wrote:
-> Hi Greg/Alan,
+On Fri, 2011-03-18 at 10:12 +0100, Peter Zijlstra wrote:
+> On Thu, 2011-03-17 at 17:56 -0400, Steven Rostedt wrote:
+> > + * WARN_ON(!spin_is_locked(&lock)) checks, as spin_is_locked()
+> > + * returns 0 for uniprocessor settings. 
 > 
-> Any comments regarding this driver.
+> Arguably most spin_is_locked() usages should be removed in favour of
+> something like lockdep_assert_held().
+> 
+> The latter only emits code then built with lockdep enabled and it checks
+> we are indeed the owner, not some random other cpu.
 > 
 
-I already did a review of the base MFD driver that you have not replied
-to yet. A number of the points I brought up in that review and in my
-review of the pruss CAN driver also apply to this one. Please post
-cleaned-up versions of all those drivers, and I'll have another look.
+Perhaps we should have lockdep_assert_held() also be in
+"spin_is_locked()". The warning with spin_is_locked() is still nice to
+have because it can trigger on production systems that might find a code
+path that it's not locked. lockdep is too heavy to run on production
+systems. But if lockdep is enabled, the spin_is_locked() should probably
+check ownership too.
 
-	Arnd
+-- Steve
+
+
