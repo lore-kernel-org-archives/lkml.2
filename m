@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab1CRVUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 17:20:20 -0400
-Received: from mail.ch.keymile.com ([193.17.201.103]:51490 "HELO
-	mail.ch.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757444Ab1CRVUP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:20:15 -0400
-Message-ID: <4D83CB7C.8040903@keymile.com>
-Date: Fri, 18 Mar 2011 22:15:40 +0100
-From: Stefan Bigler <stefan.bigler@keymile.com>
-Reply-To: stefan.bigler@keymile.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: TTY loosing data with u_serial gadget
-References: <4D8121F6.9060600@keymile.com><20110317000408.GA18911@kroah.com><4D8389EC.5030704@keymile.com> <20110318180718.6d019c71@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110318180718.6d019c71@lxorguk.ukuu.org.uk>
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	format=flowed
+	id S1757529Ab1CRV10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:27:26 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:36995 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757444Ab1CRV1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 17:27:22 -0400
+Date: Fri, 18 Mar 2011 22:27:13 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Antti Palosaari <crope@iki.fi>
+Cc: mchehab@infradead.org, oliver@neukum.org, jwjstone@fastmail.fm,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH 09/16] [media] au6610: get rid of on-stack dma buffer
+Message-ID: <20110318222713.4c51f1ed@schatten.dmk.lab>
+In-Reply-To: <4D8389B2.60507@iki.fi>
+References: <20110315093632.5fc9fb77@schatten.dmk.lab>
+	<1300178655-24832-1-git-send-email-florian@mickler.org>
+	<1300178655-24832-9-git-send-email-florian@mickler.org>
+	<4D8389B2.60507@iki.fi>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Mar 2011 21:15:40.0623 (UTC) FILETIME=[A25DF5F0:01CBE5B1]
-X-ESAFE-STATUS: Mail allowed
-X-ESAFE-DETAILS: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 18 Mar 2011 18:34:58 +0200
+Antti Palosaari <crope@iki.fi> wrote:
 
-> In essence if you get a value from receive_room it's a guarantee you may
-> send that many bytes, it is not a precise instantaneous perfect answer to
-> the question "exactly what number of bytes could fit at this precise
-> moment".
->
-Hi
+> On 03/15/2011 10:43 AM, Florian Mickler wrote:
+> > usb_control_msg initiates (and waits for completion of) a dma transfer using
+> > the supplied buffer. That buffer thus has to be seperately allocated on
+> > the heap.
+> >
+> > In lib/dma_debug.c the function check_for_stack even warns about it:
+> > 	WARNING: at lib/dma-debug.c:866 check_for_stack
+> >
+> > Note: This change is tested to compile only, as I don't have the hardware.
+> >
+> > Signed-off-by: Florian Mickler<florian@mickler.org>
+> 
+> 
+> This patch did not found from patchwork! Probably skipped due to broken 
+> Cc at my contact. Please resend.
+> 
+> Anyhow, I tested and reviewed it.
+> 
+> Acked-by: Antti Palosaari <crope@iki.fi>
+> Reviewed-by: Antti Palosaari <crope@iki.fi>
+> Tested-by: Antti Palosaari <crope@iki.fi>
+> 
+> [1] https://patchwork.kernel.org/project/linux-media/list/
+> 
+> Antti
+> 
 
-I have no problem with having more space available than guarantied by
-the value of receive_room. But what I see is that the value can be less!
-Data will be lost.
-My test showed:
-  data to queue=201
-  receive_room (guarantied space) =287
-  real space in queue =0
-In the last mail I attached the code for printing, the read_lock was only
-added to show a constistant view of all current values.
+Yes, there was some broken adressing on my side. Sorry. 
 
-Stefan
+Thanks for review && test!  I will resend (hopefully this weekend) the
+series when I reviewed some of the other patches if it is
+feasible/better to use prealocated memory as suggested by Mauro. 
+
+How often does au6610_usb_msg get called in normal operation? Should it
+use preallocated memory?
+
+Regards,
+Flo
