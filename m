@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab1CRRUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 13:20:12 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:37304 "EHLO mail.kapsi.fi"
+	id S1757263Ab1CRRUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 13:20:21 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:41234 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757198Ab1CRRUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 13:20:07 -0400
-X-Greylist: delayed 2700 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 13:20:07 EDT
-Message-ID: <4D8389B2.60507@iki.fi>
-Date: Fri, 18 Mar 2011 18:34:58 +0200
+	id S1757214Ab1CRRUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 13:20:16 -0400
+Message-ID: <4D838A25.8010301@iki.fi>
+Date: Fri, 18 Mar 2011 18:36:53 +0200
 From: Antti Palosaari <crope@iki.fi>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Florian Mickler <florian@mickler.org>
 CC: mchehab@infradead.org, oliver@neukum.org, jwjstone@fastmail.fm,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 09/16] [media] au6610: get rid of on-stack dma buffer
-References: <20110315093632.5fc9fb77@schatten.dmk.lab> <1300178655-24832-1-git-send-email-florian@mickler.org> <1300178655-24832-9-git-send-email-florian@mickler.org>
-In-Reply-To: <1300178655-24832-9-git-send-email-florian@mickler.org>
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 05/16] [media] ec168: get rid of on stack dma buffers
+References: <20110315093632.5fc9fb77@schatten.dmk.lab> <1300178655-24832-1-git-send-email-florian@mickler.org> <1300178655-24832-5-git-send-email-florian@mickler.org>
+In-Reply-To: <1300178655-24832-5-git-send-email-florian@mickler.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 X-SA-Exim-Connect-IP: 82.128.184.4
@@ -39,78 +40,72 @@ On 03/15/2011 10:43 AM, Florian Mickler wrote:
 >
 > Signed-off-by: Florian Mickler<florian@mickler.org>
 
-
-This patch did not found from patchwork! Probably skipped due to broken 
-Cc at my contact. Please resend.
-
-Anyhow, I tested and reviewed it.
-
 Acked-by: Antti Palosaari <crope@iki.fi>
 Reviewed-by: Antti Palosaari <crope@iki.fi>
 Tested-by: Antti Palosaari <crope@iki.fi>
 
-[1] https://patchwork.kernel.org/project/linux-media/list/
-
-Antti
-
-
+t. Antti
 
 > ---
->   drivers/media/dvb/dvb-usb/au6610.c |   22 ++++++++++++++++------
->   1 files changed, 16 insertions(+), 6 deletions(-)
+>   drivers/media/dvb/dvb-usb/ec168.c |   18 +++++++++++++++---
+>   1 files changed, 15 insertions(+), 3 deletions(-)
 >
-> diff --git a/drivers/media/dvb/dvb-usb/au6610.c b/drivers/media/dvb/dvb-usb/au6610.c
-> index eb34cc3..2351077 100644
-> --- a/drivers/media/dvb/dvb-usb/au6610.c
-> +++ b/drivers/media/dvb/dvb-usb/au6610.c
-> @@ -33,8 +33,16 @@ static int au6610_usb_msg(struct dvb_usb_device *d, u8 operation, u8 addr,
->   {
+> diff --git a/drivers/media/dvb/dvb-usb/ec168.c b/drivers/media/dvb/dvb-usb/ec168.c
+> index 52f5d4f..1ba3e5d 100644
+> --- a/drivers/media/dvb/dvb-usb/ec168.c
+> +++ b/drivers/media/dvb/dvb-usb/ec168.c
+> @@ -36,7 +36,9 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
 >   	int ret;
->   	u16 index;
-> -	u8 usb_buf[6]; /* enough for all known requests,
-> -			  read returns 5 and write 6 bytes */
-> +	u8 *usb_buf;
+>   	unsigned int pipe;
+>   	u8 request, requesttype;
+> -	u8 buf[req->size];
+> +	u8 *buf;
 > +
-> +	/*
-> +	 * allocate enough for all known requests,
-> +	 * read returns 5 and write 6 bytes
-> +	 */
-> +	usb_buf = kmalloc(6, GFP_KERNEL);
-> +	if (!usb_buf)
-> +		return -ENOMEM;
 > +
->   	switch (wlen) {
->   	case 1:
->   		index = wbuf[0]<<  8;
-> @@ -45,14 +53,15 @@ static int au6610_usb_msg(struct dvb_usb_device *d, u8 operation, u8 addr,
->   		break;
->   	default:
->   		warn("wlen = %x, aborting.", wlen);
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto error;
+>
+>   	switch (req->cmd) {
+>   	case DOWNLOAD_FIRMWARE:
+> @@ -72,6 +74,12 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
+>   		goto error;
 >   	}
 >
->   	ret = usb_control_msg(d->udev, usb_rcvctrlpipe(d->udev, 0), operation,
->   			      USB_TYPE_VENDOR|USB_DIR_IN, addr<<  1, index,
-> -			      usb_buf, sizeof(usb_buf), AU6610_USB_TIMEOUT);
-> +			      usb_buf, 6, AU6610_USB_TIMEOUT);
+> +	buf = kmalloc(req->size, GFP_KERNEL);
+> +	if (!buf) {
+> +		ret = -ENOMEM;
+> +		goto error;
+> +	}
+> +
+>   	if (requesttype == (USB_TYPE_VENDOR | USB_DIR_OUT)) {
+>   		/* write */
+>   		memcpy(buf, req->data, req->size);
+> @@ -84,13 +92,13 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
+>   	msleep(1); /* avoid I2C errors */
+>
+>   	ret = usb_control_msg(udev, pipe, request, requesttype, req->value,
+> -		req->index, buf, sizeof(buf), EC168_USB_TIMEOUT);
+> +		req->index, buf, req->size, EC168_USB_TIMEOUT);
+>
+>   	ec168_debug_dump(request, requesttype, req->value, req->index, buf,
+>   		req->size, deb_xfer);
+>
 >   	if (ret<  0)
-> -		return ret;
-> +		goto error;
+> -		goto error;
+> +		goto err_dealloc;
+>   	else
+>   		ret = 0;
 >
->   	switch (operation) {
->   	case AU6610_REQ_I2C_READ:
-> @@ -60,7 +69,8 @@ static int au6610_usb_msg(struct dvb_usb_device *d, u8 operation, u8 addr,
->   		/* requested value is always 5th byte in buffer */
->   		rbuf[0] = usb_buf[4];
->   	}
-> -
-> +error:
-> +	kfree(usb_buf);
+> @@ -98,7 +106,11 @@ static int ec168_rw_udev(struct usb_device *udev, struct ec168_req *req)
+>   	if (!ret&&  requesttype == (USB_TYPE_VENDOR | USB_DIR_IN))
+>   		memcpy(req->data, buf, req->size);
+>
+> +	kfree(buf);
 >   	return ret;
->   }
->
+> +
+> +err_dealloc:
+> +	kfree(buf);
+>   error:
+>   	deb_info("%s: failed:%d\n", __func__, ret);
+>   	return ret;
 
 
 -- 
