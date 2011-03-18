@@ -1,70 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab1CRTAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 15:00:08 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:51132 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756995Ab1CRTAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 15:00:00 -0400
-Date: Sat, 19 Mar 2011 00:23:14 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2.6.38-rc8-tip 5/20] 5: Uprobes: register/unregister
- probes.
-Message-ID: <20110318185314.GB24048@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
- <20110314133454.27435.81020.sendpatchset@localhost6.localdomain6>
- <alpine.LFD.2.00.1103151439400.2787@localhost6.localdomain6>
- <20110315171536.GA24254@linux.vnet.ibm.com>
- <1300211262.9910.295.camel@gandalf.stny.rr.com>
- <1300211411.2203.290.camel@twins>
- <20110315180423.GA10429@linux.vnet.ibm.com>
- <1300212949.2203.324.camel@twins>
+	id S1756976Ab1CRTKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 15:10:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52890 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756740Ab1CRTKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 15:10:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Subject: Re: 2.6.38: XFS/USB/HW issue, or failing USB stick?
+Date: Fri, 18 Mar 2011 20:10:37 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
+Cc: Tim Soderstrom <tim@moocowproductions.org>, linux-usb@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, flashbench-results@lists.linaro.org
+References: <alpine.DEB.2.02.1103181104020.30018@p34.internal.lan> <201103181659.46558.arnd@arndb.de> <alpine.DEB.2.02.1103181259480.21715@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1103181259480.21715@p34.internal.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1300212949.2203.324.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103182010.37455.arnd@arndb.de>
+X-Provags-ID: V02:K0:FI1KtmXAPSsKvYmdAWUqXpGm7dT9/ZaP4ZyMX2a1ir9
+ iIgCRL/xzF/3hxWy4tcUfu3fu6mHyuHViDFFYpcNnTnXHsV/O2
+ g6eRhrTxCTgzMlDNfhjo3WyvAAVu+KFQcaKqt05p0RyXsr6/26
+ Y1TNbkMrAzDI17HmjiFqRdRuk823lZ+n4QWEuiWC1yP8zWKqb+
+ qLilq4tgyW+gTjTw4WZTQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > One of the install_uprobe could be failing because the process was
-> > almost exiting, something like there was no mm->owner. Also lets
-> > assume that the first few install_uprobes go thro and the last
-> > install_uprobe fails. There could be breakpoint hits corresponding to
-> > the already installed uprobes that get displayed. i.e all
-> > breakpoint hits from the first install_uprobe to the time we detect a
-> > failed a install_uprobe and revert all inserted breakpoints will be
-> > shown as being captured.
+On Friday 18 March 2011 18:45:34 Justin Piszcz wrote:
+> On Fri, 18 Mar 2011, Arnd Bergmann wrote:
+> > Getting back to the rogiinal question, I'd recommend testing the
+> > stick by doing raw accesses instead of a file system. A simple
 > 
-> I think you can gracefully deal with the exit case and simply ignore
-> that one. But you cannot let arbitrary installs fail and still report
-> success, that gives very weak and nearly useless semantics.
+> Ok, here are the results:
+> 
+> root@sysresccd /root % time dd if=/dev/zero of=/dev/sda oflag=direct bs=4M
+> dd: writing `/dev/sda': No space left on device
+> 1961+0 records in
+> 1960+0 records out
+> 8220835840 bytes (8.2 GB) copied, 283.744 s, 29.0 MB/s
 
-If there are more than one instance of a process running and if one
-instance of a process has a probe thro ptrace, install_uprobe would fail
-for that process with -EEXIST since we dont want to probe locations that
-have breakpoints already. Should we then act similar to the exit case,
-do we also deal gracefully?
+Ok, so no immediate problem there.
 
--- 
-Thanks and Regards
-Srikar
+> > I'm also interested in results from flashbench
+> > (git://git.linaro.org/people/arnd/flashbench.git, e.g. like
+> > http://lists.linaro.org/pipermail/flashbench-results/2011-March/000039.html)
+> > That might help explain how the stick failed.
+> 
+> Certainly, testing below, following this:
+> http://lists.linaro.org/pipermail/flashbench-results/2011-March/000039.html
+
+I'm sorry, I should have been more specific. Unfortunately, running flashbench
+is not very user friendly yet.
+
+The results indicate that the device does not have a 2 MB erase block size
+but rather 4 or 8, which is more common on 8 GB media.
+
+> # ./flashbench --open-au --open-au-nr=1  /dev/sda --blocksize=8192   --erasesize=$[2* 1024 * 1024]  --random
+> 2MiB    29.5M/s 
+> 1MiB    29.1M/s 
+> 512KiB  28.5M/s 
+> 256KiB  22.8M/s 
+> 128KiB  23.8M/s 
+> 64KiB   24.4M/s 
+> 32KiB   18.9M/s 
+> 16KiB   13.1M/s 
+> 8KiB    8.22M/s
+> 
+> # ./flashbench --open-au --open-au-nr=4  /dev/sda --blocksize=8192 --erasesize=$[2* 1024 * 1024]  --random
+> 2MiB    25.9M/s 
+> 1MiB    21.8M/s 
+> 512KiB  15M/s 
+> 256KiB  11.9M/s 
+> 128KiB  12.1M/s 
+> 64KiB   13.6M/s 
+> 32KiB   9.81M/s 
+> 16KiB   6.41M/s 
+> 8KiB    3.88M/s
+
+The numbers are jumping around a bit with the incorrectly guessed erasesize.
+These values should be more like the ones in the first test. Can you rerun
+with --erasesize=$[4 * 1024 * 1024]?
+
+Also, what is the output of 'lsusb' for this stick? I'd like to add the
+data to https://wiki.linaro.org/WorkingGroups/KernelConsolidation/Projects/FlashCardSurvey
+
+> # ./flashbench --open-au --open-au-nr=5  /dev/sda --blocksize=8192 --erasesize=$[2* 1024 * 1024]  --random
+> 2MiB    29.2M/s 
+> 1MiB    27.8M/s 
+> 512KiB  18.4M/s 
+> 256KiB  7.82M/s 
+> 128KiB  4.62M/s 
+> 64KiB   2.47M/s 
+> 32KiB   1.26M/s 
+> 16KiB   642K/s 
+> 8KiB    327K/s 
+
+This is where your drive stops coping with the accesses: Writing small
+blocks to four different erase blocks (2MB for the test, probably
+larger) works fine, but writing to five of them is devestating for
+performance, going from 30 MB/s to 300 KB/s, or lower if you were
+to write smaller than 8 KB blocks.
+
+The cutoff at --open-au-nr=4 is coincidentally the same as for the
+SD card I was testing. This is what happens in the animation in
+http://lwn.net/Articles/428799/. The example given there is for
+a drive that can only have two open AUs (allocation units aka
+erase blocks), while yours does 4.
+
+> (did not run one with 7)
+
+Note that the test results I had with 6 and 7 are without --random,
+so the cut-off there was higher for that card when writing an
+multiple erase blocks from start to finish instead of writing random
+sectors inside of them.
+
+> # ./flashbench --findfat --fat-nr=10 /dev/sda --blocksize=1024 --erasesize=$[2* 1024 * 1024]   --random
+> 2MiB    22.7M/s  19.1M/s  15.5M/s  13.1M/s  29.5M/s  29.5M/s  29.6M/s  29.6M/s  29.5M/s  29.5M/s 
+> 1MiB    20.6M/s  13.3M/s  13.3M/s  20.8M/s  18.1M/s  17.8M/s  18M/s    18.3M/s  18.8M/s  18.6M/s 
+> 512KiB  18.4M/s  18.6M/s  18.3M/s  18.1M/s  23.5M/s  23.2M/s  23.5M/s  23.5M/s  23.4M/s  23.4M/s 
+> 256KiB  26.9M/s  21.3M/s  21.2M/s  21M/s    21.1M/s  21.2M/s  21.1M/s  21.1M/s  20.6M/s  21M/s 
+> 128KiB  22.2M/s  22.3M/s  22.6M/s  21.4M/s  21.5M/s  21.3M/s  21.6M/s  21.3M/s  21.4M/s  21.4M/s 
+> 64KiB   23.9M/s  22.6M/s  22.9M/s  23M/s    22.5M/s  22.4M/s  22.4M/s  22.4M/s  22.5M/s  22.4M/s 
+> 32KiB   18.2M/s  18.3M/s  18.3M/s  18.3M/s  18.3M/s  18.4M/s  18.3M/s  18.2M/s  18.3M/s  18.3M/s 
+> 16KiB   12.9M/s  12.9M/s  13M/s    13M/s    12.9M/s  13M/s    12.9M/s  12.9M/s  12.9M/s  12.9M/s 
+> 8KiB    8.14M/s  8.15M/s  8.15M/s  8.15M/s  8.15M/s  8.14M/s  8.14M/s  8.15M/s  8.15M/s  8.06M/s 
+> 4KiB    4.07M/s  4.08M/s  4.07M/s  4.06M/s  4.04M/s  4.04M/s  4.04M/s  4.04M/s  4.04M/s  4.04M/s 
+> 2KiB    2.02M/s  2.02M/s  2.02M/s  2.02M/s  2.02M/s  2.01M/s  2.01M/s  2.01M/s  2.01M/s  2.02M/s 
+> 1KiB    956K/s   954K/s   956K/s   953K/s   947K/s   947K/s   947K/s   950K/s   947K/s   948K/s
+> 
+
+One thing that is very clear from this is that this stick has a page size
+of 8KB, and that it requires at least 64 KB transfers for the maximum speed.
+
+If your partition is not aligned to 8 KB or more (better: to the erase
+block size, e.g. 4 MB) or if the file system writes smaller than 8 KB 
+naturally aligned blocks at once, the drive has to do read-modify-write
+cycles that severely impact performance and the expected life-time.
+
+I cannot see any block that is optimzied for storing the FAT, which is
+good, as this means that the manufacturer did not exclusively design
+the stick for FAT32, as is normally the case with flash memory cards.
+
+For this stick, I would strongly recommend creating the file system
+in a way that writes at least 16 KB naturally aligned blocks at all
+times, but I don't know if that's supported by XFS.
+
+Also, the limitation of forcing a garbage collection when writing to
+more than four 4 MB (or so) segments may be a problem, depending on
+how XFS stores its metadata. The good news is that it can do random
+write access inside of the erase blocks.
+
+	Arnd
