@@ -1,141 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab1CRBzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 21:55:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28293 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755534Ab1CRBzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 21:55:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,203,1299484800"; 
-   d="scan'208";a="721428848"
-Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task
- plugging
-From: Shaohua Li <shaohua.li@intel.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-In-Reply-To: <4D81D813.8060608@fusionio.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	 <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
-	 <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
-	 <20110316173148.GC13562@redhat.com>
-	 <1300323609.2337.117.camel@sli10-conroe>
-	 <1300331967.2337.127.camel@sli10-conroe>  <4D81D813.8060608@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Mar 2011 09:55:40 +0800
-Message-ID: <1300413340.2337.129.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755853Ab1CRCEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 22:04:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58546 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755716Ab1CRCEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 22:04:41 -0400
+Date: Fri, 18 Mar 2011 11:04:33 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+Subject: [PATCH v5] fat: Batched discard support for fat
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Message-id: <20110318020433.GA27263@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-OriginalArrivalTime: 18 Mar 2011 02:04:37.0133 (UTC)
+ FILETIME=[D551B3D0:01CBE510]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 17:44 +0800, Jens Axboe wrote:
-> On 2011-03-17 04:19, Shaohua Li wrote:
-> > On Thu, 2011-03-17 at 09:00 +0800, Shaohua Li wrote:
-> >> On Thu, 2011-03-17 at 01:31 +0800, Vivek Goyal wrote:
-> >>> On Wed, Mar 16, 2011 at 04:18:30PM +0800, Shaohua Li wrote:
-> >>>> 2011/1/22 Jens Axboe <jaxboe@fusionio.com>:
-> >>>>> Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-> >>>>> ---
-> >>>>>  block/blk-core.c          |  357 ++++++++++++++++++++++++++++++++------------
-> >>>>>  block/elevator.c          |    6 +-
-> >>>>>  include/linux/blk_types.h |    2 +
-> >>>>>  include/linux/blkdev.h    |   30 ++++
-> >>>>>  include/linux/elevator.h  |    1 +
-> >>>>>  include/linux/sched.h     |    6 +
-> >>>>>  kernel/exit.c             |    1 +
-> >>>>>  kernel/fork.c             |    3 +
-> >>>>>  kernel/sched.c            |   11 ++-
-> >>>>>  9 files changed, 317 insertions(+), 100 deletions(-)
-> >>>>>
-> >>>>> diff --git a/block/blk-core.c b/block/blk-core.c
-> >>>>> index 960f12c..42dbfcc 100644
-> >>>>> --- a/block/blk-core.c
-> >>>>> +++ b/block/blk-core.c
-> >>>>> @@ -27,6 +27,7 @@
-> >>>>>  #include <linux/writeback.h>
-> >>>>>  #include <linux/task_io_accounting_ops.h>
-> >>>>>  #include <linux/fault-inject.h>
-> >>>>> +#include <linux/list_sort.h>
-> >>>>>
-> >>>>>  #define CREATE_TRACE_POINTS
-> >>>>>  #include <trace/events/block.h>
-> >>>>> @@ -213,7 +214,7 @@ static void blk_delay_work(struct work_struct *work)
-> >>>>>
-> >>>>>        q = container_of(work, struct request_queue, delay_work.work);
-> >>>>>        spin_lock_irq(q->queue_lock);
-> >>>>> -       q->request_fn(q);
-> >>>>> +       __blk_run_queue(q);
-> >>>>>        spin_unlock_irq(q->queue_lock);
-> >>>>>  }
-> >>>> Hi Jens,
-> >>>> I have some questions about the per-task plugging. Since the request
-> >>>> list is per-task, and each task delivers its requests at finish flush
-> >>>> or schedule. But when one cpu delivers requests to global queue, other
-> >>>> cpus don't know. This seems to have problem. For example:
-> >>>> 1. get_request_wait() can only flush current task's request list,
-> >>>> other cpus/tasks might still have a lot of requests, which aren't sent
-> >>>> to request_queue.
-> >>>
-> >>> But very soon these requests will be sent to request queue as soon task
-> >>> is either scheduled out or task explicitly flushes the plug? So we might
-> >>> wait a bit longer but that might not matter in general, i guess. 
-> >> Yes, I understand there is just a bit delay. I don't know how severe it
-> >> is, but this still could be a problem, especially for fast storage or
-> >> random I/O. My current tests show slight regression (3% or so) with
-> >> Jens's for 2.6.39/core branch. I'm still checking if it's caused by the
-> >> per-task plug, but the per-task plug is highly suspected.
-> >>
-> >>>> your ioc-rq-alloc branch is for this, right? Will it
-> >>>> be pushed to 2.6.39 too? I'm wondering if we should limit per-task
-> >>>> queue length. If there are enough requests there, we force a flush
-> >>>> plug.
-> >>>
-> >>> That's the idea jens had. But then came the question of maintaining
-> >>> data structures per task per disk. That makes it complicated.
-> >>>
-> >>> Even if we move the accounting out of request queue and do it say at
-> >>> bdi, ideally we shall to do per task per bdi accounting.
-> >>>
-> >>> Jens seemed to be suggesting that generally fluser threads are the
-> >>> main cluprit for submitting large amount of IO. They are already per
-> >>> bdi. So probably just maintain a per task limit for flusher threads.
-> >> Yep, flusher is the main spot in my mind. We need call more flush plug
-> >> for flusher thread. 
-> >>
-> >>> I am not sure what happens to direct reclaim path, AIO deep queue 
-> >>> paths etc.
-> >> direct reclaim path could build deep write queue too. It
-> >> uses .writepage, currently there is no flush plug there. Maybe we need
-> >> add flush plug in shrink_inactive_list too.
-> >>
-> >>>> 2. some APIs like blk_delay_work, which call __blk_run_queue() might
-> >>>> not work. because other CPUs might not dispatch their requests to
-> >>>> request queue. So __blk_run_queue will eventually find no requests,
-> >>>> which might stall devices.
-> >>>> Since one cpu doesn't know other cpus' request list, I'm wondering if
-> >>>> there are other similar issues.
-> >>>
-> >>> So again in this case if queue is empty at the time of __blk_run_queue(),
-> >>> then we will probably just experinece little more delay then intended
-> >>> till some task flushes. But should not stall the system?
-> >> not stall the system, but device stalls a little time.
-> > Jens,
-> > I need below patch to recover a ffsb fsync workload, which has about 30%
-> > regression with stack plug. 
-> > I guess the reason is WRITE_SYNC_PLUG doesn't work now, so if a context
-> > hasn't blk_plug, we lose previous plug (request merge). This suggests
-> > all places we use WRITE_SYNC_PLUG before (for example, kjournald) should
-> > have a blk_plug context.
-> 
-> Good point, those should be auto-converted. I'll take this patch and
-> double check the others. Thanks!
-> 
-> Does it remove that performance regression completely?
-Yes, it removes the regression completely at my side.
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
+FAT supports batched discard as ext4.
+
+Cited from Lukas words.
+"The current solution is not ideal because of its bad performance impact.
+So basic idea to improve things is to avoid discarding every time some
+blocks are freed. and instead batching is together into bigger trims,
+which tends to be more effective."
+
+You can find an information in detail at following URLs.
+http://lwn.net/Articles/397538/
+http://lwn.net/Articles/383933/
+
+Clearify the meaning of "len" (Cited form Lukas mail)
+
+Let the "O" be free (bytes, blocks, whatever), and "=" be used.
+Now, we have a filesystem like this.
+
+  OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+  ^                                      ^
+  0                                      40
+
+This is how it supposed to wotk if you have called FITIRM with parameters:
+
+start = 0
+minlen = 2
+len = 20
+
+So you will go through (blocks, bytes...) 0 -> 20
+
+  OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+  ^                   ^
+  0                   20
+
+So, you will call discard on extents:
+
+0-3
+You'll skip 6 because is smaller than minlen
+10-11
+15-19
+
+instead of 
+
+0-3
+10-11
+15-19
+30-36
+
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Changelog v5:
+	Exit when start cluster is grater than max cluster
+
+Changelog v4:
+	Simplify the exit condition
+
+Changelog v3:
+	Adjust the minlen from queue discard_granularity
+	Use the corrent len usage
+Changelog v2:
+	Use the given start and len as Lukas comments
+	Check the queue supports discard feature
+---
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index f504089..08b53e1 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
+ 			      int nr_cluster);
+ extern int fat_free_clusters(struct inode *inode, int cluster);
+ extern int fat_count_free_clusters(struct super_block *sb);
++extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
+ 
+ /* fat/file.c */
+ extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
+diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+index b47d2c9..cc89ea6 100644
+--- a/fs/fat/fatent.c
++++ b/fs/fat/fatent.c
+@@ -1,6 +1,8 @@
+ /*
+  * Copyright (C) 2004, OGAWA Hirofumi
+  * Released under GPL v2.
++ *
++ * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
+  */
+ 
+ #include <linux/module.h>
+@@ -541,6 +543,16 @@ out:
+ 	return err;
+ }
+ 
++static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++	sector_t block, nr_blocks;
++
++	block = fat_clus_to_blknr(sbi, cluster);
++	nr_blocks = nr_clus * sbi->sec_per_clus;
++	return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
++}
++
+ int fat_free_clusters(struct inode *inode, int cluster)
+ {
+ 	struct super_block *sb = inode->i_sb;
+@@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
+ 			if (cluster != fatent.entry + 1) {
+ 				int nr_clus = fatent.entry - first_cl + 1;
+ 
+-				sb_issue_discard(sb,
+-					fat_clus_to_blknr(sbi, first_cl),
+-					nr_clus * sbi->sec_per_clus,
+-					GFP_NOFS, 0);
+-
++				fat_issue_discard(sb, first_cl, nr_clus);
+ 				first_cl = cluster;
+ 			}
+ 		}
+@@ -683,3 +691,86 @@ out:
+ 	unlock_fat(sbi);
+ 	return err;
+ }
++
++int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++	struct fatent_operations *ops = sbi->fatent_ops;
++	struct fat_entry fatent;
++	unsigned long reada_blocks, reada_mask, cur_block;
++	int err, free, count, entry;
++	int start, len, minlen, trimmed;
++
++	start = range->start >> sb->s_blocksize_bits;
++	start = start / sbi->sec_per_clus;
++	len = range->len >> sb->s_blocksize_bits;
++	len = len / sbi->sec_per_clus;
++	minlen = range->minlen >> sb->s_blocksize_bits;
++	minlen = minlen / sbi->sec_per_clus;
++	trimmed = 0;
++	count = 0;
++	err = -EINVAL;
++
++	lock_fat(sbi);
++	if (sbi->free_clusters != -1 && sbi->free_clus_valid)
++		goto out;
++
++	if (start >= sbi->max_cluster)
++		goto out;
++
++	reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
++	reada_mask = reada_blocks - 1;
++	cur_block = 0;
++
++	entry = 0;
++	free = 0;
++	fatent_init(&fatent);
++
++	if (start < FAT_START_ENT)
++		start = FAT_START_ENT;
++
++	fatent_set_entry(&fatent, start);
++
++	while (count < sbi->max_cluster) {
++		if (fatent.entry >= sbi->max_cluster)
++			fatent.entry = FAT_START_ENT;
++		/* readahead of fat blocks */
++		if ((cur_block & reada_mask) == 0) {
++			unsigned long rest = sbi->fat_length - cur_block;
++			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
++		}
++		cur_block++;
++
++		err = fat_ent_read_block(sb, &fatent);
++		if (err)
++			goto out;
++
++		do {
++			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
++				free++;
++				if (!entry)
++					entry = fatent.entry;
++			} else if (entry) {
++				if (free >= minlen) {
++					fat_issue_discard(sb, entry, free);
++					trimmed += free;
++				}
++				free = 0;
++				entry = 0;
++			}
++			count++;
++			if (count >= len)
++				goto done;
++		} while (fat_ent_next(sbi, &fatent));
++	}
++done:
++	if (free >= minlen) {
++		fat_issue_discard(sb, entry, free);
++		trimmed += free;
++	}
++	range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
++	fatent_brelse(&fatent);
++out:
++	unlock_fat(sbi);
++	return err;
++}
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index 7257752..9910aba 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		return fat_ioctl_get_attributes(inode, user_attr);
+ 	case FAT_IOCTL_SET_ATTRIBUTES:
+ 		return fat_ioctl_set_attributes(filp, user_attr);
++	case FITRIM:
++	{
++		struct super_block *sb = inode->i_sb;
++		struct request_queue *q = bdev_get_queue(sb->s_bdev);
++		struct fstrim_range range;
++		int ret = 0;
++
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++
++		if (!blk_queue_discard(q))
++			return -EOPNOTSUPP;
++
++		if (copy_from_user(&range, (struct fstrim_range *)arg,
++					sizeof(range)))
++			return -EFAULT;
++
++		range.minlen = max((unsigned int)range.minlen,
++					q->limits.discard_granularity);
++		ret = fat_trim_fs(sb, &range);
++		if (ret < 0)
++			return ret;
++
++		if (copy_to_user((struct fstrim_range *)arg, &range,
++					sizeof(range)))
++			return -EFAULT;
++
++		return 0;
++	}
++
+ 	default:
+ 		return -ENOTTY;	/* Inappropriate ioctl for device */
+ 	}
