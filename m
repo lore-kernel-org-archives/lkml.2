@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab1CRPF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 11:05:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60343 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724Ab1CRPFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 11:05:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Waldemar.Rymarkiewicz@tieto.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Date: Fri, 18 Mar 2011 16:05:36 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: alan@lxorguk.ukuu.org.uk, linux-i2c@vger.kernel.org, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, hthebaud@insidefr.com,
-        matti.j.aaltonen@nokia.com
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com> <20110318110348.728f6036@lxorguk.ukuu.org.uk> <99B09243E1A5DA4898CDD8B7001114481085881963@EXMB04.eu.tieto.com>
-In-Reply-To: <99B09243E1A5DA4898CDD8B7001114481085881963@EXMB04.eu.tieto.com>
+	id S1756820Ab1CRPIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 11:08:48 -0400
+Received: from lucidpixels.com ([75.144.35.66]:54494 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756694Ab1CRPIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 11:08:42 -0400
+Date: Fri, 18 Mar 2011 11:08:40 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-usb@vger.kernel.org, xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+cc: Alan Piszcz <ap@solarrain.com>
+Subject: 2.6.38: XFS/USB/HW issue, or failing USB stick?
+Message-ID: <alpine.DEB.2.02.1103181104020.30018@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103181605.36877.arnd@arndb.de>
-X-Provags-ID: V02:K0:7ISOC3ASl1pxJqql+8Qh5nbQWRsJb24RX7TJpnEjTER
- ggB5DYWK11Mo6d4O7TPRQR3cZ3e1wfKBuRAUom/oC+1UpijfoY
- rj95+zxjI3dMl39yOp/UmnJZzywsnahPhS3O9cwTP1JZdzH9rU
- LiDFzkN6b7KKimD8EokSltKR1MjNyyh9r9T9ZeZhU9GV2m802u
- rphn4uH9yyQtQwOISfZlw==
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 March 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
-> >
-> >Ermm nope.. why do we have do nothing ioctls ?
-> >
-> 
-> onfc stack requires those ones, but they are only valid for a specific test enviroment.
-> This should not be a case for driver and the stack should care about it if it needs
-> this. Then will remove it.
+Hi,
 
-The way this normally works is to figure out the correct
-way to implement the kernel driver first and then write
-a user space stack around it, not the other way round...
-  
-> >> +
-> >> +    mutex_lock(&info->rx_mutex);
-> >> +    info->irq_state = 1;
-> >> +    mutex_unlock(&info->rx_mutex);
-> >
-> >Would it not be lighter to use atomic bit ops ?
-> 
-> Do you mean  in order to remove rx_mutex? 
-> 
-> mutex_lock(&info->rx_mutex);
-> atomic_set(info->irq_state ,1);
-> mutex_unlock(&info->rx_mutex);
-> 
-> looks a bit strange. I still need the rx_mutex to protect irq_state while reading i2c.
-> 
->         mutex_lock(&info->rx_mutex);
->         ret = i2c_master_recv(client, info->buf, info->buflen);
->         info->irq_state = 0;
->         mutex_unlock(&info->rx_mutex);
+I can write to just about the entire USB stick, with no errors:
 
-What Alan meant was set_bit/test_and_clear_bit here, not atomic_*().
-As I mentioned in the other mail, the way you check the flag is
-probably still racy with the current mutex use.
+atom:~# df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/sda2             5.8G  1.5G  4.3G  26% /
+tmpfs                 2.0G     0  2.0G   0% /lib/init/rw
+udev                   10M  140K  9.9M   2% /dev
+tmpfs                 2.0G     0  2.0G   0% /dev/shm
+atom:~# cd /
+atom:/# ls
+bin   cdrom  etc   lib    media  nfs  proc  sbin     srv  tmp  var
+boot  dev    home  lib64  mnt    opt  root  selinux  sys  usr
+atom:/# dd if=/dev/zero of=bigfile bs=1M count=4000
+4000+0 records in
+4000+0 records out
+4194304000 bytes (4.2 GB) copied, 135.536 s, 30.9 MB/s
+atom:/# df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/sda2             5.8G  5.4G  350M  95% /
+tmpfs                 2.0G     0  2.0G   0% /lib/init/rw
+udev                   10M  140K  9.9M   2% /dev
+tmpfs                 2.0G     0  2.0G   0% /dev/shm
+atom:/# rm bigfile
 
-Note that the interrupt handler doesn't do much at all, so it's probably
-a good idea to use a regular (non-threaded) handler here to reduce
-the overhead, once you have removed the mutex.
+However, after some amount of time, the errors occur below, is this USB
+stick failing?  Since it has no SMART, is there any other way to verify
+the 'health' of a USB stick?
 
-	Arnd
+Mar 18 07:55:12 atom [   10.034310] e1000e 0000:03:00.0: eth1: 10/100 speed: disabling TSO
+
+[ .. no errors .. ]
+
+Mar 18 08:32:44 atom [ 2261.883848] usb 1-1: USB disconnect, address 2
+Mar 18 08:32:44 atom [ 2261.884465] Buffer I/O error on device sda2, logical block 1317256
+Mar 18 08:32:44 atom [ 2261.884525] lost page write due to I/O error on sda2
+Mar 18 08:32:44 atom [ 2261.884713] Buffer I/O error on device sda2, logical block 1307821
+Mar 18 08:32:44 atom [ 2261.884764] lost page write due to I/O error on sda2
+Mar 18 08:33:06 atom [ 2283.744165] sd 6:0:0:0: Device offlined - not ready after error recovery
+Mar 18 08:33:06 atom [ 2283.744264] sd 6:0:0:0: [sda] Unhandled error code
+Mar 18 08:33:06 atom [ 2283.744298] sd 6:0:0:0: [sda]
+Mar 18 08:33:06 atom Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
+Mar 18 08:33:06 atom [ 2283.744356] sd 6:0:0:0: [sda] CDB:
+Mar 18 08:33:06 atom Write(10)
+Mar 18 08:33:06 atom :
+Mar 18 08:33:06 atom  2a
+Mar 18 08:33:06 atom  00
+Mar 18 08:33:06 atom  00
+Mar 18 08:33:06 atom  99
+Mar 18 08:33:06 atom  0f
+Mar 18 08:33:06 atom  7e
+Mar 18 08:33:06 atom  00
+Mar 18 08:33:06 atom  00
+Mar 18 08:33:06 atom  02
+Mar 18 08:33:06 atom  00
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.744450] end_request: I/O error, dev sda, sector 10030974
+Mar 18 08:33:06 atom [ 2283.744544] I/O error in filesystem ("sda2") meta-data dev sda2 block 0x5c05c5       ("xlog_iodone") error 5 buf count 1024
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.744591] xfs_force_shutdown(sda2,0x2) called from line 893 of file fs/xfs/xfs_log.c.  Return address = 0xffffffff811c9834
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.744669] Filesystem sda2: Log I/O Error Detected.  Shutting down filesystem: sda2
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.744732] Please umount the filesystem, and rectify the problem(s)
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.744779] Buffer I/O error on device sda2, logical block 1318284
+Mar 18 08:33:06 atom [ 2283.744831] lost page write due to I/O error on sda2
+Mar 18 08:33:06 atom [ 2283.745659] Filesystem sda2: xfs_log_force: error 5 returned.
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.746109] Filesystem sda2: xfs_log_force: error 5 returned.
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.746168] xfs_force_shutdown(sda2,0x1) called from line 1111 of file fs/xfs/linux-2.6/xfs_buf.c.  Return address = 0xffffffff811e1e1c
+Mar 18 08:33:06 atom
+Mar 18 08:33:06 atom [ 2283.963059] usb 1-1: new high speed USB device using ehci_hcd and address 4
+Mar 18 08:33:06 atom [ 2284.080647] usb 1-1: New USB device found, idVendor=0325, idProduct=ac02
+Mar 18 08:33:06 atom [ 2284.080707] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+Mar 18 08:33:06 atom [ 2284.080752] usb 1-1: Product: R2_TURBO
+Mar 18 08:33:06 atom [ 2284.080794] usb 1-1: Manufacturer: OCZ Technology
+Mar 18 08:33:06 atom [ 2284.080831] usb 1-1: SerialNumber: (removed)
+Mar 18 08:33:06 atom [ 2284.082082] scsi7 : usb-storage 1-1:1.0
+Mar 18 08:33:07 atom [ 2285.083417] scsi 7:0:0:0: Direct-Access     OCZ      R2_TURBO         1100 PQ: 0 ANSI: 0 CCS
+Mar 18 08:33:07 atom [ 2285.085539] sd 7:0:0:0: [sdb] 16056320 512-byte logical blocks: (8.22 GB/7.65 GiB)
+Mar 18 08:33:07 atom [ 2285.086520] sd 7:0:0:0: [sdb] Write Protect is off
+Mar 18 08:33:07 atom [ 2285.089383] sd 7:0:0:0: [sdb] No Caching mode page present
+Mar 18 08:33:07 atom [ 2285.089435] sd 7:0:0:0: [sdb] Assuming drive cache: write through
+Mar 18 08:33:07 atom [ 2285.094025] sd 7:0:0:0: [sdb] No Caching mode page present
+Mar 18 08:33:07 atom [ 2285.094071] sd 7:0:0:0: [sdb] Assuming drive cache: write through
+Mar 18 08:33:07 atom [ 2285.094888]  sdb: sdb1 sdb2
+Mar 18 08:33:07 atom [ 2285.097544] sd 7:0:0:0: [sdb] No Caching mode page present
+Mar 18 08:33:07 atom [ 2285.097602] sd 7:0:0:0: [sdb] Assuming drive cache: write through
+Mar 18 08:33:07 atom [ 2285.097647] sd 7:0:0:0: [sdb] Attached SCSI removable disk
+Mar 18 08:33:36 atom [ 2313.744037] Filesystem sda2: xfs_log_force: error 5 returned.
+Mar 18 08:34:06 atom
+Mar 18 08:34:06 atom [ 2343.745039] Filesystem sda2: xfs_log_force: error 5 returned.
+Mar 18 08:34:36 atom
+Mar 18 08:34:36 atom [ 2373.745039] Filesystem sda2: xfs_log_force: error 5 returned.
+Mar 18 08:35:06 atom
+
+
