@@ -1,101 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab1CRRaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 13:30:18 -0400
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:35133 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757074Ab1CRRaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 13:30:13 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=BRzphQnO5V3s/ex+U563opSfemnme74geNuNP1iMw9YHlvZBbHV0YRBgLmR2BfJZtThvTV404cPQqTgmtgz/NacRtQsrekdQ1QAGfLVXClOtDJukneM7AwS/N5RfciUY;
-Date: Fri, 18 Mar 2011 10:30:04 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] PCI changes
-Message-ID: <20110318103004.02d78fe7@jbarnes-desktop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757243Ab1CRRj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 13:39:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45203 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757182Ab1CRRjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 13:39:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Subject: Re: [RFC][PATCH v2]: PCI: PCIe links may not get configured for ASPM under POWERSAVE mode
+Date: Fri, 18 Mar 2011 18:39:23 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: jbarnes@virtuousgeek.org, mjg59@srcf.ucam.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+References: <20110318041801.2349.33357.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+In-Reply-To: <20110318041801.2349.33357.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+Message-Id: <201103181839.23664.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit
-100b33c8bd8a3235fd0b7948338d6cbb3db3c63d:
+On Friday, March 18, 2011, Naga Chumbalkar wrote:
+> v2 -> v1:
+> 	. Kept the logic in pci_raw_set_power_state
+> 	. Changed the ASPM enabling logic
+> 	. Modified the text that describes the problem
+> 
+> v1	: http://marc.info/?l=linux-pci&m=130013164703283&w=2
+> 
+> The assumption made in commit 41cd766b065970ff6f6c89dd1cf55fa706c84a3d 
+> (PCI: Don't enable aspm before drivers have had a chance to veto it) that
+> pci_enable_device() will result in re-configuring ASPM when aspm_policy is 
+> POWERSAVE is no longer valid.  This is due to commit 
+> 97c145f7c87453cec90e91238fba5fe2c1561b32 (PCI: read current power state 
+> at enable time) which resets dev->current_state to D0. This makes the
+> equality check (below) become true, so pcie_aspm_pm_state_change() never
+> gets called.
+> ./drivers/pci/pci.c: pci_raw_set_pci_power_state()
+> 546         /* Check if we're already there */
+> 547         if (dev->current_state == state)
+> 548                 return 0;
+> 
+> So OSPM doesnn't configure the PCIe links for ASPM.
+> 
+> The patch below does the following:
+> At the end of each Root Bridge scan make a call to configure ASPM when the
+> ASPM policy is set to "powersave" mode. Note that if a previous pass had 
+> completed the configuration for all devices under that Bridge then the 
+> configuration will not take place again because pcie_config_aspm_link() 
+> checks to see if the link is already in the requested state.
+> We won't reconfigure ASPM when _OSC control is not granted. In fact, we will
+> disable ASPM in that situation. This is to protect systems with a buggy BIOS
+> that did not set the FADT bit even though the underlying HW can't do ASPM.
+> 
+> To turn "on" ASPM the minimum the BIOS needs to do:
+> 1. Clear the ACPI FADT "ASPM Controls" bit. 
+> 2. Support _OSC appropriately
+> 
+> Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl> 
+> Cc: Matthew Garrett <mjg59@srcf.ucam.org>
 
-  Linux 2.6.38-rc4 (2011-02-07 16:03:55 -0800)
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 linux-next
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index 8524939..c0655aa 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/pci.h>
+>  #include <linux/pci-acpi.h>
+> +#include <linux/pci-aspm.h>
+>  #include <linux/acpi.h>
+>  #include <linux/slab.h>
+>  #include <acpi/acpi_bus.h>
+> @@ -591,12 +592,22 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>  
+>  		status = acpi_pci_osc_control_set(device->handle, &flags,
+>  					OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
+> -		if (ACPI_SUCCESS(status))
+> +
+> +		if (ACPI_SUCCESS(status)) {
+>  			dev_info(root->bus->bridge,
+>  				"ACPI _OSC control (0x%02x) granted\n", flags);
+> -		else
+> +			/*
+> +			 * When aspm_policy is POWERSAVE, this
+> +			 * call ensures that ASPM is configured.
+> +			 */
+> +			pcie_aspm_reconfig_link(root->bus->self);
+> +		} else {
+>  			dev_dbg(root->bus->bridge,
+>  				"ACPI _OSC request failed (code %d)\n", status);
+> +			printk(KERN_INFO "Unable to assume _OSC PCIe control."
+> +				" Disabling ASPM.\n");
+> +			pcie_no_aspm();
+> +		}
+>  	}
+>  
+>  	pci_acpi_add_bus_pm_notifier(device, root->bus);
+> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+> index 3188cd9..1316745 100644
+> --- a/drivers/pci/pcie/aspm.c
+> +++ b/drivers/pci/pcie/aspm.c
+> @@ -742,6 +742,29 @@ void pci_disable_link_state(struct pci_dev *pdev, int state)
+>  }
+>  EXPORT_SYMBOL(pci_disable_link_state);
+>  
+> +void pcie_aspm_reconfig_link(struct pci_dev *pdev)
+> +{
+> +	struct pcie_link_state *link = NULL;
+> +
+> +	if (aspm_disabled)
+> +		return;
+> +	if (aspm_policy != POLICY_POWERSAVE)
+> +		return;
+> +
+> +	down_read(&pci_bus_sem);
+> +	mutex_lock(&aspm_lock);
+> +
+> +	if (list_empty(&link_list))
+> +		goto out;
+> +	list_for_each_entry(link, &link_list, sibling) {
+> +		pcie_config_aspm_link(link, policy_to_aspm_state(link));
+> +		pcie_set_clkpm(link, policy_to_clkpm_state(link));
+> +	}
+> +out:
+> +	mutex_unlock(&aspm_lock);
+> +	up_read(&pci_bus_sem);
+> +}
+> +
+>  static int pcie_aspm_set_policy(const char *val, struct kernel_param *kp)
+>  {
+>  	int i;
+> diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+> index 5130d0d..595654a 100644
+> --- a/drivers/pci/pcie/portdrv_core.c
+> +++ b/drivers/pci/pcie/portdrv_core.c
+> @@ -15,7 +15,6 @@
+>  #include <linux/slab.h>
+>  #include <linux/pcieport_if.h>
+>  #include <linux/aer.h>
+> -#include <linux/pci-aspm.h>
+>  
+>  #include "../pci.h"
+>  #include "portdrv.h"
+> @@ -356,10 +355,8 @@ int pcie_port_device_register(struct pci_dev *dev)
+>  
+>  	/* Get and check PCI Express port services */
+>  	capabilities = get_port_device_capability(dev);
+> -	if (!capabilities) {
+> -		pcie_no_aspm();
+> +	if (!capabilities)
+>  		return 0;
+> -	}
+>  
+>  	pci_set_master(dev);
+>  	/*
+> diff --git a/include/linux/pci-aspm.h b/include/linux/pci-aspm.h
+> index ce68105..216b196 100644
+> --- a/include/linux/pci-aspm.h
+> +++ b/include/linux/pci-aspm.h
+> @@ -26,6 +26,7 @@
+>  extern void pcie_aspm_init_link_state(struct pci_dev *pdev);
+>  extern void pcie_aspm_exit_link_state(struct pci_dev *pdev);
+>  extern void pcie_aspm_pm_state_change(struct pci_dev *pdev);
+> +extern void pcie_aspm_reconfig_link(struct pci_dev *pdev);
+>  extern void pci_disable_link_state(struct pci_dev *pdev, int state);
+>  extern void pcie_clear_aspm(void);
+>  extern void pcie_no_aspm(void);
+> @@ -39,6 +40,9 @@ static inline void pcie_aspm_exit_link_state(struct pci_dev *pdev)
+>  static inline void pcie_aspm_pm_state_change(struct pci_dev *pdev)
+>  {
+>  }
+> +static inline void pcie_aspm_reconfig_link(struct pci_dev *pdev)
+> +{
+> +}
+>  static inline void pci_disable_link_state(struct pci_dev *pdev, int state)
+>  {
+>  }
+> 
+> 
 
-The only scary thing in here is Ram's patchset to adjust our resource
-allocation policy.  The old policy was too biased in favor of hotplug;
-his patches try to make sure we can allocate space for devices detected
-at boot first, only making hotplug windows available if possible
-afterwards.
-
-A couple of last minute fixes for the ACPI _DSM patch landed this week
-as well, but they're very low risk so I think that's ok.
-
-Ben Hutchings (1):
-      PCI: sysfs: Fix failure path for addition of "vpd" attribute
-
-Brandeburg, Jesse (1):
-      PCI: remove quirk for pre-production systems
-
-Jesper Juhl (1):
-      PCI: Avoid potential NULL pointer dereference in pci_scan_bridge
-
-Jiri Slaby (2):
-      PCI: add more checking to ICH region quirks
-      PCI: do not create quirk I/O regions below PCIBIOS_MIN_IO for ICH
-
-Narendra_K@Dell.com (2):
-      PCI: Export ACPI _DSM provided firmware instance number and string name to sysfs
-      PCI: label: Fix compilation error when CONFIG_ACPI is unset
-
-Prarit Bhargava (1):
-      PCI: aer-inject: Override PCIe AER Mask Registers
-
-Ram Pai (4):
-      PCI: refactor io size calculation code
-      PCI: data structure agnostic free list function
-      PCI: introduce reset_resource()
-      PCI: pre-allocate additional resources to devices only after successful allocation of essential resources.
-
-Randy Dunlap (1):
-      PCI: fix tlan build when CONFIG_PCI is not enabled
-
-Seth Heasley (1):
-      PCI/lpc: irq and pci_ids patch for Intel DH89xxCC DeviceIDs
-
-Shyam_Iyer@Dell.com (1):
-      PCI: label: remove #include of ACPI header to avoid warnings
-
-Stefano Stabellini (1):
-      PCI hotplug: acpiphp: set current_state to D0 in register_slot
-
- Documentation/ABI/testing/sysfs-bus-pci |   31 +++-
- arch/x86/pci/irq.c                      |   15 +-
- drivers/pci/Kconfig                     |    2 +
- drivers/pci/Makefile                    |    3 +-
- drivers/pci/hotplug/acpiphp_glue.c      |    1 +
- drivers/pci/pci-label.c                 |  252 +++++++++++++++++++++++-
- drivers/pci/pci-sysfs.c                 |    2 +-
- drivers/pci/pci.h                       |    2 +-
- drivers/pci/pcie/aer/aer_inject.c       |   31 +++-
- drivers/pci/probe.c                     |    4 +-
- drivers/pci/quirks.c                    |  113 +++++------
- drivers/pci/setup-bus.c                 |  321 +++++++++++++++++++++++--------
- include/linux/pci.h                     |    5 +
- include/linux/pci_ids.h                 |    3 +
- 14 files changed, 614 insertions(+), 171 deletions(-)
-
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
