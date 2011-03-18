@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab1CROYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 10:24:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49555 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab1CROYr (ORCPT
+	id S1756630Ab1CRO0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 10:26:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46116 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756544Ab1CRO0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 10:24:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-Subject: Re: known vboxgetty/isdn issue in 2.6.35.3?
-Date: Fri, 18 Mar 2011 15:24:33 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Udo van den Heuvel <udovdh@xs4all.nl>, Karsten Keil <isdn@linux-pingi.de>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Tilman Schmidt <tilman@imap.cc>,
-        stable@kernel.org
-References: <4C864143.5090803@xs4all.nl> <201011091115.16351.arnd@arndb.de> <1300398521.16073.60.camel@localhost>
-In-Reply-To: <1300398521.16073.60.camel@localhost>
+	Fri, 18 Mar 2011 10:26:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=rSMgp4R2pl9yrOSWd2/rvOFe0JL/QCxiagGb+tFc6Y2FjIyKB1tsrwDYvmDySDCqXv
+         98v2r6LTnCDicmUAmsZYSmM7cmSUy+8kyp1cPHgLRdNsHdI94Xbg1JTOkNeIMZKhIjkd
+         eu9m8OU5y/qtHzETRj9WdLlKvM+mDhAWOo+So=
+Date: Fri, 18 Mar 2011 22:26:22 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: john.stultz@linaro.org, linux-kernel@vger.kernel.org, stable@kernel.org,
+        rtc-linux@googlegroups.com, a.zummo@towertech.it
+Subject: Re: [PATCH] rtc-bfin: add missing "return 0" in new alarm func
+Message-ID: <20110318142618.GA3142@gmail.com>
+Mail-Followup-To: Mike Frysinger <vapier@gentoo.org>,
+	john.stultz@linaro.org, linux-kernel@vger.kernel.org,
+	stable@kernel.org, rtc-linux@googlegroups.com, a.zummo@towertech.it
+References: <1300436784-26543-1-git-send-email-vapier@gentoo.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103181524.33246.arnd@arndb.de>
-X-Provags-ID: V02:K0:S/EN/+/QN17hcjoyrNH89WQiZyNZEYrN27YIg6Bk+Ww
- 3uQoCrriihDP+QGxCVGRm2joEW70KoDR03HvrWz66LwVg/u0L1
- WIm+zncC4eHyJJCqjpf0JtTX5DabAz92XDo/fqf6eNVKwJT4jN
- Gf49eMWLrdiZ6mtp1J0FOn8I21sIGkfRR6Y5Is+s4WHK6VXxG4
- SIl2NE/l0rCAc6+gb+D3w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300436784-26543-1-git-send-email-vapier@gentoo.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 March 2011, Michael Karcher wrote:
-> The same issue happened on our system. Sometimes vboxgetty gets stuck in
-> state D on a debian stable system (2.6.32). I just applied your patch to
-> that kernel and hope the problem went away. Please remind me to report
-> back in one to two weeks if I didn't already report whether the hangs
-> are fixed. Is something except for a test on a productive system missing
-> to get this fix into 32-stable?
+On Fri, Mar 18, 2011 at 04:26:24AM -0400, Mike Frysinger wrote:
+> The new bfin_rtc_alarm_irq_enable function forgot to add a "return 0" to
+> the end leading to the build warning:
+> 	drivers/rtc/rtc-bfin.c: In function 'bfin_rtc_alarm_irq_enable':
+> 	drivers/rtc/rtc-bfin.c:253: warning: control reaches end of non-void function
+Hi Mike,
+   I am sure we should give a return-value
+but whether it is '0'? Maybe it should return
+other value.
+   Can you give some explanations for yours.
 
-Thanks for the report. You are talking about this patch, right?
-
-bc10f96757 "isdn: avoid calling tty_ldisc_flush() in atomic context"
-
-    Remove the call to tty_ldisc_flush() from the RESULT_NO_CARRIER
-    branch of isdn_tty_modem_result(), as already proposed in commit
-    00409bb045887ec5e7b9e351bc080c38ab6bfd33.
-    This avoids a "sleeping function called from invalid context" BUG
-    when the hardware driver calls the statcallb() callback with
-    command==ISDN_STAT_DHUP in atomic context, which in turn calls
-    isdn_tty_modem_result(RESULT_NO_CARRIER, ~), and from there,
-    tty_ldisc_flush() which may sleep.
-    
-    Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-	Arnd
+   Thanks.
+   Best Regards.
+   Harry Wei.
+> 
+> CC: stable@kernel.org
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  drivers/rtc/rtc-bfin.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-bfin.c b/drivers/rtc/rtc-bfin.c
+> index 17971d9..0e61e2d 100644
+> --- a/drivers/rtc/rtc-bfin.c
+> +++ b/drivers/rtc/rtc-bfin.c
+> @@ -276,6 +276,8 @@ static int bfin_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+>  		bfin_rtc_int_set_alarm(rtc);
+>  	else
+>  		bfin_rtc_int_clear(~(RTC_ISTAT_ALARM | RTC_ISTAT_ALARM_DAY));
+> +
+> +	return 0;
+>  }
+>  
+>  static int bfin_rtc_read_time(struct device *dev, struct rtc_time *tm)
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
