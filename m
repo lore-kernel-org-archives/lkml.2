@@ -1,383 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab1CRCkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 22:40:23 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:34660 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab1CRCkT (ORCPT
+	id S932096Ab1CRCvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 22:51:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60298 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755775Ab1CRCvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 22:40:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=P95eCUtYJVIMiF8ER52Ij3Vte0/NNoz+bF18ZDdU2OSHOeTdeom7xsEDVfLu8WUnBn
-         d0GmgGSkmI/i+7vV/E8FNmSBoaSJYSE7KkLITzGm+ZiqPB2w1hgWDLoh5tBPSp5LBaAU
-         kIi/pv7hZWIFYAB0Q9xK21KVyLheGXuXVDoEQ=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Soren Sandmann <ssp@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH RESEND v5 -tip] x86, dumpstack: Correct stack dump info when frame pointer is available
-Date: Fri, 18 Mar 2011 11:40:06 +0900
-Message-Id: <1300416006-3163-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
+	Thu, 17 Mar 2011 22:51:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110317183048.GW7258@atomide.com>
+References: <20110317183048.GW7258@atomide.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Mar 2011 19:50:36 -0700
+Message-ID: <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+To: Tony Lindgren <tony@atomide.com>, Russell King <rmk@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current stack dump code scans entire stack and check each entry
-contains a pointer to kernel code. If CONFIG_FRAME_POINTER=y it
-could mark whether the pointer is valid or not based on value of
-the frame pointer. Invalid entries could be preceded by '?' sign.
+On Thu, Mar 17, 2011 at 11:30 AM, Tony Lindgren <tony@atomide.com> wrote:
+>
+> Please pull omap changes for this merge window from:
 
-However this was not going to happen because scan start point was
-always higher than the frame pointer so that they could not meet.
+Gaah. Guys, this whole ARM thing is a f*cking pain in the ass.
 
-Commit 9c0729dc8062 ("x86: Eliminate bp argument from the stack
-tracing routines") delayed bp acquisition point, so the bp was
-read in lower frame, thus all of the entries were marked invalid.
+You need to stop stepping on each others toes. There is no way that
+your changes to those crazy clock-data files should constantly result
+in those annoying conflicts, just because different people in
+different ARM trees do some masturbatory renaming of some random
+device. Seriously.
 
-This patch fixes this by reverting above commit while retaining
-stack_frame() helper as suggested by Frederic Weisbecker.
-End result looks like below:
+That usb_musb_init() thing in arch/arm/mach-omap2/usb-musb.c also
+seems to be totally insane. I wonder what kind of insanity I'm missing
+just because I don't happen to see the merge conflicts, just because
+people were lucky enough to happen to not touch the same file within a
+few lines.
 
-before:
-[    3.508329] Call Trace:
-[    3.508551]  [<ffffffff814f35c9>] ? panic+0x91/0x199
-[    3.508662]  [<ffffffff814f3739>] ? printk+0x68/0x6a
-[    3.508770]  [<ffffffff81a981b2>] ? mount_block_root+0x257/0x26e
-[    3.508876]  [<ffffffff81a9821f>] ? mount_root+0x56/0x5a
-[    3.508975]  [<ffffffff81a98393>] ? prepare_namespace+0x170/0x1a9
-[    3.509216]  [<ffffffff81a9772b>] ? kernel_init+0x1d2/0x1e2
-[    3.509335]  [<ffffffff81003894>] ? kernel_thread_helper+0x4/0x10
-[    3.509442]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-[    3.509542]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-[    3.509641]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+Somebody needs to get a grip in the ARM community. I do want to do
+these merges, just to see how screwed up things are, but guys, this is
+just ridiculous. The pure amount of crazy churn is annoying in itself,
+but when I then get these "independent" pull requests from four
+different people, and they touch the same files, that indicates that
+something is wrong.
 
-after:
-[    3.522991] Call Trace:
-[    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
-[    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
-[    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
-[    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
-[    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
-[    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
-[    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
-[    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-[    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-[    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+And stop the crazy renaming already! Just leave it off. Don't rename
+boards and drivers "just because", at least not when there clearly are
+clashes. There's no point. I'm not even talking about the file renames
+(which happened and can also make it "fun" to try to resolve the
+conflicts when somebody else then makes _other_ changes), but about
+the stupid "change human-readable names in board files just to annoy
+whoever needs to merge the crap".
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Soren Sandmann <ssp@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>
----
-v5:
- * fix build breakage with oprofile
+Somebody in the ARM community really needs to step up and tell people
+to stop dicking around.
 
-v4:
- * use 0 instead of regs->bp
- * separate out printk changes
+(I'm replying to the omap pull request, because that's the one I did
+last, but I don't know who to "blame". I don't care. It really doesn't
+matter. I realize thar ARM vendors do crazy shit and haven't figured
+out this whole "platform" thing yet, but you guys need to push back on
+the people sending you crap).
 
-v3:
- * apply comment from Frederic
- * add a couple of printk fixes
-
- arch/x86/include/asm/kdebug.h     |    2 +-
- arch/x86/include/asm/stacktrace.h |    6 +++---
- arch/x86/kernel/cpu/perf_event.c  |    2 +-
- arch/x86/kernel/dumpstack.c       |   14 ++++++++------
- arch/x86/kernel/dumpstack_32.c    |   15 ++++++++-------
- arch/x86/kernel/dumpstack_64.c    |   14 +++++++-------
- arch/x86/kernel/process.c         |    2 +-
- arch/x86/kernel/stacktrace.c      |    6 +++---
- arch/x86/oprofile/backtrace.c     |    2 +-
- 9 files changed, 33 insertions(+), 30 deletions(-)
-
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index 518bbbb9ee59..fe2cc6e105fa 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -26,7 +26,7 @@ extern void die(const char *, struct pt_regs *,long);
- extern int __must_check __die(const char *, struct pt_regs *, long);
- extern void show_registers(struct pt_regs *regs);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
--		       unsigned long *sp);
-+		       unsigned long *sp, unsigned long bp);
- extern void __show_regs(struct pt_regs *regs, int all);
- extern void show_regs(struct pt_regs *regs);
- extern unsigned long oops_begin(void);
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index 52b5c7ed3608..d7e89c83645d 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -47,7 +47,7 @@ struct stacktrace_ops {
- };
-
- void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
--		unsigned long *stack,
-+		unsigned long *stack, unsigned long bp,
- 		const struct stacktrace_ops *ops, void *data);
-
- #ifdef CONFIG_X86_32
-@@ -86,11 +86,11 @@ stack_frame(struct task_struct *task, struct pt_regs *regs)
-
- extern void
- show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *stack, char *log_lvl);
-+		   unsigned long *stack, unsigned long bp, char *log_lvl);
-
- extern void
- show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *sp, char *log_lvl);
-+		   unsigned long *sp, unsigned long bp, char *log_lvl);
-
- extern unsigned int code_bytes;
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 26604188aa49..1c81bf72d85a 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1790,7 +1790,7 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
-
- 	perf_callchain_store(entry, regs->ip);
-
--	dump_trace(NULL, regs, NULL, &backtrace_ops, entry);
-+	dump_trace(NULL, regs, NULL, 0, &backtrace_ops, entry);
- }
-
- #ifdef CONFIG_COMPAT
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 220a1c11cfde..999e2793590b 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -175,21 +175,21 @@ static const struct stacktrace_ops print_trace_ops = {
-
- void
- show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		unsigned long *stack, char *log_lvl)
-+		unsigned long *stack, unsigned long bp, char *log_lvl)
- {
- 	printk("%sCall Trace:\n", log_lvl);
--	dump_trace(task, regs, stack, &print_trace_ops, log_lvl);
-+	dump_trace(task, regs, stack, bp, &print_trace_ops, log_lvl);
- }
-
- void show_trace(struct task_struct *task, struct pt_regs *regs,
--		unsigned long *stack)
-+		unsigned long *stack, unsigned long bp)
- {
--	show_trace_log_lvl(task, regs, stack, "");
-+	show_trace_log_lvl(task, regs, stack, bp, "");
- }
-
- void show_stack(struct task_struct *task, unsigned long *sp)
- {
--	show_stack_log_lvl(task, NULL, sp, "");
-+	show_stack_log_lvl(task, NULL, sp, 0, "");
- }
-
- /*
-@@ -197,14 +197,16 @@ void show_stack(struct task_struct *task, unsigned long *sp)
-  */
- void dump_stack(void)
- {
-+	unsigned long bp;
- 	unsigned long stack;
-
-+	bp = stack_frame(current, NULL);
- 	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
- 		current->pid, current->comm, print_tainted(),
- 		init_utsname()->release,
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
--	show_trace(NULL, NULL, &stack);
-+	show_trace(NULL, NULL, &stack, bp);
- }
- EXPORT_SYMBOL(dump_stack);
-
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 74cc1eda384b..3b97a80ce329 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -17,12 +17,11 @@
- #include <asm/stacktrace.h>
-
-
--void dump_trace(struct task_struct *task,
--		struct pt_regs *regs, unsigned long *stack,
-+void dump_trace(struct task_struct *task, struct pt_regs *regs,
-+		unsigned long *stack, unsigned long bp,
- 		const struct stacktrace_ops *ops, void *data)
- {
- 	int graph = 0;
--	unsigned long bp;
-
- 	if (!task)
- 		task = current;
-@@ -35,7 +34,9 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
-
--	bp = stack_frame(task, regs);
-+	if (!bp)
-+		bp = stack_frame(task, regs);
-+
- 	for (;;) {
- 		struct thread_info *context;
-
-@@ -55,7 +56,7 @@ EXPORT_SYMBOL(dump_trace);
-
- void
- show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *sp, char *log_lvl)
-+		   unsigned long *sp, unsigned long bp, char *log_lvl)
- {
- 	unsigned long *stack;
- 	int i;
-@@ -77,7 +78,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
- 		touch_nmi_watchdog();
- 	}
- 	printk(KERN_CONT "\n");
--	show_trace_log_lvl(task, regs, sp, log_lvl);
-+	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
- }
-
-
-@@ -102,7 +103,7 @@ void show_registers(struct pt_regs *regs)
- 		u8 *ip;
-
- 		printk(KERN_EMERG "Stack:\n");
--		show_stack_log_lvl(NULL, regs, &regs->sp, KERN_EMERG);
-+		show_stack_log_lvl(NULL, regs, &regs->sp, 0, KERN_EMERG);
-
- 		printk(KERN_EMERG "Code: ");
-
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index a6b6fcf7f0ae..e71c98d3c0d2 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -139,8 +139,8 @@ fixup_bp_irq_link(unsigned long bp, unsigned long *stack,
-  * severe exception (double fault, nmi, stack fault, debug, mce) hardware stack
-  */
-
--void dump_trace(struct task_struct *task,
--		struct pt_regs *regs, unsigned long *stack,
-+void dump_trace(struct task_struct *task, struct pt_regs *regs,
-+		unsigned long *stack, unsigned long bp,
- 		const struct stacktrace_ops *ops, void *data)
- {
- 	const unsigned cpu = get_cpu();
-@@ -150,7 +150,6 @@ void dump_trace(struct task_struct *task,
- 	struct thread_info *tinfo;
- 	int graph = 0;
- 	unsigned long dummy;
--	unsigned long bp;
-
- 	if (!task)
- 		task = current;
-@@ -161,7 +160,8 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
-
--	bp = stack_frame(task, regs);
-+	if (!bp)
-+		bp = stack_frame(task, regs);
- 	/*
- 	 * Print function call entries in all stacks, starting at the
- 	 * current stack address. If the stacks consist of nested
-@@ -225,7 +225,7 @@ EXPORT_SYMBOL(dump_trace);
-
- void
- show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *sp, char *log_lvl)
-+		   unsigned long *sp, unsigned long bp, char *log_lvl)
- {
- 	unsigned long *irq_stack_end;
- 	unsigned long *irq_stack;
-@@ -269,7 +269,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
- 	preempt_enable();
-
- 	printk(KERN_CONT "\n");
--	show_trace_log_lvl(task, regs, sp, log_lvl);
-+	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
- }
-
- void show_registers(struct pt_regs *regs)
-@@ -298,7 +298,7 @@ void show_registers(struct pt_regs *regs)
-
- 		printk(KERN_EMERG "Stack:\n");
- 		show_stack_log_lvl(NULL, regs, (unsigned long *)sp,
--				   KERN_EMERG);
-+				   0, KERN_EMERG);
-
- 		printk(KERN_EMERG "Code: ");
-
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 99fa3adf0141..d46cbe46b7ab 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -86,7 +86,7 @@ void exit_thread(void)
- void show_regs(struct pt_regs *regs)
- {
- 	show_registers(regs);
--	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs));
-+	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
- }
-
- void show_regs_common(void)
-diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
-index 938c8e10a19a..6515733a289d 100644
---- a/arch/x86/kernel/stacktrace.c
-+++ b/arch/x86/kernel/stacktrace.c
-@@ -73,7 +73,7 @@ static const struct stacktrace_ops save_stack_ops_nosched = {
-  */
- void save_stack_trace(struct stack_trace *trace)
- {
--	dump_trace(current, NULL, NULL, &save_stack_ops, trace);
-+	dump_trace(current, NULL, NULL, 0, &save_stack_ops, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
-@@ -81,14 +81,14 @@ EXPORT_SYMBOL_GPL(save_stack_trace);
-
- void save_stack_trace_regs(struct stack_trace *trace, struct pt_regs *regs)
- {
--	dump_trace(current, regs, NULL, &save_stack_ops, trace);
-+	dump_trace(current, regs, NULL, 0, &save_stack_ops, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
-
- void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- {
--	dump_trace(tsk, NULL, NULL, &save_stack_ops_nosched, trace);
-+	dump_trace(tsk, NULL, NULL, 0, &save_stack_ops_nosched, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 72cbec14d783..2d49d4e19a36 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -126,7 +126,7 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
- 	if (!user_mode_vm(regs)) {
- 		unsigned long stack = kernel_stack_pointer(regs);
- 		if (depth)
--			dump_trace(NULL, regs, (unsigned long *)stack,
-+			dump_trace(NULL, regs, (unsigned long *)stack, 0,
- 				   &backtrace_ops, &depth);
- 		return;
- 	}
---
-1.7.4
-
+                                   Linus
