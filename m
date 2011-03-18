@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab1CRLeO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 07:34:14 -0400
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:40070 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752862Ab1CRLeH (ORCPT
+	id S1755972Ab1CRLeZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 07:34:25 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55841 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755291Ab1CRLeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 07:34:07 -0400
-Message-ID: <4D83432A.10504@example.com>
-Date: Fri, 18 Mar 2011 12:34:02 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Firmware works I think, why my networking fails?
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 4840243701542383896
-X-Ovh-Remote: 178.36.31.15 (178-36-31-15.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Fri, 18 Mar 2011 07:34:16 -0400
+Date: Fri, 18 Mar 2011 11:34:33 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sergey Lapin <slapin@ossfans.org>
+Cc: linux-x25@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow LAPB users know which data were actually sent.
+Message-ID: <20110318113433.39794ca5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110318005220.GA9674@build.ihdev.net>
+References: <1300400422-8820-1-git-send-email-slapin@ossfans.org>
+	<20110317235532.44c0e202@lxorguk.ukuu.org.uk>
+	<20110318005220.GA9674@build.ihdev.net>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> > Looks sensible but your patch doesn't add a user for it so what is it
+> > needed for ?
+> 
+> I implement accessor for special equipment (acessing fiscal information)
+> which uses custom protocol over LAPB. As it is being implemented,
+> I actually wanted to know if this approach for using LAPB is good enough
+> for mainline submission, as I want to have kernel part to be in mainline.
+> I think I will have the rest of patches ready within two weeks.
 
-The 2.6.39-git3 kernel works as usual, mii-tool shows that there is 
-link. Any newer kernel fails this test. What can I do? What extra 
-information would you need?
-
-Regards,
-
-Piotr Hosowicz
-
--- 
-"Wiedza to w³adza. Ale niewiedza, niestety, nie oznacza jeszcze
-braku w³adzy." Niels Bohr
-NP: Peter Green Splinter Group - Big Change Is Gonna Come
-NB: 2.6.38-git3
+It seems sensible as an implementation to me so I would carry on using
+that model and then submit it with all the other bits when you are ready.
