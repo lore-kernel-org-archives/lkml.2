@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab1CRIZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 04:25:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53618 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab1CRIZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 04:25:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: andy.green@linaro.org
-Subject: Re: RFC: Platform data for onboard USB assets
-Date: Fri, 18 Mar 2011 09:25:29 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, Greg KH <greg@kroah.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <20110311165642.GA9996@kroah.com> <20110317232756.GA3148@angua.secretlab.ca> <4D830E97.4010403@linaro.org>
-In-Reply-To: <4D830E97.4010403@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103180925.30074.arnd@arndb.de>
-X-Provags-ID: V02:K0:4EyjZo2M800P9qd0ytbYnf+piarhMliAZsuNLxzZdY/
- oRqmtYV2YYQS2odxjL2J3bppx5/9A1P+f9ngU9x8iWGpz7S9ce
- yc9wwNdUpJUd3SZVgXCtDSawPU1nVLQENlrx+VICwEoZ9x0b7A
- 99ZUC9GyXYVsfzhVU5xNuONFs8xlTlFxYq9rPoTY4WgNhPWfPr
- 0GKNt/IerVrXXOrCkBdIg==
+	id S1755935Ab1CRI0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 04:26:10 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:50231 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753318Ab1CRI0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 04:26:07 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>
+Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] rtc-bfin: add missing "return 0" in new alarm func
+Date: Fri, 18 Mar 2011 04:26:24 -0400
+Message-Id: <1300436784-26543-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 March 2011, Andy Green wrote:
-> On 03/17/2011 11:27 PM, Somebody in the thread at some point said:
-> 
-> > The patch below also looks right to me.  I believe it also has the
-> > advantage of u-boot already knowing how to update the
-> > local-mac-address property at boot time.
-> 
-> In my (tested, working, complete) patch series, I allow platform_data 
-> based override of MAC at usbnet level, so all the drivers can benefit 
-> from it.
->
-> Is this not a case of "small thinking" from a Device Tree perspective 
-> that Arnd's patch only targets smsc95xx?  Or did I miss some 
-> disadvantage to allowing this functional configuration option at usbnet 
-> layer?
+The new bfin_rtc_alarm_irq_enable function forgot to add a "return 0" to
+the end leading to the build warning:
+	drivers/rtc/rtc-bfin.c: In function 'bfin_rtc_alarm_irq_enable':
+	drivers/rtc/rtc-bfin.c:253: warning: control reaches end of non-void function
 
-I think either way works (usb-net or individual drivers), the difference is 
-which information you use when both a hardware MAC address and the
-local-mac-address property are used. Your patch uses the local-mac-address,
-mine would use the hardware mac address and only fall back to the
-property if there is no other one.
+CC: stable@kernel.org
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ drivers/rtc/rtc-bfin.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-I still need to look at your patch series, I didn't realize you had
-already sent it.
+diff --git a/drivers/rtc/rtc-bfin.c b/drivers/rtc/rtc-bfin.c
+index 17971d9..0e61e2d 100644
+--- a/drivers/rtc/rtc-bfin.c
++++ b/drivers/rtc/rtc-bfin.c
+@@ -276,6 +276,8 @@ static int bfin_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ 		bfin_rtc_int_set_alarm(rtc);
+ 	else
+ 		bfin_rtc_int_clear(~(RTC_ISTAT_ALARM | RTC_ISTAT_ALARM_DAY));
++
++	return 0;
+ }
+ 
+ static int bfin_rtc_read_time(struct device *dev, struct rtc_time *tm)
+-- 
+1.7.4.1
 
-	Arnd
