@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab1CRXKR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 19:10:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36363 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756252Ab1CRXKM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 19:10:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ORkioypgYfkTh4vXPOurkD/MPBKx8FN9l4Mzr04tPv8LYdiQtZ5wWvKBgYxGVShAxw
-         76npJ1tslUXdZDVqiG+lesIBSfo6fRK+yszR6BuOg3zr7RECo2MUyB6KqPpKLQGuAbWL
-         d0jC87BLsNb/2STvUWRJ7zzSXxnHncnNkyBxk=
+	id S1757589Ab1CRXNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 19:13:55 -0400
+Received: from void.printf.net ([89.145.121.20]:59995 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754690Ab1CRXNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 19:13:50 -0400
+From: Chris Ball <cjb@laptop.org>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <vmehta@atheros.com>, <naveen.singh@atheros.com>, <kvalo@adurom.com>,
+        <j@w1.fi>, Naveen Singh <nsingh@atheros.com>,
+        Vipin Mehta <Vipin.Mehta@atheros.com>
+Subject: Re: [RFC 1/4] sdhci: allow for multiple delays when sending commands
+References: <1300486320-23607-1-git-send-email-lrodriguez@atheros.com>
+	<1300486320-23607-2-git-send-email-lrodriguez@atheros.com>
+Date: Fri, 18 Mar 2011 19:10:40 -0400
+In-Reply-To: <1300486320-23607-2-git-send-email-lrodriguez@atheros.com> (Luis
+	R. Rodriguez's message of "Fri, 18 Mar 2011 15:11:57 -0700")
+Message-ID: <m3y64ct47j.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110318225016.GB15921@suse.de>
-References: <20110318221606.26841.92271.stgit@localhost6.localdomain6>
-	<20110318225016.GB15921@suse.de>
-Date: Fri, 18 Mar 2011 16:10:10 -0700
-X-Google-Sender-Auth: 9KzfBB4jfQVT7aXcRQFfsEDdVNc
-Message-ID: <AANLkTim+HB0GWzGiif=MvYHaiXMSLuVB6R0=UK3906xU@mail.gmail.com>
-Subject: Re: [PATCH] firmware/efi: export a routine to retrieve efi-variables
- by GUID
-From: Dan Williams <dan.j.williams@intel.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Dave Jiang <dave.jiang@intel.com>, linux-scsi@vger.kernel.org,
-        jacek.danecki@intel.com, ed.ciechanowski@intel.com,
-        linux-kernel@vger.kernel.org, dmilburn@redhat.com,
-        edmund.nadolski@intel.com, Jeff Garzik <jeff@garzik.org>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 3:50 PM, Greg KH <gregkh@suse.de> wrote:
->> Not sure who looks after efivars.c, but get_maintainer.pl and git shortlog
->> fingered Greg as a likely target.
+Hi Luis,
+
+On Fri, Mar 18 2011, Luis R. Rodriguez wrote:
+> This is at least known to be required for the ENE 714.
 >
-> Yes, that is me.
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: Kalle Valo <kvalo@adurom.com>
+> Cc: Naveen Singh <nsingh@atheros.com>
+> Cc: Vipin Mehta <Vipin.Mehta@atheros.com>
+> Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-Sorry Greg, didn't mean to refer to you in the third person.
+I think this wins cjb's "I've never been so confused about what a patch
+author thought they were doing before" award.
 
+> ---
+>  drivers/mmc/host/sdhci.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
 >
->> We are currently targeting a late merge of the isci driver through the
->> staging tree into 2.6.39.  This is a pre-requisite to be able to use the
->> driver on an efi enabled platform.
->
-> You are?  That's news to me, why didn't you ask the staging tree
-> maintainer about this?
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 9e15f41..c95dfc2 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -891,8 +891,8 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+>  
+>  	WARN_ON(host->cmd);
+>  
+> -	/* Wait max 10 ms */
+> -	timeout = 10;
+> +	/* Wait max this amount of ms */
+> +	timeout = (10*256) + 255;
+>  
+>  	mask = SDHCI_CMD_INHIBIT;
+>  	if ((cmd->data != NULL) || (cmd->flags & MMC_RSP_BUSY))
 
-This was a very recent, two days ago discussion on linux-scsi [1] with
-Jeff and Christoph that you should have been copied on...
+Okay, so our original plan is to go through the while loop ten times,
+which equals ten mdelay(1)s == 10ms, waiting for the inhibit bit to
+become unset.
 
-> I needed all patches in linux-next _before_ the merge window opened to
-> be able to accept it.
+After this hunk of your patch, we're set to go through the loop 2815
+times, which would make for 2.8 seconds.  That seems excessive.
 
-Yes, I know, and as dmaengine maintainer I also hate being ambushed by
-last minute patches, but now I am unfortunately one of those annoying
-people on the other side of the coin.
+> @@ -913,7 +913,8 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+>  			return;
+>  		}
+>  		timeout--;
+> -		mdelay(1);
+> +		if (!(timeout & 0xFF))
+> +			mdelay(1);
+>  	}
+>  
+>  	mod_timer(&host->timer, jiffies + 10 * HZ);
 
-The review has been intermittent until very recently.  Given that
-fact, James was understandably not ready to take it into
-drivers/scsi/.  So the thought was to leave time for the review to pan
-out and then attempt a post -rc1 merge through scsi or staging.
+But wait, here you decide *not* to call mdelay(1) every time through the
+loop, and instead call it only on iterations where the bottom eight bits
+are unset.  This disqualifies most of the 2815 values that timeout will
+be set to, and leaves the following values triggering the mdelay(1):
 
-> So, sorry, it will have to wait until .40.
-> Please send me the isci driver and I will be glad to queue it up for
-> staging for that kernel.
+0x100 0x200 0x300 0x400 0x500 0x600 0x700 0x800 0x900 0xa00
+  256   512   768  1024  1280  1536  1792  2048  2304  2560
 
-We will submit a revised driver in the next few weeks.
+The astute observer will notice that there are ten such values.
+So you're calling mdelay(1) ten times.  But that's what we were
+doing before!  The only difference is that now we spin through
+the while loop 2815 times instead of 10, and don't perform any
+explicit delay on 2805 of them.  Or am I missing something?
 
---
-Dan
+I think you should try:
 
-[1]: http://marc.info/?l=linux-scsi&m=130022318906252&w=2
+(a) Reverting the patch and checking that it's actually needed
+(b) Leaving the while loop body alone, but increasing the max
+    timeout until you bisect to the amount of ms that your controller
+    actually takes to release the inhibit bit.
+(c) Yelling loudly in the direction that this code came from.  :)
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
