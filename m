@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab1CRAwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 20:52:30 -0400
-Received: from build.ihdev.net ([178.63.197.118]:40784 "EHLO build.ossfans.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755890Ab1CRAw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 20:52:28 -0400
-Date: Thu, 17 Mar 2011 20:52:20 -0400
-From: Sergey Lapin <slapin@ossfans.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-x25@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow LAPB users know which data were actually sent.
-Message-ID: <20110318005220.GA9674@build.ihdev.net>
-References: <1300400422-8820-1-git-send-email-slapin@ossfans.org>
- <20110317235532.44c0e202@lxorguk.ukuu.org.uk>
+	id S1756156Ab1CRAzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 20:55:54 -0400
+Received: from mail.tpi.com ([70.99.223.143]:2367 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755971Ab1CRAzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 20:55:52 -0400
+Message-ID: <4D82AD81.7030107@canonical.com>
+Date: Thu, 17 Mar 2011 18:55:29 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110317235532.44c0e202@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "J. Bruce Fields" <bfields@redhat.com>
+CC: Greg KH <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
+        Roel Kluin <roel.kluin@gmail.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [14/17] nfsd: wrong index used in inner loop
+References: <20110311204110.753145113@clark.kroah.org> <4D7AA086.3030500@canonical.com> <20110317230012.GA4072@pad.home.fieldses.org>
+In-Reply-To: <20110317230012.GA4072@pad.home.fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 11:55:32PM +0000, Alan Cox wrote:
-> On Thu, 17 Mar 2011 18:20:22 -0400
-> Sergey Lapin <slapin@ossfans.org> wrote:
-> 
-> > Normally, when LAPB is transport layer for X.25 protocol,
-> > internal mechanics of X.25 knows wheather data were actually
-> > received by peer. But for non-X.25 protocols which use LAPB
-> > as data reliability layer, it is important to have some way
-> > to know what was actually sent, so we add transmit indication.
-> 
-> Looks sensible but your patch doesn't add a user for it so what is it
-> needed for ?
+On 03/17/2011 05:00 PM, J. Bruce Fields wrote:
+> On Fri, Mar 11, 2011 at 10:21:58PM +0000, Tim Gardner wrote:
+>> On 03/11/2011 08:40 PM, Greg KH wrote:
+>>> 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+>>>
+>>> ------------------
+>>>
+>>> From: roel<roel.kluin@gmail.com>
+>>>
+>>> commit 3ec07aa9522e3d5e9d5ede7bef946756e623a0a0 upstream.
+>>>
+>>> Index i was already used in the outer loop
+>>>
+>>> Signed-off-by: Roel Kluin<roel.kluin@gmail.com>
+>>> Signed-off-by: J. Bruce Fields<bfields@redhat.com>
+>>> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
+>>>
+>>> ---
+>>>   fs/nfsd/nfs4xdr.c |    4 ++--
+>>>   1 file changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> --- a/fs/nfsd/nfs4xdr.c
+>>> +++ b/fs/nfsd/nfs4xdr.c
+>>> @@ -1114,7 +1114,7 @@ nfsd4_decode_create_session(struct nfsd4
+>>>
+>>>   	u32 dummy;
+>>>   	char *machine_name;
+>>> -	int i;
+>>> +	int i, j;
+>>>   	int nr_secflavs;
+>>>
+>>>   	READ_BUF(16);
+>>> @@ -1187,7 +1187,7 @@ nfsd4_decode_create_session(struct nfsd4
+>>>   			READ_BUF(4);
+>>>   			READ32(dummy);
+>>>   			READ_BUF(dummy * 4);
+>>> -			for (i = 0; i<   dummy; ++i)
+>>> +			for (j = 0; j<   dummy; ++j)
+>>>   				READ32(dummy);
+>>>   			break;
+>>>   		case RPC_AUTH_GSS:
+>>>
+>>>
+>>> --
+>>
+>> I agree that fixing the index in this loop is a good thing, but its
+>> caused me to look at the result:
+>>
+>> for (j = 0; j<   dummy; ++j)
+>> 	READ32(dummy);
+>>
+>> It seems to me that this loop might never terminate if the original
+>> buffer is maliciously constructed, e.g., 0, 1, 2, 3, ... Is the data
+>> in this buffer really that well vetted?
+>
+> Agreed, the code's still clearly bogus.  In fact, we can just delete
+> that loop entirely; I have a patch queued up to send to Linus soon.
+>
+> (But go ahead and apply this anyway, and then you'll get the followup
+> patch when it lands.)
+>
+> --b.
+>
 
-I implement accessor for special equipment (acessing fiscal information)
-which uses custom protocol over LAPB. As it is being implemented,
-I actually wanted to know if this approach for using LAPB is good enough
-for mainline submission, as I want to have kernel part to be in mainline.
-I think I will have the rest of patches ready within two weeks.
+Will do. Thanks for the update.
 
-All the best,
-S.
-
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
