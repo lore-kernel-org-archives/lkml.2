@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab1CRVlj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 17:41:39 -0400
-Received: from ishtar.tlinx.org ([173.164.175.65]:35826 "EHLO
-	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932524Ab1CRVle (ORCPT
+	id S932682Ab1CRVsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:48:22 -0400
+Received: from mail.ch.keymile.com ([193.17.201.103]:51806 "HELO
+	mail.ch.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932590Ab1CRVsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:41:34 -0400
-Message-ID: <4D83D188.3000909@tlinx.org>
-Date: Fri, 18 Mar 2011 14:41:28 -0700
-From: Linda Walsh <lkml@tlinx.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
+	Fri, 18 Mar 2011 17:48:14 -0400
+Message-ID: <4D83D2BB.5070204@keymile.com>
+Date: Fri, 18 Mar 2011 22:46:35 +0100
+From: Stefan Bigler <stefan.bigler@keymile.com>
+Reply-To: stefan.bigler@keymile.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: minor doc correction: Documentation/iostats.txt: bit-size reference
-X-Stationery: 0.5.1
-Content-Type: text/plain; charset=us-ascii; format=flowed
+To: balbi@ti.com
+CC: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: TTY loosing data with u_serial gadget
+References: <4D8121F6.9060600@keymile.com><20110317000408.GA18911@kroah.com><4D8389EC.5030704@keymile.com> <20110318170801.GA2857@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110318170801.GA2857@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Mar 2011 21:46:35.0803 (UTC) FILETIME=[F423F6B0:01CBE5B5]
+X-ESAFE-STATUS: Mail allowed
+X-ESAFE-DETAILS: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
+Returning the size of queued data is a reasonable solution for this problem.
 
-Documentation/iostats.txt describes fields in /proc/diskstats as
-32-bit unsigned values that can wrap.
-
-On a 64-bit system, it appears they are 64-bit unsigned values.
-
-Should 'iostats.txt' describe fields as "unsigned, native-word-sized 
-values" or is my 64-bit system not behaving according to "spec"? ;-)
-
-
-Linda
+Stefan
 
 
