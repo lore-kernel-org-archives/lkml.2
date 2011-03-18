@@ -1,45 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab1CRSHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 14:07:07 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59292 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752338Ab1CRSHC (ORCPT
+	id S1756272Ab1CRSJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 14:09:50 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47712 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab1CRSJq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 14:07:02 -0400
-Date: Fri, 18 Mar 2011 18:07:18 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: stefan.bigler@keymile.com
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: TTY loosing data with u_serial gadget
-Message-ID: <20110318180718.6d019c71@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D8389EC.5030704@keymile.com>
-References: <4D8121F6.9060600@keymile.com>
-	<20110317000408.GA18911@kroah.com>
-	<4D8389EC.5030704@keymile.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Mar 2011 14:09:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bQfyaMsY6VPPjZG9R/sVMJv8SKYExUVmRwPToE/dMT4oYEmIgMoYESgYHlJs0wbqg4
+         bGldgSPRmbKDUTEVXB3rK13+7pvmfKvamYGwoCITDTQcBLwkz5Q/T2xZHZhNhJ71L9Vu
+         c3moCPPpUXH2Y/ec63f6yk+fX4YSe0lmZozcg=
+MIME-Version: 1.0
+In-Reply-To: <20110308123541.GA11804@khazad-dum.debian.net>
+References: <1299540407-3779-1-git-send-email-manoj.iyer@canonical.com>
+	<1299540407-3779-2-git-send-email-manoj.iyer@canonical.com>
+	<20110308123541.GA11804@khazad-dum.debian.net>
+Date: Fri, 18 Mar 2011 13:09:44 -0500
+X-Google-Sender-Auth: 6asDht45U97r4B8wDHuUlHH8Raw
+Message-ID: <AANLkTinDQbCX4kkm8DOuJZfM_gNQU+BXaF5gASafCCUQ@mail.gmail.com>
+Subject: Re: [PATCH] thinkpad-acpi: module autoloading for newer Lenovo ThinkPads.
+From: Manoj Iyer <manoj.iyer@canonical.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I had also a look at the relevant fixes, a lot is done but I could not find
-> the required protection of the attribute receive_room.
+Henrique,
 
-receive_room isn't protected because it may only be shrunk by the amount
-of data sent to the ldisc or less. The ldisc is at liberty to grow the
-value as it sees fit.
+Thanks the ack on the patch, any idea when this will be Q'ed for linus tree ?
 
-In essence if you get a value from receive_room it's a guarantee you may
-send that many bytes, it is not a precise instantaneous perfect answer to
-the question "exactly what number of bytes could fit at this precise
-moment".
-
-Which does of course mean you should never see the case where
-receive_room is bigger than the actual space available in tty raw mode.
+-----------------------------------------------------
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement Team
+------------------------------------------------------
 
 
+
+On Tue, Mar 8, 2011 at 6:35 AM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Mon, 07 Mar 2011, Manoj Iyer wrote:
+>> The newer Lenovo ThinkPads have HKEY HID of LEN0068 instead
+>> of IBM0068. Added new HID so that thinkpad_acpi module will
+>> auto load on these newer Lenovo ThinkPads.
+>>
+>> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+>
+> Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+>
+>> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+>> index eb99223..125d891 100644
+>> --- a/drivers/platform/x86/thinkpad_acpi.c
+>> +++ b/drivers/platform/x86/thinkpad_acpi.c
+>> @@ -128,7 +128,8 @@ enum {
+>>  };
+>>
+>>  /* ACPI HIDs */
+>> -#define TPACPI_ACPI_HKEY_HID         "IBM0068"
+>> +#define TPACPI_ACPI_IBM_HKEY_HID     "IBM0068"
+>> +#define TPACPI_ACPI_LENOVO_HKEY_HID  "LEN0068"
+>>  #define TPACPI_ACPI_EC_HID           "PNP0C09"
+>>
+>>  /* Input IDs */
+>> @@ -3879,7 +3880,8 @@ errexit:
+>>  }
+>>
+>>  static const struct acpi_device_id ibm_htk_device_ids[] = {
+>> -     {TPACPI_ACPI_HKEY_HID, 0},
+>> +     {TPACPI_ACPI_IBM_HKEY_HID, 0},
+>> +     {TPACPI_ACPI_LENOVO_HKEY_HID, 0},
+>>       {"", 0},
+>>  };
+>
+> --
+>  "One disk to rule them all, One disk to find them. One disk to bring
+>  them all and in the darkness grind them. In the Land of Redmond
+>  where the shadows lie." -- The Silicon Valley Tarot
+>  Henrique Holschuh
+>
