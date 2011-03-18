@@ -1,129 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab1CRVe3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 17:34:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:48894 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131Ab1CRVeW (ORCPT
+	id S932598Ab1CRVfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:35:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38058 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932131Ab1CRVfK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:34:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=mA88vHBmDLHxCvvwt3K+tEgLFIaL9//riJunkQugqCSVYLnV9NRy2Ca6uXglPoFA9p
-         zgg4oLPB58GQv3qAHFTw==
-Date: Fri, 18 Mar 2011 14:34:03 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: PageBuddy and mapcount underflows robustness
-In-Reply-To: <20110317231635.GC10696@random.random>
-Message-ID: <alpine.LSU.2.00.1103181428100.1996@sister.anvils>
-References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils> <20110314155232.GB10696@random.random> <alpine.LSU.2.00.1103140910570.2601@sister.anvils> <20110314165922.GE10696@random.random> <AANLkTikWh5tFUZuALYRP3Dx2Zcs33u0UVdjf4d_7KhPJ@mail.gmail.com>
- <20110317231635.GC10696@random.random>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 18 Mar 2011 17:35:10 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <4D839BCD.6030202@linaro.org>
+References: <20110311165642.GA9996@kroah.com> <201103172333.01474.arnd@arndb.de>
+ <4D82979B.2050003@linaro.org> <201103181600.09877.arnd@arndb.de> <4D839BCD.6030202@linaro.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 18 Mar 2011 15:28:14 -0600
+X-Google-Sender-Auth: isbzZlWgdx2BORXgdAa-zPrBoYI
+Message-ID: <AANLkTi=Vy4Cu9rf7SpOFL1umN37bJgXhq9jEQpUrqjgw@mail.gmail.com>
+Subject: Re: RFC: Platform data for onboard USB assets
+To: andy.green@linaro.org
+Cc: Andy Green <andy@warmcat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg KH <greg@kroah.com>, devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011, Andrea Arcangeli wrote:
-> On Mon, Mar 14, 2011 at 10:30:11AM -0700, Linus Torvalds wrote:
-> Subject: mm: PageBuddy and mapcount robustness
-> 
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> Change the _mapcount value indicating PageBuddy from -2 to -128 for
-> more robusteness against page_mapcount() undeflows.
-> 
-> Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
-> ignore the previous retval of PageBuddy().
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Reported-by: Hugh Dickins <hughd@google.com>
+On Fri, Mar 18, 2011 at 11:52 AM, Andy Green <andy@warmcat.com> wrote:
+> On 03/18/2011 03:00 PM, Somebody in the thread at some point said:
+>
+> Hi -
+>
+>>> You changed your first opinion about tagging "dynamically probed
+>>> devices" with what is effectively platform_data, cool.
+>>
+>> I still don't like the idea of attaching platform_data to more
+>> devices, when we try to move people away from that in other
+>> parts of the kernel, because of the known deficiencies.
+>
+> Whatever way you look at it, data delivered into the driver by Device Tree
+> is fundamentally the same action as delivering data into the driver by
+> platform_data.  Yes, you query by named element with device context, but you
+> end up with the same answer as if you dereference a platform_data member.
+>  There are no "known deficiencies" to platform_data for this action either,
+> at least, not known to me, I don't think lack of typechecking on the pointer
+> itself is an issue given the accuracy it can be targeted to a
+> soldered-on-the-board device.
 
-Yes, this version satisfies my objections too.
-I'd say Acked-by but I see that it's already in, great.
+Apologies if we got a little carried away on the device tree side
+topic; it is something that needs to be investigated regardless and
+that unfortunately ended up co-opting this thread.  You're right that
+on ARM device tree is optional and a solution is required for
+!CONFIG_OF.
 
-I've Cc'ed stable@kernel.org: please can we have this in 2.6.38.1,
-since 2.6.38 regressed the recovery from bad page states,
-inadvertently changing them to a fatal error when CONFIG_DEBUG_VM.
+However, at issue here is that platform_data sucks hard, and
+asynchronous platform data sucks harder.  I think I can go out on a
+limb and say that platform_data is viewed with distaste by more people
+than just Arnd and me.  It sucks because it is an anonymous pointer
+with absolutely zero chance of verifying that the driver has the right
+thing when it comes out the other end at the driver.  This means the
+very real possibility of dereferencing the wrong structure and the
+kernel oopsing or worse.
 
-Thanks,
-Hugh
+For current {platform,i2c,spi} device users, there is at least some
+level of protection in that the specific driver and the specific pdata
+is specified at exactly the same time in the same place in the source
+code.  If a driver changes the pdata structure it expects, then it is
+easy to find all the users (at least for all in-tree users), but it
+still sucks.  gcc cannot tell us when it is wrong, and the kernel
+cannot validate it at runtime.  One reason the DT has been preferred
+over platform_data in this discussion is because it does *not* carry
+the risk of dereferencing the wrong structure.
 
-commit ef2b4b95a63a1d23958dcb99eb2c6898eddc87d0
-Author: Andrea Arcangeli <aarcange@redhat.com>
-Date:   Fri Mar 18 00:16:35 2011 +0100
+Asynchronously attached pdata sucks harder because the selected driver
+is completely dissociated from the pdata type.  Not even the i2c and
+spi board info structures have this issue.  At least the board info
+structures have the driver and the pdata settings co-located.
 
-    mm: PageBuddy and mapcount robustness
-    
-    Change the _mapcount value indicating PageBuddy from -2 to -128 for
-    more robusteness against page_mapcount() undeflows.
-    
-    Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
-    ignore the previous retval of PageBuddy().
-    
-    Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-    Reported-by: Hugh Dickins <hughd@google.com>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+I certainly have no intention of trying to migrate
+{platform,i2c,spi}_device away from platform_data, but I will actively
+nack any attempt to bring it into other subsystems.  There are better
+ways.  Device tree is one option, but I will accept other approaches.
+Using domain specific api, such as to retrieve the correct MAC address
+is one idea that's been raised.  Regardless, the ability to validate
+the data passed to the driver, either at compile or runtime, is a hard
+requirement in my mind.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 679300c..ff83798 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -402,16 +402,23 @@ static inline void init_page_count(struct page *page)
- /*
-  * PageBuddy() indicate that the page is free and in the buddy system
-  * (see mm/page_alloc.c).
-+ *
-+ * PAGE_BUDDY_MAPCOUNT_VALUE must be <= -2 but better not too close to
-+ * -2 so that an underflow of the page_mapcount() won't be mistaken
-+ * for a genuine PAGE_BUDDY_MAPCOUNT_VALUE. -128 can be created very
-+ * efficiently by most CPU architectures.
-  */
-+#define PAGE_BUDDY_MAPCOUNT_VALUE (-128)
-+
- static inline int PageBuddy(struct page *page)
- {
--	return atomic_read(&page->_mapcount) == -2;
-+	return atomic_read(&page->_mapcount) == PAGE_BUDDY_MAPCOUNT_VALUE;
- }
- 
- static inline void __SetPageBuddy(struct page *page)
- {
- 	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
--	atomic_set(&page->_mapcount, -2);
-+	atomic_set(&page->_mapcount, PAGE_BUDDY_MAPCOUNT_VALUE);
- }
- 
- static inline void __ClearPageBuddy(struct page *page)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bd76256..7945247 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -286,7 +286,7 @@ static void bad_page(struct page *page)
- 
- 	/* Don't complain about poisoned pages */
- 	if (PageHWPoison(page)) {
--		__ClearPageBuddy(page);
-+		reset_page_mapcount(page); /* remove PageBuddy */
- 		return;
- 	}
- 
-@@ -317,7 +317,7 @@ static void bad_page(struct page *page)
- 	dump_stack();
- out:
- 	/* Leave bad fields for debug, except PageBuddy could make trouble */
--	__ClearPageBuddy(page);
-+	reset_page_mapcount(page); /* remove PageBuddy */
- 	add_taint(TAINT_BAD_PAGE);
- }
- 
+>> Passing a MAC address in a device tree property is a
+>> well-established method that is used on many drivers, and
+>> is portable across operating systems and architectures.
+>
+> If you're talking about Device Tree, that itself is not at all "well
+> established" let alone servicing drivers from it.  Like I say I don't want
+> to seem like I am down on it, but it is very new indeed let's face it and
+> few drivers are using it for functional configuration information compared
+> to vast numbers using platform_data.
+>
+> =====> If Device Tree APIs is mandated to implement functionality fixes to
+> drivers and platform_data is blocked for this, then we end up with
+> different, rotting functionality for platform_data basis and drivers that
+> remain broken on the many, many, platforms that don't have and will never
+> have Device Tree.  That does NOT sound like the right approach.
+>
+> I guess the grand plan is to eliminate platform_data by overwhelming it with
+> Device Tree refactoring.  But each driver has to be tested and each board
+> definition file changed... that is a huge, huge undertaking that will not
+> happen in any kind of medium and perhaps not long term either.
+
+Nope, not the plan.
+
+> At least we agree there's no point to target pluggable devices with either
+> solution, in which case platform_data and Device Tree provide the same end
+> result, plus or minus extra query API.
+
+Right, if it is detectable it has no business being described
+anywhere, whether it be platform_data, a dt node, or something else.
+
+g.
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
