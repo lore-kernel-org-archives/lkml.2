@@ -1,358 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab1CRDFw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 23:05:52 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:36952 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932904Ab1CRDFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 23:05:46 -0400
-Date: Thu, 17 Mar 2011 22:05:39 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: kirkland@canonical.com, dhowells@redhat.com, jmorris@namei.org,
-        linux-fsdevel@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, ecryptfs-devel@lists.launchpad.net
-Subject: Re: [PATCH 3/5] eCryptfs: verify authentication tokens before their
- use
-Message-ID: <20110318030539.GA16889@boyd.l.tihix.com>
-References: <1300362538-11502-1-git-send-email-roberto.sassu@polito.it>
- <1300362538-11502-4-git-send-email-roberto.sassu@polito.it>
+	id S932231Ab1CRDOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 23:14:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61480 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932120Ab1CRDOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 23:14:02 -0400
+Message-ID: <4D82CE63.4030006@cn.fujitsu.com>
+Date: Fri, 18 Mar 2011 11:15:47 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300362538-11502-4-git-send-email-roberto.sassu@polito.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>
+CC: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH V5 1/1] rcu: introduce kfree_rcu()
+References: <4D7F356C.8020903@cn.fujitsu.com> <201103151302.09381.arnd@arndb.de> <20110315121941.GD2167@linux.vnet.ibm.com> <201103151407.24800.arnd@arndb.de> <20110316040203.GB2273@linux.vnet.ibm.com>
+In-Reply-To: <20110316040203.GB2273@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-18 11:12:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-18 11:12:39,
+	Serialize complete at 2011-03-18 11:12:39
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu Mar 17, 2011 at 12:48:52PM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> Authentication tokens content may change if another requestor calls the
-> update() method of the corresponding key. The new function
-> ecryptfs_verify_auth_tok_from_key() retrieves the authentication token from
-> the provided key and verifies if it is still valid before being used to
-> encrypt or decrypt an eCryptfs file.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> ---
->  fs/ecryptfs/ecryptfs_kernel.h |    3 +-
->  fs/ecryptfs/keystore.c        |  107 ++++++++++++++++++++++++++++-------------
->  fs/ecryptfs/main.c            |    4 +-
->  3 files changed, 77 insertions(+), 37 deletions(-)
-> 
-> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-> index 8282031..85728e9 100644
-> --- a/fs/ecryptfs/ecryptfs_kernel.h
-> +++ b/fs/ecryptfs/ecryptfs_kernel.h
-> @@ -333,7 +333,6 @@ struct ecryptfs_global_auth_tok {
->  	u32 flags;
->  	struct list_head mount_crypt_stat_list;
->  	struct key *global_auth_tok_key;
-> -	struct ecryptfs_auth_tok *global_auth_tok;
->  	unsigned char sig[ECRYPTFS_SIG_SIZE_HEX + 1];
->  };
-> 
-> @@ -726,6 +725,8 @@ int ecryptfs_get_tfm_and_mutex_for_cipher_name(struct crypto_blkcipher **tfm,
->  int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
->  				      struct ecryptfs_auth_tok **auth_tok,
->  				      char *sig);
-> +int ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
-> +				      struct ecryptfs_auth_tok **auth_tok);
+kfree_rcu() which was original proposed by Lai 2.5 years ago is one of
+the most important RCU TODO list entries, Lai and Manfred have worked on
+patches for this. This V4 patch is based on the Manfred's patch and
+the V1 of Lai's patch. (These two patches are almost the same
+in implementation, and this patch is mainly based on the Manfred's).
 
-This shouldn't go in the header file. It only seems to be used in
-keystore.c.
+Lai's V1 patch: http://lkml.org/lkml/2008/9/18/1
+Manfred's patch: http://lkml.org/lkml/2009/1/2/115
+RCU TODO list: http://www.kernel.org/pub/linux/kernel/people/paulmck/rcutodo.html
 
->  int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
->  			 loff_t offset, size_t size);
->  int ecryptfs_write_lower_page_segment(struct inode *ecryptfs_inode,
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 36b68a6..e35d745 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -405,25 +405,47 @@ out:
-> 
->  static int
->  ecryptfs_find_global_auth_tok_for_sig(
-> -	struct ecryptfs_global_auth_tok **global_auth_tok,
-> +	struct key **auth_tok_key,
-> +	struct ecryptfs_auth_tok **auth_tok,
->  	struct ecryptfs_mount_crypt_stat *mount_crypt_stat, char *sig)
->  {
->  	struct ecryptfs_global_auth_tok *walker;
->  	int rc = 0;
-> 
-> -	(*global_auth_tok) = NULL;
-> +	(*auth_tok_key) = NULL;
-> +	(*auth_tok) = NULL;
->  	mutex_lock(&mount_crypt_stat->global_auth_tok_list_mutex);
->  	list_for_each_entry(walker,
->  			    &mount_crypt_stat->global_auth_tok_list,
->  			    mount_crypt_stat_list) {
->  		if (memcmp(walker->sig, sig, ECRYPTFS_SIG_SIZE_HEX) == 0) {
+This new introduced API kfree_rcu() primitive kfree()s the specified memory
+after a RCU grace period elapses.
 
-Since we're adding more logic inside this conditional, I'd like to see
-something like this:
+It replaces many simple "call_rcu(head, simple_kfree_callback)";
+These many simple_kfree_callback() instances just does
 
-if (!memcmp(...))
-	continue;
+	kfree(containerof(head,struct whatever_struct,rcu_member));
 
-Then proceed with all the newly added logic.
+These simple_kfree_callback() instances are just duplicate code, we need
+a generic function for them.
 
-The eCryptfs source is full of long, too descriptive function and
-variable names. The less nesting we do now, the easier it will be to
-read later. :)
+And kfree_rcu() is also help for unloadable modules, kfree_rcu() does not
+queue any function which belong to the module, so a rcu_barrier() can
+be avoid when module exit. (If we queue any other function by call_rcu(),
+rcu_barrier() is still needed.)
 
-> +			if (walker->flags & ECRYPTFS_AUTH_TOK_INVALID) {
-> +				rc = -EINVAL;
-> +				goto out;
-> +			}
-> +
->  			rc = key_validate(walker->global_auth_tok_key);
-> -			if (!rc)
-> -				(*global_auth_tok) = walker;
-> +			if (rc)
-> +				goto out;
-> +
-> +			rc = ecryptfs_verify_auth_tok_from_key(
-> +					walker->global_auth_tok_key, auth_tok);
-> +			if (rc) {
-> +				printk(KERN_WARNING
-> +				      "Invalidating auth tok with sig = [%s]\n",
-> +				      sig);
-
-Off by one space on the indenting here.
-
-> +				walker->flags |= ECRYPTFS_AUTH_TOK_INVALID;
-> +				key_put(walker->global_auth_tok_key);
-> +				walker->global_auth_tok_key = NULL;
-> +				mount_crypt_stat->num_global_auth_toks--;
-
-It looks like num_global_auth_toks can go away. We increment and
-decrement it, but never actually check it.
-
-> +				goto out;
-> +			}
-> +			(*auth_tok_key) = walker->global_auth_tok_key;
-> +			key_get(*auth_tok_key);
->  			goto out;
->  		}
->  	}
-> -	rc = -EINVAL;
-> +	rc = -ENOENT;
->  out:
->  	mutex_unlock(&mount_crypt_stat->global_auth_tok_list_mutex);
->  	return rc;
-> @@ -451,14 +473,11 @@ ecryptfs_find_auth_tok_for_sig(
->  	struct ecryptfs_mount_crypt_stat *mount_crypt_stat,
->  	char *sig)
->  {
-> -	struct ecryptfs_global_auth_tok *global_auth_tok;
->  	int rc = 0;
-> 
-> -	(*auth_tok_key) = NULL;
-> -	(*auth_tok) = NULL;
-> -	if (ecryptfs_find_global_auth_tok_for_sig(&global_auth_tok,
-> -						  mount_crypt_stat, sig)) {
-> -
-> +	rc = ecryptfs_find_global_auth_tok_for_sig(auth_tok_key, auth_tok,
-> +						   mount_crypt_stat, sig);
-> +	if (rc == -ENOENT) {
->  		/* if the flag ECRYPTFS_GLOBAL_MOUNT_AUTH_TOK_ONLY is set in the
->  		 * mount_crypt_stat structure, we prevent to use auth toks that
->  		 * are not inserted through the ecryptfs_add_global_auth_tok
-> @@ -470,8 +489,8 @@ ecryptfs_find_auth_tok_for_sig(
-> 
->  		rc = ecryptfs_keyring_auth_tok_for_sig(auth_tok_key, auth_tok,
->  						       sig);
-> -	} else
-> -		(*auth_tok) = global_auth_tok->global_auth_tok;
-> +	}
-> +
->  	return rc;
->  }
-> 
-> @@ -1566,7 +1585,23 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
->  		(*auth_tok_key) = NULL;
->  		goto out;
->  	}
-> -	(*auth_tok) = ecryptfs_get_key_payload_data(*auth_tok_key);
-> +
-> +	rc = ecryptfs_verify_auth_tok_from_key(*auth_tok_key, auth_tok);
-> +	if (rc) {
-> +		key_put(*auth_tok_key);
-> +		(*auth_tok_key) = NULL;
-> +		goto out;
-> +	}
-> +out:
-> +	return rc;
-> +}
-> +
-> +int ecryptfs_verify_auth_tok_from_key(struct key *auth_tok_key,
-> +				      struct ecryptfs_auth_tok **auth_tok)
-
-Can be marked static.
-
-> +{
-> +	int rc = 0;
-> +
-> +	(*auth_tok) = ecryptfs_get_key_payload_data(auth_tok_key);
->  	if (ecryptfs_verify_version((*auth_tok)->version)) {
->  		printk(KERN_ERR
->  		       "Data structure version mismatch. "
-> @@ -1576,19 +1611,14 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
->  		       ECRYPTFS_VERSION_MAJOR,
->  		       ECRYPTFS_VERSION_MINOR);
->  		rc = -EINVAL;
-> -		goto out_release_key;
-> +		goto out;
->  	}
->  	if ((*auth_tok)->token_type != ECRYPTFS_PASSWORD
->  	    && (*auth_tok)->token_type != ECRYPTFS_PRIVATE_KEY) {
->  		printk(KERN_ERR "Invalid auth_tok structure "
->  		       "returned from key query\n");
->  		rc = -EINVAL;
-> -		goto out_release_key;
-> -	}
-> -out_release_key:
-> -	if (rc) {
-> -		key_put(*auth_tok_key);
-> -		(*auth_tok_key) = NULL;
-> +		goto out;
->  	}
->  out:
->  	return rc;
-> @@ -2325,13 +2355,14 @@ ecryptfs_generate_key_packet_set(char *dest_base,
->  				 size_t max)
->  {
->  	struct ecryptfs_auth_tok *auth_tok;
-> -	struct ecryptfs_global_auth_tok *global_auth_tok;
-> +	struct key *auth_tok_key = NULL;
->  	struct ecryptfs_mount_crypt_stat *mount_crypt_stat =
->  		&ecryptfs_superblock_to_private(
->  			ecryptfs_dentry->d_sb)->mount_crypt_stat;
->  	size_t written;
->  	struct ecryptfs_key_record *key_rec;
->  	struct ecryptfs_key_sig *key_sig;
-> +	int auth_tok_count = 0;
->  	int rc = 0;
-> 
->  	(*len) = 0;
-> @@ -2344,21 +2375,18 @@ ecryptfs_generate_key_packet_set(char *dest_base,
->  	list_for_each_entry(key_sig, &crypt_stat->keysig_list,
->  			    crypt_stat_list) {
->  		memset(key_rec, 0, sizeof(*key_rec));
-> -		rc = ecryptfs_find_global_auth_tok_for_sig(&global_auth_tok,
-> +		rc = ecryptfs_find_global_auth_tok_for_sig(&auth_tok_key,
-> +							   &auth_tok,
->  							   mount_crypt_stat,
->  							   key_sig->keysig);
->  		if (rc) {
-> -			printk(KERN_ERR "Error attempting to get the global "
-> -			       "auth_tok; rc = [%d]\n", rc);
-> -			goto out_free;
-> -		}
-> -		if (global_auth_tok->flags & ECRYPTFS_AUTH_TOK_INVALID) {
->  			printk(KERN_WARNING
->  			       "Skipping invalid auth tok with sig = [%s]\n",
-
-"invalid auth tok" isn't necessarily accurate here. A global auth tok
-with that sig simply may not have been found.
-
-> -			       global_auth_tok->sig);
-> +			       key_sig->keysig);
-> +			rc = 0;
->  			continue;
-
-In my opinion, this is an error condition that can't be ignored. The
-user trusts us to wrap the file encryption key of all newly created
-files with the key associated with this auth tok. If the auth tok is not
-found or is unusable, I don't feel like we should act like everything is
-going as planned. What do you think?
-
->  		}
-> -		auth_tok = global_auth_tok->global_auth_tok;
-> +		auth_tok_count++;
->  		if (auth_tok->token_type == ECRYPTFS_PASSWORD) {
->  			rc = write_tag_3_packet((dest_base + (*len)),
->  						&max, auth_tok,
-> @@ -2367,7 +2395,7 @@ ecryptfs_generate_key_packet_set(char *dest_base,
->  			if (rc) {
->  				ecryptfs_printk(KERN_WARNING, "Error "
->  						"writing tag 3 packet\n");
-> -				goto out_free;
-> +				goto out_release_key;
->  			}
->  			(*len) += written;
->  			/* Write auth tok signature packet */
-> @@ -2377,7 +2405,7 @@ ecryptfs_generate_key_packet_set(char *dest_base,
->  			if (rc) {
->  				ecryptfs_printk(KERN_ERR, "Error writing "
->  						"auth tok signature packet\n");
-> -				goto out_free;
-> +				goto out_release_key;
->  			}
->  			(*len) += written;
->  		} else if (auth_tok->token_type == ECRYPTFS_PRIVATE_KEY) {
-> @@ -2387,15 +2415,23 @@ ecryptfs_generate_key_packet_set(char *dest_base,
->  			if (rc) {
->  				ecryptfs_printk(KERN_WARNING, "Error "
->  						"writing tag 1 packet\n");
-> -				goto out_free;
-> +				goto out_release_key;
->  			}
->  			(*len) += written;
->  		} else {
->  			ecryptfs_printk(KERN_WARNING, "Unsupported "
->  					"authentication token type\n");
->  			rc = -EINVAL;
-> -			goto out_free;
-> +			goto out_release_key;
->  		}
-> +		key_put(auth_tok_key);
-> +	}
-> +	if (!auth_tok_count) {
-> +		printk(KERN_WARNING
-> +			"Unable to create a new file without a valid "
-> +			"authentication token\n");
-> +		rc = -EINVAL;
-> +		goto out_free;
->  	}
->  	if (likely(max > 0)) {
->  		dest_base[(*len)] = 0x00;
-> @@ -2403,6 +2439,9 @@ ecryptfs_generate_key_packet_set(char *dest_base,
->  		ecryptfs_printk(KERN_ERR, "Error writing boundary byte\n");
->  		rc = -EIO;
->  	}
-> +out_release_key:
-> +	if (rc)
-> +		key_put(auth_tok_key);
->  out_free:
->  	kmem_cache_free(ecryptfs_key_record_cache, key_rec);
->  out:
-> diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-> index 758323a..f079473 100644
-> --- a/fs/ecryptfs/main.c
-> +++ b/fs/ecryptfs/main.c
-> @@ -241,14 +241,14 @@ static int ecryptfs_init_global_auth_toks(
->  	struct ecryptfs_mount_crypt_stat *mount_crypt_stat)
->  {
->  	struct ecryptfs_global_auth_tok *global_auth_tok;
-> +	struct ecryptfs_auth_tok *auth_tok;
->  	int rc = 0;
-> 
->  	list_for_each_entry(global_auth_tok,
->  			    &mount_crypt_stat->global_auth_tok_list,
->  			    mount_crypt_stat_list) {
->  		rc = ecryptfs_keyring_auth_tok_for_sig(
-> -			&global_auth_tok->global_auth_tok_key,
-> -			&global_auth_tok->global_auth_tok,
-> +			&global_auth_tok->global_auth_tok_key, &auth_tok,
->  			global_auth_tok->sig);
->  		if (rc) {
->  			printk(KERN_ERR "Could not find valid key in user "
-> -- 
-> 1.7.4
-> 
-
-
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7d62909..e45ed82 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -777,4 +777,58 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+ }
+ #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ 
++static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
++{
++	return offset < 4096;
++}
++
++static __always_inline
++void __kfree_rcu(struct rcu_head *head, unsigned long offset)
++{
++	typedef void (*rcu_callback)(struct rcu_head *);
++
++	BUILD_BUG_ON(!__builtin_constant_p(offset));
++
++	/* See the comments of kfree_rcu(), the "Note:" section. */
++	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
++
++	call_rcu(head, (rcu_callback)offset);
++}
++
++extern void kfree(const void *);
++
++static inline void __rcu_reclaim(struct rcu_head *head)
++{
++	unsigned long offset = (unsigned long)head->func;
++
++	if (__is_kfree_rcu_offset(offset))
++		kfree((void *)head - offset);
++	else
++		head->func(head);
++}
++
++/**
++ * kfree_rcu() - kfree an object after a grace period.
++ * @ptr:	pointer to kfree
++ * @rcu_head:	the name of the struct rcu_head within the type of @ptr.
++ *
++ * Many rcu callbacks just call kfree() on the base structure. This helper
++ * function calls kfree internally. The rcu_head structure must be embedded
++ * in the to be freed structure.
++ *
++ * It is different from call_rcu(), kfree_rcu() does not require nor create
++ * any local RCU callback functions belong to its module. So the caller
++ * does not need to wait the callback to complete when the caller want to
++ * unload the module.
++ *
++ * Note: if the offset of the struct rcu_head within the type of @ptr
++ * is larger than 4096, it will trigger a BUILD_BUG_ON() compile-time
++ * error in __kfree_rcu(), the user of kfree_rcu() should rerange the
++ * fields of the type of @ptr to make the offset smaller or use call_rcu()
++ * instead or require the RCU maintainer changing the limit
++ * in this situation.
++ */
++#define kfree_rcu(ptr, rcu_head)					\
++	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
++
+ #endif /* __LINUX_RCUPDATE_H */
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 0c343b9..4d60fbc 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -167,7 +167,7 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ 		prefetch(next);
+ 		debug_rcu_head_unqueue(list);
+ 		local_bh_disable();
+-		list->func(list);
++		__rcu_reclaim(list);
+ 		local_bh_enable();
+ 		list = next;
+ 		RCU_TRACE(cb_count++);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index dd4aea8..b3c1aed 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1143,7 +1143,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 		next = list->next;
+ 		prefetch(next);
+ 		debug_rcu_head_unqueue(list);
+-		list->func(list);
++		__rcu_reclaim(list);
+ 		list = next;
+ 		if (++count >= rdp->blimit)
+ 			break;
