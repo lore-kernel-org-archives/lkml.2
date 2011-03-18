@@ -1,79 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab1CRQ2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 12:28:17 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:43591 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756853Ab1CRQ2K (ORCPT
+	id S1757093Ab1CRQbU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 12:31:20 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54602 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762Ab1CRQbP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 12:28:10 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D83885C.3050402@cam.ac.uk>
-Date: Fri, 18 Mar 2011 16:29:16 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Fri, 18 Mar 2011 12:31:15 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Kay Sievers <kay.sievers@vrfy.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: IIO comments
-References: <201103152215.20059.arnd@arndb.de> <201103181347.15291.arnd@arndb.de> <4D838313.9020804@cam.ac.uk> <201103181718.08502.arnd@arndb.de>
-In-Reply-To: <201103181718.08502.arnd@arndb.de>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <AANLkTikPiwRgm0DX9CzJacMxsfhPjTU-ksZjw9m2dkEO@mail.gmail.com>
+References: <AANLkTikPiwRgm0DX9CzJacMxsfhPjTU-ksZjw9m2dkEO@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 18 Mar 2011 10:30:55 -0600
+X-Google-Sender-Auth: kG6UfhBq-vCpaeYaECj9XlV32Mg
+Message-ID: <AANLkTikXDaTFF0AmKOZFKDKRFd11MPc+oV5WAdZvvJsG@mail.gmail.com>
+Subject: Re: [git pull] spi and gpio patches for 2.6.39
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/11 16:18, Arnd Bergmann wrote:
-> On Friday 18 March 2011, Jonathan Cameron wrote:
->> On 03/18/11 12:47, Arnd Bergmann wrote:
->>> On Thursday 17 March 2011, Jonathan Cameron wrote:
->>>> On 03/17/11 17:51, Arnd Bergmann wrote:
->>>>> I don't completely understand the notation. Regarding the various
->>>>> {in0, in1, in2, ...} inputs, is there a fundamental difference between
->>>>> them? In the code example I gave, a driver would simply list
->>>>> a set of inputs of the same type (IIO_CHAN_IN) and let the core
->>>>> enumerate them. What does "in0-in1" mean?
->>>>
->>>> in0-in1 is a differential adc channel. Literally outputs value on
->>>> physical pin 1 subtracted from physical pin 2.
->>>
->>> Ok, I see. So these would be fairly hard to enumerate, right?
->>> Would it be possible to have one attribute with named "diff%d"
->>> and another attribute associated with it that describes which
->>> channels are compared?
->>
->> Could do, but what would it gain us?  If the information is available
->> to the core, then it can use it give us the explicit naming? As shown
->> below we have to handle holes in the enumeration anyway so this isn't
->> to much of a problem.
-> 
-> Maybe I was seeing problems that don't exist here. Wouldn't
-> you need to numeric identifiers to describe a differential
-> channel?
-Agreed, but from the point of view of what is exposed in naming it doesn't
-matter.  The core and the driver need that number. Userspace doesn't.
+Hi Linus,
 
-Also note that we'll need to pass over an explicit index for the buffering
-order anyway so what is one more.  The buffering one we can't avoid as
-userspace has to know what it is and they are sometimes dependent on
-really esoteric rules on the hardware.   Right now we assume that
-there aren't sets with different contents where the ordering
-of any given pair changes.  I think that is probably valid.
-Hence what we have won't allow
+Update to this, I just pushed out one more trivial change that moves a
+header file for a driver out of include/linux.  I had forgotten about
+it in another branch.
 
-a b c and b a d (in some sense they have to have a monotonic index).
+g.
 
-> I guess if it's always in${i}-in${i+1}, it's still not too hard.
-I think they have been so far, but doubt this is universal.
-How about having a diff type and just having a pair of indices in the
-channel structure?  Actually may need a third for x^2+y^2+z^2 devices.
-(iirc there are parts that do x^2+y^2 despite also having a z channel)
-...
+On Fri, Mar 18, 2011 at 10:18 AM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> Hi Linus,
+>
+> Here are the SPI and GPIO changes I've got queued up for 2.6.39
+>
+> g.
+>
+> The following changes since commit 08351fc6a75731226e1112fc7254542bd3a2912e:
+>
+>  Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile
+> (2011-03-17 19:34:12 -0700)
+>
+> are available in the git repository at:
+>
+>  git://git.secretlab.ca/git/linux-2.6 spi/next
+>
+> Axel Lin (2):
+>      gpio: add MODULE_DEVICE_TABLE to pch_gpio and ml_ioh_gpio
+>      gpio: Use __devexit at necessary places
+>
+> Bernhard Walle (1):
+>      spi/spidev: Add 32 bit compat ioctl()
+>
+> Bob Liu (1):
+>      spi/bfin_spi: support for multiples of 8bits with hardware CS
+>
+> Dirk Eibach (1):
+>      gpio/pca953x: Fix wrong pointer type
+>
+> Esben Haabendal (1):
+>      of_mmc_spi: add card detect irq support
+>
+> Geert Uytterhoeven (1):
+>      spi/rtc-{ds1390,ds3234,m41t94}: Use spi_get_drvdata() for SPI devices
+>
+> Grant Likely (4):
+>      Merge commit 'v2.6.38-rc4' into spi/next
+>      Merge branch 'devicetree/next' into spi/next
+>      Merge commit 'v2.6.38-rc8' into spi/next
+>      Merge remote-tracking branch 'origin' into spi/next
+>
+> Guennadi Liakhovetski (2):
+>      spi/spi_sh_msiof: cosmetic clean-up
+>      spi/spi_sh_msiof: consolidate data in 8-bit mode into 32-bit words
+>
+> Hannu Heikkinen (1):
+>      spi/omap_mcspi: Off-by-one error in finding the right divisor
+>
+> Jiri Slaby (1):
+>      spi/dw_spi: Fix missing header
+>
+> Linus Walleij (4):
+>      spi/pl022: use dmaengine helper macros
+>      spi/pl022: disable core voltage when idle
+>      spi/pl022: minor kerneldoc updates
+>      spi/pl022: rid dangling labels
+>
+> Michael Jones (1):
+>      spi/omap_mcspi: catch xfers of non-multiple SPI word size
+>
+> Michael Williamson (2):
+>      spi/davinci: Use correct length parameter to dma_map_single calls
+>      spi/davinci: Support DMA transfers larger than 65535 words
+>
+> Nikanth Karthikesan (1):
+>      gpio/cs5535-gpio: Fix section mismatch
+>
+> Peter Korsgaard (1):
+>      gpio/mcp23s08: support mcp23s17 variant
+>
+> Sascha Hauer (2):
+>      spi/bitbang: check for setup_transfer during initialization
+>      spi/imx: select master mode for all channels
+>
+> Sonic Zhang (1):
+>      spi/bfin_spi: return immediately after skipping to next transfer
+>
+> Thomas Chou (2):
+>      spi: add OpenCores tiny SPI driver
+>      spi: New driver for Altera SPI
+>
+> Thomas Gleixner (6):
+>      gpio/sx150x: Do not access I2C from mask/unmask functions
+>      gpio; Make Intel chipset gpio drivers depend on x86
+>      gpio/langwell: Fix broken irq_eoi change.
+>      gpio/langwell: Convert irq name space
+>      gpio/langwell: Simplify demux loop
+>      gpio/langwell: Clear edge bit before handling
+>
+> Virupax Sadashivpetimath (1):
+>      spi/pl022: remove dangling status check
+>
+> Yoshihiro Shimoda (1):
+>      spi: add support for SuperH SPI
+>
+>  .../devicetree/bindings/mmc/mmc-spi-slot.txt       |    9 +-
+>  .../devicetree/bindings/spi/spi_altera.txt         |    4 +
+>  .../devicetree/bindings/spi/spi_oc_tiny.txt        |   12 +
+>  drivers/gpio/74x164.c                              |    2 +-
+>  drivers/gpio/Kconfig                               |   12 +-
+>  drivers/gpio/cs5535-gpio.c                         |    6 +-
+>  drivers/gpio/langwell_gpio.c                       |   43 +-
+>  drivers/gpio/mc33880.c                             |    2 +-
+>  drivers/gpio/mcp23s08.c                            |  191 +++++--
+>  drivers/gpio/pca953x.c                             |   13 +-
+>  drivers/gpio/sx150x.c                              |   54 ++-
+>  drivers/mmc/host/of_mmc_spi.c                      |   26 +-
+>  drivers/rtc/rtc-ds1390.c                           |    2 +-
+>  drivers/rtc/rtc-ds3234.c                           |    2 +-
+>  drivers/rtc/rtc-m41t94.c                           |    2 +-
+>  drivers/spi/Kconfig                                |   19 +
+>  drivers/spi/Makefile                               |    3 +
+>  drivers/spi/amba-pl022.c                           |   73 ++--
+>  drivers/spi/davinci_spi.c                          |   43 ++-
+>  drivers/spi/omap2_mcspi.c                          |   38 +-
+>  drivers/spi/spi_altera.c                           |  339 ++++++++++++
+>  drivers/spi/spi_bfin5xx.c                          |  104 +++--
+>  drivers/spi/spi_bitbang.c                          |   13 +-
+>  drivers/spi/spi_imx.c                              |   12 +-
+>  drivers/spi/spi_oc_tiny.c                          |  425 +++++++++++++++
+>  drivers/spi/spi_sh.c                               |  543 ++++++++++++++++++++
+>  drivers/spi/spi_sh_msiof.c                         |  127 ++++--
+>  drivers/spi/spidev.c                               |   12 +
+>  include/linux/spi/dw_spi.h                         |    1 +
+>  include/linux/spi/mcp23s08.h                       |   15 +-
+>  include/linux/spi/spi_oc_tiny.h                    |   20 +
+>  31 files changed, 1911 insertions(+), 256 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/spi/spi_altera.txt
+>  create mode 100644 Documentation/devicetree/bindings/spi/spi_oc_tiny.txt
+>  create mode 100644 drivers/spi/spi_altera.c
+>  create mode 100644 drivers/spi/spi_oc_tiny.c
+>  create mode 100644 drivers/spi/spi_sh.c
+>  create mode 100644 include/linux/spi/spi_oc_tiny.h
+>
+>
+> --
+> Grant Likely, B.Sc., P.Eng.
+> Secret Lab Technologies Ltd.
+>
 
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
