@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab1CRUjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 16:39:53 -0400
-Received: from www.tglx.de ([62.245.132.106]:58550 "EHLO www.tglx.de"
+	id S1757403Ab1CRUuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 16:50:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48216 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757291Ab1CRUjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 16:39:48 -0400
-Date: Fri, 18 Mar 2011 21:39:40 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Esben Haabendal <eha@doredevelopment.dk>
-cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca
-Subject: Re: [PATCH] Support IRQ_NOAUTOEN flag in set_irq_chained_handler()
-In-Reply-To: <1300435389-11048-1-git-send-email-eha@doredevelopment.dk>
-Message-ID: <alpine.LFD.2.00.1103182135260.2787@localhost6.localdomain6>
-References: <1300435389-11048-1-git-send-email-eha@doredevelopment.dk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756949Ab1CRUt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 16:49:58 -0400
+Subject: Re: [PATCH -mm] RapidIO,powerpc/85xx: Fix configuration option
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1300468735-1158-1-git-send-email-alexandre.bounine@idt.com>
+Date: Fri, 18 Mar 2011 15:49:00 -0500
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <8E8332C6-1F17-4EC1-BD04-7B93D7B49640@kernel.crashing.org>
+References: <1300468735-1158-1-git-send-email-alexandre.bounine@idt.com>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011, eha@doredevelopment.dk wrote:
 
-> From: Esben Haabendal <eha@doredevelopment.dk>
+On Mar 18, 2011, at 12:18 PM, Alexandre Bounine wrote:
+
+> Follows set of patches in -mm tree. Replaces configuration option
+> missed in previous patches.
 > 
-> Handle IRQ_NOAUTOEN in __set_irq_handler() (ie. for
-> set_irq_chained_handler()) instead of just silently ignoring it, and in
-> the same way as is done in __setup_irq() (ie. request_irq()).
-> 
-> This give a more consistent interface, and also adheres better to
-> the rule of least surprise.
+> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> ---
+> arch/powerpc/kernel/cpu_setup_fsl_booke.S |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Well, that might be less surprising for you, but you will be surprised
-that such a change would be a real big surprise for all users of
-chained handlers in arch/arm. They simply would not work anymore.
+Acked-by: Kumar Gala <galak@kernel.crashing.org>
 
-So we _cannot_ change the semantics here. All we can do is document
-it.
+Alex, I can push this via the powerpc.git tree route if you want.
 
-Thanks,
-
-	tglx
+- k
