@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab1CRRl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 13:41:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45213 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757182Ab1CRRlU convert rfc822-to-8bit (ORCPT
+	id S932238Ab1CRRpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 13:45:31 -0400
+Received: from mail6.webfaction.com ([74.55.86.74]:60100 "EHLO
+	smtp.webfaction.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757237Ab1CRRp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 13:41:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] PCI/ACPI: Report ASPM support to BIOS if not disabled from command line
-Date: Fri, 18 Mar 2011 18:41:28 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-pci@vger.kernel.org
-References: <201103051321.51856.rjw@sisk.pl> <20110318012556.GA13851@srcf.ucam.org> <20110317214152.503adac8@jbarnes-x200>
-In-Reply-To: <20110317214152.503adac8@jbarnes-x200>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103181841.28636.rjw@sisk.pl>
+	Fri, 18 Mar 2011 13:45:27 -0400
+From: Tony Ibbs <tibs@tonyibbs.co.uk>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Linux-embedded <linux-embedded@vger.kernel.org>,
+        Tibs at Kynesim <tibs@kynesim.co.uk>,
+        Richard Watts <rrw@kynesim.co.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tony Ibbs <tibs@tonyibbs.co.uk>
+Subject: [PATCH 07/11] KBUS add ability to add devices at runtime
+Date: Fri, 18 Mar 2011 17:21:16 +0000
+Message-Id: <6038dbd7e203bc102bd5d33ad9f1aa4f204a3a2e.1300450604.git.tibs@tonyibbs.co.uk>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <023b39071aff3abc8e63336be501742333ceeced.1300450604.git.tibs@tonyibbs.co.uk>
+References: <cover.1300450604.git.tibs@tonyibbs.co.uk>
+ <273ee9658cbcbe19adfa0d7b30082d8966e70afc.1300450604.git.tibs@tonyibbs.co.uk>
+ <979f23cd5f8a9ac727f17ad359ee487cbccbf7f6.1300450604.git.tibs@tonyibbs.co.uk>
+ <c28914a66ae5526f18c331475298e7ef05bf57c7.1300450604.git.tibs@tonyibbs.co.uk>
+ <ffc9b735a3b61c51881c108235155384a6e6f56c.1300450604.git.tibs@tonyibbs.co.uk>
+ <e1e0c80ed995eccd4881081f5a769acb148b267b.1300450604.git.tibs@tonyibbs.co.uk>
+ <023b39071aff3abc8e63336be501742333ceeced.1300450604.git.tibs@tonyibbs.co.uk>
+In-Reply-To: <cover.1300450604.git.tibs@tonyibbs.co.uk>
+References: <cover.1300450604.git.tibs@tonyibbs.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 18, 2011, Jesse Barnes wrote:
-> On Fri, 18 Mar 2011 01:25:56 +0000
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> 
-> > On Fri, Mar 18, 2011 at 10:10:20AM +0900, Kenji Kaneshige wrote:
-> > > Jesse,
-> > >
-> > > This patch fixes the problem that PCIe hotplug no longer work in
-> > > 2.6.38 on my platform (ASPM is disabled　through ACPI FADT in my
-> > > platform). I think this need to be applied soon.
-> > >
-> > > Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-> > > Tested-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-> > 
-> > Yes, I think we need to look at -stable for this one.
-> 
-> Ok, thanks guys.  I'll queue it up in -fixes and send it to Linus after
-> my 2.6.39 pull req with a cc for stable.
+Users do not always know how many KBUS devices will be needed when
+the system starts. This allows a normal user to request an extra
+device.
 
-Well, I thought you could simply include it into the pull request. :-)
+Signed-off-by: Tony Ibbs <tibs@tonyibbs.co.uk>
+---
+ include/linux/kbus_defns.h |   12 +++++++++++-
+ ipc/kbus_main.c            |   17 +++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletions(-)
 
-Thanks,
-Rafael
+diff --git a/include/linux/kbus_defns.h b/include/linux/kbus_defns.h
+index 9da72e4..4d3fcd5 100644
+--- a/include/linux/kbus_defns.h
++++ b/include/linux/kbus_defns.h
+@@ -611,8 +611,18 @@ struct kbus_replier_bind_event_data {
+  */
+ #define KBUS_IOC_VERBOSE  _IOWR(KBUS_IOC_MAGIC, 15, char *)
+ 
++/*
++ * NEWDEVICE - request another KBUS device (/dev/kbus<n>).
++ *
++ * The next device number (up to a maximum of 255) will be allocated.
++ *
++ * arg(out): __u32, the new device number (<n>)
++ * retval: 0 for success, negative for failure
++ */
++#define KBUS_IOC_NEWDEVICE _IOR(KBUS_IOC_MAGIC, 16, char *)
++
+ /* If adding another IOCTL, remember to increment the next number! */
+-#define KBUS_IOC_MAXNR	15
++#define KBUS_IOC_MAXNR	16
+ 
+ #if !__KERNEL__ && defined(__cplusplus)
+ }
+diff --git a/ipc/kbus_main.c b/ipc/kbus_main.c
+index a75d2e1..48ba4b2 100644
+--- a/ipc/kbus_main.c
++++ b/ipc/kbus_main.c
+@@ -3532,6 +3532,23 @@ static long kbus_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		retval = kbus_set_verbosity(priv, arg);
+ 		break;
+ 
++	case KBUS_IOC_NEWDEVICE:
++		/*
++		 * Request a new device
++		 *
++		 * arg out: the new device number
++		 * return: 0 means OK, otherwise not OK.
++		 */
++		kbus_maybe_dbg(priv->dev, "%u NEWDEVICE %d\n",
++			       id, kbus_num_devices);
++		retval = kbus_setup_new_device(kbus_num_devices);
++		if (retval > 0) {
++			kbus_num_devices++;
++			retval = __put_user(kbus_num_devices - 1,
++				       (u32 __user *) arg);
++		}
++		break;
++
+ 	default:
+ 		/* *Should* be redundant, if we got our range checks right */
+ 		retval = -ENOTTY;
+-- 
+1.7.4.1
+
