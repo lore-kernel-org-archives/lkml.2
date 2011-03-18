@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab1CRWjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:39:17 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:45865 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757476Ab1CRWjK (ORCPT
+	id S932562Ab1CRWja (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:39:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57373 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757239Ab1CRWjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:39:10 -0400
-X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 18:39:10 EDT
-Date: Fri, 18 Mar 2011 17:38:43 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
-        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Avi Kivity <avi@redhat.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 3/8] ACPI: Use syscore_ops instead of sysdev class and
- sysdev
-In-reply-to: <201103122216.51858.rjw@sisk.pl>
-Message-id: <alpine.LFD.2.02.1103181738400.24304@x980>
-References: <201103100131.58206.rjw@sisk.pl> <201103122212.40828.rjw@sisk.pl>
- <201103122216.51858.rjw@sisk.pl>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 18 Mar 2011 18:39:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=Hm5HCqAVPuobLBt6+l4LfJAKKv0LO3WKi9Kqt9RATZMvim4+SiKnTralI4t9eZABy+
+         n547HgCtqIrtTMNnpOZ2pVq1UPPdntGuusIhbinsNvrtPhejLIuo99J6iu3RvZ7UuEdH
+         jpbkrGeu/GQ71uLMnA3f6VnbLvE+HDFOk1L2A=
+Message-ID: <4D83DF0D.5050006@linaro.org>
+Date: Fri, 18 Mar 2011 22:39:09 +0000
+From: Andy Green <andy@warmcat.com>
+Reply-To: andy.green@linaro.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <20110311165642.GA9996@kroah.com>	 <20110317214042.GQ31411@opensource.wolfsonmicro.com>	 <20110317214736.GA29014@kroah.com> <201103172333.01474.arnd@arndb.de>	 <4D82979B.2050003@linaro.org> <1300487863.22236.1289.camel@pasglop>
+In-Reply-To: <1300487863.22236.1289.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-applied
+On 03/18/2011 10:37 PM, Somebody in the thread at some point said:
+> On Thu, 2011-03-17 at 23:22 +0000, Andy Green wrote:
+>>
+>> Is there actually a need for sort of not platform_data but universal
+>> vid_pid_specific_usb_device_option_data coming from the board
+>> definition
+>> file or bootloader for *pluggable* usb devices?  udev seems to be
+>> well
+>> established doing that already in a generic, not-platform-specific
+>> way
+>> that can go in all distros and so on nicely.  Maybe this is just my
+>> impoverished imagination and people do want, say, some kinds of USB
+>> mice
+>> to operate at higher DPI or whatever when plugged in a specific board
+>> because it is that board.
+>
+> Except that vid/pid are the -WRONG- way to do that. Your device is
+> on-board, the proper way to identify it uniquely is it's topological
+> location, ie path of HW port numbers.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+Thanks Ben.
 
+I'll go change that VID/PID stuff in my patches right away.
+
+-Andy
