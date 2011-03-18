@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab1CRQUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 12:20:07 -0400
-Received: from mail.moocowproductions.org ([50.56.82.78]:34390 "EHLO
-	mail.moocowproductions.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932121Ab1CRQUE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 12:20:04 -0400
-Subject: Re: 2.6.38: XFS/USB/HW issue, or failing USB stick?
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Tim Soderstrom <tim@moocowproductions.org>
-In-Reply-To: <201103181659.46558.arnd@arndb.de>
-Date: Fri, 18 Mar 2011 11:20:01 -0500
-Cc: Alan Piszcz <ap@solarrain.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Justin Piszcz <jpiszcz@lucidpixels.com>,
-        xfs@oss.sgi.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <74AA2E38-9C4E-45EB-B810-2B64EC731F24@moocowproductions.org>
-References: <alpine.DEB.2.02.1103181104020.30018@p34.internal.lan> <30463798-7ACB-4248-8CDC-CEFCB6ABC0BE@moocowproductions.org> <201103181659.46558.arnd@arndb.de>
-To: Arnd Bergmann <arnd@arndb.de>
-X-Mailer: Apple Mail (2.1082)
+	id S1756935Ab1CRQYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 12:24:50 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:51303 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756284Ab1CRQYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 12:24:46 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=mav53efbwIAFDMJV2tN6zWodZfb+SEYoHYKJoPXydRbHGd1nBWl9a41CkRBpGk8Zs+taAbOqVSaorrqs56U0Dob+bmLUVY7E7jaIt2quOsMx6n/G4BmOVsckLl9eUSIh;
+Date: Fri, 18 Mar 2011 09:24:43 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
+Cc: gregkh <greg@kroah.com>, Chris Wright <chrisw@sous-sol.org>
+Subject: [PATCH] MAINTAINERS: update STABLE BRANCH info
+Message-Id: <20110318092443.e3ddcd67.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-On Mar 18, 2011, at 10:59 AM, Arnd Bergmann wrote:
+Drop Chris Wright from STABLE maintainers.  He hasn't done STABLE
+release work for quite some time.
 
-> On Friday 18 March 2011, Tim Soderstrom wrote:
-> 
->>> 
->>> However, after some amount of time, the errors occur below, is this USB
->>> stick failing?  Since it has no SMART, is there any other way to verify
->>> the 'health' of a USB stick?
->> 
->> What prompted you to go with XFS over, say, ext2? The journal will generally
->> cause quite a bit more writes onto your USB device. I use ext2 on my CF card 
->> in my NAS for that reason (the spinning media is on XFS of course). I know
->> that's not an answer to your problem but thought I would add it as a suggestion :)
-> 
-> Using ext2 on flash media instead of ext3 or other file systems is
-> recommended a lot, but the situation is actually much more complex.
-> In https://lwn.net/Articles/428584/, I explain how these things work
-> under the cover. For a drive that can only have very few erase blocks
-> open, using a journaled file system will always mean thrashing, but
-> for drives with more open erase blocks, it's probably better to
-> use a journal than not.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ MAINTAINERS |    1 -
+ 1 file changed, 1 deletion(-)
 
-Wow that's a great article, thanks for the link!
+Greg, is there a git tree or quilt queue that people can look at
+for stable?
 
-Tim
-
+--- linux-next-20110317.orig/MAINTAINERS
++++ linux-next-20110317/MAINTAINERS
+@@ -5986,7 +5986,6 @@ F:	arch/alpha/kernel/srm_env.c
+ 
+ STABLE BRANCH
+ M:	Greg Kroah-Hartman <greg@kroah.com>
+-M:	Chris Wright <chrisw@sous-sol.org>
+ L:	stable@kernel.org
+ S:	Maintained
+ 
