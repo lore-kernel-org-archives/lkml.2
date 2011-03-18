@@ -1,116 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1CRF0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 01:26:39 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42907 "EHLO
+	id S1756174Ab1CRF3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 01:29:43 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46296 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756131Ab1CRF0W (ORCPT
+	with ESMTP id S1754932Ab1CRF3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 01:26:22 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4D82ED01.304@np.css.fujitsu.com>
-Date: Fri, 18 Mar 2011 14:26:25 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Fri, 18 Mar 2011 01:29:37 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4D82EDAC.8070307@jp.fujitsu.com>
+Date: Fri, 18 Mar 2011 14:29:16 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Check whether pages are poisoned before copying
-References: <4D817234.9070106@jp.fujitsu.com> <4D8172D7.3040201@jp.fujitsu.com> <20110317041424.GD11094@one.firstfloor.org> <4D819A2A.8050606@jp.fujitsu.com> <20110317062612.GE11094@one.firstfloor.org> <4D81BB87.10803@jp.fujitsu.com> <20110317152150.GF11094@one.firstfloor.org>
-In-Reply-To: <20110317152150.GF11094@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+CC: jbarnes@virtuousgeek.org, rjw@sisk.pl, mjg59@srcf.ucam.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [RFC][PATCH v2]: PCI: PCIe links may not get configured for ASPM
+ under POWERSAVE mode
+References: <20110318041801.2349.33357.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+In-Reply-To: <20110318041801.2349.33357.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andi
+(2011/03/18 13:21), Naga Chumbalkar wrote:
+> v2 ->  v1:
+> 	. Kept the logic in pci_raw_set_power_state
+> 	. Changed the ASPM enabling logic
+> 	. Modified the text that describes the problem
+>
+> v1	: http://marc.info/?l=linux-pci&m=130013164703283&w=2
+>
+> The assumption made in commit 41cd766b065970ff6f6c89dd1cf55fa706c84a3d
+> (PCI: Don't enable aspm before drivers have had a chance to veto it) that
+> pci_enable_device() will result in re-configuring ASPM when aspm_policy is
+> POWERSAVE is no longer valid.  This is due to commit
+> 97c145f7c87453cec90e91238fba5fe2c1561b32 (PCI: read current power state
+> at enable time) which resets dev->current_state to D0. This makes the
+> equality check (below) become true, so pcie_aspm_pm_state_change() never
+> gets called.
+> ./drivers/pci/pci.c: pci_raw_set_pci_power_state()
+> 546         /* Check if we're already there */
+> 547         if (dev->current_state == state)
+> 548                 return 0;
+>
+> So OSPM doesnn't configure the PCIe links for ASPM.
+>
+> The patch below does the following:
+> At the end of each Root Bridge scan make a call to configure ASPM when the
+> ASPM policy is set to "powersave" mode. Note that if a previous pass had
+> completed the configuration for all devices under that Bridge then the
+> configuration will not take place again because pcie_config_aspm_link()
+> checks to see if the link is already in the requested state.
+> We won't reconfigure ASPM when _OSC control is not granted.
 
-(2011/03/18 0:21), Andi Kleen wrote:
->> At least copy to the last page of the huge page is performed after
->> all preceding copies are finished.  So I'm not sure it is really
->> "a few" or not.
->> Still I think making the window smaller than now is worthwhile,
->> no matter it is change from 0.1% to 0.01%, or from 0.01% to 0.001%.
-> 
-> Note that hwpoison will never reach 100% coverage. That's impossible.
-> But to get nearer to 100% it's better to concentrate of the paths
-> that affect long time windows and significant amounts of memory.
-> What those are is often non-obvious and needs measurements.
-> 
->>
->> Or did you find the downside of the check here?
-> 
-> The usual problem is how to test it. That tends to be harder 
-> than just writing the code. If it's not tested it's probably 
-> not worth having.
-> 
+Which _OSC controls do we need for configuring ASPM?
 
-We did the test with our own test method. And the problem happened
-as we expected really.
-
-The method needs kernel part and user part. They are listed as following.
-    1. Kernel part
-       A. Debug interface
-          - check whether the THP aligned page belongs to THP.
-          - set the page position to be poisoned.
-          - set the flag whether 4K page or THP in khugepaged daemon will
-            be poisoned.
-          - split the requested THP to 4K pages.
-
-       B. A daemon poison_sched
-          Make poison_sched daemon call memory_failure().
-
-       C. Changes in khugepaged for debug.
-          - Check whether the requested page will be collapsed.
-          - Set poison information for poison_sched daemon
-            when the requested page will be collapsed.
-          - print the poison information to kernel log
-            when the page has been poisoned.
-
-    2. User part
-       A test APL
-         - Request memory which may be containing THP.
-         - Set test conditions with debug interface.
-
-The steps for our own test are like following:
-    1. APL requests memory and check whether the THP aligned page is
-       THP with debug interface. If the THP aligned page is not THP,
-       APL will be restarted until THP is mapped.
-
-    2. APL set the page position being poisoned and the flag
-       whether 4K page or THP in khugepaged daemon is poisoned
-       with debug interface.
-
-    3. APL requests to split the requested THP with debug interface.
-       Here kernel must remember the split THP page address and pfn
-       for later page collapse.
-
-       (Waiting for page collapse ...)
-
-    4. When khugepaged daemon collapses the remembered split THP address
-       and pfn, khugepaged daemon will set poison information
-       for poison_sched daemon.
-
-    5. khugepaged daemon will do its work continually, and poison_sched
-       daemon will call memory_failure() deal with poisoned page
-       at the same time.
-
-    6. khugepaged daemon will print poison information to kernel log.
-       And whether the APL will be killed or not will be checked
-       by ourselves.
-       
-After we confirmed the above problem, the patch set is also implemented to
-be tested. we confirmed the patch set could resolve the problem we got.
-
-Thanks.
-
-Best Regards,
-Jin Dongming
-
-> -Andi
-
+Regards,
+Kenji Kaneshige
 
