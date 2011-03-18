@@ -1,265 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab1CROkz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 10:40:55 -0400
-Received: from verein.lst.de ([213.95.11.211]:56111 "EHLO newverein.lst.de"
+	id S1756777Ab1CROrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 10:47:39 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:38765 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756502Ab1CROkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 10:40:49 -0400
-Date: Fri, 18 Mar 2011 15:40:48 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+	id S1750953Ab1CROrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 10:47:33 -0400
+Date: Fri, 18 Mar 2011 15:46:51 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [RFC-v3 02/12] iscsi-target: Add primary iSCSI
-	request/response state machine logic
-Message-ID: <20110318144047.GA29478@lst.de>
-References: <1300398797-24536-1-git-send-email-nab@linux-iscsi.org> <1300398797-24536-3-git-send-email-nab@linux-iscsi.org>
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Curt Wohlgemuth <curtw@google.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-ID: <20110318144651.GW2140@cmpxchg.org>
+References: <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+ <20110314202324.GG31120@redhat.com>
+ <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+ <20110315184839.GB5740@redhat.com>
+ <20110316131324.GM2140@cmpxchg.org>
+ <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
+ <20110316215214.GO2140@cmpxchg.org>
+ <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+ <20110317124350.GQ2140@cmpxchg.org>
+ <20110318142949.GA19859@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300398797-24536-3-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20110318142949.GA19859@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 02:53:07PM -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Fri, Mar 18, 2011 at 10:29:50AM -0400, Vivek Goyal wrote:
+> On Thu, Mar 17, 2011 at 01:43:50PM +0100, Johannes Weiner wrote:
 > 
-> This patch adds iscsi_target.[c,h] containing the main iSCSI Request and
-> Response PDU state machines and accompanying infrastructure code and
-> base iscsi_target_core.h include for iscsi_target_mod.  This includes
-> support for all defined iSCSI operation codes from RFC-3720 Section
-> 10.2.1.2 and primary state machines for per struct iscsi_conn RX/TX
-> threads.
+> [..]
+> > So structures roughly like this:
+> > 
+> > struct mem_cgroup {
+> > 	...
+> > 	/* key is struct backing_dev_info * */
+> > 	struct rb_root memcg_bdis;
+> > };
+> > 
+> > struct memcg_bdi {
+> > 	/* key is struct address_space * */
+> > 	struct rb_root memcg_mappings;
+> > 	struct rb_node node;
+> > };
+> > 
+> > struct memcg_mapping {
+> > 	struct address_space *mapping;
+> > 	struct mem_cgroup *memcg;
+> > 	struct rb_node node;
+> > 	atomic_t count;
+> > };
+> > 
+> > struct page_cgroup {
+> > 	...
+> > 	struct memcg_mapping *memcg_mapping;
+> > };
 > 
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/target/iscsi/iscsi_target.c      | 5371 ++++++++++++++++++++++++++++++
->  drivers/target/iscsi/iscsi_target.h      |   45 +
->  drivers/target/iscsi/iscsi_target_core.h |  888 +++++
->  3 files changed, 6304 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/target/iscsi/iscsi_target.c
->  create mode 100644 drivers/target/iscsi/iscsi_target.h
->  create mode 100644 drivers/target/iscsi/iscsi_target_core.h
+> Johannes, didn't you want page->mapping to point to memcg_mapping instead
+> of increasing the size of page_cgroup?
 
-> +static struct iscsi_np *iscsit_get_np(
-> +	unsigned char *ipv6,
-> +	u32 ipv4,
-> +	u16 port,
-> +	int network_transport)
-
-> +		if (ipv6 != NULL) {
-> +			p = (void *)&np->np_ipv6[0];
-> +			ip = (void *)ipv6;
-> +			net_size = IPV6_ADDRESS_SPACE;
-> +		} else {
-> +			p = (void *)&np->np_ipv4;
-> +			ip = (void *)&ipv4;
-> +			net_size = IPV4_ADDRESS_SPACE;
-> +		}
-> +
-> +		if (!memcmp(p, ip, net_size) && (np->np_port == port) &&
-
-All this opencoded handling of IPV4 vs IPV6 address is still quite a mess.
-
-What's the problem with always passing around a struct sockaddr, and then
-have helpers that treat it like a sockaddr_in or sockaddr_in6 depending
-on the ->ss_family field?  That's what at least the iSCSI initiator and
-NFS client and server do.
-
-> +int iscsit_del_np_thread(struct iscsi_np *np)
-> +{
-> +	spin_lock_bh(&np->np_thread_lock);
-> +	np->np_thread_state = ISCSI_NP_THREAD_SHUTDOWN;
-> +	atomic_set(&np->np_shutdown, 1);
-> +	spin_unlock_bh(&np->np_thread_lock);
-> +
-> +	if (np->np_thread) {
-> +		/*
-> +		 * We need to send the signal to wakeup Linux/Net
-> +		 * sock_accept()..
-> +		 */
-> +		send_sig(SIGINT, np->np_thread, 1);
-> +		kthread_stop(np->np_thread);
-> +	}
-
-What's the point of np_shutdown and the thread_state?
-
-kthread_should_stop() returns true if the thread should stop, so
-it can replace the shutdown check.  You'll still need some indicator
-for the pure reset case, but except for that the kthread API alone
-should do it.
-
-> +u32 lio_sess_get_initiator_sid(
-
-> +int iscsi_add_nopin(
-
-> +int iscsi_add_reject(
-
-Why are all these fabric ops method implementations in a different file
-from the code assigning them to the ops vector?  Having all these static
-and just an ops vector or helper to assign it exposed gives much better
-visibility control.
-
-> +/* #define iscsi_calculate_map_segment_DEBUG */
-> +#ifdef iscsi_calculate_map_segment_DEBUG
-> +#define DEBUG_MAP_SEGMENTS(buf...) PYXPRINT(buf)
-> +#else
-> +#define DEBUG_MAP_SEGMENTS(buf...)
-> +#endif
-
-Do we need to keep all this ad-hoc debugging code?
-
-> +/*	iscsi_logout_closesession():
-> + *
-> + *
-> + */
-
-As mentioned in a previous round please try to remove all comment which
-like this one don't provide any documentation value by just repeating
-the function name.
-
-> +
-> +		add_timer(&async_msg_timer);
-> +		wait_for_completion(&conn->sess->async_msg_comp);
-> +		del_timer_sync(&async_msg_timer);
-
-Just use wait_for_completion_timeout here.
-
-> +static void iscsi_tx_thread_TCP_timeout(unsigned long data)
-> +{
-> +	complete((struct completion *)data);
-> +}
-> +
-> +static void iscsi_tx_thread_wait_for_tcp(struct iscsi_conn *conn)
-> +{
-> +	struct timer_list tx_TCP_timer;
-> +	int ret;
-> +
-> +	if ((conn->sock->sk->sk_shutdown & SEND_SHUTDOWN) ||
-> +	    (conn->sock->sk->sk_shutdown & RCV_SHUTDOWN)) {
-> +		init_timer(&tx_TCP_timer);
-> +		tx_TCP_timer.expires =
-> +			(get_jiffies_64() + ISCSI_TX_THREAD_TCP_TIMEOUT * HZ);
-> +		tx_TCP_timer.data = (unsigned long)&conn->tx_half_close_comp;
-> +		tx_TCP_timer.function = iscsi_tx_thread_TCP_timeout;
-> +
-> +		add_timer(&tx_TCP_timer);
-> +		ret = wait_for_completion_interruptible(&conn->tx_half_close_comp);
-> +		del_timer_sync(&tx_TCP_timer);
-
-and wait_for_completion_interruptible_timeout here, please.
-
-> +	set_user_nice(current, -20);
-
-Messing with the nice level at least needs an explanation.
-
-> +	allow_signal(SIGINT);
-> +
-> +restart:
-> +	conn = iscsi_tx_thread_pre_handler(ts);
-> +	if (!conn)
-> +		goto out;
-> +
-> +	eodr = map_sg = ret = sent_status = use_misc = 0;
-> +
-> +	while (!kthread_should_stop()) {
-> +		/*
-> +		 * Ensure that both TX and RX per connection kthreads
-> +		 * are scheduled to run on the same CPU.
-> +		 */
-> +		iscsi_thread_check_cpumask(conn, current, 1);
-
-Would kthread_bind help with binding the threads to CPUs?
-
-> +		ret = wait_for_completion_interruptible(&conn->tx_comp);
-
-This looks like the functions to queue up work should just do a
-wake_up_process on the tast structure, and the thread itself should
-just do a schedule_timeout().
-
-> +static void iscsi_rx_thread_TCP_timeout(unsigned long data)
-> +{
-> +	complete((struct completion *)data);
-> +}
-> +
-> +static void iscsi_rx_thread_wait_for_tcp(struct iscsi_conn *conn)
-> +{
-> +	struct timer_list rx_TCP_timer;
-> +	int ret;
-> +
-> +	if ((conn->sock->sk->sk_shutdown & SEND_SHUTDOWN) ||
-> +	    (conn->sock->sk->sk_shutdown & RCV_SHUTDOWN)) {
-> +		init_timer(&rx_TCP_timer);
-> +		rx_TCP_timer.expires =
-> +			(get_jiffies_64() + ISCSI_RX_THREAD_TCP_TIMEOUT * HZ);
-> +		rx_TCP_timer.data = (unsigned long)&conn->rx_half_close_comp;
-> +		rx_TCP_timer.function = iscsi_rx_thread_TCP_timeout;
-> +
-> +		add_timer(&rx_TCP_timer);
-> +		ret = wait_for_completion_interruptible(&conn->rx_half_close_comp);
-> +		del_timer_sync(&rx_TCP_timer);
-
-wait_for_completion_interruptible_timeout again, please.
-
-
-> +	set_user_nice(current, -20);
-
-explanation, please.
-
-> +	spin_lock_bh(&conn->cmd_lock);
-> +	list_for_each_entry_safe(cmd, cmd_tmp, &conn->conn_cmd_list, i_list) {
-> +		if (!(SE_CMD(cmd)) ||
-> +		    !(SE_CMD(cmd)->se_cmd_flags & SCF_SE_LUN_CMD)) {
-> +
-> +			list_del(&cmd->i_list);
-> +			spin_unlock_bh(&conn->cmd_lock);
-
-What gurantees the list hasn't been modified after the lock was released?
-
-> +	/*
-> +	 * If connection reinstatement is being performed on this connection
-> +	 * by receiving a REMOVECONNFORRECOVERY logout request, up the
-> +	 * connection wait rcfr semaphore that is being blocked on
-> +	 * an iscsi_connection_reinstatement_rcfr().
-> +	 */
-> +	if (atomic_read(&conn->connection_wait_rcfr)) {
-> +		spin_unlock_bh(&conn->state_lock);
-> +		complete(&conn->conn_wait_rcfr_comp);
-> +		wait_for_completion(&conn->conn_post_wait_comp);
-
-I'm trying to understand what this (and the similar block next to it)
-is doing.  You wake up another process in the ERL code, which does
-nothing but waking this code up again.  Why do we have to wait here
-until the ERL code did it's run?
-
-
-> +int iscsi_close_session(struct iscsi_session *sess)
-
-The code still seems to be undecided on iscsi_ vs iscsit_ as a prefix.
-
-> +	spin_lock_bh(&sess->conn_lock);
-> +	if (session_sleep)
-> +		atomic_set(&sess->sleep_on_sess_wait_comp, 1);
-> +
-> +	if (connection_sleep) {
-> +		list_for_each_entry_safe(conn, conn_tmp, &sess->sess_conn_list,
-> +				conn_list) {
-> +			if (conn_count == 0)
-> +				break;
-> +
-> +			iscsi_inc_conn_usage_count(conn);
-> +			spin_unlock_bh(&sess->conn_lock);
-
-What protects the next entry from going away after dropping the lock?
-
+Initially, yes, but this is far less invasive.  We don't increase
+page_cgroup, though: memcg_mapping contains the pointer to struct
+mem_cgroup, it can replace pc->memcg for now.
