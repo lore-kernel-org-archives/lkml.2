@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab1CRIjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 04:39:23 -0400
-Received: from www.tglx.de ([62.245.132.106]:39492 "EHLO www.tglx.de"
+	id S1756393Ab1CRInM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 04:43:12 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:49357 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab1CRIjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 04:39:16 -0400
-Date: Fri, 18 Mar 2011 09:38:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-cc: davidb@codeaurora.org, dwalker@fifo99.com,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-msm-owner@vger.kernel.org,
-        linux-arm-kernel@lists.intradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PM8921 MFD V4 2/6] mfd: pm8xxx: Add irq support
-In-Reply-To: <1300422118-13888-3-git-send-email-adharmap@codeaurora.org>
-Message-ID: <alpine.LFD.2.00.1103180935530.2787@localhost6.localdomain6>
-References: <1300422118-13888-1-git-send-email-adharmap@codeaurora.org> <1300422118-13888-3-git-send-email-adharmap@codeaurora.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755028Ab1CRInI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 04:43:08 -0400
+Message-ID: <4D831AEF.3020109@nokia.com>
+Date: Fri, 18 Mar 2011 10:42:23 +0200
+From: Roger Quadros <roger.quadros@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: ext Arnd Bergmann <arnd@arndb.de>
+CC: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, <andy.green@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <20110311161421.GA7843@kroah.com> <20110317201835.GM31411@opensource.wolfsonmicro.com> <20110317202614.GA3155@kroah.com> <201103172311.36246.arnd@arndb.de>
+In-Reply-To: <201103172311.36246.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [131.228.1.90]
+X-OriginalArrivalTime: 18 Mar 2011 08:42:32.0071 (UTC) FILETIME=[6BE42170:01CBE548]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, adharmap@codeaurora.org wrote:
-> +static struct irq_chip pm8xxx_irq_chip = {
-> +	.name		= "pm8xxx",
-> +	.irq_mask_ack	= pm8xxx_irq_mask_ack,
-> +	.irq_unmask	= pm8xxx_irq_unmask,
-> +	.irq_set_type	= pm8xxx_irq_set_type,
-> +	.flags		= IRQCHIP_MASK_ON_SUSPEND,
-> +};
+On 03/18/2011 12:11 AM, ext Arnd Bergmann wrote:
+> On Thursday 17 March 2011 21:26:14 Greg KH wrote:
+>>> It's going to be an off the shelf USB ethernet controller.  I'd be
+>>> astonished if the board-configurable device IDs weren't set from the
+>>> same SEPROM that the MAC address is so it'd just show up as a generic
+>>> chip of whatever kind.
+>>
+>> Huh?  All USB controllers you buy have the ability to set the vendor and
+>> product id, so you should always be able to key off of that.
+>>
+>> Isn't that the case here?
+> 
+> The same EEPROM that is missing here carries both the MAC address and
+> the vendor/product ID overrides.
+> 
 
-Ok, that looks sane now. One problem remains. You have removed the
-set_wake function, which will cause the core to bail when an irq is
-marked wake. So you want an set_wake() function which does nothing
-else than return 0 for now. I'll have a look that we can handle that
-case with a chip flag in the core.
+Just curious, how do Panda boards manage to get the MAC address? Is it
+programmed in some other flash memory?
 
-Thanks,
+The LAN9514 datasheet says
+"If a properly configured EEPROM is not detected, it is the
+responsibility of the Host LAN Driver to set the IEEE addresses."
 
-	tglx
+So how does the Host LAN driver know what MAC address it should use?
 
-
+-- 
+regards,
+-roger
