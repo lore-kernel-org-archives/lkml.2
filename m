@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab1CRP4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 11:56:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	id S1757110Ab1CRP5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 11:57:39 -0400
+Received: from ebb06.tieto.com ([131.207.168.38]:47830 "EHLO ebb06.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756616Ab1CRP4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 11:56:41 -0400
-Date: Fri, 18 Mar 2011 11:55:46 -0400
-From: David Teigland <teigland@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] dlm updates for 2.6.39
-Message-ID: <20110318155546.GB14954@redhat.com>
+	id S1756840Ab1CRP5f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 11:57:35 -0400
+X-AuditID: 83cfa826-b7c1cae000000efa-ce-4d8380edcf9e
+From: <Waldemar.Rymarkiewicz@tieto.com>
+To: <rdunlap@xenotime.net>
+CC: <linux-i2c@vger.kernel.org>, <arnd@arndb.de>, <sameo@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hthebaud@insidefr.com>,
+        <matti.j.aaltonen@nokia.com>
+Date: Fri, 18 Mar 2011 17:57:24 +0200
+Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Index: AcvlhD7Si63+1hIEQjm7DqqS/xLMQQAALIGw
+Message-ID: <99B09243E1A5DA4898CDD8B7001114481085881990@EXMB04.eu.tieto.com>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+	<1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
+ <20110318085033.9bea6dc9.rdunlap@xenotime.net>
+In-Reply-To: <20110318085033.9bea6dc9.rdunlap@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Randy, 
 
-Please pull dlm updates for 2.6.39 from:
+>> +data to be read. Then, poll() will indicate that fact to 
+>the userspace.
+>> +
+>> +The application can use ioctl(MICROREAD_IOC_RESET)to reset 
+>the hardware.
+>
+>                                              _RESET) to reset
+>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git for-linus
+Thanks, all are now fixed. 
 
-There's one significant change to how we keep track of callbacks.  It
-removes the guess work we were trying to do given odd combinations of
-callbacks, and seems to have fixed a problem gfs2 QE found.  There are two
-other trivial changes.
-Thanks,
-Dave
-
-David Teigland (3):
-      dlm: record full callback state
-      dlm: increase default hash table sizes
-      dlm: use alloc_workqueue function
-
- fs/dlm/ast.c          |  257 +++++++++++++++++++++++++++++++++++++-----------
- fs/dlm/ast.h          |    7 +-
- fs/dlm/config.c       |    4 +-
- fs/dlm/debug_fs.c     |    4 +-
- fs/dlm/dlm_internal.h |   35 ++++---
- fs/dlm/lock.c         |   38 ++++----
- fs/dlm/lowcomms.c     |    6 +-
- fs/dlm/rcom.c         |    4 +-
- fs/dlm/user.c         |  185 ++++++++++++-----------------------
- fs/dlm/user.h         |    3 +-
- 10 files changed, 317 insertions(+), 226 deletions(-)
-
+Waldek
