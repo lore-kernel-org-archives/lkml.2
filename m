@@ -1,1478 +1,687 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab1CRSAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 14:00:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52891 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab1CRSAL (ORCPT
+	id S1755699Ab1CRSBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 14:01:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:48322 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab1CRSBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 14:00:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=OPAtC59wv/1L3pD9miMcs6e5LBh8932k1BTZgbIy20R2uJyGdu9cSFIKLC2pUenCyL
-         6XSjyNYiONRDaVO30EJklOooFi6Suyz7h4ieuv/XRO0Rokz23J8KUiwI28Jsz6RQXCfo
-         JtDjwC2tYR6zpRZb9pCo/lxO6rpQ16JF5SZb0=
-Date: Fri, 18 Mar 2011 21:00:02 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Pavel Kankovsky <peak@argo.troja.mff.cuni.cz>,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Eugene Teo <eugene@redhat.com>, Nelson Elhage <nelhage@ksplice.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Pekka Savola <pekkas@netcore.fi>, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH] net: ipv4: add IPPROTO_ICMP socket kind
-Message-ID: <20110318180002.GA30912@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 Mar 2011 14:01:10 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6289"; a="80795775"
+From: adharmap@codeaurora.org
+To: davidb@codeaurora.org, dwalker@fifo99.com
+Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm-owner@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.intradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linux.walleij@linaro.org>,
+        Thomas Glexiner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PM8921 MFD V4 2/2] mfd: pm8xxx: Add irq support
+Date: Fri, 18 Mar 2011 11:00:54 -0700
+Message-Id: <1300471255-30285-1-git-send-email-adharmap@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds IPPROTO_ICMP socket kind.  It makes it possible to send
-ICMP_ECHO messages and receive the corresponding ICMP_ECHOREPLY messages
-without any special privileges.  In other words, the patch makes it
-possible to implement setuid-less and CAP_NET_RAW-less /bin/ping.  In
-order not to increase the kernel's attack surface (in case of
-vulnerabilities in the newly added code), the new functionality is
-disabled by default, but is enabled at bootup by supporting Linux
-distributions, optionally with restriction to a group or a group range
-(see below).
+Add support for the irq controller in Qualcomm 8xxx pmic. The 8xxx
+interrupt controller provides control for gpio and mpp configured as
+interrupts in addition to other subdevice interrupts. The interrupt
+controller also provides a way to read the real time status of an
+interrupt. This real time status is the only way one can get the
+input values of gpio and mpp lines.
 
-Similar functionality is implemented in Mac OS X:
-http://www.manpagez.com/man/4/icmp/
-
-A new ping socket is created with
-
-    socket(PF_INET, SOCK_DGRAM, PROT_ICMP)
-
-Message identifiers (octets 4-5 of ICMP header) are interpreted as local
-ports. Addresses are stored in struct sockaddr_in. No port numbers are
-reserved for privileged processes, port 0 is reserved for API ("let the
-kernel pick a free number"). There is no notion of remote ports, remote
-port numbers provided by the user (e.g. in connect()) are ignored.
-
-Data sent and received include ICMP headers. This is deliberate to:
-1) Avoid the need to transport headers values like sequence numbers by
-other means
-2) Make it easier to port existing programs using raw sockets.
-
-ICMP headers given to send() are checked and sanitized. The type must be
-ICMP_ECHO and the code must be zero (future extensions might relax this,
-see below). The id is set to the number (local port) of the socket, the
-checksum is always recomputed.
-
-ICMP reply packets received from the network are demultiplexed according
-to their id's, and are returned by recv() without any modifications.
-IP header information and ICMP errors of those packets may be obtained
-via ancillary data (IP_RECVTTL, IP_RETOPTS, and IP_RECVERR). ICMP source
-quenches and redirects are reported as fake errors via the error queue
-(IP_RECVERR); the next hop address for redirects is saved to ee_info (in
-network order).
-
-socket(2) is restricted to the group range specified in
-"/proc/sys/net/ipv4/ping_group_range".  It is "1 0" by default, meaning
-that nobody (not even root) may create ping sockets.  Setting it to "100
-100" would grant permissions to the single group, "0 65535" would enable
-it for the world.
-
-The existing code might be (in the unlikely case anyone needs it)
-extended rather easily to handle other similar pairs of ICMP messages
-(Timestamp/Reply, Information Request/Reply, Address Mask Request/Reply
-etc.).
-
-
-Userspace ping util & patch for it:
-http://openwall.info/wiki/segoon/ping
-
-A revision of this patch (for RHEL5/OpenVZ kernels) is in use in
-Owl-current, such as in the 2011/03/12 LiveCD ISOs:
-http://mirrors.kernel.org/openwall/Owl/current/iso/
-
-For Openwall GNU/*/Linux it is the last step on the road to the
-setuid-less distro.
-
-Initially this functionality was written by Pavel Kankovsky (CC'ed him)
-for linux 2.4.32, but unfortunately it was never made public.
-
-Reference to the previous discussion:
-http://lwn.net/Articles/420801/
-
-
-All ping options (-b, -p, -Q, -R, -s, -t, -T, -M, -I), are tested with
-the patch.
-
-Changes since RFCv2:
-    - fixed checksumming bug.
-    - CAP_NET_RAW may not create icmp sockets anymore.
-
-Changes since RFCv1:
-    - minor cleanups.
-    - introduced sysctl'able group range to restrict socket(2).
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
 ---
- include/net/netns/ipv4.h   |    2 +
- include/net/ping.h         |   69 ++++
- net/ipv4/Kconfig           |   21 +
- net/ipv4/Makefile          |    1 +
- net/ipv4/af_inet.c         |   36 ++
- net/ipv4/icmp.c            |   14 +-
- net/ipv4/ping.c            |  933 ++++++++++++++++++++++++++++++++++++++++++++
- net/ipv4/sysctl_net_ipv4.c |   90 +++++
- 8 files changed, 1165 insertions(+), 1 deletions(-)
- create mode 100644 include/net/ping.h
- create mode 100644 net/ipv4/ping.c
+ drivers/mfd/Kconfig               |   10 +
+ drivers/mfd/Makefile              |    1 +
+ drivers/mfd/pm8921-core.c         |   54 ++++++
+ drivers/mfd/pm8xxx-irq.c          |  370 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/pm8xxx/core.h   |   10 +
+ include/linux/mfd/pm8xxx/irq.h    |   59 ++++++
+ include/linux/mfd/pm8xxx/pm8921.h |    4 +
+ 7 files changed, 508 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/pm8xxx-irq.c
+ create mode 100644 include/linux/mfd/pm8xxx/irq.h
 
-diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
-index d68c3f1..ff3bb61 100644
---- a/include/net/netns/ipv4.h
-+++ b/include/net/netns/ipv4.h
-@@ -55,6 +55,8 @@ struct netns_ipv4 {
- 	int sysctl_rt_cache_rebuild_count;
- 	int current_rt_cache_rebuild_count;
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index c7cb258..19e758e 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -642,6 +642,16 @@ config MFD_PM8921_CORE
+ 	  Say M here if you want to include support for PM8921 chip as a module.
+ 	  This will build a module called "pm8921-core".
  
-+	unsigned int sysctl_ping_group_range[2];
-+
- 	atomic_t rt_genid;
- 
- #ifdef CONFIG_IP_MROUTE
-diff --git a/include/net/ping.h b/include/net/ping.h
-new file mode 100644
-index 0000000..32ad20a
---- /dev/null
-+++ b/include/net/ping.h
-@@ -0,0 +1,69 @@
-+/*
-+ * INET		An implementation of the TCP/IP protocol suite for the LINUX
-+ *		operating system.  INET is implemented using the  BSD Socket
-+ *		interface as the means of communication with the user level.
-+ *
-+ *		Definitions for the "ping" module.
-+ *
-+ *		This program is free software; you can redistribute it and/or
-+ *		modify it under the terms of the GNU General Public License
-+ *		as published by the Free Software Foundation; either version
-+ *		2 of the License, or (at your option) any later version.
-+ */
-+#ifndef _PING_H
-+#define _PING_H
-+
-+#include <net/netns/hash.h>
-+
-+#ifdef CONFIG_IP_PING_DEBUG
-+#define ping_debug(fmt, x...) printk(KERN_INFO fmt, ## x)
-+#else
-+#define ping_debug(fmt, x...) do {} while (0)
-+#endif
-+
-+/* PING_HTABLE_SIZE must be power of 2 */
-+#define PING_HTABLE_SIZE 	64
-+#define PING_HTABLE_MASK 	(PING_HTABLE_SIZE-1)
-+
-+#define ping_portaddr_for_each_entry(__sk, node, list) \
-+	hlist_nulls_for_each_entry(__sk, node, list, sk_nulls_node)
-+
-+/*
-+ * gid_t is either uint or ushort.  We want to pass it to
-+ * proc_dointvec_minmax(), so it must not be larger than INT_MAX
-+ */
-+#define GID_T_MAX (((gid_t)~0U) >> 1)
-+
-+struct ping_table {
-+	struct hlist_nulls_head	hash[PING_HTABLE_SIZE];
-+	rwlock_t		lock;
-+};
-+
-+struct ping_iter_state {
-+	struct seq_net_private  p;
-+	int			bucket;
-+};
-+
-+extern struct proto ping_prot;
-+
-+
-+#ifdef CONFIG_IP_PING
-+#define icmp_echoreply ping_rcv
-+#else
-+#define icmp_echoreply icmp_discard
-+#endif
-+
-+extern void ping_rcv(struct sk_buff *);
-+extern void ping_err(struct sk_buff *, u32 info);
-+
-+extern void inet_get_ping_group_range_net(struct net *net, unsigned int *low, unsigned int *high);
-+
-+#ifdef CONFIG_PROC_FS
-+extern int __init ping_proc_init(void);
-+extern void ping_proc_exit(void);
-+#endif
-+
-+void __init ping_init(void);
-+
-+
-+#endif /* _PING_H */
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index a5a1050..cf64f35 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -14,6 +14,27 @@ config IP_MULTICAST
- 	  <file:Documentation/networking/multicast.txt>. For most people, it's
- 	  safe to say N.
- 
-+config IP_PING
-+	bool "IP: ping socket"
-+	depends on EXPERIMENTAL
++config MFD_PM8XXX_IRQ
++	bool "Support for Qualcomm PM8xxx IRQ features"
++	depends on MFD_PM8XXX
++	default y if MFD_PM8XXX
 +	help
-+	  This option introduces a new kind of sockets - "ping sockets".
++	  This is the IRQ driver for Qualcomm PM 8xxx PMIC chips.
 +
-+	  A ping socket makes it possible to send ICMP Echo messages and receive
-+	  corresponding ICMP Echo Reply messages without any special privileges.
-+	  In other words, it makes is possible to implement setuid-less /bin/ping.
++	  This is required to use certain other PM 8xxx features, such as GPIO
++	  and MPP.
 +
-+	  A new ping socket is created with socket(PF_INET, SOCK_DGRAM, PROT_ICMP).
-+
-+config IP_PING_DEBUG
-+	bool "IP: ping socket debug output"
-+	depends on IP_PING
-+	default n
-+	help
-+	  Enable the inclusion of debug code in the ICMP ping sockets.
-+	  Be aware that doing this will impact performance.
-+	  If unsure say N.
-+
- config IP_ADVANCED_ROUTER
- 	bool "IP: advanced router"
- 	---help---
-diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
-index 4978d22..3a37479 100644
---- a/net/ipv4/Makefile
-+++ b/net/ipv4/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_IP_FIB_TRIE) += fib_trie.o
- obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_IP_MULTIPLE_TABLES) += fib_rules.o
- obj-$(CONFIG_IP_MROUTE) += ipmr.o
-+obj-$(CONFIG_IP_PING) += ping.o
- obj-$(CONFIG_NET_IPIP) += ipip.o
- obj-$(CONFIG_NET_IPGRE_DEMUX) += gre.o
- obj-$(CONFIG_NET_IPGRE) += ip_gre.o
-diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 45b89d7..a707d3e 100644
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -105,6 +105,7 @@
- #include <net/tcp.h>
- #include <net/udp.h>
- #include <net/udplite.h>
-+#include <net/ping.h>
- #include <linux/skbuff.h>
- #include <net/sock.h>
- #include <net/raw.h>
-@@ -1008,6 +1009,16 @@ static struct inet_protosw inetsw_array[] =
- 		.flags =      INET_PROTOSW_PERMANENT,
-        },
+ endif # MFD_SUPPORT
  
-+#ifdef CONFIG_IP_PING
-+       {
-+		.type =       SOCK_DGRAM,
-+		.protocol =   IPPROTO_ICMP,
-+		.prot =       &ping_prot,
-+		.ops =        &inet_dgram_ops,
-+		.no_check =   UDP_CSUM_DEFAULT,
-+		.flags =      INET_PROTOSW_REUSE,
-+       },
-+#endif
+ menu "Multimedia Capabilities Port drivers"
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index ec158da..5fc9315 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -84,3 +84,4 @@ obj-$(CONFIG_MFD_VX855)		+= vx855.o
+ obj-$(CONFIG_MFD_WL1273_CORE)	+= wl1273-core.o
+ obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+ obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o
++obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
+diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
+index a2ecd32..e873b15 100644
+--- a/drivers/mfd/pm8921-core.c
++++ b/drivers/mfd/pm8921-core.c
+@@ -16,6 +16,7 @@
+ #include <linux/kernel.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
++#include <linux/err.h>
+ #include <linux/msm_ssbi.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/pm8xxx/pm8921.h>
+@@ -26,6 +27,7 @@
  
-        {
- 	       .type =       SOCK_RAW,
-@@ -1528,6 +1539,9 @@ static const struct net_protocol udp_protocol = {
- 
- static const struct net_protocol icmp_protocol = {
- 	.handler =	icmp_rcv,
-+#ifdef CONFIG_IP_PING
-+	.err_handler =	ping_err,
-+#endif
- 	.no_policy =	1,
- 	.netns_ok =	1,
+ struct pm8921 {
+ 	struct device			*dev;
++	struct pm_irq_chip		*irq_chip;
  };
-@@ -1643,6 +1657,12 @@ static int __init inet_init(void)
- 	if (rc)
- 		goto out_unregister_udp_proto;
  
-+#ifdef CONFIG_IP_PING
-+	rc = proto_register(&ping_prot, 1);
-+	if (rc)
-+		goto out_unregister_raw_proto;
-+#endif
-+
- 	/*
- 	 *	Tell SOCKET that we are alive...
- 	 */
-@@ -1698,6 +1718,10 @@ static int __init inet_init(void)
- 	/* Add UDP-Lite (RFC 3828) */
- 	udplite4_register();
+ static int pm8921_readb(const struct device *dev, u16 addr, u8 *val)
+@@ -62,19 +64,53 @@ static int pm8921_write_buf(const struct device *dev, u16 addr, u8 *buf,
+ 	return msm_ssbi_write(pmic->dev->parent, addr, buf, cnt);
+ }
  
-+#ifdef CONFIG_IP_PING
-+	ping_init();
-+#endif
++static int pm8921_read_irq_stat(const struct device *dev, int irq)
++{
++	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
++	const struct pm8921 *pmic = pm8921_drvdata->pm_chip_data;
 +
- 	/*
- 	 *	Set the ICMP layer up
- 	 */
-@@ -1728,6 +1752,10 @@ static int __init inet_init(void)
- 	rc = 0;
- out:
- 	return rc;
-+#ifdef CONFIG_IP_PING
-+out_unregister_raw_proto:
-+	proto_unregister(&raw_prot);
-+#endif
- out_unregister_udp_proto:
- 	proto_unregister(&udp_prot);
- out_unregister_tcp_proto:
-@@ -1752,11 +1780,19 @@ static int __init ipv4_proc_init(void)
- 		goto out_tcp;
- 	if (udp4_proc_init())
- 		goto out_udp;
-+#ifdef CONFIG_IP_PING
-+	if (ping_proc_init())
-+		goto out_ping;
-+#endif
- 	if (ip_misc_proc_init())
- 		goto out_misc;
- out:
- 	return rc;
- out_misc:
-+#ifdef CONFIG_IP_PING
-+	ping_proc_exit();
-+out_ping:
-+#endif
- 	udp4_proc_exit();
- out_udp:
- 	tcp4_proc_exit();
-diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
-index 4aa1b7f..7a52374 100644
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -83,6 +83,7 @@
- #include <net/tcp.h>
- #include <net/udp.h>
- #include <net/raw.h>
-+#include <net/ping.h>
- #include <linux/skbuff.h>
- #include <net/sock.h>
- #include <linux/errno.h>
-@@ -798,6 +799,17 @@ static void icmp_redirect(struct sk_buff *skb)
- 			       iph->saddr, skb->dev);
- 		break;
++	return pm8xxx_get_irq_stat(pmic->irq_chip, irq);
++}
++
+ static struct pm8xxx_drvdata pm8921_drvdata = {
+ 	.pmic_readb		= pm8921_readb,
+ 	.pmic_writeb		= pm8921_writeb,
+ 	.pmic_read_buf		= pm8921_read_buf,
+ 	.pmic_write_buf		= pm8921_write_buf,
++	.pmic_read_irq_stat	= pm8921_read_irq_stat,
+ };
+ 
++static int __devinit pm8921_add_subdevices(const struct pm8921_platform_data
++					   *pdata,
++					   struct pm8921 *pmic,
++					   u32 rev)
++{
++	int ret = 0, irq_base = 0;
++	struct pm_irq_chip *irq_chip;
++
++	if (pdata->irq_pdata) {
++		pdata->irq_pdata->irq_cdata.nirqs = PM8921_NR_IRQS;
++		pdata->irq_pdata->irq_cdata.rev = rev;
++		irq_base = pdata->irq_pdata->irq_base;
++		irq_chip = pm8xxx_irq_init(pmic->dev, pdata->irq_pdata);
++
++		if (IS_ERR(irq_chip)) {
++			pr_err("Failed to init interrupts ret=%ld\n",
++					PTR_ERR(irq_chip));
++			return PTR_ERR(irq_chip);
++		}
++		pmic->irq_chip = irq_chip;
++	}
++	return ret;
++}
++
+ static int __devinit pm8921_probe(struct platform_device *pdev)
+ {
+ 	const struct pm8921_platform_data *pdata = pdev->dev.platform_data;
+ 	struct pm8921 *pmic;
+ 	int rc;
+ 	u8 val;
++	u32 rev;
+ 
+ 	if (!pdata) {
+ 		pr_err("missing platform data\n");
+@@ -94,6 +130,7 @@ static int __devinit pm8921_probe(struct platform_device *pdev)
+ 		goto err_read_rev;
  	}
-+
-+#ifdef CONFIG_IP_PING
-+	/* Ping wants to see redirects.
-+         * Let's pretend they are errors of sorts... */
-+	if (iph->protocol == IPPROTO_ICMP &&
-+	    iph->ihl >= 5 &&
-+	    pskb_may_pull(skb, (iph->ihl<<2)+8)) {
-+		ping_err(skb, icmp_hdr(skb)->un.gateway);
+ 	pr_info("PMIC revision 1: %02X\n", val);
++	rev = val;
+ 
+ 	/* Read PMIC chip revision 2 */
+ 	rc = msm_ssbi_read(pdev->dev.parent, REG_HWREV_2, &val, sizeof(val));
+@@ -103,13 +140,26 @@ static int __devinit pm8921_probe(struct platform_device *pdev)
+ 		goto err_read_rev;
+ 	}
+ 	pr_info("PMIC revision 2: %02X\n", val);
++	rev |= val << BITS_PER_BYTE;
+ 
+ 	pmic->dev = &pdev->dev;
+ 	pm8921_drvdata.pm_chip_data = pmic;
+ 	platform_set_drvdata(pdev, &pm8921_drvdata);
+ 
++	rc = pm8921_add_subdevices(pdata, pmic, rev);
++	if (rc) {
++		pr_err("Cannot add subdevices rc=%d\n", rc);
++		goto err;
 +	}
-+#endif
 +
- out:
- 	return;
- out_err:
-@@ -1058,7 +1070,7 @@ error:
-  */
- static const struct icmp_control icmp_pointers[NR_ICMP_TYPES + 1] = {
- 	[ICMP_ECHOREPLY] = {
--		.handler = icmp_discard,
-+		.handler = icmp_echoreply,
- 	},
- 	[1] = {
- 		.handler = icmp_discard,
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
++	/* gpio might not work if no irq device is found */
++	WARN_ON(pmic->irq_chip == NULL);
++
+ 	return 0;
+ 
++err:
++	mfd_remove_devices(pmic->dev);
++	platform_set_drvdata(pdev, NULL);
+ err_read_rev:
+ 	kfree(pmic);
+ 	return rc;
+@@ -125,6 +175,10 @@ static int __devexit pm8921_remove(struct platform_device *pdev)
+ 		pmic = drvdata->pm_chip_data;
+ 	if (pmic)
+ 		mfd_remove_devices(pmic->dev);
++	if (pmic->irq_chip) {
++		pm8xxx_irq_exit(pmic->irq_chip);
++		pmic->irq_chip = NULL;
++	}
+ 	platform_set_drvdata(pdev, NULL);
+ 	kfree(pmic);
+ 
+diff --git a/drivers/mfd/pm8xxx-irq.c b/drivers/mfd/pm8xxx-irq.c
 new file mode 100644
-index 0000000..16a4683
+index 0000000..4d08689
 --- /dev/null
-+++ b/net/ipv4/ping.c
-@@ -0,0 +1,933 @@
++++ b/drivers/mfd/pm8xxx-irq.c
+@@ -0,0 +1,370 @@
 +/*
-+ * INET		An implementation of the TCP/IP protocol suite for the LINUX
-+ *		operating system.  INET is implemented using the  BSD Socket
-+ *		interface as the means of communication with the user level.
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 + *
-+ *		"Ping" sockets
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
-+ *		This program is free software; you can redistribute it and/or
-+ *		modify it under the terms of the GNU General Public License
-+ *		as published by the Free Software Foundation; either version
-+ *		2 of the License, or (at your option) any later version.
-+ *
-+ * Based on ipv4/udp.c code.
-+ *
-+ * Authors:	Vasiliy Kulikov / Openwall (for Linux 2.6),
-+ *		Pavel Kankovsky (for Linux 2.4.32)
-+ *
-+ * Pavel gave all rights to bugs to Vasiliy,
-+ * none of the bugs are Pavel's now.
-+ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + */
 +
-+#include <asm/system.h>
-+#include <linux/uaccess.h>
-+#include <asm/ioctls.h>
-+#include <linux/types.h>
-+#include <linux/fcntl.h>
-+#include <linux/socket.h>
-+#include <linux/sockios.h>
-+#include <linux/in.h>
-+#include <linux/errno.h>
-+#include <linux/timer.h>
-+#include <linux/mm.h>
-+#include <linux/inet.h>
-+#include <linux/netdevice.h>
-+#include <net/snmp.h>
-+#include <net/ip.h>
-+#include <net/ipv6.h>
-+#include <net/icmp.h>
-+#include <net/protocol.h>
-+#include <linux/skbuff.h>
-+#include <linux/proc_fs.h>
-+#include <net/sock.h>
-+#include <net/ping.h>
-+#include <net/icmp.h>
-+#include <net/udp.h>
-+#include <net/route.h>
-+#include <net/inet_common.h>
-+#include <net/checksum.h>
++#define pr_fmt(fmt)	"%s: " fmt, __func__
 +
++#include <linux/err.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/kernel.h>
++#include <linux/mfd/pm8xxx/core.h>
++#include <linux/mfd/pm8xxx/irq.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
 +
-+struct ping_table ping_table __read_mostly;
++/* PMIC8xxx IRQ */
 +
-+u16 ping_port_rover;
++#define	SSBI_REG_ADDR_IRQ_BASE		0x1BB
 +
-+static inline int ping_hashfn(struct net *net, unsigned num, unsigned mask)
-+{
-+	int res = (num + net_hash_mix(net)) & mask;
-+	ping_debug("hash(%d) = %d\n", num, res);
-+	return res;
-+}
++#define	SSBI_REG_ADDR_IRQ_ROOT		(SSBI_REG_ADDR_IRQ_BASE + 0)
++#define	SSBI_REG_ADDR_IRQ_M_STATUS1	(SSBI_REG_ADDR_IRQ_BASE + 1)
++#define	SSBI_REG_ADDR_IRQ_M_STATUS2	(SSBI_REG_ADDR_IRQ_BASE + 2)
++#define	SSBI_REG_ADDR_IRQ_M_STATUS3	(SSBI_REG_ADDR_IRQ_BASE + 3)
++#define	SSBI_REG_ADDR_IRQ_M_STATUS4	(SSBI_REG_ADDR_IRQ_BASE + 4)
++#define	SSBI_REG_ADDR_IRQ_BLK_SEL	(SSBI_REG_ADDR_IRQ_BASE + 5)
++#define	SSBI_REG_ADDR_IRQ_IT_STATUS	(SSBI_REG_ADDR_IRQ_BASE + 6)
++#define	SSBI_REG_ADDR_IRQ_CONFIG	(SSBI_REG_ADDR_IRQ_BASE + 7)
++#define	SSBI_REG_ADDR_IRQ_RT_STATUS	(SSBI_REG_ADDR_IRQ_BASE + 8)
 +
-+static inline struct hlist_nulls_head *ping_hashslot(struct ping_table *table,
-+					     struct net *net, unsigned num)
-+{
-+	return &table->hash[ping_hashfn(net, num, PING_HTABLE_MASK)];
-+}
++#define	PM_IRQF_LVL_SEL			0x01	/* level select */
++#define	PM_IRQF_MASK_FE			0x02	/* mask falling edge */
++#define	PM_IRQF_MASK_RE			0x04	/* mask rising edge */
++#define	PM_IRQF_CLR			0x08	/* clear interrupt */
++#define	PM_IRQF_BITS_MASK		0x70
++#define	PM_IRQF_BITS_SHIFT		4
++#define	PM_IRQF_WRITE			0x80
 +
-+static int ping_v4_get_port(struct sock *sk, unsigned short ident)
-+{
-+	struct hlist_nulls_node *node;
-+	struct hlist_nulls_head *hlist;
-+	struct inet_sock *isk, *isk2;
-+	struct sock *sk2 = NULL;
++#define	PM_IRQF_MASK_ALL		(PM_IRQF_MASK_FE | \
++					PM_IRQF_MASK_RE)
 +
-+	isk = inet_sk(sk);
-+	write_lock_bh(&ping_table.lock);
-+	if (ident == 0) {
-+		u32 i;
-+		u16 result = ping_port_rover + 1;
-+
-+		for (i = 0; i < (1L << 16); i++, result++) {
-+			if (!result)
-+				result++; /* avoid zero */
-+			hlist = ping_hashslot(&ping_table, sock_net(sk),
-+					    result);
-+			ping_portaddr_for_each_entry(sk2, node, hlist) {
-+				isk2 = inet_sk(sk2);
-+
-+				if (isk2->inet_num == result)
-+					goto next_port;
-+			}
-+
-+			/* found */
-+			ping_port_rover = ident = result;
-+			break;
-+next_port:
-+			;
-+		}
-+		if (i >= (1L << 16))
-+			goto fail;
-+	} else {
-+		hlist = ping_hashslot(&ping_table, sock_net(sk), ident);
-+		ping_portaddr_for_each_entry(sk2, node, hlist) {
-+			isk2 = inet_sk(sk2);
-+
-+			if ((isk2->inet_num == ident) &&
-+			    (sk2 != sk) &&
-+			    (!sk2->sk_reuse || !sk->sk_reuse))
-+				goto fail;
-+		}
-+	}
-+
-+	ping_debug("found port/ident = %d\n", ident);
-+	isk->inet_num = ident;
-+	if (sk_unhashed(sk)) {
-+		ping_debug("was not hashed\n");
-+		sock_hold(sk);
-+		hlist_nulls_add_head(&sk->sk_nulls_node, hlist);
-+		sock_prot_inuse_add(sock_net(sk), sk->sk_prot, 1);
-+	}
-+	write_unlock_bh(&ping_table.lock);
-+	return 0;
-+
-+fail:
-+	write_unlock_bh(&ping_table.lock);
-+	return 1;
-+}
-+
-+static void ping_v4_hash(struct sock *sk)
-+{
-+	ping_debug("ping_v4_hash(sk->port=%u)\n", inet_sk(sk)->inet_num);
-+	BUG(); /* "Please do not press this button again." */
-+}
-+
-+static void ping_v4_unhash(struct sock *sk)
-+{
-+	struct inet_sock *isk = inet_sk(sk);
-+	ping_debug("ping_v4_unhash(isk=%p,isk->num=%u)\n", isk, isk->inet_num);
-+	if (sk_hashed(sk)) {
-+		struct hlist_nulls_head *hslot;
-+
-+		hslot = ping_hashslot(&ping_table, sock_net(sk), isk->inet_num);
-+		write_lock_bh(&ping_table.lock);
-+		hlist_nulls_del(&sk->sk_nulls_node);
-+		sock_put(sk);
-+		isk->inet_num = isk->inet_sport = 0;
-+		sock_prot_inuse_add(sock_net(sk), sk->sk_prot, -1);
-+		write_unlock_bh(&ping_table.lock);
-+	}
-+}
-+
-+struct sock *ping_v4_lookup(struct net *net, u32 saddr, u32 daddr,
-+	 u16 ident, int dif)
-+{
-+	struct hlist_nulls_head *hslot = ping_hashslot(&ping_table, net, ident);
-+	struct sock *sk = NULL;
-+	struct inet_sock *isk;
-+	struct hlist_nulls_node *hnode;
-+
-+	ping_debug("try to find: num = %d, daddr = %ld, dif = %d\n",
-+			 (int)ident, (unsigned long)daddr, dif);
-+	read_lock_bh(&ping_table.lock);
-+
-+	ping_portaddr_for_each_entry(sk, hnode, hslot) {
-+		isk = inet_sk(sk);
-+
-+		ping_debug("found: %p: num = %d, daddr = %ld, dif = %d\n", sk,
-+			 (int)isk->inet_num, (unsigned long)isk->inet_rcv_saddr,
-+			 sk->sk_bound_dev_if);
-+
-+		ping_debug("iterate\n");
-+		if (isk->inet_num != ident)
-+			continue;
-+		if (isk->inet_rcv_saddr && isk->inet_rcv_saddr != daddr)
-+			continue;
-+		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
-+			continue;
-+
-+		sock_hold(sk);
-+		goto exit;
-+	}
-+
-+	sk = NULL;
-+exit:
-+	read_unlock_bh(&ping_table.lock);
-+
-+	return sk;
-+}
-+
-+static int ping_init_sock(struct sock *sk)
-+{
-+	struct net *net = sock_net(sk);
-+	gid_t group = current_egid();
-+	gid_t range[2];
-+	struct group_info *group_info = get_current_groups();
-+	int i, j, count = group_info->ngroups;
-+
-+	inet_get_ping_group_range_net(net, range, range+1);
-+	if (range[0] <= group && group <= range[1])
-+		return 0;
-+
-+	for (i = 0; i < group_info->nblocks; i++) {
-+		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
-+
-+		for (j = 0; j < cp_count; j++) {
-+			group = group_info->blocks[i][j];
-+			if (range[0] <= group && group <= range[1])
-+				return 0;
-+		}
-+
-+		count -= cp_count;
-+	}
-+
-+	return -EACCES;
-+}
-+
-+static void ping_close(struct sock *sk, long timeout)
-+{
-+	ping_debug("ping_close(sk=%p,sk->num=%u)\n",
-+		inet_sk(sk), inet_sk(sk)->inet_num);
-+	ping_debug("isk->refcnt = %d\n", sk->sk_refcnt.counter);
-+
-+	sk_common_release(sk);
-+}
-+
-+/*
-+ * We need our own bind because there are no privileged id's == local ports.
-+ * Moreover, we don't allow binding to multi- and broadcast addresses.
-+ */
-+
-+static int ping_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len)
-+{
-+	struct sockaddr_in *addr = (struct sockaddr_in *)uaddr;
-+	struct inet_sock *isk = inet_sk(sk);
-+	unsigned short snum;
-+	int chk_addr_ret;
-+	int err;
-+
-+	if (addr_len < sizeof(struct sockaddr_in))
-+		return -EINVAL;
-+
-+	ping_debug("ping_v4_bind(sk=%p,sa_addr=%08x,sa_port=%d)\n",
-+		sk, addr->sin_addr.s_addr, ntohs(addr->sin_port));
-+
-+	chk_addr_ret = inet_addr_type(sock_net(sk), addr->sin_addr.s_addr);
-+	if (addr->sin_addr.s_addr == INADDR_ANY)
-+		chk_addr_ret = RTN_LOCAL;
-+
-+	if ((sysctl_ip_nonlocal_bind == 0 &&
-+	    isk->freebind == 0 && isk->transparent == 0 &&
-+	     chk_addr_ret != RTN_LOCAL) ||
-+	    chk_addr_ret == RTN_MULTICAST ||
-+	    chk_addr_ret == RTN_BROADCAST)
-+		return -EADDRNOTAVAIL;
-+
-+	lock_sock(sk);
-+
-+	err = -EINVAL;
-+	if (isk->inet_num != 0)
-+		goto out;
-+
-+	err = -EADDRINUSE;
-+	isk->inet_rcv_saddr = isk->inet_saddr = addr->sin_addr.s_addr;
-+	snum = ntohs(addr->sin_port);
-+	if (ping_v4_get_port(sk, snum) != 0) {
-+		isk->inet_saddr = isk->inet_rcv_saddr = 0;
-+		goto out;
-+	}
-+
-+	ping_debug("after bind(): num = %d, daddr = %ld, dif = %d\n",
-+		(int)isk->inet_num,
-+		(unsigned long) isk->inet_rcv_saddr,
-+		(int)sk->sk_bound_dev_if);
-+
-+	err = 0;
-+	if (isk->inet_rcv_saddr)
-+		sk->sk_userlocks |= SOCK_BINDADDR_LOCK;
-+	if (snum)
-+		sk->sk_userlocks |= SOCK_BINDPORT_LOCK;
-+	isk->inet_sport = htons(isk->inet_num);
-+	isk->inet_daddr = 0;
-+	isk->inet_dport = 0;
-+	sk_dst_reset(sk);
-+out:
-+	release_sock(sk);
-+	ping_debug("ping_v4_bind -> %d\n", err);
-+	return err;
-+}
-+
-+/*
-+ * Is this a supported type of ICMP message?
-+ */
-+
-+static inline int ping_supported(int type, int code)
-+{
-+	if (type == ICMP_ECHO && code == 0)
-+		return 1;
-+	return 0;
-+}
-+
-+/*
-+ * This routine is called by the ICMP module when it gets some
-+ * sort of error condition.
-+ */
-+
-+static int ping_queue_rcv_skb(struct sock *sk, struct sk_buff *skb);
-+
-+void ping_err(struct sk_buff *skb, u32 info)
-+{
-+	struct iphdr *iph = (struct iphdr *)skb->data;
-+	struct icmphdr *icmph = (struct icmphdr *)(skb->data+(iph->ihl<<2));
-+	struct inet_sock *inet_sock;
-+	int type = icmph->type;
-+	int code = icmph->code;
-+	struct net *net = dev_net(skb->dev);
-+	struct sock *sk;
-+	int harderr;
-+	int err;
-+
-+	/* We assume the packet has already been checked by icmp_unreach */
-+
-+	if (!ping_supported(icmph->type, icmph->code))
-+		return;
-+
-+	ping_debug("ping_err(type=%04x,code=%04x,id=%04x,seq=%04x)\n", type,
-+		code, ntohs(icmph->un.echo.id), ntohs(icmph->un.echo.sequence));
-+
-+	sk = ping_v4_lookup(net, iph->daddr, iph->saddr,
-+			    ntohs(icmph->un.echo.id), skb->dev->ifindex);
-+	if (sk == NULL) {
-+		ICMP_INC_STATS_BH(net, ICMP_MIB_INERRORS);
-+		ping_debug("no socket, dropping\n");
-+		return;	/* No socket for error */
-+	}
-+	ping_debug("err on socket %p\n", sk);
-+
-+	err = 0;
-+	harderr = 0;
-+	inet_sock = inet_sk(sk);
-+
-+	switch (type) {
-+	default:
-+	case ICMP_TIME_EXCEEDED:
-+		err = EHOSTUNREACH;
-+		break;
-+	case ICMP_SOURCE_QUENCH:
-+		/* This is not a real error but ping wants to see it.
-+		 * Report it with some fake errno. */
-+		err = EREMOTEIO;
-+		break;
-+	case ICMP_PARAMETERPROB:
-+		err = EPROTO;
-+		harderr = 1;
-+		break;
-+	case ICMP_DEST_UNREACH:
-+		if (code == ICMP_FRAG_NEEDED) { /* Path MTU discovery */
-+			if (inet_sock->pmtudisc != IP_PMTUDISC_DONT) {
-+				err = EMSGSIZE;
-+				harderr = 1;
-+				break;
-+			}
-+			goto out;
-+		}
-+		err = EHOSTUNREACH;
-+		if (code <= NR_ICMP_UNREACH) {
-+			harderr = icmp_err_convert[code].fatal;
-+			err = icmp_err_convert[code].errno;
-+		}
-+		break;
-+	case ICMP_REDIRECT:
-+		/* See ICMP_SOURCE_QUENCH */
-+		err = EREMOTEIO;
-+		break;
-+	}
-+
-+	/*
-+	 *      RFC1122: OK.  Passes ICMP errors back to application, as per
-+	 *	4.1.3.3.
-+	 */
-+	if (!inet_sock->recverr) {
-+		if (!harderr || sk->sk_state != TCP_ESTABLISHED)
-+			goto out;
-+	} else {
-+		ip_icmp_error(sk, skb, err, 0 /* no remote port */,
-+			 info, (u8 *)icmph);
-+	}
-+	sk->sk_err = err;
-+	sk->sk_error_report(sk);
-+out:
-+	sock_put(sk);
-+}
-+
-+/*
-+ *	Copy and checksum an ICMP Echo packet from user space into a buffer.
-+ */
-+
-+struct pingfakehdr {
-+	struct icmphdr icmph;
-+	struct iovec *iov;
-+	u32 wcheck;
++struct pm_irq_chip {
++	struct device		*dev;
++	spinlock_t		pm_irq_lock;
++	unsigned int		devirq;
++	unsigned int		irq_base;
++	unsigned int		num_irqs;
++	unsigned int		num_blocks;
++	unsigned int		num_masters;
++	u8			config[0];
 +};
 +
-+static int ping_getfrag(void *from, char * to,
-+			int offset, int fraglen, int odd, struct sk_buff *skb)
++static int pm8xxx_read_root_irq(const struct pm_irq_chip *chip, u8 *rp)
 +{
-+	struct pingfakehdr *pfh = (struct pingfakehdr *)from;
-+
-+	if (offset == 0) {
-+		if (fraglen < sizeof(struct icmphdr))
-+			BUG();
-+		if (csum_partial_copy_fromiovecend(to + sizeof(struct icmphdr),
-+			    pfh->iov, 0, fraglen - sizeof(struct icmphdr),
-+			    &pfh->wcheck))
-+			return -EFAULT;
-+
-+		return 0;
-+	}
-+	if (offset < sizeof(struct icmphdr))
-+		BUG();
-+	if (csum_partial_copy_fromiovecend
-+			(to, pfh->iov, offset - sizeof(struct icmphdr),
-+			 fraglen, &pfh->wcheck))
-+		return -EFAULT;
-+	return 0;
++	return pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_ROOT, rp);
 +}
 +
-+static int ping_push_pending_frames(struct sock *sk, struct pingfakehdr *pfh)
++static int pm8xxx_read_master_irq(const struct pm_irq_chip *chip, u8 m, u8 *bp)
 +{
-+	struct sk_buff *skb = skb_peek(&sk->sk_write_queue);
-+
-+	pfh->wcheck = csum_partial((char *)&pfh->icmph,
-+		sizeof(struct icmphdr), pfh->wcheck);
-+	pfh->icmph.checksum = csum_fold(pfh->wcheck);
-+	memcpy(icmp_hdr(skb), &pfh->icmph, sizeof(struct icmphdr));
-+	skb->ip_summed = CHECKSUM_NONE;
-+	return ip_push_pending_frames(sk);
++	return pm8xxx_readb(chip->dev,
++			SSBI_REG_ADDR_IRQ_M_STATUS1 + m, bp);
 +}
 +
-+int ping_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
-+		 size_t len)
++static int pm8xxx_read_block_irq(struct pm_irq_chip *chip, u8 bp, u8 *ip)
 +{
-+	struct inet_sock *isk = inet_sk(sk);
-+	struct ipcm_cookie ipc;
-+	struct icmphdr user_icmph;
-+	struct pingfakehdr pfh;
-+	struct rtable *rt = NULL;
-+	int free = 0;
-+	u32 saddr, daddr;
-+	u8  tos;
-+	int err;
++	int	rc;
 +
-+	ping_debug("ping_sendmsg(sk=%p,sk->num=%u)\n", isk, isk->inet_num);
-+
-+
-+	if (len > 0xFFFF)
-+		return -EMSGSIZE;
-+
-+	/*
-+	 *	Check the flags.
-+	 */
-+
-+	/* Mirror BSD error message compatibility */
-+	if (msg->msg_flags & MSG_OOB)
-+		return -EOPNOTSUPP;
-+
-+	/*
-+	 *	Fetch the ICMP header provided by the userland.
-+	 *	iovec is modified!
-+	 */
-+
-+	if (memcpy_fromiovec((u8 *)&user_icmph, msg->msg_iov,
-+			     sizeof(struct icmphdr)))
-+		return -EFAULT;
-+	if (!ping_supported(user_icmph.type, user_icmph.code))
-+		return -EINVAL;
-+
-+	/*
-+	 *	Get and verify the address.
-+	 */
-+
-+	if (msg->msg_name) {
-+		struct sockaddr_in *usin = (struct sockaddr_in *)msg->msg_name;
-+		if (msg->msg_namelen < sizeof(*usin))
-+			return -EINVAL;
-+		if (usin->sin_family != AF_INET)
-+			return -EINVAL;
-+		daddr = usin->sin_addr.s_addr;
-+		/* no remote port */
-+	} else {
-+		if (sk->sk_state != TCP_ESTABLISHED)
-+			return -EDESTADDRREQ;
-+		daddr = isk->inet_daddr;
-+		/* no remote port */
++	spin_lock(&chip->pm_irq_lock);
++	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, bp);
++	if (rc) {
++		pr_err("Failed Selecting Block %d rc=%d\n", bp, rc);
++		goto bail;
 +	}
 +
-+	ipc.addr = isk->inet_saddr;
-+	ipc.opt = NULL;
-+	ipc.oif = sk->sk_bound_dev_if;
-+
-+	if (msg->msg_controllen) {
-+		err = ip_cmsg_send(sock_net(sk), msg, &ipc);
-+		if (err)
-+			return err;
-+		if (ipc.opt)
-+			free = 1;
-+	}
-+	if (!ipc.opt)
-+		ipc.opt = isk->opt;
-+
-+	saddr = ipc.addr;
-+	ipc.addr = daddr;
-+
-+	if (ipc.opt && ipc.opt->srr) {
-+		if (!daddr)
-+			return -EINVAL;
-+		daddr = ipc.opt->faddr;
-+	}
-+	tos = RT_TOS(isk->tos);
-+	if (sock_flag(sk, SOCK_LOCALROUTE) ||
-+	    (msg->msg_flags&MSG_DONTROUTE) ||
-+	    (ipc.opt && ipc.opt->is_strictroute)) {
-+		tos |= RTO_ONLINK;
-+	}
-+
-+	if (ipv4_is_multicast(daddr)) {
-+		if (!ipc.oif)
-+			ipc.oif = isk->mc_index;
-+		if (!saddr)
-+			saddr = isk->mc_addr;
-+	}
-+
-+	{
-+		struct flowi fl = { .oif = ipc.oif,
-+				    .mark = sk->sk_mark,
-+				    .nl_u = { .ip4_u = {
-+						.daddr = daddr,
-+						.saddr = saddr,
-+						.tos = tos } },
-+				    .proto = IPPROTO_ICMP,
-+				    .flags = inet_sk_flowi_flags(sk),
-+		};
-+
-+		struct net *net = sock_net(sk);
-+
-+		security_sk_classify_flow(sk, &fl);
-+		err = ip_route_output_flow(net, &rt, &fl, sk, 1);
-+		if (err) {
-+			if (err == -ENETUNREACH)
-+				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+			goto out;
-+		}
-+
-+		err = -EACCES;
-+		if ((rt->rt_flags & RTCF_BROADCAST) &&
-+		    !sock_flag(sk, SOCK_BROADCAST))
-+			goto out;
-+	}
-+
-+	if (msg->msg_flags & MSG_CONFIRM)
-+		goto do_confirm;
-+back_from_confirm:
-+
-+	if (!ipc.addr)
-+		ipc.addr = rt->rt_dst;
-+
-+	lock_sock(sk);
-+
-+	pfh.icmph.type = user_icmph.type; /* already checked */
-+	pfh.icmph.code = user_icmph.code; /* dtto */
-+	pfh.icmph.checksum = 0;
-+	pfh.icmph.un.echo.id = isk->inet_sport;
-+	pfh.icmph.un.echo.sequence = user_icmph.un.echo.sequence;
-+	pfh.iov = msg->msg_iov;
-+	pfh.wcheck = 0;
-+
-+	err = ip_append_data(sk, ping_getfrag, &pfh, len,
-+			0, &ipc, &rt,
-+			msg->msg_flags);
-+	if (err)
-+		ip_flush_pending_frames(sk);
-+	else
-+		err = ping_push_pending_frames(sk, &pfh);
-+	release_sock(sk);
-+
-+out:
-+	ip_rt_put(rt);
-+	if (free)
-+		kfree(ipc.opt);
-+	if (!err) {
-+		icmp_out_count(sock_net(sk), user_icmph.type);
-+		return len;
-+	}
-+	return err;
-+
-+do_confirm:
-+	dst_confirm(&rt->dst);
-+	if (!(msg->msg_flags & MSG_PROBE) || len)
-+		goto back_from_confirm;
-+	err = 0;
-+	goto out;
-+}
-+
-+/*
-+ *	IOCTL requests applicable to the UDP^H^H^HICMP protocol
-+ */
-+
-+int ping_ioctl(struct sock *sk, int cmd, unsigned long arg)
-+{
-+	ping_debug("ping_ioctl(sk=%p,sk->num=%u,cmd=%d,arg=%lu)\n",
-+		inet_sk(sk), inet_sk(sk)->inet_num, cmd, arg);
-+	switch (cmd) {
-+	case SIOCOUTQ:
-+	case SIOCINQ:
-+		return udp_ioctl(sk, cmd, arg);
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+}
-+
-+int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
-+		 size_t len, int noblock, int flags, int *addr_len)
-+{
-+	struct inet_sock *isk = inet_sk(sk);
-+	struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
-+	struct sk_buff *skb;
-+	int copied, err;
-+
-+	ping_debug("ping_recvmsg(sk=%p,sk->num=%u)\n", isk, isk->inet_num);
-+
-+	if (flags & MSG_OOB)
-+		goto out;
-+
-+	if (addr_len)
-+		*addr_len = sizeof(*sin);
-+
-+	if (flags & MSG_ERRQUEUE)
-+		return ip_recv_error(sk, msg, len);
-+
-+	skb = skb_recv_datagram(sk, flags, noblock, &err);
-+	if (!skb)
-+		goto out;
-+
-+	copied = skb->len;
-+	if (copied > len) {
-+		msg->msg_flags |= MSG_TRUNC;
-+		copied = len;
-+	}
-+
-+	/* Don't bother checking the checksum */
-+	err = skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
-+	if (err)
-+		goto done;
-+
-+	sock_recv_timestamp(msg, sk, skb);
-+
-+	/* Copy the address. */
-+	if (sin) {
-+		sin->sin_family = AF_INET;
-+		sin->sin_port = 0 /* skb->h.uh->source */;
-+		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
-+		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+	}
-+	if (isk->cmsg_flags)
-+		ip_cmsg_recv(msg, skb);
-+	err = copied;
-+
-+done:
-+	skb_free_datagram(sk, skb);
-+out:
-+	ping_debug("ping_recvmsg -> %d\n", err);
-+	return err;
-+}
-+
-+static int ping_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
-+{
-+	ping_debug("ping_queue_rcv_skb(sk=%p,sk->num=%d,skb=%p)\n",
-+		inet_sk(sk), inet_sk(sk)->inet_num, skb);
-+	if (sock_queue_rcv_skb(sk, skb) < 0) {
-+		ICMP_INC_STATS_BH(sock_net(sk), ICMP_MIB_INERRORS);
-+		kfree_skb(skb);
-+		ping_debug("ping_queue_rcv_skb -> failed\n");
-+		return -1;
-+	}
-+	return 0;
-+}
-+
-+
-+/*
-+ *	All we need to do is get the socket.
-+ */
-+
-+void ping_rcv(struct sk_buff *skb)
-+{
-+	struct sock *sk;
-+	struct net *net = dev_net(skb->dev);
-+	struct iphdr *iph = ip_hdr(skb);
-+	struct icmphdr *icmph = icmp_hdr(skb);
-+	u32 saddr = iph->saddr;
-+	u32 daddr = iph->daddr;
-+
-+	/* We assume the packet has already been checked by icmp_rcv */
-+
-+	ping_debug("ping_rcv(skb=%p,id=%04x,seq=%04x)\n",
-+		skb, ntohs(icmph->un.echo.id), ntohs(icmph->un.echo.sequence));
-+
-+	/* Push ICMP header back */
-+	skb_push(skb, skb->data - (u8 *)icmph);
-+
-+	sk = ping_v4_lookup(net, saddr, daddr, ntohs(icmph->un.echo.id),
-+			    skb->dev->ifindex);
-+	if (sk != NULL) {
-+		ping_debug("rcv on socket %p\n", sk);
-+		ping_queue_rcv_skb(sk, skb_get(skb));
-+		sock_put(sk);
-+		return;
-+	}
-+	ping_debug("no socket, dropping\n");
-+
-+	/* We're called from icmp_rcv(). kfree_skb() is done there. */
-+}
-+
-+struct proto ping_prot = {
-+	.name =		"PING",
-+	.owner =	THIS_MODULE,
-+	.init =		ping_init_sock,
-+	.close =	ping_close,
-+	.connect =	ip4_datagram_connect,
-+	.disconnect =	udp_disconnect,
-+	.ioctl =	ping_ioctl,
-+	.setsockopt =	ip_setsockopt,
-+	.getsockopt =	ip_getsockopt,
-+	.sendmsg =	ping_sendmsg,
-+	.recvmsg =	ping_recvmsg,
-+	.bind =		ping_bind,
-+	.backlog_rcv =	ping_queue_rcv_skb,
-+	.hash =		ping_v4_hash,
-+	.unhash =	ping_v4_unhash,
-+	.get_port =	ping_v4_get_port,
-+	.obj_size =	sizeof(struct inet_sock),
-+};
-+EXPORT_SYMBOL(ping_prot);
-+
-+#ifdef CONFIG_PROC_FS
-+
-+static struct sock *ping_get_first(struct seq_file *seq, int start)
-+{
-+	struct sock *sk;
-+	struct ping_iter_state *state = seq->private;
-+	struct net *net = seq_file_net(seq);
-+
-+	for (state->bucket = start; state->bucket < PING_HTABLE_SIZE;
-+	     ++state->bucket) {
-+		struct hlist_nulls_node *node;
-+		struct hlist_nulls_head *hslot = &ping_table.hash[state->bucket];
-+
-+		if (hlist_nulls_empty(hslot))
-+			continue;
-+
-+		sk_nulls_for_each(sk, node, hslot) {
-+			if (net_eq(sock_net(sk), net))
-+				goto found;
-+		}
-+	}
-+	sk = NULL;
-+found:
-+	return sk;
-+}
-+
-+static struct sock *ping_get_next(struct seq_file *seq, struct sock *sk)
-+{
-+	struct ping_iter_state *state = seq->private;
-+	struct net *net = seq_file_net(seq);
-+
-+	do {
-+		sk = sk_nulls_next(sk);
-+	} while (sk && (!net_eq(sock_net(sk), net)));
-+
-+	if (!sk)
-+		return ping_get_first(seq, state->bucket + 1);
-+	return sk;
-+}
-+
-+static struct sock *ping_get_idx(struct seq_file *seq, loff_t pos)
-+{
-+	struct sock *sk = ping_get_first(seq, 0);
-+
-+	if (sk)
-+		while (pos && (sk = ping_get_next(seq, sk)) != NULL)
-+			--pos;
-+	return pos ? NULL : sk;
-+}
-+
-+static void *ping_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	struct ping_iter_state *state = seq->private;
-+	state->bucket = 0;
-+
-+	read_lock_bh(&ping_table.lock);
-+
-+	return *pos ? ping_get_idx(seq, *pos-1) : SEQ_START_TOKEN;
-+}
-+
-+static void *ping_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct sock *sk;
-+
-+	if (v == SEQ_START_TOKEN)
-+		sk = ping_get_idx(seq, 0);
-+	else
-+		sk = ping_get_next(seq, v);
-+
-+	++*pos;
-+	return sk;
-+}
-+
-+static void ping_seq_stop(struct seq_file *seq, void *v)
-+{
-+	read_unlock_bh(&ping_table.lock);
-+}
-+
-+static void ping_format_sock(struct sock *sp, struct seq_file *f,
-+		int bucket, int *len)
-+{
-+	struct inet_sock *inet = inet_sk(sp);
-+	__be32 dest = inet->inet_daddr;
-+	__be32 src = inet->inet_rcv_saddr;
-+	__u16 destp = ntohs(inet->inet_dport);
-+	__u16 srcp = ntohs(inet->inet_sport);
-+
-+	seq_printf(f, "%5d: %08X:%04X %08X:%04X"
-+		" %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %p %d%n",
-+		bucket, src, srcp, dest, destp, sp->sk_state,
-+		sk_wmem_alloc_get(sp),
-+		sk_rmem_alloc_get(sp),
-+		0, 0L, 0, sock_i_uid(sp), 0, sock_i_ino(sp),
-+		atomic_read(&sp->sk_refcnt), sp,
-+		atomic_read(&sp->sk_drops), len);
-+}
-+
-+static int ping_seq_show(struct seq_file *seq, void *v)
-+{
-+	if (v == SEQ_START_TOKEN)
-+		seq_printf(seq, "%-127s\n",
-+			   "  sl  local_address rem_address   st tx_queue "
-+			   "rx_queue tr tm->when retrnsmt   uid  timeout "
-+			   "inode ref pointer drops");
-+	else {
-+		struct ping_iter_state *state = seq->private;
-+		int len;
-+
-+		ping_format_sock(v, seq, state->bucket, &len);
-+		seq_printf(seq, "%*s\n", 127 - len, "");
-+	}
-+	return 0;
-+}
-+
-+static const struct seq_operations ping_seq_ops = {
-+	.show		= ping_seq_show,
-+	.start		= ping_seq_start,
-+	.next		= ping_seq_next,
-+	.stop		= ping_seq_stop,
-+};
-+
-+static int ping_seq_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open_net(inode, file, &ping_seq_ops,
-+			   sizeof(struct ping_iter_state));
-+}
-+
-+static const struct file_operations ping_seq_fops = {
-+	.owner		= THIS_MODULE,
-+	.open		= ping_seq_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release_net,
-+};
-+
-+static const char ping_proc_name[] = "icmp";
-+
-+static int ping_proc_register(struct net *net)
-+{
-+	struct proc_dir_entry *p;
-+	int rc = 0;
-+
-+	p = proc_create_data(ping_proc_name, S_IRUGO, net->proc_net,
-+			     &ping_seq_fops, NULL);
-+	if (!p)
-+		rc = -ENOMEM;
++	rc = pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_IT_STATUS, ip);
++	if (rc)
++		pr_err("Failed Reading Status rc=%d\n", rc);
++bail:
++	spin_unlock(&chip->pm_irq_lock);
 +	return rc;
 +}
 +
-+static void ping_proc_unregister(struct net *net)
++static int pm8xxx_config_irq(struct pm_irq_chip *chip, u8 bp, u8 cp)
 +{
-+	proc_net_remove(net, ping_proc_name);
++	int	rc;
++
++	spin_lock(&chip->pm_irq_lock);
++	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, bp);
++	if (rc) {
++		pr_err("Failed Selecting Block %d rc=%d\n", bp, rc);
++		goto bail;
++	}
++
++	cp |= PM_IRQF_WRITE;
++	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_CONFIG, cp);
++	if (rc)
++		pr_err("Failed Configuring IRQ rc=%d\n", rc);
++bail:
++	spin_unlock(&chip->pm_irq_lock);
++	return rc;
 +}
 +
-+
-+static int __net_init ping_proc_init_net(struct net *net)
++static int pm8xxx_irq_block_handler(struct pm_irq_chip *chip, int block)
 +{
-+	return ping_proc_register(net);
++	int pmirq, irq, i, ret = 0;
++	u8 bits;
++
++	ret = pm8xxx_read_block_irq(chip, block, &bits);
++	if (ret) {
++		pr_err("Failed reading %d block ret=%d", block, ret);
++		return ret;
++	}
++	if (!bits) {
++		pr_err("block bit set in master but no irqs: %d", block);
++		return 0;
++	}
++
++	/* Check IRQ bits */
++	for (i = 0; i < 8; i++) {
++		if (bits & (1 << i)) {
++			pmirq = block * 8 + i;
++			irq = pmirq + chip->irq_base;
++			generic_handle_irq(irq);
++		}
++	}
++	return 0;
 +}
 +
-+static void __net_exit ping_proc_exit_net(struct net *net)
++static int pm8xxx_irq_master_handler(struct pm_irq_chip *chip, int master)
 +{
-+	ping_proc_unregister(net);
-+}
++	u8 blockbits;
++	int block_number, i, ret = 0;
 +
-+static struct pernet_operations ping_net_ops = {
-+	.init = ping_proc_init_net,
-+	.exit = ping_proc_exit_net,
-+};
++	ret = pm8xxx_read_master_irq(chip, master, &blockbits);
++	if (ret) {
++		pr_err("Failed to read master %d ret=%d\n", master, ret);
++		return ret;
++	}
++	if (!blockbits) {
++		pr_err("master bit set in root but no blocks: %d", master);
++		return 0;
++	}
 +
-+int __init ping_proc_init(void)
-+{
-+	return register_pernet_subsys(&ping_net_ops);
-+}
-+
-+void ping_proc_exit(void)
-+{
-+	unregister_pernet_subsys(&ping_net_ops);
-+}
-+
-+#endif
-+
-+void __init ping_init(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < PING_HTABLE_SIZE; i++)
-+		INIT_HLIST_NULLS_HEAD(&ping_table.hash[i], i);
-+	rwlock_init(&ping_table.lock);
-+}
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 1a45665..9b406d7 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -13,6 +13,7 @@
- #include <linux/seqlock.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-+#include <linux/nsproxy.h>
- #include <net/snmp.h>
- #include <net/icmp.h>
- #include <net/ip.h>
-@@ -21,6 +22,7 @@
- #include <net/udp.h>
- #include <net/cipso_ipv4.h>
- #include <net/inet_frag.h>
-+#include <net/ping.h>
- 
- static int zero;
- static int tcp_retr1_max = 255;
-@@ -30,6 +32,10 @@ static int tcp_adv_win_scale_min = -31;
- static int tcp_adv_win_scale_max = 31;
- static int ip_ttl_min = 1;
- static int ip_ttl_max = 255;
-+#ifdef CONFIG_IP_PING
-+static int ip_ping_group_range_min[] = { 0, 0 };
-+static int ip_ping_group_range_max[] = { GID_T_MAX, GID_T_MAX };
-+#endif
- 
- /* Update system visible IP port range */
- static void set_local_port_range(int range[2])
-@@ -68,6 +74,67 @@ static int ipv4_local_port_range(ctl_table *table, int write,
- 	return ret;
- }
- 
-+#ifdef CONFIG_IP_PING
-+
-+void inet_get_ping_group_range_net(struct net *net, gid_t *low, gid_t *high)
-+{
-+	gid_t *data = net->ipv4.sysctl_ping_group_range;
-+	unsigned seq;
-+	do {
-+		seq = read_seqbegin(&sysctl_local_ports.lock);
-+
-+		*low = data[0];
-+		*high = data[1];
-+	} while (read_seqretry(&sysctl_local_ports.lock, seq));
-+}
-+
-+void inet_get_ping_group_range_table(struct ctl_table *table, gid_t *low, gid_t *high)
-+{
-+	gid_t *data = table->data;
-+	unsigned seq;
-+	do {
-+		seq = read_seqbegin(&sysctl_local_ports.lock);
-+
-+		*low = data[0];
-+		*high = data[1];
-+	} while (read_seqretry(&sysctl_local_ports.lock, seq));
-+}
-+
-+/* Update system visible IP port range */
-+static void set_ping_group_range(struct ctl_table *table, int range[2])
-+{
-+	gid_t *data = table->data;
-+	write_seqlock(&sysctl_local_ports.lock);
-+	data[0] = range[0];
-+	data[1] = range[1];
-+	write_sequnlock(&sysctl_local_ports.lock);
-+}
-+
-+/* Validate changes from /proc interface. */
-+static int ipv4_ping_group_range(ctl_table *table, int write,
-+				 void __user *buffer,
-+				 size_t *lenp, loff_t *ppos)
-+{
-+	int ret;
-+	gid_t range[2];
-+	ctl_table tmp = {
-+		.data = &range,
-+		.maxlen = sizeof(range),
-+		.mode = table->mode,
-+		.extra1 = &ip_ping_group_range_min,
-+		.extra2 = &ip_ping_group_range_max,
-+	};
-+
-+	inet_get_ping_group_range_table(table, range, range + 1);
-+	ret = proc_dointvec_minmax(&tmp, write, buffer, lenp, ppos);
-+
-+	if (write && ret == 0)
-+		set_ping_group_range(table, range);
-+
++	for (i = 0; i < 8; i++)
++		if (blockbits & (1 << i)) {
++			block_number = master * 8 + i;	/* block # */
++			ret |= pm8xxx_irq_block_handler(chip, block_number);
++		}
 +	return ret;
 +}
-+#endif
 +
- static int proc_tcp_congestion_control(ctl_table *ctl, int write,
- 				       void __user *buffer, size_t *lenp, loff_t *ppos)
- {
-@@ -680,6 +747,15 @@ static struct ctl_table ipv4_net_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+#ifdef CONFIG_IP_PING
-+	{
-+		.procname	= "ping_group_range",
-+		.data		= &init_net.ipv4.sysctl_ping_group_range,
-+		.maxlen		= sizeof(init_net.ipv4.sysctl_ping_group_range),
-+		.mode		= 0644,
-+		.proc_handler	= ipv4_ping_group_range,
-+	},
++static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
++{
++	struct pm_irq_chip *chip = get_irq_desc_data(desc);
++	struct irq_chip *irq_chip = get_irq_desc_chip(desc);
++	u8	root;
++	int	i, ret, masters = 0;
++
++	ret = pm8xxx_read_root_irq(chip, &root);
++	if (ret) {
++		pr_err("Can't read root status ret=%d\n", ret);
++		return;
++	}
++
++	/* on pm8xxx series masters start from bit 1 of the root */
++	masters = root >> 1;
++
++	/* Read allowed masters for blocks. */
++	for (i = 0; i < chip->num_masters; i++)
++		if (masters & (1 << i))
++			pm8xxx_irq_master_handler(chip, i);
++
++	irq_chip->irq_ack(&desc->irq_data);
++}
++
++static void pm8xxx_irq_mask_ack(struct irq_data *d)
++{
++	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
++	unsigned int pmirq = d->irq - chip->irq_base;
++	int	master, irq_bit;
++	u8	block, config;
++
++	block = pmirq / 8;
++	master = block / 8;
++	irq_bit = pmirq % 8;
++
++	config = chip->config[pmirq] | PM_IRQF_MASK_ALL | PM_IRQF_CLR;
++	pm8xxx_config_irq(chip, block, config);
++}
++
++static void pm8xxx_irq_unmask(struct irq_data *d)
++{
++	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
++	unsigned int pmirq = d->irq - chip->irq_base;
++	int	master, irq_bit;
++	u8	block, config;
++
++	block = pmirq / 8;
++	master = block / 8;
++	irq_bit = pmirq % 8;
++
++	config = chip->config[pmirq];
++	pm8xxx_config_irq(chip, block, config);
++}
++
++static int pm8xxx_irq_set_type(struct irq_data *d, unsigned int flow_type)
++{
++	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
++	unsigned int pmirq = d->irq - chip->irq_base;
++	int master, irq_bit;
++	u8 block, config;
++
++	block = pmirq / 8;
++	master = block / 8;
++	irq_bit  = pmirq % 8;
++
++	chip->config[pmirq] = (irq_bit << PM_IRQF_BITS_SHIFT)
++							| PM_IRQF_MASK_ALL;
++	if (flow_type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING)) {
++		if (flow_type & IRQF_TRIGGER_RISING)
++			chip->config[pmirq] &= ~PM_IRQF_MASK_RE;
++		if (flow_type & IRQF_TRIGGER_FALLING)
++			chip->config[pmirq] &= ~PM_IRQF_MASK_FE;
++	} else {
++		chip->config[pmirq] |= PM_IRQF_LVL_SEL;
++
++		if (flow_type & IRQF_TRIGGER_HIGH)
++			chip->config[pmirq] &= ~PM_IRQF_MASK_RE;
++		else
++			chip->config[pmirq] &= ~PM_IRQF_MASK_FE;
++	}
++
++	config = chip->config[pmirq] | PM_IRQF_CLR;
++	return pm8xxx_config_irq(chip, block, config);
++}
++
++static int pm8xxx_irq_set_wake(struct irq_data *d, unsigned int on)
++{
++	return 0;
++}
++
++static struct irq_chip pm8xxx_irq_chip = {
++	.name		= "pm8xxx",
++	.irq_mask_ack	= pm8xxx_irq_mask_ack,
++	.irq_unmask	= pm8xxx_irq_unmask,
++	.irq_set_type	= pm8xxx_irq_set_type,
++	.irq_set_wake	= pm8xxx_irq_set_wake,
++	.flags		= IRQCHIP_MASK_ON_SUSPEND,
++};
++
++/**
++ * pm8xxx_get_irq_stat - get the status of the irq line
++ * @chip: pointer to identify a pmic irq controller
++ * @irq: the irq number
++ *
++ * The pm8xxx gpio and mpp rely on the interrupt block to read
++ * the values on their pins. This function is to facilitate reading
++ * the status of a gpio or an mpp line. The caller has to convert the
++ * gpio number to irq number.
++ *
++ * RETURNS:
++ * an int indicating the value read on that line
++ */
++int pm8xxx_get_irq_stat(struct pm_irq_chip *chip, int irq)
++{
++	int pmirq, rc;
++	u8  block, bits, bit;
++	unsigned long flags;
++
++	if (chip == NULL || irq < chip->irq_base ||
++			irq >= chip->irq_base + chip->num_irqs)
++		return -EINVAL;
++
++	pmirq = irq - chip->irq_base;
++
++	block = pmirq / 8;
++	bit = pmirq % 8;
++
++	spin_lock_irqsave(&chip->pm_irq_lock, flags);
++
++	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, block);
++	if (rc) {
++		pr_err("Failed Selecting block irq=%d pmirq=%d blk=%d rc=%d\n",
++			irq, pmirq, block, rc);
++		goto bail_out;
++	}
++
++	rc = pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_RT_STATUS, &bits);
++	if (rc) {
++		pr_err("Failed Configuring irq=%d pmirq=%d blk=%d rc=%d\n",
++			irq, pmirq, block, rc);
++		goto bail_out;
++	}
++
++	rc = (bits & (1 << bit)) ? 1 : 0;
++
++bail_out:
++	spin_unlock_irqrestore(&chip->pm_irq_lock, flags);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(pm8xxx_get_irq_stat);
++
++struct pm_irq_chip *  __devinit pm8xxx_irq_init(struct device *dev,
++				const struct pm8xxx_irq_platform_data *pdata)
++{
++	struct pm_irq_chip  *chip;
++	int devirq, rc;
++	unsigned int pmirq;
++
++	if (!pdata) {
++		pr_err("No platform data\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	devirq = pdata->devirq;
++	if (devirq < 0) {
++		pr_err("missing devirq\n");
++		rc = devirq;
++		return ERR_PTR(-EINVAL);
++	}
++
++	chip = kzalloc(sizeof(struct pm_irq_chip)
++			+ sizeof(u8) * pdata->irq_cdata.nirqs, GFP_KERNEL);
++	if (!chip) {
++		pr_err("Cannot alloc pm_irq_chip struct\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	chip->dev = dev;
++	chip->devirq = devirq;
++	chip->irq_base = pdata->irq_base;
++	chip->num_irqs = pdata->irq_cdata.nirqs;
++	chip->num_blocks = DIV_ROUND_UP(chip->num_irqs, 8);
++	chip->num_masters = DIV_ROUND_UP(chip->num_blocks, 8);
++	spin_lock_init(&chip->pm_irq_lock);
++
++	for (pmirq = 0; pmirq < chip->num_irqs; pmirq++) {
++		set_irq_chip(chip->irq_base + pmirq, &pm8xxx_irq_chip);
++		set_irq_chip_data(chip->irq_base + pmirq, chip);
++		set_irq_handler(chip->irq_base + pmirq, handle_level_irq);
++#ifdef CONFIG_ARM
++		set_irq_flags(chip->irq_base + pmirq, IRQF_VALID);
++#else
++		set_irq_noprobe(chip->irq_base + pmirq);
 +#endif
- 	{ }
++	}
++
++	set_irq_type(devirq, pdata->irq_trigger_flag);
++	set_irq_data(devirq, chip);
++	set_irq_chained_handler(devirq, pm8xxx_irq_handler);
++	set_irq_wake(devirq, 1);
++
++	return chip;
++}
++
++int __devexit pm8xxx_irq_exit(struct pm_irq_chip *chip)
++{
++	set_irq_chained_handler(chip->devirq, NULL);
++	kfree(chip);
++	return 0;
++}
+diff --git a/include/linux/mfd/pm8xxx/core.h b/include/linux/mfd/pm8xxx/core.h
+index 36ccb33..bd2f4f6 100644
+--- a/include/linux/mfd/pm8xxx/core.h
++++ b/include/linux/mfd/pm8xxx/core.h
+@@ -27,6 +27,7 @@ struct pm8xxx_drvdata {
+ 									int n);
+ 	int	(*pmic_write_buf) (const struct device *dev, u16 addr, u8 *buf,
+ 									int n);
++	int	(*pmic_read_irq_stat) (const struct device *dev, int irq);
+ 	void	*pm_chip_data;
  };
  
-@@ -714,8 +790,22 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
- 			&net->ipv4.sysctl_icmp_ratemask;
- 		table[6].data =
- 			&net->ipv4.sysctl_rt_cache_rebuild_count;
-+#ifdef CONFIG_IP_PING
-+		table[7].data =
-+			&net->ipv4.sysctl_ping_group_range;
-+#endif
-+
- 	}
+@@ -68,4 +69,13 @@ static inline int pm8xxx_write_buf(const struct device *dev, u16 addr, u8 *buf,
+ 	return dd->pmic_write_buf(dev, addr, buf, n);
+ }
  
-+#ifdef CONFIG_IP_PING
-+	/*
-+	 * Sane defaults - nobody may create ping sockets.
-+	 * Boot scripts should set this to disto-specific group.
-+	 */
-+	net->ipv4.sysctl_ping_group_range[0] = 1;
-+	net->ipv4.sysctl_ping_group_range[1] = 0;
-+#endif
++static inline int pm8xxx_read_irq_stat(const struct device *dev, int irq)
++{
++	struct pm8xxx_drvdata *dd = dev_get_drvdata(dev);
 +
- 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
++	if (!dd)
++		return -EINVAL;
++	return dd->pmic_read_irq_stat(dev, irq);
++}
++
+ #endif
+diff --git a/include/linux/mfd/pm8xxx/irq.h b/include/linux/mfd/pm8xxx/irq.h
+new file mode 100644
+index 0000000..4b21769
+--- /dev/null
++++ b/include/linux/mfd/pm8xxx/irq.h
+@@ -0,0 +1,59 @@
++/*
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++/*
++ * Qualcomm PMIC irq 8xxx driver header file
++ *
++ */
++
++#ifndef __MFD_PM8XXX_IRQ_H
++#define __MFD_PM8XXX_IRQ_H
++
++#include <linux/errno.h>
++#include <linux/err.h>
++
++struct pm8xxx_irq_core_data {
++	u32		rev;
++	int		nirqs;
++};
++
++struct pm8xxx_irq_platform_data {
++	int				irq_base;
++	struct pm8xxx_irq_core_data	irq_cdata;
++	int				devirq;
++	int				irq_trigger_flag;
++};
++
++struct pm_irq_chip;
++
++#ifdef CONFIG_MFD_PM8XXX_IRQ
++int pm8xxx_get_irq_stat(struct pm_irq_chip *chip, int irq);
++struct pm_irq_chip * __devinit pm8xxx_irq_init(struct device *dev,
++				const struct pm8xxx_irq_platform_data *pdata);
++int __devexit pm8xxx_irq_exit(struct pm_irq_chip *chip);
++#else
++static inline int pm8xxx_get_irq_stat(struct pm_irq_chip *chip, int irq)
++{
++	return -ENXIO;
++}
++static inline struct pm_irq_chip * __devinit pm8xxx_irq_init(
++				const struct device *dev,
++				const struct pm8xxx_irq_platform_data *pdata)
++{
++	return ERR_PTR(-ENXIO);
++}
++static inline int __devexit pm8xxx_irq_exit(struct pm_irq_chip *chip)
++{
++	return -ENXIO;
++}
++#endif /* CONFIG_MFD_PM8XXX_IRQ */
++#endif /* __MFD_PM8XXX_IRQ_H */
+diff --git a/include/linux/mfd/pm8xxx/pm8921.h b/include/linux/mfd/pm8xxx/pm8921.h
+index 33fbe9c..d5517fd 100644
+--- a/include/linux/mfd/pm8xxx/pm8921.h
++++ b/include/linux/mfd/pm8xxx/pm8921.h
+@@ -19,9 +19,13 @@
+ #define __MFD_PM8921_H
  
- 	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
+ #include <linux/device.h>
++#include <linux/mfd/pm8xxx/irq.h>
++
++#define PM8921_NR_IRQS		256
+ 
+ struct pm8921_platform_data {
+ 	int					irq_base;
++	struct pm8xxx_irq_platform_data		*irq_pdata;
+ };
+ 
+ #endif
 -- 
-1.7.0.4
+1.7.1
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
