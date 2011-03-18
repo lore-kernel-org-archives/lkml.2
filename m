@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab1CRSzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 14:55:40 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59959 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756345Ab1CRSze convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 14:55:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CsI+NQ5BdpdbldTmoRUEf+6UT9wYuLAQixnVjUXQeblLpdqeTYn4dYOfylEMwS3Do1
-         p96+ehudU2oSvlYULou6Viu9g40Y6i9nFufR2/ypEAq5QCnhVaFe/j74LCumKSmaFq98
-         U7BeRBqloB/Ropglab/TkJTZxBQDAMncRhg9A=
-MIME-Version: 1.0
-In-Reply-To: <20110318184957.GA6979@infradead.org>
-References: <20110316235608.GY22723@ZenIV.linux.org.uk>
-	<AANLkTimF9ExskxBmebk7X2=g5S6OK5vAa05G1cgeVVCP@mail.gmail.com>
-	<20110317072344.GZ22723@ZenIV.linux.org.uk>
-	<AANLkTin=5jSzZKXLL=A+dbRn1jB+tPg56LmjthzC02ui@mail.gmail.com>
-	<4d83a82032021e2997@agluck-desktop.sc.intel.com>
-	<20110318184957.GA6979@infradead.org>
-Date: Fri, 18 Mar 2011 11:55:32 -0700
-Message-ID: <AANLkTiky==VxCRcw=0TLH2Ojhgu8k_wfRA-+NNOsMTt9@mail.gmail.com>
-Subject: Re: pstore: fix leaking ->i_private
-From: Tony Luck <tony.luck@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Xiaotian Feng <xtfeng@gmail.com>,
+	id S1756805Ab1CRS4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 14:56:19 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:33682 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756345Ab1CRS4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 14:56:14 -0400
+Date: Sat, 19 Mar 2011 00:19:22 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Roland McGrath <roland@hack.frob.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 6/20] 6: x86: analyze instruction and
+ determine fixups.
+Message-ID: <20110318184922.GA31152@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+ <20110314133507.27435.71382.sendpatchset@localhost6.localdomain6>
+ <alpine.LFD.2.00.1103151529130.2787@localhost6.localdomain6>
+ <20110318182457.GA24048@linux.vnet.ibm.com>
+ <20110318183629.2AB052C286@topped-with-meat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110318183629.2AB052C286@topped-with-meat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 11:49 AM, Christoph Hellwig <hch@infradead.org> wrote:
->  - the kmsg_bytes attribute really should be a mount option.  no need
->   have this in a completely different namespace, and require all the
->   kobject mess around it.
+* Roland McGrath <roland@hack.frob.com> [2011-03-18 11:36:29]:
 
-Sounds cleaner - I'll take a look.
+> > handle_riprel_insn() returns 0 if the instruction is not rip-relative
+> > returns 1 if its rip-relative but can use XOL slots.
+> > returns -1 if its rip-relative but cannot use XOL.
+> > 
+> > We dont see any instructions that are rip-relative and cannot use XOL.
+> > so the check and return are redundant and I will remove that in the next
+> > patch.
+> 
+> How is that?  You can only adjust a rip-relative instruction correctly if
+> the instruction copy is within 2GB of the original target address, which
+> cannot be presumed to always be the case in user address space layout
+> (unlike the kernel).
+> 
 
-Thanks
+So we rewrite the copy of instruction (stored in XOL) such that it
+accesses its memory operand indirectly thro a scratch register.
+The contents of the scratch register are stored before singlestep and
+restored later.
 
--Tony
+Can you please tell us if this doesnt work?
+
+-- 
+Thanks and Regards
+Srikar
+
