@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab1CRHJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 03:09:42 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:10653 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab1CRHJi (ORCPT
+	id S1756271Ab1CRHMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 03:12:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54451 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab1CRHMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 03:09:38 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18pXBXSRKjJMUBLYWk+H5y6
-Date: Fri, 18 Mar 2011 00:09:35 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110318070935.GC3555@atomide.com>
-References: <20110317183048.GW7258@atomide.com>
- <AANLkTik_Y1uMfVTVVEdPFG0sjW2uYpeeUMKfymho3sd+@mail.gmail.com>
+	Fri, 18 Mar 2011 03:12:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=OyKd7URTb/hv8sXwkdcAIdK3ILlEKSKTfVCBG/+y8ubDe/FzRq3BfKn6cF4dB/An6a
+         Yz5nV49Fj6Pmu4qEE7KDGvy7/E45yhXZt1Ain9jObu4OOL2pkscfd7LvBA7yQ5Scq7em
+         vV1FbzijlqVD0Hl7HFIZAbEtgojG8MMugG3E0=
+Date: Fri, 18 Mar 2011 10:12:14 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Mike Waychison <mikew@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch 1/2] efivars: memory leak on error in
+ create_efivars_bin_attributes()
+Message-ID: <20110318071214.GV2008@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Mike Waychison <mikew@google.com>,
+	Chris Wright <chrisw@sous-sol.org>, Tejun Heo <tj@kernel.org>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik_Y1uMfVTVVEdPFG0sjW2uYpeeUMKfymho3sd+@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds <torvalds@linux-foundation.org> [110317 20:00]:
-> On Thu, Mar 17, 2011 at 11:30 AM, Tony Lindgren <tony@atomide.com> wrote:
-> >
-> > Please pull omap changes for this merge window from:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
-> 
-> Btw, that "generic hardware spinlock" thing needs to be hidden from
-> sane people and architectures that don't need it.
-> 
-> Make platforms that need it "select" it or something. It looks like
-> nobody but an OMAP4 could _possibly_ ever want to answer 'y' to that
-> question, SO DON'T ASK IT!
+This is a cut and paste bug.  We intended to free ->del_var and
+->new_var but we only free ->new_var.
 
-No problem, let's make it depends on OMAP4.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Regards,
-
-Tony
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index ff0c373..ff2fe40 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -677,8 +677,8 @@ create_efivars_bin_attributes(struct efivars *efivars)
+ 
+ 	return 0;
+ out_free:
+-	kfree(efivars->new_var);
+-	efivars->new_var = NULL;
++	kfree(efivars->del_var);
++	efivars->del_var = NULL;
+ 	kfree(efivars->new_var);
+ 	efivars->new_var = NULL;
+ 	return error;
