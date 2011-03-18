@@ -1,121 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab1CRPIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 11:08:48 -0400
-Received: from lucidpixels.com ([75.144.35.66]:54494 "EHLO lucidpixels.com"
+	id S1756846Ab1CRPI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 11:08:57 -0400
+Received: from ebb06.tieto.com ([131.207.168.38]:54043 "EHLO ebb06.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab1CRPIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 11:08:42 -0400
-Date: Fri, 18 Mar 2011 11:08:40 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-usb@vger.kernel.org, xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-cc: Alan Piszcz <ap@solarrain.com>
-Subject: 2.6.38: XFS/USB/HW issue, or failing USB stick?
-Message-ID: <alpine.DEB.2.02.1103181104020.30018@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756823Ab1CRPIw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 11:08:52 -0400
+X-AuditID: 83cfa826-b7c1cae000000efa-25-4d837582540d
+From: <Waldemar.Rymarkiewicz@tieto.com>
+To: <w.sang@pengutronix.de>
+CC: <linux-i2c@vger.kernel.org>, <arnd@arndb.de>, <sameo@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hthebaud@insidefr.com>,
+        <matti.j.aaltonen@nokia.com>
+Date: Fri, 18 Mar 2011 17:08:39 +0200
+Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Index: AcvlYo07sHRAHrVFSWK40CpwkSneHgAGqR5A
+Message-ID: <99B09243E1A5DA4898CDD8B700111448108588196C@EXMB04.eu.tieto.com>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+ <1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
+ <20110318114931.GA2155@pengutronix.de>
+In-Reply-To: <20110318114931.GA2155@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Wolfram,
 
-I can write to just about the entire USB stick, with no errors:
+>> +	unsigned int irq_gpio;
+>> +	unsigned int ioh_gpio;
+>
+>... you should request and setup the GPIOs before using them.
 
-atom:~# df -h
-Filesystem            Size  Used Avail Use% Mounted on
-/dev/sda2             5.8G  1.5G  4.3G  26% /
-tmpfs                 2.0G     0  2.0G   0% /lib/init/rw
-udev                   10M  140K  9.9M   2% /dev
-tmpfs                 2.0G     0  2.0G   0% /dev/shm
-atom:~# cd /
-atom:/# ls
-bin   cdrom  etc   lib    media  nfs  proc  sbin     srv  tmp  var
-boot  dev    home  lib64  mnt    opt  root  selinux  sys  usr
-atom:/# dd if=/dev/zero of=bigfile bs=1M count=4000
-4000+0 records in
-4000+0 records out
-4194304000 bytes (4.2 GB) copied, 135.536 s, 30.9 MB/s
-atom:/# df -h
-Filesystem            Size  Used Avail Use% Mounted on
-/dev/sda2             5.8G  5.4G  350M  95% /
-tmpfs                 2.0G     0  2.0G   0% /lib/init/rw
-udev                   10M  140K  9.9M   2% /dev
-tmpfs                 2.0G     0  2.0G   0% /dev/shm
-atom:/# rm bigfile
-
-However, after some amount of time, the errors occur below, is this USB
-stick failing?  Since it has no SMART, is there any other way to verify
-the 'health' of a USB stick?
-
-Mar 18 07:55:12 atom [   10.034310] e1000e 0000:03:00.0: eth1: 10/100 speed: disabling TSO
-
-[ .. no errors .. ]
-
-Mar 18 08:32:44 atom [ 2261.883848] usb 1-1: USB disconnect, address 2
-Mar 18 08:32:44 atom [ 2261.884465] Buffer I/O error on device sda2, logical block 1317256
-Mar 18 08:32:44 atom [ 2261.884525] lost page write due to I/O error on sda2
-Mar 18 08:32:44 atom [ 2261.884713] Buffer I/O error on device sda2, logical block 1307821
-Mar 18 08:32:44 atom [ 2261.884764] lost page write due to I/O error on sda2
-Mar 18 08:33:06 atom [ 2283.744165] sd 6:0:0:0: Device offlined - not ready after error recovery
-Mar 18 08:33:06 atom [ 2283.744264] sd 6:0:0:0: [sda] Unhandled error code
-Mar 18 08:33:06 atom [ 2283.744298] sd 6:0:0:0: [sda]
-Mar 18 08:33:06 atom Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
-Mar 18 08:33:06 atom [ 2283.744356] sd 6:0:0:0: [sda] CDB:
-Mar 18 08:33:06 atom Write(10)
-Mar 18 08:33:06 atom :
-Mar 18 08:33:06 atom  2a
-Mar 18 08:33:06 atom  00
-Mar 18 08:33:06 atom  00
-Mar 18 08:33:06 atom  99
-Mar 18 08:33:06 atom  0f
-Mar 18 08:33:06 atom  7e
-Mar 18 08:33:06 atom  00
-Mar 18 08:33:06 atom  00
-Mar 18 08:33:06 atom  02
-Mar 18 08:33:06 atom  00
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.744450] end_request: I/O error, dev sda, sector 10030974
-Mar 18 08:33:06 atom [ 2283.744544] I/O error in filesystem ("sda2") meta-data dev sda2 block 0x5c05c5       ("xlog_iodone") error 5 buf count 1024
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.744591] xfs_force_shutdown(sda2,0x2) called from line 893 of file fs/xfs/xfs_log.c.  Return address = 0xffffffff811c9834
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.744669] Filesystem sda2: Log I/O Error Detected.  Shutting down filesystem: sda2
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.744732] Please umount the filesystem, and rectify the problem(s)
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.744779] Buffer I/O error on device sda2, logical block 1318284
-Mar 18 08:33:06 atom [ 2283.744831] lost page write due to I/O error on sda2
-Mar 18 08:33:06 atom [ 2283.745659] Filesystem sda2: xfs_log_force: error 5 returned.
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.746109] Filesystem sda2: xfs_log_force: error 5 returned.
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.746168] xfs_force_shutdown(sda2,0x1) called from line 1111 of file fs/xfs/linux-2.6/xfs_buf.c.  Return address = 0xffffffff811e1e1c
-Mar 18 08:33:06 atom
-Mar 18 08:33:06 atom [ 2283.963059] usb 1-1: new high speed USB device using ehci_hcd and address 4
-Mar 18 08:33:06 atom [ 2284.080647] usb 1-1: New USB device found, idVendor=0325, idProduct=ac02
-Mar 18 08:33:06 atom [ 2284.080707] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-Mar 18 08:33:06 atom [ 2284.080752] usb 1-1: Product: R2_TURBO
-Mar 18 08:33:06 atom [ 2284.080794] usb 1-1: Manufacturer: OCZ Technology
-Mar 18 08:33:06 atom [ 2284.080831] usb 1-1: SerialNumber: (removed)
-Mar 18 08:33:06 atom [ 2284.082082] scsi7 : usb-storage 1-1:1.0
-Mar 18 08:33:07 atom [ 2285.083417] scsi 7:0:0:0: Direct-Access     OCZ      R2_TURBO         1100 PQ: 0 ANSI: 0 CCS
-Mar 18 08:33:07 atom [ 2285.085539] sd 7:0:0:0: [sdb] 16056320 512-byte logical blocks: (8.22 GB/7.65 GiB)
-Mar 18 08:33:07 atom [ 2285.086520] sd 7:0:0:0: [sdb] Write Protect is off
-Mar 18 08:33:07 atom [ 2285.089383] sd 7:0:0:0: [sdb] No Caching mode page present
-Mar 18 08:33:07 atom [ 2285.089435] sd 7:0:0:0: [sdb] Assuming drive cache: write through
-Mar 18 08:33:07 atom [ 2285.094025] sd 7:0:0:0: [sdb] No Caching mode page present
-Mar 18 08:33:07 atom [ 2285.094071] sd 7:0:0:0: [sdb] Assuming drive cache: write through
-Mar 18 08:33:07 atom [ 2285.094888]  sdb: sdb1 sdb2
-Mar 18 08:33:07 atom [ 2285.097544] sd 7:0:0:0: [sdb] No Caching mode page present
-Mar 18 08:33:07 atom [ 2285.097602] sd 7:0:0:0: [sdb] Assuming drive cache: write through
-Mar 18 08:33:07 atom [ 2285.097647] sd 7:0:0:0: [sdb] Attached SCSI removable disk
-Mar 18 08:33:36 atom [ 2313.744037] Filesystem sda2: xfs_log_force: error 5 returned.
-Mar 18 08:34:06 atom
-Mar 18 08:34:06 atom [ 2343.745039] Filesystem sda2: xfs_log_force: error 5 returned.
-Mar 18 08:34:36 atom
-Mar 18 08:34:36 atom [ 2373.745039] Filesystem sda2: xfs_log_force: error 5 returned.
-Mar 18 08:35:06 atom
+I assume the board specific code will do so. 
 
 
+Waldek
