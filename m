@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933020Ab1CRW13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:27:29 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:51180 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932914Ab1CRW1Y convert rfc822-to-8bit (ORCPT
+	id S933038Ab1CRW3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:29:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47830 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932978Ab1CRW3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:27:24 -0400
+	Fri, 18 Mar 2011 18:29:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=DyEzNR51cTZIx3MPP1G2ZZ/KTsHwZdfzWFKgFnxsE6h7t4WmorbIS8tjuU+0mlI7RK
-         Yp/wTDJ7wQ32StmeQLAw==
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=RZcJqCruPVm8CnGpGIfrPj6L3sP5wS91Z+z+Ji1O8qhdOlY2OZ+qWKsNSM0SX7GXSK
+         tAPb8wDNL0TA4LrsvoCq+NrpRtBo6ZOHP0kytUSrhKdTlJJcw8pfyjxiMhsX4ysGHV4q
+         0V6RYPoTNfm5v99+diX4orge9mqNF4ye9seKw=
 MIME-Version: 1.0
-In-Reply-To: <20110318083723.GE8571@htj.dyndns.org>
-References: <20110318083723.GE8571@htj.dyndns.org>
-From: Justin TerAvest <teravest@google.com>
-Date: Fri, 18 Mar 2011 15:26:59 -0700
-Message-ID: <AANLkTi=uX1PbKEs1=4mfAXKEpxwy1knWrLZsY9dUNpoh@mail.gmail.com>
-Subject: Re: [PATCH] block: NULL dereference on error path in __blkdev_get()
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <1300486320-23607-1-git-send-email-lrodriguez@atheros.com>
+References: <1300486320-23607-1-git-send-email-lrodriguez@atheros.com>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Fri, 18 Mar 2011 15:29:26 -0700
+X-Google-Sender-Auth: _sWpiyd-btKIKuzoA2XE0QIj9no
+Message-ID: <AANLkTinVRMr2D6oKAS0xQjBcG=OQyUMnoYDLMBR385rq@mail.gmail.com>
+Subject: Re: [RFC 0/4] sdhci: few patches for ENE 712 support
+To: cjb@laptop.org
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vmehta@atheros.com, naveen.singh@atheros.com, kvalo@adurom.com,
+        j@w1.fi, "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 1:37 AM, Tejun Heo <tj@kernel.org> wrote:
-> From: Dan Carpenter <error27@gmail.com>
->
-> "disk" is always NULL when we goto out.  There was a check for this
-> before, but it was removed in 69e02c59a7d9 "block: Don't check events
-> while open is in progress".
->
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> Acked-by: Tejun Heo <tj@kernel.org>
+On Fri, Mar 18, 2011 at 3:11 PM, Luis R. Rodriguez
+<lrodriguez@atheros.com> wrote:
+> I was pulled in to help with ath6kl development work. As part
+> of this I was given some PCI "ENE" SDHCI card which can I can slap
+> on to my desktop. I was then given this dump of patches to apply
+> to sdhci code to get it to work:
 
-I was running into this problem too; this patch fixes the problem.
+http://www.kernel.org/pub/linux/kernel/people/mcgrof/patches/ath6kl/2011/03/18/sdhci-orig.patch
 
-Tested-by: Justin TerAvest <teravest@google.com>
+> I prefer code upstream though so here is my split and cleanup
+> of these patches. I've tested it with my ENE card. Since I am
+> new to SDHCI I would prefer someone with more experience review
+> these chagnes and the respective commit log messages. I've
+> tried to make sense of them as best as I can. Unfortunately
+> I was not given any explanation to these changes except the
+> patch I got so I tried to make the best of it.
 
->
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index fbe05cb..7d02afb 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -1181,9 +1181,9 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
->  out_unlock_bdev:
->        mutex_unlock(&bdev->bd_mutex);
->        disk_unblock_events(disk);
-> - out:
->        module_put(disk->fops->owner);
->        put_disk(disk);
-> + out:
->        bdput(bdev);
->
->        return ret;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+  Luis
