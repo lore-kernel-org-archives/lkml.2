@@ -1,607 +1,1761 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab1CRNw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 09:52:56 -0400
-Received: from outgoing.selfhost.de ([82.98.87.70]:55971 "EHLO
-	outgoing.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab1CRNwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 09:52:33 -0400
-Message-ID: <4D836397.6040509@afaics.de>
-Date: Fri, 18 Mar 2011 14:52:23 +0100
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110303 Thunderbird/3.1.8
+	id S1756696Ab1CRNyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 09:54:24 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57444 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756525Ab1CRNyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 09:54:18 -0400
+Date: Fri, 18 Mar 2011 14:54:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20110318135403.GA8506@elte.hu>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.38: ps -ef got stuck, kernel call trace included
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig1A35EA1E735569A4055C760D"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig1A35EA1E735569A4055C760D
-Content-Type: multipart/mixed;
- boundary="------------080807090801080209060201"
+Linus,
 
-This is a multi-part message in MIME format.
---------------080807090801080209060201
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Please pull the latest x86-fixes-for-linus git tree from:
 
-Hi folks,
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
 
-I got this:
+ Thanks,
 
-[ 3480.437038] INFO: task blkid:30093 blocked for more than 120 seconds.
-[ 3480.437040] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disable=
-s this message.
-[ 3480.437042] blkid           D 00000001002e916f     0 30093   3696 0x00=
-000000
-[ 3480.437045]  ffff88010bd2a6f0 0000000000000082 ffff880011a4dfd8 000000=
-0000000000
-[ 3480.437048]  ffffffff813e7020 ffff880011a4dfd8 0000000000011280 000000=
-0000011280
-[ 3480.437051]  0000000000004000 0000000000004000 ffff880011a4c000 000000=
-0000011280
-[ 3480.437054] Call Trace:
-[ 3480.437060]  [<ffffffff81087e78>] ? get_page_from_freelist+0x413/0x4b6=
+	Ingo
 
-[ 3480.437064]  [<ffffffff8113b3f3>] ? kobject_get+0x12/0x17
-[ 3480.437081]  [<ffffffff811302ff>] ? get_disk+0x75/0x95
-[ 3480.437083]  [<ffffffff81087e78>] ? get_page_from_freelist+0x413/0x4b6=
+------------------>
+Andreas Herrmann (1):
+      x86, quirk: Fix SB600 revision check
 
-[ 3480.437086]  [<ffffffff8129a4dd>] ? __mutex_lock_slowpath+0x11a/0x192
-[ 3480.437089]  [<ffffffff8129a330>] ? mutex_lock+0x12/0x2b
-[ 3480.437092]  [<ffffffff810ddfd3>] ? __blkdev_get+0x6b/0x33e
-[ 3480.437094]  [<ffffffff810de53f>] ? blkdev_open+0x0/0x62
-[ 3480.437096]  [<ffffffff810de462>] ? blkdev_get+0x1bc/0x299
-[ 3480.437099]  [<ffffffff810c1f60>] ? link_path_walk+0x728/0x900
-[ 3480.437101]  [<ffffffff810de53f>] ? blkdev_open+0x0/0x62
-[ 3480.437104]  [<ffffffff810b65ca>] ? __dentry_open.clone.14+0x14b/0x255=
+Boris Ostrovsky (1):
+      x86, AMD: Set ARAT feature on AMD processors
 
-[ 3480.437107]  [<ffffffff810c2976>] ? finish_open+0x97/0x14d
-[ 3480.437109]  [<ffffffff810c23a0>] ? do_path_lookup+0x82/0xe6
-[ 3480.437111]  [<ffffffff810c2e60>] ? do_filp_open+0x15e/0x5d4
-[ 3480.437114]  [<ffffffff8101fcad>] ? do_page_fault+0x31b/0x356
-[ 3480.437117]  [<ffffffff8109ea9c>] ? do_brk+0x278/0x2cb
-[ 3480.437119]  [<ffffffff810ccce2>] ? alloc_fd+0x10b/0x11d
-[ 3480.437122]  [<ffffffff810b72dd>] ? do_sys_open+0x56/0xe4
-[ 3480.437124]  [<ffffffff8100287b>] ? system_call_fastpath+0x16/0x1b
+Borislav Petkov (1):
+      x86, amd-nb: Misc cleanliness fixes
 
-It happened when I visited http://n24.de/. This page provides some
-live video streaming. Since it made an awful noise I tried to kill
-firefox with ^Q first. This did not work. Then I ran xkill to destroy
-it. The GUI disappeared, but the sound was still playing. I tried
-"ps -ef" to get the PID. ps got stuck for some minutes, then it
-continued. The first line it printed after the lock was about firefox-bin=
-=2E
-Soon after that firefox terminated gracefully. Then I noticed the
-stack trace in kern.log.
+Ingo Molnar (1):
+      x86: Clean up csum-copy_64.S a bit
 
-Attached you can find my .config. TRANSPARENT_HUGEPAGE was enabled.
+Jon Nettleton (1):
+      x86: Use PentiumPro-optimized partial_csum() on VIA C7
+
+Lucas De Marchi (2):
+      x86: Fix misspelling and align params
+      x86: Fix common misspellings
+
+Mathieu Desnoyers (1):
+      x86: stop_machine_text_poke() should issue sync_core()
+
+Namhyung Kim (1):
+      x86, dumpstack: Correct stack dump info when frame pointer is available
+
+Shaohua Li (1):
+      x86: Flush TLB if PGD entry is changed in i386 PAE mode
 
 
-Hope this helps
+ Documentation/x86/x86_64/boot-options.txt   |   14 +-
+ arch/x86/Kconfig.cpu                        |    4 +-
+ arch/x86/crypto/aesni-intel_asm.S           |    6 +-
+ arch/x86/include/asm/amd_nb.h               |   12 +-
+ arch/x86/include/asm/cacheflush.h           |    2 +-
+ arch/x86/include/asm/kdebug.h               |    2 +-
+ arch/x86/include/asm/nmi.h                  |    4 +-
+ arch/x86/include/asm/nops.h                 |    2 +-
+ arch/x86/include/asm/olpc.h                 |    2 +-
+ arch/x86/include/asm/perf_event_p4.h        |    4 +-
+ arch/x86/include/asm/pgtable-3level.h       |   11 +-
+ arch/x86/include/asm/processor-flags.h      |    2 +-
+ arch/x86/include/asm/ptrace-abi.h           |    2 +-
+ arch/x86/include/asm/ptrace.h               |    4 +-
+ arch/x86/include/asm/stacktrace.h           |    6 +-
+ arch/x86/include/asm/tsc.h                  |    2 +-
+ arch/x86/include/asm/xen/interface.h        |    2 +-
+ arch/x86/kernel/alternative.c               |    9 +-
+ arch/x86/kernel/amd_nb.c                    |   18 +-
+ arch/x86/kernel/aperture_64.c               |    2 +-
+ arch/x86/kernel/apic/io_apic.c              |    4 +-
+ arch/x86/kernel/apm_32.c                    |    2 +-
+ arch/x86/kernel/cpu/amd.c                   |    4 +
+ arch/x86/kernel/cpu/cpufreq/longhaul.c      |    4 +-
+ arch/x86/kernel/cpu/cpufreq/powernow-k8.c   |    2 +-
+ arch/x86/kernel/cpu/cpufreq/speedstep-smi.c |    4 +-
+ arch/x86/kernel/cpu/mcheck/mce-inject.c     |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c            |    2 +-
+ arch/x86/kernel/cpu/mtrr/generic.c          |    2 +-
+ arch/x86/kernel/cpu/perf_event.c            |    4 +-
+ arch/x86/kernel/cpu/perf_event_p4.c         |    8 +-
+ arch/x86/kernel/cpu/vmware.c                |    2 +-
+ arch/x86/kernel/dumpstack.c                 |   14 +-
+ arch/x86/kernel/dumpstack_32.c              |   15 +-
+ arch/x86/kernel/dumpstack_64.c              |   14 +-
+ arch/x86/kernel/early-quirks.c              |    7 +-
+ arch/x86/kernel/entry_64.S                  |    4 +-
+ arch/x86/kernel/i387.c                      |    2 +-
+ arch/x86/kernel/irq_32.c                    |    2 +-
+ arch/x86/kernel/kgdb.c                      |    2 +-
+ arch/x86/kernel/mca_32.c                    |    2 +-
+ arch/x86/kernel/mpparse.c                   |    4 +-
+ arch/x86/kernel/pci-calgary_64.c            |    4 +-
+ arch/x86/kernel/process.c                   |    2 +-
+ arch/x86/kernel/stacktrace.c                |    6 +-
+ arch/x86/kernel/step.c                      |    2 +-
+ arch/x86/kernel/topology.c                  |    2 +-
+ arch/x86/kernel/tsc.c                       |    4 +-
+ arch/x86/kernel/verify_cpu.S                |    2 +-
+ arch/x86/kernel/xsave.c                     |    2 +-
+ arch/x86/kvm/paging_tmpl.h                  |    2 +-
+ arch/x86/kvm/timer.c                        |    2 +-
+ arch/x86/kvm/x86.c                          |    2 +-
+ arch/x86/lguest/boot.c                      |    2 +-
+ arch/x86/lib/copy_user_64.S                 |    2 +-
+ arch/x86/lib/csum-copy_64.S                 |  242 +++++++++++++-------------
+ arch/x86/lib/csum-partial_64.c              |    2 +-
+ arch/x86/mm/hugetlbpage.c                   |    2 +-
+ arch/x86/mm/init_32.c                       |    2 +-
+ arch/x86/mm/numa_64.c                       |    2 +-
+ arch/x86/mm/pageattr.c                      |    2 +-
+ arch/x86/mm/pgtable.c                       |    3 +-
+ arch/x86/oprofile/backtrace.c               |    2 +-
+ arch/x86/pci/i386.c                         |    4 +-
+ arch/x86/xen/mmu.c                          |    2 +-
+ 65 files changed, 263 insertions(+), 250 deletions(-)
 
-Harri
-
---------------080807090801080209060201
-Content-Type: application/x-tar;
- name="config-2.6.38.gz"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="config-2.6.38.gz"
-
-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
---------------080807090801080209060201--
-
---------------enig1A35EA1E735569A4055C760D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk2DY5wACgkQUTlbRTxpHjd6kQCfQ7NYtmJRjkirWFPrStX/M67E
-Q14An37mxW7df1MHSjM661SlYf/8vnUz
-=T8g0
------END PGP SIGNATURE-----
-
---------------enig1A35EA1E735569A4055C760D--
+diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+index 7fbbaf8..48c13b8 100644
+--- a/Documentation/x86/x86_64/boot-options.txt
++++ b/Documentation/x86/x86_64/boot-options.txt
+@@ -189,13 +189,13 @@ ACPI
+ 
+ PCI
+ 
+-  pci=off	Don't use PCI
+-  pci=conf1	Use conf1 access.
+-  pci=conf2	Use conf2 access.
+-  pci=rom	Assign ROMs.
+-  pci=assign-busses    Assign busses
+-  pci=irqmask=MASK	       Set PCI interrupt mask to MASK
+-  pci=lastbus=NUMBER	       Scan upto NUMBER busses, no matter what the mptable says.
++  pci=off		Don't use PCI
++  pci=conf1		Use conf1 access.
++  pci=conf2		Use conf2 access.
++  pci=rom		Assign ROMs.
++  pci=assign-busses	Assign busses
++  pci=irqmask=MASK	Set PCI interrupt mask to MASK
++  pci=lastbus=NUMBER	Scan up to NUMBER busses, no matter what the mptable says.
+   pci=noacpi		Don't use ACPI to set up PCI interrupt routing.
+ 
+ IOMMU (input/output memory management unit)
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index ed47e6e..d161e93 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -326,7 +326,7 @@ config X86_PPRO_FENCE
+ 	  Old PentiumPro multiprocessor systems had errata that could cause
+ 	  memory operations to violate the x86 ordering standard in rare cases.
+ 	  Enabling this option will attempt to work around some (but not all)
+-	  occurances of this problem, at the cost of much heavier spinlock and
++	  occurrences of this problem, at the cost of much heavier spinlock and
+ 	  memory barrier operations.
+ 
+ 	  If unsure, say n here. Even distro kernels should think twice before
+@@ -366,7 +366,7 @@ config X86_INTEL_USERCOPY
+ 
+ config X86_USE_PPRO_CHECKSUM
+ 	def_bool y
+-	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MVIAC3_2 || MEFFICEON || MGEODE_LX || MCORE2 || MATOM
++	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MVIAC3_2 || MVIAC7 || MEFFICEON || MGEODE_LX || MCORE2 || MATOM
+ 
+ config X86_USE_3DNOW
+ 	def_bool y
+diff --git a/arch/x86/crypto/aesni-intel_asm.S b/arch/x86/crypto/aesni-intel_asm.S
+index 8fe2a49..adcf794 100644
+--- a/arch/x86/crypto/aesni-intel_asm.S
++++ b/arch/x86/crypto/aesni-intel_asm.S
+@@ -1346,7 +1346,7 @@ _zero_cipher_left_decrypt:
+ 	and	$15, %r13				# %r13 = arg4 (mod 16)
+ 	je	_multiple_of_16_bytes_decrypt
+ 
+-        # Handle the last <16 byte block seperately
++        # Handle the last <16 byte block separately
+ 
+ 	paddd ONE(%rip), %xmm0         # increment CNT to get Yn
+         movdqa SHUF_MASK(%rip), %xmm10
+@@ -1355,7 +1355,7 @@ _zero_cipher_left_decrypt:
+ 	ENCRYPT_SINGLE_BLOCK  %xmm0, %xmm1    # E(K, Yn)
+ 	sub $16, %r11
+ 	add %r13, %r11
+-	movdqu (%arg3,%r11,1), %xmm1   # recieve the last <16 byte block
++	movdqu (%arg3,%r11,1), %xmm1   # receive the last <16 byte block
+ 	lea SHIFT_MASK+16(%rip), %r12
+ 	sub %r13, %r12
+ # adjust the shuffle mask pointer to be able to shift 16-%r13 bytes
+@@ -1607,7 +1607,7 @@ _zero_cipher_left_encrypt:
+ 	and	$15, %r13			# %r13 = arg4 (mod 16)
+ 	je	_multiple_of_16_bytes_encrypt
+ 
+-         # Handle the last <16 Byte block seperately
++         # Handle the last <16 Byte block separately
+ 	paddd ONE(%rip), %xmm0                # INCR CNT to get Yn
+         movdqa SHUF_MASK(%rip), %xmm10
+ 	PSHUFB_XMM %xmm10, %xmm0
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index e264ae5..3316822 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -13,7 +13,7 @@ extern const struct pci_device_id amd_nb_misc_ids[];
+ extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
+ struct bootnode;
+ 
+-extern int early_is_amd_nb(u32 value);
++extern bool early_is_amd_nb(u32 value);
+ extern int amd_cache_northbridges(void);
+ extern void amd_flush_garts(void);
+ extern int amd_numa_init(void);
+@@ -32,18 +32,18 @@ struct amd_northbridge_info {
+ };
+ extern struct amd_northbridge_info amd_northbridges;
+ 
+-#define AMD_NB_GART			0x1
+-#define AMD_NB_L3_INDEX_DISABLE		0x2
+-#define AMD_NB_L3_PARTITIONING		0x4
++#define AMD_NB_GART			BIT(0)
++#define AMD_NB_L3_INDEX_DISABLE		BIT(1)
++#define AMD_NB_L3_PARTITIONING		BIT(2)
+ 
+ #ifdef CONFIG_AMD_NB
+ 
+-static inline int amd_nb_num(void)
++static inline u16 amd_nb_num(void)
+ {
+ 	return amd_northbridges.num;
+ }
+ 
+-static inline int amd_nb_has_feature(int feature)
++static inline bool amd_nb_has_feature(unsigned feature)
+ {
+ 	return ((amd_northbridges.flags & feature) == feature);
+ }
+diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
+index 62f0844..4e12668 100644
+--- a/arch/x86/include/asm/cacheflush.h
++++ b/arch/x86/include/asm/cacheflush.h
+@@ -71,7 +71,7 @@ static inline void set_page_memtype(struct page *pg, unsigned long memtype) { }
+  * Read/Write    : ReadOnly, ReadWrite
+  * Presence      : NotPresent
+  *
+- * Within a catagory, the attributes are mutually exclusive.
++ * Within a category, the attributes are mutually exclusive.
+  *
+  * The implementation of this API will take care of various aspects that
+  * are associated with changing such attributes, such as:
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index 518bbbb..fe2cc6e 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -26,7 +26,7 @@ extern void die(const char *, struct pt_regs *,long);
+ extern int __must_check __die(const char *, struct pt_regs *, long);
+ extern void show_registers(struct pt_regs *regs);
+ extern void show_trace(struct task_struct *t, struct pt_regs *regs,
+-		       unsigned long *sp);
++		       unsigned long *sp, unsigned long bp);
+ extern void __show_regs(struct pt_regs *regs, int all);
+ extern void show_regs(struct pt_regs *regs);
+ extern unsigned long oops_begin(void);
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index 07f4601..4886a68 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -29,8 +29,8 @@ void arch_trigger_all_cpu_backtrace(void);
+  * external nmis, because the local ones are more frequent.
+  *
+  * Also setup some default high/normal/low settings for
+- * subsystems to registers with.  Using 4 bits to seperate
+- * the priorities.  This can go alot higher if needed be.
++ * subsystems to registers with.  Using 4 bits to separate
++ * the priorities.  This can go a lot higher if needed be.
+  */
+ 
+ #define NMI_LOCAL_SHIFT		16	/* randomly picked */
+diff --git a/arch/x86/include/asm/nops.h b/arch/x86/include/asm/nops.h
+index 6d8723a..af78849 100644
+--- a/arch/x86/include/asm/nops.h
++++ b/arch/x86/include/asm/nops.h
+@@ -38,7 +38,7 @@
+ #define K8_NOP8	K8_NOP4 K8_NOP4
+ 
+ /* K7 nops
+-   uses eax dependencies (arbitary choice)
++   uses eax dependencies (arbitrary choice)
+    1: nop
+    2: movl %eax,%eax
+    3: leal (,%eax,1),%eax
+diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
+index f482010..5ca6801 100644
+--- a/arch/x86/include/asm/olpc.h
++++ b/arch/x86/include/asm/olpc.h
+@@ -20,7 +20,7 @@ extern struct olpc_platform_t olpc_platform_info;
+ 
+ /*
+  * OLPC board IDs contain the major build number within the mask 0x0ff0,
+- * and the minor build number withing 0x000f.  Pre-builds have a minor
++ * and the minor build number within 0x000f.  Pre-builds have a minor
+  * number less than 8, and normal builds start at 8.  For example, 0x0B10
+  * is a PreB1, and 0x0C18 is a C1.
+  */
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index cc29086..56fd9e3 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -1,5 +1,5 @@
+ /*
+- * Netburst Perfomance Events (P4, old Xeon)
++ * Netburst Performance Events (P4, old Xeon)
+  */
+ 
+ #ifndef PERF_EVENT_P4_H
+@@ -9,7 +9,7 @@
+ #include <linux/bitops.h>
+ 
+ /*
+- * NetBurst has perfomance MSRs shared between
++ * NetBurst has performance MSRs shared between
+  * threads if HT is turned on, ie for both logical
+  * processors (mem: in turn in Atom with HT support
+  * perf-MSRs are not shared and every thread has its
+diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
+index 94b979d..effff47 100644
+--- a/arch/x86/include/asm/pgtable-3level.h
++++ b/arch/x86/include/asm/pgtable-3level.h
+@@ -69,8 +69,6 @@ static inline void native_pmd_clear(pmd_t *pmd)
+ 
+ static inline void pud_clear(pud_t *pudp)
+ {
+-	unsigned long pgd;
+-
+ 	set_pud(pudp, __pud(0));
+ 
+ 	/*
+@@ -79,13 +77,10 @@ static inline void pud_clear(pud_t *pudp)
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 *
+-	 * Make sure the pud entry we're updating is within the
+-	 * current pgd to avoid unnecessary TLB flushes.
++	 * Currently all places where pud_clear() is called either have
++	 * flush_tlb_mm() followed or don't need TLB flush (x86_64 code or
++	 * pud_clear_bad()), so we don't need TLB flush here.
+ 	 */
+-	pgd = read_cr3();
+-	if (__pa(pudp) >= pgd && __pa(pudp) <
+-	    (pgd + sizeof(pgd_t)*PTRS_PER_PGD))
+-		write_cr3(pgd);
+ }
+ 
+ #ifdef CONFIG_SMP
+diff --git a/arch/x86/include/asm/processor-flags.h b/arch/x86/include/asm/processor-flags.h
+index 7a3e836..a898a2b 100644
+--- a/arch/x86/include/asm/processor-flags.h
++++ b/arch/x86/include/asm/processor-flags.h
+@@ -7,7 +7,7 @@
+  */
+ #define X86_EFLAGS_CF	0x00000001 /* Carry Flag */
+ #define X86_EFLAGS_PF	0x00000004 /* Parity Flag */
+-#define X86_EFLAGS_AF	0x00000010 /* Auxillary carry Flag */
++#define X86_EFLAGS_AF	0x00000010 /* Auxiliary carry Flag */
+ #define X86_EFLAGS_ZF	0x00000040 /* Zero Flag */
+ #define X86_EFLAGS_SF	0x00000080 /* Sign Flag */
+ #define X86_EFLAGS_TF	0x00000100 /* Trap Flag */
+diff --git a/arch/x86/include/asm/ptrace-abi.h b/arch/x86/include/asm/ptrace-abi.h
+index 52b098a..7b0a55a 100644
+--- a/arch/x86/include/asm/ptrace-abi.h
++++ b/arch/x86/include/asm/ptrace-abi.h
+@@ -31,7 +31,7 @@
+ #define R12 24
+ #define RBP 32
+ #define RBX 40
+-/* arguments: interrupts/non tracing syscalls only save upto here*/
++/* arguments: interrupts/non tracing syscalls only save up to here*/
+ #define R11 48
+ #define R10 56
+ #define R9 64
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index 78cd1ea..1babf8a 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -73,7 +73,7 @@ struct pt_regs {
+ 	unsigned long r12;
+ 	unsigned long rbp;
+ 	unsigned long rbx;
+-/* arguments: non interrupts/non tracing syscalls only save upto here*/
++/* arguments: non interrupts/non tracing syscalls only save up to here*/
+ 	unsigned long r11;
+ 	unsigned long r10;
+ 	unsigned long r9;
+@@ -103,7 +103,7 @@ struct pt_regs {
+ 	unsigned long r12;
+ 	unsigned long bp;
+ 	unsigned long bx;
+-/* arguments: non interrupts/non tracing syscalls only save upto here*/
++/* arguments: non interrupts/non tracing syscalls only save up to here*/
+ 	unsigned long r11;
+ 	unsigned long r10;
+ 	unsigned long r9;
+diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
+index 52b5c7e..d7e89c8 100644
+--- a/arch/x86/include/asm/stacktrace.h
++++ b/arch/x86/include/asm/stacktrace.h
+@@ -47,7 +47,7 @@ struct stacktrace_ops {
+ };
+ 
+ void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
+-		unsigned long *stack,
++		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data);
+ 
+ #ifdef CONFIG_X86_32
+@@ -86,11 +86,11 @@ stack_frame(struct task_struct *task, struct pt_regs *regs)
+ 
+ extern void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *stack, char *log_lvl);
++		   unsigned long *stack, unsigned long bp, char *log_lvl);
+ 
+ extern void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, char *log_lvl);
++		   unsigned long *sp, unsigned long bp, char *log_lvl);
+ 
+ extern unsigned int code_bytes;
+ 
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 1ca132f..83e2efd 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -35,7 +35,7 @@ static inline cycles_t get_cycles(void)
+ static __always_inline cycles_t vget_cycles(void)
+ {
+ 	/*
+-	 * We only do VDSOs on TSC capable CPUs, so this shouldnt
++	 * We only do VDSOs on TSC capable CPUs, so this shouldn't
+ 	 * access boot_cpu_data (which is not VDSO-safe):
+ 	 */
+ #ifndef CONFIG_X86_TSC
+diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
+index 1c10c88..5d4922a 100644
+--- a/arch/x86/include/asm/xen/interface.h
++++ b/arch/x86/include/asm/xen/interface.h
+@@ -86,7 +86,7 @@ DEFINE_GUEST_HANDLE(void);
+  * The privilege level specifies which modes may enter a trap via a software
+  * interrupt. On x86/64, since rings 1 and 2 are unavailable, we allocate
+  * privilege levels as follows:
+- *  Level == 0: Noone may enter
++ *  Level == 0: No one may enter
+  *  Level == 1: Kernel may enter
+  *  Level == 2: Kernel may enter
+  *  Level == 3: Everyone may enter
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 7038b95..4a23467 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -199,7 +199,7 @@ void *text_poke_early(void *addr, const void *opcode, size_t len);
+ 
+ /* Replace instructions with better alternatives for this CPU type.
+    This runs before SMP is initialized to avoid SMP problems with
+-   self modifying code. This implies that assymetric systems where
++   self modifying code. This implies that asymmetric systems where
+    APs have less capabilities than the boot processor are not handled.
+    Tough. Make sure you disable such features by hand. */
+ 
+@@ -620,7 +620,12 @@ static int __kprobes stop_machine_text_poke(void *data)
+ 		flush_icache_range((unsigned long)p->addr,
+ 				   (unsigned long)p->addr + p->len);
+ 	}
+-
++	/*
++	 * Intel Archiecture Software Developer's Manual section 7.1.3 specifies
++	 * that a core serializing instruction such as "cpuid" should be
++	 * executed on _each_ core before the new instruction is made visible.
++	 */
++	sync_core();
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index ed3c2e5..6563419 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -48,7 +48,7 @@ static struct pci_dev *next_northbridge(struct pci_dev *dev,
+ 
+ int amd_cache_northbridges(void)
+ {
+-	int i = 0;
++	u16 i = 0;
+ 	struct amd_northbridge *nb;
+ 	struct pci_dev *misc, *link;
+ 
+@@ -103,9 +103,11 @@ int amd_cache_northbridges(void)
+ }
+ EXPORT_SYMBOL_GPL(amd_cache_northbridges);
+ 
+-/* Ignores subdevice/subvendor but as far as I can figure out
+-   they're useless anyways */
+-int __init early_is_amd_nb(u32 device)
++/*
++ * Ignores subdevice/subvendor but as far as I can figure out
++ * they're useless anyways
++ */
++bool __init early_is_amd_nb(u32 device)
+ {
+ 	const struct pci_device_id *id;
+ 	u32 vendor = device & 0xffff;
+@@ -113,8 +115,8 @@ int __init early_is_amd_nb(u32 device)
+ 	device >>= 16;
+ 	for (id = amd_nb_misc_ids; id->vendor; id++)
+ 		if (vendor == id->vendor && device == id->device)
+-			return 1;
+-	return 0;
++			return true;
++	return false;
+ }
+ 
+ int amd_get_subcaches(int cpu)
+@@ -176,9 +178,9 @@ int amd_set_subcaches(int cpu, int mask)
+ 	return 0;
+ }
+ 
+-int amd_cache_gart(void)
++static int amd_cache_gart(void)
+ {
+-       int i;
++	u16 i;
+ 
+        if (!amd_nb_has_feature(AMD_NB_GART))
+                return 0;
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 7b1e8e1..86d1ad4 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -73,7 +73,7 @@ static u32 __init allocate_aperture(void)
+ 	/*
+ 	 * using 512M as goal, in case kexec will load kernel_big
+ 	 * that will do the on position decompress, and  could overlap with
+-	 * that positon with gart that is used.
++	 * that position with gart that is used.
+ 	 * sequende:
+ 	 * kernel_small
+ 	 * ==> kexec (with kdump trigger path or previous doesn't shutdown gart)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 4b5ebd2..f15c6f7 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1886,7 +1886,7 @@ void disable_IO_APIC(void)
+ 	 *
+ 	 * With interrupt-remapping, for now we will use virtual wire A mode,
+ 	 * as virtual wire B is little complex (need to configure both
+-	 * IOAPIC RTE aswell as interrupt-remapping table entry).
++	 * IOAPIC RTE as well as interrupt-remapping table entry).
+ 	 * As this gets called during crash dump, keep this simple for now.
+ 	 */
+ 	if (ioapic_i8259.pin != -1 && !intr_remapping_enabled) {
+@@ -2905,7 +2905,7 @@ void __init setup_IO_APIC(void)
+ }
+ 
+ /*
+- *      Called after all the initialization is done. If we didnt find any
++ *      Called after all the initialization is done. If we didn't find any
+  *      APIC bugs then we can allow the modify fast path
+  */
+ 
+diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+index 0e4f24c..a10e516 100644
+--- a/arch/x86/kernel/apm_32.c
++++ b/arch/x86/kernel/apm_32.c
+@@ -66,7 +66,7 @@
+  *    1.5: Fix segment register reloading (in case of bad segments saved
+  *         across BIOS call).
+  *         Stephen Rothwell
+- *    1.6: Cope with complier/assembler differences.
++ *    1.6: Cope with compiler/assembler differences.
+  *         Only try to turn off the first display device.
+  *         Fix OOPS at power off with no APM BIOS by Jan Echternach
+  *                   <echter@informatik.uni-rostock.de>
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index f771ab6..3ecece0 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -611,6 +611,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		}
+ 	}
+ #endif
++
++	/* As a rule processors have APIC timer running in deep C states */
++	if (c->x86 >= 0xf && !cpu_has_amd_erratum(amd_erratum_400))
++		set_cpu_cap(c, X86_FEATURE_ARAT);
+ }
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/kernel/cpu/cpufreq/longhaul.c b/arch/x86/kernel/cpu/cpufreq/longhaul.c
+index 03162da..cf48cdd 100644
+--- a/arch/x86/kernel/cpu/cpufreq/longhaul.c
++++ b/arch/x86/kernel/cpu/cpufreq/longhaul.c
+@@ -444,7 +444,7 @@ static int __cpuinit longhaul_get_ranges(void)
+ 		return -EINVAL;
+ 	}
+ 	/* Get max multiplier - as we always did.
+-	 * Longhaul MSR is usefull only when voltage scaling is enabled.
++	 * Longhaul MSR is useful only when voltage scaling is enabled.
+ 	 * C3 is booting at max anyway. */
+ 	maxmult = mult;
+ 	/* Get min multiplier */
+@@ -1011,7 +1011,7 @@ static void __exit longhaul_exit(void)
+  * trigger frequency transition in some cases. */
+ module_param(disable_acpi_c3, int, 0644);
+ MODULE_PARM_DESC(disable_acpi_c3, "Don't use ACPI C3 support");
+-/* Change CPU voltage with frequency. Very usefull to save
++/* Change CPU voltage with frequency. Very useful to save
+  * power, but most VIA C3 processors aren't supporting it. */
+ module_param(scale_voltage, int, 0644);
+ MODULE_PARM_DESC(scale_voltage, "Scale voltage of processor");
+diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+index c567dec..b41f7da 100644
+--- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
++++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+@@ -1276,7 +1276,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 
+ 	if (powernow_k8_cpu_init_acpi(data)) {
+ 		/*
+-		 * Use the PSB BIOS structure. This is only availabe on
++		 * Use the PSB BIOS structure. This is only available on
+ 		 * an UP version, and is deprecated by AMD.
+ 		 */
+ 		if (num_online_cpus() != 1) {
+diff --git a/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c b/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c
+index 8abd869..91bc25b 100644
+--- a/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c
++++ b/arch/x86/kernel/cpu/cpufreq/speedstep-smi.c
+@@ -292,7 +292,7 @@ static int speedstep_cpu_init(struct cpufreq_policy *policy)
+ 
+ 	result = speedstep_smi_ownership();
+ 	if (result) {
+-		dprintk("fails in aquiring ownership of a SMI interface.\n");
++		dprintk("fails in acquiring ownership of a SMI interface.\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -360,7 +360,7 @@ static int speedstep_resume(struct cpufreq_policy *policy)
+ 	int result = speedstep_smi_ownership();
+ 
+ 	if (result)
+-		dprintk("fails in re-aquiring ownership of a SMI interface.\n");
++		dprintk("fails in re-acquiring ownership of a SMI interface.\n");
+ 
+ 	return result;
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index a779719..0ed633c 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -32,7 +32,7 @@ static void inject_mce(struct mce *m)
+ {
+ 	struct mce *i = &per_cpu(injectm, m->extcpu);
+ 
+-	/* Make sure noone reads partially written injectm */
++	/* Make sure no one reads partially written injectm */
+ 	i->finished = 0;
+ 	mb();
+ 	m->finished = 0;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index d916183..ab11229 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -881,7 +881,7 @@ reset:
+  * Check if the address reported by the CPU is in a format we can parse.
+  * It would be possible to add code for most other cases, but all would
+  * be somewhat complicated (e.g. segment offset would require an instruction
+- * parser). So only support physical addresses upto page granuality for now.
++ * parser). So only support physical addresses up to page granuality for now.
+  */
+ static int mce_usable_address(struct mce *m)
+ {
+diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
+index 9f27228..a71efcdb 100644
+--- a/arch/x86/kernel/cpu/mtrr/generic.c
++++ b/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -1,6 +1,6 @@
+ /*
+  * This only handles 32bit MTRR on 32bit hosts. This is strictly wrong
+- * because MTRRs can span upto 40 bits (36bits on most modern x86)
++ * because MTRRs can span up to 40 bits (36bits on most modern x86)
+  */
+ #define DEBUG
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 2660418..3061276 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1111,7 +1111,7 @@ static int x86_pmu_add(struct perf_event *event, int flags)
+ 
+ 	/*
+ 	 * If group events scheduling transaction was started,
+-	 * skip the schedulability test here, it will be peformed
++	 * skip the schedulability test here, it will be performed
+ 	 * at commit time (->commit_txn) as a whole
+ 	 */
+ 	if (cpuc->group_flag & PERF_EVENT_TXN)
+@@ -1792,7 +1792,7 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 
+ 	perf_callchain_store(entry, regs->ip);
+ 
+-	dump_trace(NULL, regs, NULL, &backtrace_ops, entry);
++	dump_trace(NULL, regs, NULL, 0, &backtrace_ops, entry);
+ }
+ 
+ #ifdef CONFIG_COMPAT
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index 3769ac8..0811f5e 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -1,5 +1,5 @@
+ /*
+- * Netburst Perfomance Events (P4, old Xeon)
++ * Netburst Performance Events (P4, old Xeon)
+  *
+  *  Copyright (C) 2010 Parallels, Inc., Cyrill Gorcunov <gorcunov@openvz.org>
+  *  Copyright (C) 2010 Intel Corporation, Lin Ming <ming.m.lin@intel.com>
+@@ -679,7 +679,7 @@ static int p4_validate_raw_event(struct perf_event *event)
+ 	 */
+ 
+ 	/*
+-	 * if an event is shared accross the logical threads
++	 * if an event is shared across the logical threads
+ 	 * the user needs special permissions to be able to use it
+ 	 */
+ 	if (p4_ht_active() && p4_event_bind_map[v].shared) {
+@@ -790,13 +790,13 @@ static void p4_pmu_disable_pebs(void)
+ 	 *
+ 	 * It's still allowed that two threads setup same cache
+ 	 * events so we can't simply clear metrics until we knew
+-	 * noone is depending on us, so we need kind of counter
++	 * no one is depending on us, so we need kind of counter
+ 	 * for "ReplayEvent" users.
+ 	 *
+ 	 * What is more complex -- RAW events, if user (for some
+ 	 * reason) will pass some cache event metric with improper
+ 	 * event opcode -- it's fine from hardware point of view
+-	 * but completely nonsence from "meaning" of such action.
++	 * but completely nonsense from "meaning" of such action.
+ 	 *
+ 	 * So at moment let leave metrics turned on forever -- it's
+ 	 * ok for now but need to be revisited!
+diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
+index 227b044..d22d0c4 100644
+--- a/arch/x86/kernel/cpu/vmware.c
++++ b/arch/x86/kernel/cpu/vmware.c
+@@ -86,7 +86,7 @@ static void __init vmware_platform_setup(void)
+ }
+ 
+ /*
+- * While checking the dmi string infomation, just checking the product
++ * While checking the dmi string information, just checking the product
+  * serial key should be enough, as this will always have a VMware
+  * specific string when running under VMware hypervisor.
+  */
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 220a1c1..999e279 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -175,21 +175,21 @@ static const struct stacktrace_ops print_trace_ops = {
+ 
+ void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		unsigned long *stack, char *log_lvl)
++		unsigned long *stack, unsigned long bp, char *log_lvl)
+ {
+ 	printk("%sCall Trace:\n", log_lvl);
+-	dump_trace(task, regs, stack, &print_trace_ops, log_lvl);
++	dump_trace(task, regs, stack, bp, &print_trace_ops, log_lvl);
+ }
+ 
+ void show_trace(struct task_struct *task, struct pt_regs *regs,
+-		unsigned long *stack)
++		unsigned long *stack, unsigned long bp)
+ {
+-	show_trace_log_lvl(task, regs, stack, "");
++	show_trace_log_lvl(task, regs, stack, bp, "");
+ }
+ 
+ void show_stack(struct task_struct *task, unsigned long *sp)
+ {
+-	show_stack_log_lvl(task, NULL, sp, "");
++	show_stack_log_lvl(task, NULL, sp, 0, "");
+ }
+ 
+ /*
+@@ -197,14 +197,16 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+  */
+ void dump_stack(void)
+ {
++	unsigned long bp;
+ 	unsigned long stack;
+ 
++	bp = stack_frame(current, NULL);
+ 	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
+ 		current->pid, current->comm, print_tainted(),
+ 		init_utsname()->release,
+ 		(int)strcspn(init_utsname()->version, " "),
+ 		init_utsname()->version);
+-	show_trace(NULL, NULL, &stack);
++	show_trace(NULL, NULL, &stack, bp);
+ }
+ EXPORT_SYMBOL(dump_stack);
+ 
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 74cc1ed..3b97a80 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -17,12 +17,11 @@
+ #include <asm/stacktrace.h>
+ 
+ 
+-void dump_trace(struct task_struct *task,
+-		struct pt_regs *regs, unsigned long *stack,
++void dump_trace(struct task_struct *task, struct pt_regs *regs,
++		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data)
+ {
+ 	int graph = 0;
+-	unsigned long bp;
+ 
+ 	if (!task)
+ 		task = current;
+@@ -35,7 +34,9 @@ void dump_trace(struct task_struct *task,
+ 			stack = (unsigned long *)task->thread.sp;
+ 	}
+ 
+-	bp = stack_frame(task, regs);
++	if (!bp)
++		bp = stack_frame(task, regs);
++
+ 	for (;;) {
+ 		struct thread_info *context;
+ 
+@@ -55,7 +56,7 @@ EXPORT_SYMBOL(dump_trace);
+ 
+ void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, char *log_lvl)
++		   unsigned long *sp, unsigned long bp, char *log_lvl)
+ {
+ 	unsigned long *stack;
+ 	int i;
+@@ -77,7 +78,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		touch_nmi_watchdog();
+ 	}
+ 	printk(KERN_CONT "\n");
+-	show_trace_log_lvl(task, regs, sp, log_lvl);
++	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+ 
+@@ -102,7 +103,7 @@ void show_registers(struct pt_regs *regs)
+ 		u8 *ip;
+ 
+ 		printk(KERN_EMERG "Stack:\n");
+-		show_stack_log_lvl(NULL, regs, &regs->sp, KERN_EMERG);
++		show_stack_log_lvl(NULL, regs, &regs->sp, 0, KERN_EMERG);
+ 
+ 		printk(KERN_EMERG "Code: ");
+ 
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index a6b6fcf..e71c98d 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -139,8 +139,8 @@ fixup_bp_irq_link(unsigned long bp, unsigned long *stack,
+  * severe exception (double fault, nmi, stack fault, debug, mce) hardware stack
+  */
+ 
+-void dump_trace(struct task_struct *task,
+-		struct pt_regs *regs, unsigned long *stack,
++void dump_trace(struct task_struct *task, struct pt_regs *regs,
++		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data)
+ {
+ 	const unsigned cpu = get_cpu();
+@@ -150,7 +150,6 @@ void dump_trace(struct task_struct *task,
+ 	struct thread_info *tinfo;
+ 	int graph = 0;
+ 	unsigned long dummy;
+-	unsigned long bp;
+ 
+ 	if (!task)
+ 		task = current;
+@@ -161,7 +160,8 @@ void dump_trace(struct task_struct *task,
+ 			stack = (unsigned long *)task->thread.sp;
+ 	}
+ 
+-	bp = stack_frame(task, regs);
++	if (!bp)
++		bp = stack_frame(task, regs);
+ 	/*
+ 	 * Print function call entries in all stacks, starting at the
+ 	 * current stack address. If the stacks consist of nested
+@@ -225,7 +225,7 @@ EXPORT_SYMBOL(dump_trace);
+ 
+ void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, char *log_lvl)
++		   unsigned long *sp, unsigned long bp, char *log_lvl)
+ {
+ 	unsigned long *irq_stack_end;
+ 	unsigned long *irq_stack;
+@@ -269,7 +269,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 	preempt_enable();
+ 
+ 	printk(KERN_CONT "\n");
+-	show_trace_log_lvl(task, regs, sp, log_lvl);
++	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+ void show_registers(struct pt_regs *regs)
+@@ -298,7 +298,7 @@ void show_registers(struct pt_regs *regs)
+ 
+ 		printk(KERN_EMERG "Stack:\n");
+ 		show_stack_log_lvl(NULL, regs, (unsigned long *)sp,
+-				   KERN_EMERG);
++				   0, KERN_EMERG);
+ 
+ 		printk(KERN_EMERG "Code: ");
+ 
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 9efbdcc..3755ef4 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -159,7 +159,12 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ 	if (rev >= 0x40)
+ 		acpi_fix_pin2_polarity = 1;
+ 
+-	if (rev > 0x13)
++	/*
++	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
++	 * SB700: revisions 0x39, 0x3a, ...
++	 * SB800: revisions 0x40, 0x41, ...
++	 */
++	if (rev >= 0x39)
+ 		return;
+ 
+ 	if (acpi_use_timer_override)
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b72b4a6..8a445a0 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -18,7 +18,7 @@
+  * A note on terminology:
+  * - top of stack: Architecture defined interrupt frame from SS to RIP
+  * at the top of the kernel process stack.
+- * - partial stack frame: partially saved registers upto R11.
++ * - partial stack frame: partially saved registers up to R11.
+  * - full stack frame: Like partial stack frame, but all register saved.
+  *
+  * Some macro usage:
+@@ -422,7 +422,7 @@ ENTRY(ret_from_fork)
+ END(ret_from_fork)
+ 
+ /*
+- * System call entry. Upto 6 arguments in registers are supported.
++ * System call entry. Up to 6 arguments in registers are supported.
+  *
+  * SYSCALL does not save anything on the stack and does not change the
+  * stack pointer.
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index e60c38c..12aff25 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -145,7 +145,7 @@ EXPORT_SYMBOL_GPL(fpu_finit);
+  * The _current_ task is using the FPU for the first time
+  * so initialize it and set the mxcsr to its default
+  * value at reset if we support XMM instructions and then
+- * remeber the current task has used the FPU.
++ * remember the current task has used the FPU.
+  */
+ int init_fpu(struct task_struct *tsk)
+ {
+diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
+index 9974d21..7209070 100644
+--- a/arch/x86/kernel/irq_32.c
++++ b/arch/x86/kernel/irq_32.c
+@@ -172,7 +172,7 @@ asmlinkage void do_softirq(void)
+ 
+ 		call_on_stack(__do_softirq, isp);
+ 		/*
+-		 * Shouldnt happen, we returned above if in_interrupt():
++		 * Shouldn't happen, we returned above if in_interrupt():
+ 		 */
+ 		WARN_ON_ONCE(softirq_count());
+ 	}
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index 7c64c42..dba0b36 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -278,7 +278,7 @@ static int hw_break_release_slot(int breakno)
+ 		pevent = per_cpu_ptr(breakinfo[breakno].pev, cpu);
+ 		if (dbg_release_bp_slot(*pevent))
+ 			/*
+-			 * The debugger is responisble for handing the retry on
++			 * The debugger is responsible for handing the retry on
+ 			 * remove failure.
+ 			 */
+ 			return -1;
+diff --git a/arch/x86/kernel/mca_32.c b/arch/x86/kernel/mca_32.c
+index 63eaf65..177183c 100644
+--- a/arch/x86/kernel/mca_32.c
++++ b/arch/x86/kernel/mca_32.c
+@@ -259,7 +259,7 @@ static int __init mca_init(void)
+ 	/*
+ 	 * WARNING: Be careful when making changes here. Putting an adapter
+ 	 * and the motherboard simultaneously into setup mode may result in
+-	 * damage to chips (according to The Indispensible PC Hardware Book
++	 * damage to chips (according to The Indispensable PC Hardware Book
+ 	 * by Hans-Peter Messmer). Also, we disable system interrupts (so
+ 	 * that we are not disturbed in the middle of this).
+ 	 */
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 01b0f6d..6f789a8 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -883,7 +883,7 @@ static int __init update_mp_table(void)
+ 
+ 	if (!mpc_new_phys) {
+ 		unsigned char old, new;
+-		/* check if we can change the postion */
++		/* check if we can change the position */
+ 		mpc->checksum = 0;
+ 		old = mpf_checksum((unsigned char *)mpc, mpc->length);
+ 		mpc->checksum = 0xff;
+@@ -892,7 +892,7 @@ static int __init update_mp_table(void)
+ 			printk(KERN_INFO "mpc is readonly, please try alloc_mptable instead\n");
+ 			return 0;
+ 		}
+-		printk(KERN_INFO "use in-positon replacing\n");
++		printk(KERN_INFO "use in-position replacing\n");
+ 	} else {
+ 		mpf->physptr = mpc_new_phys;
+ 		mpc_new = phys_to_virt(mpc_new_phys);
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index f56a117..e8c33a3 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -1279,7 +1279,7 @@ static int __init calgary_bus_has_devices(int bus, unsigned short pci_dev)
+ 
+ 	if (pci_dev == PCI_DEVICE_ID_IBM_CALIOC2) {
+ 		/*
+-		 * FIXME: properly scan for devices accross the
++		 * FIXME: properly scan for devices across the
+ 		 * PCI-to-PCI bridge on every CalIOC2 port.
+ 		 */
+ 		return 1;
+@@ -1295,7 +1295,7 @@ static int __init calgary_bus_has_devices(int bus, unsigned short pci_dev)
+ 
+ /*
+  * calgary_init_bitmap_from_tce_table():
+- * Funtion for kdump case. In the second/kdump kernel initialize
++ * Function for kdump case. In the second/kdump kernel initialize
+  * the bitmap based on the tce table entries obtained from first kernel
+  */
+ static void calgary_init_bitmap_from_tce_table(struct iommu_table *tbl)
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 99fa3ad..d46cbe4 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -87,7 +87,7 @@ void exit_thread(void)
+ void show_regs(struct pt_regs *regs)
+ {
+ 	show_registers(regs);
+-	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs));
++	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
+ }
+ 
+ void show_regs_common(void)
+diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
+index 938c8e1..6515733 100644
+--- a/arch/x86/kernel/stacktrace.c
++++ b/arch/x86/kernel/stacktrace.c
+@@ -73,7 +73,7 @@ static const struct stacktrace_ops save_stack_ops_nosched = {
+  */
+ void save_stack_trace(struct stack_trace *trace)
+ {
+-	dump_trace(current, NULL, NULL, &save_stack_ops, trace);
++	dump_trace(current, NULL, NULL, 0, &save_stack_ops, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+@@ -81,14 +81,14 @@ EXPORT_SYMBOL_GPL(save_stack_trace);
+ 
+ void save_stack_trace_regs(struct stack_trace *trace, struct pt_regs *regs)
+ {
+-	dump_trace(current, regs, NULL, &save_stack_ops, trace);
++	dump_trace(current, regs, NULL, 0, &save_stack_ops, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+ 
+ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ {
+-	dump_trace(tsk, NULL, NULL, &save_stack_ops_nosched, trace);
++	dump_trace(tsk, NULL, NULL, 0, &save_stack_ops_nosched, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
+index 58de45e..7977f0c 100644
+--- a/arch/x86/kernel/step.c
++++ b/arch/x86/kernel/step.c
+@@ -166,7 +166,7 @@ static void enable_step(struct task_struct *child, bool block)
+ 	 * Make sure block stepping (BTF) is not enabled unless it should be.
+ 	 * Note that we don't try to worry about any is_setting_trap_flag()
+ 	 * instructions after the first when using block stepping.
+-	 * So noone should try to use debugger block stepping in a program
++	 * So no one should try to use debugger block stepping in a program
+ 	 * that uses user-mode single stepping itself.
+ 	 */
+ 	if (enable_single_step(child) && block) {
+diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+index 7e45159..8927486 100644
+--- a/arch/x86/kernel/topology.c
++++ b/arch/x86/kernel/topology.c
+@@ -39,7 +39,7 @@ int __ref arch_register_cpu(int num)
+ 	/*
+ 	 * CPU0 cannot be offlined due to several
+ 	 * restrictions and assumptions in kernel. This basically
+-	 * doesnt add a control file, one cannot attempt to offline
++	 * doesn't add a control file, one cannot attempt to offline
+ 	 * BSP.
+ 	 *
+ 	 * Also certain PCI quirks require not to enable hotplug control
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index ffe5755..9335bf7 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -427,7 +427,7 @@ unsigned long native_calibrate_tsc(void)
+ 	 * the delta to the previous read. We keep track of the min
+ 	 * and max values of that delta. The delta is mostly defined
+ 	 * by the IO time of the PIT access, so we can detect when a
+-	 * SMI/SMM disturbance happend between the two reads. If the
++	 * SMI/SMM disturbance happened between the two reads. If the
+ 	 * maximum time is significantly larger than the minimum time,
+ 	 * then we discard the result and have another try.
+ 	 *
+@@ -900,7 +900,7 @@ static DECLARE_DELAYED_WORK(tsc_irqwork, tsc_refine_calibration_work);
+  * timer based, instead of loop based, we don't block the boot
+  * process while this longer calibration is done.
+  *
+- * If there are any calibration anomolies (too many SMIs, etc),
++ * If there are any calibration anomalies (too many SMIs, etc),
+  * or the refined calibration is off by 1% of the fast early
+  * calibration, we throw out the new calibration and use the
+  * early calibration.
+diff --git a/arch/x86/kernel/verify_cpu.S b/arch/x86/kernel/verify_cpu.S
+index 0edefc1..b9242ba 100644
+--- a/arch/x86/kernel/verify_cpu.S
++++ b/arch/x86/kernel/verify_cpu.S
+@@ -18,7 +18,7 @@
+  *	This file is expected to run in 32bit code.  Currently:
+  *
+  *	arch/x86/boot/compressed/head_64.S: Boot cpu verification
+- *	arch/x86/kernel/trampoline_64.S: secondary processor verfication
++ *	arch/x86/kernel/trampoline_64.S: secondary processor verification
+  *	arch/x86/kernel/head_32.S: processor startup
+  *
+  *	verify_cpu, returns the status of longmode and SSE in register %eax.
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 5471285..a391134 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -53,7 +53,7 @@ void __sanitize_i387_state(struct task_struct *tsk)
+ 
+ 	/*
+ 	 * None of the feature bits are in init state. So nothing else
+-	 * to do for us, as the memory layout is upto date.
++	 * to do for us, as the memory layout is up to date.
+ 	 */
+ 	if ((xstate_bv & pcntxt_mask) == pcntxt_mask)
+ 		return;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 6bccc24..a51517d 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -348,7 +348,7 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 		return;
+ 	kvm_get_pfn(pfn);
+ 	/*
+-	 * we call mmu_set_spte() with host_writable = true beacuse that
++	 * we call mmu_set_spte() with host_writable = true because that
+ 	 * vcpu->arch.update_pte.pfn was fetched from get_user_pages(write = 1).
+ 	 */
+ 	mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
+diff --git a/arch/x86/kvm/timer.c b/arch/x86/kvm/timer.c
+index fc7a101..abd86e86 100644
+--- a/arch/x86/kvm/timer.c
++++ b/arch/x86/kvm/timer.c
+@@ -25,7 +25,7 @@ static int __kvm_timer_fn(struct kvm_vcpu *vcpu, struct kvm_timer *ktimer)
+ 
+ 	/*
+ 	 * There is a race window between reading and incrementing, but we do
+-	 * not care about potentially loosing timer events in the !reinject
++	 * not care about potentially losing timer events in the !reinject
+ 	 * case anyway. Note: KVM_REQ_PENDING_TIMER is implicitly checked
+ 	 * in vcpu_enter_guest.
+ 	 */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index bcc0efc..e3a9e4b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1028,7 +1028,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+ 	/*
+ 	 * Special case: close write to TSC within 5 seconds of
+ 	 * another CPU is interpreted as an attempt to synchronize
+-	 * The 5 seconds is to accomodate host load / swapping as
++	 * The 5 seconds is to accommodate host load / swapping as
+ 	 * well as any reset of TSC during the boot process.
+ 	 *
+ 	 * In that case, for a reliable TSC, we can match TSC offsets,
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index b9ec1c7..1cd6089 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -397,7 +397,7 @@ static void lguest_load_tr_desc(void)
+  * instead we just use the real "cpuid" instruction.  Then I pretty much turned
+  * off feature bits until the Guest booted.  (Don't say that: you'll damage
+  * lguest sales!)  Shut up, inner voice!  (Hey, just pointing out that this is
+- * hardly future proof.)  Noone's listening!  They don't like you anyway,
++ * hardly future proof.)  No one's listening!  They don't like you anyway,
+  * parenthetic weirdo!
+  *
+  * Replacing the cpuid so we can turn features off is great for the kernel, but
+diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
+index a460158..99e4826 100644
+--- a/arch/x86/lib/copy_user_64.S
++++ b/arch/x86/lib/copy_user_64.S
+@@ -117,7 +117,7 @@ ENDPROC(bad_from_user)
+  * rdx count
+  *
+  * Output:
+- * eax uncopied bytes or 0 if successfull.
++ * eax uncopied bytes or 0 if successful.
+  */
+ ENTRY(copy_user_generic_unrolled)
+ 	CFI_STARTPROC
+diff --git a/arch/x86/lib/csum-copy_64.S b/arch/x86/lib/csum-copy_64.S
+index f0dba36..fb903b7 100644
+--- a/arch/x86/lib/csum-copy_64.S
++++ b/arch/x86/lib/csum-copy_64.S
+@@ -1,6 +1,6 @@
+ /*
+- * Copyright 2002,2003 Andi Kleen, SuSE Labs.
+- *	
++ * Copyright 2002, 2003 Andi Kleen, SuSE Labs.
++ *
+  * This file is subject to the terms and conditions of the GNU General Public
+  * License.  See the file COPYING in the main directory of this archive
+  * for more details. No warranty for anything given at all.
+@@ -11,82 +11,82 @@
+ 
+ /*
+  * Checksum copy with exception handling.
+- * On exceptions src_err_ptr or dst_err_ptr is set to -EFAULT and the 
++ * On exceptions src_err_ptr or dst_err_ptr is set to -EFAULT and the
+  * destination is zeroed.
+- * 
++ *
+  * Input
+  * rdi  source
+  * rsi  destination
+  * edx  len (32bit)
+- * ecx  sum (32bit) 
++ * ecx  sum (32bit)
+  * r8   src_err_ptr (int)
+  * r9   dst_err_ptr (int)
+  *
+  * Output
+  * eax  64bit sum. undefined in case of exception.
+- * 
+- * Wrappers need to take care of valid exception sum and zeroing.		 
++ *
++ * Wrappers need to take care of valid exception sum and zeroing.
+  * They also should align source or destination to 8 bytes.
+  */
+ 
+ 	.macro source
+ 10:
+-	.section __ex_table,"a"
++	.section __ex_table, "a"
+ 	.align 8
+-	.quad 10b,.Lbad_source
++	.quad 10b, .Lbad_source
+ 	.previous
+ 	.endm
+-		
++
+ 	.macro dest
+ 20:
+-	.section __ex_table,"a"
++	.section __ex_table, "a"
+ 	.align 8
+-	.quad 20b,.Lbad_dest
++	.quad 20b, .Lbad_dest
+ 	.previous
+ 	.endm
+-			
++
+ 	.macro ignore L=.Lignore
+ 30:
+-	.section __ex_table,"a"
++	.section __ex_table, "a"
+ 	.align 8
+-	.quad 30b,\L
++	.quad 30b, \L
+ 	.previous
+ 	.endm
+-	
+-				
++
++
+ ENTRY(csum_partial_copy_generic)
+ 	CFI_STARTPROC
+-	cmpl	 $3*64,%edx
+-	jle	 .Lignore
++	cmpl	$3*64, %edx
++	jle	.Lignore
+ 
+-.Lignore:		
+-	subq  $7*8,%rsp
++.Lignore:
++	subq  $7*8, %rsp
+ 	CFI_ADJUST_CFA_OFFSET 7*8
+-	movq  %rbx,2*8(%rsp)
++	movq  %rbx, 2*8(%rsp)
+ 	CFI_REL_OFFSET rbx, 2*8
+-	movq  %r12,3*8(%rsp)
++	movq  %r12, 3*8(%rsp)
+ 	CFI_REL_OFFSET r12, 3*8
+-	movq  %r14,4*8(%rsp)
++	movq  %r14, 4*8(%rsp)
+ 	CFI_REL_OFFSET r14, 4*8
+-	movq  %r13,5*8(%rsp)
++	movq  %r13, 5*8(%rsp)
+ 	CFI_REL_OFFSET r13, 5*8
+-	movq  %rbp,6*8(%rsp)
++	movq  %rbp, 6*8(%rsp)
+ 	CFI_REL_OFFSET rbp, 6*8
+ 
+-	movq  %r8,(%rsp)
+-	movq  %r9,1*8(%rsp)
+-	
+-	movl  %ecx,%eax
+-	movl  %edx,%ecx
++	movq  %r8, (%rsp)
++	movq  %r9, 1*8(%rsp)
+ 
+-	xorl  %r9d,%r9d
+-	movq  %rcx,%r12
++	movl  %ecx, %eax
++	movl  %edx, %ecx
+ 
+-	shrq  $6,%r12
+-	jz    .Lhandle_tail       /* < 64 */
++	xorl  %r9d, %r9d
++	movq  %rcx, %r12
++
++	shrq  $6, %r12
++	jz	.Lhandle_tail       /* < 64 */
+ 
+ 	clc
+-	
++
+ 	/* main loop. clear in 64 byte blocks */
+ 	/* r9: zero, r8: temp2, rbx: temp1, rax: sum, rcx: saved length */
+ 	/* r11:	temp3, rdx: temp4, r12 loopcnt */
+@@ -94,156 +94,156 @@ ENTRY(csum_partial_copy_generic)
+ 	.p2align 4
+ .Lloop:
+ 	source
+-	movq  (%rdi),%rbx
++	movq  (%rdi), %rbx
+ 	source
+-	movq  8(%rdi),%r8
++	movq  8(%rdi), %r8
+ 	source
+-	movq  16(%rdi),%r11
++	movq  16(%rdi), %r11
+ 	source
+-	movq  24(%rdi),%rdx
++	movq  24(%rdi), %rdx
+ 
+ 	source
+-	movq  32(%rdi),%r10
++	movq  32(%rdi), %r10
+ 	source
+-	movq  40(%rdi),%rbp
++	movq  40(%rdi), %rbp
+ 	source
+-	movq  48(%rdi),%r14
++	movq  48(%rdi), %r14
+ 	source
+-	movq  56(%rdi),%r13
+-		
++	movq  56(%rdi), %r13
++
+ 	ignore 2f
+ 	prefetcht0 5*64(%rdi)
+-2:							
+-	adcq  %rbx,%rax
+-	adcq  %r8,%rax
+-	adcq  %r11,%rax
+-	adcq  %rdx,%rax
+-	adcq  %r10,%rax
+-	adcq  %rbp,%rax
+-	adcq  %r14,%rax
+-	adcq  %r13,%rax
++2:
++	adcq  %rbx, %rax
++	adcq  %r8, %rax
++	adcq  %r11, %rax
++	adcq  %rdx, %rax
++	adcq  %r10, %rax
++	adcq  %rbp, %rax
++	adcq  %r14, %rax
++	adcq  %r13, %rax
+ 
+ 	decl %r12d
+-	
++
+ 	dest
+-	movq %rbx,(%rsi)
++	movq %rbx, (%rsi)
+ 	dest
+-	movq %r8,8(%rsi)
++	movq %r8, 8(%rsi)
+ 	dest
+-	movq %r11,16(%rsi)
++	movq %r11, 16(%rsi)
+ 	dest
+-	movq %rdx,24(%rsi)
++	movq %rdx, 24(%rsi)
+ 
+ 	dest
+-	movq %r10,32(%rsi)
++	movq %r10, 32(%rsi)
+ 	dest
+-	movq %rbp,40(%rsi)
++	movq %rbp, 40(%rsi)
+ 	dest
+-	movq %r14,48(%rsi)
++	movq %r14, 48(%rsi)
+ 	dest
+-	movq %r13,56(%rsi)
+-	
++	movq %r13, 56(%rsi)
++
+ 3:
+-	
+-	leaq 64(%rdi),%rdi
+-	leaq 64(%rsi),%rsi
+ 
+-	jnz   .Lloop
++	leaq 64(%rdi), %rdi
++	leaq 64(%rsi), %rsi
+ 
+-	adcq  %r9,%rax
++	jnz	.Lloop
+ 
+-	/* do last upto 56 bytes */
++	adcq  %r9, %rax
++
++	/* do last up to 56 bytes */
+ .Lhandle_tail:
+ 	/* ecx:	count */
+-	movl %ecx,%r10d
+-	andl $63,%ecx
+-	shrl $3,%ecx
+-	jz 	 .Lfold
++	movl %ecx, %r10d
++	andl $63, %ecx
++	shrl $3, %ecx
++	jz	.Lfold
+ 	clc
+ 	.p2align 4
+-.Lloop_8:	
++.Lloop_8:
+ 	source
+-	movq (%rdi),%rbx
+-	adcq %rbx,%rax
++	movq (%rdi), %rbx
++	adcq %rbx, %rax
+ 	decl %ecx
+ 	dest
+-	movq %rbx,(%rsi)
+-	leaq 8(%rsi),%rsi /* preserve carry */
+-	leaq 8(%rdi),%rdi
++	movq %rbx, (%rsi)
++	leaq 8(%rsi), %rsi /* preserve carry */
++	leaq 8(%rdi), %rdi
+ 	jnz	.Lloop_8
+-	adcq %r9,%rax	/* add in carry */
++	adcq %r9, %rax	/* add in carry */
+ 
+ .Lfold:
+ 	/* reduce checksum to 32bits */
+-	movl %eax,%ebx
+-	shrq $32,%rax
+-	addl %ebx,%eax
+-	adcl %r9d,%eax
++	movl %eax, %ebx
++	shrq $32, %rax
++	addl %ebx, %eax
++	adcl %r9d, %eax
+ 
+-	/* do last upto 6 bytes */	
++	/* do last up to 6 bytes */
+ .Lhandle_7:
+-	movl %r10d,%ecx
+-	andl $7,%ecx
+-	shrl $1,%ecx
++	movl %r10d, %ecx
++	andl $7, %ecx
++	shrl $1, %ecx
+ 	jz   .Lhandle_1
+-	movl $2,%edx
+-	xorl %ebx,%ebx
+-	clc  
++	movl $2, %edx
++	xorl %ebx, %ebx
++	clc
+ 	.p2align 4
+-.Lloop_1:	
++.Lloop_1:
+ 	source
+-	movw (%rdi),%bx
+-	adcl %ebx,%eax
++	movw (%rdi), %bx
++	adcl %ebx, %eax
+ 	decl %ecx
+ 	dest
+-	movw %bx,(%rsi)
+-	leaq 2(%rdi),%rdi
+-	leaq 2(%rsi),%rsi
++	movw %bx, (%rsi)
++	leaq 2(%rdi), %rdi
++	leaq 2(%rsi), %rsi
+ 	jnz .Lloop_1
+-	adcl %r9d,%eax	/* add in carry */
+-	
++	adcl %r9d, %eax	/* add in carry */
++
+ 	/* handle last odd byte */
+ .Lhandle_1:
+-	testl $1,%r10d
++	testl $1, %r10d
+ 	jz    .Lende
+-	xorl  %ebx,%ebx
++	xorl  %ebx, %ebx
+ 	source
+-	movb (%rdi),%bl
++	movb (%rdi), %bl
+ 	dest
+-	movb %bl,(%rsi)
+-	addl %ebx,%eax
+-	adcl %r9d,%eax		/* carry */
+-			
++	movb %bl, (%rsi)
++	addl %ebx, %eax
++	adcl %r9d, %eax		/* carry */
++
+ 	CFI_REMEMBER_STATE
+ .Lende:
+-	movq 2*8(%rsp),%rbx
++	movq 2*8(%rsp), %rbx
+ 	CFI_RESTORE rbx
+-	movq 3*8(%rsp),%r12
++	movq 3*8(%rsp), %r12
+ 	CFI_RESTORE r12
+-	movq 4*8(%rsp),%r14
++	movq 4*8(%rsp), %r14
+ 	CFI_RESTORE r14
+-	movq 5*8(%rsp),%r13
++	movq 5*8(%rsp), %r13
+ 	CFI_RESTORE r13
+-	movq 6*8(%rsp),%rbp
++	movq 6*8(%rsp), %rbp
+ 	CFI_RESTORE rbp
+-	addq $7*8,%rsp
++	addq $7*8, %rsp
+ 	CFI_ADJUST_CFA_OFFSET -7*8
+ 	ret
+ 	CFI_RESTORE_STATE
+ 
+ 	/* Exception handlers. Very simple, zeroing is done in the wrappers */
+ .Lbad_source:
+-	movq (%rsp),%rax
+-	testq %rax,%rax
++	movq (%rsp), %rax
++	testq %rax, %rax
+ 	jz   .Lende
+-	movl $-EFAULT,(%rax)
++	movl $-EFAULT, (%rax)
+ 	jmp  .Lende
+-	
++
+ .Lbad_dest:
+-	movq 8(%rsp),%rax
+-	testq %rax,%rax
+-	jz   .Lende	
+-	movl $-EFAULT,(%rax)
++	movq 8(%rsp), %rax
++	testq %rax, %rax
++	jz   .Lende
++	movl $-EFAULT, (%rax)
+ 	jmp .Lende
+ 	CFI_ENDPROC
+ ENDPROC(csum_partial_copy_generic)
+diff --git a/arch/x86/lib/csum-partial_64.c b/arch/x86/lib/csum-partial_64.c
+index bf51144..9845371 100644
+--- a/arch/x86/lib/csum-partial_64.c
++++ b/arch/x86/lib/csum-partial_64.c
+@@ -84,7 +84,7 @@ static unsigned do_csum(const unsigned char *buff, unsigned len)
+ 				count64--;
+ 			}
+ 
+-			/* last upto 7 8byte blocks */
++			/* last up to 7 8byte blocks */
+ 			count %= 8; 
+ 			while (count) { 
+ 				asm("addq %1,%0\n\t"
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 069ce7c..d420398 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -326,7 +326,7 @@ try_again:
+ 	if (mm->free_area_cache < len)
+ 		goto fail;
+ 
+-	/* either no address requested or cant fit in requested address hole */
++	/* either no address requested or can't fit in requested address hole */
+ 	addr = (mm->free_area_cache - len) & huge_page_mask(h);
+ 	do {
+ 		/*
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 73ad7eb..80088f9 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -917,7 +917,7 @@ static void mark_nxdata_nx(void)
+ {
+ 	/*
+ 	 * When this called, init has already been executed and released,
+-	 * so everything past _etext sould be NX.
++	 * so everything past _etext should be NX.
+ 	 */
+ 	unsigned long start = PFN_ALIGN(_etext);
+ 	/*
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 9ec0f20..e8c00cc 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -446,7 +446,7 @@ static int __init numa_alloc_distance(void)
+  * @distance: NUMA distance
+  *
+  * Set the distance from node @from to @to to @distance.  If distance table
+- * doesn't exist, one which is large enough to accomodate all the currently
++ * doesn't exist, one which is large enough to accommodate all the currently
+  * known nodes will be created.
+  *
+  * If such table cannot be allocated, a warning is printed and further
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 90825f2..f9e5267 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -310,7 +310,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 		 * these shared mappings are made of small page mappings.
+ 		 * Thus this don't enforce !RW mapping for small page kernel
+ 		 * text mapping logic will help Linux Xen parvirt guest boot
+-		 * aswell.
++		 * as well.
+ 		 */
+ 		if (lookup_address(address, &level) && (level != PG_LEVEL_4K))
+ 			pgprot_val(forbidden) |= _PAGE_RW;
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 0113d19..8573b83 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -168,8 +168,7 @@ void pud_populate(struct mm_struct *mm, pud_t *pudp, pmd_t *pmd)
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 */
+-	if (mm == current->active_mm)
+-		write_cr3(read_cr3());
++	flush_tlb_mm(mm);
+ }
+ #else  /* !CONFIG_X86_PAE */
+ 
+diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+index 72cbec1..2d49d4e 100644
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -126,7 +126,7 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
+ 	if (!user_mode_vm(regs)) {
+ 		unsigned long stack = kernel_stack_pointer(regs);
+ 		if (depth)
+-			dump_trace(NULL, regs, (unsigned long *)stack,
++			dump_trace(NULL, regs, (unsigned long *)stack, 0,
+ 				   &backtrace_ops, &depth);
+ 		return;
+ 	}
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index b1805b7..494f2e7 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -241,7 +241,7 @@ void __init pcibios_resource_survey(void)
+ 	e820_reserve_resources_late();
+ 	/*
+ 	 * Insert the IO APIC resources after PCI initialization has
+-	 * occured to handle IO APICS that are mapped in on a BAR in
++	 * occurred to handle IO APICS that are mapped in on a BAR in
+ 	 * PCI space, but before trying to assign unassigned pci res.
+ 	 */
+ 	ioapic_insert_resources();
+@@ -304,7 +304,7 @@ int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
+ 		/*
+ 		 * ioremap() and ioremap_nocache() defaults to UC MINUS for now.
+ 		 * To avoid attribute conflicts, request UC MINUS here
+-		 * aswell.
++		 * as well.
+ 		 */
+ 		prot |= _PAGE_CACHE_UC_MINUS;
+ 
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 3f6f334..a2d78ad 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1745,7 +1745,7 @@ static void convert_pfn_mfn(void *v)
+ }
+ 
+ /*
+- * Set up the inital kernel pagetable.
++ * Set up the initial kernel pagetable.
+  *
+  * We can construct this by grafting the Xen provided pagetable into
+  * head_64.S's preconstructed pagetables.  We copy the Xen L2's into
