@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab1CRJyn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 05:54:43 -0400
-Received: from smtp-out5.blueyonder.co.uk ([195.188.213.8]:34863 "EHLO
-	smtp-out5.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932402Ab1CRJyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 05:54:37 -0400
-Message-ID: <4D832BD0.4030809@blueyonder.co.uk>
-Date: Fri, 18 Mar 2011 09:54:24 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7 ThunderBrowse/3.3.5
+	id S932448Ab1CRJzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 05:55:48 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:52281 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932366Ab1CRJzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 05:55:44 -0400
+Message-ID: <4D832BF4.9000004@nokia.com>
+Date: Fri, 18 Mar 2011 11:55:00 +0200
+From: Roger Quadros <roger.quadros@Nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: pstore build error
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: ext Arnd Bergmann <arnd@arndb.de>
+CC: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, <andy.green@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <20110311161421.GA7843@kroah.com> <201103172311.36246.arnd@arndb.de> <4D831AEF.3020109@nokia.com> <201103181001.17308.arnd@arndb.de>
+In-Reply-To: <201103181001.17308.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [131.228.1.90]
+X-OriginalArrivalTime: 18 Mar 2011 09:55:03.0619 (UTC) FILETIME=[8D9DA930:01CBE552]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-slipstream:/usr/src/linux-2.6.38-git5 # make -j 4
-   CHK     include/linux/version.h
-   CHK     include/generated/utsrelease.h
-   CALL    scripts/checksyscalls.sh
-   CHK     include/generated/compile.h
-   CC      fs/pstore/inode.o
-   CC      fs/pstore/platform.o
-fs/pstore/inode.c:253:2: error: unknown field ‘get_sb’ specified in 
-initializer
-fs/pstore/inode.c:253:2: warning: initialization makes integer from 
-pointer without a cast
-fs/pstore/inode.c:253:2: error: initializer element is not computable at 
-load time
-fs/pstore/inode.c:253:2: error: (near initialization for 
-‘pstore_fs_type.fs_flags’)
-make[2]: *** [fs/pstore/inode.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-make[1]: *** [fs/pstore] Error 2
-make: *** [fs] Error 2
-make: *** Waiting for unfinished jobs....
-Regards
-Sid.
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support 
-Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+On 03/18/2011 11:01 AM, ext Arnd Bergmann wrote:
+> On Friday 18 March 2011, Roger Quadros wrote:
+>> Just curious, how do Panda boards manage to get the MAC address? Is it
+>> programmed in some other flash memory?
+>>
+>> The LAN9514 datasheet says
+>> "If a properly configured EEPROM is not detected, it is the
+>> responsibility of the Host LAN Driver to set the IEEE addresses."
+>>
+>> So how does the Host LAN driver know what MAC address it should use?
+> 
+> This is the problem we're trying to work out. The EEPROM is not
+> present, and user space has no way of knowing which MAC address
+> to set to which device. Note that there might be multiple
+> USB devices of the same type that are indistinguishable to user
+> space, so setting the MAC address there would not be completely
+> safe.
+> 
 
+And what happens if you need to use u-boot or some bootloader with
+ethernet network support?
+
+Wouldn't it be better to have the MAC address programmed at the
+bootloader level?
+
+-- 
+regards,
+-roger
