@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab1CROVW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 10:21:22 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:20455 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756728Ab1CROVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 10:21:08 -0400
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 18 Mar 2011 16:18:57 +0200
-Message-Id: <20110318141857.5529.40164.sendpatchset@localhost.localdomain>
-Subject: [GIT PULL] UBIFS changes for 2.6.39
-X-Nokia-AV: Clean
+	id S1756751Ab1CROYx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 10:24:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:49555 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab1CROYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 10:24:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+Subject: Re: known vboxgetty/isdn issue in 2.6.35.3?
+Date: Fri, 18 Mar 2011 15:24:33 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Udo van den Heuvel <udovdh@xs4all.nl>, Karsten Keil <isdn@linux-pingi.de>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Tilman Schmidt <tilman@imap.cc>,
+        stable@kernel.org
+References: <4C864143.5090803@xs4all.nl> <201011091115.16351.arnd@arndb.de> <1300398521.16073.60.camel@localhost>
+In-Reply-To: <1300398521.16073.60.camel@localhost>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103181524.33246.arnd@arndb.de>
+X-Provags-ID: V02:K0:S/EN/+/QN17hcjoyrNH89WQiZyNZEYrN27YIg6Bk+Ww
+ 3uQoCrriihDP+QGxCVGRm2joEW70KoDR03HvrWz66LwVg/u0L1
+ WIm+zncC4eHyJJCqjpf0JtTX5DabAz92XDo/fqf6eNVKwJT4jN
+ Gf49eMWLrdiZ6mtp1J0FOn8I21sIGkfRR6Y5Is+s4WHK6VXxG4
+ SIl2NE/l0rCAc6+gb+D3w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thursday 17 March 2011, Michael Karcher wrote:
+> The same issue happened on our system. Sometimes vboxgetty gets stuck in
+> state D on a debian stable system (2.6.32). I just applied your patch to
+> that kernel and hope the problem went away. Please remind me to report
+> back in one to two weeks if I didn't already report whether the hangs
+> are fixed. Is something except for a test on a productive system missing
+> to get this fix into 32-stable?
 
-please pull UBIFS changes. Note, I usually keep UBI and UBIFS
-changes in separate trees, but this time I have a couple of UBI changes
-in the UBIFS tree because they have hard dependency with UBIFS fixes.
+Thanks for the report. You are talking about this patch, right?
 
-The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
+bc10f96757 "isdn: avoid calling tty_ldisc_flush() in atomic context"
 
-  Linux 2.6.37 (2011-01-04 16:50:19 -0800)
+    Remove the call to tty_ldisc_flush() from the RESULT_NO_CARRIER
+    branch of isdn_tty_modem_result(), as already proposed in commit
+    00409bb045887ec5e7b9e351bc080c38ab6bfd33.
+    This avoids a "sleeping function called from invalid context" BUG
+    when the hardware driver calls the statcallb() callback with
+    command==ISDN_STAT_DHUP in atomic context, which in turn calls
+    isdn_tty_modem_result(RESULT_NO_CARRIER, ~), and from there,
+    tty_ldisc_flush() which may sleep.
+    
+    Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-are available in the git repository at:
-  git://git.infradead.org/ubifs-2.6.git linux-next
-
-Artem Bityutskiy (23):
-      UBIFS: re-arrange variables in ubifs_info
-      UBIFS: introduce mounting flag
-      UBIFS: do not start the commit if there is nothing to commit
-      UBIFS: remove double semicolon
-      UBIFS: describe UBIFS recovery logic some more
-      UBIFS: fix LEB number in printk
-      UBI: incorporate maximum write size
-      UBI: provide LEB offset information
-      UBIFS: incorporate maximum write size
-      UBI: incorporate LEB offset information
-      UBIFS: introduce write-buffer size field
-      UBIFS: use max_write_size for write-buffers
-      UBIFS: use max_write_size during recovery
-      UBIFS: print max. index node size
-      UBIFS: simplify UBIFS Kconfig menu
-      UBIFS: do not check data crc by default
-      UBIFS: allocate dump buffer on demand
-      UBIFS: allocate scanning buffer on demand
-      UBIFS: allocate ltab checking buffer on demand
-      UBIFS: allocate lpt dump buffer on demand
-      UBIFS: allocate orphans scan buffer on demand
-      UBIFS: save 128KiB or more RAM
-      UBIFS: clean-up commentaries
-
-Matthew L. Creech (1):
-      UBIFS: handle allocation failures in UBIFS write path
-
-Vasiliy Kulikov (1):
-      UBIFS: restrict world-writable debugfs files
-
- Documentation/filesystems/ubifs.txt |    4 +-
- drivers/mtd/ubi/build.c             |   14 +++
- drivers/mtd/ubi/kapi.c              |    2 +
- drivers/mtd/ubi/ubi.h               |    3 +
- fs/ubifs/Kconfig                    |   23 ++---
- fs/ubifs/commit.c                   |   58 ++++++++++-
- fs/ubifs/debug.c                    |   34 +++---
- fs/ubifs/debug.h                    |   30 +-----
- fs/ubifs/io.c                       |  201 +++++++++++++++++++++++++++--------
- fs/ubifs/journal.c                  |   28 ++++-
- fs/ubifs/lprops.c                   |   26 ++++-
- fs/ubifs/lpt_commit.c               |   56 +++++++---
- fs/ubifs/orphan.c                   |   10 ++-
- fs/ubifs/recovery.c                 |   44 ++++++---
- fs/ubifs/scan.c                     |    2 +-
- fs/ubifs/super.c                    |   54 ++++++++--
- fs/ubifs/tnc.c                      |   10 ++-
- fs/ubifs/ubifs.h                    |   45 ++++++--
- include/linux/mtd/ubi.h             |   22 ++++
- 19 files changed, 490 insertions(+), 176 deletions(-)
-
-Thanks,
-Artem.
+	Arnd
