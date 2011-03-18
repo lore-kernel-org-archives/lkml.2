@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab1CRV10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 17:27:26 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:36995 "EHLO mx01.d-labs.de"
+	id S1757553Ab1CRV2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:28:32 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:54821 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757444Ab1CRV1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:27:22 -0400
-Date: Fri, 18 Mar 2011 22:27:13 +0100
+	id S1757444Ab1CRV2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 17:28:25 -0400
+Date: Fri, 18 Mar 2011 22:28:19 +0100
 From: Florian Mickler <florian@mickler.org>
 To: Antti Palosaari <crope@iki.fi>
 Cc: mchehab@infradead.org, oliver@neukum.org, jwjstone@fastmail.fm,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 09/16] [media] au6610: get rid of on-stack dma buffer
-Message-ID: <20110318222713.4c51f1ed@schatten.dmk.lab>
-In-Reply-To: <4D8389B2.60507@iki.fi>
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 06/16] [media] ce6230: get rid of on-stack dma buffer
+Message-ID: <20110318222819.3ab2424a@schatten.dmk.lab>
+In-Reply-To: <4D8389FB.6040707@iki.fi>
 References: <20110315093632.5fc9fb77@schatten.dmk.lab>
 	<1300178655-24832-1-git-send-email-florian@mickler.org>
-	<1300178655-24832-9-git-send-email-florian@mickler.org>
-	<4D8389B2.60507@iki.fi>
+	<1300178655-24832-6-git-send-email-florian@mickler.org>
+	<4D8389FB.6040707@iki.fi>
 X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,7 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011 18:34:58 +0200
+On Fri, 18 Mar 2011 18:36:11 +0200
 Antti Palosaari <crope@iki.fi> wrote:
 
 > On 03/15/2011 10:43 AM, Florian Mickler wrote:
@@ -41,29 +43,15 @@ Antti Palosaari <crope@iki.fi> wrote:
 > >
 > > Signed-off-by: Florian Mickler<florian@mickler.org>
 > 
-> 
-> This patch did not found from patchwork! Probably skipped due to broken 
-> Cc at my contact. Please resend.
-> 
-> Anyhow, I tested and reviewed it.
-> 
 > Acked-by: Antti Palosaari <crope@iki.fi>
 > Reviewed-by: Antti Palosaari <crope@iki.fi>
 > Tested-by: Antti Palosaari <crope@iki.fi>
 > 
-> [1] https://patchwork.kernel.org/project/linux-media/list/
 > 
-> Antti
+> t. Antti
 > 
 
-Yes, there was some broken adressing on my side. Sorry. 
-
-Thanks for review && test!  I will resend (hopefully this weekend) the
-series when I reviewed some of the other patches if it is
-feasible/better to use prealocated memory as suggested by Mauro. 
-
-How often does au6610_usb_msg get called in normal operation? Should it
-use preallocated memory?
+Thanks for your feedback!
 
 Regards,
 Flo
