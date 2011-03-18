@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1CRILq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 04:11:46 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:13867 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750996Ab1CRILn (ORCPT
+	id S1753466Ab1CRINN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 04:13:13 -0400
+Received: from [77.233.226.4] ([77.233.226.4]:57510 "EHLO
+	public.doredevelopment.dk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750996Ab1CRINJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 04:11:43 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAIKvgk1R8sEi/2dsb2JhbAClZniITbl+DYVWBJJc
-Date: Fri, 18 Mar 2011 09:11:40 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Julia Lawall <julia@diku.dk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, "'Ben Dooks'" <ben-linux@fluff.org>,
-        kernel-janitors@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers/watchdog/s3c2410_wdt.c: Convert
-	release_resource to release_region/release_mem_region
-Message-ID: <20110318081140.GS1751@infomag.iguana.be>
-References: <1298738079-28893-1-git-send-email-julia@diku.dk> <002e01cbd72f$448ac150$cda043f0$%kim@samsung.com> <Pine.LNX.4.64.1102281110090.14560@pc-004.diku.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1102281110090.14560@pc-004.diku.dk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 18 Mar 2011 04:13:09 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 04:13:09 EDT
+From: eha@doredevelopment.dk
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, grant.likely@secretlab.ca,
+        Esben Haabendal <eha@doredevelopment.dk>
+Subject: [PATCH] Support IRQ_NOAUTOEN flag in set_irq_chained_handler()
+Date: Fri, 18 Mar 2011 09:03:09 +0100
+Message-Id: <1300435389-11048-1-git-send-email-eha@doredevelopment.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia, Kukjin Kim,
+From: Esben Haabendal <eha@doredevelopment.dk>
 
-> > Hmm...I think, 'res' is better for platform_get_resource().
-> > Do we _really_ need to change the name?...
-> 
-> wdt_mem is a global variable.  Is res a good name for a global variable?  
-> One could say wdt_mem = res, if that seems better.
+Handle IRQ_NOAUTOEN in __set_irq_handler() (ie. for
+set_irq_chained_handler()) instead of just silently ignoring it, and in
+the same way as is done in __setup_irq() (ie. request_irq()).
 
-If you look at the code then you have:
-static struct resource  *wdt_mem;
-static struct resource  *wdt_irq;
+This give a more consistent interface, and also adheres better to
+the rule of least surprise.
 
-and in the probe function you have:
-        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	...
-	wdt_mem = request_mem_region(res->start, size, pdev->name);
-	...
-	wdt_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+Signed-off-by: Esben Haabendal <eha@doredevelopment.dk>
+---
+ kernel/irq/chip.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-So doing Julia's:
-	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	...
-	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
-	...
-	wdt_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0)
-
-seems the best solution to me (since you then have both resources being polulated via platform_get_resource(pdev,... ).
-
-Kind regards,
-Wim.
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index baa5c4a..5594b17 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -731,10 +731,13 @@ __set_irq_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+ 	desc->name = name;
+ 
+ 	if (handle != handle_bad_irq && is_chained) {
+-		desc->status &= ~IRQ_DISABLED;
+ 		desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE;
+-		desc->depth = 0;
+-		desc->irq_data.chip->irq_startup(&desc->irq_data);
++		if (!(desc->status & IRQ_NOAUTOEN)) {
++			desc->depth = 0;
++			desc->status &= ~IRQ_DISABLED;
++			desc->irq_data.chip->irq_startup(&desc->irq_data);
++		} else
++			desc->depth = 1;
+ 	}
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	chip_bus_sync_unlock(desc);
+-- 
+1.7.1
 
