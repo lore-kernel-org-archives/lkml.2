@@ -1,74 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981Ab1CRWMx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:12:53 -0400
-Received: from mail.atheros.com ([12.19.149.2]:44359 "EHLO mail.atheros.com"
+	id S932993Ab1CRWM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:12:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54003 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935Ab1CRWMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:12:18 -0400
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: <cjb@laptop.org>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <vmehta@atheros.com>, <naveen.singh@atheros.com>, <kvalo@adurom.com>,
-        <j@w1.fi>, "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Naveen Singh <nsingh@atheros.com>,
-        Vipin Mehta <Vipin.Mehta@atheros.com>
-Subject: [RFC 3/4] sdhci: cache when the MMC bus width is 4 bits wide
-Date: Fri, 18 Mar 2011 15:11:59 -0700
-Message-ID: <1300486320-23607-4-git-send-email-lrodriguez@atheros.com>
-X-Mailer: git-send-email 1.7.4.15.g7811d
-In-Reply-To: <1300486320-23607-1-git-send-email-lrodriguez@atheros.com>
-References: <1300486320-23607-1-git-send-email-lrodriguez@atheros.com>
+	id S932939Ab1CRWMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 18:12:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,207,1299484800"; 
+   d="scan'208";a="668868633"
+Subject: [PATCH] firmware/efi: export a routine to retrieve efi-variables by
+	GUID
+To: gregkh@suse.de
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, linux-scsi@vger.kernel.org,
+        jacek.danecki@intel.com, ed.ciechanowski@intel.com,
+        linux-kernel@vger.kernel.org, dmilburn@redhat.com,
+        edmund.nadolski@intel.com
+Date: Fri, 18 Mar 2011 15:16:22 -0700
+Message-ID: <20110318221606.26841.92271.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15-7-g9bfb
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This can later be used when we send commands.
+From: Dave Jiang <dave.jiang@intel.com>
 
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Kalle Valo <kvalo@adurom.com>
-Cc: Naveen Singh <nsingh@atheros.com>
-Cc: Vipin Mehta <Vipin.Mehta@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+The efivars module already scans all available variables, normalizes the
+variable names, and stores them in a list.  Rather than duplicate this
+to efi runtime services interface let drivers query variable data by
+GUID.
+
+This is needed by the isci driver which relies on an efi variable to
+store critical platform parameters like gloablly unique sas addresses
+and phy configuration parameters.  This is similar to the
+pci_map_biosrom() enabling that allows the isci driver to retrieve the
+same data in the non-efi case.
+
+For the built-in case efivars is moved to subsys_initcall.
+
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/mmc/host/sdhci.c  |    7 +++++--
- include/linux/mmc/sdhci.h |    1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+Not sure who looks after efivars.c, but get_maintainer.pl and git shortlog
+fingered Greg as a likely target.
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 7074870..a4cf0c0 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1206,10 +1206,13 @@ static void sdhci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 		} else {
- 			if (host->version >= SDHCI_SPEC_300)
- 				ctrl &= ~SDHCI_CTRL_8BITBUS;
--			if (ios->bus_width == MMC_BUS_WIDTH_4)
-+			if (ios->bus_width == MMC_BUS_WIDTH_4) {
- 				ctrl |= SDHCI_CTRL_4BITBUS;
--			else
-+				host->flags |= SDHCI_IN_4BIT_MODE;
-+			} else {
- 				ctrl &= ~SDHCI_CTRL_4BITBUS;
-+				host->flags &= ~SDHCI_IN_4BIT_MODE;
-+			}
- 		}
- 		sdhci_writeb(host, ctrl, SDHCI_HOST_CONTROL);
- 	}
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index 83bd9f7..266f796 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -109,6 +109,7 @@ struct sdhci_host {
- #define SDHCI_USE_ADMA		(1<<1)	/* Host is ADMA capable */
- #define SDHCI_REQ_USE_DMA	(1<<2)	/* Use DMA for this req. */
- #define SDHCI_DEVICE_DEAD	(1<<3)	/* Device unresponsive */
-+#define SDHCI_IN_4BIT_MODE	(1<<4)  /* bus is in 4-bit mode */
+We are currently targeting a late merge of the isci driver through the
+staging tree into 2.6.39.  This is a pre-requisite to be able to use the
+driver on an efi enabled platform.
+
+--
+Dan
+
+ drivers/firmware/efivars.c |   59 ++++++++++++++++++++++++++++++--------------
+ include/linux/efi.h        |   22 ++++++++++++++++
+ 2 files changed, 62 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 2a62ec6..e139dac 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -100,23 +100,6 @@ MODULE_VERSION(EFIVARS_VERSION);
+ static DEFINE_SPINLOCK(efivars_lock);
+ static LIST_HEAD(efivar_list);
  
- 	unsigned int version;	/* SDHCI spec. version */
+-/*
+- * The maximum size of VariableName + Data = 1024
+- * Therefore, it's reasonable to save that much
+- * space in each part of the structure,
+- * and we use a page for reading/writing.
+- */
+-
+-struct efi_variable {
+-	efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
+-	efi_guid_t    VendorGuid;
+-	unsigned long DataSize;
+-	__u8          Data[1024];
+-	efi_status_t  Status;
+-	__u32         Attributes;
+-} __attribute__((packed));
+-
+-
+ struct efivar_entry {
+ 	struct efi_variable var;
+ 	struct list_head list;
+@@ -169,6 +152,45 @@ utf8_strsize(efi_char16_t *data, unsigned long maxlength)
+ 	return utf8_strlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
+ }
  
--- 
-1.7.4.15.g7811d
++efi_status_t
++efivar_get_data_from_guid(struct efi_variable *evar)
++{
++	struct efivar_entry *search_efivar;
++	unsigned long strsize;
++	efi_status_t status;
++	int found = 0;
++
++	spin_lock(&efivars_lock);
++
++	/* make sure this EFI variable is there */
++	list_for_each_entry(search_efivar, &efivar_list, list) {
++		if (!efi_guidcmp(search_efivar->var.VendorGuid,
++				 evar->VendorGuid)) {
++			found = 1;
++			break;
++		}
++	}
++
++	if (!found) {
++		spin_unlock(&efivars_lock);
++		return EFI_NOT_FOUND;
++	}
++
++	strsize = utf8_strsize(search_efivar->var.VariableName, 1024);
++	memcpy(evar->VariableName, search_efivar->var.VariableName, strsize);
++
++	evar->DataSize = 1024;
++	status = efi.get_variable(evar->VariableName,
++				  &evar->VendorGuid,
++				  &evar->Attributes,
++				  &evar->DataSize,
++				  evar->Data);
++	spin_unlock(&efivars_lock);
++
++	return status;
++}
++EXPORT_SYMBOL(efivar_get_data_from_guid);
++
+ static efi_status_t
+ get_var_data(struct efi_variable *var)
+ {
+@@ -757,6 +779,5 @@ efivars_exit(void)
+ 	kobject_put(efi_kobj);
+ }
+ 
+-module_init(efivars_init);
++subsys_initcall(efivars_init);
+ module_exit(efivars_exit);
+-
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index fb737bc..4230bc5 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -243,6 +243,19 @@ struct efi_memory_map {
+ 	unsigned long desc_size;
+ };
+ 
++/* The maximum size of VariableName + Data = 1024 Therefore, it's
++ * reasonable to save that much space in each part of the structure, and
++ * we use a page for reading/writing.
++ */
++struct efi_variable {
++	efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
++	efi_guid_t    VendorGuid;
++	unsigned long DataSize;
++	__u8          Data[1024];
++	efi_status_t  Status;
++	__u32         Attributes;
++} __attribute__((packed));
++
+ #define EFI_INVALID_TABLE_ADDR		(~0UL)
+ 
+ /*
+@@ -326,6 +339,15 @@ static inline int efi_range_is_wc(unsigned long start, unsigned long len)
+ extern int __init efi_setup_pcdp_console(char *);
+ #endif
+ 
++#if defined(CONFIG_EFI_VARS) || defined(CONFIG_EFI_VARS_MODULE)
++extern efi_status_t efivar_get_data_from_guid(struct efi_variable *evar);
++#else
++static inline efi_status_t efivar_get_data_from_guid(struct efi_variable *evar)
++{
++	return EFI_NOT_FOUND;
++}
++#endif
++
+ /*
+  * We play games with efi_enabled so that the compiler will, if possible, remove
+  * EFI-related code altogether.
 
