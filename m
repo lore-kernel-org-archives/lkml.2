@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab1CRPPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 11:15:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56725 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752486Ab1CRPPL (ORCPT
+	id S1756869Ab1CRPPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 11:15:47 -0400
+Received: from ebb06.tieto.com ([131.207.168.38]:43015 "EHLO ebb06.tieto.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486Ab1CRPPl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 11:15:11 -0400
-Date: Fri, 18 Mar 2011 15:15:09 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: andy.green@linaro.org, Greg KH <greg@kroah.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110318151508.GC677@opensource.wolfsonmicro.com>
-References: <20110311165642.GA9996@kroah.com>
- <201103172333.01474.arnd@arndb.de>
- <4D82979B.2050003@linaro.org>
- <201103181600.09877.arnd@arndb.de>
+	Fri, 18 Mar 2011 11:15:41 -0400
+X-AuditID: 83cfa826-b7c1cae000000efa-87-4d83771cc2dc
+From: <Waldemar.Rymarkiewicz@tieto.com>
+To: <alan@lxorguk.ukuu.org.uk>
+CC: <linux-i2c@vger.kernel.org>, <arnd@arndb.de>, <sameo@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hthebaud@insidefr.com>,
+        <matti.j.aaltonen@nokia.com>
+Date: Fri, 18 Mar 2011 17:15:30 +0200
+Subject: RE: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Topic: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Thread-Index: AcvlftxyhnXDix60Qrqz68TfSp5FjQAACIPQ
+Message-ID: <99B09243E1A5DA4898CDD8B7001114481085881971@EXMB04.eu.tieto.com>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+	<1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
+	<20110318110348.728f6036@lxorguk.ukuu.org.uk>
+	<99B09243E1A5DA4898CDD8B7001114481085881963@EXMB04.eu.tieto.com>
+ <20110318151219.7aedc765@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110318151219.7aedc765@lxorguk.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103181600.09877.arnd@arndb.de>
-X-Cookie: Don't Worry, Be Happy.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Brightmail-Tracker: AAAAAhesvxcXrL/D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 04:00:09PM +0100, Arnd Bergmann wrote:
-> On Friday 18 March 2011, Andy Green wrote:
+>I was thinking clear_bit/test_and_set_bit rather than atomic_t 
+>operations.
+>
 
-> > What's the plan for leveraging that level of generality on "dynamically 
-> > probed devices"?  I mean I know what I want to use this for and the 
-> > platform_data scheme covers all the soldered-on-the-board cases fine.
+I see, then I will for it.
 
-> Isn't there also a device tree based OMAP tree that can boot on
-> Panda and is just waiting to get merged?
 
-Did the stuff with multiple interrupt controllers get resolved?  That's
-pretty important for practical use.  There have been quite a few
-iterations of the device tree patches for ARM over the last release but
-the iterations I looked at all seemed to be bugfix type stuff.
+Waldek
