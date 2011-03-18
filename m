@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab1CROJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 10:09:29 -0400
-Received: from verein.lst.de ([213.95.11.211]:41463 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754075Ab1CROJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 10:09:24 -0400
-Date: Fri, 18 Mar 2011 15:09:24 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [PATCH] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
-Message-ID: <20110318140924.GA29373@lst.de>
-References: <1300396040-24253-1-git-send-email-nab@linux-iscsi.org>
+	id S1756741Ab1CROUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 10:20:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:10307 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756717Ab1CROUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 10:20:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=P28r8i9SPC6rStYCvWZqT14xK4k+IX27xQI/nZddwy+XRTNDPlLbYRTP3gLWLs3oGz
+         wKLXVnV9exVcg030o3vA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300396040-24253-1-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Date: Fri, 18 Mar 2011 15:19:59 +0100
+Message-ID: <AANLkTimjSZSvz2zPEoc3SSJUBtWVJ_mza5ujpyaM0RVi@mail.gmail.com>
+Subject: [BUG] perf: cannot generate Python support without NEWT
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        mingo@elte.hu
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that everything is in one C file all functions can be marked static,
-and there is no need to have prototypes in the header file.
+Arnaldo,
 
+Looks like some define is missing during the generation of the python support.
+If you don't have newt then it fails to compile:
+
+$ make
+Makefile:430: newt not found, disables TUI support. Please install
+newt-devel or libnewt-dev
+PERF_VERSION = 2.6.38
+Makefile:430: newt not found, disables TUI support. Please install
+newt-devel or libnewt-dev
+...
+GEN perf-archive
+GEN python/perf.so
+In file included from util/evsel.h:10,
+                 from util/python.c:6:
+util/hist.h:105: fatal error: newt.h: No such file or directory
+compilation terminated.
+error: command 'gcc' failed with exit status 1
