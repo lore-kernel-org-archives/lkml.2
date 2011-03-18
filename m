@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab1CRIp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 04:45:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38361 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687Ab1CRIpU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 04:45:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=rubyvgfWvAMLDTgwh+mBfGzCW+komD/EVlIKFGZdaNn+0oDDSNk2FKfQEQKANAcQvc
-         UKChwF2mt1DICKmyaMB9g6PT9BnrPrrVh+Emgxmi8fuGbJQrS8grG9ZXsk+wa76UiSYQ
-         xW/cpIJRs8EGwaRWG2CrCQ2kQkNvQfK78NE4A=
+	id S1756400Ab1CRIsH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 04:48:07 -0400
+Received: from www.tglx.de ([62.245.132.106]:52299 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926Ab1CRIr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 04:47:59 -0400
+Date: Fri, 18 Mar 2011 09:44:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg KH <gregkh@suse.de>
+cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mgalbraith@suse.de
+Subject: Re: [000/474] 2.6.33.8-longterm review
+In-Reply-To: <20110317213822.GA27980@kroah.com>
+Message-ID: <alpine.LFD.2.00.1103180942531.2787@localhost6.localdomain6>
+References: <20110317213822.GA27980@kroah.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1103171344270.26889@xanadu.home>
-References: <1300098516-1601-1-git-send-email-ratbert.chuang@gmail.com>
- <1300169637-1628-1-git-send-email-ratbert.chuang@gmail.com>
- <alpine.LFD.2.00.1103171301030.26889@xanadu.home> <AANLkTik1oEkLX3R-adK9-_2W+ku4j9YDikr+Z4vzfGtb@mail.gmail.com>
- <alpine.LFD.2.00.1103171344270.26889@xanadu.home>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Fri, 18 Mar 2011 16:44:44 +0800
-Message-ID: <AANLkTi=Zq0fiVf+GcRC8M+CPakwmEWn1rrqq_U4OehNy@mail.gmail.com>
-Subject: Re: [PATCH v2] arm: cmpxchg syscall should data abort if page not write
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Ashwin Chaugule <ashbertslists@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Po-Yu Chuang <ratbert@faraday-tech.com>, tony@atomide.com,
-        lkml <linux-kernel@vger.kernel.org>, joe@perches.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Nicolas Pitre,
+On Thu, 17 Mar 2011, Greg KH wrote:
 
-On Fri, Mar 18, 2011 at 1:57 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Thu, 17 Mar 2011, Ashwin Chaugule wrote:
->>
->> Just beginning to understand the subtleties involved, so please
->> correct me if I'm wrong.
->> Wont this patch also fix the problem that was brought up with futexes
->> on ARM SMP ?
->
-> Nope.  The code being fixed here was suptly broken so it needs fixing.
-> However this code is almost never used, if at all, as it is a fall-back
-> solution for when all the better alternatives are not available for some
-> reasons (and I'm still wondering what those reasons are for Po-Yu Chuang
-> to actually use that code).  In practice this bug should have affected
-> no one.
+> Yeah, I know what you are thinking, "What, 2.6.33, are you crazy?"
 
-We met this problem while porting an v5 SMP processor because kernel
-selects NEEDS_SYSCALL_FOR_CMPXCHG by default if CPU_32v5.
+Aren't we all crazy ?
+ 
+> I'd prefer it if you didn't answer that question...
 
-After we added our own implementation of __kuser_cmpxchg, this code
-is not needed anymore. But since this is actually a bug, it is still a good
-idea to submit a patch. :-)
+Too late. You should have put this before the question.
 
-> If you have SMP then this code is definitively not what you should be
-> using.
+> So, if you are using .33, please give this patch a test and let me know
+> if I've messed up anything (hint, I think I did, it's up to you to
+> figure it out, consider it a test to see if anyone actually cares about
+> this kernel version.)
 
-Best regards,
-Po-Yu Chuang
+We'll pull it into rt and figure out what breaks.
+ 
+Thanks for the effort,
+
+	tglx
