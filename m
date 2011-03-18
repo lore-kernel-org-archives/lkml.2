@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab1CRTfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 15:35:22 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60175
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932408Ab1CRTfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 15:35:10 -0400
-Date: Fri, 18 Mar 2011 12:35:47 -0700 (PDT)
-Message-Id: <20110318.123547.112592113.davem@davemloft.net>
-To: laijs@cn.fujitsu.com
-Cc: paulmck@linux.vnet.ibm.com, mingo@elte.hu, axboe@kernel.dk,
-        robert.w.love@intel.com, James.Bottomley@suse.de,
-        nhorman@tuxdriver.com, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        eric.dumazet@gmail.com, shemminger@vyatta.com, tj@kernel.org,
-        jarkao2@gmail.com, linux-kernel@vger.kernel.org, devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 06/36] net,rcu: convert call_rcu(__gen_kill_estimator)
- to kfree_rcu()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D82D4DE.60105@cn.fujitsu.com>
-References: <4D82D071.5020703@cn.fujitsu.com>
-	<4D82D3FF.2080303@cn.fujitsu.com>
-	<4D82D4DE.60105@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932398Ab1CRTfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 15:35:08 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:53096 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932223Ab1CRTe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 15:34:57 -0400
+Date: Sat, 19 Mar 2011 00:58:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Stephen Wilson <wilsons@start.ca>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 2.6.38-rc8-tip 16/20] 16: uprobes: register a
+ notifier for uprobes.
+Message-ID: <20110318192811.GE31152@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110314133403.27435.7901.sendpatchset@localhost6.localdomain6>
+ <20110314133708.27435.81257.sendpatchset@localhost6.localdomain6>
+ <20110315195636.GB24972@fibrous.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110315195636.GB24972@fibrous.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Fri, 18 Mar 2011 11:43:26 +0800
+* Stephen Wilson <wilsons@start.ca> [2011-03-15 15:56:36]:
 
+> On Mon, Mar 14, 2011 at 07:07:08PM +0530, Srikar Dronamraju wrote:
+> > +static int __init init_uprobes(void)
+> > +{
+> > +	register_die_notifier(&uprobes_exception_nb);
+> > +	return 0;
+> > +}
+> > +
 > 
+> Although not currently needed, perhaps it would be best to return the
+> result of register_die_notifier() ? 
 > 
-> The rcu callback __gen_kill_estimator() just calls a kfree(),
-> so we use kfree_rcu() instead of the call_rcu(__gen_kill_estimator).
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Okay, I can do that but notifier_chain_register() that gets called from
+register_die_notifier() always return 0.
+
+-- 
+Thanks and Regards
+Srikar
