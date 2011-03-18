@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab1CRRxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 13:53:05 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:54421 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932556Ab1CRRwz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 13:52:55 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=gXyBi/hwVbBe4sWf793Aq57G0yEtPWIzV2tspUZOJZbNZjYbUST6StMolLa6EV6UZhIHM5VDLmNQ4cjJQIBfGtEhPTiEV4OVPVVXooUvJU5186If0In/jNyHBkmVVygk;
-Date: Fri, 18 Mar 2011 10:52:52 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] PCI/ACPI: Report ASPM support to BIOS if not disabled
- from command line
-Message-ID: <20110318105252.1d896bb6@jbarnes-desktop>
-In-Reply-To: <201103181841.28636.rjw@sisk.pl>
-References: <201103051321.51856.rjw@sisk.pl>
-	<20110318012556.GA13851@srcf.ucam.org>
-	<20110317214152.503adac8@jbarnes-x200>
-	<201103181841.28636.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754064Ab1CRRzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 13:55:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39647 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab1CRRzM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 13:55:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eQZQXODkBsRc7SxD8pwoCvFALF2e2RMjOEhX8EC3dbSaPD1LX+Vt1T73lEIU2kYQls
+         AhCChgTBQ+suLbBpK6z9CCN0+IRYxRM95PPLoGAXK/iGmFwCdT6S32Uya/Ei/5Sr79cf
+         C26Q0xsTsejWQmlsRyZdi9XgHdKANL/T4fdrQ=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinRVWhsiee=MPZy7VeMg9TVMHH0k+n=pbn3QrBh@mail.gmail.com>
+References: <Pine.LNX.4.64.1009302047410.25061@boston.corp.fedex.com>
+	<s5hsk0rtlun.wl%tiwai@suse.de>
+	<AANLkTinT3EU3aLSBt5WmA=qDOf1cFABUNG+RiT3Nvx3e@mail.gmail.com>
+	<s5h4od7tf43.wl%tiwai@suse.de>
+	<20100930154557.GD11399@localhost>
+	<AANLkTinnTeseJY4RDuGNkTjNE--QJ0Mw_S8FVKy_RT7h@mail.gmail.com>
+	<20101001021548.GA7115@localhost>
+	<AANLkTi=1=jT5LnjjP9uGMx-Q9kM7X6kx5=NeKK6Sa9g8@mail.gmail.com>
+	<s5h8w2irzb9.wl%tiwai@suse.de>
+	<AANLkTinRVWhsiee=MPZy7VeMg9TVMHH0k+n=pbn3QrBh@mail.gmail.com>
+Date: Sat, 19 Mar 2011 01:55:10 +0800
+Message-ID: <AANLkTinD-8Z-aLwUGArRJ4QPPVhGsEZks-5HCFoC693w@mail.gmail.com>
+Subject: Re: Microphone not working on PCI ID 8086:3b56
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011 18:41:28 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Sat, Oct 2, 2010 at 1:10 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> On Fri, Oct 1, 2010 at 6:18 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>
+>>>
+>>> Getting closer, but mic still not working.
+>>
+>> Jeff, give always alsa-info.sh output when you want someone else
+>> looking into your HD-audio problem.  Without it, it's very hard to
+>> follow what is wrong.
+>> So, the mic is detected.  I guess you didn't set up the capture mixer
+>> and else properly.
+>
+> Attached is the alsa-info output. I used alsamixer to set the Analog
+> mic boost to 40db, and I can also see that alsa is detecting the
+> external mic when I plug the mic in.
+>
+> - ALSA sound/pci/hda/patch_conexant.c:2354: CXT5066: external microphone absent
+> + ALSA sound/pci/hda/patch_conexant.c:2348: CXT5066: external
+> microphone detected
+> Still no sound.
 
-> On Friday, March 18, 2011, Jesse Barnes wrote:
-> > On Fri, 18 Mar 2011 01:25:56 +0000
-> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > 
-> > > On Fri, Mar 18, 2011 at 10:10:20AM +0900, Kenji Kaneshige wrote:
-> > > > Jesse,
-> > > >
-> > > > This patch fixes the problem that PCIe hotplug no longer work in
-> > > > 2.6.38 on my platform (ASPM is disabledã€€through ACPI FADT in my
-> > > > platform). I think this need to be applied soon.
-> > > >
-> > > > Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-> > > > Tested-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-> > > 
-> > > Yes, I think we need to look at -stable for this one.
-> > 
-> > Ok, thanks guys.  I'll queue it up in -fixes and send it to Linus after
-> > my 2.6.39 pull req with a cc for stable.
-> 
-> Well, I thought you could simply include it into the pull request. :-)
+I just want to update you all now that I finally got the mic to work
+on my X201s. It's the settings in the BIOS. Unlike earlier Thinkpad
+models, the X201s BIOS has a special setting to enable/disable the
+mic.  Bios setup: F1 -> Security -> I/O Ports -> Microphone -> Enable.
+Since I trashed Windows on the X201s as soon as I power up the first
+time  that could have disabled the mic by default.
 
-I could have if I had applied it last week...
+Now, it's all working.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Thanks for all you help!
+
+Jeff.
