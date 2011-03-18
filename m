@@ -1,192 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757702Ab1CRXns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 19:43:48 -0400
-Received: from void.printf.net ([89.145.121.20]:35292 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757672Ab1CRXnm convert rfc822-to-8bit (ORCPT
+	id S1757665Ab1CRXsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 19:48:08 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39335 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989Ab1CRXsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 19:43:42 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: MMC updates for 2.6.39-rc1
-Date: Fri, 18 Mar 2011 19:40:38 -0400
-Message-ID: <m3wrjwt2tl.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Mar 2011 19:48:04 -0400
+Subject: Re: [RFC-v3 02/12] iscsi-target: Add primary iSCSI
+	request/response state machine logic
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <20110318144047.GA29478@lst.de>
+References: <1300398797-24536-1-git-send-email-nab@linux-iscsi.org>
+	 <1300398797-24536-3-git-send-email-nab@linux-iscsi.org>
+	 <20110318144047.GA29478@lst.de>
+Content-Type: text/plain
+Date: Fri, 18 Mar 2011 16:40:58 -0700
+Message-Id: <1300491658.20672.106.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2011-03-18 at 15:40 +0100, Christoph Hellwig wrote:
+> On Thu, Mar 17, 2011 at 02:53:07PM -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch adds iscsi_target.[c,h] containing the main iSCSI Request and
+> > Response PDU state machines and accompanying infrastructure code and
+> > base iscsi_target_core.h include for iscsi_target_mod.  This includes
+> > support for all defined iSCSI operation codes from RFC-3720 Section
+> > 10.2.1.2 and primary state machines for per struct iscsi_conn RX/TX
+> > threads.
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/target/iscsi/iscsi_target.c      | 5371 ++++++++++++++++++++++++++++++
+> >  drivers/target/iscsi/iscsi_target.h      |   45 +
+> >  drivers/target/iscsi/iscsi_target_core.h |  888 +++++
+> >  3 files changed, 6304 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/target/iscsi/iscsi_target.c
+> >  create mode 100644 drivers/target/iscsi/iscsi_target.h
+> >  create mode 100644 drivers/target/iscsi/iscsi_target_core.h
+> 
+> > +static struct iscsi_np *iscsit_get_np(
+> > +	unsigned char *ipv6,
+> > +	u32 ipv4,
+> > +	u16 port,
+> > +	int network_transport)
+> 
+> > +		if (ipv6 != NULL) {
+> > +			p = (void *)&np->np_ipv6[0];
+> > +			ip = (void *)ipv6;
+> > +			net_size = IPV6_ADDRESS_SPACE;
+> > +		} else {
+> > +			p = (void *)&np->np_ipv4;
+> > +			ip = (void *)&ipv4;
+> > +			net_size = IPV4_ADDRESS_SPACE;
+> > +		}
+> > +
+> > +		if (!memcmp(p, ip, net_size) && (np->np_port == port) &&
+> 
+> All this opencoded handling of IPV4 vs IPV6 address is still quite a mess.
+> 
+> What's the problem with always passing around a struct sockaddr, and then
+> have helpers that treat it like a sockaddr_in or sockaddr_in6 depending
+> on the ->ss_family field?  That's what at least the iSCSI initiator and
+> NFS client and server do.
+> 
 
-Please pull from:
+<nod>, will get this converted over to follow existing code.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus 
+> > +int iscsit_del_np_thread(struct iscsi_np *np)
+> > +{
+> > +	spin_lock_bh(&np->np_thread_lock);
+> > +	np->np_thread_state = ISCSI_NP_THREAD_SHUTDOWN;
+> > +	atomic_set(&np->np_shutdown, 1);
+> > +	spin_unlock_bh(&np->np_thread_lock);
+> > +
+> > +	if (np->np_thread) {
+> > +		/*
+> > +		 * We need to send the signal to wakeup Linux/Net
+> > +		 * sock_accept()..
+> > +		 */
+> > +		send_sig(SIGINT, np->np_thread, 1);
+> > +		kthread_stop(np->np_thread);
+> > +	}
+> 
+> What's the point of np_shutdown and the thread_state?
+> 
 
-to receive the MMC merge for 2.6.39-rc1.  There are currently no merge
-conflicts, and the patches have been tested in linux-next.  Thanks.
+np_shutdown is used in a handful of places external to
+iscsi_target_login_thread() context to skip processing of iscsi_np while
+the shutdown is happening. 
 
-Highlights are:
-Core:
- * A new per-device quirks mechanism, based on PCI quirks
- * Export eMMC4.4 enhanced area details to sysfs
- * New mmc_test tests for large sequential I/O performance
-Drivers:
- * New mxs-mmc driver supporting Freescale i.MX23/28 SoCs.
- * Support for Ricoh e823 SDHCI controllers.
- * DesignWare MMC: add 8-bit width, DDR mode, clock gating support
- * SuperH controllers: add clock gating support
+> kthread_should_stop() returns true if the thread should stop, so
+> it can replace the shutdown check.
 
+Ok, I will drop np_shutdown and just check thread_state for these
+handful of cases outside of iscsi_target_login_thread() context
+currently checking for iscsi_np->np_shutdown..
 
-The following changes since commit cfd80652467717ca7346857d6d8c94503d74f3a3:
-  Linus Torvalds (1):
-        Merge branch 'fixes' of git://git.kernel.org/.../davej/cpufreq
+> You'll still need some indicator
+> for the pure reset case, but except for that the kthread API alone
+> should do it.
+> 
 
-are available in the git repository at:
+<nod>, keeping thread_state for this purpose..
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+> > +u32 lio_sess_get_initiator_sid(
+> 
+> > +int iscsi_add_nopin(
+> 
+> > +int iscsi_add_reject(
+> 
+> Why are all these fabric ops method implementations in a different file
+> from the code assigning them to the ops vector?  Having all these static
+> and just an ops vector or helper to assign it exposed gives much better
+> visibility control.
+> 
 
-Adrian Hunter (3):
-      mmc: mmc_test: make performance test area size about 4MiB
-      mmc: mmc_test: add tests to measure random I/O operations per second
-      mmc: mmc_test: add tests to measure large sequential I/O performance
+Only sess_get_initiator_sid is a fabric ops method btw, but point taken.
+I will take a look at iscsi_target_util.c and make everything possible
+statically defined.
 
-Chris Ball (4):
-      mmc: sdhci-pci: Remove set-but-unused variable.
-      mmc: cb710: Return err value in cb710_wait_while_busy()
-      mmc: via-sdmmc: Remove set-but-unused variable.
-      mmc: dw_mmc: Remove set-but-unused variable.
+> > +/* #define iscsi_calculate_map_segment_DEBUG */
+> > +#ifdef iscsi_calculate_map_segment_DEBUG
+> > +#define DEBUG_MAP_SEGMENTS(buf...) PYXPRINT(buf)
+> > +#else
+> > +#define DEBUG_MAP_SEGMENTS(buf...)
+> > +#endif
+> 
+> Do we need to keep all this ad-hoc debugging code?
+> 
 
-Chuanxiao Dong (1):
-      mmc: export eMMC4.4 enhanced area details to sysfs
+Dropping all of these now..
 
-Fabio Estevam (1):
-      mmc: mmc_mxc: Allow selection only for the correct platforms
+> > +/*	iscsi_logout_closesession():
+> > + *
+> > + *
+> > + */
+> 
+> As mentioned in a previous round please try to remove all comment which
+> like this one don't provide any documentation value by just repeating
+> the function name.
+> 
 
-Guennadi Liakhovetski (2):
-      mmc: sh_mmcif: support aggressive clock gating
-      mmc: tmio: fix address in kunmap_atomic() calls
+Ugh, sorry, will get all of these removed
 
-Jaehoon Chung (6):
-      mmc: dw_mmc: modify quirks bit-shift control
-      mmc: dw_mmc: support 8-bit buswidth
-      mmc: dw_mmc: support DDR mode
-      mmc: dw_mmc: add quirks for unreliable card detect, and capabilities
-      mmc: dw_mmc: fix suspend/resume operation
-      mmc: dw_mmc: support mmc power control with regulator
+> > +
+> > +		add_timer(&async_msg_timer);
+> > +		wait_for_completion(&conn->sess->async_msg_comp);
+> > +		del_timer_sync(&async_msg_timer);
+> 
+> Just use wait_for_completion_timeout here.
+> 
 
-Kyungmin Park (1):
-      mmc: sdhci-s3c: Auto CMD12 support
+Converted
 
-Linus Walleij (12):
-      mmc: atmel-mci: map DMA sglist on the DMA engine
-      mmc: atmel-mci: conform to DMA-API
-      mmc: atmel-mci: use dmaengine helper functions
-      mmc: sh_mmcif: map DMA buffers on the DMA engine device
-      mmc: sh_mmcif: unmap with the proper sglen
-      mmc: sh_mmcif: rename and retype activity variable
-      mmc: sh_mmcif: use dmaengine helpers, drop submit check
-      mmc: tmio_mmc: map DMA buffers on the DMA engine device
-      mmc: tmio_mmc: unmap with the proper sglen
-      mmc: tmio_mmc: drop dma_sglen state variable
-      mmc: tmio_mmc: use dmaengine helpers, drop submit check
-      mmc: msm_sdcc: remove needless cache flush after dma_unmap_sg()
+> > +static void iscsi_tx_thread_TCP_timeout(unsigned long data)
+> > +{
+> > +	complete((struct completion *)data);
+> > +}
+> > +
+> > +static void iscsi_tx_thread_wait_for_tcp(struct iscsi_conn *conn)
+> > +{
+> > +	struct timer_list tx_TCP_timer;
+> > +	int ret;
+> > +
+> > +	if ((conn->sock->sk->sk_shutdown & SEND_SHUTDOWN) ||
+> > +	    (conn->sock->sk->sk_shutdown & RCV_SHUTDOWN)) {
+> > +		init_timer(&tx_TCP_timer);
+> > +		tx_TCP_timer.expires =
+> > +			(get_jiffies_64() + ISCSI_TX_THREAD_TCP_TIMEOUT * HZ);
+> > +		tx_TCP_timer.data = (unsigned long)&conn->tx_half_close_comp;
+> > +		tx_TCP_timer.function = iscsi_tx_thread_TCP_timeout;
+> > +
+> > +		add_timer(&tx_TCP_timer);
+> > +		ret = wait_for_completion_interruptible(&conn->tx_half_close_comp);
+> > +		del_timer_sync(&tx_TCP_timer);
+> 
+> and wait_for_completion_interruptible_timeout here, please.
+> 
 
-Manoj Iyer (1):
-      mmc: sdhci: Add Ricoh e823 PCI ID
+Converted
 
-Marc-André Hébert (1):
-      mmc: Fix the block device read only flag
+> > +	set_user_nice(current, -20);
+> 
+> Messing with the nice level at least needs an explanation.
+> 
 
-Mark Brown (1):
-      mmc: Ensure prototypes for SD API are visible in sd.c
+I think this was originally from iSCSI Initiator code and/or NDB (which
+still uses it btw), and several other mainline software fabric users do
+it as well; drivers/scsi/fcoe/fcoe.c:fcoe_percpu_receive_thread()
 
-Pawel Moll (1):
-      mmc: mmc_test: Only warn about not waiting for busy if it's supported
+Adding a comments here..
 
-Philip Rakity (2):
-      mmc: core: comment on why sdio_reset is done at init time
-      mmc: check if mmc cards < 2GB do sector addressing
+> > +	allow_signal(SIGINT);
+> > +
+> > +restart:
+> > +	conn = iscsi_tx_thread_pre_handler(ts);
+> > +	if (!conn)
+> > +		goto out;
+> > +
+> > +	eodr = map_sg = ret = sent_status = use_misc = 0;
+> > +
+> > +	while (!kthread_should_stop()) {
+> > +		/*
+> > +		 * Ensure that both TX and RX per connection kthreads
+> > +		 * are scheduled to run on the same CPU.
+> > +		 */
+> > +		iscsi_thread_check_cpumask(conn, current, 1);
+> 
+> Would kthread_bind help with binding the threads to CPUs?
+> 
 
-Pierre Tardy (4):
-      mmc: put the led blinking code after clock ungating
-      mmc: add per device quirk placeholder
-      mmc: add MMC_QUIRK_BROKEN_CLK_GATING
-      mmc: remove BROKEN_CLK_GATING quirk for wl1271
+Hmmm, need to have a deeper look at this.
 
-Sascha Hauer (1):
-      mmc: mxcmmc: use dmaengine API
+Converting this would mean that the RX/TX thread pairs would only be
+calling kthread_bind() once when the threads are created, instead of
+checking per each RX/TX loop iteration w/ iscsi_thread_check_cpumask().
 
-Shawn Guo (1):
-      mmc: mxs-mmc: add mmc host driver for i.MX23/28
+I think being able to re-bind these to different CPUs after the fact
+would still be useful though..  If we are using kthread_bind() during
+initial thread creation, how would re-binding work once the thread is
+running..?
 
-Simon Horman (1):
-      mmc: tmio_mmc: Improve readability of the output of pr_debug_status()
+> > +		ret = wait_for_completion_interruptible(&conn->tx_comp);
+> 
+> This looks like the functions to queue up work should just do a
+> wake_up_process on the tast structure, and the thread itself should
+> just do a schedule_timeout().
+> 
 
-Stefan Nilsson XK (1):
-      mmc: sdio: remember new card RCA when redetecting card
+OK, converting iscsi_target_tx_thread() to use wake_up_process() and
+schedule_timeout().
 
-Ulf Hansson (2):
-      mmc: core: export function mmc_do_release_host()
-      mmc: core: reset card voltage after power off
+> > +static void iscsi_rx_thread_TCP_timeout(unsigned long data)
+> > +{
+> > +	complete((struct completion *)data);
+> > +}
+> > +
+> > +static void iscsi_rx_thread_wait_for_tcp(struct iscsi_conn *conn)
+> > +{
+> > +	struct timer_list rx_TCP_timer;
+> > +	int ret;
+> > +
+> > +	if ((conn->sock->sk->sk_shutdown & SEND_SHUTDOWN) ||
+> > +	    (conn->sock->sk->sk_shutdown & RCV_SHUTDOWN)) {
+> > +		init_timer(&rx_TCP_timer);
+> > +		rx_TCP_timer.expires =
+> > +			(get_jiffies_64() + ISCSI_RX_THREAD_TCP_TIMEOUT * HZ);
+> > +		rx_TCP_timer.data = (unsigned long)&conn->rx_half_close_comp;
+> > +		rx_TCP_timer.function = iscsi_rx_thread_TCP_timeout;
+> > +
+> > +		add_timer(&rx_TCP_timer);
+> > +		ret = wait_for_completion_interruptible(&conn->rx_half_close_comp);
+> > +		del_timer_sync(&rx_TCP_timer);
+> 
+> wait_for_completion_interruptible_timeout again, please.
+> 
 
-Will Newton (3):
-      mmc: dw_mmc: Run card detect tasklet during slot initialisation.
-      mmc: dw_mmc: Enable low-power mode for the card clock.
-      mmc: Improve MMC_TEST config text.
+Converted
 
-Wolfram Sang (4):
-      mmc: sdhci-tegra: free irq on error and remove
-      mmc: sdhci-esdhc-imx: add write protect on custom GPIO on mx25/35
-      mmc: sdhci-esdhc: broken card detection is not a default quirk
-      mmc: sdhci-esdhc-imx: add card detect on custom GPIO for mx25/35
+> 
+> > +	set_user_nice(current, -20);
+> 
+> explanation, please.
+> 
+> > +	spin_lock_bh(&conn->cmd_lock);
+> > +	list_for_each_entry_safe(cmd, cmd_tmp, &conn->conn_cmd_list, i_list) {
+> > +		if (!(SE_CMD(cmd)) ||
+> > +		    !(SE_CMD(cmd)->se_cmd_flags & SCF_SE_LUN_CMD)) {
+> > +
+> > +			list_del(&cmd->i_list);
+> > +			spin_unlock_bh(&conn->cmd_lock);
+> 
+> What gurantees the list hasn't been modified after the lock was released?
+> 
 
- Documentation/ABI/testing/sysfs-devices-mmc |   21 +
- arch/arm/mach-mxs/include/mach/mmc.h        |   18 +
- arch/arm/plat-mxc/include/mach/esdhc.h      |   12 +-
- drivers/mmc/card/Kconfig                    |    3 +-
- drivers/mmc/card/block.c                    |    1 +
- drivers/mmc/card/mmc_test.c                 |  271 ++++++++-
- drivers/mmc/core/Makefile                   |    3 +-
- drivers/mmc/core/core.c                     |   26 +-
- drivers/mmc/core/core.h                     |    2 +
- drivers/mmc/core/host.c                     |    5 +-
- drivers/mmc/core/mmc.c                      |   86 +++-
- drivers/mmc/core/quirks.c                   |   84 +++
- drivers/mmc/core/sd.c                       |    1 +
- drivers/mmc/core/sdio.c                     |    9 +
- drivers/mmc/host/Kconfig                    |   11 +-
- drivers/mmc/host/Makefile                   |    1 +
- drivers/mmc/host/atmel-mci.c                |   19 +-
- drivers/mmc/host/cb710-mmc.c                |    2 +-
- drivers/mmc/host/dw_mmc.c                   |   83 +++-
- drivers/mmc/host/dw_mmc.h                   |    2 +-
- drivers/mmc/host/msm_sdcc.c                 |    8 -
- drivers/mmc/host/mxcmmc.c                   |  183 ++++---
- drivers/mmc/host/mxs-mmc.c                  |  874 +++++++++++++++++++++++++++
- drivers/mmc/host/sdhci-esdhc-imx.c          |  134 ++++-
- drivers/mmc/host/sdhci-esdhc.h              |    1 -
- drivers/mmc/host/sdhci-of-esdhc.c           |    3 +-
- drivers/mmc/host/sdhci-pci.c                |   12 +-
- drivers/mmc/host/sdhci-s3c.c                |    3 +
- drivers/mmc/host/sdhci-tegra.c              |    6 +-
- drivers/mmc/host/sh_mmcif.c                 |   62 +-
- drivers/mmc/host/tmio_mmc.c                 |   96 ++--
- drivers/mmc/host/via-sdmmc.c                |    3 -
- include/linux/mmc/card.h                    |    6 +
- include/linux/mmc/core.h                    |    1 +
- include/linux/mmc/dw_mmc.h                  |   15 +-
- include/linux/mmc/mmc.h                     |    3 +
- 36 files changed, 1811 insertions(+), 259 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-mmc
- create mode 100644 arch/arm/mach-mxs/include/mach/mmc.h
- create mode 100644 drivers/mmc/core/quirks.c
- create mode 100644 drivers/mmc/host/mxs-mmc.c
+At this point for a RX/TX connection pair during a connection logout or
+failure event, only one of the two threads can ever call:
 
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+	iscsi_take_action_for_connection_exit() -> 		
+		iscsi_handle_connection_cleanup() ->
+			iscsi_close_connection() -> 		
+				iscsi_release_commands_from_conn()
+
+The other will return back to sleeping in
+iscsi_[r,t]x_thread_pre_handler() waiting for the iSCSI connection to be
+shutdown.
+
+> > +	/*
+> > +	 * If connection reinstatement is being performed on this connection
+> > +	 * by receiving a REMOVECONNFORRECOVERY logout request, up the
+> > +	 * connection wait rcfr semaphore that is being blocked on
+> > +	 * an iscsi_connection_reinstatement_rcfr().
+> > +	 */
+> > +	if (atomic_read(&conn->connection_wait_rcfr)) {
+> > +		spin_unlock_bh(&conn->state_lock);
+> > +		complete(&conn->conn_wait_rcfr_comp);
+> > +		wait_for_completion(&conn->conn_post_wait_comp);
+> 
+> I'm trying to understand what this (and the similar block next to it)
+> is doing.  You wake up another process in the ERL code, which does
+> nothing but waking this code up again.  Why do we have to wait here
+> until the ERL code did it's run?
+> 
+
+These are two special cases where iscsi_target_login_thread() context
+may already be initiating recovery for an struct iscsi_conn, and then
+iSCSI connection failure or logout toccurs from within the active RX/TX
+thread pair context.
+
+> 
+> > +int iscsi_close_session(struct iscsi_session *sess)
+> 
+> The code still seems to be undecided on iscsi_ vs iscsit_ as a prefix.
+> 
+
+Yes, the first name conversion was specifically for the core_* prefix
+code in iscsi_target.c.  I will go ahead and convert this specifically
+for the main iscsi_target.c file, but I would prefer to avoid doing this
+for stuff outside of iscsi_target.c
+
+> > +	spin_lock_bh(&sess->conn_lock);
+> > +	if (session_sleep)
+> > +		atomic_set(&sess->sleep_on_sess_wait_comp, 1);
+> > +
+> > +	if (connection_sleep) {
+> > +		list_for_each_entry_safe(conn, conn_tmp, &sess->sess_conn_list,
+> > +				conn_list) {
+> > +			if (conn_count == 0)
+> > +				break;
+> > +
+> > +			iscsi_inc_conn_usage_count(conn);
+> > +			spin_unlock_bh(&sess->conn_lock);
+> 
+> What protects the next entry from going away after dropping the lock?
+> 
+
+Good catch.  Fixing this now by adding a conn_usage reference to
+conn_tmp when non NULL..
+
+I will get these items fixed up and tested in lio-4.1 and will send out
+an updated patch over the weekend.   Please let me know if you have any
+other comments and I will try to get them addressed ASAP.
+
+Thanks,
+
+--nab
+
