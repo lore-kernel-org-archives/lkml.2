@@ -1,45 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab1CRTky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 15:40:54 -0400
-Received: from clem.clem-digital.net ([68.16.168.10]:44965 "EHLO
-	clem.clem-digital.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756464Ab1CRTks (ORCPT
+	id S1756464Ab1CRTlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 15:41:07 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49977 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757290Ab1CRTlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 15:40:48 -0400
-X-Greylist: delayed 521 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 15:40:48 EDT
-From: Pete Clements <clem@clem.clem-digital.net>
-Message-Id: <201103181932.p2IJW5cg002394@clem.clem-digital.net>
-Subject: 38-git2-6 -- kernel/futex.c warning
-To: linux-kernel@vger.kernel.org (linux-kernel)
-Date: Fri, 18 Mar 2011 15:32:05 -0400 (EDT)
-X-Mailer: ELM [version 2.5 PL7]
+	Fri, 18 Mar 2011 15:41:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=qzRN+L6pOvtAjNWgqYZfWCboWoKn+Qbly2pxZq9fNZ2lpjQLWAGMj/cF3r6zSIy7ba
+         zYzs9EcTlDm92LELYYb/WYCQ8nCSMJHo4HW/HelsPx56uGzkGU83J3g+lWhhM4f0FaR1
+         5eDNJSM+FNUe8niVViDh+aWPFackzG+YvQivs=
+Date: Fri, 18 Mar 2011 19:41:35 +0000
+From: Prasad Joshi <prasadjoshi124@gmail.com>
+To: akpm@linux-foundation.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        prasadjoshi124@gmail.com, mitra@kqinfotech.com
+Cc: chris@zankel.net, x86@kernel.org, jdike@addtoit.com, tj@kernel.org,
+        cmetcalf@tilera.com, linux-sh@vger.kernel.org,
+        liqin.chen@sunplusct.com, lennox.wu@gmail.com, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        benh@kernel.crashing.org, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, kyle@mcmartin.ca, deller@gmx.de,
+        jejb@parisc-linux.org, linux-parisc@vger.kernel.org,
+        dhowells@redhat.com, yasutake.koichi@jp.panasonic.com,
+        linux-am33-list@redhat.com, ralf@linux-mips.org,
+        linux-mips@linux-mips.org, monstr@monstr.eu,
+        microblaze-uclinux@itee.uq.edu.au, geert@linux-m68k.org,
+        zippel@linux-m68k.org, sammy@sammy.net, linux-m68k@vger.kernel.org,
+        takata@linux-m32r.org, linux-m32r@ml.linux-m32r.org,
+        tony.luck@intel.com, fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
+        starvik@axis.com, jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
+        hans-christian.egtvedt@atmel.com, linux@arm.linux.org.uk,
+        rth@twiddle.net, linux-alpha@vger.kernel.org
+Subject: [RFC][PATCH v3 00/22] __vmalloc: Propagating GFP allocation flag
+ inside __vmalloc()
+Message-ID: <20110318194135.GA4746@prasad-kvm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fyi. Have been experiencing the below since 38-git2. Continual scrolling
-such that cannot complete system startup. System is i386 UP, Debian "squeeze".
+A filesystem might run into a problem while calling __vmalloc(GFP_NOFS)
+inside a lock.
 
-WARNING: at kernel/futex.c:786 wake_futex+0x21/0x70()
-Hardware name: XPST450
-Modules linked in: ipv6
-Pid: 1045, comm: rndc Not tainted 2.6.38-git6 #1
-Call Trace:
-[<c101eba8>] ? warn_slowpath_common+0x78/0xb0
-[<c1040b21>] ? wake_futex+0x21/0x70
-[<c1040b21>] ? wake_futex+0x21/0x70
-[<c101ebf9>] ? warn_slowpath_null+0x19/0x20
-[<c1040b21>] ? wake_futex+0x21/0x70
-[<c10429d9>] ? do_futex+0x629/0x950
-[<c108f2a3>] ? d_kill+0x73/0xd0
-[<c1042d78>] ? sys_futex+0x78/0x130
-[<c107c2dd>] ? filp_close+0x4d/0x80
-[<c11fa8bd>] ? syscall_call+0x7/0xb
----[ end trace 595c935fe53c9cd0 ]---
+It is expected than __vmalloc when called with GFP_NOFS should not
+callback the filesystem code even incase of the increased memory
+pressure. But the problem is that even if we pass this flag, __vmalloc
+itself allocates memory with GFP_KERNEL.
 
--- 
-Pete Clements 
+Using GFP_KERNEL allocations may go into the memory reclaim path and try
+to free memory by calling file system evict_inode function. Which might
+lead into deadlock.
+
+For further details
+http://marc.info/?l=linux-mm&m=128942194520631&w=4
+https://bugzilla.kernel.org/show_bug.cgi?id=30702
+
+The patch passes the gfp allocation flag all the way down to those
+allocating functions.
+
+ arch/arm/include/asm/pgalloc.h           |   11 +++++-
+ arch/avr32/include/asm/pgalloc.h         |    8 ++++-
+ arch/cris/include/asm/pgalloc.h          |   10 ++++-
+ arch/frv/include/asm/pgalloc.h           |    3 ++
+ arch/frv/include/asm/pgtable.h           |    1 +
+ arch/frv/mm/pgalloc.c                    |    9 ++++-
+ arch/ia64/include/asm/pgalloc.h          |   24 +++++++++++--
+ arch/m32r/include/asm/pgalloc.h          |   11 ++++--
+ arch/m68k/include/asm/motorola_pgalloc.h |   20 +++++++++--
+ arch/m68k/include/asm/sun3_pgalloc.h     |   14 ++++++--
+ arch/m68k/mm/memory.c                    |    9 ++++-
+ arch/microblaze/include/asm/pgalloc.h    |    3 ++
+ arch/microblaze/mm/pgtable.c             |   13 +++++--
+ arch/mips/include/asm/pgalloc.h          |   22 ++++++++----
+ arch/mn10300/include/asm/pgalloc.h       |    2 +
+ arch/mn10300/mm/pgtable.c                |   10 ++++-
+ arch/parisc/include/asm/pgalloc.h        |   21 ++++++++---
+ arch/powerpc/include/asm/pgalloc-32.h    |    2 +
+ arch/powerpc/include/asm/pgalloc-64.h    |   27 +++++++++++---
+ arch/powerpc/mm/pgtable_32.c             |   10 ++++-
+ arch/s390/include/asm/pgalloc.h          |   30 +++++++++++++---
+ arch/s390/mm/pgtable.c                   |   22 +++++++++---
+ arch/score/include/asm/pgalloc.h         |   13 ++++---
+ arch/sh/include/asm/pgalloc.h            |    8 ++++-
+ arch/sh/mm/pgtable.c                     |    8 ++++-
+ arch/sparc/include/asm/pgalloc_32.h      |    5 +++
+ arch/sparc/include/asm/pgalloc_64.h      |   17 ++++++++-
+ arch/tile/include/asm/pgalloc.h          |   13 ++++++-
+ arch/tile/mm/pgtable.c                   |   10 ++++-
+ arch/um/include/asm/pgalloc.h            |    1 +
+ arch/um/kernel/mem.c                     |   21 ++++++++---
+ arch/x86/include/asm/pgalloc.h           |   17 ++++++++-
+ arch/x86/mm/pgtable.c                    |    8 ++++-
+ arch/xtensa/include/asm/pgalloc.h        |    9 ++++-
+ arch/xtensa/mm/pgtable.c                 |   11 +++++-
+ include/asm-generic/4level-fixup.h       |    8 +++-
+ include/asm-generic/pgtable-nopmd.h      |    3 +-
+ include/asm-generic/pgtable-nopud.h      |    1 +
+ include/linux/mm.h                       |   40 ++++++++++++++++-----
+ mm/memory.c                              |   14 ++++---
+ mm/vmalloc.c                             |   57 ++++++++++++++++++++----------
+ 41 files changed, 427 insertions(+), 119 deletions(-)
+
