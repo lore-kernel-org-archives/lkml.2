@@ -1,193 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1CRSfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 14:35:40 -0400
-Received: from nm3-vm0.bullet.mail.in.yahoo.com ([121.101.151.212]:25706 "HELO
-	nm3-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755357Ab1CRSfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 14:35:33 -0400
-X-Yahoo-Newman-Id: 956906.69875.bm@omp1003.mail.in.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:Content-Disposition:User-Agent;
-  b=WfAlIiwhv9n2/kN7osruO+E3OvRFBG0M1wPLto0VlUJ2v83k54R69Ju/ieLrrg65PgAgE8zUPF7DF87TzMmHrF0L2djWxBHz5g5eVT09tRLMqiuvYy9xggRkuSmzxpEsP/TQ5Ex+FokWvR7MghT1BJFKd1MXekLj8TKV4/SQWxM=  ;
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-X-YMail-OSG: D.sYNzkVM1ncGhNirRap1vcH2YnSYBQu_FNbZM.MX.qts5b
- OIYtx4E4V4xkitqMlZyxrJw9FZkeCb6d4E0t8dO2O5sd2mnUBGNmtdr8MXPu
- rrGumjlSw9OLIZQzv9uhUeKHqMYY5LGA0lx7FEqIgZQzo2XtZn4Izf9CIl5E
- _mxaFdlUAaK3DaZGCd8YikuZRtgY7_U2l0Q5JR_RDWBSi3UG1iCw1NH_sEJ3
- kCisdsLUhery9VeUjzJ4cOLqW.ITOnnSvJjacMqDtu6VwvxDTLXcl4uTYU6b
- hvViK.d61Lg3CBQ--
-X-Yahoo-Newman-Property: ymail-3
-Date: Sat, 19 Mar 2011 00:05:29 +0530
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: patch for format issues and header bug in net/ipv4/icmp.c
-Message-ID: <20110318183529.GA3617@debian.Jeff>
+	id S1756483Ab1CRSlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 14:41:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10022 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752571Ab1CRSlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 14:41:45 -0400
+Date: Fri, 18 Mar 2011 19:32:51 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Frantisek Hrbata <fhrbata@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3 for 2.6.38] oom: select_bad_process: ignore
+	TIF_MEMDIE zombies
+Message-ID: <20110318183251.GA13988@redhat.com>
+References: <AANLkTikOdG7iTKDKq5mCYhcVz-rgZ_F2Ja78oBCOCQ91@mail.gmail.com> <alpine.DEB.2.00.1103141512310.4425@chino.kir.corp.google.com> <20110315194737.GE21640@redhat.com> <alpine.DEB.2.00.1103151259380.558@chino.kir.corp.google.com> <20110315212754.GB28117@redhat.com> <alpine.DEB.2.00.1103151530200.5099@chino.kir.corp.google.com> <20110316155310.GA9797@redhat.com> <alpine.DEB.2.00.1103161220110.9710@chino.kir.corp.google.com> <20110316202131.GA20790@redhat.com> <alpine.DEB.2.00.1103161332490.11002@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="+HP7ph2BbKc20aGI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1103161332490.11002@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry for delay...
 
---+HP7ph2BbKc20aGI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Remove security, this has nothing to do with the released code.
+But please see the question at the end...
 
-hello ,
+On 03/16, David Rientjes wrote:
+>
+> On Wed, 16 Mar 2011, Oleg Nesterov wrote:
+>
+> > > > 	do {
+> > > > 		list_for_each_entry(child, &t->children, sibling) {
+> > > > 			unsigned int child_points;
+> > > >
+> > > > 			/*
+> > > > 			 * oom_badness() returns 0 if the thread is unkillable
+> > > > 			 */
+> > > > 			child_points = oom_badness(child, mem, nodemask,
+> > > > 								totalpages);
+> > > >
+> > > > child->mm can be NULL.
+> > > >
+> > >
+> > > So child_points would be 0 here.
+> >
+> > Why? oom_badness() checks the whole group. group_leader can exit and
+> > pass exit_mm(). But it still the leader and "represents" the whole
+> > group even if it exits as thread.
+> >
+>
+> If there are still child threads that have valid mm's, then they are
+> eligible for oom kill and all threads sharing that mm will be killed once
+> passed to oom_kill_task().  That may be the same as the selected task, p,
+> passed to oom_kill_process() but all threads that share the mm would have
+> to be killed anyway to free memory.
 
-I have created a patch for net/ipv4/icmp.c
-using checkpatch.pl script to fix several warnings
-and an error.
+Not sure I understand... Yes, oom_kill_task() kills all processes that
+share the same ->mm. (but to remind, "q->mm == mm" is not right for the
+same reason, q->mm can be NULL). But the code above should filter out
+the tasks with the same ->mm. It can't.
 
-I have attached the patch along with this mail.
+OK, this is really minor. CLONE_VM processes with the dead leader, this
+is really exotics.
 
-/Thanks
+> > > > 	if (p->flags & PF_EXITING) {
+> > > > 		set_tsk_thread_flag(p, TIF_MEMDIE);
+> > > > 		boost_dying_task_prio(p, mem);
+> > > > 		return 0;
+> > > > 	}
+> > > >
+> > > > in oom_kill_process() whith -mm patches?
+> > > >
+> > > > We know that this thread (not process) was chosen by select_bad_process()
+> > > > and p->mm != NULL. As Linus rightly pointed, this means this code can only
+> > > > work in the small window between exit_signals() and exit_mm().
+> > > >
+> > > > So, what is the point?
+> > > >
+> > >
+> > > Because there's no need to SIGKILL the task or emit anything to the kernel
+> > > log.  We don't want anybody thinking that the oom killer killed it when it
+> > > was already exiting on its own.
+> >
+> > OK. But this case is very unlikely. And I am still trying to understand
+> > why this special case is important. But I can't.
+> >
+>
+> It's actually not unlikely at all if mm->mmap_sem is held.
 
--- 
-software engineer.
-department of computer science
-rajagiri school of engineering and technology.
+Do you mean OOM from with down_write(mmap_sem) ? OK, in this case we can
+see a lot of PF_EXITING && mm threads. But this means they are likely
+sleeping in exit_mm()->down_read(), how the code above can help?
 
---+HP7ph2BbKc20aGI
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-net-Fixed-format-issues-and-header-bug-in-net-ipv4-i.patch"
+> > 	> The combination of testing PF_EXITING and p->mm just doesn't seem to
+> > 	> make any sense.
+> > 	>
+> >
+> > 	Right, it doesn't (and I recently removed testing the combination from
+> > 	select_bad_process() in -mm).
+> >
+> > How so? This is what we have now, no?
+> >
+>
+> It's not required functionally for the oom killer,
 
->From 01861eb7151d397d10e1e8be58ac79252b04e254 Mon Sep 17 00:00:00 2001
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-Date: Fri, 18 Mar 2011 23:20:24 +0530
-Subject: [PATCH] net : Fixed format issues and header bug in net/ipv4/icmp.c
- This is a patch to net/ipv4/icmp.c  file that fixes several
- line limit and several format ones and also a header path
- issue found by the checkpatch.pl tool.
- Author:		Jeffrin Jose <ahiliation@yahoo.co.in>
- Signed-off-by:  Jeffrin Jose
+OK, thanks.
 
----
- net/ipv4/icmp.c |   30 +++++++++++++++++-------------
- 1 files changed, 17 insertions(+), 13 deletions(-)
+> If any other threads can't actually exit yet,
+> then they will automatically be selected when they invoke the oom killer
+> (we automatically select current if it is PF_EXITING and the oom killer
+> iterates over all threads in -mm) so we don't need to be concerned about
+> them stalling at this point.
 
-diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
-index a91dc16..348cc17 100644
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -53,7 +53,7 @@
-  *					- ICMP header length was not accounted
-  *					  at all.
-  *              Tristan Greaves :       Added sysctl option to ignore bogus
-- *              			broadcast responses from broken routers.
-+ *					broadcast responses from broken routers.
-  *
-  * To Fix:
-  *
-@@ -89,7 +89,7 @@
- #include <linux/timer.h>
- #include <linux/init.h>
- #include <asm/system.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <net/checksum.h>
- #include <net/xfrm.h>
- #include <net/inet_common.h>
-@@ -113,7 +113,8 @@ struct icmp_bxm {
- };
- 
- /* An array of errno for error messages from dest unreach. */
--/* RFC 1122: 3.2.2.1 States that NET_UNREACH, HOST_UNREACH and SR_FAILED MUST be considered 'transient errs'. */
-+/* RFC 1122: 3.2.2.1 States that NET_UNREACH, HOST_UNREACH and SR_FAILED MUST
-+be considered 'transient errs'. */
- 
- const struct icmp_err icmp_err_convert[] = {
- 	{
-@@ -303,7 +304,7 @@ static void icmp_push_reply(struct icmp_bxm *icmp_param,
- 			   ipc, rt, MSG_DONTWAIT) < 0) {
- 		ICMP_INC_STATS_BH(sock_net(sk), ICMP_MIB_OUTERRORS);
- 		ip_flush_pending_frames(sk);
--	} else if ((skb = skb_peek(&sk->sk_write_queue)) != NULL) {
-+	} else if ((skb == skb_peek(&sk->sk_write_queue)) != NULL) {
- 		struct icmphdr *icmph = icmp_hdr(skb);
- 		__wsum csum = 0;
- 		struct sk_buff *skb1;
-@@ -411,7 +412,8 @@ static struct rtable *icmp_route_lookup(struct net *net, struct sk_buff *skb_in,
- 	} else
- 		return rt;
- 
--	err = xfrm_decode_session_reverse(skb_in, flowi4_to_flowi(&fl4), AF_INET);
-+	err = xfrm_decode_session_reverse(skb_in, \
-+	flowi4_to_flowi(&fl4), AF_INET);
- 	if (err)
- 		goto relookup_failed;
- 
-@@ -648,7 +650,7 @@ static void icmp_unreach(struct sk_buff *skb)
- 
- 	/*
- 	 *	Incomplete header ?
--	 * 	Only checks for the IP header, there should be an
-+	 *	Only checks for the IP header, there should be an
- 	 *	additional check for longer headers in upper levels.
- 	 */
- 
-@@ -670,18 +672,20 @@ static void icmp_unreach(struct sk_buff *skb)
- 			break;
- 		case ICMP_FRAG_NEEDED:
- 			if (ipv4_config.no_pmtu_disc) {
--				LIMIT_NETDEBUG(KERN_INFO "ICMP: %pI4: fragmentation needed and DF set.\n",
-+				LIMIT_NETDEBUG(KERN_INFO "ICMP: %pI4: \
-+	fragmentation needed and DF set.\n",
- 					       &iph->daddr);
- 			} else {
- 				info = ip_rt_frag_needed(net, iph,
--							 ntohs(icmph->un.frag.mtu),
-+						 ntohs(icmph->un.frag.mtu),
- 							 skb->dev);
- 				if (!info)
- 					goto out;
- 			}
- 			break;
- 		case ICMP_SR_FAILED:
--			LIMIT_NETDEBUG(KERN_INFO "ICMP: %pI4: Source Route Failed.\n",
-+			LIMIT_NETDEBUG(KERN_INFO "ICMP: %pI4: \
-+	 Source Route Failed.\n",
- 				       &iph->daddr);
- 			break;
- 		default:
-@@ -875,7 +879,7 @@ out_err:
-  *
-  * RFC1812 (4.3.3.9).	A router MUST implement it.
-  *			A router SHOULD have switch turning it on/off.
-- *		      	This switch MUST be ON by default.
-+ *			This switch MUST be ON by default.
-  *
-  * Gratuitous replies, zero-source replies are not implemented,
-  * that complies with RFC. DO NOT implement them!!! All the idea
-@@ -1163,7 +1167,7 @@ static int __net_init icmp_sk_init(struct net *net)
- 	net->ipv4.sysctl_icmp_ignore_bogus_error_responses = 1;
- 
- 	/*
--	 * 	Configurable global rate limit.
-+	 *	Configurable global rate limit.
- 	 *
- 	 *	ratelimit defines tokens/packet consumed for dst->rate_token
- 	 *	bucket ratemask defines which icmp types are ratelimited by
-@@ -1188,8 +1192,8 @@ fail:
- }
- 
- static struct pernet_operations __net_initdata icmp_sk_ops = {
--       .init = icmp_sk_init,
--       .exit = icmp_sk_exit,
-+	.init = icmp_sk_init,
-+	.exit = icmp_sk_exit,
- };
- 
- int __init icmp_init(void)
--- 
-1.7.1
+Again, it is unlikely that another thread triggers oom between exit_signals()
+and exit_mm().
 
+And what "other threads" actually mean? If you mean that we already killed
+this process (iow, oom_kill_task() sent SIGKILL to any sub-thread in this
+group) then yes, this thread probably needs TIF_MEMDIE.
 
---+HP7ph2BbKc20aGI--
+But. In this case current won't call select_bad_process() at all. We have
+the fatal_signal_pending() check at the top of out_of_memory(), and this
+is the "special" case in oom_kill.c I can understand. I hope ;)
+
+Btw. fatal_signal_pending() is not really good... it can be false negative.
+signal_group_exit() looks better.
+
+> In the quote above, Linus was referring to testing PF_EXITING and p->mm in
+> oom_kill_process().  It doesn't make any sense if we have already filtered
+> p->mm in select_bad_process()
+
+No, I don't think this was the point.
+
+This was discussed assuming the current code, select_bad_process() doesn't
+filter !mm threads, and it is not per-thread.
+
+> and we don't want to needlessly kill any
+> children because p has executed exit_mm() between its selection and its
+> kill: it's on the exit path and will probably be freeing memory soon.
+
+OK, this is reasonable. And this is what I can understand. But this
+case looks unlikely, and I am not sure it is right, please see below.
+
+> While this code inspection is interesting, what would probably be more
+> interesting is if you have any test cases that are problematic on the
+> latest -mm tree
+
+I sent one. it wasn't tested, but should be problematic. Doesn't really
+matter, we can fix this.
+
+I am just trying to understand the new "per-thread" direction. I can't.
+
+OK. For example. Two threads T1 and T2. This process uses a lot of memory.
+
+	1. T2 does, say, do_brk() and triggers OOM
+
+	2. T2 calls out_of_memory->select_bad_process() and starts the
+	   main do_each_thread() loop.
+
+	   It finds T1, then T2. oom_badness() returns the same value,
+	   so select_bad_process() returns T1.
+
+	4. T1 exits, calls exit_mm() and sleeps on down_read().
+
+	5. T2 calls oom_kill_process(), sees PF_EXITING, does
+	   set_tsk_thread_flag(T1, TIF_MEMDIE) and returns.
+
+Now. out_of_memory() will be called again, but select_bad_process()
+is fooled. It will see T1 before T2 and return ERR_PTR() because of
+T1 has TIF_MEMDIE.
+
+And T2 can't access the memory reserves because it lacks TIF_MEMDIE.
+
+No?
+
+Oleg.
+
