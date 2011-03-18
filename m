@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab1CRGas (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 02:30:48 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59459 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756149Ab1CRGal convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 02:30:41 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chemparathy, Cyril" <cyril@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>
-Date: Fri, 18 Mar 2011 12:00:04 +0530
-Subject: RE: [PATCH v8 03/11] gpio: add ti-ssp gpio driver
-Thread-Topic: [PATCH v8 03/11] gpio: add ti-ssp gpio driver
-Thread-Index: Acvk03lBsqkjwknTRxu6xhjqKmko3wAWObqw
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C3B8330@dbde02.ent.ti.com>
-References: <1295378505-15221-1-git-send-email-cyril@ti.com>
- <1295378505-15221-4-git-send-email-cyril@ti.com>
- <B85A65D85D7EB246BE421B3FB0FBB593024BF35DAF@dbde02.ent.ti.com>
- <20110317184514.GP9597@angua.secretlab.ca>
-In-Reply-To: <20110317184514.GP9597@angua.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756255Ab1CRGhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 02:37:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20550 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756186Ab1CRGg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 02:36:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,204,1299484800"; 
+   d="scan'208";a="614538697"
+Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task
+ plugging
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+In-Reply-To: <4D81D7D5.7000806@fusionio.com>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+	 <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
+	 <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
+	 <20110316173148.GC13562@redhat.com>
+	 <1300323609.2337.117.camel@sli10-conroe>  <4D81D7D5.7000806@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Mar 2011 14:36:52 +0800
+Message-ID: <1300430212.2337.141.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Fri, Mar 18, 2011 at 00:15:14, Grant Likely wrote:
-> On Mon, Feb 28, 2011 at 06:04:32PM +0530, Nori, Sekhar wrote:
-> > Hi Grant,
-> > 
-> > On Wed, Jan 19, 2011 at 00:51:37, Chemparathy, Cyril wrote:
-> > > TI's SSP controller pins can be directly read and written to behave like a
-> > > GPIO.  This patch adds a GPIO driver that exposes such functionality.
-> > 
-> > Can you please review and ack the GPIO part of this
-> > series too?
-> > 
-> > I see that you have already acked the SPI part of this work.
+On Thu, 2011-03-17 at 17:43 +0800, Jens Axboe wrote:
+> On 2011-03-17 02:00, Shaohua Li wrote:
+> > On Thu, 2011-03-17 at 01:31 +0800, Vivek Goyal wrote:
+> >> On Wed, Mar 16, 2011 at 04:18:30PM +0800, Shaohua Li wrote:
+> >>> 2011/1/22 Jens Axboe <jaxboe@fusionio.com>:
+> >>>> Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> >>>> ---
+> >>>>  block/blk-core.c          |  357 ++++++++++++++++++++++++++++++++------------
+> >>>>  block/elevator.c          |    6 +-
+> >>>>  include/linux/blk_types.h |    2 +
+> >>>>  include/linux/blkdev.h    |   30 ++++
+> >>>>  include/linux/elevator.h  |    1 +
+> >>>>  include/linux/sched.h     |    6 +
+> >>>>  kernel/exit.c             |    1 +
+> >>>>  kernel/fork.c             |    3 +
+> >>>>  kernel/sched.c            |   11 ++-
+> >>>>  9 files changed, 317 insertions(+), 100 deletions(-)
+> >>>>
+> >>>> diff --git a/block/blk-core.c b/block/blk-core.c
+> >>>> index 960f12c..42dbfcc 100644
+> >>>> --- a/block/blk-core.c
+> >>>> +++ b/block/blk-core.c
+> >>>> @@ -27,6 +27,7 @@
+> >>>>  #include <linux/writeback.h>
+> >>>>  #include <linux/task_io_accounting_ops.h>
+> >>>>  #include <linux/fault-inject.h>
+> >>>> +#include <linux/list_sort.h>
+> >>>>
+> >>>>  #define CREATE_TRACE_POINTS
+> >>>>  #include <trace/events/block.h>
+> >>>> @@ -213,7 +214,7 @@ static void blk_delay_work(struct work_struct *work)
+> >>>>
+> >>>>        q = container_of(work, struct request_queue, delay_work.work);
+> >>>>        spin_lock_irq(q->queue_lock);
+> >>>> -       q->request_fn(q);
+> >>>> +       __blk_run_queue(q);
+> >>>>        spin_unlock_irq(q->queue_lock);
+> >>>>  }
+> >>> Hi Jens,
+> >>> I have some questions about the per-task plugging. Since the request
+> >>> list is per-task, and each task delivers its requests at finish flush
+> >>> or schedule. But when one cpu delivers requests to global queue, other
+> >>> cpus don't know. This seems to have problem. For example:
+> >>> 1. get_request_wait() can only flush current task's request list,
+> >>> other cpus/tasks might still have a lot of requests, which aren't sent
+> >>> to request_queue.
+> >>
+> >> But very soon these requests will be sent to request queue as soon task
+> >> is either scheduled out or task explicitly flushes the plug? So we might
+> >> wait a bit longer but that might not matter in general, i guess. 
+> > Yes, I understand there is just a bit delay. I don't know how severe it
+> > is, but this still could be a problem, especially for fast storage or
+> > random I/O. My current tests show slight regression (3% or so) with
+> > Jens's for 2.6.39/core branch. I'm still checking if it's caused by the
+> > per-task plug, but the per-task plug is highly suspected.
 > 
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> 
-> Sorry for the delay on this.  I can take it through my tree if you
-> like.  It's a new driver, so I don't have any concerns about taking it
-> now even though the merge window is already open..
-
-Please queue this for the 2.6.40 cycle. I just noticed that with
-the 2.6.39 merge, the mfd portion of this needs a linux/sched.h
-include to build successfully. That would be fixed in the 2.6.39-rc cycle.
+> To check this particular case, you can always just bump the request
+> limit. What test is showing a slowdown? 
+this is a simple multi-threaded seq read. The issue tends to be request
+merge related (not verified yet). The merge reduces about 60% with stack
+plug from fio reported data. From trace, without stack plug, requests
+from different threads get merged. But with it, such merge is impossible
+because flush_plug doesn't check merge, I thought we need add it again.
 
 Thanks,
-Sekhar
+Shaohua
 
