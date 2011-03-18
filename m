@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab1CRG4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 02:56:43 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56226 "EHLO gate.crashing.org"
+	id S1756279Ab1CRHAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 03:00:03 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46257 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932114Ab1CRG4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 02:56:37 -0400
-Subject: Re: Poll about irqsafe_cpu_add and others
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>,
-        Netfilter Development Mailinglist 
-	<netfilter-devel@vger.kernel.org>
-In-Reply-To: <1300371834.6315.93.camel@edumazet-laptop>
-References: <1300371834.6315.93.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Mar 2011 17:56:24 +1100
-Message-ID: <1300431384.22236.1280.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756193Ab1CRG74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 02:59:56 -0400
+Message-ID: <4D8302E9.30303@kernel.dk>
+Date: Fri, 18 Mar 2011 07:59:53 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Robert Love <robert.w.love@intel.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
+        Jarek Poplawski <jarkao2@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@open-fcoe.org, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 05/36] block,rcu: convert call_rcu(disk_free_ptbl_rcu_cb)
+  to kfree_rcu()
+References: <4D82D071.5020703@cn.fujitsu.com> <4D82D3FF.2080303@cn.fujitsu.com> <4D82D4C2.8020503@cn.fujitsu.com>
+In-Reply-To: <4D82D4C2.8020503@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 15:23 +0100, Eric Dumazet wrote:
-> Hi
+On 2011-03-18 04:42, Lai Jiangshan wrote:
 > 
-> irqsafe_cpu_{dec|inc} are used in network stack since 2.6.37 (commit
-> 29b4433d991c88), and I would like to use irqsafe_cpu_add() in netfilter
-> fast path too, and SNMP counters eventually (to lower ram needs by 50%)
 > 
-> Initial support of irqsafe_ was given by Christoph in 2.6.34
-> 
-> It seems only x86 arch is using a native and efficient implementation.
-> 
-> Others use irqsafe_cpu_generic_to_op() and its pair of
-> local_irq_save() / local_irq_restore()
-> 
-> Which other arches could use a native implementation ?
-> 
-> What about defining a HAVE_FAST_IRQSAFE_ADD ?
+> The rcu callback disk_free_ptbl_rcu_cb() just calls a kfree(),
+> so we use kfree_rcu() instead of the call_rcu(disk_free_ptbl_rcu_cb).
 
-On powerpc, we use the generic one and it's fast :-) Well, at least on
-ppc64, bcs we do lazy irq disabling, disabling/enabling interrupt is
-basically just poking a byte in a per-cpu data structure (there's a tad
-more work on enable in case the interrupt actually occured and we ended
-up really disabling but that's not the common case). Overall faster than
-using the atomic ops which have to go all the way to the L2 cache.
+Thanks, I'll add this.
 
-So if you define the above, please set in on powerpc despite the fact
-that we use the generic implementation.
-
-Cheers,
-Ben.
-
+-- 
+Jens Axboe
 
