@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab1CRWjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:39:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45848 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757239Ab1CRWjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:39:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: Suspend/resume regression in Toshiba A11 since 2.6.34-rc4
-Date: Fri, 18 Mar 2011 23:38:52 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20110318220034.GA10162@herton-IdeaPad-Y430>
-In-Reply-To: <20110318220034.GA10162@herton-IdeaPad-Y430>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103182338.52808.rjw@sisk.pl>
+	id S1757574Ab1CRWjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:39:17 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:45865 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757476Ab1CRWjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 18:39:10 -0400
+X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 18:39:10 EDT
+Date: Fri, 18 Mar 2011 17:38:43 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Avi Kivity <avi@redhat.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 3/8] ACPI: Use syscore_ops instead of sysdev class and
+ sysdev
+In-reply-to: <201103122216.51858.rjw@sisk.pl>
+Message-id: <alpine.LFD.2.02.1103181738400.24304@x980>
+References: <201103100131.58206.rjw@sisk.pl> <201103122212.40828.rjw@sisk.pl>
+ <201103122216.51858.rjw@sisk.pl>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 18, 2011, Herton Ronaldo Krzesinski wrote:
-> This regression is old, but discovered recently. Since 2.6.34-rc4,
-> a Toshiba Tecra A11 machine resumes without video for the first time.
-> Here is the strange thing reported, on the first suspend/resume, when
-> the machine wakes up the video is blank, but the machine is up (just the
-> screen is black). If you suspend again, on second resume the video comes
-> back normally.
-> 
-> Helping the reporter bisecting the problem, we narrowed down the bug to
-> this commit:
-> 
-> commit ac7729da880e742613129ee6dea0045328670d2d
-> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> Date:   Mon Apr 5 01:43:51 2010 +0200
-> 
->     ACPI / PM: Move ACPI video resume to a PM notifier
-> 
-> And reverting this commit on 2.6.38 still made the problem go away.
-> Looking at the commit above I don't saw any problem, and perhaps we have
-> some bad bios here which by moving the resume of acpi video later
-> triggers this bug. Also strange that on second suspend/resume everything
-> is normal... (the regression here is just the video is blank on first
-> resume).
-> 
-> I asked the reporter to try to increase brightness logged in remotely
-> when the video is blank after first resume, but this didn't have any
-> effect.
-> 
-> This was reported in https://bugs.launchpad.net/bugs/719620 (if reading
-> I recommend to skip to comment #58 and later), I can't think of any
-> solution besides trying to move acpi video resume perhaps back and
-> depend on video device being resume first. I asked for more debugging
-> information but got nothing unfortunately which could diagnose better
-> this...
+applied
 
-What graphics driver is used?
+thanks,
+Len Brown, Intel Open Source Technology Center
 
-Rafael
