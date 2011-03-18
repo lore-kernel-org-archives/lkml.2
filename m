@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab1CRSLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 14:11:07 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:38829 "EHLO smtp.gentoo.org"
+	id S1756228Ab1CRSMp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 14:12:45 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:39002 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753937Ab1CRSK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 14:10:59 -0400
+	id S1753937Ab1CRSMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 14:12:41 -0400
 From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCH 00/32] Blackfin updates for 2.6.39-rc0
-Date: Fri, 18 Mar 2011 14:11:17 -0400
-Message-Id: <1300471877-3544-1-git-send-email-vapier@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Pull request blackfin.git (for-linus branch)
+Date: Fri, 18 Mar 2011 14:12:57 -0400
+Message-Id: <1300471977-3845-1-git-send-email-vapier@gentoo.org>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300471877-3544-1-git-send-email-vapier@gentoo.org>
+References: <1300471877-3544-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Other than the normal random fixes, we've got a bunch of SMP updates,
-IRQ cleanups, and ipipe updates.  Boring stuff.
+The following changes since commit 08351fc6a75731226e1112fc7254542bd3a2912e:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile (2011-03-17 19:34:12 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
 Aaron Wu (1):
-  Blackfin: bf548-ezkit: add CAN1 support
+      Blackfin: bf548-ezkit: add CAN1 support
 
 Andreas Schallenberg (1):
-  Blackfin: dnp5370: drop MMC card detect support
+      Blackfin: dnp5370: drop MMC card detect support
 
 Graf Yang (1):
-  Blackfin: SMP: implement cpu_freq support
+      Blackfin: SMP: implement cpu_freq support
 
 Michael Hennerich (1):
-  Blackfin: cpufreq: fix typos
+      Blackfin: cpufreq: fix typos
 
 Mike Frysinger (9):
-  Blackfin: add bfin_write_{or,and} helpers
-  Blackfin: ADI boards: enable pseudo debug insns support
-  Blackfin: SMP: use standard cache functions
-  Blackfin: split optimization settings more
-  Blackfin: optimize startup code
-  Blackfin: SMP: convert to irq chip functions
-  Blackfin: wire up new syscalls
-  Blackfin: punt unused HDMA masks
-  Blackfin: ip0x: fix unused variable warning
+      Blackfin: add bfin_write_{or,and} helpers
+      Blackfin: ADI boards: enable pseudo debug insns support
+      Blackfin: SMP: use standard cache functions
+      Blackfin: split optimization settings more
+      Blackfin: optimize startup code
+      Blackfin: SMP: convert to irq chip functions
+      Blackfin: wire up new syscalls
+      Blackfin: punt unused HDMA masks
+      Blackfin: ip0x: fix unused variable warning
 
 Philippe Gerum (3):
-  Blackfin/ipipe: upgrade to I-pipe mainline
-  Blackfin/ipipe: fix deferred pipeline sync for the root stage
-  Blackfin/ipipe: restore pipeline bits in irqflags
+      Blackfin/ipipe: upgrade to I-pipe mainline
+      Blackfin/ipipe: fix deferred pipeline sync for the root stage
+      Blackfin/ipipe: restore pipeline bits in irqflags
 
 Sonic Zhang (4):
-  Blackfin: SMP: avoid section mismatch warnings
-  Blackfin: kgdb: drop dead KGDB_THR_PROC_SWAP for SMP systems
-  Blackfin: SMP: disable preempt with smp_processor_id to send messages
-  Blackfin: SMP: work around anomaly 05000491
+      Blackfin: SMP: avoid section mismatch warnings
+      Blackfin: kgdb: drop dead KGDB_THR_PROC_SWAP for SMP systems
+      Blackfin: SMP: disable preempt with smp_processor_id to send messages
+      Blackfin: SMP: work around anomaly 05000491
 
 Thomas Gleixner (9):
-  Blackfin: use proper wrappers for irq_desc
-  Blackfin: convert core irq_chip to new functions
-  Blackfin: convert internal irq_chip to new functions
-  Blackfin: convert error irq_chip to new functions
-  Blackfin: convert mac irq_chip to new functions
-  Blackfin: convert gpio irq_chip to new functions
-  Blackfin: use proper wrapper functions for modifying irq status
-  Blackfin: use accessor functions in show_interrupts()
-  Blackfin: enable GENERIC_HARDIRQS_NO_DEPRECATED
+      Blackfin: use proper wrappers for irq_desc
+      Blackfin: convert core irq_chip to new functions
+      Blackfin: convert internal irq_chip to new functions
+      Blackfin: convert error irq_chip to new functions
+      Blackfin: convert mac irq_chip to new functions
+      Blackfin: convert gpio irq_chip to new functions
+      Blackfin: use proper wrapper functions for modifying irq status
+      Blackfin: use accessor functions in show_interrupts()
+      Blackfin: enable GENERIC_HARDIRQS_NO_DEPRECATED
 
 steven miao (3):
-  Blackfin: bf54x: add kconfig for UART2/3 DMA channel assignments
-  Blackfin: SMP: PERCPU section should be PAGE aligned
-  Blackfin: SMP: delay enabling caches until CPU is initialized
+      Blackfin: bf54x: add kconfig for UART2/3 DMA channel assignments
+      Blackfin: SMP: PERCPU section should be PAGE aligned
+      Blackfin: SMP: delay enabling caches until CPU is initialized
 
  arch/blackfin/Kconfig                            |   42 +++-
  arch/blackfin/configs/BF518F-EZBRD_defconfig     |    1 +
@@ -123,7 +130,3 @@ steven miao (3):
  arch/blackfin/mach-common/ints-priority.c        |  236 +++++++++++++---------
  arch/blackfin/mach-common/smp.c                  |   28 ++-
  52 files changed, 762 insertions(+), 519 deletions(-)
-
--- 
-1.7.4.1
-
