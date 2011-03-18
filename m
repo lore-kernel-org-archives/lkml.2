@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab1CRRMI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 13:12:08 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:50586 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757182Ab1CRRMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 13:12:02 -0400
-Date: Fri, 18 Mar 2011 19:08:02 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Stefan Bigler <stefan.bigler@keymile.com>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: TTY loosing data with u_serial gadget
-Message-ID: <20110318170801.GA2857@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <4D8121F6.9060600@keymile.com>
- <20110317000408.GA18911@kroah.com>
- <4D8389EC.5030704@keymile.com>
+	id S1757234Ab1CRRTy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 13:19:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757139Ab1CRRTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 13:19:48 -0400
+Date: Fri, 18 Mar 2011 13:19:32 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        jwjstone@fastmail.fm, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 v2] watchdog, nmi:  Allow hardlockup to panic by
+ default
+Message-ID: <20110318171932.GH2743@redhat.com>
+References: <1299533860-1642-1-git-send-email-dzickus@redhat.com>
+ <20110317185013.7c8be1e0.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D8389EC.5030704@keymile.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110317185013.7c8be1e0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Mar 17, 2011 at 06:50:13PM -0700, Andrew Morton wrote:
+> On Mon,  7 Mar 2011 16:37:39 -0500 Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > Add a Kconfig option to allow users to set the hardlockup to panic
+> > by default.  Also add in a 'nmi_watchdog=nopanic' to override this.
+> > 
+> 
+> Changelog forgot to tell us "why".
 
-(please don't top-post)
+Yeah, sorry about that.
 
-On Fri, Mar 18, 2011 at 05:35:56PM +0100, Stefan Bigler wrote:
-> Thanks for your quick answer. Meanwhile we ported our board to 2.6.38.
-> We recognize the same problem again.
-> I had also a look at the relevant fixes, a lot is done but I could not find
-> the required protection of the attribute receive_room.
-> 
-> I added a printk in case of failure were receive_room shows more
-> space that is really available in the queue and also used.
-> 
-> The printk is attached below and also the log.
-> 
-> Regards
-> Stefan
-> 
-> 
-> Log:
-> flush_to_ldisc, receive_room to small count=201, receive_room=287,
-> real_room=0
-> flush_to_ldisc, receive_room to small count=225, receive_room=1031,
-> real_room=0
-> flush_to_ldisc, receive_room to small count=33, receive_room=4095,
-> real_room=0
+When a cpu is considered stuck, instead of limping along and just printing
+a warning, it is sometimes preferred to just panic, let kdump capture the
+vmcore and reboot.  This gets the machine back into a stable state quickly
+while saving the info that got it into a stuck state to begin with.
 
 
-I had the same problem while I was working at Nokia developing the N900.
-I even sent a patch (twice) with Alan Cox on the loop but nothing has
-happened. The patch might still be floating on the archives but
-essentially it would make ->receive_buf() return the amount of received
-bytes (as IMHO it should be done).
+> 
+> >  			Format: [state][,regs][,debounce][,die]
+> >  
+> >  	nmi_watchdog=	[KNL,BUGS=X86] Debugging features for SMP kernels
+> > -			Format: [panic,][num]
+> > +			Format: [panic,][nopanic,][num]
+> 
+> It would be better to support panic=[0|1], if that can be simply done
+> in a back-compatible fashion.
 
--- 
-balbi
+I am open to the idea, just can't figure the best way to implement that in
+a backwards compatible way.
+
+Personally I was wondering if there were situations where you would _not_
+want it to panic.  If the cpu is stuck spinning after 60 seconds, the odds
+of it freeing itself is low and you are probably stuck rebooting anyway.
+
+
+> 
+> >  static int __init hardlockup_panic_setup(char *str)
+> >  {
+> >  	if (!strncmp(str, "panic", 5))
+> >  		hardlockup_panic = 1;
+> > +	else if (!strncmp(str, "nopanic", 5))
+> 
+> s/5/7/
+
+doh.
+
+I can send a refreshed patch with the above changes.
+
+Cheers,
+Don
