@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab1CREIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 00:08:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49525 "EHLO song.cn.fujitsu.com"
+	id S1753216Ab1CREJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 00:09:33 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56635 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab1CREIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 00:08:42 -0400
-Message-ID: <4D82DB31.7050007@cn.fujitsu.com>
-Date: Fri, 18 Mar 2011 12:10:25 +0800
+	id S1750786Ab1CREJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 00:09:26 -0400
+Message-ID: <4D82DB5B.9000302@cn.fujitsu.com>
+Date: Fri, 18 Mar 2011 12:11:07 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 30/36] net,rcu: convert call_rcu(wq_free_rcu) to kfree_rcu()
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <jmorris@namei.org>, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 31/36] security,rcu: convert call_rcu(user_update_rcu_disposal)
+ to kfree_rcu()
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 12:07:17,
+ 2011-03-18 12:07:59,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 12:07:17,
-	Serialize complete at 2011-03-18 12:07:17
+ 2011-03-18 12:07:59,
+	Serialize complete at 2011-03-18 12:07:59
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,39 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-The rcu callback wq_free_rcu() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(wq_free_rcu).
+The rcu callback user_update_rcu_disposal() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(user_update_rcu_disposal).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- net/socket.c |   11 +----------
- 1 files changed, 1 insertions(+), 10 deletions(-)
+ security/keys/user_defined.c |   16 ++--------------
+ 1 files changed, 2 insertions(+), 14 deletions(-)
 
-diff --git a/net/socket.c b/net/socket.c
-index ac2219f..3158271 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -261,21 +261,12 @@ static struct inode *sock_alloc_inode(struct super_block *sb)
- 	return &ei->vfs_inode;
- }
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index 02807fb..71e538a 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -69,18 +69,6 @@ error:
+ EXPORT_SYMBOL_GPL(user_instantiate);
  
--
--
--static void wq_free_rcu(struct rcu_head *head)
+ /*
+- * dispose of the old data from an updated user defined key
+- */
+-static void user_update_rcu_disposal(struct rcu_head *rcu)
 -{
--	struct socket_wq *wq = container_of(head, struct socket_wq, rcu);
+-	struct user_key_payload *upayload;
 -
--	kfree(wq);
+-	upayload = container_of(rcu, struct user_key_payload, rcu);
+-
+-	kfree(upayload);
 -}
 -
- static void sock_destroy_inode(struct inode *inode)
- {
- 	struct socket_alloc *ei;
+-/*
+  * update a user defined key
+  * - the key's semaphore is write-locked
+  */
+@@ -114,7 +102,7 @@ int user_update(struct key *key, const void *data, size_t datalen)
+ 		key->expiry = 0;
+ 	}
  
- 	ei = container_of(inode, struct socket_alloc, vfs_inode);
--	call_rcu(&ei->socket.wq->rcu, wq_free_rcu);
-+	kfree_rcu(ei->socket.wq, rcu);
- 	kmem_cache_free(sock_inode_cachep, ei);
+-	call_rcu(&zap->rcu, user_update_rcu_disposal);
++	kfree_rcu(zap, rcu);
+ 
+ error:
+ 	return ret;
+@@ -145,7 +133,7 @@ void user_revoke(struct key *key)
+ 
+ 	if (upayload) {
+ 		rcu_assign_pointer(key->payload.data, NULL);
+-		call_rcu(&upayload->rcu, user_update_rcu_disposal);
++		kfree_rcu(upayload, rcu);
+ 	}
  }
  
 -- 
