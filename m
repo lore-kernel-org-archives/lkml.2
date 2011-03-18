@@ -1,150 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab1CROvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 10:51:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15740 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754913Ab1CROvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 10:51:02 -0400
-Date: Fri, 18 Mar 2011 10:50:03 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>,
-        Curt Wohlgemuth <curtw@google.com>
-Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
-Message-ID: <20110318145003.GB19859@redhat.com>
-References: <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
- <20110314202324.GG31120@redhat.com>
- <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
- <20110315184839.GB5740@redhat.com>
- <20110316131324.GM2140@cmpxchg.org>
- <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
- <20110316215214.GO2140@cmpxchg.org>
- <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
- <20110317124350.GQ2140@cmpxchg.org>
- <AANLkTinPsfz1-2O9HNXE_ej-oUa+N5YOdN+cQQimOCBP@mail.gmail.com>
+	id S1756808Ab1CROxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 10:53:37 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:48732 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab1CROxc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 10:53:32 -0400
+From: "Chumbalkar, Nagananda" <Nagananda.Chumbalkar@hp.com>
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+CC: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Fri, 18 Mar 2011 14:52:29 +0000
+Subject: RE: [RFC][PATCH v2]: PCI: PCIe links may not get configured for
+ ASPM under POWERSAVE mode
+Thread-Topic: [RFC][PATCH v2]: PCI: PCIe links may not get configured for
+ ASPM under POWERSAVE mode
+Thread-Index: AcvlNYK6zKgGHzEOQkKb5df0am5oxAARa8DQ
+Message-ID: <66D9D2F0CDB5C9428E6166B01EC85EE162ED1DE852@GVW0676EXC.americas.hpqcorp.net>
+References: <20110318041801.2349.33357.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+ <4D82EDAC.8070307@jp.fujitsu.com>
+In-Reply-To: <4D82EDAC.8070307@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinPsfz1-2O9HNXE_ej-oUa+N5YOdN+cQQimOCBP@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 12:57:09AM -0700, Greg Thelen wrote:
 
-[..]
-> I think this is a good idea to allow per memcg per bdi list of dirty mappings.
-> 
-> It feels like some of this is starting to gel.  I've been sketching
-> some of the code to see how the memcg locking will work out.  The
-> basic structures I see are:
-> 
-> struct mem_cgroup {
->         ...
->         /*
->          * For all file pages cached by this memcg sort by bdi.
->          * key is struct backing_dev_info *; value is struct memcg_bdi *
->          * Protected by bdis_lock.
->          */
->         struct rb_root bdis;
->         spinlock_t bdis_lock;  /* or use rcu structure, memcg:bdi set
-> could be fairly static */
-> };
-> 
-> struct memcg_bdi {
->         struct backing_dev_info *bdi;
->         /*
->          * key is struct address_space *; value is struct
-> memcg_mapping *
->          * memcg_mappings live within either mappings or
-> dirty_mappings set.
->          */
->         struct rb_root mappings;
->         struct rb_root dirty_mappings;
->         struct rb_node node;
->         spinlock_t lock; /* protect [dirty_]mappings */
-> };
-> 
-> struct memcg_mapping {
->         struct address_space *mapping;
->         struct memcg_bdi *memcg_bdi;
->         struct rb_node node;
->         atomic_t nr_pages;
->         atomic_t nr_dirty;
-> };
-> 
-> struct page_cgroup {
->         ...
->         struct memcg_mapping *memcg_mapping;
-> };
-> 
-> - each memcg contains a mapping from bdi to memcg_bdi.
-> - each memcg_bdi contains two mappings:
->   mappings: from address_space to memcg_mapping for clean pages
->   dirty_mappings: from address_space to memcg_mapping when there are
-> some dirty pages
+>-----Original Message-----
+>From: Kenji Kaneshige [mailto:kaneshige.kenji@jp.fujitsu.com]
+>Sent: Friday, March 18, 2011 12:29 AM
+>To: Chumbalkar, Nagananda
+>Cc: jbarnes@virtuousgeek.org; rjw@sisk.pl; mjg59@srcf.ucam.org; linux-
+>kernel@vger.kernel.org; linux-pci@vger.kernel.org
+>Subject: Re: [RFC][PATCH v2]: PCI: PCIe links may not get configured for
+>ASPM under POWERSAVE mode
+>
+>(2011/03/18 13:21), Naga Chumbalkar wrote:
+>> v2 ->  v1:
+>> 	. Kept the logic in pci_raw_set_power_state
+>> 	. Changed the ASPM enabling logic
+>> 	. Modified the text that describes the problem
+>>
+>> v1	: http://marc.info/?l=linux-pci&m=130013164703283&w=2
+>>
+>> The assumption made in commit 41cd766b065970ff6f6c89dd1cf55fa706c84a3d
+>> (PCI: Don't enable aspm before drivers have had a chance to veto it)
+>that
+>> pci_enable_device() will result in re-configuring ASPM when
+>aspm_policy is
+>> POWERSAVE is no longer valid.  This is due to commit
+>> 97c145f7c87453cec90e91238fba5fe2c1561b32 (PCI: read current power
+>state
+>> at enable time) which resets dev->current_state to D0. This makes the
+>> equality check (below) become true, so pcie_aspm_pm_state_change()
+>never
+>> gets called.
+>> ./drivers/pci/pci.c: pci_raw_set_pci_power_state()
+>> 546         /* Check if we're already there */
+>> 547         if (dev->current_state == state)
+>> 548                 return 0;
+>>
+>> So OSPM doesnn't configure the PCIe links for ASPM.
+>>
+>> The patch below does the following:
+>> At the end of each Root Bridge scan make a call to configure ASPM when
+>the
+>> ASPM policy is set to "powersave" mode. Note that if a previous pass
+>had
+>> completed the configuration for all devices under that Bridge then the
+>> configuration will not take place again because
+>pcie_config_aspm_link()
+>> checks to see if the link is already in the requested state.
+>> We won't reconfigure ASPM when _OSC control is not granted.
+>
+>Which _OSC controls do we need for configuring ASPM?
 
-Keeping dirty_mappings separate sounds like a good idea. To me this is
-equivalent of wb->b_dirty and down the line we might want to also
-maintain equivalent of ->b_io and ->b_more_io. But that's for later.
+There is no _OSC Control bit for ASPM. However, we expect the BIOS to 
+support _OSC for a Root Bridge that originates a PCIe hierarchy. If this
+is not the case - would it be okay to disable ASPM also?
 
-> - each memcg_mapping represents a set of cached pages within an
-> bdi,inode,memcg.  All
->  corresponding cached inode pages point to the same memcg_mapping via
->  pc->mapping.  I assume that all pages of inode belong to no more than one bdi.
-> - manage a global list of memcg that are over their respective background dirty
->  limit.
-> - i_mapping continues to point to a traditional non-memcg mapping (no change
->  here).
-> - none of these memcg_* structures affect root cgroup or kernels with memcg
->  configured out.
+Commit 852972acff8f10f3a15679be2059bb94916cba5d (ACPI: Disable ASPM if the 
+Platform won't provide _OSC control for PCIe) describes the above scenario.
 
-So there will not be any memcg structure for root cgroup? Then how would
-we make sure that flusher thread does not starve either root cgroup inodes
-or memory cgroup inodes. I thought if everything is on a single list
-(including root group), then we could just select cgroups to writeback in
-round robin manner. Now with root cgroup not being on that list, how
-would you make sure that root group's inodes don't starve writeback. 
+To quote from there: 
+The PCI SIG documentation for the _OSC OS/firmware handshaking interface
+states:
 
-> 
-> The routines under discussion:
-> - memcg charging a new inode page to a memcg: will use inode->mapping and inode
->  to walk memcg -> memcg_bdi -> mappings and lazily allocating missing
->  levels in data structure.
-> 
-> - Uncharging a inode page from a memcg: will use pc->mapping->memcg to locate
->  memcg.  If refcnt drops to zero, then remove memcg_mapping from the
-> memcg_bdi.[dirty_]mappings.
->  Also delete memcg_bdi if last memcg_mapping is removed.
-> 
-> - account_page_dirtied(): increment nr_dirty.  If first dirty page,
-> then move memcg_mapping from memcg_bdi.mappings to
-> memcg_bdi.dirty_mappings page counter.  When marking page clean, do
-> the opposite.
-> 
-> - mem_cgroup_balance_dirty_pages(): if memcg dirty memory usage if above
->  background limit, then add memcg to global memcg_over_bg_limit list and use
->  memcg's set of memcg_bdi to wakeup each(?) corresponding bdi flusher.  If over
->  fg limit, then use IO-less style foreground throttling with per-memcg per-bdi
->  (aka memcg_bdi) accounting structure.
+"If the _OSC control method is absent from the scope of a host bridge
+device, then the operating system must not enable or attempt to use any
+features defined in this section for the hierarchy originated by the host
+bridge."
 
-In other mail Jan mentioned that mem_cgroup_balance_dirty_pages() is per bdi
-so we have to wake up only corresponding bdi flusher thread only.
+The obvious interpretation of this is that the OS should not attempt to use
+PCIe hotplug, PME or AER - however, the specification also notes that an
+_OSC method is *required* for PCIe hierarchies, and experimental validation
+with An Alternative OS indicates that it doesn't use any PCIe functionality
+if the _OSC method is missing. That arguably means we shouldn't be using
+MSI or extended config space, but right now our problems seem to be limited
+to vendors being surprised when ASPM gets enabled on machines when other
+OSs refuse to do so. So, for now, let's just disable ASPM if the _OSC
+method doesn't exist or refuses to hand over PCIe capability control.
 
-Thanks
-Vivek
+- naga -
+
+
