@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab1CRQzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 12:55:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:16891 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757186Ab1CRQzB (ORCPT
+	id S1757194Ab1CRQ60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 12:58:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52691 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757187Ab1CRQ6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 12:55:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=gXXkvmO0yte57LQCXGUnWV8zPx+EnJ5dS7lpgzyz9H4Aaz9l9Op/PH7prrbqSmz+UH
-         RxzFR1i4jbKUxKTmC+vA==
+	Fri, 18 Mar 2011 12:58:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: IIO comments
+Date: Fri, 18 Mar 2011 17:57:58 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+References: <201103152215.20059.arnd@arndb.de> <201103181718.08502.arnd@arndb.de> <4D83885C.3050402@cam.ac.uk>
+In-Reply-To: <4D83885C.3050402@cam.ac.uk>
 MIME-Version: 1.0
-In-Reply-To: <20110315211353.GA9992@ghc17.ghc.andrew.cmu.edu>
-References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
- <20110208013950.GF31569@ghc17.ghc.andrew.cmu.edu> <AANLkTinEnNsu8=PEktXL_EECzGYqsgdf+uogGxe7k4W+@mail.gmail.com>
- <20110310061831.GA23736@ghc17.ghc.andrew.cmu.edu> <AANLkTikkmfwk0nV0p=omz2ddrw+ZqWF1Lx3EfO6dTjEQ@mail.gmail.com>
- <20110315211353.GA9992@ghc17.ghc.andrew.cmu.edu>
-From: Paul Menage <menage@google.com>
-Date: Fri, 18 Mar 2011 09:54:33 -0700
-Message-ID: <AANLkTim4z_x_UQE__f5t73Dimja8PTTXTKKgj2phv6FY@mail.gmail.com>
-Subject: Re: [PATCH v8 3/3] cgroups: make procs file writable
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-        matthltc@us.ibm.com, oleg@redhat.com,
-        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103181757.58218.arnd@arndb.de>
+X-Provags-ID: V02:K0:nzymnz4/PDeCiyx8lfxrQEPxGqTk+d5QfaVUwACRJyX
+ pTNS0KkA/mUmp+AdTBNTJFySuWH87Mz5cQBK75tT2gHKl2EdER
+ FFFVl7dtbM1gBARomkX1eERZqUkAYbTlDL1MSSSW99ggF/wK0H
+ HQ9lWT+SstVYnjV6inQch74zrpVqpyGnuPmCEys/cDR3uSQR/g
+ Hj8XPSAbx6yMv85e1ZxXQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 15, 2011 at 2:13 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
->
-> Hmm, you may be right; my understanding of RCU is not complete. But
-> actually I think the BUG_ON should just be removed, since we're about to
-> drop locks before handing off to cgroup_attach_proc anyway (so at no
-> important part is the assertion guaranteed), which will detect and
-> EAGAIN if such a race happened.
+On Friday 18 March 2011, Jonathan Cameron wrote:
+> > I guess if it's always in${i}-in${i+1}, it's still not too hard.
+> I think they have been so far, but doubt this is universal.
+> How about having a diff type and just having a pair of indices in the
+> channel structure?  Actually may need a third for x^2+y^2+z^2 devices.
+> (iirc there are parts that do x^2+y^2 despite also having a z channel)
+> ...
 
-Sounds good.
+If two identifiers are common, that would probably be fine.
 
->
-> Hmm, well, should I make this assumption, then? The code would not be
-> more complicated either way, really. I kind of prefer it as it is...
->
+If you have a x^2+y^2+z^2 device, it might be easier to call that
+a different type with a fixed name, as long as there is a small
+number of combinations.
 
-OK, I guess either way is OK until we can prove otherwise :-)
-
-Paul
+	Arnd
