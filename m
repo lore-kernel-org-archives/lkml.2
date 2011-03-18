@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1CRBL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 21:11:28 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54355
+	id S1756259Ab1CRBNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 21:13:00 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33086
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755611Ab1CRBL0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755787Ab1CRBM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 21:11:26 -0400
-Date: Thu, 17 Mar 2011 18:12:03 -0700 (PDT)
-Message-Id: <20110317.181203.193711655.davem@davemloft.net>
-To: roland@kernel.org
-Cc: sean.hefty@intel.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+	Thu, 17 Mar 2011 21:12:58 -0400
+Date: Thu, 17 Mar 2011 18:13:36 -0700 (PDT)
+Message-Id: <20110317.181336.226775410.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: roland@kernel.org, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org, hal.rosenstock@gmail.com,
         eric.dumazet@gmail.com, tj@kernel.org, xiaosuo@gmail.com,
         linux-rdma@vger.kernel.org
-Subject: Re: [PATCH] rdma/addr: Initialize ret to fix build warning
+Subject: Re: linux-next: build warning in Linus' tree
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikB=ZQQG18sDbD2kfFMWdVuUqnzYWOf7KtuBKVc@mail.gmail.com>
+In-Reply-To: <20110318100418.6556c92c.sfr@canb.auug.org.au>
 References: <20110318100418.6556c92c.sfr@canb.auug.org.au>
-	<CF9C39F99A89134C9CF9C4CCB68B8DDF25CCC10249@orsmsx501.amr.corp.intel.com>
-	<AANLkTikB=ZQQG18sDbD2kfFMWdVuUqnzYWOf7KtuBKVc@mail.gmail.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -28,16 +26,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@kernel.org>
-Date: Thu, 17 Mar 2011 16:56:27 -0700
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 18 Mar 2011 10:04:18 +1100
 
-> On Thu, Mar 17, 2011 at 4:35 PM, Hefty, Sean <sean.hefty@intel.com> wrote:
->> Commit b23dd4fe42b455af5c6e20966b7d6959fa8352ea (ipv4: Make output
->> route lookup return rtable directly) resulted in leaving
->> ret uninitialized, where it may later be returned.
+> Hi all,
 > 
-> Looks good to me, I'll merge this.
+> After merging the Linus' tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced this warning:
+> 
+> drivers/infiniband/core/addr.c: In function 'addr4_resolve':
+> drivers/infiniband/core/addr.c:188: warning: 'ret' may be used uninitialized in this function
+> 
+> I didn't notice this one before, sorry.
+> 
+> I don't know what introduced it, but the third if statement in the
+> function will make us use "ret" uninitialised.
 
-Thanks Roland.
+It was the ipv4 route lookup interface changes.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Roland has received a fix already, and will merge it via the infiniband
+tree.
