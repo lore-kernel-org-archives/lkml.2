@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab1CRHRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 03:17:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47838 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab1CRHQ7 (ORCPT
+	id S1756352Ab1CRHY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 03:24:58 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45054 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756305Ab1CRHYw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 03:16:59 -0400
+	Fri, 18 Mar 2011 03:24:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:reply-to:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=pGtMCBF1a+60sVJy4pfedOuz8b6ULulGRDeBlybUpmpnss6/LtzDIMa77pTuAXuWea
-         8DTKrUtppfZBO5zAB9C5BC4TFHDAr1CmnNYa3buPV4M3GTW++WoE0y7wNAn5uulAQAev
-         fFoyhyclSfb+XPjOPnoOEdqvIGX6iWTtO7sgM=
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-Organization: Nanjing University
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte mapping to ksm pages
-Date: Fri, 18 Mar 2011 15:16:37 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.36.4; KDE/4.6.1; i686; ; )
-Cc: Izik Eidus <ieidus@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        kernel-janitors@vger.kernel.org
-References: <201102262256.31565.nai.xia@gmail.com> <20110301154100.212c4ff9.akpm@linux-foundation.org>
-In-Reply-To: <20110301154100.212c4ff9.akpm@linux-foundation.org>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ZvUd0TVwVyR1yHtttG9Q/2bcIYbG5XcRf93/sLISttz4M2jKbdmz5L+lNNxRVmKAsI
+         hl0IirMKTiv+JXr7/ibFOmGKSpfYxKHK+4AqiOKXGUdxC0CmSKMFNcZTeQGJ39AgPYZp
+         G1cmuOb7H/ZVn+PdqMKvGGBxWVYR/5qJhdaxA=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103181516.37671.nai.xia@gmail.com>
+In-Reply-To: <4D82A068.7020101@snapgear.com>
+References: <4D5DB83D.80205@snapgear.com>
+	<AANLkTin0X-ST=rZqwfCA0i5VGCh5ygYXyZFdndiDgR_2@mail.gmail.com>
+	<AANLkTim=kQOMyKqOEkw5iQjpGhDf0YGMe1ZTnJZkKfr7@mail.gmail.com>
+	<4D5EEEBB.7050708@snapgear.com>
+	<AANLkTimmfUJASL47Cs80FJ2mkx3PPvAX57x43nF09tns@mail.gmail.com>
+	<4D61A986.3060308@snapgear.com>
+	<AANLkTimtr0JbmM2PNtGRyAKE7kNr_FXd==ZC3bM82xsG@mail.gmail.com>
+	<4D82A068.7020101@snapgear.com>
+Date: Fri, 18 Mar 2011 08:24:50 +0100
+X-Google-Sender-Auth: PUUNjbFHtXHHBZWmc0EDLeJMiSE
+Message-ID: <AANLkTikr=HVVKxuTqwh8U=LDmaMCMpOkdUxdo+pw_tz4@mail.gmail.com>
+Subject: Re: merge of m68knommu and m68k arch branches?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        uClinux development list <uclinux-dev@uclinux.org>,
+        Greg Ungerer <gerg@uclinux.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg,
 
->On Wednesday 02 March 2011, at 07:41:00, <Andrew Morton <akpm@linux-foundation.org>> wrote
-> On Sat, 26 Feb 2011 22:56:31 +0800
-> Nai Xia <nai.xia@gmail.com> wrote:
-> 
-> > ksm_pages_sharing is updated by ksmd periodically.  In some cases, it cannot 
-> > reflect the actual savings and makes the benchmarks on volatile VMAs very 
-> > inaccurate.
-> > 
-> > This patch add a vm_stat entry and let the /proc/meminfo show information 
-> > about how much virutal address pte is being mapped to ksm pages.  With default 
-> > ksm paramters (pages_to_scan==100 && sleep_millisecs==20), this can result in 
-> > 50% more accurate averaged savings result for the following test program. 
-> > Bigger sleep_millisecs values will increase this deviation. 
-> 
-> So I think you're saying that the existing ksm_pages_sharing sysfs file
-> is no good.
-> 
-> You added a new entry to /proc/meminfo and left ksm_pages_sharing
-> as-is.  Why not leave /proc/meminfo alone, and fix up the existing
-> ksm_pages_sharing?
+On Fri, Mar 18, 2011 at 00:59, Greg Ungerer <gerg@snapgear.com> wrote:
+> Looks like we both have our changes for m68k and m68knommu in Linus'
+> git tree for this merge window. Do you plan to push anything else?
 
+Nothing planned for now.
 
-The ksm_pages_sharing is really a count for how many "rmap_item"s is currently
-linked in stable_nodes. ksmd updates ksm_pages_sharing whenever it's waken up.
-However, just during the time ksmd is sleeping, many shared KSM pages can be 
-broken because of page writes. So ksm_pages_sharing means much more an internal
-state for ksm than a real count for how much pages is being shared at some time
-point. Since the state of the internal data structures of ksm is only updated 
-by ksmd privately. I think it's hard to make it correctly reflect the real time
-memory saving. So I just added another count and let ksm_pages_sharing still 
-focus on it original role.
+> If you are done I will prepare a single git commit on the m68knommu
+> git tree that merges the m68knommu and m68k arch branches. I will
+> post here again for one last check over early next week, and if
+> everyone is happy I will ask Linus to pull it later next week.
+>
+> How does that sound?
 
-> 
-> Also, the patch accumulates the NR_KSM_PAGES_SHARING counts on a
-> per-zone basis as well as on a global basis, but only provides the
-> global count to userspace.  The per-zone counts are potentially
-> interesting?  If not, maintaining the per-zone counters is wasted
-> overhead.
+Sounds great! Thx!
 
-Yes, I will make it to the zoneinfo, soon. 
+Gr{oetje,eeting}s,
 
-> 
-> > 
-> > --- test.c-----
-> >
-> 
-> The "^---" token conventionally means "end of changelog".  Please avoid
-> inserting it into the middle of the changelog.
+                        Geert
 
-OK, I understand now. :)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-> 
-> > +++ b/mm/ksm.c
-> > @@ -897,6 +897,7 @@ static int try_to_merge_one_page(struct vm_area_struct 
-> > *vma,
-> 
-> Your email client wordwraps the patches.
-
-Oops, sorry for the crappy client it is also responsible for my late reply.
-I will fix it soon.
-
-Nai
-
-> 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
