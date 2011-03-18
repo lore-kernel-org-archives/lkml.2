@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab1CRKJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 06:09:59 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36054 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab1CRKJv (ORCPT
+	id S932457Ab1CRKQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 06:16:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39546 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223Ab1CRKQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 06:09:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=CfiNS3wnRNucLFHIhvZHL+USQ8rhJaNdsx+8TK4Y6G1mQ2bHrRKnLcJEvDcY/kRG+a
-         4tb9jd8Kj2tncMiE4EyPiaB8ZeYtFIhfrIZGA7DtSK38NggGcAhXcAMOQdtfy9MsEYPu
-         9BxUl+3fgu3m1c7hfT7u2eMTnlgf1UgJqIuFs=
-Message-ID: <4D832F6A.70308@linaro.org>
-Date: Fri, 18 Mar 2011 10:09:46 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
+	Fri, 18 Mar 2011 06:16:09 -0400
+Date: Fri, 18 Mar 2011 10:15:12 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
+Message-ID: <20110318101512.GA15375@n2100.arm.linux.org.uk>
+References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
 MIME-Version: 1.0
-To: Roger Quadros <roger.quadros@Nokia.com>
-CC: ext Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-References: <20110311161421.GA7843@kroah.com> <201103172311.36246.arnd@arndb.de> <4D831AEF.3020109@nokia.com> <201103181001.17308.arnd@arndb.de> <4D832BF4.9000004@nokia.com>
-In-Reply-To: <4D832BF4.9000004@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2011 09:55 AM, Somebody in the thread at some point said:
+On Thu, Mar 17, 2011 at 07:50:36PM -0700, Linus Torvalds wrote:
+> On Thu, Mar 17, 2011 at 11:30 AM, Tony Lindgren <tony@atomide.com> wrote:
+> >
+> > Please pull omap changes for this merge window from:
+> 
+> Gaah. Guys, this whole ARM thing is a f*cking pain in the ass.
 
->>> So how does the Host LAN driver know what MAC address it should use?
->>
->> This is the problem we're trying to work out. The EEPROM is not
->> present, and user space has no way of knowing which MAC address
->> to set to which device. Note that there might be multiple
->> USB devices of the same type that are indistinguishable to user
->> space, so setting the MAC address there would not be completely
->> safe.
->>
->
-> And what happens if you need to use u-boot or some bootloader with
-> ethernet network support?
->
-> Wouldn't it be better to have the MAC address programmed at the
-> bootloader level?
+Please be more specific.  ARM is not small.  ARM as an architecture is
+_massive_, with lots of people working in it.  By blaming 'ARM', it's a
+bit like blaming the entire planet for problems in one country.
 
-Generally trying to have stuff half done in bootloader and half in Linux 
-makes things fragile and makes another place for trouble to hide (in 
-addition to bootloader state such as U-Boot env or boot.scr or 
-what-have-you needing distro control for updates).
+You've only had merge conflicts with IMX/MXC and OMAP so far, and that
+hardly warrants taring the "whole ARM thing" with the same brush.
 
-If your bootloader is bloated enough to target network operations under 
-its own steam, it's bloated enough to set a random MAC or use the same 
-CPU ID scheme.  But it doesn't mean that Linux should not assert the 
-state it wants when it runs.
+Most people are trying very hard to do the right thing.
 
--Andy
+> Somebody needs to get a grip in the ARM community. I do want to do
+> these merges, just to see how screwed up things are, but guys, this is
+> just ridiculous.
 
+It isn't as bad as you think it is for the majority of ARM stuff.
 
+> The pure amount of crazy churn is annoying in itself,
+> but when I then get these "independent" pull requests from four
+> different people, and they touch the same files, that indicates that
+> something is wrong.
+
+I have already complained to Uwe and Sascha about the IMX/MXC conflicts.
+It already struck me that there's something seriously wrong at
+pengutronix.com as both Uwe and Sascha work in the same area, yet don't
+coordinate their efforts.  It seems to me that Uwe is completely
+independent of everyone else.
+
+As for anything else, I really don't see a problem.  There are changes
+in core ARM code which have impacts on _every_ ARM platform.  It's just
+a fact of life that there could be conflicts between core changes and
+platform changes.  That's not because things are uncoordinated - I do
+try to ensure that such patches receive as many acks from maintainers
+as possible.
+
+> Somebody in the ARM community really needs to step up and tell people
+> to stop dicking around.
+
+You mean like I've already done with Uwe and Sascha?
+
+I do get the impression that you're extremely unhappy with the way ARM
+stuff works, and I've no real idea how to solve that.  I think much of
+it is down to perception rather than anything tangible.
+
+Maybe the only solution is for ARM to fork the kernel, which is something
+I really don't want to do - but from what I'm seeing its the only solution
+which could come close to making you happy.
