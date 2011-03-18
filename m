@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab1CRTdQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 15:33:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52518 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab1CRTdJ (ORCPT
+	id S932236Ab1CRTe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 15:34:57 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60114
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756818Ab1CRTeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 15:33:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Subject: Re: 2.6.38: XFS/USB/HW issue, or failing USB stick?
-Date: Fri, 18 Mar 2011 20:33:02 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
-Cc: Tim Soderstrom <tim@moocowproductions.org>, linux-usb@vger.kernel.org,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, flashbench-results@lists.linaro.org
-References: <alpine.DEB.2.02.1103181104020.30018@p34.internal.lan> <201103182010.37455.arnd@arndb.de> <alpine.DEB.2.02.1103181524400.21715@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1103181524400.21715@p34.internal.lan>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 18 Mar 2011 15:34:50 -0400
+Date: Fri, 18 Mar 2011 12:35:28 -0700 (PDT)
+Message-Id: <20110318.123528.71127686.davem@davemloft.net>
+To: laijs@cn.fujitsu.com
+Cc: paulmck@linux.vnet.ibm.com, mingo@elte.hu, axboe@kernel.dk,
+        robert.w.love@intel.com, James.Bottomley@suse.de,
+        nhorman@tuxdriver.com, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        eric.dumazet@gmail.com, shemminger@vyatta.com, tj@kernel.org,
+        jarkao2@gmail.com, linux-kernel@vger.kernel.org, devel@open-fcoe.org,
+        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 01/36] net,rcu: convert call_rcu(free_dm_hw_stat) to
+ kfree_rcu()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D82D3FF.2080303@cn.fujitsu.com>
+References: <4D82D071.5020703@cn.fujitsu.com>
+	<4D82D3FF.2080303@cn.fujitsu.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103182033.02793.arnd@arndb.de>
-X-Provags-ID: V02:K0:qRZhx1/MvMNAMNOqzu24f28NDf3lhYLp35EJqN8D8hT
- KDVODHPjteNn990G9iPD004yVyeoPhDy9gjsudUqGS/jwZe9ZH
- B/KAXCvtfwJdQgeIttDESDCmeMkuQ3BrHqowjKBEewmZ0skcd/
- BxJaAe2Lt3l8am/ySJmb9E1RG8s3UjrL5Dq7IIXW7UEeB1d46e
- rNU0sWJ9O5cnwoi9V5PHw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 March 2011 20:26:46 Justin Piszcz wrote:
-> > The numbers are jumping around a bit with the incorrectly guessed erasesize.
-> > These values should be more like the ones in the first test. Can you rerun
-> > with --erasesize=$[4 * 1024 * 1024]?
-> Hi, I put the box back into production with ext2, if it fails again I can 
-> re-run.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Fri, 18 Mar 2011 11:39:43 +0800
 
-Ok. Did you make sure to get the partition table right? It's
-rather tricky with fdisk, since it normally doesn't align
-to 4 MB. You can see this using 'fdisk -l -u /dev/sda'.
-
-> > Also, what is the output of 'lsusb' for this stick? I'd like to add the
-> > data to https://wiki.linaro.org/WorkingGroups/KernelConsolidation/Projects/FlashCardSurvey
-> Sure,
-> Bus 001 Device 002: ID 0325:ac02 OCZ Technology Inc ATV Turbo / Rally2 Dual Channel USB 2.0 Flash Drive
 > 
+> 
+> The rcu callback free_dm_hw_stat() just calls a kfree(),
+> so we use kfree_rcu() instead of the call_rcu(free_dm_hw_stat).
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Added now, thanks!
-
-Do you also have the product name for this?
-
-	Arnd
+Acked-by: David S. Miller <davem@davemloft.net>
