@@ -1,156 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab1CRPrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 11:47:10 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36389 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756257Ab1CRPrF (ORCPT
+	id S1757060Ab1CRPus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 11:50:48 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:48289 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756694Ab1CRPun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 11:47:05 -0400
-X-Sasl-enc: 8J51c8xWK47B/mPA5vTuLbTKrUFvd6BHkGgRIlfpoKlM 1300463224
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/5] eCryptfs: move ecryptfs_find_auth_tok_for_sig() call before mutex_lock
-Date: Fri, 18 Mar 2011 16:44:13 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.35.11-83.fc14.x86_64; KDE/4.5.5; x86_64; ; )
-Cc: kirkland@canonical.com, dhowells@redhat.com, jmorris@namei.org,
-        linux-fsdevel@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, ecryptfs-devel@lists.launchpad.net
-References: <1300362538-11502-1-git-send-email-roberto.sassu@polito.it> <1300362538-11502-5-git-send-email-roberto.sassu@polito.it> <20110318153049.GB22193@boyd.l.tihix.com>
-In-Reply-To: <20110318153049.GB22193@boyd.l.tihix.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 18 Mar 2011 11:50:43 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=IuJFVwVIjkNtg4pe9H0I/MIWzICWoHW9LRenzx9JB8d3THsZdpX3UCqQ3M/cXYLQv+wfUlXU+5pI9+ugPORi4RwQrdgx83GBiUz9rnsDGLaOl+IMRLZXbbydlzRaaJmJ;
+Date: Fri, 18 Mar 2011 08:50:33 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
+Cc: <linux-i2c@vger.kernel.org>, <arnd@arndb.de>, <sameo@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hthebaud@insidefr.com>,
+        <matti.j.aaltonen@nokia.com>
+Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+Message-Id: <20110318085033.9bea6dc9.rdunlap@xenotime.net>
+In-Reply-To: <1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+	<1300444824-13713-2-git-send-email-waldemar.rymarkiewicz@tieto.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103181644.13456.roberto.sassu@polito.it>
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 18, 2011 04:30:50 pm Tyler Hicks wrote:
-> On Thu Mar 17, 2011 at 12:48:53PM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> > The ecryptfs_find_auth_tok_for_sig() call is moved before the
-> > mutex_lock(s->tfm_mutex) instruction in order to avoid possible deadlocks
-> > that may occur by holding the lock on the two semaphores 'key->sem' and
-> > 's->tfm_mutex' in reverse order.
-> > 
-> > Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> > ---
-> >  fs/ecryptfs/keystore.c |   42 +++++++++++++++++++++++-------------------
-> >  1 files changed, 23 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> > index e35d745..d066217 100644
-> > --- a/fs/ecryptfs/keystore.c
-> > +++ b/fs/ecryptfs/keystore.c
-> > @@ -538,6 +538,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
-> >  			     char *filename, size_t filename_size)
-> >  {
-> >  	struct ecryptfs_write_tag_70_packet_silly_stack *s;
-> > +	struct ecryptfs_auth_tok *auth_tok;
-> 
-> Why declare a new ecryptfs_auth_tok struct pointer here? The idea behind
-> the ecryptfs_write_tag_70_packet_silly_stack struct is to keep stack
-> size at a minimum. Since it already has s->auth_tok, I don't see why we
-> would need to declare a new one.
-> 
+On Fri, 18 Mar 2011 11:40:24 +0100 Waldemar Rymarkiewicz wrote:
 
-Hi Tyler
+> Add new driver for MicroRead NFC chip connected to i2c bus.
+> 
+> See Documentation/nfc/nfc-microread.txt.
+> 
+> Signed-off-by: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
+> ---
+>  Documentation/nfc/nfc-microread.txt |   46 ++++
+>  drivers/nfc/Kconfig                 |   10 +
+>  drivers/nfc/Makefile                |    1 +
+>  drivers/nfc/microread.c             |  465 +++++++++++++++++++++++++++++++++++
+>  include/linux/nfc/microread.h       |   31 +++
+>  5 files changed, 553 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/nfc/nfc-microread.txt
+>  create mode 100644 drivers/nfc/microread.c
+>  create mode 100644 include/linux/nfc/microread.h
+> 
+> diff --git a/Documentation/nfc/nfc-microread.txt b/Documentation/nfc/nfc-microread.txt
+> new file mode 100644
+> index 0000000..e15c49c
+> --- /dev/null
+> +++ b/Documentation/nfc/nfc-microread.txt
+> @@ -0,0 +1,46 @@
+> +Kernel driver for Inside Secure MicroRead Near Field Communication chip
+> +
+> +General
+> +-------
+> +
+> +microread is the RF chip that uses Near Field Communication (NFC) for proximity
+> +transactions and interactions.
+> +
+> +Please visit Inside Secure webside for microread specification:
 
-i did this because i was thinking that 'tfm_mutex' is protecting
-the 'auth_tok' field of the ecryptfs_parse_tag_70_packet_silly_stack
-structure. Sorry, my mistake.
+                              website (or web site)
 
-Thanks
+> +http://www.insidesecure.com/eng/Products/NFC-Products/MicroRead
+> +
+> +
+> +The Driver
+> +----------
+> +
+> +The microread driver can be found under drivers/nfc/microread.c and it's
+> +compiled as a module named "microread".
+> +
+> +The driver supports i2c interface only.
+> +
+> +The userspace application can use /dev/microread device to control the chip by
+> +HCI messages. In a typical scenario application will open() /dev/microread,
+> +reset the chip useing ioctl() interface then poll() the device to check if
 
-Roberto
+                  using
+
+> +writing/reaing is possible.Finally, will read/write data (HCI) from/to the chip.
+
+           reading is possible. Finally, it will
+
+> +
+> +Note that only one application can use the /dev/microread at the time.
+> +
+> +The driver waits for microread chip interrupt which occures if there are some
+
+                                                       occurs
+
+> +data to be read. Then, poll() will indicate that fact to the userspace.
+> +
+> +The application can use ioctl(MICROREAD_IOC_RESET)to reset the hardware.
+
+                                              _RESET) to reset
+
+> +
+> +
+> +Platform Data
+> +-------------
+> +
+> +The below platform data should be set when configuring board.
+> +
+> +struct microread_nfc_platform_data {
+> +	unsigned int rst_gpio;
+> +	unsigned int irq_gpio;
+> +	unsigned int ioh_gpio;
+> +	int (*request_hardware) (struct i2c_client *client);
+> +	void (*release_hardware) (void);
+> +};
+> +
 
 
-> >  	struct key *auth_tok_key = NULL;
-> >  	int rc = 0;
-> > 
-> > @@ -550,6 +551,16 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
-> >  	}
-> >  	s->desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-> >  	(*packet_size) = 0;
-> > +	rc = ecryptfs_find_auth_tok_for_sig(
-> > +		&auth_tok_key,
-> > +		&auth_tok, mount_crypt_stat,
-> > +		mount_crypt_stat->global_default_fnek_sig);
-> > +	if (rc) {
-> > +		printk(KERN_ERR "%s: Error attempting to find auth tok for "
-> > +		       "fnek sig [%s]; rc = [%d]\n", __func__,
-> > +		       mount_crypt_stat->global_default_fnek_sig, rc);
-> > +		goto out;
-> > +	}
-> >  	rc = ecryptfs_get_tfm_and_mutex_for_cipher_name(
-> >  		&s->desc.tfm,
-> >  		&s->tfm_mutex, mount_crypt_stat->global_default_fn_cipher_name);
-> > @@ -635,16 +646,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
-> >  		goto out_free_unlock;
-> >  	}
-> >  	dest[s->i++] = s->cipher_code;
-> > -	rc = ecryptfs_find_auth_tok_for_sig(
-> > -		&auth_tok_key,
-> > -		&s->auth_tok, mount_crypt_stat,
-> > -		mount_crypt_stat->global_default_fnek_sig);
-> > -	if (rc) {
-> > -		printk(KERN_ERR "%s: Error attempting to find auth tok for "
-> > -		       "fnek sig [%s]; rc = [%d]\n", __func__,
-> > -		       mount_crypt_stat->global_default_fnek_sig, rc);
-> > -		goto out_free_unlock;
-> > -	}
-> > +	s->auth_tok = auth_tok;
-> >  	/* TODO: Support other key modules than passphrase for
-> >  	 * filename encryption */
-> >  	if (s->auth_tok->token_type != ECRYPTFS_PASSWORD) {
-> > @@ -831,6 +833,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
-> >  			     char *data, size_t max_packet_size)
-> >  {
-> >  	struct ecryptfs_parse_tag_70_packet_silly_stack *s;
-> > +	struct ecryptfs_auth_tok *auth_tok;
-> 
-> Same here as above.
-> 
-> Tyler
-> 
-> >  	struct key *auth_tok_key = NULL;
-> >  	int rc = 0;
-> > 
-> > @@ -898,6 +901,15 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
-> >  		       __func__, s->cipher_code);
-> >  		goto out;
-> >  	}
-> > +	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
-> > +					    &auth_tok, mount_crypt_stat,
-> > +					    s->fnek_sig_hex);
-> > +	if (rc) {
-> > +		printk(KERN_ERR "%s: Error attempting to find auth tok for "
-> > +		       "fnek sig [%s]; rc = [%d]\n", __func__, s->fnek_sig_hex,
-> > +		       rc);
-> > +		goto out;
-> > +	}
-> >  	rc = ecryptfs_get_tfm_and_mutex_for_cipher_name(&s->desc.tfm,
-> >  							&s->tfm_mutex,
-> >  							s->cipher_string);
-> > @@ -944,15 +956,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
-> >  	 * >= ECRYPTFS_MAX_IV_BYTES. */
-> >  	memset(s->iv, 0, ECRYPTFS_MAX_IV_BYTES);
-> >  	s->desc.info = s->iv;
-> > -	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
-> > -					    &s->auth_tok, mount_crypt_stat,
-> > -					    s->fnek_sig_hex);
-> > -	if (rc) {
-> > -		printk(KERN_ERR "%s: Error attempting to find auth tok for "
-> > -		       "fnek sig [%s]; rc = [%d]\n", __func__, s->fnek_sig_hex,
-> > -		       rc);
-> > -		goto out_free_unlock;
-> > -	}
-> > +	s->auth_tok = auth_tok;
-> >  	/* TODO: Support other key modules than passphrase for
-> >  	 * filename encryption */
-> >  	if (s->auth_tok->token_type != ECRYPTFS_PASSWORD) {
-> 
-> 
-> 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
