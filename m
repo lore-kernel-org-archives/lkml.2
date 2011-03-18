@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab1CRKQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 06:16:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39546 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab1CRKQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 06:16:09 -0400
-Date: Fri, 18 Mar 2011 10:15:12 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tony Lindgren <tony@atomide.com>, David Brown <davidb@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [GIT PULL] omap changes for v2.6.39 merge window
-Message-ID: <20110318101512.GA15375@n2100.arm.linux.org.uk>
-References: <20110317183048.GW7258@atomide.com> <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
+	id S1752667Ab1CRKXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 06:23:39 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36916 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab1CRKXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 06:23:32 -0400
+Date: Fri, 18 Mar 2011 11:22:32 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Greg KH <gregkh@suse.de>
+Cc: Jason Baron <jbaron@redhat.com>, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Bart Van Assche <bvanassche@acm.org>,
+        Greg Banks <gnb@fmeh.org>, Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 05/50] Dynamic debug: Add more flags
+Message-ID: <20110318102232.GA30751@elte.hu>
+References: <20110316205204.GA2686@kroah.com>
+ <1300309888-5028-1-git-send-email-gregkh@suse.de>
+ <1300309888-5028-5-git-send-email-gregkh@suse.de>
+ <20110317175607.GD2648@redhat.com>
+ <20110317180204.GA15205@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimWbb5DWiiCW821H6pRicbk1fS3PYcnGyUMznvM@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110317180204.GA15205@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 07:50:36PM -0700, Linus Torvalds wrote:
-> On Thu, Mar 17, 2011 at 11:30 AM, Tony Lindgren <tony@atomide.com> wrote:
-> >
-> > Please pull omap changes for this merge window from:
+
+* Greg KH <gregkh@suse.de> wrote:
+
+> On Thu, Mar 17, 2011 at 01:56:08PM -0400, Jason Baron wrote:
+> > On Wed, Mar 16, 2011 at 02:10:43PM -0700, Greg Kroah-Hartman wrote:
+> > > Add flags that allow the user to specify via debugfs whether or not the
+> > > module name, function name, line number and/or thread ID have to be
+> > > included in the printed message.
+> > 
+> > This piece is going to conflict with the jump label update patches, I'm
+> > trying to get into .39. The 'if (unlikely(descriptor.enabled))' bit is
+> > now: 'if (DDEBUG_BRANCH(descriptor.enabled))'. So its a small conflict,
+> > but they wouldn't merge together. So we need to adjust either one (and
+> > make sure they're applied in the correct orer), or drop one.
 > 
-> Gaah. Guys, this whole ARM thing is a f*cking pain in the ass.
+> This has been in linux-next for months now, [...]
 
-Please be more specific.  ARM is not small.  ARM as an architecture is
-_massive_, with lots of people working in it.  By blaming 'ARM', it's a
-bit like blaming the entire planet for problems in one country.
+Btw, a workflow observation, i'd have expected such a commit:
 
-You've only had merge conflicts with IMX/MXC and OMAP so far, and that
-hardly warrants taring the "whole ARM thing" with the same brush.
+ > Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+ > Cc: Greg Banks <gnb@fmeh.org>
+ > Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+ > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+ > ---
+ >  Documentation/dynamic-debug-howto.txt |   12 +++++-
+ >  include/linux/dynamic_debug.h         |    8 ++++-
+ >  lib/dynamic_debug.c                   |   60 ++++++++++++++++++++++++++++-----
+ >  3 files changed, 68 insertions(+), 12 deletions(-)
 
-Most people are trying very hard to do the right thing.
+... to at least have the ack from Jason who is the author and maintainer of the 
+dyn-printk bits. You should at least have Cc:-ed him!
 
-> Somebody needs to get a grip in the ARM community. I do want to do
-> these merges, just to see how screwed up things are, but guys, this is
-> just ridiculous.
+Preferably it should have been merged through him. That would also have alerted 
+him to the conflict potential and would have concentrated all changes in a 
+single tree, as it really should happen ...
 
-It isn't as bad as you think it is for the majority of ARM stuff.
+So could you *please* do such changes in a bit more organized fashion in the 
+future? Please use the get_maintainer script:
 
-> The pure amount of crazy churn is annoying in itself,
-> but when I then get these "independent" pull requests from four
-> different people, and they touch the same files, that indicates that
-> something is wrong.
+  $ scripts/get_maintainer.pl -f lib/dynamic_debug.c 
 
-I have already complained to Uwe and Sascha about the IMX/MXC conflicts.
-It already struck me that there's something seriously wrong at
-pengutronix.com as both Uwe and Sascha work in the same area, yet don't
-coordinate their efforts.  It seems to me that Uwe is completely
-independent of everyone else.
+  Jason Baron <jbaron@redhat.com> (commit_signer:6/10=60%)
+  Thomas Renninger <trenn@suse.de> (commit_signer:3/10=30%)
+  Pekka Enberg <penberg@cs.helsinki.fi> (commit_signer:3/10=30%)
+  Greg Kroah-Hartman <gregkh@suse.de> (commit_signer:3/10=30%)
+  Steven Rostedt <rostedt@goodmis.org> (commit_signer:2/10=20%)
+  linux-kernel@vger.kernel.org (open list)
 
-As for anything else, I really don't see a problem.  There are changes
-in core ARM code which have impacts on _every_ ARM platform.  It's just
-a fact of life that there could be conflicts between core changes and
-platform changes.  That's not because things are uncoordinated - I do
-try to ensure that such patches receive as many acks from maintainers
-as possible.
+The majority of those gents were not Cc:-ed to any of the submissions and 
+resubmissions.
 
-> Somebody in the ARM community really needs to step up and tell people
-> to stop dicking around.
+To answer your question, the in-flight changes Jason is talking about have not 
+touched linux-next yet because they went through several levels of review 
+feedback. Had your patches gone through a similar review process they might 
+still be in flight as well and we'd also have found out about any conflicts 
+sooner.
 
-You mean like I've already done with Uwe and Sascha?
+Thanks,
 
-I do get the impression that you're extremely unhappy with the way ARM
-stuff works, and I've no real idea how to solve that.  I think much of
-it is down to perception rather than anything tangible.
-
-Maybe the only solution is for ARM to fork the kernel, which is something
-I really don't want to do - but from what I'm seeing its the only solution
-which could come close to making you happy.
+	Ingo
