@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab1CRVCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 17:02:18 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:35301 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756949Ab1CRVCM convert rfc822-to-8bit (ORCPT
+	id S932458Ab1CRVHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:07:37 -0400
+Received: from smtp-out5.blueyonder.co.uk ([195.188.213.8]:42368 "EHLO
+	smtp-out5.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932131Ab1CRVHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:02:12 -0400
-X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 17:02:12 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 18 Mar 2011 17:07:31 -0400
+Message-ID: <4D83C98F.5060309@blueyonder.co.uk>
+Date: Fri, 18 Mar 2011 21:07:27 +0000
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7 ThunderBrowse/3.3.5
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH -mm] RapidIO,powerpc/85xx: Fix configuration option
-Date: Fri, 18 Mar 2011 13:53:08 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201A587FE@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <8E8332C6-1F17-4EC1-BD04-7B93D7B49640@kernel.crashing.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH -mm] RapidIO,powerpc/85xx: Fix configuration option
-Thread-Index: AcvlrfMvK1H0atgRTnighylevmuhcwAACe1Q
-References: <1300468735-1158-1-git-send-email-alexandre.bounine@idt.com> <8E8332C6-1F17-4EC1-BD04-7B93D7B49640@kernel.crashing.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Kumar Gala" <galak@kernel.crashing.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        "Li Yang" <leoli@freescale.com>, "Thomas Moll" <thomas.moll@sysgo.com>
+To: LKML Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: pstore build error
+References: <4D832BD0.4030809@blueyonder.co.uk> <20110318183339.GV23536@sequoia.sous-sol.org>
+In-Reply-To: <20110318183339.GV23536@sequoia.sous-sol.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch has to be applied to -mm tree. Andrew already has set of
-patches that change RapidIO configuration.
-I think it will be better if it goes into -mm to keep things aligned
-properly.
+On 18/03/11 18:33, Chris Wright wrote:
+> * Sid Boyce (sboyce@blueyonder.co.uk) wrote:
+>>    CC      fs/pstore/inode.o
+>> fs/pstore/inode.c:253:2: error: unknown field ‘get_sb’ specified in
+>> initializer
+>
+> https://lkml.org/lkml/2011/3/17/447
+>
+Thanks for the fix, now builds fine.
+Regards
+Sid.
 
-Alex.
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support 
+Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
------Original Message-----
-From: Kumar Gala [mailto:galak@kernel.crashing.org] 
-Sent: Friday, March 18, 2011 4:49 PM
-To: Bounine, Alexandre
-Cc: akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
-linuxppc-dev@lists.ozlabs.org; Matt Porter; Li Yang; Thomas Moll
-Subject: Re: [PATCH -mm] RapidIO,powerpc/85xx: Fix configuration option
-
-
-On Mar 18, 2011, at 12:18 PM, Alexandre Bounine wrote:
-
-> Follows set of patches in -mm tree. Replaces configuration option
-> missed in previous patches.
-> 
-> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-> ---
-> arch/powerpc/kernel/cpu_setup_fsl_booke.S |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
-
-Acked-by: Kumar Gala <galak@kernel.crashing.org>
-
-Alex, I can push this via the powerpc.git tree route if you want.
-
-- k
