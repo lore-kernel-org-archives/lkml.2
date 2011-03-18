@@ -1,38 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab1CRJYo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 05:24:44 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6228 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244Ab1CRJYj (ORCPT
+	id S932372Ab1CRJ05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 05:26:57 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:18009 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932244Ab1CRJ0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 05:24:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type;
-        b=JBHJUiBg8obEUxOM/wg5vNP3XPKvFKM8E2rCys3mLA54KmvpbUgRGQANcdKSTnZs5R
-         iiYoFoy7g7fp7yAosv8w==
-MIME-Version: 1.0
-In-Reply-To: <20110318071238.GW2008@bicker>
-References: <20110318071238.GW2008@bicker>
-From: Mike Waychison <mikew@google.com>
-Date: Fri, 18 Mar 2011 02:24:18 -0700
-Message-ID: <AANLkTi=HYEN16eSS1LqFcY-TO6=K=QzrrmDABXL48KpE@mail.gmail.com>
-Subject: Re: [patch 2/2] efivars: handle errors from register_efivars()
-To: Dan Carpenter <error27@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mike Waychison <mikew@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 18 Mar 2011 05:26:52 -0400
+Date: Fri, 18 Mar 2011 10:26:40 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Seth Heasley <seth.heasley@intel.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.37] lpc: irq and pci_ids patch for Intel DH89xxCC 
+ DeviceIDs
+Message-ID: <20110318102640.76f2f6fd@endymion.delvare>
+In-Reply-To: <20110208131015.7345a4df@jbarnes-desktop>
+References: <201101101308.37805.seth.heasley@intel.com>
+	<20110208131015.7345a4df@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 12:12 AM, Dan Carpenter <error27@gmail.com> wrote:
-> We should unwind and return an error if register_efivars() fails.
->
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+Hi Jesse,
 
-Acked-by: Mike Waychison <mikew@google.com>
+On Tue, 8 Feb 2011 13:10:15 -0800, Jesse Barnes wrote:
+> On Mon, 10 Jan 2011 13:08:37 -0800
+> Seth Heasley <seth.heasley@intel.com> wrote:
+> 
+> > This patch adds the LPC Controller DeviceIDs for the Intel DH89xxCC PCH.
+> > 
+> > The code for capturing ranges of LPC Controller DeviceIDs has also been updated.
+> > 
+> > Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> > 
+> > --- linux-2.6.37/include/linux/pci_ids.h.orig	2011-01-04 16:50:19.000000000 -0800
+> > +++ linux-2.6.37/include/linux/pci_ids.h	2011-01-10 11:23:19.000000000 -0800
+> > @@ -2469,6 +2469,9 @@
+> >  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
+> >  #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
+> >  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
+> > +#define PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN	0x2310
+> > +#define PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX	0x231f
+> > +#define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+> >  #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+> >  #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+> >  #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
+> > --- linux-2.6.37/arch/x86/pci/irq.c.orig	2011-01-04 16:50:19.000000000 -0800
+> > +++ linux-2.6.37/arch/x86/pci/irq.c	2011-01-10 11:31:02.000000000 -0800
+> > @@ -596,21 +596,18 @@
+> >  		return 1;
+> >  	}
+> >  
+> > -	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN) && 
+> > -		(device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)) {
+> > +	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN && 
+> > +	     device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX) 
+> > +	||  (device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN && 
+> > +	     device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)
+> > +	||  (device >= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN &&
+> > +	     device <= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX)) {
+> >  		r->name = "PIIX/ICH";
+> >  		r->get = pirq_piix_get;
+> >  		r->set = pirq_piix_set;
+> >  		return 1;
+> >  	}
+> >  
+> > -	if ((device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN) && 
+> > -		(device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)) {
+> > -		r->name = "PIIX/ICH";
+> > -		r->get = pirq_piix_get;
+> > -		r->set = pirq_piix_set;
+> > -		return 1;
+> > -	}
+> >  	return 0;
+> >  }
+> 
+> Applied to linux-next, thanks.
+
+Please make sure this patch goes to Linus quickly, I have a patch in my
+i2c tree which depends on it.
+
+Thanks,
+-- 
+Jean Delvare
