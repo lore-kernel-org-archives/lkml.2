@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab1CRWiS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:38:18 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51833 "EHLO gate.crashing.org"
+	id S1757543Ab1CRWjM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:39:12 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45848 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757239Ab1CRWiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:38:10 -0400
-Subject: Re: RFC: Platform data for onboard USB assets
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: andy.green@linaro.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D82979B.2050003@linaro.org>
-References: <20110311165642.GA9996@kroah.com>
-	 <20110317214042.GQ31411@opensource.wolfsonmicro.com>
-	 <20110317214736.GA29014@kroah.com> <201103172333.01474.arnd@arndb.de>
-	 <4D82979B.2050003@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 19 Mar 2011 09:37:43 +1100
-Message-ID: <1300487863.22236.1289.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757239Ab1CRWjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 18:39:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: Suspend/resume regression in Toshiba A11 since 2.6.34-rc4
+Date: Fri, 18 Mar 2011 23:38:52 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20110318220034.GA10162@herton-IdeaPad-Y430>
+In-Reply-To: <20110318220034.GA10162@herton-IdeaPad-Y430>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103182338.52808.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 23:22 +0000, Andy Green wrote:
+On Friday, March 18, 2011, Herton Ronaldo Krzesinski wrote:
+> This regression is old, but discovered recently. Since 2.6.34-rc4,
+> a Toshiba Tecra A11 machine resumes without video for the first time.
+> Here is the strange thing reported, on the first suspend/resume, when
+> the machine wakes up the video is blank, but the machine is up (just the
+> screen is black). If you suspend again, on second resume the video comes
+> back normally.
 > 
-> Is there actually a need for sort of not platform_data but universal 
-> vid_pid_specific_usb_device_option_data coming from the board
-> definition 
-> file or bootloader for *pluggable* usb devices?  udev seems to be
-> well 
-> established doing that already in a generic, not-platform-specific
-> way 
-> that can go in all distros and so on nicely.  Maybe this is just my 
-> impoverished imagination and people do want, say, some kinds of USB
-> mice 
-> to operate at higher DPI or whatever when plugged in a specific board 
-> because it is that board. 
+> Helping the reporter bisecting the problem, we narrowed down the bug to
+> this commit:
+> 
+> commit ac7729da880e742613129ee6dea0045328670d2d
+> Author: Rafael J. Wysocki <rjw@sisk.pl>
+> Date:   Mon Apr 5 01:43:51 2010 +0200
+> 
+>     ACPI / PM: Move ACPI video resume to a PM notifier
+> 
+> And reverting this commit on 2.6.38 still made the problem go away.
+> Looking at the commit above I don't saw any problem, and perhaps we have
+> some bad bios here which by moving the resume of acpi video later
+> triggers this bug. Also strange that on second suspend/resume everything
+> is normal... (the regression here is just the video is blank on first
+> resume).
+> 
+> I asked the reporter to try to increase brightness logged in remotely
+> when the video is blank after first resume, but this didn't have any
+> effect.
+> 
+> This was reported in https://bugs.launchpad.net/bugs/719620 (if reading
+> I recommend to skip to comment #58 and later), I can't think of any
+> solution besides trying to move acpi video resume perhaps back and
+> depend on video device being resume first. I asked for more debugging
+> information but got nothing unfortunately which could diagnose better
+> this...
 
-Except that vid/pid are the -WRONG- way to do that. Your device is
-on-board, the proper way to identify it uniquely is it's topological
-location, ie path of HW port numbers.
+What graphics driver is used?
 
-Cheers,
-Ben.
-
-
+Rafael
