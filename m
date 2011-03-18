@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893Ab1CRWAG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:00:06 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:8037 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830Ab1CRV7t (ORCPT
+	id S932902Ab1CRWAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:00:13 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41083
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932857Ab1CRV7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:59:49 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6289"; a="80850569"
-X-IronPort-AV: E=Sophos;i="4.63,205,1299484800"; 
-   d="scan'208";a="37045069"
-From: Carl Vanderlip <carlv@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>, linux-fbdev@vger.kernel.org,
-        Carl Vanderlip <carlv@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 18/20] video: msm: Prevent DMA lockups when switching bit depths
-Date: Fri, 18 Mar 2011 14:59:45 -0700
-Message-Id: <1300485585-27640-1-git-send-email-carlv@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
-References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
+	Fri, 18 Mar 2011 17:59:45 -0400
+Date: Fri, 18 Mar 2011 15:00:23 -0700 (PDT)
+Message-Id: <20110318.150023.27819221.davem@davemloft.net>
+To: grant.likely@secretlab.ca
+CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] of_mmc_spi: Need to include irq.h and of_irq.h
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forces the lcdc off and waits a frame vsync period to prevent the MDP DMA
-engine crashing if the DMA bit depth is changed.  A sleep cannot be used
-because lcdc_dma_start is called in irq context.
 
-Authors:
-Dima Zavin <dima@android.com>
-Rebecca Schultz Zavin <rebecca@android.com>
-Colin Cross <ccross@android.com>
+Since these are the headers that provide irq_of_parse_and_map()
+and NO_IRQ.
 
-Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
----
- drivers/video/msm/mdp.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-diff --git a/drivers/video/msm/mdp.c b/drivers/video/msm/mdp.c
-index b3f334ad..49d956a 100644
---- a/drivers/video/msm/mdp.c
-+++ b/drivers/video/msm/mdp.c
-@@ -564,6 +564,13 @@ void mdp_hw_init(struct mdp_info *mdp)
- 	mdp_writel(mdp, 1, 0x60);
- 	mdp_writel(mdp, 1, MDP_EBI2_PORTMAP_MODE);
- 
-+	/* disable lcdc */
-+	mdp_writel(mdp, 0, MDP_LCDC_CTL);
-+	/* enable auto clock gating for all blocks by default */
-+	mdp_writel(mdp, 0xffffffff, MDP_CGC_EN);
-+	/* reset color/gamma correct parms */
-+	mdp_writel(mdp, 0, MDP_DMA_P_COLOR_CORRECT_CONFIG);
-+
- 	mdp_writel(mdp, 0, MDP_CMD_DEBUG_ACCESS_BASE + 0x01f8);
- 	mdp_writel(mdp, 0, MDP_CMD_DEBUG_ACCESS_BASE + 0x01fc);
- 	mdp_writel(mdp, 1, 0x60);
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+diff --git a/drivers/mmc/host/of_mmc_spi.c b/drivers/mmc/host/of_mmc_spi.c
+index 5530def..e2aecb7 100644
+--- a/drivers/mmc/host/of_mmc_spi.c
++++ b/drivers/mmc/host/of_mmc_spi.c
+@@ -15,9 +15,11 @@
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/slab.h>
++#include <linux/irq.h>
+ #include <linux/gpio.h>
+ #include <linux/of.h>
+ #include <linux/of_gpio.h>
++#include <linux/of_irq.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/mmc_spi.h>
+ #include <linux/mmc/core.h>
