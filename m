@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab1CRGhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 02:37:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20550 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756186Ab1CRGg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 02:36:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,204,1299484800"; 
-   d="scan'208";a="614538697"
-Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task
- plugging
-From: Shaohua Li <shaohua.li@intel.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>
-In-Reply-To: <4D81D7D5.7000806@fusionio.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	 <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>
-	 <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>
-	 <20110316173148.GC13562@redhat.com>
-	 <1300323609.2337.117.camel@sli10-conroe>  <4D81D7D5.7000806@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Mar 2011 14:36:52 +0800
-Message-ID: <1300430212.2337.141.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756240Ab1CRGyn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 02:54:43 -0400
+Received: from mailgate2.nju.edu.cn ([202.119.32.2]:42188 "EHLO
+	mail.nju.edu.cn" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752742Ab1CRGyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 02:54:35 -0400
+X-Greylist: delayed 597 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 02:54:35 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -9.977
+From: "xianai@nju.edu.cn" <xianai@nju.edu.cn>
+Reply-To: xianai@nju.edu.cn
+Organization: NJU
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte mapping to ksm pages
+Date: Fri, 18 Mar 2011 14:44:27 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.36.4; KDE/4.6.1; i686; ; )
+Cc: Izik Eidus <ieidus@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kernel-janitors@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201102262256.31565.nai.xia@gmail.com> <1298946108.9138.1173.camel@nimitz>
+In-Reply-To: <1298946108.9138.1173.camel@nimitz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103181444.27725.xianai@nju.edu.cn>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-17 at 17:43 +0800, Jens Axboe wrote:
-> On 2011-03-17 02:00, Shaohua Li wrote:
-> > On Thu, 2011-03-17 at 01:31 +0800, Vivek Goyal wrote:
-> >> On Wed, Mar 16, 2011 at 04:18:30PM +0800, Shaohua Li wrote:
-> >>> 2011/1/22 Jens Axboe <jaxboe@fusionio.com>:
-> >>>> Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-> >>>> ---
-> >>>>  block/blk-core.c          |  357 ++++++++++++++++++++++++++++++++------------
-> >>>>  block/elevator.c          |    6 +-
-> >>>>  include/linux/blk_types.h |    2 +
-> >>>>  include/linux/blkdev.h    |   30 ++++
-> >>>>  include/linux/elevator.h  |    1 +
-> >>>>  include/linux/sched.h     |    6 +
-> >>>>  kernel/exit.c             |    1 +
-> >>>>  kernel/fork.c             |    3 +
-> >>>>  kernel/sched.c            |   11 ++-
-> >>>>  9 files changed, 317 insertions(+), 100 deletions(-)
-> >>>>
-> >>>> diff --git a/block/blk-core.c b/block/blk-core.c
-> >>>> index 960f12c..42dbfcc 100644
-> >>>> --- a/block/blk-core.c
-> >>>> +++ b/block/blk-core.c
-> >>>> @@ -27,6 +27,7 @@
-> >>>>  #include <linux/writeback.h>
-> >>>>  #include <linux/task_io_accounting_ops.h>
-> >>>>  #include <linux/fault-inject.h>
-> >>>> +#include <linux/list_sort.h>
-> >>>>
-> >>>>  #define CREATE_TRACE_POINTS
-> >>>>  #include <trace/events/block.h>
-> >>>> @@ -213,7 +214,7 @@ static void blk_delay_work(struct work_struct *work)
-> >>>>
-> >>>>        q = container_of(work, struct request_queue, delay_work.work);
-> >>>>        spin_lock_irq(q->queue_lock);
-> >>>> -       q->request_fn(q);
-> >>>> +       __blk_run_queue(q);
-> >>>>        spin_unlock_irq(q->queue_lock);
-> >>>>  }
-> >>> Hi Jens,
-> >>> I have some questions about the per-task plugging. Since the request
-> >>> list is per-task, and each task delivers its requests at finish flush
-> >>> or schedule. But when one cpu delivers requests to global queue, other
-> >>> cpus don't know. This seems to have problem. For example:
-> >>> 1. get_request_wait() can only flush current task's request list,
-> >>> other cpus/tasks might still have a lot of requests, which aren't sent
-> >>> to request_queue.
-> >>
-> >> But very soon these requests will be sent to request queue as soon task
-> >> is either scheduled out or task explicitly flushes the plug? So we might
-> >> wait a bit longer but that might not matter in general, i guess. 
-> > Yes, I understand there is just a bit delay. I don't know how severe it
-> > is, but this still could be a problem, especially for fast storage or
-> > random I/O. My current tests show slight regression (3% or so) with
-> > Jens's for 2.6.39/core branch. I'm still checking if it's caused by the
-> > per-task plug, but the per-task plug is highly suspected.
+
+>On Tuesday 01 March 2011, at 10:21:48, <Dave Hansen <dave@linux.vnet.ibm.com>> wrote
+> On Sat, 2011-02-26 at 22:56 +0800, Nai Xia wrote
+> > @@ -904,6 +905,10 @@ static int try_to_merge_one_page(struct vm_area_struct 
+> > *vma,
+> >                          */
+> >                         set_page_stable_node(page, NULL);
+> >                         mark_page_accessed(page);
+> > +                       if (mapcount)
+> > +                               add_zone_page_state(page_zone(page),
+> > +                                                   NR_KSM_PAGES_SHARING,
+> > +                                                   mapcount);
+> >                         err = 0;
+> >                 } else if (pages_identical(page, kpage))
+> >                         err = replace_page(vma, page, kpage, orig_pte); 
 > 
-> To check this particular case, you can always just bump the request
-> limit. What test is showing a slowdown? 
-this is a simple multi-threaded seq read. The issue tends to be request
-merge related (not verified yet). The merge reduces about 60% with stack
-plug from fio reported data. From trace, without stack plug, requests
-from different threads get merged. But with it, such merge is impossible
-because flush_plug doesn't check merge, I thought we need add it again.
+> If you're going to store this per-zone, does it make sense to have it
+> show up in /proc/zoneinfo?  meminfo's also getting pretty porky these
+> days, so I almost wonder if it should stay in zoneinfo only.
 
-Thanks,
-Shaohua
+Yes, thanks for pointing out, I will fix it soon. And sorry for the late 
+response,there was a bug in my mail client which prevents this mail from being 
+filtered out.
 
+Nai
+
+> 
+> -- Dave
+> 
+> 
