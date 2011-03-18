@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab1CRW51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:57:27 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54880 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab1CRW5T (ORCPT
+	id S932746Ab1CRXAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 19:00:20 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:59237 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177Ab1CRXAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:57:19 -0400
+	Fri, 18 Mar 2011 19:00:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:reply-to:user-agent:mime-version:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=RY5aoo7KXMUyNS1zS4EZhjuEBCd4VIP4cQUMJ/nYEOwLUjf10furhXMvRYAamJIuvw
-         3qeTSvG36IKhsVeJGIGKIs0E5Iuiy+uEobr4pDBF6oFfN/6jhNJgSnJ/Ltm1hJ7KmAXJ
-         itSF7ztFtkh0A1Axg9xtGWen2+kGpug0Q7ckA=
-Message-ID: <4D83E34B.3040808@linaro.org>
-Date: Fri, 18 Mar 2011 22:57:15 +0000
-From: Andy Green <andy@warmcat.com>
-Reply-To: andy.green@linaro.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110310 Fedora/3.1.9-2.fc16 Thunderbird/3.1.9
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=NejJ8tHSlAXKIII6L0glbWa3xcnQXD/TE4M2mYMT1uNim/6eFQESs53RuHNwOih3kk
+         vXc4XX16m2F6unyEq8mg==
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-References: <20110311165642.GA9996@kroah.com>	 <20110317214042.GQ31411@opensource.wolfsonmicro.com>	 <20110317214736.GA29014@kroah.com> <201103172333.01474.arnd@arndb.de>	 <20110317225328.GB31581@kroah.com> <4D8296D1.9060106@linaro.org>	 <20110317232503.GA14561@kroah.com>  <4D830CEC.4040608@linaro.org> <1300488849.22236.1296.camel@pasglop>
-In-Reply-To: <1300488849.22236.1296.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1300397780.16880.579.camel@gandalf.stny.rr.com>
+References: <AANLkTimXUDcD5YWAcR=SGa3EBM3+TaMRL1UtF4epxNaP@mail.gmail.com> <1300397780.16880.579.camel@gandalf.stny.rr.com>
+From: David Sharp <dhsharp@google.com>
+Date: Fri, 18 Mar 2011 15:59:53 -0700
+Message-ID: <AANLkTinPq0hNMnS9_VLUXOQNeQCUAKvoxZfiBoNCzsnX@mail.gmail.com>
+Subject: Re: [RFC] tracing: a proc file to automatically release ring buffer memory
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, mingo@elte.hu,
+        fweisbec@gmail.com, lizf@cn.fujitsu.com,
+        Michael Rubin <mrubin@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2011 10:54 PM, Somebody in the thread at some point said:
-> On Fri, 2011-03-18 at 07:42 +0000, Andy Green wrote:
+On Thu, Mar 17, 2011 at 2:36 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2011-03-17 at 14:29 -0700, Vaibhav Nagarnaik wrote:
+>> All
 >>
->> No, if you read Arnd's post you will find Device Tree does not support
->> targeting USB devices yet, and if you further read the 1998 document he
->> points to as the basis of actually implementing it, it seems to me at
->> least it'll be a little project yet to do that on Linux side.
+>> The current way to release memory from ftrace ring buffer is to:
+>> echo 0 > /sys/kernel/debug/tracing/buffer_size_kb
+>>
+>> Consider a scenario where ftrace is handled by a user space
+>> process. Normally, this tracing is done as a low priority task on the
+>> system. Under memory pressure for high priority tasks, tracing should
+>> be turned off and the trace ring buffer memory released. The buffer
+>> allocated is kernel memory and under OOM condition if the user space
+>> process is oom-killed, there is no way to release the ring buffer
+>> memory.
+>>
+>> The proposal is to add a proc entry
+>> /sys/kernel/debug/tracing/buffer_free. Its .release() fileops function
+>> executes tracing_stop() and then resizes the global trace buffer to
+>> minimum size (2*BUF_PAGE_SIZE). The user space process opens this file
+>> and keeps it open. When the process gets killed, the fd gets closed
+>> and .release() is called. This automatically stops the tracing and
+>> frees up the ring buffer memory.
+>>
+>> It is optional to use this functionality, since it won't affect
+>> tracing for current programs. But it provides a way to automatically
+>> free up memory, if needed. It can also be used on the command line to
+>> stop tracing and free up memory as a single operation as:
+>> echo > /sys/kernel/debug/tracing/buffer_free
 >
-> You are getting seriously full of sh*t here. Read again what Arnd said
-> rather than twisting it to try to make your point.
+> I don't like adding new files to debug/tracing. If we do add this
+> feature, I rather have it done with the buffer_size_kb directly. Perhaps
+> add an ioctl() to the file that will do this.
 >
-> The age of the OF binding document for USB has no relevance. The fact
+> You can open it and then ioctl(RINGBUF_FREE_ON_CLOSE);
+>
+> If the process dies, it closes the buffer_size_kb and frees the memory.
 
-OK, thanks for pointing out I am full of shit.
-
--Andy
+Thanks for the feedback Steve. An ioctl on buffer_size_kb sounds fine to me.
