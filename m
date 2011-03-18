@@ -1,64 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab1CRPaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 11:30:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52757 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab1CRPaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 11:30:04 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=XYJHFtupD_QA:10 a=2f1-j1pq85wA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=VVvw4wU-dGQwIfGSMBsA:9 a=_33E2IByhTy9Xd3Bij8A:7 a=EI1drTsvjlTAlublFQJTckpsxTUA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=MSl-tDqOz04A:10 a=TmBZ8bNFSUE84GdN:21 a=_vrz7lri0-xXMaw0:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Fri, 18 Mar 2011 11:29:59 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [RFC 2/2] x86, dumpstack: use %pT format specifier for stack
- trace
-Message-ID: <20110318152959.GJ14675@home.goodmis.org>
-References: <1300447278-2073-1-git-send-email-namhyung@gmail.com>
- <1300447278-2073-3-git-send-email-namhyung@gmail.com>
+	id S1757003Ab1CRPbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 11:31:01 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:37994 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756801Ab1CRPaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 11:30:55 -0400
+Date: Fri, 18 Mar 2011 10:30:50 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: kirkland@canonical.com, dhowells@redhat.com, jmorris@namei.org,
+        linux-fsdevel@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, ecryptfs-devel@lists.launchpad.net
+Subject: Re: [PATCH 4/5] eCryptfs: move ecryptfs_find_auth_tok_for_sig() call
+ before mutex_lock
+Message-ID: <20110318153049.GB22193@boyd.l.tihix.com>
+References: <1300362538-11502-1-git-send-email-roberto.sassu@polito.it>
+ <1300362538-11502-5-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300447278-2073-3-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1300362538-11502-5-git-send-email-roberto.sassu@polito.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You needed to add the x86 maintainers to your Cc list.
-
--- Steve
-
-On Fri, Mar 18, 2011 at 08:21:18PM +0900, Namhyung Kim wrote:
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  arch/x86/kernel/dumpstack.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu Mar 17, 2011 at 12:48:53PM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
+> The ecryptfs_find_auth_tok_for_sig() call is moved before the
+> mutex_lock(s->tfm_mutex) instruction in order to avoid possible deadlocks
+> that may occur by holding the lock on the two semaphores 'key->sem' and
+> 's->tfm_mutex' in reverse order.
 > 
-> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-> index 914065620f2c..809d027de28f 100644
-> --- a/arch/x86/kernel/dumpstack.c
-> +++ b/arch/x86/kernel/dumpstack.c
-> @@ -27,7 +27,7 @@ static int die_counter;
->  
->  void printk_address(unsigned long address, int reliable)
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+> ---
+>  fs/ecryptfs/keystore.c |   42 +++++++++++++++++++++++-------------------
+>  1 files changed, 23 insertions(+), 19 deletions(-)
+> 
+> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+> index e35d745..d066217 100644
+> --- a/fs/ecryptfs/keystore.c
+> +++ b/fs/ecryptfs/keystore.c
+> @@ -538,6 +538,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
+>  			     char *filename, size_t filename_size)
 >  {
-> -	printk(" [<%p>] %s%pS\n", (void *) address,
-> +	printk(" [<%p>] %s%pT\n", (void *) address,
->  			reliable ? "" : "? ", (void *) address);
->  }
->  
+>  	struct ecryptfs_write_tag_70_packet_silly_stack *s;
+> +	struct ecryptfs_auth_tok *auth_tok;
+
+Why declare a new ecryptfs_auth_tok struct pointer here? The idea behind
+the ecryptfs_write_tag_70_packet_silly_stack struct is to keep stack
+size at a minimum. Since it already has s->auth_tok, I don't see why we
+would need to declare a new one.
+
+>  	struct key *auth_tok_key = NULL;
+>  	int rc = 0;
+> 
+> @@ -550,6 +551,16 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
+>  	}
+>  	s->desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+>  	(*packet_size) = 0;
+> +	rc = ecryptfs_find_auth_tok_for_sig(
+> +		&auth_tok_key,
+> +		&auth_tok, mount_crypt_stat,
+> +		mount_crypt_stat->global_default_fnek_sig);
+> +	if (rc) {
+> +		printk(KERN_ERR "%s: Error attempting to find auth tok for "
+> +		       "fnek sig [%s]; rc = [%d]\n", __func__,
+> +		       mount_crypt_stat->global_default_fnek_sig, rc);
+> +		goto out;
+> +	}
+>  	rc = ecryptfs_get_tfm_and_mutex_for_cipher_name(
+>  		&s->desc.tfm,
+>  		&s->tfm_mutex, mount_crypt_stat->global_default_fn_cipher_name);
+> @@ -635,16 +646,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
+>  		goto out_free_unlock;
+>  	}
+>  	dest[s->i++] = s->cipher_code;
+> -	rc = ecryptfs_find_auth_tok_for_sig(
+> -		&auth_tok_key,
+> -		&s->auth_tok, mount_crypt_stat,
+> -		mount_crypt_stat->global_default_fnek_sig);
+> -	if (rc) {
+> -		printk(KERN_ERR "%s: Error attempting to find auth tok for "
+> -		       "fnek sig [%s]; rc = [%d]\n", __func__,
+> -		       mount_crypt_stat->global_default_fnek_sig, rc);
+> -		goto out_free_unlock;
+> -	}
+> +	s->auth_tok = auth_tok;
+>  	/* TODO: Support other key modules than passphrase for
+>  	 * filename encryption */
+>  	if (s->auth_tok->token_type != ECRYPTFS_PASSWORD) {
+> @@ -831,6 +833,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
+>  			     char *data, size_t max_packet_size)
+>  {
+>  	struct ecryptfs_parse_tag_70_packet_silly_stack *s;
+> +	struct ecryptfs_auth_tok *auth_tok;
+
+Same here as above.
+
+Tyler
+
+>  	struct key *auth_tok_key = NULL;
+>  	int rc = 0;
+> 
+> @@ -898,6 +901,15 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
+>  		       __func__, s->cipher_code);
+>  		goto out;
+>  	}
+> +	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
+> +					    &auth_tok, mount_crypt_stat,
+> +					    s->fnek_sig_hex);
+> +	if (rc) {
+> +		printk(KERN_ERR "%s: Error attempting to find auth tok for "
+> +		       "fnek sig [%s]; rc = [%d]\n", __func__, s->fnek_sig_hex,
+> +		       rc);
+> +		goto out;
+> +	}
+>  	rc = ecryptfs_get_tfm_and_mutex_for_cipher_name(&s->desc.tfm,
+>  							&s->tfm_mutex,
+>  							s->cipher_string);
+> @@ -944,15 +956,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
+>  	 * >= ECRYPTFS_MAX_IV_BYTES. */
+>  	memset(s->iv, 0, ECRYPTFS_MAX_IV_BYTES);
+>  	s->desc.info = s->iv;
+> -	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
+> -					    &s->auth_tok, mount_crypt_stat,
+> -					    s->fnek_sig_hex);
+> -	if (rc) {
+> -		printk(KERN_ERR "%s: Error attempting to find auth tok for "
+> -		       "fnek sig [%s]; rc = [%d]\n", __func__, s->fnek_sig_hex,
+> -		       rc);
+> -		goto out_free_unlock;
+> -	}
+> +	s->auth_tok = auth_tok;
+>  	/* TODO: Support other key modules than passphrase for
+>  	 * filename encryption */
+>  	if (s->auth_tok->token_type != ECRYPTFS_PASSWORD) {
 > -- 
 > 1.7.4
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+
