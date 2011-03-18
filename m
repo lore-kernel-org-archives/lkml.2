@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab1CRVHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 17:07:37 -0400
-Received: from smtp-out5.blueyonder.co.uk ([195.188.213.8]:42368 "EHLO
-	smtp-out5.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932131Ab1CRVHb (ORCPT
+	id S1757487Ab1CRVL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:11:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61799 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757368Ab1CRVLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:07:31 -0400
-Message-ID: <4D83C98F.5060309@blueyonder.co.uk>
-Date: Fri, 18 Mar 2011 21:07:27 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7 ThunderBrowse/3.3.5
+	Fri, 18 Mar 2011 17:11:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: andy.green@linaro.org
+Subject: Re: RFC: Platform data for onboard USB assets
+Date: Fri, 18 Mar 2011 22:11:36 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Anders <x0132446@ti.com>, Greg KH <greg@kroah.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <4D83A25C.804@ti.com> <20110318182518.GA2271@opensource.wolfsonmicro.com> <4D83BA4F.8050301@linaro.org>
+In-Reply-To: <4D83BA4F.8050301@linaro.org>
 MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: pstore build error
-References: <4D832BD0.4030809@blueyonder.co.uk> <20110318183339.GV23536@sequoia.sous-sol.org>
-In-Reply-To: <20110318183339.GV23536@sequoia.sous-sol.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103182211.36869.arnd@arndb.de>
+X-Provags-ID: V02:K0:Xa49IBPbOhWBHt/potWwn1SDBGDkZlkPkOr4yG3mJw6
+ tX/Xlo7O+875GcSVKVM0xWsYXvuJt8U/daC9HslyNk8sxXI21R
+ /7LbYXZuHZnxAPCZXfvcTtF5vMY+vqmfeJjtma3n2wZvvpgtkh
+ PfoZKJ3r1lF+4RSzSyzt2QvFegdh23lKIXr4feSeY8OTnFccSN
+ bhEa4oIRSS9sSlMtPq3qA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/03/11 18:33, Chris Wright wrote:
-> * Sid Boyce (sboyce@blueyonder.co.uk) wrote:
->>    CC      fs/pstore/inode.o
->> fs/pstore/inode.c:253:2: error: unknown field ‘get_sb’ specified in
->> initializer
->
-> https://lkml.org/lkml/2011/3/17/447
->
-Thanks for the fix, now builds fine.
-Regards
-Sid.
+On Friday 18 March 2011, Andy Green wrote:
+> In which case, they are all potential consumers of a MAC "stored in an 
+> alternative location and needs to be programmed into the NIC by 
+> software" solution, which he also thinks is needed.
 
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support 
-Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+Note that there is also of_get_mac_address(), which is meant to
+deal with this exact problem.
 
+	Arnd
