@@ -1,66 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab1CRD5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 23:57:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63248 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932134Ab1CRD53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 23:57:29 -0400
-Message-ID: <4D82D892.5000908@cn.fujitsu.com>
-Date: Fri, 18 Mar 2011 11:59:14 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S932322Ab1CRD6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 23:58:01 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:52023 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932172Ab1CRD55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 23:57:57 -0400
+From: Bibek Basu <bibek.basu@stericsson.com>
+To: <linus.walleij@stericsson.com>, <grant.likely@secretlab.ca>
+Cc: <linux-kernel@vger.kernel.org>, <bibek.basu@stericsson.com>
+Subject: [PATCH] AB8500 GPIO : Board Support for  AB8500 GPIO Driver
+Date: Fri, 18 Mar 2011 09:07:49 +0530
+Message-ID: <1300419470-1699-1-git-send-email-bibek.basu@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <AANLkTikw87uS4w15ZWZOp8bUU1jYwn1xK4tp5cSrpeYH@mail.gmail.com>
+References: <AANLkTikw87uS4w15ZWZOp8bUU1jYwn1xK4tp5cSrpeYH@mail.gmail.com>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Neil Brown <neilb@suse.de>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/36] md,rcu: convert call_rcu(free_conf) to kfree_rcu()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 11:56:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 11:56:05,
-	Serialize complete at 2011-03-18 11:56:05
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the board support patch for ab8500 gpio driver
+on mach-ux500.Patch implements 16 virtual
+IRQ mapped to 16 interrupt capable AB8500 GPIOs.
 
-
-The rcu callback free_conf() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(free_conf).
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Bibek Basu <bibek.basu@stericsson.com>
 ---
- drivers/md/linear.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+ arch/arm/mach-ux500/board-mop500.c                 |   24 ++++++++++++++++++++
+ arch/arm/mach-ux500/board-mop500.h                 |    3 +-
+ .../mach-ux500/include/mach/irqs-board-mop500.h    |   15 ++++++++++-
+ 3 files changed, 39 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index 0ed7f6b..a5b9e53 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -231,12 +231,6 @@ static int linear_run (mddev_t *mddev)
- 	return 0;
- }
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 67d9c63..69ee789 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -21,6 +21,7 @@
+ #include <linux/spi/spi.h>
+ #include <linux/mfd/ab8500.h>
+ #include <linux/mfd/tc3589x.h>
++#include <linux/mfd/ab8500/ab8500-gpio.h>
+ #include <linux/leds-lp5521.h>
+ #include <linux/input.h>
+ #include <linux/gpio_keys.h>
+@@ -102,10 +103,33 @@ static pin_cfg_t mop500_pins[] = {
+ 	GPIO267_USB_DAT0	| PIN_PULL_DOWN,
+ };
  
--static void free_conf(struct rcu_head *head)
--{
--	linear_conf_t *conf = container_of(head, linear_conf_t, rcu);
--	kfree(conf);
--}
++static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
++	.gpio_base		= MOP500_AB8500_GPIO(0),
++	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
++	/* config_reg is the initial configuration of ab8500 pins.
++	 * The pins can be configured as GPIO or alt functions based
++	 * on value present in GpioSel1 to GpioSel6 and AlternatFunction
++	 * register. This is the array of 7 configuration settings.
++	 * One has to compile time decide these settings. Below is the
++	 * explaination of these setting
++	 * GpioSel1 = 0x00 => Pins GPIO1 to GPIO8 are not used as GPIO
++	 * GpioSel2 = 0x1E => Pins GPIO10 to GPIO13 are configured as GPIO
++	 * GpioSel3 = 0x80 => Pin GPIO24 is configured as GPIO
++	 * GpioSel4 = 0x01 => Pin GPIo25 is configured as GPIO
++	 * GpioSel5 = 0x7A => Pins GPIO34, GPIO36 to GPIO39 are conf as GPIO
++	 * GpioSel6 = 0x00 => Pins GPIO41 & GPIo42 are not configured as GPIO
++	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
++	 * as GPIO then this register selectes the alternate fucntions
++	 */
++	.config_reg		= {0x00, 0x1E, 0x80, 0x01,
++					0x7A, 0x00, 0x00},
++};
++
+ static struct ab8500_platform_data ab8500_platdata = {
+ 	.irq_base	= MOP500_AB8500_IRQ_BASE,
+ 	.regulator	= ab8500_regulators,
+ 	.num_regulator	= ARRAY_SIZE(ab8500_regulators),
++	.gpio = &ab8500_gpio_pdata,
+ };
+ 
+ static struct resource ab8500_resources[] = {
+diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
+index 19b6c27..d00ea06 100644
+--- a/arch/arm/mach-ux500/board-mop500.h
++++ b/arch/arm/mach-ux500/board-mop500.h
+@@ -8,7 +8,8 @@
+ #define __BOARD_MOP500_H
+ 
+ #define MOP500_EGPIO(x)			(NOMADIK_NR_GPIO + (x))
 -
- static int linear_add(mddev_t *mddev, mdk_rdev_t *rdev)
- {
- 	/* Adding a drive to a linear array allows the array to grow.
-@@ -265,7 +259,7 @@ static int linear_add(mddev_t *mddev, mdk_rdev_t *rdev)
- 	md_set_array_sectors(mddev, linear_size(mddev, 0, 0));
- 	set_capacity(mddev->gendisk, mddev->array_sectors);
- 	revalidate_disk(mddev->gendisk);
--	call_rcu(&oldconf->rcu, free_conf);
-+	kfree_rcu(oldconf, rcu);
- 	return 0;
- }
++#define MOP500_EGPIO_END		MOP500_EGPIO(24)
++#define MOP500_AB8500_GPIO(x)		(MOP500_EGPIO_END + (x))
+ /* GPIOs on the TC35892 expander */
+ #define GPIO_SDMMC_CD			MOP500_EGPIO(3)
+ #define GPIO_PROX_SENSOR		MOP500_EGPIO(7)
+diff --git a/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h b/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h
+index 7cdeb2a..97ef55f 100644
+--- a/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h
++++ b/arch/arm/mach-ux500/include/mach/irqs-board-mop500.h
+@@ -35,9 +35,20 @@
+ #define MOP500_STMPE1601_IRQBASE        MOP500_EGPIO_IRQ_END
+ #define MOP500_STMPE1601_IRQ(x)         (MOP500_STMPE1601_IRQBASE + (x))
  
+-#define MOP500_NR_IRQS          MOP500_STMPE1601_IRQ(STMPE_NR_INTERNAL_IRQS)
++#define MOP500_STMPE1601_IRQ_END	\
++	MOP500_STMPE1601_IRQ(STMPE_NR_INTERNAL_IRQS)
+ 
+-#define MOP500_IRQ_END          MOP500_NR_IRQS
++/* AB8500 virtual gpio IRQ */
++#define AB8500_VIR_GPIO_NR_IRQS			16
++
++#define MOP500_AB8500_VIR_GPIO_IRQ_BASE		\
++	MOP500_STMPE1601_IRQ_END
++#define MOP500_AB8500_VIR_GPIO_IRQ_END		\
++	(MOP500_AB8500_VIR_GPIO_IRQ_BASE + AB8500_VIR_GPIO_NR_IRQS)
++
++#define MOP500_NR_IRQS		MOP500_AB8500_VIR_GPIO_IRQ_END
++
++#define MOP500_IRQ_END		MOP500_NR_IRQS
+ 
+ #if MOP500_IRQ_END > IRQ_BOARD_END
+ #undef IRQ_BOARD_END
 -- 
-1.7.4
+1.7.2.dirty
+
