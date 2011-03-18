@@ -1,70 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab1CRUL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 16:11:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63050 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab1CRULv (ORCPT
+	id S1757482Ab1CRUMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 16:12:19 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:36172 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756739Ab1CRUMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 16:11:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Subject: Re: 2.6.38: XFS/USB/HW issue, or failing USB stick?
-Date: Fri, 18 Mar 2011 21:11:43 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
-Cc: Tim Soderstrom <tim@moocowproductions.org>, linux-usb@vger.kernel.org,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, flashbench-results@lists.linaro.org
-References: <alpine.DEB.2.02.1103181104020.30018@p34.internal.lan> <201103182033.02793.arnd@arndb.de> <alpine.DEB.2.02.1103181547590.21715@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1103181547590.21715@p34.internal.lan>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 18 Mar 2011 16:12:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=U3W6PmTnZOA6vDoIOGXWhbtBsjWq5aCMNKEjTb57Mg+QzMhD7dJPDdQ4unUYLei9l6
+         aRgcOnigJePN0KE8NE+M9LLt4wxoWI2gvWioO129Y4HG0A4N4jLJKHmxKJIDOU4h8im6
+         bCB8HjUK+wcnKl8xJVpFcnCMXh1Ir6oDPL2wI=
+Subject: Re: [RFC][PATCH v3 05/22] mm, tile: add gfp flags variant of pmd
+ and pte allocations
+From: Prasad Joshi <prasadjoshi124@gmail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: cmetcalf@tilera.com, linux-kernel@vger.kernel.org,
+        prasadjoshi124@gmail.com, Anand Mitra <mitra@kqinfotech.com>
+In-Reply-To: <4D83B7F2.4000903@tilera.com>
+References: <20110318194135.GA4746@prasad-kvm>
+	 <20110318194341.GB4746@prasad-kvm> <20110318194600.GC4746@prasad-kvm>
+	 <20110318194740.GD4746@prasad-kvm> <20110318194929.GE4746@prasad-kvm>
+	 <20110318195035.GF4746@prasad-kvm>  <4D83B7F2.4000903@tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Mar 2011 20:12:52 +0000
+Message-ID: <1300479172.32664.33.camel@prasad-kvm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103182111.43126.arnd@arndb.de>
-X-Provags-ID: V02:K0:Mxs0EjIXfDCelKAcvqw5aNukWlf47IqyWxV9UGAaIgj
- HsRTKNtK6jTs1tJeV6O/rnm06Tks+fz4QqJwzRc2wWVe9riiXr
- jNL0Xie3Oda6CVefvpzUVuiwlbAEYgWEhf4QhCl+KMzZl2vdVv
- /apiRIO5NqaaZwSeCpzF6fFCCx8hgUoD2nZO2//3tkwVmQlYtx
- b9FCs4H+Fm8llto/nD2Fw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 March 2011 20:51:47 Justin Piszcz wrote:
-> Disk /dev/sda: 8220 MB, 8220835840 bytes
-> 154 heads, 56 sectors/track, 1861 cylinders, total 16056320 sectors
-> Units = sectors of 1 * 512 = 512 bytes
-> Sector size (logical/physical): 512 bytes / 512 bytes
-> I/O size (minimum/optimal): 512 bytes / 512 bytes
-> Disk identifier: 0x99df019d
+On Fri, 2011-03-18 at 15:52 -0400, Chris Metcalf wrote:
+> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+
+Thanks Chris.
+
+Regards,
+Prasad
+
 > 
->     Device Boot      Start         End      Blocks   Id  System
-> /dev/sda1            2048    16056319     8027136   83  Linux
-
-Ok, so it has the normal 1 MB alignment. That is not too
-bad then, no immediate reason to reformat, because ext2
-doesn't understand the concept of erase blocks.
-
-If the partition was completely misaligned (old fdisk would
-start the first partition at sector 63 instead of 2048),
-that would be a much more significant problem.
-
-> >>> Also, what is the output of 'lsusb' for this stick? I'd like to add the
-> >>> data to https://wiki.linaro.org/WorkingGroups/KernelConsolidation/Projects/FlashCardSurvey
-> >> Sure,
-> >> Bus 001 Device 002: ID 0325:ac02 OCZ Technology Inc ATV Turbo / Rally2 Dual Channel USB 2.0 Flash Drive
-> >>
+> On 3/18/2011 3:50 PM, Prasad Joshi wrote:
+> > - Added function __pte_alloc_one() which is very similar to pte_alloc_one(),
+> >   but also accepts an additional gfp_t allocation flag.
 > >
-> > Added now, thanks!
+> > - The pte_alloc_one() function calls __pte_alloc_one().
 > >
-> > Do you also have the product name for this?
-> 10007937 OCZ OCZUSBR2TDC-8GB 8GB Rally2 Turbo USB 2.0 Flash Drive Retail
-> Was $116.99 on 01-05-2009.
+> > - Added function __pte_alloc_one_kernel() to accept and then pass the
+> >   allocation flag to __pte_alloc_one().
+> >
+> > - The function pte_alloc_one_kernel() calls __pte_alloc_one_kernel().
+> >
+> > - Added function __pmd_alloc_one to allocation pmd entries using the
+> >   specified allocation flag. It works by passing the allocation flag
+> >   to __pte_alloc_one().
+> >
+> > - changes help in fixing the Bug 30702
+> >
+> > Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
+> > Signed-off-by: Anand Mitra <mitra@kqinfotech.com>
+> > ---
+> >  arch/tile/include/asm/pgalloc.h |   13 ++++++++++++-
+> >  arch/tile/mm/pgtable.c          |   10 ++++++++--
+> >  2 files changed, 20 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/arch/tile/include/asm/pgalloc.h b/arch/tile/include/asm/pgalloc.h
+> > index cf52791..2dcad88 100644
+> > --- a/arch/tile/include/asm/pgalloc.h
+> > +++ b/arch/tile/include/asm/pgalloc.h
+> > @@ -69,14 +69,23 @@ extern pgd_t *pgd_alloc(struct mm_struct *mm);
+> >  extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
+> >  
+> >  extern pgtable_t pte_alloc_one(struct mm_struct *mm, unsigned long address);
+> > +extern pgtable_t __pte_alloc_one(struct mm_struct *, unsigned long, gfp_t);
+> > +
+> >  extern void pte_free(struct mm_struct *mm, struct page *pte);
+> >  
+> >  #define pmd_pgtable(pmd) pmd_page(pmd)
+> >  
+> >  static inline pte_t *
+> > +__pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address, 
+> > +		gfp_t gfp_mask)
+> > +{
+> > +	return pfn_to_kaddr(page_to_pfn(__pte_alloc_one(mm, address, gfp_mask)));
+> > +}
+> > +
+> > +static inline pte_t *
+> >  pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
+> >  {
+> > -	return pfn_to_kaddr(page_to_pfn(pte_alloc_one(mm, address)));
+> > +	return __pte_alloc_one_kernel(mm, address, GFP_KERNEL | __GFP_REPEAT);
+> >  }
+> >  
+> >  static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+> > @@ -108,6 +117,8 @@ void shatter_pmd(pmd_t *pmd);
+> >  #define L1_USER_PGTABLE_ORDER L2_USER_PGTABLE_ORDER
+> >  #define pud_populate(mm, pud, pmd) \
+> >    pmd_populate_kernel((mm), (pmd_t *)(pud), (pte_t *)(pmd))
+> > +#define __pmd_alloc_one(mm, addr, mask) \
+> > +  ((pmd_t *)page_to_virt(__pte_alloc_one((mm), (addr), (mask))))
+> >  #define pmd_alloc_one(mm, addr) \
+> >    ((pmd_t *)page_to_virt(pte_alloc_one((mm), (addr))))
+> >  #define pmd_free(mm, pmdp) \
+> > diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
+> > index 1f5430c..34ee920 100644
+> > --- a/arch/tile/mm/pgtable.c
+> > +++ b/arch/tile/mm/pgtable.c
+> > @@ -218,9 +218,10 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+> >  
+> >  #define L2_USER_PGTABLE_PAGES (1 << L2_USER_PGTABLE_ORDER)
+> >  
+> > -struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
+> > +struct page *
+> > +__pte_alloc_one(struct mm_struct *mm, unsigned long address, gfp_t gfp_mask)
+> >  {
+> > -	gfp_t flags = GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO|__GFP_COMP;
+> > +	gfp_t flags = gfp_mask | __GFP_ZERO | __GFP_COMP;
+> >  	struct page *p;
+> >  
+> >  #ifdef CONFIG_HIGHPTE
+> > @@ -235,6 +236,11 @@ struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
+> >  	return p;
+> >  }
+> >  
+> > +struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
+> > +{
+> > +	return __pte_alloc_one(mm, address, GFP_KERNEL);
+> > +}
+> > +
+> >  /*
+> >   * Free page immediately (used in __pte_alloc if we raced with another
+> >   * process).  We have to correct whatever pte_alloc_one() did before
 > 
-> Was purported (at the time) to be one of the fastest USB sticks available,
-> according to benchmarks.
-> 
-Ok, thanks for the detailed information.
 
-	Arnd
+
