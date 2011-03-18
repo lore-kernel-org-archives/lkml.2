@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927Ab1CRWAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:00:52 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43893 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab1CRWAl (ORCPT
+	id S1757454Ab1CRWJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:09:06 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:42954 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757237Ab1CRWJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:00:41 -0400
-Date: Fri, 18 Mar 2011 19:00:35 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Suspend/resume regression in Toshiba A11 since 2.6.34-rc4
-Message-ID: <20110318220034.GA10162@herton-IdeaPad-Y430>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 Mar 2011 18:09:00 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=KVSX3EPYuqd7KBc3CqSKqUQG9fVNUIWRCRGkY4fUGfdHcDBLP1J03OjM5gh2Qs9piw5l5SPYuQfBuHeTkpFCwIeVx7DRPjHPFk1+Q5hCPPbA5HLHhuJecShsoq4gvb9H;
+Date: Fri, 18 Mar 2011 15:08:56 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Linda Walsh <lkml@tlinx.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, axboe@kernel.dk
+Subject: Re: minor doc correction: Documentation/iostats.txt: bit-size
+ reference
+Message-Id: <20110318150856.de589ea6.rdunlap@xenotime.net>
+In-Reply-To: <4D83D188.3000909@tlinx.org>
+References: <4D83D188.3000909@tlinx.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This regression is old, but discovered recently. Since 2.6.34-rc4,
-a Toshiba Tecra A11 machine resumes without video for the first time.
-Here is the strange thing reported, on the first suspend/resume, when
-the machine wakes up the video is blank, but the machine is up (just the
-screen is black). If you suspend again, on second resume the video comes
-back normally.
+On Fri, 18 Mar 2011 14:41:28 -0700 Linda Walsh wrote:
 
-Helping the reporter bisecting the problem, we narrowed down the bug to
-this commit:
+> 
+> 
+> Documentation/iostats.txt describes fields in /proc/diskstats as
+> 32-bit unsigned values that can wrap.
+> 
+> On a 64-bit system, it appears they are 64-bit unsigned values.
+> 
+> Should 'iostats.txt' describe fields as "unsigned, native-word-sized 
+> values" or is my 64-bit system not behaving according to "spec"? ;-)
 
-commit ac7729da880e742613129ee6dea0045328670d2d
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Mon Apr 5 01:43:51 2010 +0200
+They are "unsigned long", so yes, that is basically your native-word-sized
+values.  That text file was written in 2003 or earlier, so things have changed
+a bit (or several bits) since then.
 
-    ACPI / PM: Move ACPI video resume to a PM notifier
-
-And reverting this commit on 2.6.38 still made the problem go away.
-Looking at the commit above I don't saw any problem, and perhaps we have
-some bad bios here which by moving the resume of acpi video later
-triggers this bug. Also strange that on second suspend/resume everything
-is normal... (the regression here is just the video is blank on first
-resume).
-
-I asked the reporter to try to increase brightness logged in remotely
-when the video is blank after first resume, but this didn't have any
-effect.
-
-This was reported in https://bugs.launchpad.net/bugs/719620 (if reading
-I recommend to skip to comment #58 and later), I can't think of any
-solution besides trying to move acpi video resume perhaps back and
-depend on video device being resume first. I asked for more debugging
-information but got nothing unfortunately which could diagnose better
-this...
-
--- 
-[]'s
-Herton
+thanks.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
