@@ -1,398 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab1CRMr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 08:47:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59901 "EHLO hera.kernel.org"
+	id S1756462Ab1CRMs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 08:48:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59934 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756055Ab1CRMru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 08:47:50 -0400
-Date: Fri, 18 Mar 2011 12:47:13 GMT
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@gmail.com, ssp@redhat.com, robert.richter@amd.com,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@gmail.com, ssp@redhat.com, robert.richter@amd.com,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1300416006-3163-1-git-send-email-namhyung@gmail.com>
-References: <1300416006-3163-1-git-send-email-namhyung@gmail.com>
+	id S1756258Ab1CRMsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 08:48:20 -0400
+Date: Fri, 18 Mar 2011 12:47:37 GMT
+From: tip-bot for Shaohua Li <shaohua.li@intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, asit.k.mallick@intel.com,
+        shaohua.li@intel.com, y-goto@jp.fujitsu.com, riel@redhat.com,
+        akpm@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
+        linux-mm@kvack.org, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, shaohua.li@intel.com,
+        asit.k.mallick@intel.com, y-goto@jp.fujitsu.com, riel@redhat.com,
+        akpm@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
+        linux-mm@kvack.org, mingo@elte.hu
+In-Reply-To: <1300246649.2337.95.camel@sli10-conroe>
+References: <1300246649.2337.95.camel@sli10-conroe>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, dumpstack: Correct stack dump info when frame pointer is available
-Message-ID: <tip-e8e999cf3cc733482e390b02ff25a64cecdc0b64@git.kernel.org>
-Git-Commit-ID: e8e999cf3cc733482e390b02ff25a64cecdc0b64
+Subject: [tip:x86/urgent] x86: Flush TLB if PGD entry is changed in i386 PAE mode
+Message-ID: <tip-4981d01eada5354d81c8929d5b2836829ba3df7b@git.kernel.org>
+Git-Commit-ID: 4981d01eada5354d81c8929d5b2836829ba3df7b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Mar 2011 12:47:15 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Mar 2011 12:47:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8e999cf3cc733482e390b02ff25a64cecdc0b64
-Gitweb:     http://git.kernel.org/tip/e8e999cf3cc733482e390b02ff25a64cecdc0b64
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Fri, 18 Mar 2011 11:40:06 +0900
+Commit-ID:  4981d01eada5354d81c8929d5b2836829ba3df7b
+Gitweb:     http://git.kernel.org/tip/4981d01eada5354d81c8929d5b2836829ba3df7b
+Author:     Shaohua Li <shaohua.li@intel.com>
+AuthorDate: Wed, 16 Mar 2011 11:37:29 +0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 18 Mar 2011 10:51:42 +0100
+CommitDate: Fri, 18 Mar 2011 11:44:01 +0100
 
-x86, dumpstack: Correct stack dump info when frame pointer is available
+x86: Flush TLB if PGD entry is changed in i386 PAE mode
 
-Current stack dump code scans entire stack and check each entry
-contains a pointer to kernel code. If CONFIG_FRAME_POINTER=y it
-could mark whether the pointer is valid or not based on value of
-the frame pointer. Invalid entries could be preceded by '?' sign.
+According to intel CPU manual, every time PGD entry is changed in i386 PAE
+mode, we need do a full TLB flush. Current code follows this and there is
+comment for this too in the code.
 
-However this was not going to happen because scan start point
-was always higher than the frame pointer so that they could not
-meet.
+But current code misses the multi-threaded case. A changed page table
+might be used by several CPUs, every such CPU should flush TLB. Usually
+this isn't a problem, because we prepopulate all PGD entries at process
+fork. But when the process does munmap and follows new mmap, this issue
+will be triggered.
 
-Commit 9c0729dc8062 ("x86: Eliminate bp argument from the stack
-tracing routines") delayed bp acquisition point, so the bp was
-read in lower frame, thus all of the entries were marked
-invalid.
+When it happens, some CPUs keep doing page faults:
 
-This patch fixes this by reverting above commit while retaining
-stack_frame() helper as suggested by Frederic Weisbecker.
+  http://marc.info/?l=linux-kernel&m=129915020508238&w=2
 
-End result looks like below:
-
-before:
-
- [    3.508329] Call Trace:
- [    3.508551]  [<ffffffff814f35c9>] ? panic+0x91/0x199
- [    3.508662]  [<ffffffff814f3739>] ? printk+0x68/0x6a
- [    3.508770]  [<ffffffff81a981b2>] ? mount_block_root+0x257/0x26e
- [    3.508876]  [<ffffffff81a9821f>] ? mount_root+0x56/0x5a
- [    3.508975]  [<ffffffff81a98393>] ? prepare_namespace+0x170/0x1a9
- [    3.509216]  [<ffffffff81a9772b>] ? kernel_init+0x1d2/0x1e2
- [    3.509335]  [<ffffffff81003894>] ? kernel_thread_helper+0x4/0x10
- [    3.509442]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
- [    3.509542]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
- [    3.509641]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
-
-after:
-
- [    3.522991] Call Trace:
- [    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
- [    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
- [    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
- [    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
- [    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
- [    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
- [    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
- [    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
- [    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
- [    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
-
- -v5:
-   * fix build breakage with oprofile
-
- -v4:
-   * use 0 instead of regs->bp
-   * separate out printk changes
-
- -v3:
-   * apply comment from Frederic
-   * add a couple of printk fixes
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Soren Sandmann <ssp@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>
-LKML-Reference: <1300416006-3163-1-git-send-email-namhyung@gmail.com>
+Reported-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+Tested-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+Cc: Mallick Asit K <asit.k.mallick@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: stable <stable@kernel.org>
+LKML-Reference: <1300246649.2337.95.camel@sli10-conroe>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/kdebug.h     |    2 +-
- arch/x86/include/asm/stacktrace.h |    6 +++---
- arch/x86/kernel/cpu/perf_event.c  |    2 +-
- arch/x86/kernel/dumpstack.c       |   14 ++++++++------
- arch/x86/kernel/dumpstack_32.c    |   15 ++++++++-------
- arch/x86/kernel/dumpstack_64.c    |   14 +++++++-------
- arch/x86/kernel/process.c         |    2 +-
- arch/x86/kernel/stacktrace.c      |    6 +++---
- arch/x86/oprofile/backtrace.c     |    2 +-
- 9 files changed, 33 insertions(+), 30 deletions(-)
+ arch/x86/include/asm/pgtable-3level.h |   11 +++--------
+ arch/x86/mm/pgtable.c                 |    3 +--
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index 518bbbb..fe2cc6e 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -26,7 +26,7 @@ extern void die(const char *, struct pt_regs *,long);
- extern int __must_check __die(const char *, struct pt_regs *, long);
- extern void show_registers(struct pt_regs *regs);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
--		       unsigned long *sp);
-+		       unsigned long *sp, unsigned long bp);
- extern void __show_regs(struct pt_regs *regs, int all);
- extern void show_regs(struct pt_regs *regs);
- extern unsigned long oops_begin(void);
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index 52b5c7e..d7e89c8 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -47,7 +47,7 @@ struct stacktrace_ops {
- };
+diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
+index 94b979d..effff47 100644
+--- a/arch/x86/include/asm/pgtable-3level.h
++++ b/arch/x86/include/asm/pgtable-3level.h
+@@ -69,8 +69,6 @@ static inline void native_pmd_clear(pmd_t *pmd)
  
- void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
--		unsigned long *stack,
-+		unsigned long *stack, unsigned long bp,
- 		const struct stacktrace_ops *ops, void *data);
- 
- #ifdef CONFIG_X86_32
-@@ -86,11 +86,11 @@ stack_frame(struct task_struct *task, struct pt_regs *regs)
- 
- extern void
- show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *stack, char *log_lvl);
-+		   unsigned long *stack, unsigned long bp, char *log_lvl);
- 
- extern void
- show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *sp, char *log_lvl);
-+		   unsigned long *sp, unsigned long bp, char *log_lvl);
- 
- extern unsigned int code_bytes;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 279bc9d..3061276 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1792,7 +1792,7 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 
- 	perf_callchain_store(entry, regs->ip);
- 
--	dump_trace(NULL, regs, NULL, &backtrace_ops, entry);
-+	dump_trace(NULL, regs, NULL, 0, &backtrace_ops, entry);
- }
- 
- #ifdef CONFIG_COMPAT
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 220a1c1..999e279 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -175,21 +175,21 @@ static const struct stacktrace_ops print_trace_ops = {
- 
- void
- show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		unsigned long *stack, char *log_lvl)
-+		unsigned long *stack, unsigned long bp, char *log_lvl)
+ static inline void pud_clear(pud_t *pudp)
  {
- 	printk("%sCall Trace:\n", log_lvl);
--	dump_trace(task, regs, stack, &print_trace_ops, log_lvl);
-+	dump_trace(task, regs, stack, bp, &print_trace_ops, log_lvl);
- }
+-	unsigned long pgd;
+-
+ 	set_pud(pudp, __pud(0));
  
- void show_trace(struct task_struct *task, struct pt_regs *regs,
--		unsigned long *stack)
-+		unsigned long *stack, unsigned long bp)
- {
--	show_trace_log_lvl(task, regs, stack, "");
-+	show_trace_log_lvl(task, regs, stack, bp, "");
- }
- 
- void show_stack(struct task_struct *task, unsigned long *sp)
- {
--	show_stack_log_lvl(task, NULL, sp, "");
-+	show_stack_log_lvl(task, NULL, sp, 0, "");
- }
- 
- /*
-@@ -197,14 +197,16 @@ void show_stack(struct task_struct *task, unsigned long *sp)
-  */
- void dump_stack(void)
- {
-+	unsigned long bp;
- 	unsigned long stack;
- 
-+	bp = stack_frame(current, NULL);
- 	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
- 		current->pid, current->comm, print_tainted(),
- 		init_utsname()->release,
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
--	show_trace(NULL, NULL, &stack);
-+	show_trace(NULL, NULL, &stack, bp);
- }
- EXPORT_SYMBOL(dump_stack);
- 
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 74cc1ed..3b97a80 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -17,12 +17,11 @@
- #include <asm/stacktrace.h>
- 
- 
--void dump_trace(struct task_struct *task,
--		struct pt_regs *regs, unsigned long *stack,
-+void dump_trace(struct task_struct *task, struct pt_regs *regs,
-+		unsigned long *stack, unsigned long bp,
- 		const struct stacktrace_ops *ops, void *data)
- {
- 	int graph = 0;
--	unsigned long bp;
- 
- 	if (!task)
- 		task = current;
-@@ -35,7 +34,9 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
- 
--	bp = stack_frame(task, regs);
-+	if (!bp)
-+		bp = stack_frame(task, regs);
-+
- 	for (;;) {
- 		struct thread_info *context;
- 
-@@ -55,7 +56,7 @@ EXPORT_SYMBOL(dump_trace);
- 
- void
- show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *sp, char *log_lvl)
-+		   unsigned long *sp, unsigned long bp, char *log_lvl)
- {
- 	unsigned long *stack;
- 	int i;
-@@ -77,7 +78,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
- 		touch_nmi_watchdog();
- 	}
- 	printk(KERN_CONT "\n");
--	show_trace_log_lvl(task, regs, sp, log_lvl);
-+	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
- }
- 
- 
-@@ -102,7 +103,7 @@ void show_registers(struct pt_regs *regs)
- 		u8 *ip;
- 
- 		printk(KERN_EMERG "Stack:\n");
--		show_stack_log_lvl(NULL, regs, &regs->sp, KERN_EMERG);
-+		show_stack_log_lvl(NULL, regs, &regs->sp, 0, KERN_EMERG);
- 
- 		printk(KERN_EMERG "Code: ");
- 
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index a6b6fcf..e71c98d 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -139,8 +139,8 @@ fixup_bp_irq_link(unsigned long bp, unsigned long *stack,
-  * severe exception (double fault, nmi, stack fault, debug, mce) hardware stack
-  */
- 
--void dump_trace(struct task_struct *task,
--		struct pt_regs *regs, unsigned long *stack,
-+void dump_trace(struct task_struct *task, struct pt_regs *regs,
-+		unsigned long *stack, unsigned long bp,
- 		const struct stacktrace_ops *ops, void *data)
- {
- 	const unsigned cpu = get_cpu();
-@@ -150,7 +150,6 @@ void dump_trace(struct task_struct *task,
- 	struct thread_info *tinfo;
- 	int graph = 0;
- 	unsigned long dummy;
--	unsigned long bp;
- 
- 	if (!task)
- 		task = current;
-@@ -161,7 +160,8 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
- 
--	bp = stack_frame(task, regs);
-+	if (!bp)
-+		bp = stack_frame(task, regs);
  	/*
- 	 * Print function call entries in all stacks, starting at the
- 	 * current stack address. If the stacks consist of nested
-@@ -225,7 +225,7 @@ EXPORT_SYMBOL(dump_trace);
- 
- void
- show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
--		   unsigned long *sp, char *log_lvl)
-+		   unsigned long *sp, unsigned long bp, char *log_lvl)
- {
- 	unsigned long *irq_stack_end;
- 	unsigned long *irq_stack;
-@@ -269,7 +269,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
- 	preempt_enable();
- 
- 	printk(KERN_CONT "\n");
--	show_trace_log_lvl(task, regs, sp, log_lvl);
-+	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+@@ -79,13 +77,10 @@ static inline void pud_clear(pud_t *pudp)
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 *
+-	 * Make sure the pud entry we're updating is within the
+-	 * current pgd to avoid unnecessary TLB flushes.
++	 * Currently all places where pud_clear() is called either have
++	 * flush_tlb_mm() followed or don't need TLB flush (x86_64 code or
++	 * pud_clear_bad()), so we don't need TLB flush here.
+ 	 */
+-	pgd = read_cr3();
+-	if (__pa(pudp) >= pgd && __pa(pudp) <
+-	    (pgd + sizeof(pgd_t)*PTRS_PER_PGD))
+-		write_cr3(pgd);
  }
  
- void show_registers(struct pt_regs *regs)
-@@ -298,7 +298,7 @@ void show_registers(struct pt_regs *regs)
- 
- 		printk(KERN_EMERG "Stack:\n");
- 		show_stack_log_lvl(NULL, regs, (unsigned long *)sp,
--				   KERN_EMERG);
-+				   0, KERN_EMERG);
- 
- 		printk(KERN_EMERG "Code: ");
- 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 99fa3ad..d46cbe4 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -87,7 +87,7 @@ void exit_thread(void)
- void show_regs(struct pt_regs *regs)
- {
- 	show_registers(regs);
--	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs));
-+	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
+ #ifdef CONFIG_SMP
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 0113d19..8573b83 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -168,8 +168,7 @@ void pud_populate(struct mm_struct *mm, pud_t *pudp, pmd_t *pmd)
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 */
+-	if (mm == current->active_mm)
+-		write_cr3(read_cr3());
++	flush_tlb_mm(mm);
  }
+ #else  /* !CONFIG_X86_PAE */
  
- void show_regs_common(void)
-diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
-index 938c8e1..6515733 100644
---- a/arch/x86/kernel/stacktrace.c
-+++ b/arch/x86/kernel/stacktrace.c
-@@ -73,7 +73,7 @@ static const struct stacktrace_ops save_stack_ops_nosched = {
-  */
- void save_stack_trace(struct stack_trace *trace)
- {
--	dump_trace(current, NULL, NULL, &save_stack_ops, trace);
-+	dump_trace(current, NULL, NULL, 0, &save_stack_ops, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
-@@ -81,14 +81,14 @@ EXPORT_SYMBOL_GPL(save_stack_trace);
- 
- void save_stack_trace_regs(struct stack_trace *trace, struct pt_regs *regs)
- {
--	dump_trace(current, regs, NULL, &save_stack_ops, trace);
-+	dump_trace(current, regs, NULL, 0, &save_stack_ops, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
- void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- {
--	dump_trace(tsk, NULL, NULL, &save_stack_ops_nosched, trace);
-+	dump_trace(tsk, NULL, NULL, 0, &save_stack_ops_nosched, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 72cbec1..2d49d4e 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -126,7 +126,7 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
- 	if (!user_mode_vm(regs)) {
- 		unsigned long stack = kernel_stack_pointer(regs);
- 		if (depth)
--			dump_trace(NULL, regs, (unsigned long *)stack,
-+			dump_trace(NULL, regs, (unsigned long *)stack, 0,
- 				   &backtrace_ops, &depth);
- 		return;
- 	}
