@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab1CRRw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 13:52:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50182 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab1CRRwv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 13:52:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=StnyVHVWaSukwCTrDGM4yyUtiwHclZyOVUlwTRaPUchDwTSH+EC7UFInpIi8+phZNe
-         bKbImynXGzphhhtweYMSz5tO5re11QQ1gulv9b3WBPPFWIqGDsNgZRKIqTrVue7bFHa1
-         DDYzPcEEzkRDI9kIrs7n0JKV6qhEyrOrPhAho=
-MIME-Version: 1.0
-In-Reply-To: <20110318142618.GA3142@gmail.com>
-References: <1300436784-26543-1-git-send-email-vapier@gentoo.org> <20110318142618.GA3142@gmail.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 18 Mar 2011 13:52:26 -0400
-X-Google-Sender-Auth: V9m1tQvmNP69DnmAk1Z4Ycqsj8M
-Message-ID: <AANLkTinExKgnaSMceMhMkAD8rF9RM4UM363WjgtfmZFt@mail.gmail.com>
-Subject: Re: [PATCH] rtc-bfin: add missing "return 0" in new alarm func
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Cc: john.stultz@linaro.org, linux-kernel@vger.kernel.org, stable@kernel.org,
-        rtc-linux@googlegroups.com, a.zummo@towertech.it
-Content-Type: text/plain; charset=UTF-8
+	id S932580Ab1CRRxF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 13:53:05 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:54421 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932556Ab1CRRwz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 13:52:55 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=gXyBi/hwVbBe4sWf793Aq57G0yEtPWIzV2tspUZOJZbNZjYbUST6StMolLa6EV6UZhIHM5VDLmNQ4cjJQIBfGtEhPTiEV4OVPVVXooUvJU5186If0In/jNyHBkmVVygk;
+Date: Fri, 18 Mar 2011 10:52:52 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI/ACPI: Report ASPM support to BIOS if not disabled
+ from command line
+Message-ID: <20110318105252.1d896bb6@jbarnes-desktop>
+In-Reply-To: <201103181841.28636.rjw@sisk.pl>
+References: <201103051321.51856.rjw@sisk.pl>
+	<20110318012556.GA13851@srcf.ucam.org>
+	<20110317214152.503adac8@jbarnes-x200>
+	<201103181841.28636.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 10:26, Harry Wei wrote:
-> On Fri, Mar 18, 2011 at 04:26:24AM -0400, Mike Frysinger wrote:
->> The new bfin_rtc_alarm_irq_enable function forgot to add a "return 0" to
->> the end leading to the build warning:
->>       drivers/rtc/rtc-bfin.c: In function 'bfin_rtc_alarm_irq_enable':
->>       drivers/rtc/rtc-bfin.c:253: warning: control reaches end of non-void function
->
->   I am sure we should give a return-value
-> but whether it is '0'? Maybe it should return
-> other value.
->   Can you give some explanations for yours.
+On Fri, 18 Mar 2011 18:41:28 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-read the interface.c code ... this func returns 0 on "success".  i
-dont know what other possible value this could return.
--mike
+> On Friday, March 18, 2011, Jesse Barnes wrote:
+> > On Fri, 18 Mar 2011 01:25:56 +0000
+> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > 
+> > > On Fri, Mar 18, 2011 at 10:10:20AM +0900, Kenji Kaneshige wrote:
+> > > > Jesse,
+> > > >
+> > > > This patch fixes the problem that PCIe hotplug no longer work in
+> > > > 2.6.38 on my platform (ASPM is disabled　through ACPI FADT in my
+> > > > platform). I think this need to be applied soon.
+> > > >
+> > > > Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> > > > Tested-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> > > 
+> > > Yes, I think we need to look at -stable for this one.
+> > 
+> > Ok, thanks guys.  I'll queue it up in -fixes and send it to Linus after
+> > my 2.6.39 pull req with a cc for stable.
+> 
+> Well, I thought you could simply include it into the pull request. :-)
+
+I could have if I had applied it last week...
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
