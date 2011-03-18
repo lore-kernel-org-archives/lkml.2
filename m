@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab1CREBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 00:01:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54511 "EHLO song.cn.fujitsu.com"
+	id S1752246Ab1CREBh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 00:01:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62563 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab1CREBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 00:01:01 -0400
-Message-ID: <4D82D967.7090408@cn.fujitsu.com>
-Date: Fri, 18 Mar 2011 12:02:47 +0800
+	id S1750817Ab1CREBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 00:01:32 -0400
+Message-ID: <4D82D987.3050508@cn.fujitsu.com>
+Date: Fri, 18 Mar 2011 12:03:19 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Tom Herbert <therbert@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 18/36] net,rcu: convert call_rcu(xps_dev_maps_release) to
- kfree_rcu()
+        Ingo Molnar <mingo@elte.hu>, Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 19/36] security,rcu: convert call_rcu(sel_netif_free) to kfree_rcu()
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 11:59:38,
+ 2011-03-18 12:00:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 11:59:39,
-	Serialize complete at 2011-03-18 11:59:39
+ 2011-03-18 12:00:11,
+	Serialize complete at 2011-03-18 12:00:11
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,50 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-The rcu callback xps_dev_maps_release() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(xps_dev_maps_release).
+The rcu callback sel_netif_free() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(sel_netif_free).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- net/core/net-sysfs.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ security/selinux/netif.c |   18 +-----------------
+ 1 files changed, 1 insertions(+), 17 deletions(-)
 
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index 9ae2e1d..06332e5 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -876,14 +876,6 @@ static ssize_t show_xps_map(struct netdev_queue *queue,
- 	return len;
+diff --git a/security/selinux/netif.c b/security/selinux/netif.c
+index d6095d6..58cc481 100644
+--- a/security/selinux/netif.c
++++ b/security/selinux/netif.c
+@@ -104,22 +104,6 @@ static int sel_netif_insert(struct sel_netif *netif)
  }
  
--static void xps_dev_maps_release(struct rcu_head *rcu)
+ /**
+- * sel_netif_free - Frees an interface entry
+- * @p: the entry's RCU field
+- *
+- * Description:
+- * This function is designed to be used as a callback to the call_rcu()
+- * function so that memory allocated to a hash table interface entry can be
+- * released safely.
+- *
+- */
+-static void sel_netif_free(struct rcu_head *p)
 -{
--	struct xps_dev_maps *dev_maps =
--	    container_of(rcu, struct xps_dev_maps, rcu);
--
--	kfree(dev_maps);
+-	struct sel_netif *netif = container_of(p, struct sel_netif, rcu_head);
+-	kfree(netif);
 -}
 -
- static DEFINE_MUTEX(xps_map_mutex);
- #define xmap_dereference(P)		\
- 	rcu_dereference_protected((P), lockdep_is_held(&xps_map_mutex))
-@@ -993,7 +985,7 @@ static ssize_t store_xps_map(struct netdev_queue *queue,
- 	}
+-/**
+  * sel_netif_destroy - Remove an interface record from the table
+  * @netif: the existing interface record
+  *
+@@ -131,7 +115,7 @@ static void sel_netif_destroy(struct sel_netif *netif)
+ {
+ 	list_del_rcu(&netif->list);
+ 	sel_netif_total--;
+-	call_rcu(&netif->rcu_head, sel_netif_free);
++	kfree_rcu(netif, rcu_head);
+ }
  
- 	if (dev_maps)
--		call_rcu(&dev_maps->rcu, xps_dev_maps_release);
-+		kfree_rcu(dev_maps, rcu);
- 
- 	netdev_queue_numa_node_write(queue, (numa_node >= 0) ? numa_node :
- 					    NUMA_NO_NODE);
-@@ -1065,7 +1057,7 @@ static void netdev_queue_release(struct kobject *kobj)
- 
- 		if (!nonempty) {
- 			RCU_INIT_POINTER(dev->xps_maps, NULL);
--			call_rcu(&dev_maps->rcu, xps_dev_maps_release);
-+			kfree_rcu(dev_maps, rcu);
- 		}
- 	}
- 
+ /**
 -- 
 1.7.4
