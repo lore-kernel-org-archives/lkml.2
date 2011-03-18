@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352Ab1CRHY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 03:24:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45054 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab1CRHYw convert rfc822-to-8bit (ORCPT
+	id S932156Ab1CRHaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 03:30:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38968 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756310Ab1CRH37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 03:24:52 -0400
+	Fri, 18 Mar 2011 03:29:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ZvUd0TVwVyR1yHtttG9Q/2bcIYbG5XcRf93/sLISttz4M2jKbdmz5L+lNNxRVmKAsI
-         hl0IirMKTiv+JXr7/ibFOmGKSpfYxKHK+4AqiOKXGUdxC0CmSKMFNcZTeQGJ39AgPYZp
-         G1cmuOb7H/ZVn+PdqMKvGGBxWVYR/5qJhdaxA=
+        h=from:reply-to:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=QUbuGUoq/eee1rbIMLWLyM//yPGvK8ed1ym7d/qnbsgrQdfozhyAVt6B1rWmBX3u61
+         xl5bfWnmuMvFmmZSE4TeEEMgohDGgwVO/7akyngrlqgymnxvOWM/610JsnBn23TEGeaj
+         yMhf14FdbZ7QhDJm/x+0hhyzEQXnrpL3eoBSc=
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+Organization: Nanjing University
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte mapping to ksm pages
+Date: Fri, 18 Mar 2011 15:29:43 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.36.4; KDE/4.6.1; i686; ; )
+Cc: Izik Eidus <ieidus@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kernel-janitors@vger.kernel.org
+References: <201102262256.31565.nai.xia@gmail.com> <20110302143142.a3c0002b.akpm@linux-foundation.org>
+In-Reply-To: <20110302143142.a3c0002b.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <4D82A068.7020101@snapgear.com>
-References: <4D5DB83D.80205@snapgear.com>
-	<AANLkTin0X-ST=rZqwfCA0i5VGCh5ygYXyZFdndiDgR_2@mail.gmail.com>
-	<AANLkTim=kQOMyKqOEkw5iQjpGhDf0YGMe1ZTnJZkKfr7@mail.gmail.com>
-	<4D5EEEBB.7050708@snapgear.com>
-	<AANLkTimmfUJASL47Cs80FJ2mkx3PPvAX57x43nF09tns@mail.gmail.com>
-	<4D61A986.3060308@snapgear.com>
-	<AANLkTimtr0JbmM2PNtGRyAKE7kNr_FXd==ZC3bM82xsG@mail.gmail.com>
-	<4D82A068.7020101@snapgear.com>
-Date: Fri, 18 Mar 2011 08:24:50 +0100
-X-Google-Sender-Auth: PUUNjbFHtXHHBZWmc0EDLeJMiSE
-Message-ID: <AANLkTikr=HVVKxuTqwh8U=LDmaMCMpOkdUxdo+pw_tz4@mail.gmail.com>
-Subject: Re: merge of m68knommu and m68k arch branches?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        uClinux development list <uclinux-dev@uclinux.org>,
-        Greg Ungerer <gerg@uclinux.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103181529.43659.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-On Fri, Mar 18, 2011 at 00:59, Greg Ungerer <gerg@snapgear.com> wrote:
-> Looks like we both have our changes for m68k and m68knommu in Linus'
-> git tree for this merge window. Do you plan to push anything else?
+>On Thursday 03 March 2011, at 06:31:42, <Andrew Morton <akpm@linux-foundation.org>> wrote
+> This patch obviously wasn't tested with CONFIG_KSM=n, which was a
+> pretty basic patch-testing failure :(
 
-Nothing planned for now.
+Oops, I will be careful to avoid similar mistakes next time.
 
-> If you are done I will prepare a single git commit on the m68knommu
-> git tree that merges the m68knommu and m68k arch branches. I will
-> post here again for one last check over early next week, and if
-> everyone is happy I will ask Linus to pull it later next week.
->
-> How does that sound?
+> 
+> I fixed up my tree with the below, but really the amount of ifdeffing
+> is unacceptable - please find a cleaner way to fix up this patch.
 
-Sounds great! Thx!
+Ok, I will have a try in my next patch submit. 
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+-Nai
+> 
+> --- a/mm/ksm.c~ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix
+> +++ a/mm/ksm.c
+> @@ -883,7 +883,6 @@ static int try_to_merge_one_page(struct 
+>  	 */
+>  	if (write_protect_page(vma, page, &orig_pte) == 0) {
+>  		if (!kpage) {
+> -			long mapcount = page_mapcount(page);
+>  			/*
+>  			 * While we hold page lock, upgrade page from
+>  			 * PageAnon+anon_vma to PageKsm+NULL stable_node:
+> @@ -891,10 +890,12 @@ static int try_to_merge_one_page(struct 
+>  			 */
+>  			set_page_stable_node(page, NULL);
+>  			mark_page_accessed(page);
+> -			if (mapcount)
+> +#ifdef CONFIG_KSM
+> +			if (page_mapcount(page))
+>  				add_zone_page_state(page_zone(page),
+>  						    NR_KSM_PAGES_SHARING,
+>  						    mapcount);
+> +#endif
+>  			err = 0;
+>  		} else if (pages_identical(page, kpage))
+>  			err = replace_page(vma, page, kpage, orig_pte);
+> --- a/mm/memory.c~ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix
+> +++ a/mm/memory.c
+> @@ -719,8 +719,10 @@ copy_one_pte(struct mm_struct *dst_mm, s
+>  			rss[MM_ANONPAGES]++;
+>  		else
+>  			rss[MM_FILEPAGES]++;
+> +#ifdef CONFIG_KSM
+>  		if (PageKsm(page)) /* follows page_dup_rmap() */
+>  			inc_zone_page_state(page, NR_KSM_PAGES_SHARING);
+> +#endif
+>  	}
+>  
+>  out_set_pte:
+> --- a/mm/rmap.c~ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix
+> +++ a/mm/rmap.c
+> @@ -893,11 +893,12 @@ void do_page_add_anon_rmap(struct page *
+>  			__inc_zone_page_state(page,
+>  					      NR_ANON_TRANSPARENT_HUGEPAGES);
+>  	}
+> +#ifdef CONFIG_KSM
+>  	if (unlikely(PageKsm(page))) {
+>  		__inc_zone_page_state(page, NR_KSM_PAGES_SHARING);
+>  		return;
+>  	}
+> -
+> +#endif
+>  	VM_BUG_ON(!PageLocked(page));
+>  	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+>  	if (first)
+> @@ -955,9 +956,10 @@ void page_add_file_rmap(struct page *pag
+>   */
+>  void page_remove_rmap(struct page *page)
+>  {
+> +#ifdef CONFIG_KSM
+>  	if (PageKsm(page))
+>  		__dec_zone_page_state(page, NR_KSM_PAGES_SHARING);
+> -
+> +#endif
+>  	/* page still mapped by someone else? */
+>  	if (!atomic_add_negative(-1, &page->_mapcount))
+>  		return;
+> _
+> 
+> 
