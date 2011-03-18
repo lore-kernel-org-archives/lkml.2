@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab1CRTjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 15:39:53 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60155
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932334Ab1CRTfE (ORCPT
+	id S1757364Ab1CRTky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 15:40:54 -0400
+Received: from clem.clem-digital.net ([68.16.168.10]:44965 "EHLO
+	clem.clem-digital.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464Ab1CRTks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 15:35:04 -0400
-Date: Fri, 18 Mar 2011 12:35:41 -0700 (PDT)
-Message-Id: <20110318.123541.189691785.davem@davemloft.net>
-To: laijs@cn.fujitsu.com
-Cc: paulmck@linux.vnet.ibm.com, mingo@elte.hu, axboe@kernel.dk,
-        robert.w.love@intel.com, James.Bottomley@suse.de,
-        nhorman@tuxdriver.com, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        eric.dumazet@gmail.com, shemminger@vyatta.com, tj@kernel.org,
-        jarkao2@gmail.com, linux-kernel@vger.kernel.org, devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 04/36] net,rcu: convert call_rcu(__leaf_info_free_rcu)
- to kfree_rcu()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D82D4AA.2080601@cn.fujitsu.com>
-References: <4D82D071.5020703@cn.fujitsu.com>
-	<4D82D3FF.2080303@cn.fujitsu.com>
-	<4D82D4AA.2080601@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 18 Mar 2011 15:40:48 -0400
+X-Greylist: delayed 521 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Mar 2011 15:40:48 EDT
+From: Pete Clements <clem@clem.clem-digital.net>
+Message-Id: <201103181932.p2IJW5cg002394@clem.clem-digital.net>
+Subject: 38-git2-6 -- kernel/futex.c warning
+To: linux-kernel@vger.kernel.org (linux-kernel)
+Date: Fri, 18 Mar 2011 15:32:05 -0400 (EDT)
+X-Mailer: ELM [version 2.5 PL7]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Fri, 18 Mar 2011 11:42:34 +0800
+Fyi. Have been experiencing the below since 38-git2. Continual scrolling
+such that cannot complete system startup. System is i386 UP, Debian "squeeze".
 
-> 
-> 
-> The rcu callback __leaf_info_free_rcu() just calls a kfree(),
-> so we use kfree_rcu() instead of the call_rcu(__leaf_info_free_rcu).
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+WARNING: at kernel/futex.c:786 wake_futex+0x21/0x70()
+Hardware name: XPST450
+Modules linked in: ipv6
+Pid: 1045, comm: rndc Not tainted 2.6.38-git6 #1
+Call Trace:
+[<c101eba8>] ? warn_slowpath_common+0x78/0xb0
+[<c1040b21>] ? wake_futex+0x21/0x70
+[<c1040b21>] ? wake_futex+0x21/0x70
+[<c101ebf9>] ? warn_slowpath_null+0x19/0x20
+[<c1040b21>] ? wake_futex+0x21/0x70
+[<c10429d9>] ? do_futex+0x629/0x950
+[<c108f2a3>] ? d_kill+0x73/0xd0
+[<c1042d78>] ? sys_futex+0x78/0x130
+[<c107c2dd>] ? filp_close+0x4d/0x80
+[<c11fa8bd>] ? syscall_call+0x7/0xb
+---[ end trace 595c935fe53c9cd0 ]---
 
-Acked-by: David S. Miller <davem@davemloft.net>
+-- 
+Pete Clements 
