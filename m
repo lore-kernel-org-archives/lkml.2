@@ -1,520 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab1CRSM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 14:12:59 -0400
-Received: from mail1.nippynetworks.com ([91.220.24.129]:50295 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756440Ab1CRSMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 14:12:51 -0400
-From: kernel@wildgooses.com
-To: lists@wildgooses.com, grant.likely@secretlab.ca, dilinger@queued.net
-Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] leds: New PCEngines Alix LED driver using gpio interface
-Date: Fri, 18 Mar 2011 18:12:29 +0000
-Message-Id: <1300471949-29366-1-git-send-email-kernel@wildgooses.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <20110317181757.GM9597@angua.secretlab.ca>
-References: <20110317181757.GM9597@angua.secretlab.ca>
+	id S1756471Ab1CRSUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 14:20:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35664 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752571Ab1CRSU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 14:20:26 -0400
+Message-ID: <4D83A25C.804@ti.com>
+Date: Fri, 18 Mar 2011 13:20:12 -0500
+From: David Anders <x0132446@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: "andy.green@linaro.org" <andy.green@linaro.org>
+CC: Andy Green <andy@warmcat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Platform data for onboard USB assets
+References: <20110311165642.GA9996@kroah.com> <201103172333.01474.arnd@arndb.de> <4D82979B.2050003@linaro.org> <201103181600.09877.arnd@arndb.de> <4D839BCD.6030202@linaro.org>
+In-Reply-To: <4D839BCD.6030202@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ed Wildgoose <git@wildgooses.com>
+On 03/18/2011 12:52 PM, Andy Green wrote:
+> On 03/18/2011 03:00 PM, Somebody in the thread at some point said:
+>
+> Hi -
+>
+>    
+>>> You changed your first opinion about tagging "dynamically probed
+>>> devices" with what is effectively platform_data, cool.
+>>>        
+>> I still don't like the idea of attaching platform_data to more
+>> devices, when we try to move people away from that in other
+>> parts of the kernel, because of the known deficiencies.
+>>      
+> Whatever way you look at it, data delivered into the driver by Device
+> Tree is fundamentally the same action as delivering data into the driver
+> by platform_data.  Yes, you query by named element with device context,
+> but you end up with the same answer as if you dereference a
+> platform_data member.  There are no "known deficiencies" to
+> platform_data for this action either, at least, not known to me, I don't
+> think lack of typechecking on the pointer itself is an issue given the
+> accuracy it can be targeted to a soldered-on-the-board device.
+>
+>    
+>> Passing a MAC address in a device tree property is a
+>> well-established method that is used on many drivers, and
+>> is portable across operating systems and architectures.
+>>      
+> If you're talking about Device Tree, that itself is not at all "well
+> established" let alone servicing drivers from it.  Like I say I don't
+> want to seem like I am down on it, but it is very new indeed let's face
+> it and few drivers are using it for functional configuration information
+> compared to vast numbers using platform_data.
+>
+> =====>  If Device Tree APIs is mandated to implement functionality fixes
+> to drivers and platform_data is blocked for this, then we end up with
+> different, rotting functionality for platform_data basis and drivers
+> that remain broken on the many, many, platforms that don't have and will
+> never have Device Tree.  That does NOT sound like the right approach.
+>
+> I guess the grand plan is to eliminate platform_data by overwhelming it
+> with Device Tree refactoring.  But each driver has to be tested and each
+> board definition file changed... that is a huge, huge undertaking that
+> will not happen in any kind of medium and perhaps not long term either.
+>
+> So they will have to coexist for a very long while.  A policy of denying
+> fixes to platform_data users by enforcing introduction of Device Tree
+> APIs and making platform_data users out as troglodytes does not sound
+> workable.
+>
+>    
+>> We don't need to implement the entire binding. My point was that
+>> if we implement a way to attach a device_node to a usb_device, we
+>> should do it in a way that is compatible with that binding, rather
+>> than coming up with a new way.
+>>      
+> That document is of no interest outside open firmware / Device Tree
+> implementation since it is specific to it, and there is no value to
+> reference it for a platform_data based solution.
+>
+>    
+>> My impression so far is that attaching a struct device_node to
+>> static USB devices can be useful in general, but I wouldn't
+>> go so far to suggest using this for dynamically probed devices.
+>>      
+> At least we agree there's no point to target pluggable devices with
+> either solution, in which case platform_data and Device Tree provide the
+> same end result, plus or minus extra query API.
+>
+> By the way I intend shortly to extend my patchset to cover Panda WLAN
+> case via probed MMC / SDIO device in the same way as USB.  So there will
+> then be a second use case for my async platform_data patchset via a
+> different subsystem.  Of course, maybe it just doubles the number of
+> beatings ^^
+>
+> -Andy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>    
 
-This new driver replaces the old PCEngines Alix 2/3 LED driver with
-a new driver that controls the LEDs through the leds-gpio driver.
-The old driver accessed GPIOs directly, which created a conflict
-and prevented also loading the cs5535-gpio driver to read other
-GPIOs on the Alix board. With this new driver, we hook into leds-gpio
-which in turn uses GPIO to control the LEDs and therefore it's
-possible to control both the LEDs and access onboard GPIOs
 
-Driver is moved to platform/geode and any other geode
-initialisation modules should move here also.
+just a note on some of things discussed. the mac address issue applies 
+to many development boards including the BeagleBoard XM which uses the 
+same SMSC LAN9514 with no eeprom.
 
-This driver is inspired by leds-net5501.c
-by: Alessandro Zummo <a.zummo@towertech.it>
-Ideally, leds-net5501.c should also be moved to platform/geode.
-Additionally the driver relies on parts of the patch: 7f131cf3ed
-by: Daniel Mack <daniel@caiaq.de> to perform detection of the Alix board
-Signed-off-by: Ed Wildgoose <git@wildgooses.com>
----
-:100644 100644 d5ed94d... b16ab56... M	arch/x86/Kconfig
-:100644 100644 021eee9... 8d87439... M	arch/x86/platform/Makefile
-:000000 100644 0000000... d4e599f... A	arch/x86/platform/geode/Makefile
-:000000 100644 0000000... bc1b3b3... A	arch/x86/platform/geode/alix_leds.c
-:100644 100644 6f190f4... e4573d6... M	drivers/leds/Kconfig
-:100644 100644 aae6989... bf5a00c... M	drivers/leds/Makefile
-:100644 000000 f59ffad... 0000000... D	drivers/leds/leds-alix2.c
- arch/x86/Kconfig                    |    9 ++
- arch/x86/platform/Makefile          |    1 +
- arch/x86/platform/geode/Makefile    |    1 +
- arch/x86/platform/geode/alix_leds.c |  138 ++++++++++++++++++++
- drivers/leds/Kconfig                |    8 --
- drivers/leds/Makefile               |    1 -
- drivers/leds/leds-alix2.c           |  239 -----------------------------------
- 7 files changed, 149 insertions(+), 248 deletions(-)
+if you look at the drivers/net/usb/smsc95xx.c you'll find:
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d5ed94d..b16ab56 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2094,6 +2094,15 @@ config OLPC_OPENFIRMWARE_DT
- 	default y if OLPC_OPENFIRMWARE && PROC_DEVICETREE
- 	select OF_PROMTREE
- 
-+config ALIX_LEDS
-+	bool "PCEngines ALIX.2/.3 LED Support"
-+	select GPIOLIB
-+	depends on LEDS_CLASS
-+	depends on LEDS_GPIO_PLATFORM && GPIO_CS5535
-+	---help---
-+	  This option enables support for the PCEngines ALIX.2 and ALIX.3 LEDs.
-+	  You have to set alix-leds.force=1 for boards with Award BIOS.
-+
- endif # X86_32
- 
- config AMD_NB
-diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-index 021eee9..8d87439 100644
---- a/arch/x86/platform/Makefile
-+++ b/arch/x86/platform/Makefile
-@@ -1,6 +1,7 @@
- # Platform specific code goes here
- obj-y	+= ce4100/
- obj-y	+= efi/
-+obj-y	+= geode/
- obj-y	+= iris/
- obj-y	+= mrst/
- obj-y	+= olpc/
-diff --git a/arch/x86/platform/geode/Makefile b/arch/x86/platform/geode/Makefile
-new file mode 100644
-index 0000000..d4e599f
---- /dev/null
-+++ b/arch/x86/platform/geode/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_ALIX_LEDS)		+= alix-leds.o
-diff --git a/arch/x86/platform/geode/alix_leds.c b/arch/x86/platform/geode/alix_leds.c
-new file mode 100644
-index 0000000..bc1b3b3
---- /dev/null
-+++ b/arch/x86/platform/geode/alix_leds.c
-@@ -0,0 +1,138 @@
-+/*
-+ * Configure GPIO control of LEDs on Alix.2/3 from PCEngines
-+ *
-+ * Copyright (C) 2008 Constantin Baranov <const@mimas.ru>
-+ * Copyright (C) 2011 Nippy Networks Ltd
-+ * 
-+ * TODO: There are large similarities with leds-net5501.c 
-+ * by Alessandro Zummo <a.zummo@towertech.it>
-+ * In the future leds-net5501.c should be migrated over to platform
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2
-+ * as published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/string.h>
-+#include <linux/leds.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+
-+#include <asm/geode.h>
-+
-+static int force = 0;
-+module_param(force, bool, 0444);
-+/* FIXME: Award bios is not automatically detected as Alix platform */
-+MODULE_PARM_DESC(force, "Force detection as ALIX.2/ALIX.3 platform");
-+
-+static struct gpio_led alix_leds[] = {
-+	{
-+		.name = "alix:1",
-+		.gpio = 6,
-+		.default_trigger = "default-on",
-+		.active_low = 1,
-+	},
-+	{
-+		.name = "alix:2",
-+		.gpio = 25,
-+		.default_trigger = "default-off",
-+		.active_low = 1,
-+	},
-+	{
-+		.name = "alix:3",
-+		.gpio = 27,
-+		.default_trigger = "default-off",
-+		.active_low = 1,
-+	},
-+};
-+
-+static struct gpio_led_platform_data alix_leds_data = {
-+	.num_leds = ARRAY_SIZE(alix_leds),
-+	.leds = alix_leds,
-+};
-+
-+static struct platform_device alix_leds_dev = {
-+	.name = "leds-gpio",
-+	.id = -1,
-+	.dev.platform_data = &alix_leds_data,
-+};
-+
-+static void __init register_alix(void)
-+{
-+	/* Setup LED control through leds-gpio driver */
-+	platform_device_register(&alix_leds_dev);
-+}
-+
-+static int __init alix_present(unsigned long bios_phys,
-+				const char *alix_sig,
-+				size_t alix_sig_len)
-+{
-+	const size_t bios_len = 0x00010000;
-+	const char *bios_virt;
-+	const char *scan_end;
-+	const char *p;
-+	char name[64];
-+
-+	if (force) {
-+		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
-+		       "assume system is ALIX.2/ALIX.3\n",
-+		       KBUILD_MODNAME);
-+		return 1;
-+	}
-+
-+	bios_virt = phys_to_virt(bios_phys);
-+	scan_end = bios_virt + bios_len - (alix_sig_len + 2);
-+	for (p = bios_virt; p < scan_end; p++) {
-+		const char *tail;
-+		char *a;
-+
-+		if (memcmp(p, alix_sig, alix_sig_len) != 0)
-+			continue;
-+
-+		memcpy(name, p, sizeof(name));
-+
-+		/* remove the first \0 character from string */
-+		a = strchr(name, '\0');
-+		if (a)
-+			*a = ' ';
-+
-+		/* cut the string at a newline */
-+		a = strchr(name, '\r');
-+		if (a)
-+			*a = '\0';
-+
-+		tail = p + alix_sig_len;
-+		if ((tail[0] == '2' || tail[0] == '3')) {
-+			printk(KERN_INFO
-+			       "%s: system is recognized as \"%s\"\n",
-+			       KBUILD_MODNAME, name);
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int __init alix_init(void)
-+{
-+	const char tinybios_sig[] = "PC Engines ALIX.";
-+	const char coreboot_sig[] = "PC Engines\0ALIX.";
-+
-+	if (!is_geode())
-+		return 0;
-+
-+	if (alix_present(0xf0000, tinybios_sig, sizeof(tinybios_sig) - 1) ||
-+	    alix_present(0x500, coreboot_sig, sizeof(coreboot_sig) - 1))
-+		register_alix();
-+
-+	return 0;
-+}
-+
-+module_init(alix_init);
-+
-+MODULE_AUTHOR("Ed Wildgoose <kernel@wildgooses.com>");
-+MODULE_DESCRIPTION("PCEngines ALIX.2 and ALIX.3 System Setup");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 6f190f4..e4573d6 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -97,14 +97,6 @@ config LEDS_WRAP
- 	help
- 	  This option enables support for the PCEngines WRAP programmable LEDs.
- 
--config LEDS_ALIX2
--	tristate "LED Support for ALIX.2 and ALIX.3 series"
--	depends on LEDS_CLASS
--	depends on X86 && !GPIO_CS5535 && !CS5535_GPIO
--	help
--	  This option enables support for the PCEngines ALIX.2 and ALIX.3 LEDs.
--	  You have to set leds-alix2.force=1 for boards with Award BIOS.
--
- config LEDS_H1940
- 	tristate "LED Support for iPAQ H1940 device"
- 	depends on LEDS_CLASS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index aae6989..bf5a00c 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -15,7 +15,6 @@ obj-$(CONFIG_LEDS_AMS_DELTA)		+= leds-ams-delta.o
- obj-$(CONFIG_LEDS_NET48XX)		+= leds-net48xx.o
- obj-$(CONFIG_LEDS_NET5501)		+= leds-net5501.o
- obj-$(CONFIG_LEDS_WRAP)			+= leds-wrap.o
--obj-$(CONFIG_LEDS_ALIX2)		+= leds-alix2.o
- obj-$(CONFIG_LEDS_H1940)		+= leds-h1940.o
- obj-$(CONFIG_LEDS_COBALT_QUBE)		+= leds-cobalt-qube.o
- obj-$(CONFIG_LEDS_COBALT_RAQ)		+= leds-cobalt-raq.o
-diff --git a/drivers/leds/leds-alix2.c b/drivers/leds/leds-alix2.c
-deleted file mode 100644
-index f59ffad..0000000
---- a/drivers/leds/leds-alix2.c
-+++ /dev/null
-@@ -1,239 +0,0 @@
--/*
-- * LEDs driver for PCEngines ALIX.2 and ALIX.3
-- *
-- * Copyright (C) 2008 Constantin Baranov <const@mimas.ru>
-- */
--
--#include <linux/err.h>
--#include <linux/io.h>
--#include <linux/kernel.h>
--#include <linux/leds.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/string.h>
--#include <linux/pci.h>
--
--static int force = 0;
--module_param(force, bool, 0444);
--MODULE_PARM_DESC(force, "Assume system has ALIX.2/ALIX.3 style LEDs");
--
--#define MSR_LBAR_GPIO		0x5140000C
--#define CS5535_GPIO_SIZE	256
--
--static u32 gpio_base;
--
--static struct pci_device_id divil_pci[] = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_NS,  PCI_DEVICE_ID_NS_CS5535_ISA) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA) },
--	{ } /* NULL entry */
--};
--MODULE_DEVICE_TABLE(pci, divil_pci);
--
--struct alix_led {
--	struct led_classdev cdev;
--	unsigned short port;
--	unsigned int on_value;
--	unsigned int off_value;
--};
--
--static void alix_led_set(struct led_classdev *led_cdev,
--			 enum led_brightness brightness)
--{
--	struct alix_led *led_dev =
--		container_of(led_cdev, struct alix_led, cdev);
--
--	if (brightness)
--		outl(led_dev->on_value, gpio_base + led_dev->port);
--	else
--		outl(led_dev->off_value, gpio_base + led_dev->port);
--}
--
--static struct alix_led alix_leds[] = {
--	{
--		.cdev = {
--			.name = "alix:1",
--			.brightness_set = alix_led_set,
--		},
--		.port = 0x00,
--		.on_value = 1 << 22,
--		.off_value = 1 << 6,
--	},
--	{
--		.cdev = {
--			.name = "alix:2",
--			.brightness_set = alix_led_set,
--		},
--		.port = 0x80,
--		.on_value = 1 << 25,
--		.off_value = 1 << 9,
--	},
--	{
--		.cdev = {
--			.name = "alix:3",
--			.brightness_set = alix_led_set,
--		},
--		.port = 0x80,
--		.on_value = 1 << 27,
--		.off_value = 1 << 11,
--	},
--};
--
--static int __init alix_led_probe(struct platform_device *pdev)
--{
--	int i;
--	int ret;
--
--	for (i = 0; i < ARRAY_SIZE(alix_leds); i++) {
--		alix_leds[i].cdev.flags |= LED_CORE_SUSPENDRESUME;
--		ret = led_classdev_register(&pdev->dev, &alix_leds[i].cdev);
--		if (ret < 0)
--			goto fail;
--	}
--	return 0;
--
--fail:
--	while (--i >= 0)
--		led_classdev_unregister(&alix_leds[i].cdev);
--	return ret;
--}
--
--static int alix_led_remove(struct platform_device *pdev)
--{
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(alix_leds); i++)
--		led_classdev_unregister(&alix_leds[i].cdev);
--	return 0;
--}
--
--static struct platform_driver alix_led_driver = {
--	.remove = alix_led_remove,
--	.driver = {
--		.name = KBUILD_MODNAME,
--		.owner = THIS_MODULE,
--	},
--};
--
--static int __init alix_present(unsigned long bios_phys,
--				const char *alix_sig,
--				size_t alix_sig_len)
--{
--	const size_t bios_len = 0x00010000;
--	const char *bios_virt;
--	const char *scan_end;
--	const char *p;
--	char name[64];
--
--	if (force) {
--		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
--		       "assume system has ALIX.2 style LEDs\n",
--		       KBUILD_MODNAME);
--		return 1;
--	}
--
--	bios_virt = phys_to_virt(bios_phys);
--	scan_end = bios_virt + bios_len - (alix_sig_len + 2);
--	for (p = bios_virt; p < scan_end; p++) {
--		const char *tail;
--		char *a;
--
--		if (memcmp(p, alix_sig, alix_sig_len) != 0)
--			continue;
--
--		memcpy(name, p, sizeof(name));
--
--		/* remove the first \0 character from string */
--		a = strchr(name, '\0');
--		if (a)
--			*a = ' ';
--
--		/* cut the string at a newline */
--		a = strchr(name, '\r');
--		if (a)
--			*a = '\0';
--
--		tail = p + alix_sig_len;
--		if ((tail[0] == '2' || tail[0] == '3')) {
--			printk(KERN_INFO
--			       "%s: system is recognized as \"%s\"\n",
--			       KBUILD_MODNAME, name);
--			return 1;
--		}
--	}
--
--	return 0;
--}
--
--static struct platform_device *pdev;
--
--static int __init alix_pci_led_init(void)
--{
--	u32 low, hi;
--
--	if (pci_dev_present(divil_pci) == 0) {
--		printk(KERN_WARNING KBUILD_MODNAME": DIVIL not found\n");
--		return -ENODEV;
--	}
--
--	/* Grab the GPIO I/O range */
--	rdmsr(MSR_LBAR_GPIO, low, hi);
--
--	/* Check the mask and whether GPIO is enabled (sanity check) */
--	if (hi != 0x0000f001) {
--		printk(KERN_WARNING KBUILD_MODNAME": GPIO not enabled\n");
--		return -ENODEV;
--	}
--
--	/* Mask off the IO base address */
--	gpio_base = low & 0x0000ff00;
--
--	if (!request_region(gpio_base, CS5535_GPIO_SIZE, KBUILD_MODNAME)) {
--		printk(KERN_ERR KBUILD_MODNAME": can't allocate I/O for GPIO\n");
--		return -ENODEV;
--	}
--
--	/* Set GPIO function to output */
--	outl(1 << 6, gpio_base + 0x04);
--	outl(1 << 9, gpio_base + 0x84);
--	outl(1 << 11, gpio_base + 0x84);
--
--	return 0;
--}
--
--static int __init alix_led_init(void)
--{
--	int ret = -ENODEV;
--	const char tinybios_sig[] = "PC Engines ALIX.";
--	const char coreboot_sig[] = "PC Engines\0ALIX.";
--
--	if (alix_present(0xf0000, tinybios_sig, sizeof(tinybios_sig) - 1) ||
--	    alix_present(0x500, coreboot_sig, sizeof(coreboot_sig) - 1))
--		ret = alix_pci_led_init();
--
--	if (ret < 0)
--		return ret;
--
--	pdev = platform_device_register_simple(KBUILD_MODNAME, -1, NULL, 0);
--	if (!IS_ERR(pdev)) {
--		ret = platform_driver_probe(&alix_led_driver, alix_led_probe);
--		if (ret)
--			platform_device_unregister(pdev);
--	} else
--		ret = PTR_ERR(pdev);
--
--	return ret;
--}
--
--static void __exit alix_led_exit(void)
--{
--	platform_device_unregister(pdev);
--	platform_driver_unregister(&alix_led_driver);
--	release_region(gpio_base, CS5535_GPIO_SIZE);
--}
--
--module_init(alix_led_init);
--module_exit(alix_led_exit);
--
--MODULE_AUTHOR("Constantin Baranov <const@mimas.ru>");
--MODULE_DESCRIPTION("PCEngines ALIX.2 and ALIX.3 LED driver");
--MODULE_LICENSE("GPL");
--- 
-1.7.4
+static void smsc95xx_init_mac_address(struct usbnet *dev)
+{
+     /* try reading mac address from EEPROM */
+     if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
+             dev->net->dev_addr) == 0) {
+         if (is_valid_ether_addr(dev->net->dev_addr)) {
+             /* eeprom values are valid so use them */
+             netif_dbg(dev, ifup, dev->net, "MAC address read from 
+EEPROM\n");
+             return;
+         }
+     }
+
+     /* no eeprom, or eeprom values are invalid. generate random MAC */
+     random_ether_addr(dev->net->dev_addr);
+     netif_dbg(dev, ifup, dev->net, "MAC address set to 
+random_ether_addr\n");
+}
+
+
+this is how the mac address is assigned when no eeprom is present.
+
+
+if you grep in drivers/net you will find a wide range of network devices 
+that use the random_ether_addr() function:
+
+
+grep -r -e "random_ether_addr" * | wc -l
+61
+
+Dave Anders
+
+
 
