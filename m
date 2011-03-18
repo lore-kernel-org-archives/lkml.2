@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab1CRO3Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 10:29:24 -0400
-Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:57460 "EHLO
-	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750953Ab1CRO3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 10:29:18 -0400
-Subject: Re: known vboxgetty/isdn issue in 2.6.35.3?
-From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Udo van den Heuvel <udovdh@xs4all.nl>, Karsten Keil <isdn@linux-pingi.de>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Tilman Schmidt <tilman@imap.cc>,
-        stable@kernel.org
-In-Reply-To: <201103181524.33246.arnd@arndb.de>
-References: <4C864143.5090803@xs4all.nl> <201011091115.16351.arnd@arndb.de>
-	 <1300398521.16073.60.camel@localhost>  <201103181524.33246.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Mar 2011 15:29:25 +0100
-Message-ID: <1300458565.4299.301.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 87.77.215.94
+	id S1756706Ab1CRObs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 10:31:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13347 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953Ab1CRObj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 10:31:39 -0400
+Date: Fri, 18 Mar 2011 10:29:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>,
+        Curt Wohlgemuth <curtw@google.com>
+Subject: Re: [PATCH v6 0/9] memcg: per cgroup dirty page accounting
+Message-ID: <20110318142949.GA19859@redhat.com>
+References: <20110311171006.ec0d9c37.akpm@linux-foundation.org>
+ <AANLkTimT-kRMQW3JKcJAZP4oD3EXuE-Bk3dqumH_10Oe@mail.gmail.com>
+ <20110314202324.GG31120@redhat.com>
+ <AANLkTinDNOLMdU7EEMPFkC_f9edCx7ZFc7=qLRNAEmBM@mail.gmail.com>
+ <20110315184839.GB5740@redhat.com>
+ <20110316131324.GM2140@cmpxchg.org>
+ <AANLkTim7q3cLGjxnyBS7SDdpJsGi-z34bpPT=MJSka+C@mail.gmail.com>
+ <20110316215214.GO2140@cmpxchg.org>
+ <AANLkTinCErw+0QGpXJ4+JyZ1O96BC7SJAyXaP4t5v17c@mail.gmail.com>
+ <20110317124350.GQ2140@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110317124350.GQ2140@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 18.03.2011, 15:24 +0100 schrieb Arnd Bergmann:
-> On Thursday 17 March 2011, Michael Karcher wrote:
-> > The same issue happened on our system. Sometimes vboxgetty gets stuck in
-> > state D on a debian stable system (2.6.32). I just applied your patch to
-> > that kernel and hope the problem went away. Please remind me to report
-> > back in one to two weeks if I didn't already report whether the hangs
-> > are fixed. Is something except for a test on a productive system missing
-> > to get this fix into 32-stable?
+On Thu, Mar 17, 2011 at 01:43:50PM +0100, Johannes Weiner wrote:
+
+[..]
+> So structures roughly like this:
 > 
-> Thanks for the report. You are talking about this patch, right?
+> struct mem_cgroup {
+> 	...
+> 	/* key is struct backing_dev_info * */
+> 	struct rb_root memcg_bdis;
+> };
 > 
-> bc10f96757 "isdn: avoid calling tty_ldisc_flush() in atomic context"
+> struct memcg_bdi {
+> 	/* key is struct address_space * */
+> 	struct rb_root memcg_mappings;
+> 	struct rb_node node;
+> };
+> 
+> struct memcg_mapping {
+> 	struct address_space *mapping;
+> 	struct mem_cgroup *memcg;
+> 	struct rb_node node;
+> 	atomic_t count;
+> };
+> 
+> struct page_cgroup {
+> 	...
+> 	struct memcg_mapping *memcg_mapping;
+> };
 
-Yes, exactly. Sorry for not mentioning it. I did not experience the BUG,
-but the hung task, just as in the mail I replied to.
+Johannes, didn't you want page->mapping to point to memcg_mapping instead
+of increasing the size of page_cgroup?
 
-Regards,
-  Michael Karcher
-
+Thanks
+Vivek
