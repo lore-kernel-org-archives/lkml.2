@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab1CRD6Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Mar 2011 23:58:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49202 "EHLO song.cn.fujitsu.com"
+	id S932368Ab1CRD7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Mar 2011 23:59:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64588 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932155Ab1CRD6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Mar 2011 23:58:21 -0400
-Message-ID: <4D82D8C7.3040608@cn.fujitsu.com>
-Date: Fri, 18 Mar 2011 12:00:07 +0800
+	id S932176Ab1CRD7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Mar 2011 23:59:05 -0400
+Message-ID: <4D82D8F2.5020208@cn.fujitsu.com>
+Date: Fri, 18 Mar 2011 12:00:50 +0800
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Patrick McHardy <kaber@trash.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/36] macvlan,rcu: convert call_rcu(macvlan_port_rcu_free)
+        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 15/36] net,rcu: convert call_rcu(ipv6_mc_socklist_reclaim)
  to kfree_rcu()
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 11:56:58,
+ 2011-03-18 11:57:41,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-18 11:56:59,
-	Serialize complete at 2011-03-18 11:56:59
+ 2011-03-18 11:57:43,
+	Serialize complete at 2011-03-18 11:57:43
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,40 +34,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-The rcu callback macvlan_port_rcu_free() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(macvlan_port_rcu_free).
+The rcu callback ipv6_mc_socklist_reclaim() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(ipv6_mc_socklist_reclaim).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- drivers/net/macvlan.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+ net/ipv6/mcast.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 6ed577b..6205e45 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -591,21 +591,13 @@ static int macvlan_port_create(struct net_device *dev)
- 	return err;
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index 49f986d..7f8df31 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -201,10 +201,6 @@ int ipv6_sock_mc_join(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 	return 0;
  }
  
--static void macvlan_port_rcu_free(struct rcu_head *head)
+-static void ipv6_mc_socklist_reclaim(struct rcu_head *head)
 -{
--	struct macvlan_port *port;
--
--	port = container_of(head, struct macvlan_port, rcu);
--	kfree(port);
+-	kfree(container_of(head, struct ipv6_mc_socklist, rcu));
 -}
--
- static void macvlan_port_destroy(struct net_device *dev)
- {
- 	struct macvlan_port *port = macvlan_port_get(dev);
+ /*
+  *	socket leave on multicast group
+  */
+@@ -239,7 +235,7 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
+ 				(void) ip6_mc_leave_src(sk, mc_lst, NULL);
+ 			rcu_read_unlock();
+ 			atomic_sub(sizeof(*mc_lst), &sk->sk_omem_alloc);
+-			call_rcu(&mc_lst->rcu, ipv6_mc_socklist_reclaim);
++			kfree_rcu(mc_lst, rcu);
+ 			return 0;
+ 		}
+ 	}
+@@ -307,7 +303,7 @@ void ipv6_sock_mc_close(struct sock *sk)
+ 		rcu_read_unlock();
  
- 	dev->priv_flags &= ~IFF_MACVLAN_PORT;
- 	netdev_rx_handler_unregister(dev);
--	call_rcu(&port->rcu, macvlan_port_rcu_free);
-+	kfree_rcu(port, rcu);
- }
+ 		atomic_sub(sizeof(*mc_lst), &sk->sk_omem_alloc);
+-		call_rcu(&mc_lst->rcu, ipv6_mc_socklist_reclaim);
++		kfree_rcu(mc_lst, rcu);
  
- static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
+ 		spin_lock(&ipv6_sk_mc_lock);
+ 	}
 -- 
 1.7.4
