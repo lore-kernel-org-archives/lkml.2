@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab1CRWk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 18:40:27 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54376 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577Ab1CRWkX (ORCPT
+	id S932757Ab1CRWke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 18:40:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:48712 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932733Ab1CRWk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 18:40:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=S9lQEsodUXUZaXjaNMkMR3nAPPzSPMZ7bQWLJR5pA7xyqgpvgoYXtkmNz41oA3VaYo
-         goOvYlPVZwt3MTS3iyJg==
-Date: Fri, 18 Mar 2011 15:40:00 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Nai Xia <nai.xia@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte mapping
- to ksm pages
-In-Reply-To: <201103181529.43659.nai.xia@gmail.com>
-Message-ID: <alpine.LSU.2.00.1103181448100.2092@sister.anvils>
-References: <201102262256.31565.nai.xia@gmail.com> <20110302143142.a3c0002b.akpm@linux-foundation.org> <201103181529.43659.nai.xia@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 18 Mar 2011 18:40:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6289"; a="80858072"
+Message-ID: <4D83DF5B.1000006@codeaurora.org>
+Date: Fri, 18 Mar 2011 15:40:27 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+CC: akpm@linux-foundation.org, gregkh@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 0/4] Improve fallback LPJ calculation
+References: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
+In-Reply-To: <1299768487-13200-1-git-send-email-ext-phil.2.carmody@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011, Nai Xia wrote:
-> >On Thursday 03 March 2011, at 06:31:42, <Andrew Morton <akpm@linux-foundation.org>> wrote
-> > This patch obviously wasn't tested with CONFIG_KSM=n, which was a
-> > pretty basic patch-testing failure :(
-> 
-> Oops, I will be careful to avoid similar mistakes next time.
-> 
-> > 
-> > I fixed up my tree with the below, but really the amount of ifdeffing
-> > is unacceptable - please find a cleaner way to fix up this patch.
-> 
-> Ok, I will have a try in my next patch submit. 
+On 03/10/2011 06:48 AM, Phil Carmody wrote:
+> Apologies for picking on you, Andrew, and sending this out of the blue,
+> but I didn't have much luck with my previous attempt, and I quite like
+> this patchset, so thought it was worth trying again.
+> (http://lkml.org/lkml/2010/9/28/121)
+>
+> The guts of this patchset are in patch 2/4. The motivation for that patch
+> is that currently our OMAP calibrates itself using the trial-and-error 
+> binary chop fallback that some other architectures no longer need to 
+> perform. This is a lengthy process, taking 0.2s in an environment where 
+> boot time is of great interest.
+>
+>
+[snip]
+> 1/4 is simply cosmetic to prepare for 2/4. 
+> 4/4 is simply to assist testing and not intended for integration.
+>
 
-A couple of notes on that.
+I tried this patch set out on an MSM7630.
 
-akpm's fixup introduced an #ifdef CONFIG_KSM in mm/ksm.c: that should
-be, er, unnecessary - since ksm.c is only compiled when CONFIG_KSM=y.
+Before:
 
-And PageKsm(page) evaluates to 0 when CONFIG_KSM is not set, so the
-optimizer should eliminate code from most places without #ifdef:
-though you need to keep the #ifdef around display in /proc/meminfo
-itself, so as not to annoy non-KSM people with an always 0kB line.
+Calibrating delay loop... 681.57 BogoMIPS (lpj=3407872)
 
-But I am uncomfortable with the whole patch.
+After:
 
-Can you make a stronger case for it?  KSM is designed to have its own
-cycle, and to keep out of the way of the rest of mm as much as possible
-(not as much as originally hoped, I admit).  Do we really want to show
-its statistics in /proc/meminfo now?  And do we really care that they
-don't keep up with exiting processes when the scan rate is low?
+Calibrating delay loop... 680.75 BogoMIPS (lpj=3403776)
 
-I am not asserting that we don't, nor am I nacking your patch:
-but I would like to hear more support for it, before it adds
-yet another line to our user interface in /proc/meminfo.
+But the really good news is calibration time dropped from ~247ms to
+~56ms. Sadly we won't be able to benefit from this should my udelay
+patches make it into ARM because we would be using
+calibrate_delay_direct() instead (at least on machines who choose to).
+Can we somehow reapply the logic behind this to
+calibrate_delay_direct()? That would be even better, but this is
+definitely a boot time improvement.
 
-And there is an awkward little bug in your patch, which amplifies
-a more significant and shameful pair of bugs of mine in KSM itself -
-no wonder that I'm anxious about your patch going in!
+Or maybe we could just replace calibrate_delay_direct() with this
+fallback calculation? If __delay() is a thin wrapper around
+read_current_timer() it should work just as well (plus patch 3 makes it
+handle SMIs). I'll try that out.
 
-Your bug is precisely where akpm added the #ifdef in ksm.c.  The
-problem is that page_mapcount() is maintained atomically, generally
-without spinlock or pagelock: so the value of mapcount there, unless
-it is 1, can go up or down racily (as other processes sharing that
-anonymous page fork or unmap at the same time).
+You can add a
 
-I could hardly complain about that, while suggesting above that more
-approximate numbers are good enough!  Except that, when KSM is turned
-off, there's a chance that you'd be left showing a non-0 kB in
-/proc/meminfo.  Then people will want a fix, and I don't yet know
-what that fix will be.
+Tested-by: Stephen Boyd <sboyd@codeaurora.org>
 
-My first bug is in the break_cow() technique used to get back to
-normal, when merging into a KSM page fails for one reason or another:
-that technique misses other mappings of the page.  I did have a patch
-in progress to fix that a few months ago, but it wasn't quite working,
-and then I realized the second bug: that even when successful, if
-VM_UNMERGEABLE has been used in forked processes, then we could end up
-with a KSM page in a VM_UNMERGEABLE area, which is against the spec.
+to the first 3 patches.
 
-A solution to all three problems would be to revert to allocating a
-separate KSM page, instead of using one of the pages already there.
-But that feels like a regression, and I don't think anybody is really
-hurting from the current situation, so I've not jumped to fix it yet.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Hugh
