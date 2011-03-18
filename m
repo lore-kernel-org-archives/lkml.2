@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab1CREyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 00:54:10 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45245 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab1CREyG (ORCPT
+	id S1754526Ab1CRE63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 00:58:29 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:46739 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab1CRE6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 00:54:06 -0400
-Date: Thu, 17 Mar 2011 22:54:01 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: andy.green@linaro.org
-Cc: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Platform data for onboard USB assets
-Message-ID: <20110318045401.GA18545@angua.secretlab.ca>
-References: <20110311165642.GA9996@kroah.com>
- <20110317214042.GQ31411@opensource.wolfsonmicro.com>
- <20110317214736.GA29014@kroah.com>
- <201103172333.01474.arnd@arndb.de>
- <20110317225328.GB31581@kroah.com>
- <4D8296D1.9060106@linaro.org>
+	Fri, 18 Mar 2011 00:58:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D8296D1.9060106@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [74.117.61.21]
+Date: Fri, 18 Mar 2011 12:58:23 +0800
+Message-ID: <AANLkTikuBxnd0bFsO5NP2GQYDZmGFP9kLruWVpjZ7+UQ@mail.gmail.com>
+Subject: [PATCH] Fixup personality in different ABI.
+From: Heiher <admin@heiher.info>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 17, 2011 at 11:18:41PM +0000, Andy Green wrote:
-> On 03/17/2011 10:53 PM, Somebody in the thread at some point said:
-> 
-> >>Not tested!
-> >>
-> >>Signed-off-by: Arnd Bergmann<arnd.bergmann@linaro.org>
-> >
-> ><snip>
-> >
-> >Very nice.
-> >
-> >Andy and Mark, would this patch work for you?
-> 
-> You do realize this untested patch depends on 13 year old vapour
-> definition of general usb device tagging in Device Tree that does
-> not exist yet?
+Hello,
 
-IIRC, not vapour.  I believe this binding is currently used by Open
-Firmware on existing PowerPC, SPARC and x86 machines.  Linux doesn't
-use the binding because up to this point Linux hasn't cared about how
-firmware initialized the usb bus.  It just reinitializes everything
-anyway.
+>From bf3637153bc5e3d0e3f1c2982c323057a8e04801 Mon Sep 17 00:00:00 2001
+From: Heiher <admin@heiher.info>
+Date: Fri, 18 Mar 2011 12:51:08 +0800
+Subject: [PATCH] Fixup personality in different ABI.
 
-g.
+* 'arch' output:
+	o32 : mips
+	n32 : mips64
+	64  : mips64
+---
+ arch/mips/include/asm/elf.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
+diff --git a/arch/mips/include/asm/elf.h b/arch/mips/include/asm/elf.h
+index 455c0ac..01510d4 100644
+--- a/arch/mips/include/asm/elf.h
++++ b/arch/mips/include/asm/elf.h
+@@ -262,6 +262,7 @@ do {									\
+ #ifdef CONFIG_MIPS32_N32
+ #define __SET_PERSONALITY32_N32()					\
+ 	do {								\
++		set_personality(PER_LINUX);				\
+ 		set_thread_flag(TIF_32BIT_ADDR);			\
+ 		current->thread.abi = &mips_abi_n32;			\
+ 	} while (0)
+@@ -273,6 +274,7 @@ do {									\
+ #ifdef CONFIG_MIPS32_O32
+ #define __SET_PERSONALITY32_O32()					\
+ 	do {								\
++		set_personality(PER_LINUX32);			\
+ 		set_thread_flag(TIF_32BIT_REGS);			\
+ 		set_thread_flag(TIF_32BIT_ADDR);			\
+ 		current->thread.abi = &mips_abi_32;			\
+@@ -305,7 +307,10 @@ do {									\
+ 	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)			\
+ 		__SET_PERSONALITY32(ex);				\
+ 	else								\
++	{								\
++		set_personality(PER_LINUX);				\
+ 		current->thread.abi = &mips_abi;			\
++	}								\
+ 									\
+ 	p = personality(current->personality);				\
+ 	if (p != PER_LINUX32 && p != PER_LINUX)				\
+-- 
+1.7.4.1.225.g83c3c
+
+-- 
+Best regards!
+Heiher
