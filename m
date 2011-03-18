@@ -1,56 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539Ab1CRVdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 17:33:43 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:34394 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932131Ab1CRVdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 17:33:35 -0400
-Date: Fri, 18 Mar 2011 22:33:29 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Antti Palosaari <crope@iki.fi>
-Cc: mchehab@infradead.org, oliver@neukum.org, jwjstone@fastmail.fm,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 05/16] [media] ec168: get rid of on stack dma buffers
-Message-ID: <20110318223329.5e400d1e@schatten.dmk.lab>
-In-Reply-To: <4D838A25.8010301@iki.fi>
-References: <20110315093632.5fc9fb77@schatten.dmk.lab>
-	<1300178655-24832-1-git-send-email-florian@mickler.org>
-	<1300178655-24832-5-git-send-email-florian@mickler.org>
-	<4D838A25.8010301@iki.fi>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932479Ab1CRVe3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 17:34:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:48894 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932131Ab1CRVeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 17:34:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=mA88vHBmDLHxCvvwt3K+tEgLFIaL9//riJunkQugqCSVYLnV9NRy2Ca6uXglPoFA9p
+         zgg4oLPB58GQv3qAHFTw==
+Date: Fri, 18 Mar 2011 14:34:03 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: PageBuddy and mapcount underflows robustness
+In-Reply-To: <20110317231635.GC10696@random.random>
+Message-ID: <alpine.LSU.2.00.1103181428100.1996@sister.anvils>
+References: <alpine.LSU.2.00.1103140059510.1661@sister.anvils> <20110314155232.GB10696@random.random> <alpine.LSU.2.00.1103140910570.2601@sister.anvils> <20110314165922.GE10696@random.random> <AANLkTikWh5tFUZuALYRP3Dx2Zcs33u0UVdjf4d_7KhPJ@mail.gmail.com>
+ <20110317231635.GC10696@random.random>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Mar 2011 18:36:53 +0200
-Antti Palosaari <crope@iki.fi> wrote:
-
-> On 03/15/2011 10:43 AM, Florian Mickler wrote:
-> > usb_control_msg initiates (and waits for completion of) a dma transfer using
-> > the supplied buffer. That buffer thus has to be seperately allocated on
-> > the heap.
-> >
-> > In lib/dma_debug.c the function check_for_stack even warns about it:
-> > 	WARNING: at lib/dma-debug.c:866 check_for_stack
-> >
-> > Note: This change is tested to compile only, as I don't have the hardware.
-> >
-> > Signed-off-by: Florian Mickler<florian@mickler.org>
+On Fri, 18 Mar 2011, Andrea Arcangeli wrote:
+> On Mon, Mar 14, 2011 at 10:30:11AM -0700, Linus Torvalds wrote:
+> Subject: mm: PageBuddy and mapcount robustness
 > 
-> Acked-by: Antti Palosaari <crope@iki.fi>
-> Reviewed-by: Antti Palosaari <crope@iki.fi>
-> Tested-by: Antti Palosaari <crope@iki.fi>
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> t. Antti
+> Change the _mapcount value indicating PageBuddy from -2 to -128 for
+> more robusteness against page_mapcount() undeflows.
 > 
+> Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
+> ignore the previous retval of PageBuddy().
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Reported-by: Hugh Dickins <hughd@google.com>
 
-Thanks for the feedback!
+Yes, this version satisfies my objections too.
+I'd say Acked-by but I see that it's already in, great.
 
-Regards,
-Flo
+I've Cc'ed stable@kernel.org: please can we have this in 2.6.38.1,
+since 2.6.38 regressed the recovery from bad page states,
+inadvertently changing them to a fatal error when CONFIG_DEBUG_VM.
+
+Thanks,
+Hugh
+
+commit ef2b4b95a63a1d23958dcb99eb2c6898eddc87d0
+Author: Andrea Arcangeli <aarcange@redhat.com>
+Date:   Fri Mar 18 00:16:35 2011 +0100
+
+    mm: PageBuddy and mapcount robustness
+    
+    Change the _mapcount value indicating PageBuddy from -2 to -128 for
+    more robusteness against page_mapcount() undeflows.
+    
+    Use reset_page_mapcount instead of __ClearPageBuddy in bad_page to
+    ignore the previous retval of PageBuddy().
+    
+    Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+    Reported-by: Hugh Dickins <hughd@google.com>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 679300c..ff83798 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -402,16 +402,23 @@ static inline void init_page_count(struct page *page)
+ /*
+  * PageBuddy() indicate that the page is free and in the buddy system
+  * (see mm/page_alloc.c).
++ *
++ * PAGE_BUDDY_MAPCOUNT_VALUE must be <= -2 but better not too close to
++ * -2 so that an underflow of the page_mapcount() won't be mistaken
++ * for a genuine PAGE_BUDDY_MAPCOUNT_VALUE. -128 can be created very
++ * efficiently by most CPU architectures.
+  */
++#define PAGE_BUDDY_MAPCOUNT_VALUE (-128)
++
+ static inline int PageBuddy(struct page *page)
+ {
+-	return atomic_read(&page->_mapcount) == -2;
++	return atomic_read(&page->_mapcount) == PAGE_BUDDY_MAPCOUNT_VALUE;
+ }
+ 
+ static inline void __SetPageBuddy(struct page *page)
+ {
+ 	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
+-	atomic_set(&page->_mapcount, -2);
++	atomic_set(&page->_mapcount, PAGE_BUDDY_MAPCOUNT_VALUE);
+ }
+ 
+ static inline void __ClearPageBuddy(struct page *page)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index bd76256..7945247 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -286,7 +286,7 @@ static void bad_page(struct page *page)
+ 
+ 	/* Don't complain about poisoned pages */
+ 	if (PageHWPoison(page)) {
+-		__ClearPageBuddy(page);
++		reset_page_mapcount(page); /* remove PageBuddy */
+ 		return;
+ 	}
+ 
+@@ -317,7 +317,7 @@ static void bad_page(struct page *page)
+ 	dump_stack();
+ out:
+ 	/* Leave bad fields for debug, except PageBuddy could make trouble */
+-	__ClearPageBuddy(page);
++	reset_page_mapcount(page); /* remove PageBuddy */
+ 	add_taint(TAINT_BAD_PAGE);
+ }
+ 
