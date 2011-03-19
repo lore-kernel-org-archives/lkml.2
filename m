@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268Ab1CTBNq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 21:13:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33205 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894Ab1CTBNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 21:13:44 -0400
-Subject: Re: [PATCH] firmware/efi: export a routine to retrieve
- efi-variables by GUID
-From: James Bottomley <James.Bottomley@suse.de>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Greg KH <gregkh@suse.de>, "Jiang, Dave" <dave.jiang@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Danecki, Jacek" <jacek.danecki@intel.com>,
-        "Ciechanowski, Ed" <ed.ciechanowski@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmilburn@redhat.com" <dmilburn@redhat.com>,
-        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <20110320001459.GA9237@suse.de>
-References: <20110318221606.26841.92271.stgit@localhost6.localdomain6>
-	 <20110318225016.GB15921@suse.de>
-	 <AANLkTim+HB0GWzGiif=MvYHaiXMSLuVB6R0=UK3906xU@mail.gmail.com>
-	 <20110319002246.GB14249@suse.de> <4D8403C3.6020300@intel.com>
-	 <20110320001459.GA9237@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 19 Mar 2011 20:13:27 -0500
-Message-ID: <1300583607.12679.29.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1751343Ab1CTCC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 22:02:27 -0400
+Received: from [190.12.89.67] ([190.12.89.67]:56088 "EHLO icn.minsa.gob.pe"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750738Ab1CTCC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 22:02:26 -0400
+X-Greylist: delayed 84333 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Mar 2011 22:02:26 EDT
+Message-ID: <20110318213611.15771gwvhqa2xcbf@mail.icn.minsa.gob.pe>
+Date: Fri, 18 Mar 2011 21:36:11 -0500
+From: WESTERN UNION HEAD OFFICE <acarrilloe@icn.minsa.gob.pe>
+Reply-to: westernunion724@yahoo.com.hk
+To: undisclosed-recipients:;
+Subject: Payment Information
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-03-19 at 17:14 -0700, Greg KH wrote:
-> On Fri, Mar 18, 2011 at 06:15:47PM -0700, Dan Williams wrote:
-> > On 3/18/2011 5:22 PM, Greg KH wrote:
-> > >On Fri, Mar 18, 2011 at 04:10:10PM -0700, Dan Williams wrote:
-> > >>>I needed all patches in linux-next _before_ the merge window opened to
-> > >>>be able to accept it.
-> > >>
-> > >>Yes, I know, and as dmaengine maintainer I also hate being ambushed by
-> > >>last minute patches, but now I am unfortunately one of those annoying
-> > >>people on the other side of the coin.
-> > >
-> > >Then you should know better than to try to go around the well-known
-> > >rules :)
-> > 
-> > Yes...
-> > 
-> > /me about to push his luck
-> 
-> <snip>
-> 
-> > As Jeff pointed out:
-> > "It seemed like this was turning into another driver that would get
-> > held outside the kernel until it's "perfect."  If that is the case,
-> > Linus has also made it clear we should get drivers for high volume,
-> > shipping hardware into the kernel, even if its staging, if the
-> > alternative is to deny users the driver."
-> 
-> That's fine, _BUT_ you are trying to go around the rules for the merge
-> window, which isn't acceptable.  Also note that your driver isn't
-> self-contained, it needs this change at the least, right?  Any others?
-> 
-> > So yes, we are targeting that exception.  I'm up for taking the heat
-> > directly if you want...  because the pull request will need to
-> > backed up with justification.
-> 
-> No, sorry, I'll not take this for .40, all of my trees are merged with
-> Linus now for .40 and I'll only be sending him bugfixes until the .41
-> merge window opens up.
-> 
-> Remember, it's only a 3 month wait, you knew about this _WAY_ in
-> advance, so it's not like this is something new, or out of the ordinary
-> at all.  Because of that, I fail to see why this is somehow not
-> expected.
-> 
-> On a personal note, I'm going to be very scarse for the next 3 weeks due
-> to conferences and travel for spring break, so I physically don't have
-> the time to do any more merges like this with Linus.
+How are you today?
 
-So, here's the deal:  You get this driver to a mergeable state, which
-means all of the problems Christoph, others and I have outlined
-completely fixed or well on the way to being in two months and I will
-take it under the merge window exception for new drivers.  However, I
-mean seriously cleaned up and shiny (and dumping tens of thousands of
-lines of flue code and other oddities), not cleaned up for staging.
-Further you're going to have to use standard methods to store and
-retrieve data, not esoteric efi ones that rely on changes outside SCSI
-(you aren't the first people to need to set a SAS address and other
-things, so we have a request firmware like method for it).
+I write to inform you that we have sent you $7,500.00USD through  
+Western Union as we have been given the mandate to transfer your full  
+compensation payment of $1.8Million USD via western union by the  
+United Nation Government. I have been trying to give you the  
+information, but internet hackers were many and we do not have any  
+means of reaching you for over two weeks now and even this morning.  
+So,I decided to email you the MTCN and Sender's Name so that you can  
+pick up this $7,500.00USD to enable us send another $7,500.00USD by  
+tomorrow as you knows we will be sending you only $7,500.00USD per  
+day.Please pick up this information, you are to run fast to any  
+western Union in your country to pick up the $7,500.00USD and send us  
+e-mail back so we can send you another payment tomorrow as soon as  
+possible.
 
-If you can't make it in two months .. can you do it? I'll extend the
-offer to the .40 which makes the cutoff around 5 months, if you need
-extra time.
 
-What I suggest is that you take about a month and a half to make all the
-changes and then do a patch code drop on linux-scsi.  If you're less
-sure about what you need to do, do one after three weeks and we'll redo
-the assessment.
+Manager Mr Felix James
+Tel:-  +234-70-334-18663
+Email: westernunion724@yahoo.com.hk
 
-James
+E-mail me once you picked up this $7,500.00USD today.
+Here is the western union information to pick up the $7,500.00USD,
+
+
+MTCN :___________________162 573 4496
+SENDER'S NAME:___________PETER VANDALIN
+TEXT QUESTION:___________HONEST
+ANSWER:__________________TRUST
+AMOUNT SENT______________$7,500.00USD
+COUNTRY:_________________NIGERIA
+
+
+I am waiting for your E-mail once you pick up $7,500.00USD,
+For more information please call:-  +234-703-341-8663
+
+Thanks
+Mr Felix James
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
 
