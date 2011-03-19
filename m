@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab1CSSWQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 14:22:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54471 "EHLO hera.kernel.org"
+	id S1757320Ab1CSSXC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 14:23:02 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54484 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757133Ab1CSSWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 14:22:12 -0400
-Date: Sat, 19 Mar 2011 18:21:55 GMT
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110319172005.GB4978@quad>
-References: <20110319172005.GB4978@quad>
+	id S1752621Ab1CSSXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 14:23:00 -0400
+Date: Sat, 19 Mar 2011 18:22:22 GMT
+From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, randy.dunlap@oracle.com,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, randy.dunlap@oracle.com,
+        mingo@elte.hu
+In-Reply-To: <20110318093453.8f7489a4.randy.dunlap@oracle.com>
+References: <20110318093453.8f7489a4.randy.dunlap@oracle.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: Fix Intel fixed counters base initialization
-Message-ID: <tip-fc66c5210ec2539e800e87d7b3a985323c7be96e@git.kernel.org>
-Git-Commit-ID: fc66c5210ec2539e800e87d7b3a985323c7be96e
+Subject: [tip:sched/urgent] sched: Fix yield_to kernel-doc
+Message-ID: <tip-16addf954d3954a72fd56abc02ffcba3c18529a1@git.kernel.org>
+Git-Commit-ID: 16addf954d3954a72fd56abc02ffcba3c18529a1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Mar 2011 18:21:57 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Mar 2011 18:22:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc66c5210ec2539e800e87d7b3a985323c7be96e
-Gitweb:     http://git.kernel.org/tip/fc66c5210ec2539e800e87d7b3a985323c7be96e
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Sat, 19 Mar 2011 18:20:05 +0100
+Commit-ID:  16addf954d3954a72fd56abc02ffcba3c18529a1
+Gitweb:     http://git.kernel.org/tip/16addf954d3954a72fd56abc02ffcba3c18529a1
+Author:     Randy Dunlap <randy.dunlap@oracle.com>
+AuthorDate: Fri, 18 Mar 2011 09:34:53 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 19 Mar 2011 19:00:49 +0100
+CommitDate: Sat, 19 Mar 2011 19:19:36 +0100
 
-perf, x86: Fix Intel fixed counters base initialization
+sched: Fix yield_to kernel-doc
 
-The following patch solves the problems introduced by Robert's
-commit 41bf498 and reported by Arun Sharma. This commit gets rid
-of the base + index notation for reading and writing PMU msrs.
+Add missing function parameters for yield_to():
 
-The problem is that for fixed counters, the new calculation for
-the base did not take into account the fixed counter indexes,
-thus all fixed counters were read/written from fixed counter 0.
-Although all fixed counters share the same config MSR, they each
-have their own counter register.
+ Warning(kernel/sched.c:5470): No description found for parameter 'p'
+ Warning(kernel/sched.c:5470): No description found for parameter 'preempt'
 
-Without:
-
- $ task -e unhalted_core_cycles -e instructions_retired -e baclears noploop 1 noploop for 1 seconds
-
-  242202299 unhalted_core_cycles (0.00% scaling, ena=1000790892, run=1000790892)
- 2389685946 instructions_retired (0.00% scaling, ena=1000790892, run=1000790892)
-      49473 baclears             (0.00% scaling, ena=1000790892, run=1000790892)
-
-With:
-
- $ task -e unhalted_core_cycles -e instructions_retired -e baclears noploop 1 noploop for 1 seconds
-
- 2392703238 unhalted_core_cycles (0.00% scaling, ena=1000840809, run=1000840809)
- 2389793744 instructions_retired (0.00% scaling, ena=1000840809, run=1000840809)
-      47863 baclears             (0.00% scaling, ena=1000840809, run=1000840809)
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: ming.m.lin@intel.com
-Cc: robert.richter@amd.com
-Cc: asharma@fb.com
-Cc: perfmon2-devel@lists.sf.net
-LKML-Reference: <20110319172005.GB4978@quad>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <20110318093453.8f7489a4.randy.dunlap@oracle.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/sched.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index e8dbe17..ec46eea 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -912,7 +912,7 @@ static inline void x86_assign_hw_event(struct perf_event *event,
- 		hwc->event_base	= 0;
- 	} else if (hwc->idx >= X86_PMC_IDX_FIXED) {
- 		hwc->config_base = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
--		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0;
-+		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0 + (hwc->idx - X86_PMC_IDX_FIXED);
- 	} else {
- 		hwc->config_base = x86_pmu_config_addr(hwc->idx);
- 		hwc->event_base  = x86_pmu_event_addr(hwc->idx);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 58d66ea..052120d 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5467,6 +5467,8 @@ EXPORT_SYMBOL(yield);
+  * yield_to - yield the current processor to another thread in
+  * your thread group, or accelerate that thread toward the
+  * processor it's on.
++ * @p: target task
++ * @preempt: whether task preemption is allowed or not
+  *
+  * It's the caller's job to ensure that the target task struct
+  * can't go away on us before we can do any checks.
