@@ -1,81 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757800Ab1CSCCk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 22:02:40 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:38720 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756570Ab1CSCCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 22:02:33 -0400
-Date: Sat, 19 Mar 2011 03:02:33 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Greg KH <gregkh@suse.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manuel Traut <manut@linutronix.de>
-Subject: Re: [PATCH] uio_netx: Add support for netPLC cards
-Message-ID: <20110319020233.GD2761@local>
-References: <F988B291A6BAC142A66450B2FED7EF55852377B3@ENTWMAIL.ENTWDOM.local>
- <20110319001210.GC2761@local>
- <20110319002335.GC14249@suse.de>
-MIME-Version: 1.0
+	id S1756545Ab1CSC2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 22:28:36 -0400
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:45743 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755189Ab1CSC23 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 22:28:29 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=I0jFHxriRJwyplOnjK2nOSNCO7GacXBAI5CCNqI8fuI= c=1 sm=1
+ a=WKMNdXk8PrIA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VnNF1IyMAAAA:8 a=7-415B0cAAAA:8
+ a=VwQbUJbxAAAA:8 a=aQ6LyYGYDGLbr7eGIzEA:9 a=i_S_P1udGoTVAZcVggEA:7
+ a=yszbfaBcTZhaJ8WTEONnjYatzooA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10
+ a=FtYAf7_czLgA:10 a=aPmbDp2QIOtMH0M7:21 a=DH1emcrVcMHNAjJf:21
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation	problem
+Mime-Version: 1.0 (Apple Message framework v1082)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110319002335.GC14249@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20110319000755.GD1110@tux1.beaverton.ibm.com>
+Date: Fri, 18 Mar 2011 20:28:26 -0600
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+        Jan Kara <jack@suse.cz>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E2EA0861-6143-4F91-805A-63736F45C514@dilger.ca>
+References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com>
+To: djwong@us.ibm.com
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 05:23:35PM -0700, Greg KH wrote:
-> On Sat, Mar 19, 2011 at 01:12:11AM +0100, Hans J. Koch wrote:
-> > On Thu, Mar 17, 2011 at 11:40:59AM +0000, Daniel Trautmann wrote:
-> > > This patch adds support for Hilscher / IBHsoftec netPLC cards to uio_netx userspace IO driver.
-> > > 
-> > > Signed-off-by: Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>
-> > > ---
-> > >  drivers/uio/uio_netx.c |   19 +++++++++++++++++++
-> > >  1 files changed, 19 insertions(+), 0 deletions(-)
-> > 
-> > Against what kernel is that supposed to apply? It doesn't apply against
-> > Linus' current tree here.
-> > 
-> > And, please, run your patch through scripts/checkpatch.pl before posting it.
-> > 
-> > I get:
-> > -----------------------
-> > total: 15 errors, 16 warnings, 37 lines checked
-> > 
-> > NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or
-> >       scripts/cleanfile
-> > -----------------------
-> > I find 15 errors in 19 insertions a bit too much. Most of it is whitespace,
-> > so it might be a problem with your mail client. Please check.
-> > 
-> > > 
-> > > diff --git a/drivers/uio/uio_netx.c b/drivers/uio/uio_netx.c
-> > > index 5ffdb48..7921190 100644
-> > > --- a/drivers/uio/uio_netx.c
-> > > +++ b/drivers/uio/uio_netx.c
-> > > @@ -18,6 +18,9 @@
-> > >  
-> > >  #define PCI_VENDOR_ID_HILSCHER         0x15CF
-> > >  #define PCI_DEVICE_ID_HILSCHER_NETX    0x0000
-> > > +#define PCI_DEVICE_ID_HILSCHER_NETPLC  0x0010
-> > 
-> > Hmpf, yes... The three defines above should go to include/linux/pci_ids.h
+On 2011-03-18, at 6:07 PM, Darrick J. Wong wrote:
+>> Ok, here's what I have so far.  I took everyone's suggestions of where to add
+>> calls to wait_on_page_writeback, which seems to handle the multiple-write case
+>> adequately.  Unfortunately, it is still possible to generate checksum errors by
+>> scribbling furiously on a mmap'd region, even after adding the writeback wait
+>> in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
+>> removing its wait_for_page_writeback call, so I suspect there's a bit more
+>> going on in btrfs than I've been able to figure out.
+
+> I wonder, is it possible for this to happen:
 > 
-> No, read the top of that file please.  They belong here.
+> 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
+>   but there's no ongoing writeback, so it returns without delay.
+> 2. Thread A starts writing furiously to the page.
+> 3. Thread B runs fsync() or something that results in the page being
+>   checksummed and scheduled for writeout.
+> 4. Thread A continues to write furiously(!) on that same page before the
+>   controller finishes the DMA transfer.
 
-Ooops, yes.
+Right, page_mkwrite() is only called for the ro->rw transition.
 
+> 5. Disk gets the page, which now doesn't match its checksum, and *boom*
 > 
-> > I should have done that from the beginning, could you fix it now?
+> After letting the stress tool run for a few days, I can say fairly confidently
+> that the write() case doesn't seem to fail regardless of the O_DIRECT setting.
+> However, with writes to mmap regions, failures happen about once every 20-40
+> minutes, even with O_DIRECT set.  To me this suggests some sort of race
+> condition that we seem to win except once every 20 minutes.
 > 
-> Please don't.
+> I then thought, if page_mkwrite contains a wait_on_page_writeback, then perhaps
+> there's something that I could do just prior to calculating the DIF checksum
+> that would cause any subsequent write attempts to be shuffled back into
+> page_mkwrite.  I tried the set_memory_ro thing again, though that led to some
+> recursive lock errors and I noticed that those functions only seem to exist in
+> arch/x86/.  Next I tried directly mucking with PTEs, in addition to feeling
+> messy, only seemed to corrupt memory. :)
 
-Now I remember why I once put them here :)
+This seems like the best solution, IMHO, to ensure that mmap is blocked in page_mkwrite() before it has any chance to dirty the page undergoing checksum.  The trick is that you need to set_page_writeback() before setting the page read-only, otherwise the race still exists.
 
-Thanks,
-Hans
+> Is there a "correct" way to take a writeable page and make it so that any
+> process trying to write to it ends up hitting the page fault handler where we
+> can then wait for writeback?  Or perhaps I am simply barking up the wrong tree?
+> 
+> (Just FYI I took the old copy-everything-to-bounce-buffers patch that few
+> people liked for a second spin, and the errors did not surface regardless of
+> what combination of write/mmap and directio/bufferedio I told it to use.)
+
+I wouldn't be so much against memcpy() for mmap pages, but it does seem kind of gross that mmap is forcing data copies when a major reason to use mmap is to AVOID data copies.
+
+>>> The set_memory_ro debugging trick didn't ferret out any write paths that I
+>>> didn't catch... though it did have the effect of causing occasional fsync()
+>>> deadlocks.  I suppose I could sprinkle in a few more of those write calls to
+>>> see what happens.
+>>> 
+>>> Either way, I'm emailing to ask everyone's advice since I've run out of ideas.
+>>> Or: Did I miss something?
+>>> 
+>>> Thanks all for the feedback so far!
+>>> 
+>>> --
+>>> fs: Wait for page writeback when rewrite detected
+>>> 
+>>> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+>>> ---
+>>> 
+>>> fs/buffer.c     |    4 +++-
+>>> fs/ext4/inode.c |    3 +++
+>>> mm/filemap.c    |   15 +++++++++++++--
+>>> 3 files changed, 19 insertions(+), 3 deletions(-)
+>>> 
+>>> diff --git a/fs/buffer.c b/fs/buffer.c
+>>> index 2219a76..39e934c 100644
+>>> --- a/fs/buffer.c
+>>> +++ b/fs/buffer.c
+>>> @@ -2379,8 +2379,10 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+>>> 			ret = VM_FAULT_OOM;
+>>> 		else /* -ENOSPC, -EIO, etc */
+>>> 			ret = VM_FAULT_SIGBUS;
+>>> -	} else
+>>> +	} else {
+>>> +		wait_on_page_writeback(page);
+>>> 		ret = VM_FAULT_LOCKED;
+>>> +	}
+>> 
+>> I think this needs to wait before the __block_write_begin() call,
+>> not after it. i.e. wait before the page is mapped, not afterwards.
+>> 
+>> ....
+>>> diff --git a/mm/filemap.c b/mm/filemap.c
+>>> index 83a45d3..f201d80 100644
+>>> --- a/mm/filemap.c
+>>> +++ b/mm/filemap.c
+>>> @@ -2217,8 +2217,8 @@ EXPORT_SYMBOL(generic_file_direct_write);
+>>>  * Find or create a page at the given pagecache position. Return the locked
+>>>  * page. This function is specifically for buffered writes.
+>>>  */
+>>> -struct page *grab_cache_page_write_begin(struct address_space *mapping,
+>>> -					pgoff_t index, unsigned flags)
+>>> +struct page *__grab_cache_page_write_begin(struct address_space *mapping,
+>>> +					   pgoff_t index, unsigned flags)
+>>> {
+>>> 	int status;
+>>> 	struct page *page;
+>>> @@ -2243,6 +2243,17 @@ repeat:
+>>> 	}
+>>> 	return page;
+>>> }
+>>> +struct page *grab_cache_page_write_begin(struct address_space *mapping,
+>>> +					pgoff_t index, unsigned flags)
+>>> +{
+>>> +	struct page *p;
+>>> +
+>>> +	p = __grab_cache_page_write_begin(mapping, index, flags);
+>>> +	if (p)
+>>> +		wait_on_page_writeback(p);
+>>> +
+>>> +	return p;
+>>> +}
+>>> EXPORT_SYMBOL(grab_cache_page_write_begin);
+>> 
+>> Not much point in add in a wrapper when nothing else calls
+>> __grab_cache_page_write_begin(), which should also be static....
+>> 
+>> Cheers,
+>> 
+>> Dave.
+>> -- 
+>> Dave Chinner
+>> david@fromorbit.com
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+Cheers, Andreas
+
+
+
+
 
