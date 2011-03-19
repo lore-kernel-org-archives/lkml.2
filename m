@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab1CSCvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 22:51:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17710 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab1CSCvr (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 18 Mar 2011 22:51:47 -0400
-Date: Fri, 18 Mar 2011 22:51:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: 2.6.39 crashes BUG: unable to handle kernel NULL pointer
- dereference at 000000000000042 .. cmos_checkintr+0x4d/0x55 under Xen as PV
- guest.
-Message-ID: <20110319025134.GA3298@dumpdata.com>
-References: <20110318203830.GA9262@dumpdata.com>
- <1300485566.2731.46.camel@work-vm>
+	id S1756697Ab1CSD7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 23:59:08 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:56394 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905Ab1CSD7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 23:59:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=qZKYkjRDO9JLrIXeO1gs7KOa7wiRw7U5QDq8HHsmE9tgG52DAspVF35VP5ny82hxto
+         8fShKeMLGgyyvJKgQdYQ==
+Date: Fri, 18 Mar 2011 20:58:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Christoph Lameter <cl@linux.com>
+cc: Pekka Enberg <penberg@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/4] slub,rcu: don't assume the size of struct rcu_head
+In-Reply-To: <alpine.DEB.2.00.1103171006270.12540@router.home>
+Message-ID: <alpine.LSU.2.00.1103182037340.18458@sister.anvils>
+References: <4D6CA852.3060303@cn.fujitsu.com> <AANLkTimXy2Yaj+NTDMNTWuLqHHfKZJhVDpeXj3CfMvBf@mail.gmail.com> <alpine.DEB.2.00.1103010909320.6253@router.home> <AANLkTim0Zjc7c9-7LCnEaYpV5PVN=5fNQpjMYqtZe-fk@mail.gmail.com> <alpine.DEB.2.00.1103020625290.10180@router.home>
+ <AANLkTikk02f6kLiPFqqAGroJErQkHbJFfHzpHy4Y5P8Y@mail.gmail.com> <alpine.DEB.2.00.1103171006270.12540@router.home>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300485566.2731.46.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D841A3A.0019,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 02:59:26PM -0700, John Stultz wrote:
-> On Fri, 2011-03-18 at 16:38 -0400, Konrad Rzeszutek Wilk wrote:
-> > Haven't done any bisection, but looking at the latest set of
-> > patches John's name is on them. (John, congrats on a new job)
+On Thu, 17 Mar 2011, Christoph Lameter wrote:
+> On Sun, 6 Mar 2011, Hugh Dickins wrote:
 > 
-> No new job, I'm still at IBM. Just a new email address, as I'm working
-> as part of the Linaro effort. My old address still work too, and I'll
-> continue to use them for non-Linaro work.
+> > >> That was so for a long time, but I stopped it just over a year ago
+> > >> with commit a70caa8ba48f21f46d3b4e71b6b8d14080bbd57a, stop ptlock
+> > >> enlarging struct page.
+> > >
+> > > Strange. I just played around with in in January and the page struct size
+> > > changes when I build kernels with full debugging. I have some
+> > > cmpxchg_double patches here that depend on certain alignment in the page
+> > > struct. Debugging causes all that stuff to get out of whack so that I had
+> > > to do some special patches to make sure fields following the spinlock are
+> > > properly aligned when the sizes change.
+> >
+> > That puzzles me, it's not my experience and I don't have an
+> > explanation: do you have time to investigate?
+> >
+> > Uh oh, you're going to tell me you're working on an out-of-tree
+> > architecture with a million cpus ;)  In that case, yes, I'm afraid
+> > I'll have to update the SPLIT_PTLOCK_CPUS defaulting (for a million -
+> > 1 even).
 > 
+> No I am not working on any out of tree structure. Just regular dual socket
+> server boxes with 24 processors (which is a normal business machine
+> configuration these days).
+> 
+> But then there is also CONFIG_GENERIC_LOCKBREAK. That does not affect
+> things?
 
-Aah, OK.
-> 
-> > With the latest linus/master I get this when starting a Xen Linux PV
-> > guest:
-> > 
-> > [    0.404760] initcall psmouse_init+0x0/0x79 returned 0 after 59 usecs
-> > [    0.404767] calling  cmos_init+0x0/0x6a @ 1
-> > [    0.464855] BUG: unable to handle kernel NULL pointer dereference at 0000000000000428
-> > [    0.464867] IP: [<ffffffff8105d347>] queue_work_on+0x4/0x1d
-> [snip]
-> > [    0.465018] Call Trace:
-> > [    0.465023]  [<ffffffff8105d38f>] queue_work+0x1a/0x1c
-> > [    0.465029]  [<ffffffff8105d3a4>] schedule_work+0x13/0x15
-> > [    0.465035]  [<ffffffff81331b2e>] rtc_update_irq+0x10/0x12
-> > [    0.465041]  [<ffffffff81333939>] cmos_checkintr+0x4d/0x55
-> > [    0.465047]  [<ffffffff81333987>] cmos_irq_disable+0x46/0x4e
-> > [    0.465051]  [<ffffffff8133481d>] cmos_set_alarm+0xd9/0x16e
-> > [    0.465051]  [<ffffffff813320a4>] __rtc_set_alarm+0x7d/0x88
-> > [    0.465051]  [<ffffffff813321fa>] rtc_timer_enqueue+0x71/0xb8
-> > [    0.465051]  [<ffffffff81331707>] ? rtc_tm_to_time+0x2f/0x38
-> > 
-> > ... full log at the end.
-> > 
-> > From a brief look it looks as if rtc_device_register was never
-> > called, so
-> > 
-> > INIT_WORK(&rtc->irqwork, rtc_timer_do_work);
-> > 
-> > was never called.. and hence schedule_work tries to derefence an
-> > unitialized rtc->irqwork.
-> > 
-> > Which actually sounds right - the rtc_device_register should not
-> > be called since there are no RTC clocks exposed.
-> 
-> 
-> Huh. Did you see this with 2.6.38 vanilla? Just want to clarify if this
+CONFIG_GENERIC_LOCKBREAK adds an unsigned int break_lock after the
+int-sized arch_spinlock_t: which would make no difference on 64-bit
+anyway (the two ints fitting into one long), and makes no difference
+on 32-bit because we have put
+	struct {
+		unsigned long private;
+		struct address_space *mapping;
+	};
+into the union with spinlock_t ptl - the arch_spinlock_t then
+overlays private and the break_lock overlays mapping.
 
-No. 2.6.38 vaniall works great.
-> is 2.6.39 only or not.
+I'd much rather have had simple elements in that union, but it's
+precisely because of 32-bit CONFIG_GENERIC_LOCKBREAK that we need
+that structure in there.
 
-It is something new.
-> 
-> 
-> > There are probably two ways of fixing this - making rtc_update_irq
-> > check the rtc->irqwork (not attempted) or inhibit cmos_pnp_probe from
-> > setting this up. Looking at the cmos_pnp_probe and its friend they all
-> > call cmos_wake_setup, but never checks whether that function works properly.
-> > 
-> > The cmos_wake_setup checks for ACPI (which is disabled for PV guests)
-> > and just returns.
-> > 
-> > This little patch seems to work, but not sure if that is the correct
-> > way to do it?
-> 
-> So I'm still trying to get my head around this (sorry, just back from
-> vacation).
+(It is important to the KSM assumption about page->mapping that
+what goes into break_lock is either 0 or 1: in neither case could
+page->mapping look like a kmem address + 3.)
 
-No problem. I just noticed it today.
-> 
-> So the issue is that somehow the cmos code is calling rtc_update_irq
-> even though there is no cmos rtc device registered. That clearly seems
-> problematic.
-> 
-> However, its unclear from both the code and your patch if
-> cmos_wake_setup or cmos_do_probe is causing the rtc_update_irq to be
-> called.
-
-> cmos_do_probe() has lots of checks for the hardware and even registers
-> the rtc device (which should init the irqwork), so I don't see how the
-> null irqwork would trip after that point.
-
-It isn't a pointer actually. I thought it would but then I realized it
-was a 'struct workqueue' which just hadn't been initialized.
-
-> 
-> Any insight there?
-
-I hoped you might have :-)
-> 
-> thanks
-> -john
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hugh
