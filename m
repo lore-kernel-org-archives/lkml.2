@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab1CSBPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 21:15:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43156 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab1CSBPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 21:15:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=iR5KaOoyMaDB6vS2R6e3gDkViWwKGuoQyIcQTFcp1odjGzcFR7QfleCKqdhwPI0yzF
-         jUZ6gY3Xnb3QzhcMV3sy9eRKcZw+hzVZ9Ec67zDzohu5rw9cqlftKVazLxrgnmElAeWT
-         LXiayKnshnI3rcCW7Jht7QVeXPB2KdPKQ7oT8=
-Date: Sat, 19 Mar 2011 09:15:30 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: vapier@gentoo.org
-Cc: john.stultz@linaro.org, linux-kernel@vger.kernel.org, stable@kernel.org,
-        rtc-linux@googlegroups.com, a.zummo@towertech.it
-Subject: Re: [PATCH] rtc-bfin: add missing "return 0" in new alarm func> On
- Fri, Mar 18, 2011 at 04:26:24AM -0400, Mike Frysinger wrote:
-Message-ID: <20110319011527.GA1972@gmail.com>
-Mail-Followup-To: vapier@gentoo.org, john.stultz@linaro.org,
-	linux-kernel@vger.kernel.org, stable@kernel.org,
-	rtc-linux@googlegroups.com, a.zummo@towertech.it
-References: <1300436784-26543-1-git-send-email-vapier@gentoo.org>
- <AANLkTinjTVpNbkiNKpbc7kvtMVeXfjifr7Q5Dg4B9oGE@mail.gmail.com>
- <AANLkTinC_WCh2XXk-irG9d5QZvVU439_FYWZzTGQLbG7@mail.gmail.com>
+	id S1757801Ab1CSBQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 21:16:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3282 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757490Ab1CSBPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 21:15:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,208,1299484800"; 
+   d="scan'208";a="668915488"
+Message-ID: <4D8403C3.6020300@intel.com>
+Date: Fri, 18 Mar 2011 18:15:47 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinC_WCh2XXk-irG9d5QZvVU439_FYWZzTGQLbG7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@suse.de>
+CC: "Jiang, Dave" <dave.jiang@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Danecki, Jacek" <jacek.danecki@intel.com>,
+        "Ciechanowski, Ed" <ed.ciechanowski@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmilburn@redhat.com" <dmilburn@redhat.com>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] firmware/efi: export a routine to retrieve efi-variables
+ by GUID
+References: <20110318221606.26841.92271.stgit@localhost6.localdomain6> <20110318225016.GB15921@suse.de> <AANLkTim+HB0GWzGiif=MvYHaiXMSLuVB6R0=UK3906xU@mail.gmail.com> <20110319002246.GB14249@suse.de>
+In-Reply-To: <20110319002246.GB14249@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	On Sat, Mar 19, 2011 at 09:10:14AM +0800, jiaweiwei wrote:
-> 
-> >> the end leading to the build warning:
-> >>        drivers/rtc/rtc-bfin.c: In function 'bfin_rtc_alarm_irq_enable':
-> >>        drivers/rtc/rtc-bfin.c:253: warning: control reaches end of
-> >> non-void function
-> >>
-> >> CC: stable@kernel.org
-> >> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Acked-by: Harry Wei <harryxiyou@gmail.com>
-> >> ---
-> >>  drivers/rtc/rtc-bfin.c |    2 ++
-> >>  1 files changed, 2 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/rtc/rtc-bfin.c b/drivers/rtc/rtc-bfin.c
-> >> index 17971d9..0e61e2d 100644
-> >> --- a/drivers/rtc/rtc-bfin.c
-> >> +++ b/drivers/rtc/rtc-bfin.c
-> >> @@ -276,6 +276,8 @@ static int bfin_rtc_alarm_irq_enable(struct device
-> >> *dev, unsigned int enabled)
-> >>                bfin_rtc_int_set_alarm(rtc);
-> >>        else
-> >>                bfin_rtc_int_clear(~(RTC_ISTAT_ALARM |
-> >> RTC_ISTAT_ALARM_DAY));
-> >> +
-> >> +       return 0;
-> >>  }
-> >>
-> >>  static int bfin_rtc_read_time(struct device *dev, struct rtc_time *tm)
-> >> --
-> >> 1.7.4.1
-> >>
->alarm_irq_enable function forgot to add a "return 0" to
->> the end leading to the build warning:
->>       drivers/rtc/rtc-bfin.c: In function 'bfin_rtc_alarm_irq_enable':
->>       drivers/rtc/rtc-bfin.c:253: warning: control reaches end of non-void function
+On 3/18/2011 5:22 PM, Greg KH wrote:
+> On Fri, Mar 18, 2011 at 04:10:10PM -0700, Dan Williams wrote:
+>>> I needed all patches in linux-next _before_ the merge window opened to
+>>> be able to accept it.
+>>
+>> Yes, I know, and as dmaengine maintainer I also hate being ambushed by
+>> last minute patches, but now I am unfortunately one of those annoying
+>> people on the other side of the coin.
 >
->   I am sure we should give a return-value
-> but whether it is '0'? Maybe it should return
-> other value.
->   Can you give some explanations for yours.
+> Then you should know better than to try to go around the well-known
+> rules :)
 
->read the interface.c code ... this func returns 0 on "success".  i
->dont know what other possible value this could return.
-Oh, it is true.
+Yes...
 
-Thanks.
-Best Regards.
-Harry Wei.
+/me about to push his luck
+
+...I also know the rules can sometimes be bent:
+
+$ git describe --contains 9d200153
+v2.6.35-rc2~14^2~15
+
+commit 9d20015391dfc47f6371492925cc0333ac403414
+Author: Stepan Moskovchenko <stepanm@codeaurora.org>
+Date:   Wed May 19 11:03:30 2010 -0700
+
+     Staging: add MSM framebuffer driver
+
+I see you got flamed for that:
+"I pulled, but quite frankly, I don't want to see this kind of pull 
+request again. There's just no _point_.
+
+I'll take new drivers outside the merge window, but there has to be some
+_reason_ for them. See the whole SCSI discussion a few merge windows 
+ago. The new driver needs to improve the life of somebody to the point 
+where I want to feel that there is a _reason_ for pulling it outside the 
+merge window.
+
+These drivers? Not so much. Not even f*cking close.
+
+In other words: tell me why the new drivers couldn't just have waited 
+for the next merge window? Really?"
+
+As Jeff pointed out:
+"It seemed like this was turning into another driver that would get held 
+outside the kernel until it's "perfect."  If that is the case, Linus has 
+also made it clear we should get drivers for high volume, shipping 
+hardware into the kernel, even if its staging, if the alternative is to 
+deny users the driver."
+
+So yes, we are targeting that exception.  I'm up for taking the heat 
+directly if you want...  because the pull request will need to backed up 
+with justification.
+
+--
+Dan
