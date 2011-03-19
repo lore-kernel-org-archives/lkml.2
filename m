@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab1CSPyc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 11:54:32 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:11960 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab1CSPy3 (ORCPT
+	id S1756549Ab1CSP7l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 11:59:41 -0400
+Received: from list.bajajcapital.com ([209.20.93.67]:45951 "EHLO
+	list.bajajcapital.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab1CSP7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 11:54:29 -0400
-Message-Id: <201103191554.p2JFsQ9N010993@farm-0023.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Sat, 19 Mar 2011 11:47:53 -0400
-Subject: [PATCH] asm-generic: support clock_adjtime() in <asm-generic/unistd.h>
-To: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-X-OriginalArrivalTime: 19 Mar 2011 15:54:28.0433 (UTC) FILETIME=[EDA8E410:01CBE64D]
+	Sat, 19 Mar 2011 11:59:37 -0400
+X-DomainKeys: Sendmail DomainKeys Filter v1.0.1 list.bajajcapital.com C979B170033
+DomainKey-Signature: a=rsa-sha1; s=signer; d=bajajcapital.com; c=simple; q=dns;
+	b=FehCReulTJhRk1+oc3obQvVcqrotzdhVmXtwg4sB9b/k37SLA1zF1DpdB7avlKYgv
+	x0nWMF2/ykk/dLm34elCg==
+Recieved: 
+Date: Sat, 19 Mar 2011 21:29:36 +0580
+To: linux-kernel@vger.kernel.org
+From: InvestorsIndia <noreply@bajajcapital.com>
+Subject: Get Assured Gift with Every Subscription..
+Message-ID: <8cfe074324234803ad3c7e45a4ec521d@localhost.localdomain>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.73]
+X-Mailer: phplist v2.10.8
+X-MessageID: 3334
+X-ListMember: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A syscall was added without being added to asm-generic, which
-makes tile (and presumably score and unicore32) break.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
----
- include/asm-generic/unistd.h |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Unable to view the mailer click here to view it online
+<http://www.bajajcapital.com/e-mailer/magazine-10/magazine.html>
 
-diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
-index 57af033..d94f447 100644
---- a/include/asm-generic/unistd.h
-+++ b/include/asm-generic/unistd.h
-@@ -650,9 +650,11 @@ __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
- __SYSCALL(__NR_name_to_handle_at, sys_name_to_handle_at)
- #define __NR_open_by_handle_at		265
- __SYSCALL(__NR_open_by_handle_at, sys_open_by_handle_at)
-+#define __NR_clock_adjtime 266
-+__SYSCALL(__NR_clock_adjtime, sys_clock_adjtime)
+ <http://www.bajajcapital.com/New%20Subscription.htm>
+
+ <http://www.bajajcapital.com/New%20Subscription.htm>
+
+ <http://www.bajajcapital.com/New%20Subscription.htm>
+
+ <http://www.bajajcapital.com/New%20Subscription.htm>
+
+ Yes I am interested contact me with more details
+
+ Name
  
- #undef __NR_syscalls
--#define __NR_syscalls 266
-+#define __NR_syscalls 267
+ Mobile
+
+ Email 
  
- /*
-  * All syscalls below here should go away really,
--- 
-1.6.5.2
+ City:
+
+ <http://www.bajajcapital.com/New Subscription.htm>
+
+CLICK HERE TO SUBSCRIBE NOW
+
+Unable to view the mailer click here to view it online
+<http://www.bajajcapital.com/New%20Subscription.htm>
+
+If you do not wish to receive this mailer, Click here to "Unsubscribe
+<http://www.bajajcapital.com/taxsaving/quickunsubs.php>
+". We respect your privacy.
+
+ 
+
+--
+To unsubscribe from this list visit
+http://list.bajajcapital.com/lists/?p=unsubscribe&uid=5e45811c1162b9224015609e4014297c
+
+
 
