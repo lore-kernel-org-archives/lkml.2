@@ -1,167 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1CSFfE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 01:35:04 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:8068 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab1CSFe5 (ORCPT
+	id S1754334Ab1CSGpA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 02:45:00 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36152 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab1CSGox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 01:34:57 -0400
+	Sat, 19 Mar 2011 02:44:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=wgIglYhC6P1nYPJF2yn+pxpBXuCwgvg69owLWsjBeT3iQfrj2V96xUTHDV7JzslNeI
-         ws/LTpFwsqgH9h2wqiuw==
-Date: Fri, 18 Mar 2011 22:34:36 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Robert Swiecki <robert@swiecki.net>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Michel Lespinasse <walken@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix possible cause of a page_mapped BUG
-In-Reply-To: <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1103182158200.18771@sister.anvils>
-References: <alpine.LSU.2.00.1102232136020.2239@sister.anvils> <AANLkTi==MQV=_qq1HaCxGLRu8DdT6FYddqzBkzp1TQs7@mail.gmail.com> <AANLkTimv66fV1+JDqSAxRwddvy_kggCuhoJLMTpMTtJM@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=tKjDcU8PInbULEHU5ylAf/FCCq6n15VrRFaaoyIk5IbsGMjvccWgDQ2BFZA9TTgzFl
+         JzM6/Sz9L2HW0jHL8t3JVc11+2DMNgGN0lhZhHngjGJloCd1RO3GV6UJ3E2/ES+dSReF
+         qGJbHc4yLAC/u4prIp7a6c62nQkYNtRbYY3DY=
+Date: Fri, 18 Mar 2011 23:44:47 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.39-rc0
+Message-ID: <20110319064447.GA7298@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, Robert Swiecki wrote:
-> On Tue, Mar 1, 2011 at 12:35 AM, Robert Swiecki <robert@swiecki.net> wrote:
-> 
-> So, I compiled 2.6.38 and started fuzzing it. I'm bumping into other
-> problems, and never seen anything about mremap in 2.6.38 (yet),
+Hi Linus,
 
-Thanks a lot for getting back to this, Robert, and thanks for the update.
-I won't be celebrating, but this sounds like good news for my mremap patch.
+Please pull from:
 
-> as it had been happening in 2.6.37-rc2. The output goes to
-> http://alt.swiecki.net/linux_kernel/ - I'm still trying.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-A problem in sys_mlock: I've Cc'ed Michel who is the current expert.
+to receive updates for the input subsystem. Purely driver changes.
 
-A problem in sys_munlock: Michel again, except vma_prio_tree_add is
-implicated, and I used to be involved with that.  I've appended below
-a debug patch which I wrote years ago, and have largely forgotten, but
-Andrew keeps it around in mmotm: we might learn more if you add that
-into your kernel build.
+Changelog:
+---------
 
-A problem in next_pidmap from find_ge_pid from ... proc_pid_readdir.
-I did spend a while looking into that when you first reported it.
-I'm pretty sure, from the register values, that it's a result of
-a pid number (in some places signed int, in some places unsigned)
-getting unexpectedly sign-extended to negative, so indexing before
-the beginning of an array; but I never tracked down the root of the
-problem, and failed to reproduce it with odd lseeks on the directory.
+Abraham Arce (1):
+      Input: omap4-keypad - wire up runtime PM handling
 
-Ah, the one you report now comes from compat_sys_getdents,
-whereas the original one came from compat_sys_old_readdir: okay,
-I had been wondering whether it was peculiar to the old_readdir case,
-but no, it's reproduced with getdents too.  Might be peculiar to compat.
+Andy Botting (1):
+      Input: bcm5974 - add support for MacBookPro8
 
-Anyway, I've Cc'ed Eric who will be the best for that one.
+Bo Shen (1):
+      Input: add Atmel AT42QT1070 keypad driver
 
-And a couple of watchdog problems: I haven't even glanced at
-those, hope someone else can suggest a good way forward on them.
+Chris Leech (1):
+      Input: atmel_mxt_ts - add mXT224 identifier to id_table
 
-Hugh
+Dan Carpenter (1):
+      Input: uinput - reversed test in uinput_setup_device()
 
-> 
-> > Btw, the fuzzer is here: http://code.google.com/p/iknowthis/
-> >
-> > I think i was trying it with this revision:
-> > http://code.google.com/p/iknowthis/source/detail?r=11 (i386 mode,
-> > newest 'iknowthis' supports x86-64 natively), so feel free to try it.
-> >
-> > It used to crash the machine (it's BUG_ON but the system became
-> > unusable) in matter of hours. Btw, when I was testing it for the last
-> > time it Ooopsed much more frequently in proc_readdir (I sent report in
-> > one of earliet e-mails).
+Daniel De Graaf (1):
+      Input: xen-kbdfront - add grant reference for shared page
 
-From: Hugh Dickins <hughd@google.com>
+David Herrmann (1):
+      Input: uinput - fix setting up device name
 
-Jayson Santos has sighted mm/prio_tree.c:78,79 BUGs (kernel bugzilla 8446),
-and one was sighted a couple of years ago.  No reason yet to suppose
-they're prio_tree bugs, but we can't tell much about them without seeing
-the vmas.
+Dmitry Torokhov (24):
+      Input: dvb-usb-remote - convert to new style of get/setkeycode
+      Input: switch completely over to the new versions of get/setkeycode
+      Input: input-polldev - fix a couple of typos
+      Input: qt602240_ts - rename to atmel_mxt_ts
+      Input: uinput - use memdup_user() and friends
+      Input: tc3589x-keypad - fix 'double const' warning
+      Input: xen-kbdfront - move to drivers/input/misc
+      Input: tsc2005 - use spi_get/set_drvdata()
+      Input: tsc2005 - convert to using dev_pm_ops
+      Input: tsc2005 - remove incorrect module alias
+      Input: tsc2005 - remove driver banner message
+      Input: tsc2005 - add module description
+      Input: tsc2005 - clear driver data after unbinding
+      Input: tsc2005 - set up parent device
+      Input: tsc2005 - set up bus type in input device
+      Input: tsc2005 - rework driver initialization code
+      Input: tsc2005 - hide selftest attribute if we can't reset
+      Input: tsc2005 - use true/false for boolean variables
+      Input: tsc2005 - do not use 0 in place of NULL
+      Input: tsc2005 - don't use work for 'pen up' handling
+      Input: tsc2005 - do not rearm timer in hardirq handler
+      Input: tsc2005 - handle read errors from SPI layer
+      Input: tsc2005 - add open/close
+      Input: tsc2005 - remove 'disable' sysfs attribute
 
-So dump vma and the one it's supposed to resemble: I had expected to use
-print_hex_dump(), but that's designed for u8 dumps, whereas almost every
-field of vm_area_struct is either a pointer or an unsigned long - which
-look nonsense dumped as u8s.
+Henrik Rydberg (1):
+      Input: bcm5974 - Report button also for zero fingers
 
-Replace the two BUG_ONs by a single WARN_ON; and if it fires, just keep
-this vma out of the tree (truncation and swapout won't be able to find it).
- How safe this is depends on what the error really is; but we hold a file's
-i_mmap_lock here, so it may be impossible to recover from BUG_ON.
+HeungJun Kim (1):
+      Input: mcs_touchkey - add shutdown handler
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Jayson Santos <jaysonsantos2003@yahoo.com.br>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+Heungjun Kim (1):
+      Input: mcs_touchkey - add support for suspend/resume
 
- mm/prio_tree.c |   33 ++++++++++++++++++++++++++++-----
- 1 file changed, 28 insertions(+), 5 deletions(-)
+Iiro Valkonen (5):
+      Input: atmel_mxt_ts - get rid of qt602240 prefixes in names
+      Input: atmel_mxt_ts - read whole message to make CHG low
+      Input: atmel_mxt_ts - allow board code to suppliy controller config
+      Input: atmel_mxt_ts - allow board code to specify IRQ flags
+      Input: atmel_mxt_ts - remove matrix size check
 
-diff -puN mm/prio_tree.c~prio_tree-debugging-patch mm/prio_tree.c
---- a/mm/prio_tree.c~prio_tree-debugging-patch
-+++ a/mm/prio_tree.c
-@@ -67,6 +67,20 @@
-  * 	vma->shared.vm_set.head == NULL ==> a list node
-  */
- 
-+static void dump_vma(struct vm_area_struct *vma)
-+{
-+	void **ptr = (void **) vma;
-+	int i;
-+
-+	printk("vm_area_struct at %p:", ptr);
-+	for (i = 0; i < sizeof(*vma)/sizeof(*ptr); i++, ptr++) {
-+		if (!(i & 3))
-+			printk("\n");
-+		printk(" %p", *ptr);
-+	}
-+	printk("\n");
-+}
-+
- /*
-  * Add a new vma known to map the same set of pages as the old vma:
-  * useful for fork's dup_mmap as well as vma_prio_tree_insert below.
-@@ -74,14 +88,23 @@
-  */
- void vma_prio_tree_add(struct vm_area_struct *vma, struct vm_area_struct *old)
- {
--	/* Leave these BUG_ONs till prio_tree patch stabilizes */
--	BUG_ON(RADIX_INDEX(vma) != RADIX_INDEX(old));
--	BUG_ON(HEAP_INDEX(vma) != HEAP_INDEX(old));
--
- 	vma->shared.vm_set.head = NULL;
- 	vma->shared.vm_set.parent = NULL;
- 
--	if (!old->shared.vm_set.parent)
-+	if (WARN_ON(RADIX_INDEX(vma) != RADIX_INDEX(old) ||
-+		    HEAP_INDEX(vma)  != HEAP_INDEX(old))) {
-+		/*
-+		 * This should never happen, yet it has been seen a few times:
-+		 * we cannot say much about it without seeing the vma contents.
-+		 */
-+		dump_vma(vma);
-+		dump_vma(old);
-+		/*
-+		 * Don't try to link this (corrupt?) vma into the (corrupt?)
-+		 * prio_tree, but arrange for its removal to succeed later.
-+		 */
-+		INIT_LIST_HEAD(&vma->shared.vm_set.list);
-+	} else if (!old->shared.vm_set.parent)
- 		list_add(&vma->shared.vm_set.list,
- 				&old->shared.vm_set.list);
- 	else if (old->shared.vm_set.head)
+Joonyoung Shim (2):
+      Input: atmel_mxt_ts - remove firmware version check
+      Input: atmel_mxt_ts - add objects of mXT1386 chip
+
+Lauri Leukkunen (1):
+      Input: introduce tsc2005 driver
+
+Magnus Damm (1):
+      Input: tca6416-keypad - suspend/resume wakeup support
+
+Mark Brown (15):
+      Input: ad7877 - convert to dev_pm_ops
+      Input: ad7879 - convert SPI to dev_pm_ops
+      Input: ads7846 - convert to dev_pm_ops
+      Input: wm831x - add driver for Wolfson WM831x PMIC touchscreen controllers
+      Input: wm831x-ts - remove use of ternary operator
+      Input: ad714x-i2c - convert to dev_pm_ops
+      Input: ad714x-spi - convert to dev_pm_ops
+      Input: lm8323 - convert to dev_pm_ops
+      Input: max7359 - convert to dev_pm_ops
+      Input: adxl34x-i2c - convert to dev_pm_ops
+      Input: adxl34x-spi - convert to dev_pm_ops
+      Input: adxl34x - fix references to adx134x
+      Input: synaptics_i2c - convert to dev_pm_ops
+      Input: wm831x-ts - default pressure measurements on
+      Input: wm831x-ts - ensure the controller is in a known state on open
+
+Olaf Hering (1):
+      Input: xen-kbdfront - advertise either absolute or relative coordinates
+
+Peter Korsgaard (1):
+      Input: evdev - fix evdev_write return value on partial writes
+
+Ping Cheng (4):
+      Input: wacom - do not send 2FGT Tablet PC events in TAP format
+      Input: wacom - process pen data in its own routine
+      Input: wacom - support one finger touch the touchscreen way
+      Input: wacom - support 2FGT in MT format
+
+
+Diffstat:
+--------
+
+ arch/arm/mach-s5pv210/mach-goni.c                  |    8 +-
+ drivers/hid/hid-apple.c                            |    6 +
+ drivers/hid/hid-core.c                             |    6 +
+ drivers/hid/hid-ids.h                              |    3 +
+ drivers/hid/hid-input.c                            |    4 +-
+ drivers/input/Kconfig                              |   10 -
+ drivers/input/Makefile                             |    2 -
+ drivers/input/evdev.c                              |   10 +-
+ drivers/input/input-polldev.c                      |    4 +-
+ drivers/input/input.c                              |   55 +-
+ drivers/input/keyboard/Kconfig                     |   10 +
+ drivers/input/keyboard/Makefile                    |    1 +
+ drivers/input/keyboard/lm8323.c                    |   15 +-
+ drivers/input/keyboard/max7359_keypad.c            |   17 +-
+ drivers/input/keyboard/mcs_touchkey.c              |   57 +-
+ drivers/input/keyboard/omap4-keypad.c              |   74 +-
+ drivers/input/keyboard/qt1070.c                    |  276 ++++
+ drivers/input/keyboard/tc3589x-keypad.c            |   22 +-
+ drivers/input/keyboard/tca6416-keypad.c            |   28 +
+ drivers/input/misc/Kconfig                         |   13 +
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/ad714x-i2c.c                    |   17 +-
+ drivers/input/misc/ad714x-spi.c                    |   17 +-
+ drivers/input/misc/adxl34x-i2c.c                   |   16 +-
+ drivers/input/misc/adxl34x-spi.c                   |   20 +-
+ drivers/input/misc/ati_remote2.c                   |    4 +-
+ drivers/input/misc/uinput.c                        |   48 +-
+ drivers/input/{ => misc}/xen-kbdfront.c            |   83 +-
+ drivers/input/mouse/bcm5974.c                      |   28 +-
+ drivers/input/mouse/synaptics_i2c.c                |   16 +-
+ drivers/input/sparse-keymap.c                      |    4 +-
+ drivers/input/tablet/wacom_sys.c                   |   12 +-
+ drivers/input/tablet/wacom_wac.c                   |  247 ++---
+ drivers/input/tablet/wacom_wac.h                   |    6 +-
+ drivers/input/touchscreen/Kconfig                  |   45 +-
+ drivers/input/touchscreen/Makefile                 |    4 +-
+ drivers/input/touchscreen/ad7877.c                 |   19 +-
+ drivers/input/touchscreen/ad7879-spi.c             |   17 +-
+ drivers/input/touchscreen/ads7846.c                |   16 +-
+ drivers/input/touchscreen/atmel_mxt_ts.c           | 1211 +++++++++++++++++
+ drivers/input/touchscreen/qt602240_ts.c            | 1406 --------------------
+ drivers/input/touchscreen/tsc2005.c                |  756 +++++++++++
+ drivers/input/touchscreen/wm831x-ts.c              |  368 +++++
+ drivers/media/dvb/dvb-usb/dvb-usb-remote.c         |  109 +-
+ drivers/media/rc/rc-main.c                         |    4 +-
+ .../linux/i2c/{qt602240_ts.h => atmel_mxt_ts.h}    |   34 +-
+ include/linux/i2c/mcs.h                            |    1 +
+ include/linux/input-polldev.h                      |    4 +-
+ include/linux/input.h                              |   12 +-
+ include/linux/mfd/wm831x/pdata.h                   |    3 +-
+ include/linux/spi/tsc2005.h                        |   41 +
+ 51 files changed, 3284 insertions(+), 1906 deletions(-)
+ create mode 100644 drivers/input/keyboard/qt1070.c
+ rename drivers/input/{ => misc}/xen-kbdfront.c (85%)
+ create mode 100644 drivers/input/touchscreen/atmel_mxt_ts.c
+ delete mode 100644 drivers/input/touchscreen/qt602240_ts.c
+ create mode 100644 drivers/input/touchscreen/tsc2005.c
+ create mode 100644 drivers/input/touchscreen/wm831x-ts.c
+ rename include/linux/i2c/{qt602240_ts.h => atmel_mxt_ts.h} (50%)
+ create mode 100644 include/linux/spi/tsc2005.h
+
+-- 
+Dmitry
+
