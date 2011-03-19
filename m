@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab1CSNFF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 09:05:05 -0400
-Received: from 2.26.mail-out.ovh.net ([178.33.107.8]:32782 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1751451Ab1CSNE7 (ORCPT
+	id S1753175Ab1CSOIU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 10:08:20 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45658 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab1CSOIR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 09:04:59 -0400
-X-Greylist: delayed 155329 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Mar 2011 09:04:59 EDT
-Message-ID: <4D84A9F6.8080402@example.com>
-Date: Sat, 19 Mar 2011 14:04:54 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	Sat, 19 Mar 2011 10:08:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=H32/HCtUBshitJiy3s/b95hmY7Oeh/LtAC2cg9VWM4XL7UBuOmauzm9y7SImL9v3Aa
+         E3vpi6Df7f2TBZTC63P3e8N9KZYHGi3IU4/oD4Y59pXvZGe8tsHMyrvABH6Udl56oB11
+         3ivkJS2ouLEo42kQp8KWn9SWeza+ygwn7lHdY=
 MIME-Version: 1.0
-To: Anca Emanuel <anca.emanuel@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D84A9F6.8080402@example.com>
+References: <4D84A46B.1000407@example.com>
+	<AANLkTi=qrK2L+MA5F5fQ6S76LLPXkYhyLg7JL4_vrkRe@mail.gmail.com>
+	<4D84A9F6.8080402@example.com>
+Date: Sat, 19 Mar 2011 16:08:16 +0200
+Message-ID: <AANLkTimFGeHYEOxx=h883rRJL463g1CBUDS0wGM-52Nj@mail.gmail.com>
 Subject: Re: No networking since git3
-References: <4D84A46B.1000407@example.com> <AANLkTi=qrK2L+MA5F5fQ6S76LLPXkYhyLg7JL4_vrkRe@mail.gmail.com>
-In-Reply-To: <AANLkTi=qrK2L+MA5F5fQ6S76LLPXkYhyLg7JL4_vrkRe@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 12247539188154659328
-X-Ovh-Remote: 178.36.164.253 (178-36-164-253.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: piotr@hosowicz.com
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.03.2011 13:56, Anca Emanuel wrote:
-> 2011/3/19 Piotr Hosowicz<piotr@hosowicz.com>:
->> Hello,
+2011/3/19 Piotr Hosowicz <piotr@hosowicz.com>:
+> On 19.03.2011 13:56, Anca Emanuel wrote:
 >>
->> I wrote lately, the problem persists, that's why I write again. I tested
->> git7 just now and it still does not work.
+>> 2011/3/19 Piotr Hosowicz<piotr@hosowicz.com>:
+>>>
+>>> Hello,
+>>>
+>>> I wrote lately, the problem persists, that's why I write again. I tested
+>>> git7 just now and it still does not work.
+>>
+>> Same problem here:
+>>
+>> [   12.923685] r8169 0000:04:00.0: eth0: link down
+>> [   12.923941] ADDRCONF(NETDEV_UP): eth0: link is not ready
+>>
+>> dmesg attached.
 >
-> Same problem here:
+> Nice to hear that I am not the only person with this problem. I forgot about
+> the dmesg.
 >
-> [   12.923685] r8169 0000:04:00.0: eth0: link down
-> [   12.923941] ADDRCONF(NETDEV_UP): eth0: link is not ready
+> Regards,
 >
-> dmesg attached.
+> Piotr Hosowicz
 
-Nice to hear that I am not the only person with this problem. I forgot 
-about the dmesg.
-
-Regards,
-
-Piotr Hosowicz
-
--- 
-- Jasiu, jakie jest najszybsze zwierze na swiecie?
-- Gepard, pszepani.
-- A najszybszy ptak?
-- Ptak geparda.
-NP: Banda Do Sol - Fabito
-NB: 2.6.38-git3
+Added CCs
