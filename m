@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab1CSUr1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 16:47:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53810 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757469Ab1CSUrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 16:47:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] asm-generic: support clock_adjtime() in <asm-generic/unistd.h>
-Date: Sat, 19 Mar 2011 21:47:20 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-References: <201103191554.p2JFsQ9N010993@farm-0023.internal.tilera.com>
-In-Reply-To: <201103191554.p2JFsQ9N010993@farm-0023.internal.tilera.com>
+	id S932125Ab1CSUv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 16:51:26 -0400
+Received: from www.tglx.de ([62.245.132.106]:46253 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757469Ab1CSUvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 16:51:24 -0400
+Date: Sat, 19 Mar 2011 21:51:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Daney <ddaney@caviumnetworks.com>
+cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] genirq: Add chip hooks for taking CPUs on/off
+ line.
+In-Reply-To: <1300484916-11133-2-git-send-email-ddaney@caviumnetworks.com>
+Message-ID: <alpine.LFD.2.00.1103192050400.2787@localhost6.localdomain6>
+References: <1300484916-11133-1-git-send-email-ddaney@caviumnetworks.com> <1300484916-11133-2-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103192147.20632.arnd@arndb.de>
-X-Provags-ID: V02:K0:THwNF8g7uSbgQFps+YeaYcoptdHPbvepVZ/4KGq54im
- AREpjO0eJKU4mgcaJEUgiWjvOGvsM/m6AGNbIqOOb009L2lvyg
- uBAYfWJzw1aY27xr0/orQQyyruo0dx25GMhLP/eWAqPVLSW6bN
- XHGwNpURN3vf1/GhpwSpk0bPqToqUzYOALj0ypMNKC52qN57KF
- s3MagAWZuE4ZaIiEHjDaA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 March 2011 16:47:53 Chris Metcalf wrote:
-> 
-> A syscall was added without being added to asm-generic, which
-> makes tile (and presumably score and unicore32) break.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Chen Liqin <liqin.chen@sunplusct.com>
-> Cc: Lennox Wu <lennox.wu@gmail.com>
+On Fri, 18 Mar 2011, David Daney wrote:
+> --- a/include/linux/irqdesc.h
+> +++ b/include/linux/irqdesc.h
+> @@ -178,6 +178,12 @@ static inline int irq_has_action(unsigned int irq)
+>  	return desc->action != NULL;
+>  }
+>  
+> +/* Test to see if the irq is currently enabled */
+> +static inline int irq_desc_is_enabled(struct irq_desc *desc)
+> +{
+> +	return desc->depth == 0;
+> +}
 
-I don't consider it actually broken, but your patch
-is definitely needed to support the new syscall, and
-looks totally correct.
+That want's to go into kernel/irq/internal.h
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+>  #ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
+>  static inline int irq_balancing_disabled(unsigned int irq)
+>  {
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index c9c0601..40736f7 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -689,3 +689,38 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+>  
+>  	irq_put_desc_unlock(desc, flags);
+>  }
+> +
+> +void irq_cpu_online(unsigned int irq)
 
-I don't have any other changes queued up for asm-generic
-in this release, so please just merge it through your
-tree if you like.
+Odd function name. It does not reflect that this is for per cpu
+interrupts. So something like irq_xxx_per_cpu_irq(irq)
+might be a bit more descriptive.
 
-	Arnd
+> +{
+
+So that's called on the cpu which goes online, right?
+
+I wonder whether we can add any sanity check to verify this.
+
+Though I would not worry too much about it. Calling that from a cpu
+which is not going offline should have enough nasty side effects that
+it's noticed during development. :)
+
+> +	unsigned long flags;
+> +	struct irq_chip *chip;
+> +	struct irq_desc *desc = irq_to_desc(irq);
+
+Needs to check !desc
+
+> +	raw_spin_lock_irqsave(&desc->lock, flags);
+> +
+> +	chip = irq_data_get_irq_chip(&desc->irq_data);
+> +
+> +	if (chip && chip->irq_cpu_online)
+> +		chip->irq_cpu_online(&desc->irq_data,
+> +				     irq_desc_is_enabled(desc));
+> +
+> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
+> +}
+> +
+> +void irq_cpu_offline(unsigned int irq)
+> +{
+> +	unsigned long flags;
+> +	struct irq_chip *chip;
+> +	struct irq_desc *desc = irq_to_desc(irq);
+
+See above. 
+
+Style nit: I prefer ordering:
+
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct irq_chip *chip;
++	unsigned long flags;
+
+For some reason, probably because I'm used to it, that's easier to
+parse. But don't worry about that, I'll turn it around before sticking
+it into git. :)
+
+Otherwise I'm fine with the approach itself. 
+
+Though one question remains: should we just iterate over the irq space
+and call the online/offline callbacks when available instead of having
+the arch code do the iteration.
+
+Thanks,
+
+	tglx
