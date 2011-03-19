@@ -1,185 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab1CSC2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 22:28:36 -0400
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:45743 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab1CSC23 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 22:28:29 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=I0jFHxriRJwyplOnjK2nOSNCO7GacXBAI5CCNqI8fuI= c=1 sm=1
- a=WKMNdXk8PrIA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VnNF1IyMAAAA:8 a=7-415B0cAAAA:8
- a=VwQbUJbxAAAA:8 a=aQ6LyYGYDGLbr7eGIzEA:9 a=i_S_P1udGoTVAZcVggEA:7
- a=yszbfaBcTZhaJ8WTEONnjYatzooA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10
- a=FtYAf7_czLgA:10 a=aPmbDp2QIOtMH0M7:21 a=DH1emcrVcMHNAjJf:21
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation	problem
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20110319000755.GD1110@tux1.beaverton.ibm.com>
-Date: Fri, 18 Mar 2011 20:28:26 -0600
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
-        Jan Kara <jack@suse.cz>, Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E2EA0861-6143-4F91-805A-63736F45C514@dilger.ca>
-References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1082)
+	id S1756442Ab1CSChz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 22:37:55 -0400
+Received: from sh.osrg.net ([192.16.179.4]:38902 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486Ab1CSChu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Mar 2011 22:37:50 -0400
+Date: Sat, 19 Mar 2011 11:37:15 +0900 (JST)
+Message-Id: <20110319.113715.163259181.ryusuke@osrg.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        linux-nilfs@vger.kernel.org
+Subject: [GIT PULL] nilfs2 updates for 2.6.39
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 19 Mar 2011 11:37:16 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-18, at 6:07 PM, Darrick J. Wong wrote:
->> Ok, here's what I have so far.  I took everyone's suggestions of where to add
->> calls to wait_on_page_writeback, which seems to handle the multiple-write case
->> adequately.  Unfortunately, it is still possible to generate checksum errors by
->> scribbling furiously on a mmap'd region, even after adding the writeback wait
->> in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
->> removing its wait_for_page_writeback call, so I suspect there's a bit more
->> going on in btrfs than I've been able to figure out.
+Hi Linus,
 
-> I wonder, is it possible for this to happen:
-> 
-> 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
->   but there's no ongoing writeback, so it returns without delay.
-> 2. Thread A starts writing furiously to the page.
-> 3. Thread B runs fsync() or something that results in the page being
->   checksummed and scheduled for writeout.
-> 4. Thread A continues to write furiously(!) on that same page before the
->   controller finishes the DMA transfer.
+please pull nilfs2 updates from:
 
-Right, page_mkwrite() is only called for the ro->rw transition.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
 
-> 5. Disk gets the page, which now doesn't match its checksum, and *boom*
-> 
-> After letting the stress tool run for a few days, I can say fairly confidently
-> that the write() case doesn't seem to fail regardless of the O_DIRECT setting.
-> However, with writes to mmap regions, failures happen about once every 20-40
-> minutes, even with O_DIRECT set.  To me this suggests some sort of race
-> condition that we seem to win except once every 20 minutes.
-> 
-> I then thought, if page_mkwrite contains a wait_on_page_writeback, then perhaps
-> there's something that I could do just prior to calculating the DIF checksum
-> that would cause any subsequent write attempts to be shuffled back into
-> page_mkwrite.  I tried the set_memory_ro thing again, though that led to some
-> recursive lock errors and I noticed that those functions only seem to exist in
-> arch/x86/.  Next I tried directly mucking with PTEs, in addition to feeling
-> messy, only seemed to corrupt memory. :)
+One noticeable change is support of standard attributes set via chattr
+and read via lsattr.  Another is block count per checkpoint which
+enables users to know used amount of filesystem at each instant of
+time via lscp command.
 
-This seems like the best solution, IMHO, to ensure that mmap is blocked in page_mkwrite() before it has any chance to dirty the page undergoing checksum.  The trick is that you need to set_page_writeback() before setting the page read-only, otherwise the race still exists.
+Also, there are a cleanup series simplifying hierarchy of on-memory
+structures and a few small fixes.
 
-> Is there a "correct" way to take a writeable page and make it so that any
-> process trying to write to it ends up hitting the page fault handler where we
-> can then wait for writeback?  Or perhaps I am simply barking up the wrong tree?
-> 
-> (Just FYI I took the old copy-everything-to-bounce-buffers patch that few
-> people liked for a second spin, and the errors did not surface regardless of
-> what combination of write/mmap and directio/bufferedio I told it to use.)
-
-I wouldn't be so much against memcpy() for mmap pages, but it does seem kind of gross that mmap is forcing data copies when a major reason to use mmap is to AVOID data copies.
-
->>> The set_memory_ro debugging trick didn't ferret out any write paths that I
->>> didn't catch... though it did have the effect of causing occasional fsync()
->>> deadlocks.  I suppose I could sprinkle in a few more of those write calls to
->>> see what happens.
->>> 
->>> Either way, I'm emailing to ask everyone's advice since I've run out of ideas.
->>> Or: Did I miss something?
->>> 
->>> Thanks all for the feedback so far!
->>> 
->>> --
->>> fs: Wait for page writeback when rewrite detected
->>> 
->>> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
->>> ---
->>> 
->>> fs/buffer.c     |    4 +++-
->>> fs/ext4/inode.c |    3 +++
->>> mm/filemap.c    |   15 +++++++++++++--
->>> 3 files changed, 19 insertions(+), 3 deletions(-)
->>> 
->>> diff --git a/fs/buffer.c b/fs/buffer.c
->>> index 2219a76..39e934c 100644
->>> --- a/fs/buffer.c
->>> +++ b/fs/buffer.c
->>> @@ -2379,8 +2379,10 @@ block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
->>> 			ret = VM_FAULT_OOM;
->>> 		else /* -ENOSPC, -EIO, etc */
->>> 			ret = VM_FAULT_SIGBUS;
->>> -	} else
->>> +	} else {
->>> +		wait_on_page_writeback(page);
->>> 		ret = VM_FAULT_LOCKED;
->>> +	}
->> 
->> I think this needs to wait before the __block_write_begin() call,
->> not after it. i.e. wait before the page is mapped, not afterwards.
->> 
->> ....
->>> diff --git a/mm/filemap.c b/mm/filemap.c
->>> index 83a45d3..f201d80 100644
->>> --- a/mm/filemap.c
->>> +++ b/mm/filemap.c
->>> @@ -2217,8 +2217,8 @@ EXPORT_SYMBOL(generic_file_direct_write);
->>>  * Find or create a page at the given pagecache position. Return the locked
->>>  * page. This function is specifically for buffered writes.
->>>  */
->>> -struct page *grab_cache_page_write_begin(struct address_space *mapping,
->>> -					pgoff_t index, unsigned flags)
->>> +struct page *__grab_cache_page_write_begin(struct address_space *mapping,
->>> +					   pgoff_t index, unsigned flags)
->>> {
->>> 	int status;
->>> 	struct page *page;
->>> @@ -2243,6 +2243,17 @@ repeat:
->>> 	}
->>> 	return page;
->>> }
->>> +struct page *grab_cache_page_write_begin(struct address_space *mapping,
->>> +					pgoff_t index, unsigned flags)
->>> +{
->>> +	struct page *p;
->>> +
->>> +	p = __grab_cache_page_write_begin(mapping, index, flags);
->>> +	if (p)
->>> +		wait_on_page_writeback(p);
->>> +
->>> +	return p;
->>> +}
->>> EXPORT_SYMBOL(grab_cache_page_write_begin);
->> 
->> Not much point in add in a wrapper when nothing else calls
->> __grab_cache_page_write_begin(), which should also be static....
->> 
->> Cheers,
->> 
->> Dave.
->> -- 
->> Dave Chinner
->> david@fromorbit.com
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks!
 
 
-Cheers, Andreas
+Ryusuke Konishi
+--
+The following changes since commit a5abba989deceb731047425812d268daf7536575:
 
+  Linux 2.6.38-rc8 (2011-03-07 21:09:37 -0800)
 
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
 
+Jiro SEKIBA (1):
+      nilfs2: move NILFS_SUPER_MAGIC to linux/magic.h
 
+Ryusuke Konishi (18):
+      nilfs2: decrement inodes count only if raw inode was successfully deleted
+      nilfs2: add free entries count only if clear bit operation succeeded
+      nilfs2: use common file attribute macros
+      nilfs2: mark S_NOATIME on inodes only if NOATIME attribute is set
+      nilfs2: tighten restrictions on inode flags
+      nilfs2: implement FS_IOC_GETFLAGS/SETFLAGS/GETVERSION
+      nilfs2: add compat ioctl
+      nilfs2: append blocksize info to warnings during loading super blocks
+      nilfs2: optimize rec_len functions
+      nilfs2: record used amount of each checkpoint in checkpoint list
+      nilfs2: move mount options to nilfs object
+      nilfs2: move parameters on nilfs_sb_info into nilfs object
+      nilfs2: move s_inode_lock and s_dirty_files into nilfs object
+      nilfs2: move next generation counter into nilfs object
+      nilfs2: move log writer onto nilfs object
+      nilfs2: get rid of sc_sbi back pointer
+      nilfs2: use sb instance instead of nilfs_sb_info struct
+      nilfs2: get rid of nilfs_sb_info structure
 
+ fs/nilfs2/alloc.c         |   12 ++-
+ fs/nilfs2/bmap.c          |   12 --
+ fs/nilfs2/bmap.h          |    3 -
+ fs/nilfs2/btree.c         |    6 +-
+ fs/nilfs2/dir.c           |    5 +-
+ fs/nilfs2/direct.c        |    4 +-
+ fs/nilfs2/file.c          |    4 +-
+ fs/nilfs2/inode.c         |   83 +++++++++------
+ fs/nilfs2/ioctl.c         |  115 ++++++++++++++++++--
+ fs/nilfs2/mdt.h           |    2 +-
+ fs/nilfs2/namei.c         |    2 +-
+ fs/nilfs2/nilfs.h         |   33 +++++--
+ fs/nilfs2/recovery.c      |   32 +++---
+ fs/nilfs2/sb.h            |   85 ---------------
+ fs/nilfs2/segment.c       |  258 ++++++++++++++++++++++-----------------------
+ fs/nilfs2/segment.h       |   14 +--
+ fs/nilfs2/super.c         |  214 ++++++++++++++++---------------------
+ fs/nilfs2/the_nilfs.c     |   44 +++++---
+ fs/nilfs2/the_nilfs.h     |   51 ++++++++-
+ include/linux/magic.h     |    1 +
+ include/linux/nilfs2_fs.h |   32 ++----
+ 21 files changed, 513 insertions(+), 499 deletions(-)
+ delete mode 100644 fs/nilfs2/sb.h
