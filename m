@@ -1,97 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442Ab1CSChz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Mar 2011 22:37:55 -0400
-Received: from sh.osrg.net ([192.16.179.4]:38902 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486Ab1CSChu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Mar 2011 22:37:50 -0400
-Date: Sat, 19 Mar 2011 11:37:15 +0900 (JST)
-Message-Id: <20110319.113715.163259181.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 updates for 2.6.39
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 19 Mar 2011 11:37:16 +0900 (JST)
+	id S1756607Ab1CSCvx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Mar 2011 22:51:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17710 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab1CSCvr (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 18 Mar 2011 22:51:47 -0400
+Date: Fri, 18 Mar 2011 22:51:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: 2.6.39 crashes BUG: unable to handle kernel NULL pointer
+ dereference at 000000000000042 .. cmos_checkintr+0x4d/0x55 under Xen as PV
+ guest.
+Message-ID: <20110319025134.GA3298@dumpdata.com>
+References: <20110318203830.GA9262@dumpdata.com>
+ <1300485566.2731.46.camel@work-vm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300485566.2731.46.camel@work-vm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt356.oracle.com [141.146.40.156]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D841A3A.0019,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Mar 18, 2011 at 02:59:26PM -0700, John Stultz wrote:
+> On Fri, 2011-03-18 at 16:38 -0400, Konrad Rzeszutek Wilk wrote:
+> > Haven't done any bisection, but looking at the latest set of
+> > patches John's name is on them. (John, congrats on a new job)
+> 
+> No new job, I'm still at IBM. Just a new email address, as I'm working
+> as part of the Linaro effort. My old address still work too, and I'll
+> continue to use them for non-Linaro work.
+> 
 
-please pull nilfs2 updates from:
+Aah, OK.
+> 
+> > With the latest linus/master I get this when starting a Xen Linux PV
+> > guest:
+> > 
+> > [    0.404760] initcall psmouse_init+0x0/0x79 returned 0 after 59 usecs
+> > [    0.404767] calling  cmos_init+0x0/0x6a @ 1
+> > [    0.464855] BUG: unable to handle kernel NULL pointer dereference at 0000000000000428
+> > [    0.464867] IP: [<ffffffff8105d347>] queue_work_on+0x4/0x1d
+> [snip]
+> > [    0.465018] Call Trace:
+> > [    0.465023]  [<ffffffff8105d38f>] queue_work+0x1a/0x1c
+> > [    0.465029]  [<ffffffff8105d3a4>] schedule_work+0x13/0x15
+> > [    0.465035]  [<ffffffff81331b2e>] rtc_update_irq+0x10/0x12
+> > [    0.465041]  [<ffffffff81333939>] cmos_checkintr+0x4d/0x55
+> > [    0.465047]  [<ffffffff81333987>] cmos_irq_disable+0x46/0x4e
+> > [    0.465051]  [<ffffffff8133481d>] cmos_set_alarm+0xd9/0x16e
+> > [    0.465051]  [<ffffffff813320a4>] __rtc_set_alarm+0x7d/0x88
+> > [    0.465051]  [<ffffffff813321fa>] rtc_timer_enqueue+0x71/0xb8
+> > [    0.465051]  [<ffffffff81331707>] ? rtc_tm_to_time+0x2f/0x38
+> > 
+> > ... full log at the end.
+> > 
+> > From a brief look it looks as if rtc_device_register was never
+> > called, so
+> > 
+> > INIT_WORK(&rtc->irqwork, rtc_timer_do_work);
+> > 
+> > was never called.. and hence schedule_work tries to derefence an
+> > unitialized rtc->irqwork.
+> > 
+> > Which actually sounds right - the rtc_device_register should not
+> > be called since there are no RTC clocks exposed.
+> 
+> 
+> Huh. Did you see this with 2.6.38 vanilla? Just want to clarify if this
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+No. 2.6.38 vaniall works great.
+> is 2.6.39 only or not.
 
-One noticeable change is support of standard attributes set via chattr
-and read via lsattr.  Another is block count per checkpoint which
-enables users to know used amount of filesystem at each instant of
-time via lscp command.
+It is something new.
+> 
+> 
+> > There are probably two ways of fixing this - making rtc_update_irq
+> > check the rtc->irqwork (not attempted) or inhibit cmos_pnp_probe from
+> > setting this up. Looking at the cmos_pnp_probe and its friend they all
+> > call cmos_wake_setup, but never checks whether that function works properly.
+> > 
+> > The cmos_wake_setup checks for ACPI (which is disabled for PV guests)
+> > and just returns.
+> > 
+> > This little patch seems to work, but not sure if that is the correct
+> > way to do it?
+> 
+> So I'm still trying to get my head around this (sorry, just back from
+> vacation).
 
-Also, there are a cleanup series simplifying hierarchy of on-memory
-structures and a few small fixes.
+No problem. I just noticed it today.
+> 
+> So the issue is that somehow the cmos code is calling rtc_update_irq
+> even though there is no cmos rtc device registered. That clearly seems
+> problematic.
+> 
+> However, its unclear from both the code and your patch if
+> cmos_wake_setup or cmos_do_probe is causing the rtc_update_irq to be
+> called.
 
-Thanks!
+> cmos_do_probe() has lots of checks for the hardware and even registers
+> the rtc device (which should init the irqwork), so I don't see how the
+> null irqwork would trip after that point.
 
+It isn't a pointer actually. I thought it would but then I realized it
+was a 'struct workqueue' which just hadn't been initialized.
 
-Ryusuke Konishi
---
-The following changes since commit a5abba989deceb731047425812d268daf7536575:
+> 
+> Any insight there?
 
-  Linux 2.6.38-rc8 (2011-03-07 21:09:37 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Jiro SEKIBA (1):
-      nilfs2: move NILFS_SUPER_MAGIC to linux/magic.h
-
-Ryusuke Konishi (18):
-      nilfs2: decrement inodes count only if raw inode was successfully deleted
-      nilfs2: add free entries count only if clear bit operation succeeded
-      nilfs2: use common file attribute macros
-      nilfs2: mark S_NOATIME on inodes only if NOATIME attribute is set
-      nilfs2: tighten restrictions on inode flags
-      nilfs2: implement FS_IOC_GETFLAGS/SETFLAGS/GETVERSION
-      nilfs2: add compat ioctl
-      nilfs2: append blocksize info to warnings during loading super blocks
-      nilfs2: optimize rec_len functions
-      nilfs2: record used amount of each checkpoint in checkpoint list
-      nilfs2: move mount options to nilfs object
-      nilfs2: move parameters on nilfs_sb_info into nilfs object
-      nilfs2: move s_inode_lock and s_dirty_files into nilfs object
-      nilfs2: move next generation counter into nilfs object
-      nilfs2: move log writer onto nilfs object
-      nilfs2: get rid of sc_sbi back pointer
-      nilfs2: use sb instance instead of nilfs_sb_info struct
-      nilfs2: get rid of nilfs_sb_info structure
-
- fs/nilfs2/alloc.c         |   12 ++-
- fs/nilfs2/bmap.c          |   12 --
- fs/nilfs2/bmap.h          |    3 -
- fs/nilfs2/btree.c         |    6 +-
- fs/nilfs2/dir.c           |    5 +-
- fs/nilfs2/direct.c        |    4 +-
- fs/nilfs2/file.c          |    4 +-
- fs/nilfs2/inode.c         |   83 +++++++++------
- fs/nilfs2/ioctl.c         |  115 ++++++++++++++++++--
- fs/nilfs2/mdt.h           |    2 +-
- fs/nilfs2/namei.c         |    2 +-
- fs/nilfs2/nilfs.h         |   33 +++++--
- fs/nilfs2/recovery.c      |   32 +++---
- fs/nilfs2/sb.h            |   85 ---------------
- fs/nilfs2/segment.c       |  258 ++++++++++++++++++++++-----------------------
- fs/nilfs2/segment.h       |   14 +--
- fs/nilfs2/super.c         |  214 ++++++++++++++++---------------------
- fs/nilfs2/the_nilfs.c     |   44 +++++---
- fs/nilfs2/the_nilfs.h     |   51 ++++++++-
- include/linux/magic.h     |    1 +
- include/linux/nilfs2_fs.h |   32 ++----
- 21 files changed, 513 insertions(+), 499 deletions(-)
- delete mode 100644 fs/nilfs2/sb.h
+I hoped you might have :-)
+> 
+> thanks
+> -john
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
