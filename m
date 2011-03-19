@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab1CSU5L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 16:57:11 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:36016 "EHLO smtp2.it.da.ut.ee"
+	id S1757681Ab1CSVuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 17:50:09 -0400
+Received: from lo.gmane.org ([80.91.229.12]:37649 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757493Ab1CSU5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 16:57:10 -0400
-Date: Sat, 19 Mar 2011 22:57:08 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Darren Hart <dvhart@linux.intel.com>
-cc: David Miller <davem@davemloft.net>, clem@clem.clem-digital.net,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        sparclinux@vger.kernel.org
-Subject: Re: 38-git2-6 -- kernel/futex.c warning
-In-Reply-To: <4D847191.7000806@linux.intel.com>
-Message-ID: <alpine.SOC.1.00.1103192255440.4548@math.ut.ee>
-References: <201103181932.p2IJW5cg002394@clem.clem-digital.net> <20110318.125808.233714688.davem@davemloft.net> <4D847191.7000806@linux.intel.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757576Ab1CSVuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 17:50:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Mikko Vinni <mmvinni@yahoo.com>
+Subject: Re: 2.6.38 kernel breaks userspace bluetooth management tools
+Date: Sat, 19 Mar 2011 21:46:03 +0000 (UTC)
+Message-ID: <loom.20110319T223719-154@post.gmane.org>
+References: <AANLkTikdco2Ex_xEAgWyOQ9OytQkTqR90Nh2hOnneXSu@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 80.186.195.196 (Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Firefox/3.6.15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Fyi. Have been experiencing the below since 38-git2. Continual scrolling
-> > > such that cannot complete system startup. System is i386 UP, Debian
-> > > "squeeze".
-> > 
-> > Looks similar to the problems reported by Meelis, CC:'d
-> 
-> yes, and the same answer, see Steven Rostedts patch set from March 17th:
-> 
-> [PATCH 0/2 v2] [GIT PULL] futex: Fix WARN_ON trigging on UP
+İsmail Dönmez <ismail <at> namtrac.org> writes:
+> According to http://www.bluez.org/the-management-interface/ bluetooth
+> management interface has changed in the 2.6.38 kernel and this ends up
+> breaking bluetooth management tools (the ones that get your bluetooth
+> mouse working) in both KDE & Gnome ( see
+> https://bugzilla.novell.com/show_bug.cgi?id=680170 ).
 
-And applying both his patches on top of 2.6.38-06439-g5bab188 fixed the 
-problem for me.
+This sounds like http://www.spinics.net/lists/linux-bluetooth/msg10695.html
 
--- 
-Meelis Roos (mroos@linux.ee)
+The fix is on its way. Nothing is deliberately broken.
+
+http://git.kernel.org/?p=linux/kernel/git/padovan/bluetooth-next-2.6.git;a=commitdiff;h=b99faf1b798d6d0e33526fd2cef55a405c08ff09;hp=58b6e124aac64bebb2e9e1a136cbd21a5ab0485a
+
+
+Cheers
+
+Mikko
+
