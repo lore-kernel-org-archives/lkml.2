@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab1CSQGN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 12:06:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48282 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab1CSQGJ (ORCPT
+	id S1756709Ab1CSQQh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 12:16:37 -0400
+Received: from 4.27.mail-out.ovh.net ([46.105.52.239]:55509 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1755765Ab1CSQQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 12:06:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=YVAIHwjlZp0ESvBbbQMbGnTJ5uesB0WbgNP5mLqUYnj31GBJmMZ3GH85/hi7OuYep/
-         yHxO7us6A7A0Bta76Ltjq+NZuUtur5tu6nxqMadHEGTQJd0pMhMjodvPQgfM/P+TLU2E
-         LFWtmucBjhmtIAsOYDYq/LqkHuAM/fDVAyvY0=
-From: Maksym Planeta <mcsim.planeta@gmail.com>
-To: tglx@linutronix.de
-Cc: kernel-janitors@vger.kernel.org, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, Maksym Planeta <mcsim.planeta@gmail.com>
-Subject: [PATCH] x86: page: get_order() optimization
-Date: Sat, 19 Mar 2011 18:08:01 +0200
-Message-Id: <1300550881-22091-1-git-send-email-mcsim.planeta@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Sat, 19 Mar 2011 12:16:35 -0400
+Message-ID: <4D84D098.1050802@example.com>
+Date: Sat, 19 Mar 2011 16:49:44 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Oliver Neukum <oliver@neukum.org>, Anca Emanuel <anca.emanuel@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] r8169: fix a bug in rtl8169_init_phy()
+References: <4D84A46B.1000407@example.com>	 <AANLkTimFGeHYEOxx=h883rRJL463g1CBUDS0wGM-52Nj@mail.gmail.com>	 <1300547930.2831.27.camel@edumazet-laptop>	 <201103191631.07952.oliver@neukum.org>	 <1300548821.2831.28.camel@edumazet-laptop> <1300549151.2831.32.camel@edumazet-laptop>
+In-Reply-To: <1300549151.2831.32.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 15031326708289532355
+X-Ovh-Remote: 178.36.62.164 (178-36-62-164.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For x86 architecture get_order function can be optimized due to
-assembler instruction bsr.
----
- arch/x86/include/asm/page.h |   20 +++++++++++++++++++-
- 1 files changed, 19 insertions(+), 1 deletions(-)
+On 19.03.2011 16:39, Eric Dumazet wrote:
+> Le samedi 19 mars 2011 à 16:33 +0100, Eric Dumazet a écrit :
+>> Le samedi 19 mars 2011 à 16:31 +0100, Oliver Neukum a écrit :
+>>> Am Samstag, 19. März 2011, 16:18:50 schrieb Eric Dumazet:
+>>>
+>>>> Problem comes from commit 54405cde762408b00a445466a40da4f7f33a8479
+>>>> (r8169: support control of advertising.)
+>>>>
+>>>> Reverting it brings back NIC for me
+>>>
+>>> Odd. It worked for me. Are you testing on a gigabit switch? Could you send
+>>> me dmesg? Does it work if you use ethtool to advertise a lower speed?
+>>>
+>>> 	Regards
+>>> 		Oliver
+>>
+>> I found the bug, I am sending a patch in two minutes.
 
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index 8ca8283..339ae26 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -60,10 +60,28 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
- extern bool __virt_addr_valid(unsigned long kaddr);
- #define virt_addr_valid(kaddr)	__virt_addr_valid((unsigned long) (kaddr))
- 
-+/* Pure 2^n version of get_order */
-+static inline __attribute_const__ int get_order(unsigned long size)
-+{
-+	int order;
-+
-+	size = (size - 1) >> (PAGE_SHIFT - 1);
-+#ifdef CONFIG_X86_CMOV
-+	asm("bsr %1,%0\n\t"
-+	    "cmovzl %2,%0"
-+	    : "=&r" (order) : "rm" (size), "rm" (0));
-+#else
-+	asm("bsr %1,%0\n\t"
-+	    "jnz 1f\n\t"
-+	    "movl $0,%0\n"
-+	    "1:" : "=r" (order) : "rm" (size));
-+#endif
-+	return order;
-+}
-+
- #endif	/* __ASSEMBLY__ */
- 
- #include <asm-generic/memory_model.h>
--#include <asm-generic/getorder.h>
- 
- #define __HAVE_ARCH_GATE_AREA 1
- 
+I do not understand. I reverted the commit you mentioned and am building 
+now. Will it suffice?
+
+Regards,
+
+Piotr Hosowicz
+
 -- 
-1.7.2.3
-
+TV: "W tej chwili, że się tak wyrażę, zaliczonych mamy 17 zawodniczek."
+NP: Big Big Train - Victorian Brickwork
+NB: 2.6.38-git3
