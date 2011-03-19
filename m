@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751043Ab1CSX0A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 19:26:00 -0400
-Received: from www.tglx.de ([62.245.132.106]:43697 "EHLO www.tglx.de"
+	id S1751275Ab1CSX0Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 19:26:24 -0400
+Received: from smtp.seznam.cz ([77.75.76.43]:39535 "EHLO smtp.seznam.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab1CSXZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 19:25:58 -0400
-Date: Sun, 20 Mar 2011 00:25:39 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Morris <jmorris@namei.org>
-cc: John Johansen <john.johansen@canonical.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 0/3] security: Yama LSM
-In-Reply-To: <alpine.LRH.2.00.1103171120590.31128@tundra.namei.org>
-Message-ID: <alpine.LFD.2.00.1103200022210.2787@localhost6.localdomain6>
-References: <1300237742-23415-1-git-send-email-kees.cook@canonical.com> <20110316013527.GQ5466@outflux.net> <4D80F59D.6000603@canonical.com> <alpine.LRH.2.00.1103171120590.31128@tundra.namei.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751204Ab1CSX0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 19:26:21 -0400
+X-Greylist: delayed 821 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Mar 2011 19:26:21 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=beta; d=email.cz;
+	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:Content-Type:X-Smtpd:X-Seznam-User:X-Session:X-Country:X-Virus-Info:X-Seznam-SPF:X-Seznam-DomainKeys;
+	b=Mp9/6MjZAYWyFMDjVDTYs+wtqVj929GPaPzdMSmsQuP2uxnG0V/fcO8+selIR1xjD
+	v/1DytgcbHMPq8H9XpGitOza1fLiSEco/u/OXbixhmwOeduddivTeJ93ejbPqd7avA1
+	LqRil9TqgS/n60D2UMyM9omKbqegBzqSX4GuHnU=
+Message-ID: <4D853861.7010206@email.cz>
+Date: Sun, 20 Mar 2011 00:12:33 +0100 
+From: =?UTF-8?B?TWlyZWsgU2x1Z2XFiA==?= <thunder.m@email.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; cs-CZ; rv:1.9.1.16) Gecko/20101227 Iceape/2.0.11 
+MIME-Version: 1.0 
+To: linux-dvb@linuxtv.org
+CC: linux-kernel@vger.kernel.org
+Subject: Patch for broken radio in XC2k and XC3k tuners 
+Content-Type: multipart/mixed;  boundary="------------020609000506040405000006" 
+X-Smtpd: 1.2.14@16206 
+X-Seznam-User: thunder.m@email.cz 
+X-Session: 19034 
+X-Country: CZ 
+X-Virus-Info: clean
+X-Seznam-SPF: neutral
+X-Seznam-DomainKeys: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Mar 2011, James Morris wrote:
-> Personally, I'd like to see the kernel offer as much hardening as possible 
-> for the general case, but this kind of work especially needs to be 
-> incorporated with full buy-in from core developers.
+This is a multi-part message in MIME format.
+--------------020609000506040405000006
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-And for that purpose it would be useful to see the actual
-patches. Looks like they got submitted only to the obscurity
-mailinglist.
+Hi, I am very supprised that no one complains about broken radio support 
+on devices with XC2k and XC3k tuner, it is broken since commit:
 
-Thanks,
+V4L/DVB: tuner-xc2028: fix tuning logic to solve a regression in Australia
 
-	tglx
+from date 19.3.2010
+
+BUG is present in current kernel stable version 2.6.38 and also olders 
+like 2.6.37, fix is very trivial.
+
+I tested this fix with Leadtek DTV1800H radio and it works great, before 
+this fix I can listen so much of noise on tuned frequency (so something 
+wrong with tuning).
+
+Feel free to modify this patch :)
+
+M. Slugen
+
+--------------020609000506040405000006
+Content-Type: text/x-patch;
+ name="kernel_xc2000_radio.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="kernel_xc2000_radio.diff"
+
+--- linux-2.6.37.2.old/drivers/media/common/tuners/tuner-xc2028.c	2011-03-19 23:25:28.000000000 +0100
++++ linux-2.6.37.2/drivers/media/common/tuners/tuner-xc2028.c	2011-03-19 23:26:13.458252000 +0100
+@@ -937,6 +937,8 @@
+ 		rc = send_seq(priv, {0x00, 0x00});
+ 
+ 		/* Analog modes require offset = 0 */
++	} else if (new_mode == T_RADIO) {
++		/* nop */
+ 	} else {
+ 		/*
+ 		 * Digital modes require an offset to adjust to the
+
+--------------020609000506040405000006--
