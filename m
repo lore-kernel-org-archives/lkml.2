@@ -1,64 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab1CSOrL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 10:47:11 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43031 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab1CSOrI (ORCPT
+	id S1754169Ab1CSOzk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 10:55:40 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33096 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885Ab1CSOzh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 10:47:08 -0400
+	Sat, 19 Mar 2011 10:55:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=rDe+rWa/d2eCXBQ8lEjfKv4VwCIEcopYbAu8OVG5c68EGfR9X3E4zIVNkAxn8dVvlx
-         G+K8rZHxH3WQ0LpWufEO8JOrH6mq+I7aBvBH01uMwjN2vlqBA51wj5CG1AaJWLlv8sHz
-         XvC/xc5SP7HhOItwnBM9NOLJXtVLNb8YwZLDM=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YOMq6IAUcfsbGs4aJvmrB5pRSSVYPXopZabcwM7kkG/qpobCoqS81H0Jq2cx9xgllm
+         UrpvcQpJzf4DBTyv9xE7GMOUxjOe0aNeV8gatNHgQH8egpJoLSP1LXvEwSqzTJtXmxLo
+         VXdhEcSrfuzjRFJFTgDtC5GbTdADVduG10IQ0=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1103180942531.2787@localhost6.localdomain6>
-References: <20110317213822.GA27980@kroah.com>
-	<alpine.LFD.2.00.1103180942531.2787@localhost6.localdomain6>
-Date: Sat, 19 Mar 2011 15:47:07 +0100
-X-Google-Sender-Auth: Jz_vuuGKsi6Oz6jLBC97l3vNJQc
-Message-ID: <AANLkTi=q-HEBKFe=DLXC36Acxd_LqgfYs=66wxs013Ac@mail.gmail.com>
-Subject: Re: [000/474] 2.6.33.8-longterm review
-From: Remy Bohmer <linux@bohmer.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <alpine.LSU.2.00.1103181448100.2092@sister.anvils>
+References: <201102262256.31565.nai.xia@gmail.com>
+	<20110302143142.a3c0002b.akpm@linux-foundation.org>
+	<201103181529.43659.nai.xia@gmail.com>
+	<alpine.LSU.2.00.1103181448100.2092@sister.anvils>
+Date: Sat, 19 Mar 2011 22:55:36 +0800
+Message-ID: <AANLkTimZsGCTJoea-uK9Box5WCXHziGBH7+qFq7yy=PN@mail.gmail.com>
+Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte mapping
+ to ksm pages
+From: Nai Xia <nai.xia@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kernel-janitors@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Mar 19, 2011 at 6:40 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Fri, 18 Mar 2011, Nai Xia wrote:
+>> >On Thursday 03 March 2011, at 06:31:42, <Andrew Morton <akpm@linux-foundation.org>> wrote
+>> > This patch obviously wasn't tested with CONFIG_KSM=n, which was a
+>> > pretty basic patch-testing failure :(
+>>
+>> Oops, I will be careful to avoid similar mistakes next time.
+>>
+>> >
+>> > I fixed up my tree with the below, but really the amount of ifdeffing
+>> > is unacceptable - please find a cleaner way to fix up this patch.
+>>
+>> Ok, I will have a try in my next patch submit.
+>
+> A couple of notes on that.
+>
+> akpm's fixup introduced an #ifdef CONFIG_KSM in mm/ksm.c: that should
+> be, er, unnecessary - since ksm.c is only compiled when CONFIG_KSM=y.
 
-2011/3/18 Thomas Gleixner <tglx@linutronix.de>:
-> On Thu, 17 Mar 2011, Greg KH wrote:
->
->> Yeah, I know what you are thinking, "What, 2.6.33, are you crazy?"
->
-> Aren't we all crazy ?
->
->> I'd prefer it if you didn't answer that question...
->
-> Too late. You should have put this before the question.
->
->> So, if you are using .33, please give this patch a test and let me know
->> if I've messed up anything (hint, I think I did, it's up to you to
->> figure it out, consider it a test to see if anyone actually cares about
->> this kernel version.)
->
-> We'll pull it into rt and figure out what breaks.
+This was lately pointed out by me and canceled by another patch in
+mm-commits@vger.kernel.org and CCed to your obsolete email
+address: hugh.dickins@tiscali.co.uk I think.
 
-Can you please elaborate somewhat on the status of the RT-patchset
-development for 2.6.38 and on?
-It is silent about it for quite a while now, and actually the gap
-between mainstream and the latest RT has never been this big before...
-Are there major complications, lack on time or hands? Can I help ?
+>
+> And PageKsm(page) evaluates to 0 when CONFIG_KSM is not set, so the
+> optimizer should eliminate code from most places without #ifdef:
+> though you need to keep the #ifdef around display in /proc/meminfo
+> itself, so as not to annoy non-KSM people with an always 0kB line.
 
-Thanks for the all the effort,
+This is just what I thought before I introduced NR_KSM_PAGES_SHARING,
+which then did break the compiling. My mistake.
 
-Kind regards,
+>
+> But I am uncomfortable with the whole patch.
+>
+> Can you make a stronger case for it?  KSM is designed to have its own
+> cycle, and to keep out of the way of the rest of mm as much as possible
+> (not as much as originally hoped, I admit).  Do we really want to show
+> its statistics in /proc/meminfo now?  And do we really care that they
+> don't keep up with exiting processes when the scan rate is low?
 
-Remy
+OK, I have to explain, here.
+This patch is actually a tiny part of a bunch of code I wrote to improve ksm
+in several aspects(This is somewhat off the topic but if you are interested,
+please take at look at  http://code.google.com/p/uksm/, It's still on
+very early
+stage).
+
+In my code, the inconsistency is amplified by non-uniform
+scan speed for different VMAs and significantly improved max scan speed.
+Then I think this patch may also be helpful to ksm itself.  Just as you said,
+I had thought it at least improves the accuracy.
+
+>
+> I am not asserting that we don't, nor am I nacking your patch:
+> but I would like to hear more support for it, before it adds
+> yet another line to our user interface in /proc/meminfo.
+
+Then how about not touching the sexy meminfo and adding a new
+interface file in /sys/kernel/mm/ksm/ ?  OK, on condition that the bug
+below can be properly solved.
+
+>
+> And there is an awkward little bug in your patch, which amplifies
+> a more significant and shameful pair of bugs of mine in KSM itself -
+> no wonder that I'm anxious about your patch going in!
+>
+> Your bug is precisely where akpm added the #ifdef in ksm.c.  The
+> problem is that page_mapcount() is maintained atomically, generally
+> without spinlock or pagelock: so the value of mapcount there, unless
+> it is 1, can go up or down racily (as other processes sharing that
+> anonymous page fork or unmap at the same time).
+
+You are right,  copy_one_pte does not take page lock. So it's definitely a
+bug in my patch, although it did not appear in my tests.  Actually, there is
+another issue in my patch: It tries to count all the ptes, while actually only
+those changed by ksmd really matter, those added by fork does not mean
+memory savings. I had thought not taking the mapcount
+, instead, only increase the count by one each time a pte is changed by ksmd,
+but It seems also hard to tell a pte mapped to ksm page was previously
+changed by ksmd or by fork when it gets unmapped.
+
+So indeed, I have no idea to fix this bug for the time being.
+
+
+>
+> I could hardly complain about that, while suggesting above that more
+> approximate numbers are good enough!  Except that, when KSM is turned
+> off, there's a chance that you'd be left showing a non-0 kB in
+> /proc/meminfo.  Then people will want a fix, and I don't yet know
+> what that fix will be.
+>
+> My first bug is in the break_cow() technique used to get back to
+> normal, when merging into a KSM page fails for one reason or another:
+> that technique misses other mappings of the page.  I did have a patch
+> in progress to fix that a few months ago, but it wasn't quite working,
+> and then I realized the second bug: that even when successful, if
+> VM_UNMERGEABLE has been used in forked processes, then we could end up
+> with a KSM page in a VM_UNMERGEABLE area, which is against the spec.
+>
+> A solution to all three problems would be to revert to allocating a
+> separate KSM page, instead of using one of the pages already there.
+> But that feels like a regression, and I don't think anybody is really
+> hurting from the current situation, so I've not jumped to fix it yet.
+>
+> Hugh
+>
+
+Yes, I agree on your point. Let's hope there is an efficient and
+simple solution.
+But for now,  please drop this patch, Andrew.
+
+Nai
