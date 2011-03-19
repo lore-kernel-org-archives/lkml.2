@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab1CSSUE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 14:20:04 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:33117 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757127Ab1CSSUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 14:20:01 -0400
-Date: Sat, 19 Mar 2011 23:49:54 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: greg@kroah.com
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, anton@samba.org,
-        benh@kernel.crashing.org, mananth@in.ibm.com
-Subject: Re: [0/3] 2.6.32.stable kexec/kdump fixes backport series
-Message-ID: <20110319181954.GE23832@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <20110319180811.GA23832@linux.vnet.ibm.com>
+	id S1757310Ab1CSSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 14:22:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54471 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757133Ab1CSSWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 14:22:12 -0400
+Date: Sat, 19 Mar 2011 18:21:55 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110319172005.GB4978@quad>
+References: <20110319172005.GB4978@quad>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf, x86: Fix Intel fixed counters base initialization
+Message-ID: <tip-fc66c5210ec2539e800e87d7b3a985323c7be96e@git.kernel.org>
+Git-Commit-ID: fc66c5210ec2539e800e87d7b3a985323c7be96e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110319180811.GA23832@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Mar 2011 18:21:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kamalesh Babulal <kamalesh@linux.vnet.ibm.com> [2011-03-19 23:38:11]:
+Commit-ID:  fc66c5210ec2539e800e87d7b3a985323c7be96e
+Gitweb:     http://git.kernel.org/tip/fc66c5210ec2539e800e87d7b3a985323c7be96e
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Sat, 19 Mar 2011 18:20:05 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 19 Mar 2011 19:00:49 +0100
 
-> Hi Greg,
-> 
-> 	Can you please merge the following kexec/kdump backports for
-> 2.6.32-stable of current upstream commits. They are bug fixes,
-> which are needed in the 2.6.23-stable tree.
-  Sorry for the typo ^^^^^^^^^^^^^^^^^^, these bug fixes
-are required in 2.6.32-stable tree.
-> 
-> Michael Neuling (2):
->  powerpc/kexec: Fix race in kexec shutdown
->  powerpc/kdump: Fix race in kdump shutdown
-> 
-> Milton Miller (1):
->  powerpc: rtas_flash needs to use rtas_data_buf
-> 
-> arch/powerpc/include/asm/kexec.h       |    4 ++
-> arch/powerpc/include/asm/paca.h        |    3 +-
-> arch/powerpc/kernel/asm-offsets.c      |    1 +
-> arch/powerpc/kernel/crash.c            |   28 ++++++++++++++++++
-> arch/powerpc/kernel/machine_kexec_64.c |   48 ++++++++++++++++++++++---------
-> arch/powerpc/kernel/misc_64.S          |    8 +++--
-> arch/powerpc/kernel/paca.c             |    2 +
-> arch/powerpc/kernel/rtas_flash.c       |   41 ++++++++++++++------------
->    8 files changed, 98 insertions(+), 37 deletions(-)
-> 
-> 			
-> 			Kamalesh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-			
-			Kamalesh
+perf, x86: Fix Intel fixed counters base initialization
+
+The following patch solves the problems introduced by Robert's
+commit 41bf498 and reported by Arun Sharma. This commit gets rid
+of the base + index notation for reading and writing PMU msrs.
+
+The problem is that for fixed counters, the new calculation for
+the base did not take into account the fixed counter indexes,
+thus all fixed counters were read/written from fixed counter 0.
+Although all fixed counters share the same config MSR, they each
+have their own counter register.
+
+Without:
+
+ $ task -e unhalted_core_cycles -e instructions_retired -e baclears noploop 1 noploop for 1 seconds
+
+  242202299 unhalted_core_cycles (0.00% scaling, ena=1000790892, run=1000790892)
+ 2389685946 instructions_retired (0.00% scaling, ena=1000790892, run=1000790892)
+      49473 baclears             (0.00% scaling, ena=1000790892, run=1000790892)
+
+With:
+
+ $ task -e unhalted_core_cycles -e instructions_retired -e baclears noploop 1 noploop for 1 seconds
+
+ 2392703238 unhalted_core_cycles (0.00% scaling, ena=1000840809, run=1000840809)
+ 2389793744 instructions_retired (0.00% scaling, ena=1000840809, run=1000840809)
+      47863 baclears             (0.00% scaling, ena=1000840809, run=1000840809)
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: ming.m.lin@intel.com
+Cc: robert.richter@amd.com
+Cc: asharma@fb.com
+Cc: perfmon2-devel@lists.sf.net
+LKML-Reference: <20110319172005.GB4978@quad>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index e8dbe17..ec46eea 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -912,7 +912,7 @@ static inline void x86_assign_hw_event(struct perf_event *event,
+ 		hwc->event_base	= 0;
+ 	} else if (hwc->idx >= X86_PMC_IDX_FIXED) {
+ 		hwc->config_base = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
+-		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0;
++		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0 + (hwc->idx - X86_PMC_IDX_FIXED);
+ 	} else {
+ 		hwc->config_base = x86_pmu_config_addr(hwc->idx);
+ 		hwc->event_base  = x86_pmu_event_addr(hwc->idx);
