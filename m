@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab1CSPvO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 11:51:14 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:58697 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754233Ab1CSPvK (ORCPT
+	id S1756333Ab1CSPwT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 11:52:19 -0400
+Received: from 3.27.mail-out.ovh.net ([46.105.56.209]:42017 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1753391Ab1CSPwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 11:51:10 -0400
-Date: Sat, 19 Mar 2011 16:45:30 +0100
-From: Nicolas Kaiser <nikai@nikai.net>
-To: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] nilfs2: merge list_del()/list_add_tail() to
- list_move_tail()
-Message-ID: <20110319164530.6cc75cb2@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 19 Mar 2011 11:52:17 -0400
+Message-ID: <4D84D123.8060903@example.com>
+Date: Sat, 19 Mar 2011 16:52:03 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+MIME-Version: 1.0
+To: Oliver Neukum <oliver@neukum.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Anca Emanuel <anca.emanuel@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] r8169: fix a bug in rtl8169_init_phy()
+References: <4D84A46B.1000407@example.com> <1300548821.2831.28.camel@edumazet-laptop> <1300549151.2831.32.camel@edumazet-laptop> <201103191641.41718.oliver@neukum.org>
+In-Reply-To: <201103191641.41718.oliver@neukum.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 15070451730189873501
+X-Ovh-Remote: 178.36.62.164 (178-36-62-164.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge list_del() + list_add_tail() to list_move_tail().
+On 19.03.2011 16:41, Oliver Neukum wrote:
+> Am Samstag, 19. März 2011, 16:39:11 schrieben Sie:
+>> Le samedi 19 mars 2011 à 16:33 +0100, Eric Dumazet a écrit :
+>>> Le samedi 19 mars 2011 à 16:31 +0100, Oliver Neukum a écrit :
+>>>> Am Samstag, 19. März 2011, 16:18:50 schrieb Eric Dumazet:
+>>>>
+>>>>> Problem comes from commit 54405cde762408b00a445466a40da4f7f33a8479
+>>>>> (r8169: support control of advertising.)
+>>>>>
+>>>>> Reverting it brings back NIC for me
+>>>>
+>>>> Odd. It worked for me. Are you testing on a gigabit switch? Could you send
+>>>> me dmesg? Does it work if you use ethtool to advertise a lower speed?
+>>>>
+>>>> 	Regards
+>>>> 		Oliver
+>>>
+>>> I found the bug, I am sending a patch in two minutes.
+>>>
+>>
+>> Here it is
+>>
+>> [PATCH] r8169: fix a bug in rtl8169_init_phy()
+>>
+>> commit 54405cde7624 (r8169: support control of advertising.)
+>> introduced a bug in rtl8169_init_phy()
+>
+> Thank you. I feel like banging my head against something.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- fs/nilfs2/inode.c   |    3 +--
- fs/nilfs2/segment.c |    6 ++----
- 2 files changed, 3 insertions(+), 6 deletions(-)
+If it will work I will be banging against the wall. I am missing for a 
+fresh new kernel with networking.
 
-diff --git a/fs/nilfs2/inode.c b/fs/nilfs2/inode.c
-index d5625be..84f1b76 100644
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -873,8 +873,7 @@ int nilfs_set_file_dirty(struct inode *inode, unsigned nr_dirty)
- 			return -EINVAL; /* NILFS_I_DIRTY may remain for
- 					   freeing inode */
- 		}
--		list_del(&ii->i_dirty);
--		list_add_tail(&ii->i_dirty, &nilfs->ns_dirty_files);
-+		list_move_tail(&ii->i_dirty, &nilfs->ns_dirty_files);
- 		set_bit(NILFS_I_QUEUED, &ii->i_state);
- 	}
- 	spin_unlock(&nilfs->ns_inode_lock);
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index afe4f21..5deeadd 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -1991,8 +1991,7 @@ static int nilfs_segctor_collect_dirty_files(struct nilfs_sc_info *sci,
- 
- 		clear_bit(NILFS_I_QUEUED, &ii->i_state);
- 		set_bit(NILFS_I_BUSY, &ii->i_state);
--		list_del(&ii->i_dirty);
--		list_add_tail(&ii->i_dirty, &sci->sc_dirty_files);
-+		list_move_tail(&ii->i_dirty, &sci->sc_dirty_files);
- 	}
- 	spin_unlock(&nilfs->ns_inode_lock);
- 
-@@ -2014,8 +2013,7 @@ static void nilfs_segctor_drop_written_files(struct nilfs_sc_info *sci,
- 		clear_bit(NILFS_I_BUSY, &ii->i_state);
- 		brelse(ii->i_bh);
- 		ii->i_bh = NULL;
--		list_del(&ii->i_dirty);
--		list_add_tail(&ii->i_dirty, &ti->ti_garbage);
-+		list_move_tail(&ii->i_dirty, &ti->ti_garbage);
- 	}
- 	spin_unlock(&nilfs->ns_inode_lock);
- }
 -- 
-1.7.3.4
+Szef TVN24 do dziennikarzy: Kochani, przez dwa lata waliliśmy w obóz
+rządzący. Tak dalej byc nie może. Jesteśmy telewizją niezależną i to
+zobowiązuje. Teraz będziemy kopać w opozycję.
+NP: Big Big Train - Victorian Brickwork
+NB: 2.6.38-git3
