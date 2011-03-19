@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab1CST71 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 15:59:27 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:44718 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757387Ab1CST7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 15:59:25 -0400
-Date: Sat, 19 Mar 2011 12:59:20 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: kernel@wildgooses.com
-Cc: lists@wildgooses.com, grant.likely@secretlab.ca,
-        linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: Show explicit dependency between GPIO_CS5535 and
- MFD_CS5535
-Message-ID: <20110319125920.7b625e9b@queued.net>
-In-Reply-To: <1300556785-30368-1-git-send-email-kernel@wildgooses.com>
-References: <AANLkTinJNFZ-c_+Cuan5ebuRadrOvdfivxQjnN9GZPt=@mail.gmail.com>
-	<1300556785-30368-1-git-send-email-kernel@wildgooses.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757480Ab1CSUAz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 16:00:55 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40344 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757429Ab1CSUAv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 16:00:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=iOLs5tz1SlCcuAAnVwkopl39ebiALoIxHQEr9nZML4b0hX571qmVYY6GNnG29koO6Q
+         QHxLhhx2D+0MvLAQIk+yRM1KnWzJ5px4kMDEppxu5cqAI7XDaL1faP+I/HKzk3JlFrFX
+         qVwsFtrisgXOd9v5h6vsTJ5OaH5Bi7xH2oPqk=
+MIME-Version: 1.0
+In-Reply-To: <1300392635.17266.5.camel@mulgrave.site>
+References: <1300392635.17266.5.camel@mulgrave.site>
+Date: Sat, 19 Mar 2011 21:00:50 +0100
+X-Google-Sender-Auth: KqpPsKJkJn3nyHS7fyPRoA-mlXs
+Message-ID: <AANLkTinvwKzYiy5M=Eoae_ViRQwVBF-TgedKspP0qagE@mail.gmail.com>
+Subject: Re: [GIT PULL] First round of SCSI updates for 2.6.38 merge window
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: James Bottomley <James.Bottomley@suse.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Mar 2011 17:46:25 +0000
-kernel@wildgooses.com wrote:
+On Thu, Mar 17, 2011 at 21:10, James Bottomley <James.Bottomley@suse.de> wrote:
+> This represents the usual round of driver updates (fcoe, lpfc, qla2xxx,
+> zfcp, bnx2i, mpt2sas, megaraid_sas, iscsi, cxgbi and hpsa) plus one new
+> driver (bnx2fc) and as a bonus we move libsas from the old libata eh to
+> the new one paving the way for junking the old one (once we can get ipr
+> converted).
 
-> From: Ed Wildgoose <kernel@wildgooses.com>
-> 
-> cs5535-gpio.c has been split into two, with various setup moved
-> into cs5535-mfd.c.  Given that cs5535-gpio will not load without
-> the -mfd part, lets make that dependency explicit in Kconfig
+> Martin K. Petersen (3):
+>      sd: Logical Block Provisioning update
 
-Thanks!
+drivers/scsi/sd.c: In function ‘sd_prep_fn’:
+drivers/scsi/sd.c:544: warning: ‘ret’ may be used uninitialized in this function
 
-Acked-by: Andres Salomon <dilinger@queued.net>
+Actually it's in scsi_setup_discard_cmnd(), which is inlined:
 
-> 
-> Signed-off-by: Ed Wildgoose <kernel@wildgooses.com>
-> ---
-> :100644 100644 664660e... 3246ad4... M	drivers/gpio/Kconfig
->  drivers/gpio/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 664660e..3246ad4 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -295,7 +295,7 @@ comment "PCI GPIO expanders:"
->  
->  config GPIO_CS5535
->  	tristate "AMD CS5535/CS5536 GPIO support"
-> -	depends on PCI && X86 && !CS5535_GPIO
-> +	depends on PCI && X86 && !CS5535_GPIO && MFD_CS5535
->  	help
->  	  The AMD CS5535 and CS5536 southbridges support 28 GPIO
-> pins that can be used for quite a number of things.  The CS5535/6 is
-> found on
+        int ret;
+
+        [...]
+
+        switch (sdkp->provisioning_mode) {
+
+                [...]
+
+        default:
+                goto out;
+        }
+
+        [...]
+
+        ret = scsi_setup_blk_pc_cmnd(sdp, rq);
+        rq->buffer = page_address(page);
+
+out:
+        if (ret != BLKPREP_OK) {
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
