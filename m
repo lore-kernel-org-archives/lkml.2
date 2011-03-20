@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab1CTR60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 13:58:26 -0400
-Received: from web39404.mail.mud.yahoo.com ([66.94.238.180]:30290 "HELO
-	web39404.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751948Ab1CTR6Y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 13:58:24 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Mar 2011 13:58:24 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=V6sqKCVh5oubNos5QRjlyuCqEVA74jj5oCPYs1P/oAUxqj/tuyIbmBE7aT+3cW8Bg1DqxtFD+JkBKCEjZCcNf6HTu2WjEtxhNcmKEvFEi40EYrEcewaPqB/OUkocvAM12VfM+CHQq7RuOB4Y4Y5CQDafnDEf9qs4DjGMhXvjSkA=;
-Message-ID: <559636.89511.qm@web39404.mail.mud.yahoo.com>
-X-YMail-OSG: qgd.yboVM1na0JXONvv31AYFmnz0HAK3O6o0KHR.ML6lEuG
- ejxVR4ID8xmjwyOkLJBrDkRJMOSFFTrL21CooCCbim1fa0s0Zrl1K2Vyy3k4
- V06G6y8CnlK60A9vbyJmQoQf77fTydVpoZtE_fP8bR3aOCBLz1ZxNa4.oXgv
- kg9FZ55Ve_u_XUnHN5s0FaoEZNwEClfnEML5II_FyMw.pzJ9Su298EjRcEVy
- xcoFwb6AJFD17XnU1hki1bufg.D_OH56BITdhULmOAV6C_X9NRRTct7M6.Td
- gDpxD3Xu1RMG6z9eupDabuZv90q813dKwBXWoJR7i6mw24Bsqpg6rlPmG1J8
- qYMTgI9GB4FszcpfjPbEZxBbJgr1RKiaIjOILzvIYcv6ePsYtWQrCrPney_h
- 7MDOh7X2I9qkaQA--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.295617
-Date: Sun, 20 Mar 2011 10:51:44 -0700 (PDT)
-From: Kenny Simpson <theonetruekenny@yahoo.com>
-Subject: Re: remap_file_pages doesn't like MAP_ANONYMOUS (but used to?)
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LSU.2.00.1103191525180.1609@sister.anvils>
+	id S1752057Ab1CTR76 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 13:59:58 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54785 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab1CTR7y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 13:59:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CAI8bj6AuUTGrwb/dfqaxjeOqi9XD6w2Hx8rghuIrTiIzM2tS+Iy0ebf/nY6cdjb6V
+         06W+qd7LnCw1W62Dn2l0J+UYH+V9vX4591TNWaoOocOP7d52lKjvtBQwC3ZoVQI0ivx1
+         Q7JtL+DYxbTFT+atBO3aXCX27bGeb034KU+qM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <871v21x5d2.fsf@linux.vnet.ibm.com>
+References: <1300291849-26257-1-git-send-email-mohan@in.ibm.com>
+	<871v21x5d2.fsf@linux.vnet.ibm.com>
+Date: Sun, 20 Mar 2011 12:59:52 -0500
+Message-ID: <AANLkTi=ajNeb86B60FEgfuioyB6hKwctwYkQB2Y3CC-W@mail.gmail.com>
+Subject: Re: [V9fs-developer] [PATCH V2] fs/9p: Use updated offset for writing
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "M. Mohan Kumar" <mohan@in.ibm.com>, v9fs-developer@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Sat, 3/19/11, Hugh Dickins <hughd@google.com> wrote:
-> Thanks for reporting.  It was a simple oversight: and
-> until you came
-> along, nobody noticed.  Here's the patch, I'll pass it
-> upstream shortly.
+Yeah, probably a good idea, if we don't make it in time these are
+actually fixes so we can bring them in during -rc1.
 
-Since this bug has existed for a while, could it be pushed back to the various stable/longterm branches as well? (as they all are affected)
-
-Many thanks on the quick response!  Glad it was a simple oversight with an easy and obvious fix.
-
-thanks again!
--Kenny
-
-
-
-      
+On Sun, Mar 20, 2011 at 8:56 AM, Aneesh Kumar K. V
+<aneesh.kumar@linux.vnet.ibm.com> wrote:
+> On Wed, 16 Mar 2011 21:40:49 +0530, "M. Mohan Kumar" <mohan@in.ibm.com> wrote:
+>> Use the updated offset given by generic_write_checks. Without this fix,
+>> even if a file is opened in O_APPEND mode, data will be written at current
+>> file position instead of end of file.
+>>
+>> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
+>
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>
+> Eric,
+>
+> I guess this should go in this merge window ?
+>
+>> ---
+>>  fs/9p/vfs_file.c |    7 +++++--
+>>  1 files changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
+>> index 6997eb6..ffed558 100644
+>> --- a/fs/9p/vfs_file.c
+>> +++ b/fs/9p/vfs_file.c
+>> @@ -508,9 +508,12 @@ v9fs_file_write(struct file *filp, const char __user * data,
+>>       if (!count)
+>>               goto out;
+>>
+>> -     return v9fs_file_write_internal(filp->f_path.dentry->d_inode,
+>> +     retval = v9fs_file_write_internal(filp->f_path.dentry->d_inode,
+>>                                       filp->private_data,
+>> -                                     data, count, offset, 1);
+>> +                                     data, count, &origin, 1);
+>> +     /* update offset on successful write */
+>> +     if (retval > 0)
+>> +             *offset = origin;
+>>  out:
+>>       return retval;
+>>  }
+>
+> ------------------------------------------------------------------------------
+> Colocation vs. Managed Hosting
+> A question and answer guide to determining the best fit
+> for your organization - today and in the future.
+> http://p.sf.net/sfu/internap-sfd2d
+> _______________________________________________
+> V9fs-developer mailing list
+> V9fs-developer@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/v9fs-developer
+>
