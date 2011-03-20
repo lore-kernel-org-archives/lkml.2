@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab1CTN4v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 09:56:51 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:44842 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab1CTN4s (ORCPT
+	id S1751593Ab1CTOGt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 10:06:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52863 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab1CTOGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 09:56:48 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "M. Mohan Kumar" <mohan@in.ibm.com>, v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] fs/9p: Use updated offset for writing
-In-Reply-To: <1300291849-26257-1-git-send-email-mohan@in.ibm.com>
-References: <1300291849-26257-1-git-send-email-mohan@in.ibm.com>
-User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Sun, 20 Mar 2011 19:26:41 +0530
-Message-ID: <871v21x5d2.fsf@linux.vnet.ibm.com>
+	Sun, 20 Mar 2011 10:06:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=KpYIO/cuHQltylynaTmkL6NdcchCW4hvzG5da6LK11PNCJWavByix0GFskO5EloJTg
+         SO+n04V6ED65zzDAx68zhwIV4tROE07Awgj4p6zfIGlDJpol1/BB/j1LDr+5UljNRru9
+         wsBUnLO5qgGrY/JxBw0S0F09ZOscnLv5EF9FY=
+Message-ID: <4D8609F4.4040700@gmail.com>
+Date: Sun, 20 Mar 2011 15:06:44 +0100
+From: =?ISO-8859-1?Q?Niccol=F2_Belli?= <darkbasic4@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110315 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Remy Bohmer <linux@bohmer.net>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [000/474] 2.6.33.8-longterm review
+References: <20110317213822.GA27980@kroah.com> <alpine.LFD.2.00.1103180942531.2787@localhost6.localdomain6> <AANLkTi=q-HEBKFe=DLXC36Acxd_LqgfYs=66wxs013Ac@mail.gmail.com> <alpine.LFD.2.00.1103201351570.2787@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103201351570.2787@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Mar 2011 21:40:49 +0530, "M. Mohan Kumar" <mohan@in.ibm.com> wrote:
-> Use the updated offset given by generic_write_checks. Without this fix,
-> even if a file is opened in O_APPEND mode, data will be written at current
-> file position instead of end of file.
+Il 20/03/2011 13:52, Thomas Gleixner ha scritto:
+> On Sat, 19 Mar 2011, Remy Bohmer wrote:
+>> Can you please elaborate somewhat on the status of the RT-patchset
+>> development for 2.6.38 and on?
 > 
-> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
-
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-Eric, 
-
-I guess this should go in this merge window ?
-
-> ---
->  fs/9p/vfs_file.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
+> Working on it.
 > 
-> diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-> index 6997eb6..ffed558 100644
-> --- a/fs/9p/vfs_file.c
-> +++ b/fs/9p/vfs_file.c
-> @@ -508,9 +508,12 @@ v9fs_file_write(struct file *filp, const char __user * data,
->  	if (!count)
->  		goto out;
+>> It is silent about it for quite a while now, and actually the gap
+>> between mainstream and the latest RT has never been this big before...
+>> Are there major complications, lack on time or hands? Can I help ?
 > 
-> -	return v9fs_file_write_internal(filp->f_path.dentry->d_inode,
-> +	retval = v9fs_file_write_internal(filp->f_path.dentry->d_inode,
->  					filp->private_data,
-> -					data, count, offset, 1);
-> +					data, count, &origin, 1);
-> +	/* update offset on successful write */
-> +	if (retval > 0)
-> +		*offset = origin;
->  out:
->  	return retval;
->  }
+> I concentrated on getting stuff upstream and reworking to make it more
+> palatable and maintainable.
+
+Is there a working (where working means working for testing purposes)
+snapshot somewhere?
+
+Thanks,
+Darkbasic
