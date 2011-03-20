@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1CTVwy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 17:52:54 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:51951 "EHLO mx01.d-labs.de"
+	id S1751771Ab1CTVvf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 17:51:35 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:51936 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751438Ab1CTVvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 17:51:33 -0400
+	id S1751038Ab1CTVvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 17:51:32 -0400
 From: Florian Mickler <florian@mickler.org>
 To: mchehab@infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org, crope@iki.fi,
         tvboxspy@gmail.com, Florian Mickler <florian@mickler.org>
-Subject: [PATCH 3/5] [media] au6610: get rid of on-stack dma buffer
-Date: Sun, 20 Mar 2011 22:50:50 +0100
-Message-Id: <1300657852-29318-4-git-send-email-florian@mickler.org>
+Subject: [PATCH 2/5] [media] ce6230: get rid of on-stack dma buffer
+Date: Sun, 20 Mar 2011 22:50:49 +0100
+Message-Id: <1300657852-29318-3-git-send-email-florian@mickler.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300657852-29318-1-git-send-email-florian@mickler.org>
 References: <1300657852-29318-1-git-send-email-florian@mickler.org>
@@ -32,61 +32,52 @@ Acked-by: Antti Palosaari <crope@iki.fi>
 Reviewed-by: Antti Palosaari <crope@iki.fi>
 Tested-by: Antti Palosaari <crope@iki.fi>
 ---
- drivers/media/dvb/dvb-usb/au6610.c |   22 ++++++++++++++++------
- 1 files changed, 16 insertions(+), 6 deletions(-)
+ drivers/media/dvb/dvb-usb/ce6230.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-usb/au6610.c b/drivers/media/dvb/dvb-usb/au6610.c
-index eb34cc3..2351077 100644
---- a/drivers/media/dvb/dvb-usb/au6610.c
-+++ b/drivers/media/dvb/dvb-usb/au6610.c
-@@ -33,8 +33,16 @@ static int au6610_usb_msg(struct dvb_usb_device *d, u8 operation, u8 addr,
- {
- 	int ret;
+diff --git a/drivers/media/dvb/dvb-usb/ce6230.c b/drivers/media/dvb/dvb-usb/ce6230.c
+index 3df2045..6d1a304 100644
+--- a/drivers/media/dvb/dvb-usb/ce6230.c
++++ b/drivers/media/dvb/dvb-usb/ce6230.c
+@@ -39,7 +39,7 @@ static int ce6230_rw_udev(struct usb_device *udev, struct req_t *req)
+ 	u8 requesttype;
+ 	u16 value;
  	u16 index;
--	u8 usb_buf[6]; /* enough for all known requests,
--			  read returns 5 and write 6 bytes */
-+	u8 *usb_buf;
-+
-+	/*
-+	 * allocate enough for all known requests,
-+	 * read returns 5 and write 6 bytes
-+	 */
-+	usb_buf = kmalloc(6, GFP_KERNEL);
-+	if (!usb_buf)
-+		return -ENOMEM;
-+
- 	switch (wlen) {
- 	case 1:
- 		index = wbuf[0] << 8;
-@@ -45,14 +53,15 @@ static int au6610_usb_msg(struct dvb_usb_device *d, u8 operation, u8 addr,
- 		break;
- 	default:
- 		warn("wlen = %x, aborting.", wlen);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto error;
+-	u8 buf[req->data_len];
++	u8 *buf;
+ 
+ 	request = req->cmd;
+ 	value = req->value;
+@@ -62,6 +62,12 @@ static int ce6230_rw_udev(struct usb_device *udev, struct req_t *req)
+ 		goto error;
  	}
  
- 	ret = usb_control_msg(d->udev, usb_rcvctrlpipe(d->udev, 0), operation,
- 			      USB_TYPE_VENDOR|USB_DIR_IN, addr << 1, index,
--			      usb_buf, sizeof(usb_buf), AU6610_USB_TIMEOUT);
-+			      usb_buf, 6, AU6610_USB_TIMEOUT);
- 	if (ret < 0)
--		return ret;
++	buf = kmalloc(req->data_len, GFP_KERNEL);
++	if (!buf) {
++		ret = -ENOMEM;
 +		goto error;
++	}
++
+ 	if (requesttype == (USB_TYPE_VENDOR | USB_DIR_OUT)) {
+ 		/* write */
+ 		memcpy(buf, req->data, req->data_len);
+@@ -74,7 +80,7 @@ static int ce6230_rw_udev(struct usb_device *udev, struct req_t *req)
+ 	msleep(1); /* avoid I2C errors */
  
- 	switch (operation) {
- 	case AU6610_REQ_I2C_READ:
-@@ -60,7 +69,8 @@ static int au6610_usb_msg(struct dvb_usb_device *d, u8 operation, u8 addr,
- 		/* requested value is always 5th byte in buffer */
- 		rbuf[0] = usb_buf[4];
- 	}
--
-+error:
-+	kfree(usb_buf);
+ 	ret = usb_control_msg(udev, pipe, request, requesttype, value, index,
+-				buf, sizeof(buf), CE6230_USB_TIMEOUT);
++				buf, req->data_len, CE6230_USB_TIMEOUT);
+ 
+ 	ce6230_debug_dump(request, requesttype, value, index, buf,
+ 		req->data_len, deb_xfer);
+@@ -88,6 +94,7 @@ static int ce6230_rw_udev(struct usb_device *udev, struct req_t *req)
+ 	if (!ret && requesttype == (USB_TYPE_VENDOR | USB_DIR_IN))
+ 		memcpy(req->data, buf, req->data_len);
+ 
++	kfree(buf);
+ error:
  	return ret;
  }
- 
 -- 
 1.7.4.1
 
