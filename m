@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146Ab1CTNjU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 09:39:20 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:49665 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab1CTNjS (ORCPT
+	id S1751236Ab1CTNvr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 09:51:47 -0400
+Received: from mail.wildpark.net ([217.77.208.132]:52178 "EHLO
+	mail.wildpark.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab1CTNvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 09:39:18 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4D860381.30706@die-jansens.de>
-Date: Sun, 20 Mar 2011 14:39:13 +0100
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	Sun, 20 Mar 2011 09:51:45 -0400
+X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Mar 2011 09:51:45 EDT
+Message-ID: <153a019eda27dcc8e78e957b75d7a435.squirrel@webmail.wildpark.net>
+Date: Sun, 20 Mar 2011 15:41:00 +0200
+Subject: MY PROPOSAL PLEASE READ!!! 
+From: "Mr. Vincent Cheng" <altai@mksat.net>
+Reply-To: mrvicentcheng@xnmsn.com
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-To: Jeffrin Jose <ahiliation@yahoo.co.in>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: aligning with spaces [was: Re: format fixes]
-References: <20110320104527.GA3120@debian.Jeff>
-In-Reply-To: <20110320104527.GA3120@debian.Jeff>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.03.2011 11:45, Jeffrin Jose wrote:
-> I have created a patch with fixes and format
-> error by replacing spaces with tabs.
 
-The CodingStyle guide seems to me a big vague on this topic, but
-checkpatch.pl has a clear idea of what is right and wrong. But
-the formerly present indentation seems to me totally valid.
-Use tab to indent to the current indentation level, then continue
-with spaces for the alignment of broken-up lines. This has a
-few advantages. One of them is that the code still looks neat with
-a different tab size (of course, no one ever does that). Another is,
-that editing is easier if you change the name of the function and
-with it the needed alignment for the following lines.
-If we really require using tabs as much as possible for aligning, we
-should also _only_ use tabs for it and require e.g. 2 tabs for
-broken-up lines.
-In fact, the example in CodingStyle uses only tabs and does not try
-to align the double quotes of the broken-up string with each other.
+Hello...
 
---Arne
+I am Mr. Vincent Cheng Hoi Chuen, GBS, JP Chairman of the Hong Kong and
+Shanghai Banking Corporation Limited.; I have a sensitive, confidential
+brief from Hong Kong and I am asking for your partnership in re- profiling
+funds.
+
+What I require from you is your honest co-operation and I guarantee that
+this will be executed under a legitimate arrangement that will protect you
+and I from any breach of the law. Please accept my apologies, keep my
+confidence and disregard this email if you do not appreciate this
+proposition I have offered you.
+
+All confirmable documents to back up this fund shall be made available to
+you, as soon as I receive your reply via mrvicentcheng@xnmsn.com
+
+I shall let you know what is required of you.
+
+Regards from,
+Mr Vincent Cheng
+
+
 
