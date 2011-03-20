@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab1CTOsi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 10:48:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34328 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab1CTOsg convert rfc822-to-8bit (ORCPT
+	id S1751852Ab1CTPDm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 11:03:42 -0400
+Received: from omta02-pub.suddenlink.net ([208.180.40.74]:62359 "EHLO
+	omta02.suddenlink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab1CTPDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 10:48:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=DgDiFszJO2Gt3NZTg//spifpFn7cJG2HDiVAchCD9LhFtJ2orhlTsr0IatvHSked6I
-         qoFPzNJMESI907ebpCgomhHvPp2W+zqmuqAtk+YrdpiNf4PbgZsXzHHqegOZtP+RhLY+
-         Q9QWeQ8W5Cyv72TG5VkIaJ8S7FGlza/CofXJA=
-Date: Sun, 20 Mar 2011 15:48:27 +0100
-From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
-	<ariveira@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Julia Lawall <julia@diku.dk>, Pekka Enberg <penberg@kernel.org>,
-        =?UTF-8?B?QW3DqXJpY28=?= Wang <xiyou.wangcong@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jonathan Corbet <corbet@lwn.net>,
-        LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@shadowen.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nicolas Palix <npalix@diku.dk>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
-Message-ID: <20110320154827.7ba3358b@varda>
-In-Reply-To: <20110320105412.GA11266@elte.hu>
-References: <1300416744.16880.904.camel@gandalf.stny.rr.com>
-	<20110317211548.646b04d2@tpl.lwn.net>
-	<1300419170.16880.956.camel@gandalf.stny.rr.com>
-	<AANLkTikZK278BR5o1fP_w2u5PUPbgub9QT4XxzSmEhL5@mail.gmail.com>
-	<AANLkTi=2d8S_Pi8kuZMXAmNvHa_2KrOs6K+_FF6P7-pU@mail.gmail.com>
-	<Pine.LNX.4.64.1103200852080.28495@ask.diku.dk>
-	<AANLkTi=MMKvA-9pFiM1K_JSXjS71JLRCem8THnhu-0=N@mail.gmail.com>
-	<Pine.LNX.4.64.1103201007430.28495@ask.diku.dk>
-	<20110320105412.GA11266@elte.hu>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 20 Mar 2011 11:03:40 -0400
+From: Curt Howland <Howland@priss.com>
+Organization: Acolytes of the Goddess Priss
+To: linux-kernel@vger.kernel.org
+Subject: Patch: Re: Compile error: arch/x86/kernel/entry_32.S:1422: Error: .size expression does not evaluate to a constant
+Date: Sun, 20 Mar 2011 11:03:37 -0400
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+References: <201103171741.39876.Howland@priss.com>
+In-Reply-To: <201103171741.39876.Howland@priss.com>
+X-KMail-QuotePrefix: > 
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201103201103.37458.Howland@priss.com>
+X-Cloudmark-Analysis: v=1.1 cv=Xa+JGUFQpioGoa33UcuxxNHYUG6p9xnFTEn5lEDqSS4= c=1 sm=0 a=BeJfjmuleZIA:10 a=ZhcJH6-yNT0A:10 a=8nJEP1OIZ-IA:10 a=PL7AUedcwVm3XmYROdwA:9 a=-KjFcQPI8qEkVmTBmKUA:7 a=EOdDFZQWze8wBI4oXglbS3DQKnwA:4 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El Sun, 20 Mar 2011 11:54:12 +0100
-Ingo Molnar <mingo@elte.hu> escribió:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
+On Thursday 17 March 2011, Curt Howland was heard to say:
+> 2.6.38-rc6 compiled just fine, 2.6.38-rc7, -rc8 and the released
+> 2.6.38 all got this error, with gcc 4.4 and after Debian Unstable
+> updated to gcc 4.5:
+>
+> arch/x86/kernel/entry_32.S: Assembler messages:
+> arch/x86/kernel/entry_32.S:1422: Error: .size expression does not
+> evaluate to a constant make[3]: *** [arch/x86/kernel/entry_32.o]
+> Error 1
 
-> 
-> I think the point Pekka tried to make is to have it integrated into the kbuild 
-> mechanism as well at a certain point. That way it's very easy to use it and we 
-> maintainers could require frequent patch submitters to use those tools to check 
-> the quality of their patches. Right now i cannot require that, as it's not part 
-> of the kernel repo. Requiring a checkpatch.pl check is much easier, as it's 
-> available to everyone who is writing kernel patches.
+This fixes the problem. The file does not have a maintainer listed, so 
+I don't know where else to send it than to the LKML. Please correct 
+me or redirect as needed.
 
- But a perl interpreter is not shipped with the kernel, is it? neither a
- posix shell or a python interpreter ...
- The scripts are already shipped with the kernel, the "interpreter" have
- to be installed in the dev machine like you have to install perl, make,
- gcc, etc
+- --- entry_32.S.original	2011-03-18 08:21:51.000000000 -0400
++++ entry_32.S	2011-03-20 10:37:00.000000000 -0400
+@@ -343,7 +343,7 @@
+ 					# int/exception return?
+ 	jne work_pending
+ 	jmp restore_all
+- -END(ret_from_exception)
++END(resume_userspace)
  
- just my two cents as a bystander :)
+ #ifdef CONFIG_PREEMPT
+ ENTRY(resume_kernel)
+@@ -1413,7 +1413,7 @@
+ 	CFI_ADJUST_CFA_OFFSET 4
+ 	jmp error_code
+ 	CFI_ENDPROC
+- -END(apf_page_fault)
++END(async_page_fault)
+ #endif
+ 
+ /*
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> 
-> Thanks,
-> 
-> 	Ingo
-> --
+iQEVAwUBTYYXSS9Y35yItIgBAQJMRwf+MUIRl9ALi04X23ano0jd0pQCwOPHXToU
+OfLQLyuJLvUkX1a5guAZhB4Id855r4e4fZnMHZpq47oxWgDy/wkXzZKo0dCYkmS0
+a2Myzli4p5qNUUlROLJGvllNAzUL6+2+1w/1IpNfwSnTtfj6V0lzHWlxjYrFh3Kg
+yJ5S3tuS993ORX6Obd7l/CzO6AIRKiZLqXbNUDwXLJvv+w8rfUsUY0EjZlpeWJr0
+4FjliC1k1ZJc8Z4LVKzQjOUQMpAp1KU6e6JKht2xOggWRcs6CIMBH+nDg4/CG0uJ
+R3bVj6Z1ydnT7vrOCrDyHhZRCSjKSeOw/+xxzeYZrBYCDP6z52VXJg==
+=S8vn
+-----END PGP SIGNATURE-----
