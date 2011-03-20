@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab1CTSz3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 14:55:29 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:62543 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab1CTSyr (ORCPT
+	id S1752522Ab1CTSzq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 14:55:46 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:27121 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab1CTSyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 14:54:47 -0400
+	Sun, 20 Mar 2011 14:54:44 -0400
 X-IronPort-AV: E=Sophos;i="4.63,215,1299456000"; 
-   d="scan'208";a="349369480"
+   d="scan'208";a="278221354"
 From: David Ahern <daahern@cisco.com>
 To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
         fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
         David Ahern <daahern@cisco.com>
-Subject: [PATCH 3/5] perf record: add time-of-day option
-Date: Sun, 20 Mar 2011 12:54:35 -0600
-Message-Id: <1300647277-8431-4-git-send-email-daahern@cisco.com>
+Subject: [PATCH 1/5] perf events: add support for realtime clock attribute
+Date: Sun, 20 Mar 2011 12:54:33 -0600
+Message-Id: <1300647277-8431-2-git-send-email-daahern@cisco.com>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1300647277-8431-1-git-send-email-daahern@cisco.com>
 References: <1300647277-8431-1-git-send-email-daahern@cisco.com>
@@ -24,57 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kernel side plumbing for PERF_SAMPLE_REALTIME.
+
 Signed-off-by: David Ahern <daahern@cisco.com>
 ---
- tools/perf/Documentation/perf-record.txt |    4 ++++
- tools/perf/builtin-record.c              |    5 +++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+ include/linux/perf_event.h |    4 +++-
+ kernel/perf_event.c        |   12 ++++++++++++
+ 2 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 5a520f8..b56b5c7 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -116,6 +116,10 @@ OPTIONS
- 	Sample timestamps. Use it with 'perf report -D' to see the timestamps,
- 	for instance.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index f495c01..d64f0fd 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -125,8 +125,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_PERIOD			= 1U << 8,
+ 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
+ 	PERF_SAMPLE_RAW				= 1U << 10,
++	PERF_SAMPLE_REALTIME			= 1U << 11,
  
-+--tod::
-+	Collect data for time-of-day strings when printing events. This option
-+	adds the realtime attribute to samples.
+-	PERF_SAMPLE_MAX = 1U << 11,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
+ };
+ 
+ /*
+@@ -998,6 +999,7 @@ struct perf_sample_data {
+ 		u32	cpu;
+ 		u32	reserved;
+ 	}				cpu_entry;
++	u64				realtime;
+ 	u64				period;
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 3472bb1..977a07b 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -903,6 +903,9 @@ static void perf_event__id_header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_CPU)
+ 		size += sizeof(data->cpu_entry);
+ 
++	if (sample_type & PERF_SAMPLE_REALTIME)
++		size += sizeof(data->realtime);
 +
- -n::
- --no-samples::
- 	Don't sample.
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 6febcc1..df15256 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -53,6 +53,7 @@ static bool			nodelay				=  false;
- static bool			raw_samples			=  false;
- static bool			sample_id_all_avail		=   true;
- static bool			system_wide			=  false;
-+static bool			want_tod			=  false;
- static pid_t			target_pid			=     -1;
- static pid_t			target_tid			=     -1;
- static pid_t			child_pid			=     -1;
-@@ -214,6 +215,9 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 	event->id_header_size = size;
+ }
+ 
+@@ -4016,6 +4019,9 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 		data->cpu_entry.cpu	 = raw_smp_processor_id();
+ 		data->cpu_entry.reserved = 0;
  	}
- 
-+	if (want_tod)
-+		attr->sample_type |= PERF_SAMPLE_REALTIME;
 +
- 	if (nodelay) {
- 		attr->watermark = 0;
- 		attr->wakeup_events = 1;
-@@ -764,6 +768,7 @@ const struct option record_options[] = {
- 	OPT_BOOLEAN('d', "data", &sample_address,
- 		    "Sample addresses"),
- 	OPT_BOOLEAN('T', "timestamp", &sample_time, "Sample timestamps"),
-+	OPT_BOOLEAN(0, "tod", &want_tod, "Collect data for Time-of-day strings."),
- 	OPT_BOOLEAN('n', "no-samples", &no_samples,
- 		    "don't sample"),
- 	OPT_BOOLEAN('N', "no-buildid-cache", &no_buildid_cache,
++	if (sample_type & PERF_SAMPLE_REALTIME)
++		data->realtime = ktime_to_ns(ktime_get_real());
+ }
+ 
+ static void perf_event_header__init_id(struct perf_event_header *header,
+@@ -4045,6 +4051,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
+ 
+ 	if (sample_type & PERF_SAMPLE_CPU)
+ 		perf_output_put(handle, data->cpu_entry);
++
++	if (sample_type & PERF_SAMPLE_REALTIME)
++		perf_output_put(handle, data->realtime);
+ }
+ 
+ static void perf_event__output_id_sample(struct perf_event *event,
+@@ -4289,6 +4298,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_CPU)
+ 		perf_output_put(handle, data->cpu_entry);
+ 
++	if (sample_type & PERF_SAMPLE_REALTIME)
++		perf_output_put(handle, data->realtime);
++
+ 	if (sample_type & PERF_SAMPLE_PERIOD)
+ 		perf_output_put(handle, data->period);
+ 
 -- 
 1.7.4
 
