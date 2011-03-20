@@ -1,126 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab1CTJXQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 05:23:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53237 "EHLO
+	id S1751730Ab1CTJ0l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 05:26:41 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53240 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab1CTJXN (ORCPT
+	with ESMTP id S1751498Ab1CTJ0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 05:23:13 -0400
-Date: Sun, 20 Mar 2011 09:22:15 +0000
+	Sun, 20 Mar 2011 05:26:38 -0400
+Date: Sun, 20 Mar 2011 09:26:29 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Carl Vanderlip <carlv@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>, linux-fbdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/20] video: msm: Split out MDP2.2 HW specific code.
-Message-ID: <20110320092215.GA16646@n2100.arm.linux.org.uk>
-References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org> <1300485423-27281-1-git-send-email-carlv@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: Merge v6 and v7 DEBUG_LL DCC support
+Message-ID: <20110320092629.GB16646@n2100.arm.linux.org.uk>
+References: <1300416720-16305-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1300485423-27281-1-git-send-email-carlv@codeaurora.org>
+In-Reply-To: <1300416720-16305-1-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 18, 2011 at 02:57:03PM -0700, Carl Vanderlip wrote:
-> +int mdp_ppp_cfg_edge_cond(struct mdp_blit_req *req, struct ppp_regs *regs)
-> +{
-> +	int32_t luma_interp[4];
-> +	int32_t luma_repeat[4];
-> +	int32_t chroma_interp[4];
-> +	int32_t chroma_bound[4];
-> +	int32_t chroma_repeat[4];
-> +	uint32_t dst_w, dst_h;
-> +
-> +	memset(&luma_interp, 0, sizeof(int32_t) * 4);
-> +	memset(&luma_repeat, 0, sizeof(int32_t) * 4);
-> +	memset(&chroma_interp, 0, sizeof(int32_t) * 4);
-> +	memset(&chroma_bound, 0, sizeof(int32_t) * 4);
-> +	memset(&chroma_repeat, 0, sizeof(int32_t) * 4);
-> +	regs->edge = 0;
-> +
-> +	if (req->flags & MDP_ROT_90) {
-> +		dst_w = req->dst_rect.h;
-> +		dst_h = req->dst_rect.w;
-> +	} else {
-> +		dst_w = req->dst_rect.w;
-> +		dst_h = req->dst_rect.h;
-> +	}
-> +
-> +	if (regs->op & (PPP_OP_SCALE_Y_ON | PPP_OP_SCALE_X_ON)) {
-> +		get_edge_info(req->src_rect.h, req->src_rect.y, dst_h,
-> +			      &luma_interp[IMG_TOP], &luma_interp[IMG_BOTTOM],
-> +			      &luma_repeat[IMG_TOP], &luma_repeat[IMG_BOTTOM]);
-> +		get_edge_info(req->src_rect.w, req->src_rect.x, dst_w,
-> +			      &luma_interp[IMG_LEFT], &luma_interp[IMG_RIGHT],
-> +			      &luma_repeat[IMG_LEFT], &luma_repeat[IMG_RIGHT]);
-> +	} else {
-> +		luma_interp[IMG_LEFT] = req->src_rect.x;
-> +		luma_interp[IMG_RIGHT] = req->src_rect.x + req->src_rect.w - 1;
-> +		luma_interp[IMG_TOP] = req->src_rect.y;
-> +		luma_interp[IMG_BOTTOM] = req->src_rect.y + req->src_rect.h - 1;
-> +		luma_repeat[IMG_LEFT] = 0;
-> +		luma_repeat[IMG_TOP] = 0;
-> +		luma_repeat[IMG_RIGHT] = 0;
-> +		luma_repeat[IMG_BOTTOM] = 0;
-> +	}
-> +
-> +	chroma_interp[IMG_LEFT] = luma_interp[IMG_LEFT];
-> +	chroma_interp[IMG_RIGHT] = luma_interp[IMG_RIGHT];
-> +	chroma_interp[IMG_TOP] = luma_interp[IMG_TOP];
-> +	chroma_interp[IMG_BOTTOM] = luma_interp[IMG_BOTTOM];
-> +
-> +	chroma_bound[IMG_LEFT] = req->src_rect.x;
-> +	chroma_bound[IMG_RIGHT] = req->src_rect.x + req->src_rect.w - 1;
-> +	chroma_bound[IMG_TOP] = req->src_rect.y;
-> +	chroma_bound[IMG_BOTTOM] = req->src_rect.y + req->src_rect.h - 1;
-> +
-> +	if (IS_YCRCB(req->src.format)) {
-> +		chroma_interp[IMG_LEFT] = chroma_interp[IMG_LEFT] >> 1;
-> +		chroma_interp[IMG_RIGHT] = (chroma_interp[IMG_RIGHT] + 1) >> 1;
-> +
-> +		chroma_bound[IMG_LEFT] = chroma_bound[IMG_LEFT] >> 1;
-> +		chroma_bound[IMG_RIGHT] = chroma_bound[IMG_RIGHT] >> 1;
-> +	}
-> +
-> +	if (req->src.format == MDP_Y_CBCR_H2V2 ||
-> +	    req->src.format == MDP_Y_CRCB_H2V2) {
-> +		chroma_interp[IMG_TOP] = (chroma_interp[IMG_TOP] - 1) >> 1;
-> +		chroma_interp[IMG_BOTTOM] = (chroma_interp[IMG_BOTTOM] + 1)
-> +					    >> 1;
-> +		chroma_bound[IMG_TOP] = (chroma_bound[IMG_TOP] + 1) >> 1;
-> +		chroma_bound[IMG_BOTTOM] = chroma_bound[IMG_BOTTOM] >> 1;
-> +	}
-> +
-> +	chroma_repeat[IMG_LEFT] = chroma_bound[IMG_LEFT] -
-> +				  chroma_interp[IMG_LEFT];
-> +	chroma_repeat[IMG_RIGHT] = chroma_interp[IMG_RIGHT] -
-> +				  chroma_bound[IMG_RIGHT];
-> +	chroma_repeat[IMG_TOP] = chroma_bound[IMG_TOP] -
-> +				  chroma_interp[IMG_TOP];
-> +	chroma_repeat[IMG_BOTTOM] = chroma_interp[IMG_BOTTOM] -
-> +				  chroma_bound[IMG_BOTTOM];
-> +
-> +	if (chroma_repeat[IMG_LEFT] < 0 || chroma_repeat[IMG_LEFT] > 3 ||
-> +	    chroma_repeat[IMG_RIGHT] < 0 || chroma_repeat[IMG_RIGHT] > 3 ||
-> +	    chroma_repeat[IMG_TOP] < 0 || chroma_repeat[IMG_TOP] > 3 ||
-> +	    chroma_repeat[IMG_BOTTOM] < 0 || chroma_repeat[IMG_BOTTOM] > 3 ||
-> +	    luma_repeat[IMG_LEFT] < 0 || luma_repeat[IMG_LEFT] > 3 ||
-> +	    luma_repeat[IMG_RIGHT] < 0 || luma_repeat[IMG_RIGHT] > 3 ||
-> +	    luma_repeat[IMG_TOP] < 0 || luma_repeat[IMG_TOP] > 3 ||
-> +	    luma_repeat[IMG_BOTTOM] < 0 || luma_repeat[IMG_BOTTOM] > 3)
-> +		return -1;
+On Thu, Mar 17, 2011 at 07:52:00PM -0700, Stephen Boyd wrote:
+> The inline assembly differences for v6 vs. v7 are purely
+> optimizations. On a v7 processor, an mrc with the pc sets the
+> condition codes to the 28-31 bits of the register being read. It
+> just so happens that the TX/RX full bits the DCC support code is
+> testing for are high enough in the register to be put into the
+> condition codes. On a v6 processor, this "feature" isn't
+> implemented and thus we have to do the usual read, mask, test
+> operations to check for TX/RX full. Thus, we can drop the v7
+> implementation and just use the v6 implementation for both.
 
-Lazy programming strikes again.  Public functions really should not
-return things that look like errno codes, rather they should return
-real errno codes.
-
-Secondly, why is this stuff, which looks very driver like, under arch/arm
-and not in drivers/ somewhere?
+This patch needs updating for the changes that were in my tree for many
+months, and are now in mainline.
