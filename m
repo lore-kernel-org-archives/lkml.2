@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab1CTAaM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Mar 2011 20:30:12 -0400
-Received: from core.signal11.us ([64.251.29.136]:34597 "EHLO core.signal11.us"
+	id S1751268Ab1CTBNq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Mar 2011 21:13:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33205 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332Ab1CTAaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Mar 2011 20:30:06 -0400
-From: Alan Ott <alan@signal11.us>
-To: Randy Dunlap <rdunlap@xenotime.net>, Jonathan Corbet <corbet@lwn.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        Jiri Kosina <jkosina@suse.cz>, Alan Ott <alan@signal11.us>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefani Seibold <stefani@seibold.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Cc: Alan Ott <alan@signal11.us>
-Subject: [PATCH v5 0/2] Documentation and Sample for hidraw
-Date: Sat, 19 Mar 2011 20:29:43 -0400
-Message-Id: <1300580985-10726-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1297829209-10511-1-git-send-email-alan@signal11.us>
-References: <1297829209-10511-1-git-send-email-alan@signal11.us>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sat Mar 19 19:30:05 2011
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4d854a8d31303607281667
+	id S1750894Ab1CTBNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Mar 2011 21:13:44 -0400
+Subject: Re: [PATCH] firmware/efi: export a routine to retrieve
+ efi-variables by GUID
+From: James Bottomley <James.Bottomley@suse.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Greg KH <gregkh@suse.de>, "Jiang, Dave" <dave.jiang@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Danecki, Jacek" <jacek.danecki@intel.com>,
+        "Ciechanowski, Ed" <ed.ciechanowski@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmilburn@redhat.com" <dmilburn@redhat.com>,
+        "Nadolski, Edmund" <edmund.nadolski@intel.com>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <20110320001459.GA9237@suse.de>
+References: <20110318221606.26841.92271.stgit@localhost6.localdomain6>
+	 <20110318225016.GB15921@suse.de>
+	 <AANLkTim+HB0GWzGiif=MvYHaiXMSLuVB6R0=UK3906xU@mail.gmail.com>
+	 <20110319002246.GB14249@suse.de> <4D8403C3.6020300@intel.com>
+	 <20110320001459.GA9237@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Mar 2011 20:13:27 -0500
+Message-ID: <1300583607.12679.29.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry I've been slack in getting v5 of this patch out. Because
-it's been so long, I'll recap what happened last time:
+On Sat, 2011-03-19 at 17:14 -0700, Greg KH wrote:
+> On Fri, Mar 18, 2011 at 06:15:47PM -0700, Dan Williams wrote:
+> > On 3/18/2011 5:22 PM, Greg KH wrote:
+> > >On Fri, Mar 18, 2011 at 04:10:10PM -0700, Dan Williams wrote:
+> > >>>I needed all patches in linux-next _before_ the merge window opened to
+> > >>>be able to accept it.
+> > >>
+> > >>Yes, I know, and as dmaengine maintainer I also hate being ambushed by
+> > >>last minute patches, but now I am unfortunately one of those annoying
+> > >>people on the other side of the coin.
+> > >
+> > >Then you should know better than to try to go around the well-known
+> > >rules :)
+> > 
+> > Yes...
+> > 
+> > /me about to push his luck
+> 
+> <snip>
+> 
+> > As Jeff pointed out:
+> > "It seemed like this was turning into another driver that would get
+> > held outside the kernel until it's "perfect."  If that is the case,
+> > Linus has also made it clear we should get drivers for high volume,
+> > shipping hardware into the kernel, even if its staging, if the
+> > alternative is to deny users the driver."
+> 
+> That's fine, _BUT_ you are trying to go around the rules for the merge
+> window, which isn't acceptable.  Also note that your driver isn't
+> self-contained, it needs this change at the least, right?  Any others?
+> 
+> > So yes, we are targeting that exception.  I'm up for taking the heat
+> > directly if you want...  because the pull request will need to
+> > backed up with justification.
+> 
+> No, sorry, I'll not take this for .40, all of my trees are merged with
+> Linus now for .40 and I'll only be sending him bugfixes until the .41
+> merge window opens up.
+> 
+> Remember, it's only a 3 month wait, you knew about this _WAY_ in
+> advance, so it's not like this is something new, or out of the ordinary
+> at all.  Because of that, I fail to see why this is somehow not
+> expected.
+> 
+> On a personal note, I'm going to be very scarse for the next 3 weeks due
+> to conferences and travel for spring break, so I physically don't have
+> the time to do any more merges like this with Linus.
 
- * Jon Corbet suggested that the example programs be moved into samples/ .
- * Randy Dunlap indicated his acked-by when this was done.
+So, here's the deal:  You get this driver to a mergeable state, which
+means all of the problems Christoph, others and I have outlined
+completely fixed or well on the way to being in two months and I will
+take it under the merge window exception for new drivers.  However, I
+mean seriously cleaned up and shiny (and dumping tens of thousands of
+lines of flue code and other oddities), not cleaned up for staging.
+Further you're going to have to use standard methods to store and
+retrieve data, not esoteric efi ones that rely on changes outside SCSI
+(you aren't the first people to need to set a SAS address and other
+things, so we have a request firmware like method for it).
 
-These patches add hidraw.txt to a new Documentation/hid/ directory.
+If you can't make it in two months .. can you do it? I'll extend the
+offer to the .40 which makes the cutoff around 5 months, if you need
+extra time.
 
-It creates an example program which is now in samples/ with a Kconfig item.
+What I suggest is that you take about a month and a half to make all the
+changes and then do a patch code drop on linux-scsi.  If you're less
+sure about what you need to do, do one after three weeks and we'll redo
+the assessment.
 
-The existing hiddev.txt has been moved from Documentation/usb/ to
-Documentation/hid/
-
-This is based on .38+
-
-Alan Ott (2):
-  HID: Documentation for hidraw
-  HID: Move hiddev.txt to the new Documentation/HID directory
-
- Documentation/{usb => hid}/hiddev.txt |    0
- Documentation/hid/hidraw.txt          |  119 +++++++++++++++++++++++
- samples/Kconfig                       |    6 +
- samples/Makefile                      |    2 +-
- samples/hidraw/Makefile               |    8 ++
- samples/hidraw/hid-example.c          |  167 +++++++++++++++++++++++++++++++++
- 6 files changed, 301 insertions(+), 1 deletions(-)
- rename Documentation/{usb => hid}/hiddev.txt (100%)
- create mode 100644 Documentation/hid/hidraw.txt
- create mode 100644 samples/hidraw/Makefile
- create mode 100644 samples/hidraw/hid-example.c
+James
 
 
