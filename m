@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab1CTL67 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 07:58:59 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:36663 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab1CTL64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 07:58:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=mYtNmIf+aXcCp1Sul9jHPH54hHaTzCEzI9mJc08MJbWkuzxGKuVT1dp1I60LXePMWS
-         mEDXi8Fb0xlviCyFBD4vgkVA/fn0nY0HfIk/DwCzBJ4W3bcp4y3EgHmxEMa2fJxlp/bQ
-         Yo8zfU/c8Kg5HoyFBwJW4w75Ww9nJF/v6Trd4=
-Message-ID: <4D85EBFA.70908@tim-richardson.net>
-Date: Sun, 20 Mar 2011 22:58:50 +1100
-From: Tim Richardson <tim@tim-richardson.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101110 Lightning/1.0b2 Icedove/3.1.6
+	id S1752136Ab1CTMAf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 08:00:35 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:49685 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab1CTMAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 08:00:33 -0400
+Date: Sun, 20 Mar 2011 13:00:26 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Nicolas Palix <Nicolas.Palix@inria.fr>
+Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jonathan Corbet <corbet@lwn.net>,
+        LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@shadowen.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
+In-Reply-To: <AANLkTi=LHeMPCHARy0GE7u2_q0=sz2jLfpb6a-RU8gLM@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1103201258450.28495@ask.diku.dk>
+References: <1300416744.16880.904.camel@gandalf.stny.rr.com>
+ <20110317211548.646b04d2@tpl.lwn.net> <1300419170.16880.956.camel@gandalf.stny.rr.com>
+ <AANLkTikZK278BR5o1fP_w2u5PUPbgub9QT4XxzSmEhL5@mail.gmail.com>
+ <AANLkTi=2d8S_Pi8kuZMXAmNvHa_2KrOs6K+_FF6P7-pU@mail.gmail.com>
+ <Pine.LNX.4.64.1103200852080.28495@ask.diku.dk>
+ <AANLkTi=MMKvA-9pFiM1K_JSXjS71JLRCem8THnhu-0=N@mail.gmail.com>
+ <Pine.LNX.4.64.1103201007430.28495@ask.diku.dk> <20110320105412.GA11266@elte.hu>
+ <AANLkTimdbs2AZ9OE6j+=ziJA1LR2wkZR5qsT8AEq--5x@mail.gmail.com>
+ <AANLkTi=LHeMPCHARy0GE7u2_q0=sz2jLfpb6a-RU8gLM@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: kernel panic on resume from suspend to ram 2.6.38, with link to photo
- of screen
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="-511516320-528062432-1300622426=:28495"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My laptop is a Toshiba U400 with intel graphics. BIOS is latest. It's 
-been running linux for three years, mostly Debian unstable.
-Every 2.6.38 kernel I've tried gives a kernel panic on resume from ram 
-suspend. I have tried three different 2.6.38 kernels from aptosid (all 
-of them after release of 2.6.38) and the Debian unstable 2.6.38 which 
-has just entered repositories.
-This happens even in run-level 3 (xserver not running).
-However, suspend to disk resumes happily.
-I don't have any closed source drivers used: video is intel, wireless is 
-intel, and virtualbox is OSE.
-I have a photo of the console screen here:
-https://picasaweb.google.com/te.richardson/Aptosid#5585718281112043778
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-PS I don't know is this is a kernel panic. The machine freezes hard, I 
-must force a power-down. I can't find the messages in the photo in any 
-system logs. The LED on the caps lock key flashes. This system has had 
-no problems with any kernels in recent memory.
+---511516320-528062432-1300622426=:28495
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
+On Sun, 20 Mar 2011, Nicolas Palix wrote:
 
+> Hi,
+> 
+> On Sun, Mar 20, 2011 at 12:06 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> > Hi,
+> >
+> > On Sun, Mar 20, 2011 at 12:54 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >>> Indeed that one seems to be quite out of date.  You can get the most
+> >>> recent version here: https://launchpad.net/~npalix/+archive/coccinelle
+> >>
+> >> With tools/coccinelle/ you would never run into such problems of distributing
+> >> the latest stable version to your fellow kernel developers: it would always be
+> >> available in tools/coccinelle/.
+> >>
+> >> Integration, synergy, availability, distribution and half a dozen other
+> >> buzzwords come to mind as to why it's a good idea to have kernel-focused
+> >> tools hosted in the kernel repo :-)
+> 
+> Our usage is mainly kernel-focused but not the tool. It is C-program focused
+> and we have used it on other programs like Wine, OpenSSL, VLC. Others
+> use it on other projects like Davecot or close-source projets.
+> So, IMHO Coccinelle should no be part of Linux.
+> 
+> Integrating kernel-focused SmPL scripts is on the other hand a great idea
+> to check the kernel and to ease kernel developer life.
+> It is what have been done so far. It is certainly possible to improve that,
+> at least by adding more and more scripts.
+> 
+> >>
+> >> IMO it's an option to consider.
+> >
+> > That's my thinking too. Yes, 80 KLOC of OCaml in the kernel tree
+> > sounds crazy but I think the practical advantages might be enough to
+> > justify it. Btw, would git-submodule be something to consider here?
+> >
+> 
+> At every RC, we push the Coccinelle code on github. Using git-submodule
+> seems the way to go thus. Moreover, it will ease the maintenance of
+> scripts as we may assume users have one of the latest versions.
 
+The latter is indeed the more serious problem.  But even if the Coccinelle 
+code is available, the person will still have to have ocaml installed to 
+be able to compile it.
 
-
-
+julia
+---511516320-528062432-1300622426=:28495--
