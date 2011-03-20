@@ -1,106 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab1CTJVB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 05:21:01 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:40989 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab1CTJU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 05:20:57 -0400
-Date: Sun, 20 Mar 2011 10:20:50 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk
-Subject: Re: [PATCH 01/13] Coccinelle: introduce list_move.cocci
-In-Reply-To: <1300229605-14499-1-git-send-email-kirill@shutemov.name>
-Message-ID: <Pine.LNX.4.64.1103201017330.28495@ask.diku.dk>
-References: <1300229605-14499-1-git-send-email-kirill@shutemov.name>
+	id S1751752Ab1CTJXQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 05:23:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53237 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab1CTJXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 05:23:13 -0400
+Date: Sun, 20 Mar 2011 09:22:15 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Carl Vanderlip <carlv@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>, linux-fbdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/20] video: msm: Split out MDP2.2 HW specific code.
+Message-ID: <20110320092215.GA16646@n2100.arm.linux.org.uk>
+References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org> <1300485423-27281-1-git-send-email-carlv@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1300485423-27281-1-git-send-email-carlv@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill,
-
-Thank you very much for your contribution.  Nevertheless, there is a small 
-problem.  In the very last python rule, you use org || report, but 
-actually you are not generating org mode.
-
-To make an org mode rule, you should replace the call to
-
-coccilib.report.print_report
-
-by a call to
-
-coccilib.org.print_todo
-
-thanks,
-julia
-
-
-On Wed, 16 Mar 2011, Kirill A. Shutemov wrote:
-
-> Use list_move instead of combination of list_del() and list_add()
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Julia Lawall <julia@diku.dk>
-> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-> Cc: Nicolas Palix <npalix.work@gmail.com>
-> Cc: cocci@diku.dk
-> ---
->  scripts/coccinelle/api/list/list_move.cocci |   41 +++++++++++++++++++++++++++
->  1 files changed, 41 insertions(+), 0 deletions(-)
->  create mode 100644 scripts/coccinelle/api/list/list_move.cocci
-> 
-> diff --git a/scripts/coccinelle/api/list/list_move.cocci b/scripts/coccinelle/api/list/list_move.cocci
-> new file mode 100644
-> index 0000000..2691a8a
-> --- /dev/null
-> +++ b/scripts/coccinelle/api/list/list_move.cocci
-> @@ -0,0 +1,41 @@
-> +///
-> +/// Use list_move() instead of combination of list_del() and list_add()
-> +///
-> +// Confidence: High
-> +// Copyright: (C) 2011 Kirill A. Shutemov. GPLv2.
-> +// Options: -no_includes -include_headers
+On Fri, Mar 18, 2011 at 02:57:03PM -0700, Carl Vanderlip wrote:
+> +int mdp_ppp_cfg_edge_cond(struct mdp_blit_req *req, struct ppp_regs *regs)
+> +{
+> +	int32_t luma_interp[4];
+> +	int32_t luma_repeat[4];
+> +	int32_t chroma_interp[4];
+> +	int32_t chroma_bound[4];
+> +	int32_t chroma_repeat[4];
+> +	uint32_t dst_w, dst_h;
 > +
-> +virtual context
-> +virtual patch
-> +virtual org
-> +virtual report
+> +	memset(&luma_interp, 0, sizeof(int32_t) * 4);
+> +	memset(&luma_repeat, 0, sizeof(int32_t) * 4);
+> +	memset(&chroma_interp, 0, sizeof(int32_t) * 4);
+> +	memset(&chroma_bound, 0, sizeof(int32_t) * 4);
+> +	memset(&chroma_repeat, 0, sizeof(int32_t) * 4);
+> +	regs->edge = 0;
 > +
-> +@depends on context@
-> +expression a, b;
-> +@@
+> +	if (req->flags & MDP_ROT_90) {
+> +		dst_w = req->dst_rect.h;
+> +		dst_h = req->dst_rect.w;
+> +	} else {
+> +		dst_w = req->dst_rect.w;
+> +		dst_h = req->dst_rect.h;
+> +	}
 > +
-> +* list_del(a);
-> +* list_add(a, b);
+> +	if (regs->op & (PPP_OP_SCALE_Y_ON | PPP_OP_SCALE_X_ON)) {
+> +		get_edge_info(req->src_rect.h, req->src_rect.y, dst_h,
+> +			      &luma_interp[IMG_TOP], &luma_interp[IMG_BOTTOM],
+> +			      &luma_repeat[IMG_TOP], &luma_repeat[IMG_BOTTOM]);
+> +		get_edge_info(req->src_rect.w, req->src_rect.x, dst_w,
+> +			      &luma_interp[IMG_LEFT], &luma_interp[IMG_RIGHT],
+> +			      &luma_repeat[IMG_LEFT], &luma_repeat[IMG_RIGHT]);
+> +	} else {
+> +		luma_interp[IMG_LEFT] = req->src_rect.x;
+> +		luma_interp[IMG_RIGHT] = req->src_rect.x + req->src_rect.w - 1;
+> +		luma_interp[IMG_TOP] = req->src_rect.y;
+> +		luma_interp[IMG_BOTTOM] = req->src_rect.y + req->src_rect.h - 1;
+> +		luma_repeat[IMG_LEFT] = 0;
+> +		luma_repeat[IMG_TOP] = 0;
+> +		luma_repeat[IMG_RIGHT] = 0;
+> +		luma_repeat[IMG_BOTTOM] = 0;
+> +	}
 > +
-> +@depends on patch@
-> +expression a, b;
-> +@@
+> +	chroma_interp[IMG_LEFT] = luma_interp[IMG_LEFT];
+> +	chroma_interp[IMG_RIGHT] = luma_interp[IMG_RIGHT];
+> +	chroma_interp[IMG_TOP] = luma_interp[IMG_TOP];
+> +	chroma_interp[IMG_BOTTOM] = luma_interp[IMG_BOTTOM];
 > +
-> +- list_del(a);
-> +- list_add(a, b);
-> ++ list_move(a, b);
+> +	chroma_bound[IMG_LEFT] = req->src_rect.x;
+> +	chroma_bound[IMG_RIGHT] = req->src_rect.x + req->src_rect.w - 1;
+> +	chroma_bound[IMG_TOP] = req->src_rect.y;
+> +	chroma_bound[IMG_BOTTOM] = req->src_rect.y + req->src_rect.h - 1;
 > +
-> +@r depends on report || org@
-> +expression a, b;
-> +position p;
-> +@@
+> +	if (IS_YCRCB(req->src.format)) {
+> +		chroma_interp[IMG_LEFT] = chroma_interp[IMG_LEFT] >> 1;
+> +		chroma_interp[IMG_RIGHT] = (chroma_interp[IMG_RIGHT] + 1) >> 1;
 > +
-> + list_del@p(a);
-> + list_add(a, b);
+> +		chroma_bound[IMG_LEFT] = chroma_bound[IMG_LEFT] >> 1;
+> +		chroma_bound[IMG_RIGHT] = chroma_bound[IMG_RIGHT] >> 1;
+> +	}
 > +
-> +@script:python depends on org || report@
-> +p << r.p;
-> +@@
+> +	if (req->src.format == MDP_Y_CBCR_H2V2 ||
+> +	    req->src.format == MDP_Y_CRCB_H2V2) {
+> +		chroma_interp[IMG_TOP] = (chroma_interp[IMG_TOP] - 1) >> 1;
+> +		chroma_interp[IMG_BOTTOM] = (chroma_interp[IMG_BOTTOM] + 1)
+> +					    >> 1;
+> +		chroma_bound[IMG_TOP] = (chroma_bound[IMG_TOP] + 1) >> 1;
+> +		chroma_bound[IMG_BOTTOM] = chroma_bound[IMG_BOTTOM] >> 1;
+> +	}
 > +
-> +msg = "WARNING: list_move() can be used"
-> +coccilib.report.print_report(p[0], msg)
-> -- 
-> 1.7.4.1
-> 
-> 
+> +	chroma_repeat[IMG_LEFT] = chroma_bound[IMG_LEFT] -
+> +				  chroma_interp[IMG_LEFT];
+> +	chroma_repeat[IMG_RIGHT] = chroma_interp[IMG_RIGHT] -
+> +				  chroma_bound[IMG_RIGHT];
+> +	chroma_repeat[IMG_TOP] = chroma_bound[IMG_TOP] -
+> +				  chroma_interp[IMG_TOP];
+> +	chroma_repeat[IMG_BOTTOM] = chroma_interp[IMG_BOTTOM] -
+> +				  chroma_bound[IMG_BOTTOM];
+> +
+> +	if (chroma_repeat[IMG_LEFT] < 0 || chroma_repeat[IMG_LEFT] > 3 ||
+> +	    chroma_repeat[IMG_RIGHT] < 0 || chroma_repeat[IMG_RIGHT] > 3 ||
+> +	    chroma_repeat[IMG_TOP] < 0 || chroma_repeat[IMG_TOP] > 3 ||
+> +	    chroma_repeat[IMG_BOTTOM] < 0 || chroma_repeat[IMG_BOTTOM] > 3 ||
+> +	    luma_repeat[IMG_LEFT] < 0 || luma_repeat[IMG_LEFT] > 3 ||
+> +	    luma_repeat[IMG_RIGHT] < 0 || luma_repeat[IMG_RIGHT] > 3 ||
+> +	    luma_repeat[IMG_TOP] < 0 || luma_repeat[IMG_TOP] > 3 ||
+> +	    luma_repeat[IMG_BOTTOM] < 0 || luma_repeat[IMG_BOTTOM] > 3)
+> +		return -1;
+
+Lazy programming strikes again.  Public functions really should not
+return things that look like errno codes, rather they should return
+real errno codes.
+
+Secondly, why is this stuff, which looks very driver like, under arch/arm
+and not in drivers/ somewhere?
