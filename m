@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab1CTMxB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 08:53:01 -0400
-Received: from www.tglx.de ([62.245.132.106]:55105 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171Ab1CTMxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 08:53:00 -0400
-Date: Sun, 20 Mar 2011 13:52:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Remy Bohmer <linux@bohmer.net>
-cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [000/474] 2.6.33.8-longterm review
-In-Reply-To: <AANLkTi=q-HEBKFe=DLXC36Acxd_LqgfYs=66wxs013Ac@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1103201351570.2787@localhost6.localdomain6>
-References: <20110317213822.GA27980@kroah.com> <alpine.LFD.2.00.1103180942531.2787@localhost6.localdomain6> <AANLkTi=q-HEBKFe=DLXC36Acxd_LqgfYs=66wxs013Ac@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751146Ab1CTNjU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 09:39:20 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:49665 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab1CTNjS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 09:39:18 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4D860381.30706@die-jansens.de>
+Date: Sun, 20 Mar 2011 14:39:13 +0100
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jeffrin Jose <ahiliation@yahoo.co.in>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: aligning with spaces [was: Re: format fixes]
+References: <20110320104527.GA3120@debian.Jeff>
+In-Reply-To: <20110320104527.GA3120@debian.Jeff>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Mar 2011, Remy Bohmer wrote:
+On 20.03.2011 11:45, Jeffrin Jose wrote:
+> I have created a patch with fixes and format
+> error by replacing spaces with tabs.
 
-> Hi,
-> 
-> 2011/3/18 Thomas Gleixner <tglx@linutronix.de>:
-> > On Thu, 17 Mar 2011, Greg KH wrote:
-> >
-> >> Yeah, I know what you are thinking, "What, 2.6.33, are you crazy?"
-> >
-> > Aren't we all crazy ?
-> >
-> >> I'd prefer it if you didn't answer that question...
-> >
-> > Too late. You should have put this before the question.
-> >
-> >> So, if you are using .33, please give this patch a test and let me know
-> >> if I've messed up anything (hint, I think I did, it's up to you to
-> >> figure it out, consider it a test to see if anyone actually cares about
-> >> this kernel version.)
-> >
-> > We'll pull it into rt and figure out what breaks.
-> 
-> Can you please elaborate somewhat on the status of the RT-patchset
-> development for 2.6.38 and on?
+The CodingStyle guide seems to me a big vague on this topic, but
+checkpatch.pl has a clear idea of what is right and wrong. But
+the formerly present indentation seems to me totally valid.
+Use tab to indent to the current indentation level, then continue
+with spaces for the alignment of broken-up lines. This has a
+few advantages. One of them is that the code still looks neat with
+a different tab size (of course, no one ever does that). Another is,
+that editing is easier if you change the name of the function and
+with it the needed alignment for the following lines.
+If we really require using tabs as much as possible for aligning, we
+should also _only_ use tabs for it and require e.g. 2 tabs for
+broken-up lines.
+In fact, the example in CodingStyle uses only tabs and does not try
+to align the double quotes of the broken-up string with each other.
 
-Working on it.
+--Arne
 
-> It is silent about it for quite a while now, and actually the gap
-> between mainstream and the latest RT has never been this big before...
-> Are there major complications, lack on time or hands? Can I help ?
-
-I concentrated on getting stuff upstream and reworking to make it more
-palatable and maintainable.
-
-Thanks,
-
-	tglx
