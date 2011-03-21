@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab1CUXV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:21:27 -0400
-Received: from kroah.org ([198.145.64.141]:52832 "EHLO coco.kroah.org"
+	id S932493Ab1CUXVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:21:44 -0400
+Received: from kroah.org ([198.145.64.141]:52818 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932458Ab1CUXSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:38 -0400
+	id S932450Ab1CUXSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:36 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:29 2011
-Message-Id: <20110321230329.319552315@clark.kroah.org>
+Message-Id: <20110321230329.103325093@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:30 -0700
+Date: Mon, 21 Mar 2011 16:02:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Manoj Iyer <manoj.iyer@canonical.com>, Chris Ball <cjb@laptop.org>
-Subject: [74/78] mmc: sdhci: Add Ricoh e823 PCI ID
+        Andy Botting <andy@andybotting.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [72/78] Input: bcm5974 - add support for MacBookPro8
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +27,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Andy Botting <andy@andybotting.com>
 
-commit 5fd11c0754fa069b6aba64b65734aa2fb193552d upstream.
+commit 47340bd9fefb571888836da942b5aee0e85e959c upstream.
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+This patch add multitouch support for the MacBookPro8,1 and
+MacBookPro8,2 models.
+
+Signed-off-by: Andy Botting <andy@andybotting.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/host/sdhci-pci.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/hid/hid-apple.c       |    6 ++++++
+ drivers/hid/hid-core.c        |    6 ++++++
+ drivers/hid/hid-ids.h         |    3 +++
+ drivers/input/mouse/bcm5974.c |   20 ++++++++++++++++++++
+ 4 files changed, 35 insertions(+)
 
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -547,6 +547,14 @@ static const struct pci_device_id pci_id
- 	},
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -481,6 +481,12 @@ static const struct hid_device_id apple_
+ 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS),
+ 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI),
++		.driver_data = APPLE_HAS_FN },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ISO),
++		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_JIS),
++		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1300,6 +1300,9 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_JIS) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
+@@ -1800,6 +1803,9 @@ static const struct hid_device_id hid_mo
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+ 	{ }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -103,6 +103,9 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI	0x0242
+ #define USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO	0x0243
+ #define USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS	0x0244
++#define USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI	0x0245
++#define USB_DEVICE_ID_APPLE_WELLSPRING5_ISO	0x0246
++#define USB_DEVICE_ID_APPLE_WELLSPRING5_JIS	0x0247
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI  0x0239
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO   0x023a
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -63,6 +63,10 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI	0x0242
+ #define USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO	0x0243
+ #define USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS	0x0244
++/* Macbook8 (unibody, March 2011) */
++#define USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI	0x0245
++#define USB_DEVICE_ID_APPLE_WELLSPRING5_ISO	0x0246
++#define USB_DEVICE_ID_APPLE_WELLSPRING5_JIS	0x0247
  
- 	{
-+		.vendor         = PCI_VENDOR_ID_RICOH,
-+		.device         = 0xe823,
-+		.subvendor      = PCI_ANY_ID,
-+		.subdevice      = PCI_ANY_ID,
-+		.driver_data    = (kernel_ulong_t)&sdhci_ricoh_mmc,
-+	},
-+
+ #define BCM5974_DEVICE(prod) {					\
+ 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
+@@ -96,6 +100,10 @@ static const struct usb_device_id bcm597
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS),
++	/* MacbookPro8 */
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5_ISO),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5_JIS),
+ 	/* Terminating entry */
+ 	{}
+ };
+@@ -274,6 +282,18 @@ static const struct bcm5974_config bcm59
+ 		{ DIM_X, DIM_X / SN_COORD, -4616, 5112 },
+ 		{ DIM_Y, DIM_Y / SN_COORD, -142, 5234 }
+ 	},
 +	{
- 		.vendor		= PCI_VENDOR_ID_ENE,
- 		.device		= PCI_DEVICE_ID_ENE_CB712_SD,
- 		.subvendor	= PCI_ANY_ID,
++		USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI,
++		USB_DEVICE_ID_APPLE_WELLSPRING5_ISO,
++		USB_DEVICE_ID_APPLE_WELLSPRING5_JIS,
++		HAS_INTEGRATED_BUTTON,
++		0x84, sizeof(struct bt_data),
++		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
++		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
++		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
++		{ DIM_X, DIM_X / SN_COORD, -4415, 5050 },
++		{ DIM_Y, DIM_Y / SN_COORD, -55, 6680 }
++	},
+ 	{}
+ };
+ 
 
 
