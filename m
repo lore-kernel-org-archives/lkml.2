@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab1CUSex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:34:53 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:43661 "EHLO mx01.d-labs.de"
+	id S1754433Ab1CUSf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:35:26 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:43629 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754182Ab1CUSeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:34:07 -0400
+	id S1754183Ab1CUSeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:34:03 -0400
 From: Florian Mickler <florian@mickler.org>
 To: mchehab@infradead.org
 Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
@@ -13,9 +13,9 @@ Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
         aet@rasterburn.org, pb@linuxtv.org, mkrufky@linuxtv.org,
         nick@nick-andrew.net, max@veneto.com, janne-dvb@grunau.be,
         Florian Mickler <florian@mickler.org>
-Subject: [PATCH 5/6] [media] m920x: get rid of on-stack dma buffers
-Date: Mon, 21 Mar 2011 19:33:45 +0100
-Message-Id: <1300732426-18958-6-git-send-email-florian@mickler.org>
+Subject: [PATCH 2/6 v2] [media] vp7045: get rid of on-stack dma buffers
+Date: Mon, 21 Mar 2011 19:33:42 +0100
+Message-Id: <1300732426-18958-3-git-send-email-florian@mickler.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300732426-18958-1-git-send-email-florian@mickler.org>
 References: <1300732426-18958-1-git-send-email-florian@mickler.org>
@@ -33,117 +33,123 @@ In lib/dma_debug.c the function check_for_stack even warns about it:
 Note: This change is tested to compile only, as I don't have the hardware.
 
 Signed-off-by: Florian Mickler <florian@mickler.org>
----
- drivers/media/dvb/dvb-usb/m920x.c |   33 ++++++++++++++++++++++-----------
- 1 files changed, 22 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-usb/m920x.c b/drivers/media/dvb/dvb-usb/m920x.c
-index da9dc91..f66eaa3 100644
---- a/drivers/media/dvb/dvb-usb/m920x.c
-+++ b/drivers/media/dvb/dvb-usb/m920x.c
-@@ -134,13 +134,17 @@ static int m920x_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
+---
+[v2: pulled buffer access under the mutex]
+
+drivers/media/dvb/dvb-usb/vp7045.c |   47 ++++++++++++++++++++++++++----------
+ 1 files changed, 34 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/media/dvb/dvb-usb/vp7045.c b/drivers/media/dvb/dvb-usb/vp7045.c
+index ab0ab3c..3db89e3 100644
+--- a/drivers/media/dvb/dvb-usb/vp7045.c
++++ b/drivers/media/dvb/dvb-usb/vp7045.c
+@@ -28,9 +28,9 @@ DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
+ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in, int inlen, int msec)
  {
- 	struct m920x_state *m = d->priv;
- 	int i, ret = 0;
--	u8 rc_state[2];
-+	u8 *rc_state;
+ 	int ret = 0;
+-	u8 inbuf[12] = { 0 }, outbuf[20] = { 0 };
++	u8 *buf = d->priv;
+ 
+-	outbuf[0] = cmd;
++	buf[0] = cmd;
+ 
+ 	if (outlen > 19)
+ 		outlen = 19;
+@@ -38,19 +38,21 @@ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in,
+ 	if (inlen > 11)
+ 		inlen = 11;
+ 
++	ret = mutex_lock_interruptible(&d->usb_mutex);
++	if (ret)
++		return ret;
 +
-+	rc_state = kmalloc(2, GFP_KERNEL);
-+	if (!rc_state)
-+		return -ENOMEM;
+ 	if (out != NULL && outlen > 0)
+-		memcpy(&outbuf[1], out, outlen);
++		memcpy(&buf[1], out, outlen);
  
- 	if ((ret = m920x_read(d->udev, M9206_CORE, 0x0, M9206_RC_STATE, rc_state, 1)) != 0)
--		goto unlock;
-+		goto out;
+ 	deb_xfer("out buffer: ");
+-	debug_dump(outbuf,outlen+1,deb_xfer);
++	debug_dump(buf, outlen+1, deb_xfer);
  
- 	if ((ret = m920x_read(d->udev, M9206_CORE, 0x0, M9206_RC_KEY, rc_state + 1, 1)) != 0)
--		goto unlock;
-+		goto out;
+-	if ((ret = mutex_lock_interruptible(&d->usb_mutex)))
+-		return ret;
  
- 	for (i = 0; i < d->props.rc.legacy.rc_map_size; i++)
- 		if (rc5_data(&d->props.rc.legacy.rc_map_table[i]) == rc_state[1]) {
-@@ -149,7 +153,7 @@ static int m920x_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
- 			switch(rc_state[0]) {
- 			case 0x80:
- 				*state = REMOTE_NO_KEY_PRESSED;
--				goto unlock;
-+				goto out;
+ 	if (usb_control_msg(d->udev,
+ 			usb_sndctrlpipe(d->udev,0),
+ 			TH_COMMAND_OUT, USB_TYPE_VENDOR | USB_DIR_OUT, 0, 0,
+-			outbuf, 20, 2000) != 20) {
++			buf, 20, 2000) != 20) {
+ 		err("USB control message 'out' went wrong.");
+ 		ret = -EIO;
+ 		goto unlock;
+@@ -61,17 +63,17 @@ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in,
+ 	if (usb_control_msg(d->udev,
+ 			usb_rcvctrlpipe(d->udev,0),
+ 			TH_COMMAND_IN, USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
+-			inbuf, 12, 2000) != 12) {
++			buf, 12, 2000) != 12) {
+ 		err("USB control message 'in' went wrong.");
+ 		ret = -EIO;
+ 		goto unlock;
+ 	}
  
- 			case 0x88: /* framing error or "invalid code" */
- 			case 0x99:
-@@ -157,7 +161,7 @@ static int m920x_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
- 			case 0xd8:
- 				*state = REMOTE_NO_KEY_PRESSED;
- 				m->rep_count = 0;
--				goto unlock;
-+				goto out;
+ 	deb_xfer("in buffer: ");
+-	debug_dump(inbuf,12,deb_xfer);
++	debug_dump(buf, 12, deb_xfer);
  
- 			case 0x93:
- 			case 0x92:
-@@ -165,7 +169,7 @@ static int m920x_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
- 			case 0x82:
- 				m->rep_count = 0;
- 				*state = REMOTE_KEY_PRESSED;
--				goto unlock;
-+				goto out;
+ 	if (in != NULL && inlen > 0)
+-		memcpy(in,&inbuf[1],inlen);
++		memcpy(in, &buf[1], inlen);
  
- 			case 0x91:
- 			case 0x81: /* pinnacle PCTV310e */
-@@ -174,12 +178,12 @@ static int m920x_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
- 					*state = REMOTE_KEY_REPEAT;
- 				else
- 					*state = REMOTE_NO_KEY_PRESSED;
--				goto unlock;
-+				goto out;
- 
- 			default:
- 				deb("Unexpected rc state %02x\n", rc_state[0]);
- 				*state = REMOTE_NO_KEY_PRESSED;
--				goto unlock;
-+				goto out;
- 			}
- 		}
- 
-@@ -188,8 +192,8 @@ static int m920x_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
- 
- 	*state = REMOTE_NO_KEY_PRESSED;
- 
-- unlock:
--
-+ out:
-+	kfree(rc_state);
- 	return ret;
- }
- 
-@@ -339,13 +343,19 @@ static int m920x_pid_filter(struct dvb_usb_adapter *adap, int index, u16 pid, in
- static int m920x_firmware_download(struct usb_device *udev, const struct firmware *fw)
+ unlock:
+ 	mutex_unlock(&d->usb_mutex);
+@@ -222,8 +224,26 @@ static struct dvb_usb_device_properties vp7045_properties;
+ static int vp7045_usb_probe(struct usb_interface *intf,
+ 		const struct usb_device_id *id)
  {
- 	u16 value, index, size;
--	u8 read[4], *buff;
-+	u8 *read, *buff;
- 	int i, pass, ret = 0;
- 
- 	buff = kmalloc(65536, GFP_KERNEL);
- 	if (buff == NULL)
- 		return -ENOMEM;
- 
-+	read = kmalloc(4, GFP_KERNEL);
-+	if (!read) {
-+		kfree(buff);
+-	return dvb_usb_device_init(intf, &vp7045_properties,
+-				   THIS_MODULE, NULL, adapter_nr);
++	struct dvb_usb_device *d;
++	int ret = dvb_usb_device_init(intf, &vp7045_properties,
++				   THIS_MODULE, &d, adapter_nr);
++	if (ret)
++		return ret;
++
++	d->priv = kmalloc(20, GFP_KERNEL);
++	if (!d->priv) {
++		dvb_usb_device_exit(intf);
 +		return -ENOMEM;
 +	}
 +
- 	if ((ret = m920x_read(udev, M9206_FILTER, 0x0, 0x8000, read, 4)) != 0)
- 		goto done;
- 	deb("%x %x %x %x\n", read[0], read[1], read[2], read[3]);
-@@ -396,6 +406,7 @@ static int m920x_firmware_download(struct usb_device *udev, const struct firmwar
- 	deb("firmware uploaded!\n");
++	return ret;
++}
++
++static void vp7045_usb_disconnect(struct usb_interface *intf)
++{
++	struct dvb_usb_device *d = usb_get_intfdata(intf);
++	kfree(d->priv);
++	dvb_usb_device_exit(intf);
+ }
  
-  done:
-+	kfree(read);
- 	kfree(buff);
+ static struct usb_device_id vp7045_usb_table [] = {
+@@ -238,6 +258,7 @@ MODULE_DEVICE_TABLE(usb, vp7045_usb_table);
+ static struct dvb_usb_device_properties vp7045_properties = {
+ 	.usb_ctrl = CYPRESS_FX2,
+ 	.firmware = "dvb-usb-vp7045-01.fw",
++	.size_of_priv = sizeof(u8 *),
  
- 	return ret;
+ 	.num_adapters = 1,
+ 	.adapter = {
+@@ -284,7 +305,7 @@ static struct dvb_usb_device_properties vp7045_properties = {
+ static struct usb_driver vp7045_usb_driver = {
+ 	.name		= "dvb_usb_vp7045",
+ 	.probe		= vp7045_usb_probe,
+-	.disconnect = dvb_usb_device_exit,
++	.disconnect	= vp7045_usb_disconnect,
+ 	.id_table	= vp7045_usb_table,
+ };
+ 
 -- 
 1.7.4.1
 
