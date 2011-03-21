@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab1CUXvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:51:31 -0400
-Received: from kroah.org ([198.145.64.141]:49277 "EHLO coco.kroah.org"
+	id S1755961Ab1CUXvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:51:33 -0400
+Received: from kroah.org ([198.145.64.141]:49270 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754971Ab1CUXPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:18 -0400
+	id S1755197Ab1CUXPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:17 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
-Message-Id: <20110321230711.235464079@clark.kroah.org>
+Message-Id: <20110321230711.135595339@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:19 -0700
+Date: Mon, 21 Mar 2011 16:06:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [20/87] x86: Dont check for BIOS corruption in first 64K when theres no need to
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [19/87] x86/mm: Fix pgd_lock deadlock
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +26,251 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit a7bd1dafdcc13ec7add4aafc927eb5e3a8d597e6 upstream.
+commit a79e53d85683c6dd9f99c90511028adc2043031f upstream.
 
-Due to commit 781c5a67f152c17c3e4a9ed9647f8c0be6ea5ae9 it is
-likely that the number of areas to scan for BIOS corruption is 0
- -- especially when the first 64K is already reserved
-(X86_RESERVE_LOW is 64K by default).
+It's forbidden to take the page_table_lock with the irq disabled
+or if there's contention the IPIs (for tlb flushes) sent with
+the page_table_lock held will never run leading to a deadlock.
 
-If that's the case then don't set up the scan.
+Nobody takes the pgd_lock from irq context so the _irqsave can be
+removed.
 
-Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-LKML-Reference: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/check.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/mm/fault.c    |    7 +++----
+ arch/x86/mm/init_64.c  |    6 +++---
+ arch/x86/mm/pageattr.c |   18 ++++++++----------
+ arch/x86/mm/pgtable.c  |   11 ++++-------
+ arch/x86/xen/mmu.c     |   10 ++++------
+ 5 files changed, 22 insertions(+), 30 deletions(-)
 
---- a/arch/x86/kernel/check.c
-+++ b/arch/x86/kernel/check.c
-@@ -106,8 +106,8 @@ void __init setup_bios_corruption_check(
- 		addr += size;
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -229,15 +229,14 @@ void vmalloc_sync_all(void)
+ 	for (address = VMALLOC_START & PMD_MASK;
+ 	     address >= TASK_SIZE && address < FIXADDR_TOP;
+ 	     address += PMD_SIZE) {
+-
+-		unsigned long flags;
+ 		struct page *page;
+ 
+-		spin_lock_irqsave(&pgd_lock, flags);
++		spin_lock(&pgd_lock);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+ 			spinlock_t *pgt_lock;
+ 			pmd_t *ret;
+ 
++			/* the pgt_lock only for Xen */
+ 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+ 
+ 			spin_lock(pgt_lock);
+@@ -247,7 +246,7 @@ void vmalloc_sync_all(void)
+ 			if (!ret)
+ 				break;
+ 		}
+-		spin_unlock_irqrestore(&pgd_lock, flags);
++		spin_unlock(&pgd_lock);
+ 	}
+ }
+ 
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -105,18 +105,18 @@ void sync_global_pgds(unsigned long star
+ 
+ 	for (address = start; address <= end; address += PGDIR_SIZE) {
+ 		const pgd_t *pgd_ref = pgd_offset_k(address);
+-		unsigned long flags;
+ 		struct page *page;
+ 
+ 		if (pgd_none(*pgd_ref))
+ 			continue;
+ 
+-		spin_lock_irqsave(&pgd_lock, flags);
++		spin_lock(&pgd_lock);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+ 			pgd_t *pgd;
+ 			spinlock_t *pgt_lock;
+ 
+ 			pgd = (pgd_t *)page_address(page) + pgd_index(address);
++			/* the pgt_lock only for Xen */
+ 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+ 			spin_lock(pgt_lock);
+ 
+@@ -128,7 +128,7 @@ void sync_global_pgds(unsigned long star
+ 
+ 			spin_unlock(pgt_lock);
+ 		}
+-		spin_unlock_irqrestore(&pgd_lock, flags);
++		spin_unlock(&pgd_lock);
+ 	}
+ }
+ 
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -56,12 +56,10 @@ static unsigned long direct_pages_count[
+ 
+ void update_page_count(int level, unsigned long pages)
+ {
+-	unsigned long flags;
+-
+ 	/* Protect against CPA */
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	direct_pages_count[level] += pages;
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ static void split_page_count(int level)
+@@ -391,7 +389,7 @@ static int
+ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 			struct cpa_data *cpa)
+ {
+-	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
++	unsigned long nextpage_addr, numpages, pmask, psize, addr, pfn;
+ 	pte_t new_pte, old_pte, *tmp;
+ 	pgprot_t old_prot, new_prot;
+ 	int i, do_split = 1;
+@@ -400,7 +398,7 @@ try_preserve_large_page(pte_t *kpte, uns
+ 	if (cpa->force_split)
+ 		return 1;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	/*
+ 	 * Check for races, another CPU might have split this page
+ 	 * up already:
+@@ -495,14 +493,14 @@ try_preserve_large_page(pte_t *kpte, uns
  	}
  
--	printk(KERN_INFO "Scanning %d areas for low memory corruption\n",
--	       num_scan_areas);
-+	if (num_scan_areas)
-+		printk(KERN_INFO "Scanning %d areas for low memory corruption\n", num_scan_areas);
+ out_unlock:
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ 
+ 	return do_split;
  }
  
- 
-@@ -143,12 +143,12 @@ static void check_corruption(struct work
+ static int split_large_page(pte_t *kpte, unsigned long address)
  {
- 	check_for_bios_corruption();
- 	schedule_delayed_work(&bios_check_work,
--		round_jiffies_relative(corruption_check_period*HZ)); 
-+		round_jiffies_relative(corruption_check_period*HZ));
+-	unsigned long flags, pfn, pfninc = 1;
++	unsigned long pfn, pfninc = 1;
+ 	unsigned int i, level;
+ 	pte_t *pbase, *tmp;
+ 	pgprot_t ref_prot;
+@@ -516,7 +514,7 @@ static int split_large_page(pte_t *kpte,
+ 	if (!base)
+ 		return -ENOMEM;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	/*
+ 	 * Check for races, another CPU might have split this page
+ 	 * up for us already:
+@@ -588,7 +586,7 @@ out_unlock:
+ 	 */
+ 	if (base)
+ 		__free_page(base);
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ 
+ 	return 0;
+ }
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -121,14 +121,12 @@ static void pgd_ctor(struct mm_struct *m
+ 
+ static void pgd_dtor(pgd_t *pgd)
+ {
+-	unsigned long flags; /* can be called from interrupt context */
+-
+ 	if (SHARED_KERNEL_PMD)
+ 		return;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	pgd_list_del(pgd);
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
  }
  
- static int start_periodic_check_for_corruption(void)
+ /*
+@@ -260,7 +258,6 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
  {
--	if (!memory_corruption_check || corruption_check_period == 0)
-+	if (!num_scan_areas || !memory_corruption_check || corruption_check_period == 0)
- 		return 0;
+ 	pgd_t *pgd;
+ 	pmd_t *pmds[PREALLOCATED_PMDS];
+-	unsigned long flags;
  
- 	printk(KERN_INFO "Scanning for low memory corruption every %d seconds\n",
+ 	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP);
+ 
+@@ -280,12 +277,12 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ 	 * respect to anything walking the pgd_list, so that they
+ 	 * never see a partially populated pgd.
+ 	 */
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 
+ 	pgd_ctor(mm, pgd);
+ 	pgd_prepopulate_pmd(mm, pgd, pmds);
+ 
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ 
+ 	return pgd;
+ 
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1362,10 +1362,9 @@ static void xen_pgd_pin(struct mm_struct
+  */
+ void xen_mm_pin_all(void)
+ {
+-	unsigned long flags;
+ 	struct page *page;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 
+ 	list_for_each_entry(page, &pgd_list, lru) {
+ 		if (!PagePinned(page)) {
+@@ -1374,7 +1373,7 @@ void xen_mm_pin_all(void)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ /*
+@@ -1475,10 +1474,9 @@ static void xen_pgd_unpin(struct mm_stru
+  */
+ void xen_mm_unpin_all(void)
+ {
+-	unsigned long flags;
+ 	struct page *page;
+ 
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 
+ 	list_for_each_entry(page, &pgd_list, lru) {
+ 		if (PageSavePinned(page)) {
+@@ -1488,7 +1486,7 @@ void xen_mm_unpin_all(void)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ void xen_activate_mm(struct mm_struct *prev, struct mm_struct *next)
 
 
