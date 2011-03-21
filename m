@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab1CUR7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:59:40 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36122 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab1CUR7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:59:38 -0400
-Date: Mon, 21 Mar 2011 18:59:34 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [build failure] Re: [GIT PULL] First round of SCSI updates for
- 2.6.38 merge window
-Message-ID: <20110321175934.GA4849@elte.hu>
-References: <1300392635.17266.5.camel@mulgrave.site>
- <20110321122111.GA17237@elte.hu>
- <1300725211.10634.20.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1300725211.10634.20.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754015Ab1CUSEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:04:09 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:47091 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753235Ab1CUSEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:04:08 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=E1sAxpfYMNgn/a7PH4VsNhmG3FmcJEZ7tiNnDontuPIK/wwNh7qjvilbFWlSyOdLw3L35dTYy9wqs/i2+5axOnxZW/Jy3Wro3vjKU389OG2Fxjc+Yc1trY+spz/sYoWM;
+Date: Mon, 21 Mar 2011 11:04:04 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Andreas Hartmann <andihartmann@01019freenet.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: intel_ips produces constant load of 1
+Message-ID: <20110321110404.6a71a404@jbarnes-desktop>
+In-Reply-To: <im2ik4$3dd$1@ID-44327.news.uni-berlin.de>
+References: <im2ik4$3dd$1@ID-44327.news.uni-berlin.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 19 Mar 2011 16:38:38 +0100
+Andreas Hartmann <andihartmann@01019freenet.de> wrote:
 
-* James Bottomley <James.Bottomley@suse.de> wrote:
-
-> On Mon, 2011-03-21 at 13:21 +0100, Ingo Molnar wrote:
-> > * James Bottomley <James.Bottomley@suse.de> wrote:
-> > 
-> > > This represents the usual round of driver updates (fcoe, lpfc,
-> > qla2xxx, > zfcp, bnx2i, mpt2sas, megaraid_sas, iscsi, cxgbi and hpsa)
-> > plus one new > driver (bnx2fc) and as a bonus we move libsas from the
-> > old libata eh to > the new one paving the way for junking the old one
-> > (once we can get ipr > converted).
-> > 
-> > The new bnx2fc driver does not build with module support disabled:
-> > 
-> >  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:17: error: dereferencing
-> > pointer to incomplete type  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:28:
-> > error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
-> >   drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:17: error: dereferencing
-> > pointer to incomplete type  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:28:
-> > error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
-> > 
-> > and this build breakage has been reported to you two weeks ago:
-> > 
-> >  http://lkml.org/lkml/2011/3/2/468
+> Hello,
 > 
-> The actual fix is here:
+> on my MSI CR620 laptop, intel_ips produces a constant load of 1, even if
+> the machine is idle.
 > 
-> http://git.kernel.org/?p=linux/kernel/git/jejb/scsi-misc-2.6.git;a=commit;h=e81460b20107ae83a7541d12b14114ea731a86fc
+> The ips-monitor hangs in D state:
+> 
+> ps aux | grep ips
+> root       593  0.0  0.0      0     0 ?        S    17:20   0:00
+> [ips-adjust]
+> root       594  0.0  0.0      0     0 ?        D    17:20   0:00
+> [ips-monitor]
+> 
+> If the module isn't loaded, the load of the machine in idle mode is 0 as
+> expected.
 
-This too does the trick.
+This is a reporting problem, and probably due to the schedule() call
+and associated task state in the ips-monitor thread.  I thought setting
+the task state to interruptible would prevent this, but it seems like
+it's not enough for the deferrable on-stack timers?
 
-Thanks,
+At any rate, it's not actually causing increased CPU usage, so you can
+safely ignore it until we have a fix.
 
-	Ingo
+-- 
+Jesse Barnes, Intel Open Source Technology Center
