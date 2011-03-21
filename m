@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab1CUXNr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:13:47 -0400
-Received: from kroah.org ([198.145.64.141]:48968 "EHLO coco.kroah.org"
+	id S1754960Ab1CUXNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:13:44 -0400
+Received: from kroah.org ([198.145.64.141]:48947 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754843Ab1CUXNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:13:39 -0400
+	id S1754893Ab1CUXNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:36 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:51 2011
-Message-Id: <20110321231051.896899218@clark.kroah.org>
+Message-Id: <20110321231051.567857789@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:09:51 -0700
+Date: Mon, 21 Mar 2011 16:09:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Seth Heasley <seth.heasley@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [11/44] ahci: AHCI mode SATA patch for Intel DH89xxCC DeviceIDs
+        Kamal Mostafa <kamal@canonical.com>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [08/44] x86: Fix panic when handling "mem={invalid}" param
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,29 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Kamal Mostafa <kamal@canonical.com>
 
-commit a4a461a6df6c0481d5a3d61660ed97f5b539cf16 upstream.
+commit 77eed821accf5dd962b1f13bed0680e217e49112 upstream.
 
-This patch adds the AHCI-mode SATA DeviceID for the Intel DH89xxCC PCH.
+Avoid removing all of memory and panicing when "mem={invalid}"
+is specified, e.g. mem=blahblah, mem=0, or mem=nopentium (on
+platforms other than x86_32).
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+BugLink: http://bugs.launchpad.net/bugs/553464
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+LKML-Reference: <1296783486-23033-1-git-send-email-kamal@canonical.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ahci.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/e820.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -579,6 +579,7 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x1d02), board_ahci }, /* PBG AHCI */
- 	{ PCI_VDEVICE(INTEL, 0x1d04), board_ahci }, /* PBG RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1d06), board_ahci }, /* PBG RAID */
-+	{ PCI_VDEVICE(INTEL, 0x2323), board_ahci }, /* DH89xxCC AHCI */
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1245,6 +1245,9 @@ static int __init parse_memopt(char *p)
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	userdef = 1;
+ 	mem_size = memparse(p, &p);
++	/* don't remove all of memory when handling "mem={invalid}" param */
++	if (mem_size == 0)
++		return -EINVAL;
+ 	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
+ 
+ 	return 0;
 
 
