@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab1CUQ1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 12:27:08 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:39292 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654Ab1CUQ1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 12:27:06 -0400
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@nokia.com>
-Subject: [PATCH] input: tsc2005: fix locking issue
-Date: Mon, 21 Mar 2011 18:24:10 +0200
-Message-Id: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
-X-Mailer: git-send-email 1.5.6.5
-X-Nokia-AV: Clean
+	id S1753821Ab1CUQ2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 12:28:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42792 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536Ab1CUQ2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 12:28:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=o7zcb57jITGHmjt+6n5GC9TUT/0hVrFuzIwjeDjAKjWnLXM8yLP/tV1Bb0aCR+YB4o
+         wryCppoosxCKfL3Mo2wSlQzlC8zcdG0B7l6Lgh+jQ6aUjkpdAx+4QQQTZQOp6qSSvWdr
+         xErr3NEvX7J5LOUY6GPfNIJIFm7hhx9Nz27pQ=
+Message-ID: <4D877C4B.9090602@gmail.com>
+Date: Mon, 21 Mar 2011 19:26:51 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Jack Steiner <steiner@sgi.com>, tglx@linutronix.de, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu>
+In-Reply-To: <20110321161425.GC23614@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0b950d3 (Input: tsc2005 - add open/close) introduced a
-locking issue with the ESD watchdog: __tsc2005_disable() is calling
-cancel_delayed_work_sync() with mutex held, and the work also needs the
-same mutex.
+On 03/21/2011 07:14 PM, Ingo Molnar wrote:
+> 
+> * Jack Steiner <steiner@sgi.com> wrote:
+> 
+>> This fixes a problem seen on UV systems handling NMIs from the node controller.
+>> The original code used the DIE notifier as the hook to get to the UV NMI
+>> handler. This does not work if performance counters are active - the hw_perf
+>> code consumes the NMI and the UV handler is not called.
+> 
+> Sigh:
+> 
+>> --- linux.orig/arch/x86/kernel/traps.c	2011-03-21 09:05:43.000000000 -0500
+>> +++ linux/arch/x86/kernel/traps.c	2011-03-21 09:13:01.306555675 -0500
+>> @@ -57,6 +57,7 @@
+>>  #include <asm/mce.h>
+>>  
+>>  #include <asm/mach_traps.h>
+>> +#include <asm/uv/uv.h>
+>>  
+>>  #ifdef CONFIG_X86_64
+>>  #include <asm/x86_init.h>
+>> @@ -397,13 +398,16 @@ unknown_nmi_error(unsigned char reason,
+>>  static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>>  {
+>>  	unsigned char reason = 0;
+>> +	int handled;
+>>  
+>>  	/*
+>>  	 * CPU-specific NMI must be processed before non-CPU-specific
+>>  	 * NMI, otherwise we may lose it, because the CPU-specific
+>>  	 * NMI can not be detected/processed on other CPUs.
+>>  	 */
+>> -	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+>> +	handled = uv_handle_nmi(regs, reason);
+>> +	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP ||
+>> +	    		handled)
+>>  		return;
+> 
+> Such code is extremely ugly. Please *reduce* the number of is_uv_system() type 
+> of hacks in core x86 code, not increase it!
+> 
+> Any reason why a higher priority for the UV NMI handler cannot solve the 'perf 
+> eats the NMI' problem?
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Fix the problem by using cancel_delayed_work() on disable. If
-the ESD work was running it will check if the device is closed
-or suspended, and in that case it will do nothing and skip
-re-arming. cancel_delayed_work_sync() is still needed when the module
-is removed.
+Yeah, Don has made priority system for NMI notifiers. Need to look in.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
----
- drivers/input/touchscreen/tsc2005.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
-index 8742061..3a15587 100644
---- a/drivers/input/touchscreen/tsc2005.c
-+++ b/drivers/input/touchscreen/tsc2005.c
-@@ -345,7 +345,7 @@ static void __tsc2005_disable(struct tsc2005 *ts)
- 	disable_irq(ts->spi->irq);
- 	del_timer_sync(&ts->penup_timer);
- 
--	cancel_delayed_work_sync(&ts->esd_work);
-+	cancel_delayed_work(&ts->esd_work);
- 
- 	enable_irq(ts->spi->irq);
- }
-@@ -479,6 +479,12 @@ static void tsc2005_esd_work(struct work_struct *work)
- 
- 	mutex_lock(&ts->mutex);
- 
-+	/* The device has been just closed or suspended. */
-+	if (!ts->opened || ts->suspended) {
-+		mutex_unlock(&ts->mutex);
-+		return;
-+	}
-+
- 	if (time_is_after_jiffies(ts->last_valid_interrupt +
- 				  msecs_to_jiffies(ts->esd_timeout)))
- 		goto out;
-@@ -685,6 +691,7 @@ static int __devexit tsc2005_remove(struct spi_device *spi)
- 
- 	free_irq(ts->spi->irq, ts);
- 	input_unregister_device(ts->idev);
-+	cancel_delayed_work_sync(&ts->esd_work);
- 	kfree(ts);
- 
- 	spi_set_drvdata(spi, NULL);
 -- 
-1.5.6.5
-
+    Cyrill
