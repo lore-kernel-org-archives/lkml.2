@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1CUSeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:34:04 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:43617 "EHLO mx01.d-labs.de"
+	id S1754245Ab1CUSeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:34:09 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:43651 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab1CUSeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:34:01 -0400
+	id S1751161Ab1CUSeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:34:06 -0400
 From: Florian Mickler <florian@mickler.org>
 To: mchehab@infradead.org
 Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
@@ -13,9 +13,9 @@ Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
         aet@rasterburn.org, pb@linuxtv.org, mkrufky@linuxtv.org,
         nick@nick-andrew.net, max@veneto.com, janne-dvb@grunau.be,
         Florian Mickler <florian@mickler.org>
-Subject: [PATCH 1/6] [media] a800: get rid of on-stack dma buffers
-Date: Mon, 21 Mar 2011 19:33:41 +0100
-Message-Id: <1300732426-18958-2-git-send-email-florian@mickler.org>
+Subject: [PATCH 4/6] [media] dw2102: get rid of on-stack dma buffer
+Date: Mon, 21 Mar 2011 19:33:44 +0100
+Message-Id: <1300732426-18958-5-git-send-email-florian@mickler.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300732426-18958-1-git-send-email-florian@mickler.org>
 References: <1300732426-18958-1-git-send-email-florian@mickler.org>
@@ -34,44 +34,41 @@ Note: This change is tested to compile only, as I don't have the hardware.
 
 Signed-off-by: Florian Mickler <florian@mickler.org>
 ---
- drivers/media/dvb/dvb-usb/a800.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+ drivers/media/dvb/dvb-usb/dw2102.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-usb/a800.c b/drivers/media/dvb/dvb-usb/a800.c
-index 53b93a4..fe2366b 100644
---- a/drivers/media/dvb/dvb-usb/a800.c
-+++ b/drivers/media/dvb/dvb-usb/a800.c
-@@ -78,17 +78,26 @@ static struct rc_map_table rc_map_a800_table[] = {
- 
- static int a800_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
+diff --git a/drivers/media/dvb/dvb-usb/dw2102.c b/drivers/media/dvb/dvb-usb/dw2102.c
+index 2c307ba..4c8ff39 100644
+--- a/drivers/media/dvb/dvb-usb/dw2102.c
++++ b/drivers/media/dvb/dvb-usb/dw2102.c
+@@ -101,12 +101,16 @@ static int dw210x_op_rw(struct usb_device *dev, u8 request, u16 value,
+ 			u16 index, u8 * data, u16 len, int flags)
  {
--	u8 key[5];
-+	int ret;
-+	u8 *key = kmalloc(5, GFP_KERNEL);
-+	if (!key)
+ 	int ret;
+-	u8 u8buf[len];
+-
++	u8 *u8buf;
+ 	unsigned int pipe = (flags == DW210X_READ_MSG) ?
+ 				usb_rcvctrlpipe(dev, 0) : usb_sndctrlpipe(dev, 0);
+ 	u8 request_type = (flags == DW210X_READ_MSG) ? USB_DIR_IN : USB_DIR_OUT;
+ 
++	u8buf = kmalloc(len, GFP_KERNEL);
++	if (!u8buf)
 +		return -ENOMEM;
 +
- 	if (usb_control_msg(d->udev,usb_rcvctrlpipe(d->udev,0),
- 				0x04, USB_TYPE_VENDOR | USB_DIR_IN, 0, 0, key, 5,
--				2000) != 5)
--		return -ENODEV;
-+				2000) != 5) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
++
+ 	if (flags == DW210X_WRITE_MSG)
+ 		memcpy(u8buf, data, len);
+ 	ret = usb_control_msg(dev, pipe, request, request_type | USB_TYPE_VENDOR,
+@@ -114,6 +118,8 @@ static int dw210x_op_rw(struct usb_device *dev, u8 request, u16 value,
  
- 	/* call the universal NEC remote processor, to find out the key's state and event */
- 	dvb_usb_nec_rc_key_to_event(d,key,event,state);
- 	if (key[0] != 0)
- 		deb_rc("key: %x %x %x %x %x\n",key[0],key[1],key[2],key[3],key[4]);
--	return 0;
-+	ret = 0;
-+out:
-+	kfree(key);
-+	return ret;
+ 	if (flags == DW210X_READ_MSG)
+ 		memcpy(data, u8buf, len);
++
++	kfree(u8buf);
+ 	return ret;
  }
  
- /* USB Driver stuff */
 -- 
 1.7.4.1
 
