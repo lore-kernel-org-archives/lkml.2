@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab1CUMg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:36:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64804 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab1CUMg4 convert rfc822-to-8bit (ORCPT
+	id S1753249Ab1CUMkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 08:40:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56212 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab1CUMkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:36:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=rBYO23ASATBsIPBS6ZJ1ehy9d8uZ5XGSNDd4UERZk1BkHQfmzylxSkLB5Hd18iJxVB
-         jbbNFdSPPtHgRS9gWXlDUE8aDAoXDWK8apkYBkq4UeU632cC2MPdCwOqEzxUH3vmP2oP
-         3H5CMP9wmZfEINFFfxUD8B1VPEAv1vGGUQqRY=
+	Mon, 21 Mar 2011 08:40:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 0/5] make sdhci device drivers self registered
+Date: Mon, 21 Mar 2011 13:39:45 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, sameo@linux.intel.com, grant.likely@secretlab.ca
+References: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
+In-Reply-To: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20110124214225.GO24104@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
-	<1295891761-18366-9-git-send-email-catalin.marinas@arm.com>
-	<AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com>
-	<20110124214225.GO24104@n2100.arm.linux.org.uk>
-Date: Mon, 21 Mar 2011 12:36:55 +0000
-X-Google-Sender-Auth: 3ceKl3vIpWxYPHhEOxgtpBOtI9E
-Message-ID: <AANLkTikH9tBTGCiJ-+dvhh1tajMVq_6ua41MMZmq48sC@mail.gmail.com>
-Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
- format definitions
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nick Piggin <npiggin@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103211339.45305.arnd@arndb.de>
+X-Provags-ID: V02:K0:kQ0HL717DMaLJ8WNWNE9lKIYmyQLDRVmaritr3moe6j
+ 9giY5W6tz/k60znRKzIuPF8gOZBiPYLwhvN2k1u4GE+MhgBGag
+ CPHrMRQdjP9oPu1xuhT0nIqNx4Zia2xTXYVdQ4gFj3PXpHdKj+
+ 0sQHJQkxgJMjdTlvDupy+5QcnEak1R5b0Mc5z0hP+ykknWivtt
+ SHv8U7xDuiLsvnLFlHyxg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Monday 21 March 2011, Shawn Guo wrote:
+> This patch set is to take sdhci device driver specific things out
+> from sdhci-pltfm.c and make them self registered. Here are the
+> differences it makes.
+> 
+>  * Get the sdhci device driver follow the Linux trend that driver
+>    take the registration by its own
+>  * sdhci-pltfm.c becomes significantly simpler and only has common
+>    support functions there
+>  * All sdhci device specific stuff are going back its own driver
+>  * The dt and non-dt support share the same pair of .probe and
+>    .remove hooks.
+> 
+> The first one patch adds common support function into sdhci-pltfm.c
+> when changing sdhci-esdhc-imx driver, while the last one cleans up
+> sdhci-pltfm.c when changing sdhci-tegra driver.
+> 
+> Only the patch of sdhci-esdhc-imx are tested on hardware, and others
+> are just build tested.  And it is based on the tree below.
+> 
+>   git://git.secretlab.ca/git/linux-2.6.git devicetree/test
+> 
+> Comments are welcomed and appreciated.
 
-On 24 January 2011 21:42, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Jan 25, 2011 at 08:26:42AM +1100, Nick Piggin wrote:
->> Too bad about the PAE thing; my condolences.
->>
->>
->> On Tue, Jan 25, 2011 at 4:55 AM, Catalin Marinas
->> <catalin.marinas@arm.com> wrote:
->> > This patch introduces the pgtable-3level*.h files with definitions
->> > specific to the LPAE page table format (3 levels of page tables).
->>
->> Seeing as you're shaking up these definitions, what do you think about
->> switching from 4level-fixup.h to pgtable-nopud.h / pgtable-nopmd.h headers?
->> One day eventually it would be nice to get rid of the fixup mode.
->
-> I have patches to do this which I de-queued for the last merge window.
-> It's not entirely trivial and without problem.  You can find the patches
-> in linux-next now.
->
-> I was waiting for the new set of patches from Catalin before going back
-> and working out the solutions to some of those problems.
+Hi Shawn,
 
-Any plans for the nopmd patches? I haven't seen them in -next or on the list.
+The changes you make look very nice, great work there!
 
-Thanks.
+I think the split of the series into five patches is not ideal
+because you have more interdependencies than necessary, and it's
+not clear that the series can be safely bisected, especially
+with the way you do all the Kconfig/Makefile updates at the
+end.
 
--- 
-Catalin
+A nicer way to partition the series would be
+
+1.   Add sdhci_pltfm_init helper
+2-5. Convert each of the users, including the respective
+     Kconfig/Makefile changes
+6.   remove obsolete code from sdhci-pltfm.c
+
+As I said, that's just a detail and the end result is the same.
+If you don't get any other feedback and Chris is happy with the
+changes, I wouldn't expect you to reshuffle all the patches just
+for this.
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
