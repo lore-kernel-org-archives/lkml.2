@@ -1,92 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab1CUD3S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 23:29:18 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:32023 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab1CUD3Q (ORCPT
+	id S1752735Ab1CUD3j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 23:29:39 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:1875 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab1CUD3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 23:29:16 -0400
+	Sun, 20 Mar 2011 23:29:21 -0400
 From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
 To: jbarnes@virtuousgeek.org
 Cc: rjw@sisk.pl, mjg59@srcf.ucam.org,
         Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Message-Id: <20110321032510.2353.69194.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+Message-Id: <20110321032516.2353.22321.sendpatchset@nchumbalkar.americas.hpqcorp.net>
 In-Reply-To: <20110321032504.2353.59070.sendpatchset@nchumbalkar.americas.hpqcorp.net>
 References: <20110321032504.2353.59070.sendpatchset@nchumbalkar.americas.hpqcorp.net>
-Subject: [RFC][PATCH v3 2/3]: PCI: Changing ASPM policy, via /sys, to POWERSAVE could cause NMIs
-Date: Mon, 21 Mar 2011 03:29:14 +0000 (UTC)
+Subject: [RFC][PATCH v3 3/3]: PCI: Disable ASPM when _OSC control is not granted for PCIe services
+Date: Mon, 21 Mar 2011 03:29:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-v3 -> v2: Modified the text that describes the problem
-v2 -> v1: Returned -EPERM
-v1      : http://marc.info/?l=linux-pci&m=130013194803727&w=2
+v3 -> v2: Added text to describe the problem
+v2 -> v1: Split this patch from v1
+v1	: Part of: http://marc.info/?l=linux-pci&m=130042212003242&w=2
 
-For servers whose hardware cannot handle ASPM the BIOS ought to set the
-FADT bit shown below:
-In Sec 5.2.9.3 (IA-PC Boot Arch. Flags) of ACPI4.0a Specification, please
-see Table 5-11:
-PCIe ASPM Controls: If set, indicates to OSPM that it must not enable
-OPSM ASPM control on this platform.
 
-However there are shipping servers whose BIOS did not set this bit. (An
-example is the HP ProLiant DL385 G6. A Maintenance BIOS will fix that).
-For such servers even if a call is made via pci_no_aspm(), based on _OSC
-support in the BIOS, it may be too late because the ASPM code may have 
-already allocated and filled its "link_list".
+Disable ASPM when no _OSC control for PCIe services is granted
+by the BIOS. This is to protect systems with a buggy BIOS that 
+did not set the ACPI FADT "ASPM Controls" bit even though the 
+underlying HW can't do ASPM.
 
-So if a user sets the ASPM "policy" to "powersave" via /sys then
-pcie_aspm_set_policy() will run through the "link_list" and re-configure
-ASPM policy on devices that advertise ASPM L0s/L1 capability:
-# echo powersave > /sys/module/pcie_aspm/parameters/policy
-# cat /sys/module/pcie_aspm/parameters/policy
-default performance [powersave]
+To turn "on" ASPM the minimum the BIOS needs to do:
+1. Clear the ACPI FADT "ASPM Controls" bit.
+2. Support _OSC appropriately
 
-That can cause NMIs since the hardware doesn't play well with ASPM:
-[ 1651.906015] NMI: PCI system error (SERR) for reason b1 on CPU 0.
-[ 1651.906015] Dazed and confused, but trying to continue
+There is no _OSC Control bit for ASPM. However, we expect the BIOS to 
+support _OSC for a Root Bridge that originates a PCIe hierarchy. If this
+is not the case - we are better off not enabling ASPM on that server.
 
-Ideally, the BIOS should have set that FADT bit in the first place but we
-could be more robust - especially given the fact that Windows doesn't
-cause NMIs in the above scenario.
+Commit 852972acff8f10f3a15679be2059bb94916cba5d (ACPI: Disable ASPM if the 
+Platform won't provide _OSC control for PCIe) describes the above scenario.
+To quote verbatim from there: 
+[The PCI SIG documentation for the _OSC OS/firmware handshaking interface
+states:
 
-There should be a sanity check to not allow a user to modify ASPM policy
-when aspm_disabled is set.
+"If the _OSC control method is absent from the scope of a host bridge
+device, then the operating system must not enable or attempt to use any
+features defined in this section for the hierarchy originated by the host
+bridge."
+
+The obvious interpretation of this is that the OS should not attempt to use
+PCIe hotplug, PME or AER - however, the specification also notes that an
+_OSC method is *required* for PCIe hierarchies, and experimental validation
+with An Alternative OS indicates that it doesn't use any PCIe functionality
+if the _OSC method is missing. That arguably means we shouldn't be using
+MSI or extended config space, but right now our problems seem to be limited
+to vendors being surprised when ASPM gets enabled on machines when other
+OSs refuse to do so. So, for now, let's just disable ASPM if the _OSC
+method doesn't exist or refuses to hand over PCIe capability control.]
 
 Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
 Cc: Matthew Garrett <mjg59@srcf.ucam.org>
 
 ---
- drivers/pci/pcie/aspm.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/acpi/pci_root.c         |    9 +++++++--
+ drivers/pci/pcie/portdrv_core.c |    5 +----
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index e768620..7ab61ac 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -769,6 +769,8 @@ static int pcie_aspm_set_policy(const char *val, struct kernel_param *kp)
- 	int i;
- 	struct pcie_link_state *link;
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 8524939..2b012db 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -32,6 +32,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/pci.h>
+ #include <linux/pci-acpi.h>
++#include <linux/pci-aspm.h>
+ #include <linux/acpi.h>
+ #include <linux/slab.h>
+ #include <acpi/acpi_bus.h>
+@@ -591,12 +592,16 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
  
-+	if (aspm_disabled)
-+		return -EPERM;
- 	for (i = 0; i < ARRAY_SIZE(policy_str); i++)
- 		if (!strncmp(val, policy_str[i], strlen(policy_str[i])))
- 			break;
-@@ -823,6 +825,8 @@ static ssize_t link_state_store(struct device *dev,
- 	struct pcie_link_state *link, *root = pdev->link_state->root;
- 	u32 val = buf[0] - '0', state = 0;
+ 		status = acpi_pci_osc_control_set(device->handle, &flags,
+ 					OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
+-		if (ACPI_SUCCESS(status))
++		if (ACPI_SUCCESS(status)) {
+ 			dev_info(root->bus->bridge,
+ 				"ACPI _OSC control (0x%02x) granted\n", flags);
+-		else
++		} else {
+ 			dev_dbg(root->bus->bridge,
+ 				"ACPI _OSC request failed (code %d)\n", status);
++			printk(KERN_INFO "Unable to assume _OSC PCIe control. "
++				"Disabling ASPM\n");
++			pcie_no_aspm();
++		}
+ 	}
  
-+	if (aspm_disabled)
-+		return -EPERM;
- 	if (n < 1 || val > 3)
- 		return -EINVAL;
+ 	pci_acpi_add_bus_pm_notifier(device, root->bus);
+diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+index 5130d0d..595654a 100644
+--- a/drivers/pci/pcie/portdrv_core.c
++++ b/drivers/pci/pcie/portdrv_core.c
+@@ -15,7 +15,6 @@
+ #include <linux/slab.h>
+ #include <linux/pcieport_if.h>
+ #include <linux/aer.h>
+-#include <linux/pci-aspm.h>
  
+ #include "../pci.h"
+ #include "portdrv.h"
+@@ -356,10 +355,8 @@ int pcie_port_device_register(struct pci_dev *dev)
+ 
+ 	/* Get and check PCI Express port services */
+ 	capabilities = get_port_device_capability(dev);
+-	if (!capabilities) {
+-		pcie_no_aspm();
++	if (!capabilities)
+ 		return 0;
+-	}
+ 
+ 	pci_set_master(dev);
+ 	/*
 -- 
 1.7.1.2
 
