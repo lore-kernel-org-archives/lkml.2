@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab1CUXNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:13:44 -0400
-Received: from kroah.org ([198.145.64.141]:48947 "EHLO coco.kroah.org"
+	id S1755250Ab1CUX7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:59:46 -0400
+Received: from kroah.org ([198.145.64.141]:49004 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754893Ab1CUXNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:13:36 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:51 2011
-Message-Id: <20110321231051.567857789@clark.kroah.org>
+	id S1754962Ab1CUXNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:52 2011
+Message-Id: <20110321231052.489889234@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:09:48 -0700
+Date: Mon, 21 Mar 2011 16:09:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kamal Mostafa <kamal@canonical.com>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [08/44] x86: Fix panic when handling "mem={invalid}" param
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>
+Subject: [17/44] USB: serial/kobil_sct, fix potential tty NULL dereference
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 77eed821accf5dd962b1f13bed0680e217e49112 upstream.
+commit 6960f40a954619857e7095a6179eef896f297077 upstream.
 
-Avoid removing all of memory and panicing when "mem={invalid}"
-is specified, e.g. mem=blahblah, mem=0, or mem=nopentium (on
-platforms other than x86_32).
+Make sure that we check the return value of tty_port_tty_get.
+Sometimes it may return NULL and we later dereference that.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-BugLink: http://bugs.launchpad.net/bugs/553464
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-LKML-Reference: <1296783486-23033-1-git-send-email-kamal@canonical.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+The only place here is in kobil_read_int_callback, so fix it.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/e820.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/kobil_sct.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -1245,6 +1245,9 @@ static int __init parse_memopt(char *p)
+--- a/drivers/usb/serial/kobil_sct.c
++++ b/drivers/usb/serial/kobil_sct.c
+@@ -372,7 +372,7 @@ static void kobil_read_int_callback(stru
+ 	}
  
- 	userdef = 1;
- 	mem_size = memparse(p, &p);
-+	/* don't remove all of memory when handling "mem={invalid}" param */
-+	if (mem_size == 0)
-+		return -EINVAL;
- 	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
+ 	tty = tty_port_tty_get(&port->port);
+-	if (urb->actual_length) {
++	if (tty && urb->actual_length) {
  
- 	return 0;
+ 		/* BEGIN DEBUG */
+ 		/*
 
 
