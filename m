@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab1CUXPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:34 -0400
-Received: from kroah.org ([198.145.64.141]:49304 "EHLO coco.kroah.org"
+	id S1755541Ab1CUXrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:47:36 -0400
+Received: from kroah.org ([198.145.64.141]:49393 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab1CUXPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:20 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
-Message-Id: <20110321230711.437764260@clark.kroah.org>
+	id S1755390Ab1CUXPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:35 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:13 2011
+Message-Id: <20110321230713.083826361@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:21 -0700
+Date: Mon, 21 Mar 2011 16:06:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [22/87] ftrace: Fix memory leak with function graph and cpu hotplug
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [38/87] ath9k_hw: Fix incorrect macversion and macrev checks
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,150 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Senthil Balasubramanian <senthilkumar@atheros.com>
 
-commit 868baf07b1a259f5f3803c1dc2777b6c358f83cf upstream.
+commit ac45c12dfb3f727a5a7a3332ed9c11b4a5ab287e upstream.
 
-When the fuction graph tracer starts, it needs to make a special
-stack for each task to save the real return values of the tasks.
-All running tasks have this stack created, as well as any new
-tasks.
+There are few places where we are checking for macversion and revsions
+before RTC is powered ON. However we are reading the macversion and
+revisions only after RTC is powered ON and so both macversion and
+revisions are actully zero and this leads to incorrect srev checks
 
-On CPU hot plug, the new idle task will allocate a stack as well
-when init_idle() is called. The problem is that cpu hotplug does
-not create a new idle_task. Instead it uses the idle task that
-existed when the cpu went down.
+Incorrect srev checks can cause registers to be configured wrongly and can
+cause unexpected behavior. Fixing this seems to address the ASPM issue that
+we have observed. The laptop becomes very slow and hangs mostly with ASPM L1
+enabled without this fix.
 
-ftrace_graph_init_task() will add a new ret_stack to the task
-that is given to it. Because a clone will make the task
-have a stack of its parent it does not check if the task's
-ret_stack is already NULL or not. When the CPU hotplug code
-starts a CPU up again, it will allocate a new stack even
-though one already existed for it.
+fix this by reading the macversion and revisisons even before we start
+using them. There is no reason why should we delay reading this info
+until RTC is powered on as this is just a register information.
 
-The solution is to treat the idle_task specially. In fact, the
-function_graph code already does, just not at init_idle().
-Instead of using the ftrace_graph_init_task() for the idle task,
-which that function expects the task to be a clone, have a
-separate ftrace_graph_init_idle_task(). Also, we will create a
-per_cpu ret_stack that is used by the idle task. When we call
-ftrace_graph_init_idle_task() it will check if the idle task's
-ret_stack is NULL, if it is, then it will assign it the per_cpu
-ret_stack.
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/ftrace.h |    2 +
- kernel/sched.c         |    2 -
- kernel/trace/ftrace.c  |   52 ++++++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 48 insertions(+), 8 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -428,6 +428,7 @@ extern void unregister_ftrace_graph(void
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -525,6 +525,8 @@ static int __ath9k_hw_init(struct ath_hw
+ 	ah->WARegVal |= (AR_WA_D3_L1_DISABLE |
+ 			 AR_WA_ASPM_TIMER_BASED_DISABLE);
  
- extern void ftrace_graph_init_task(struct task_struct *t);
- extern void ftrace_graph_exit_task(struct task_struct *t);
-+extern void ftrace_graph_init_idle_task(struct task_struct *t, int cpu);
- 
- static inline int task_curr_ret_stack(struct task_struct *t)
- {
-@@ -451,6 +452,7 @@ static inline void unpause_graph_tracing
- 
- static inline void ftrace_graph_init_task(struct task_struct *t) { }
- static inline void ftrace_graph_exit_task(struct task_struct *t) { }
-+static inline void ftrace_graph_init_idle_task(struct task_struct *t, int cpu) { }
- 
- static inline int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			  trace_func_graph_ent_t entryfunc)
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5706,7 +5706,7 @@ void __cpuinit init_idle(struct task_str
- 	 * The idle tasks have their own, simple scheduling class:
- 	 */
- 	idle->sched_class = &idle_sched_class;
--	ftrace_graph_init_task(idle);
-+	ftrace_graph_init_idle_task(idle, cpu);
- }
- 
- /*
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3328,7 +3328,7 @@ static int start_graph_tracing(void)
- 	/* The cpu_boot init_task->ret_stack will never be freed */
- 	for_each_online_cpu(cpu) {
- 		if (!idle_task(cpu)->ret_stack)
--			ftrace_graph_init_task(idle_task(cpu));
-+			ftrace_graph_init_idle_task(idle_task(cpu), cpu);
++	ath9k_hw_read_revisions(ah);
++
+ 	if (!ath9k_hw_set_reset_reg(ah, ATH9K_RESET_POWER_ON)) {
+ 		ath_print(common, ATH_DBG_FATAL,
+ 			  "Couldn't reset chip\n");
+@@ -1090,8 +1092,6 @@ static bool ath9k_hw_set_reset_power_on(
+ 		return false;
  	}
  
- 	do {
-@@ -3418,6 +3418,49 @@ void unregister_ftrace_graph(void)
- 	mutex_unlock(&ftrace_lock);
- }
- 
-+static DEFINE_PER_CPU(struct ftrace_ret_stack *, idle_ret_stack);
-+
-+static void
-+graph_init_task(struct task_struct *t, struct ftrace_ret_stack *ret_stack)
-+{
-+	atomic_set(&t->tracing_graph_pause, 0);
-+	atomic_set(&t->trace_overrun, 0);
-+	t->ftrace_timestamp = 0;
-+	/* make curr_ret_stack visable before we add the ret_stack */
-+	smp_wmb();
-+	t->ret_stack = ret_stack;
-+}
-+
-+/*
-+ * Allocate a return stack for the idle task. May be the first
-+ * time through, or it may be done by CPU hotplug online.
-+ */
-+void ftrace_graph_init_idle_task(struct task_struct *t, int cpu)
-+{
-+	t->curr_ret_stack = -1;
-+	/*
-+	 * The idle task has no parent, it either has its own
-+	 * stack or no stack at all.
-+	 */
-+	if (t->ret_stack)
-+		WARN_ON(t->ret_stack != per_cpu(idle_ret_stack, cpu));
-+
-+	if (ftrace_graph_active) {
-+		struct ftrace_ret_stack *ret_stack;
-+
-+		ret_stack = per_cpu(idle_ret_stack, cpu);
-+		if (!ret_stack) {
-+			ret_stack = kmalloc(FTRACE_RETFUNC_DEPTH
-+					    * sizeof(struct ftrace_ret_stack),
-+					    GFP_KERNEL);
-+			if (!ret_stack)
-+				return;
-+			per_cpu(idle_ret_stack, cpu) = ret_stack;
-+		}
-+		graph_init_task(t, ret_stack);
-+	}
-+}
-+
- /* Allocate a return stack for newly created task */
- void ftrace_graph_init_task(struct task_struct *t)
- {
-@@ -3433,12 +3476,7 @@ void ftrace_graph_init_task(struct task_
- 				GFP_KERNEL);
- 		if (!ret_stack)
- 			return;
--		atomic_set(&t->tracing_graph_pause, 0);
--		atomic_set(&t->trace_overrun, 0);
--		t->ftrace_timestamp = 0;
--		/* make curr_ret_stack visable before we add the ret_stack */
--		smp_wmb();
--		t->ret_stack = ret_stack;
-+		graph_init_task(t, ret_stack);
- 	}
+-	ath9k_hw_read_revisions(ah);
+-
+ 	return ath9k_hw_set_reset(ah, ATH9K_RESET_WARM);
  }
  
 
