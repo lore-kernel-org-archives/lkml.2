@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab1CUR6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:58:36 -0400
-Received: from realvnc.com ([146.101.152.142]:47608 "EHLO realvnc.com"
+	id S1754075Ab1CUR7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:59:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36122 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab1CUR6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:58:35 -0400
-Message-ID: <4D8791C9.1080407@realvnc.com>
-Date: Mon, 21 Mar 2011 17:58:33 +0000
-From: Toby Gray <toby.gray@realvnc.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1754004Ab1CUR7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:59:38 -0400
+Date: Mon, 21 Mar 2011 18:59:34 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [build failure] Re: [GIT PULL] First round of SCSI updates for
+ 2.6.38 merge window
+Message-ID: <20110321175934.GA4849@elte.hu>
+References: <1300392635.17266.5.camel@mulgrave.site>
+ <20110321122111.GA17237@elte.hu>
+ <1300725211.10634.20.camel@mulgrave.site>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: cdc-acm: Prevent data loss when filling tty buffer.
-References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com> <20110321165612.0f764046@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110321165612.0f764046@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1300725211.10634.20.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/03/2011 16:56, Alan Cox wrote:
-> On Mon, 21 Mar 2011 15:52:25 +0000
-> Toby Gray<toby.gray@realvnc.com>  wrote:
 
->> This patch adds checking for how many bytes have been inserted into the tty
->> buffer and returns any remaining bytes back to the filled read buffer list.
-> How does ACM handle flow control - is the expectation that it gets flow
-> controlled in hardware by not having the opportunity to send bits
-> to the host end ? If so this seems to make sense.
-Yes, the expectation is that it is flow controlled in hardware if a bulk 
-endpoint is used. To this end cdc-acm.ko doesn't issue any new read 
-requests while the tty is throttled. This works as flow control most of 
-the time, but not when the data is arriving quickly (a few megabytes per 
-second).
+* James Bottomley <James.Bottomley@suse.de> wrote:
 
-Thank you for your other comments. I had initially gone for the memmove 
-thinking that having a buffer head as well as a base would have 
-needlessly complicated the rest of the code.
+> On Mon, 2011-03-21 at 13:21 +0100, Ingo Molnar wrote:
+> > * James Bottomley <James.Bottomley@suse.de> wrote:
+> > 
+> > > This represents the usual round of driver updates (fcoe, lpfc,
+> > qla2xxx, > zfcp, bnx2i, mpt2sas, megaraid_sas, iscsi, cxgbi and hpsa)
+> > plus one new > driver (bnx2fc) and as a bonus we move libsas from the
+> > old libata eh to > the new one paving the way for junking the old one
+> > (once we can get ipr > converted).
+> > 
+> > The new bnx2fc driver does not build with module support disabled:
+> > 
+> >  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:17: error: dereferencing
+> > pointer to incomplete type  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:28:
+> > error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
+> >   drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:17: error: dereferencing
+> > pointer to incomplete type  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:28:
+> > error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
+> > 
+> > and this build breakage has been reported to you two weeks ago:
+> > 
+> >  http://lkml.org/lkml/2011/3/2/468
+> 
+> The actual fix is here:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/jejb/scsi-misc-2.6.git;a=commit;h=e81460b20107ae83a7541d12b14114ea731a86fc
 
-Having made the required changes it seems I'd greatly overestimated the 
-changes and it is definitely far cleaner without the memmove.
+This too does the trick.
 
-Regards,
+Thanks,
 
-Toby
+	Ingo
