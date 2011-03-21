@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab1CUBBQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 21:01:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33952 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab1CUBBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 21:01:13 -0400
-Date: Sun, 20 Mar 2011 18:01:06 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Greg KH <gregkh@suse.de>, Oliver Neukum <oneukum@suse.de>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: "usb_wwan: error case of resume" (16871dcac) is buggy
-Message-Id: <20110320180106.a835ce67.randy.dunlap@oracle.com>
-In-Reply-To: <alpine.LNX.2.00.1103210140530.19969@pobox.suse.cz>
-References: <alpine.LNX.2.00.1103210130260.19969@pobox.suse.cz>
-	<alpine.LNX.2.00.1103210140530.19969@pobox.suse.cz>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1752057Ab1CUBD5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 21:03:57 -0400
+Received: from sh.osrg.net ([192.16.179.4]:33071 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752353Ab1CUBDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 21:03:52 -0400
+Date: Mon, 21 Mar 2011 10:02:59 +0900
+To: roel.kluin@gmail.com
+Cc: James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] osst: wrong index used in inner loop
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4D8509D1.6080107@gmail.com>
+References: <4D8509D1.6080107@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D86A355.0008,ss=1,fgs=0
+Message-Id: <20110321100300P.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 21 Mar 2011 10:03:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Mar 2011 01:41:14 +0100 (CET) Jiri Kosina wrote:
+On Sat, 19 Mar 2011 20:53:53 +0100
+roel <roel.kluin@gmail.com> wrote:
 
+> Index i was already used in the outer loop.
 > 
-> [ fixing Oliver's address in CC ]
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+>  drivers/scsi/osst.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
 > 
-> On Mon, 21 Mar 2011, Jiri Kosina wrote:
-> 
-> > Hi,
-> > 
-> > the commit in subject make the kernel with CONFIG_PM_RUNTIME unset fail 
-> > during compilation, as struct dev_pm_info doesn't have whole bunch of 
-> > members in such case.
-> > 
-> > The commit in question adds this code:
-> > 
-> > 	/* we have to throw away the rest */
-> > 	do {
-> > 		unbusy_queued_urb(urb, portdata);
-> > 		//extremely dirty
-> > 		atomic_dec(&port->serial->interface->dev.power.usage_count);
-> > 	} while ((urb = usb_get_from_anchor(&portdata->delayed)));
-> > 
-> > The 'extermely dirty' comment makes me a bit nervous whether the patch 
-> > below is correct or some more thinking would be necessary.
-> > 
-> > 
-> > 
-> > From: Jiri Kosina <jkosina@suse.cz>
-> > Subject: [PATCH] USB: usb_wvan: fix compilation for !CONFIG_PM_RUNTIME case
-> > 
-> > With CONFIG_PM_RUNTIME unset, struct dev_pm_info doesn't have
-> > usage count which is used only for run-time power management
-> > purposes.
-> > 
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> > ---
-> >  drivers/usb/serial/usb_wwan.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-> > index a65ddd5..8b456dc 100644
-> > --- a/drivers/usb/serial/usb_wwan.c
-> > +++ b/drivers/usb/serial/usb_wwan.c
-> > @@ -698,8 +698,10 @@ static void play_delayed(struct usb_serial_port *port)
-> >  			/* we have to throw away the rest */
-> >  			do {
-> >  				unbusy_queued_urb(urb, portdata);
-> > -				//extremely dirty
-> > +#ifdef CONFIG_PM_RUNTIME
-> > +				/* extremely dirty */
-> >  				atomic_dec(&port->serial->interface->dev.power.usage_count);
-> > +#endif
-> >  			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
-> >  			break;
-> >  		}
-> > -- 
-> > 1.7.3.1
-> > 
-> > 
+> I'm not sure if this is the right fix, maybe a break or return
+> is missing?
 
-Please see Oliver's patch for this at
-http://marc.info/?l=linux-usb&m=130044862323463&w=2
+What are you trying to fix with this patch?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+> diff --git a/drivers/scsi/osst.c b/drivers/scsi/osst.c
+> index 521e218..d6d6d89 100644
+> --- a/drivers/scsi/osst.c
+> +++ b/drivers/scsi/osst.c
+> @@ -4702,8 +4702,9 @@ static int __os_scsi_tape_open(struct inode * inode, struct file * filp)
+>  				STp->partition = STp->new_partition = 0;
+>  				if (STp->can_partitions)
+>  					STp->nbr_partitions = 1;  /* This guess will be updated later if necessary */
+> -				for (i=0; i < ST_NBR_PARTITIONS; i++) {
+> -					STps = &(STp->ps[i]);
+> +				int j;
+> +				for (j=0; j < ST_NBR_PARTITIONS; j++) {
+> +					STps = &(STp->ps[j]);
+>  					STps->rw = ST_IDLE;
+>  					STps->eof = ST_NOEOF;
+>  					STps->at_sm = 0;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
