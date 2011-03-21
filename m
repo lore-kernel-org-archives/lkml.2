@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab1CUNnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 09:43:47 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34376 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab1CUNnp (ORCPT
+	id S1752696Ab1CUNqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 09:46:42 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:34462 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751247Ab1CUNqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 09:43:45 -0400
-Message-ID: <4D8755AD.3060402@ru.mvista.com>
-Date: Mon, 21 Mar 2011 16:42:05 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Mon, 21 Mar 2011 09:46:39 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 21 Mar 2011 14:50:13 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/5] hid-multitouch: refactor initialization of
+ ABS_MT_ORIENTATION
+Message-ID: <20110321135013.GB3363@polaris.bitmath.org>
+References: <1300454876-5017-1-git-send-email-benjamin.tissoires@enac.fr>
+ <1300454876-5017-5-git-send-email-benjamin.tissoires@enac.fr>
+ <20110321090240.GD3784@polaris.bitmath.org>
+ <AANLkTimx6YR_ByHDeqyMmSuE659xyRNkaAoOffTp_RgC@mail.gmail.com>
 MIME-Version: 1.0
-To: Carl Vanderlip <carlv@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-fbdev@vger.kernel.org,
-        Brian Swetland <swetland@google.com>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Dima Zavin <dima@android.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 18/20] video: msm: Prevent DMA lockups when switching
- bit	depths
-References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org> <1300485585-27640-1-git-send-email-carlv@codeaurora.org>
-In-Reply-To: <1300485585-27640-1-git-send-email-carlv@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimx6YR_ByHDeqyMmSuE659xyRNkaAoOffTp_RgC@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.254.52.20
+X-Scan-Result: No virus found in message 1Q1fRC-0000La-AC.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Q1fRC-0000La-AC 4d56f33bf875f77b74851165ab2c4bda
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Mar 21, 2011 at 02:32:16PM +0100, Benjamin Tissoires wrote:
+> Hi Henrik,
+> 
+> On Mon, Mar 21, 2011 at 10:02, Henrik Rydberg <rydberg@euromail.se> wrote:
+> > On Fri, Mar 18, 2011 at 02:27:55PM +0100, Benjamin Tissoires wrote:
+> >> No semantic changes, it's just easier to read the code.
+> >
+> > Please augment this commit message.
+> 
+> How about:
+> 
+> "The way the input_set_abs_params was called for the new composite
+> field ABS_MT_ORIENTATION was not very clear at second reading.
+> We can remove the non-necessary call to set_abs and use the simple
+> call to input_set_abs_params."
 
-Carl Vanderlip wrote:
+Sure thing. In addition, the old code was setting the hid parameters
+for the wrong field, which was odd.
 
-> Forces the lcdc off and waits a frame vsync period to prevent the MDP DMA
-> engine crashing if the DMA bit depth is changed.  A sleep cannot be used
-> because lcdc_dma_start is called in irq context.
-
-    Maybe I'm blind again but I don't see any waiting...
-
-> Authors:
-> Dima Zavin <dima@android.com>
-> Rebecca Schultz Zavin <rebecca@android.com>
-> Colin Cross <ccross@android.com>
-
-> Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
-> ---
->  drivers/video/msm/mdp.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-
-> diff --git a/drivers/video/msm/mdp.c b/drivers/video/msm/mdp.c
-> index b3f334ad..49d956a 100644
-> --- a/drivers/video/msm/mdp.c
-> +++ b/drivers/video/msm/mdp.c
-> @@ -564,6 +564,13 @@ void mdp_hw_init(struct mdp_info *mdp)
->  	mdp_writel(mdp, 1, 0x60);
->  	mdp_writel(mdp, 1, MDP_EBI2_PORTMAP_MODE);
->  
-> +	/* disable lcdc */
-> +	mdp_writel(mdp, 0, MDP_LCDC_CTL);
-> +	/* enable auto clock gating for all blocks by default */
-> +	mdp_writel(mdp, 0xffffffff, MDP_CGC_EN);
-> +	/* reset color/gamma correct parms */
-> +	mdp_writel(mdp, 0, MDP_DMA_P_COLOR_CORRECT_CONFIG);
-> +
->  	mdp_writel(mdp, 0, MDP_CMD_DEBUG_ACCESS_BASE + 0x01f8);
->  	mdp_writel(mdp, 0, MDP_CMD_DEBUG_ACCESS_BASE + 0x01fc);
->  	mdp_writel(mdp, 1, 0x60);
-
-WBR, Sergei
+Thanks,
+Henrik
