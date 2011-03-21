@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab1CUXvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:51:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:64295 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296Ab1CUXvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:51:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6292"; a="81265534"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] ARM: Use asm-generic/sizes.h
-Date: Mon, 21 Mar 2011 16:51:02 -0700
-Message-Id: <1300751462-1494-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.1.343.ga91df
+	id S1755948Ab1CUXvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:51:31 -0400
+Received: from kroah.org ([198.145.64.141]:49277 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754971Ab1CUXPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
+Message-Id: <20110321230711.235464079@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Mon, 21 Mar 2011 16:06:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [20/87] x86: Dont check for BIOS corruption in first 64K when theres no need to
+In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d232b12 (asm-generic headers: add sizes.h, 2011-01-15)
-introduced a generic sizes.h. Use that instead of the ARM specific
-version.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+------------------
+
+From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+
+commit a7bd1dafdcc13ec7add4aafc927eb5e3a8d597e6 upstream.
+
+Due to commit 781c5a67f152c17c3e4a9ed9647f8c0be6ea5ae9 it is
+likely that the number of areas to scan for BIOS corruption is 0
+ -- especially when the first 64K is already reserved
+(X86_RESERVE_LOW is 64K by default).
+
+If that's the case then don't set up the scan.
+
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+LKML-Reference: <20110225202838.2229.71011.sendpatchset@nchumbalkar.americas.hpqcorp.net>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/arm/include/asm/sizes.h |   60 +-----------------------------------------
- 1 files changed, 1 insertions(+), 59 deletions(-)
+ arch/x86/kernel/check.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/include/asm/sizes.h b/arch/arm/include/asm/sizes.h
-index 316bb2b..dd248c2 100644
---- a/arch/arm/include/asm/sizes.h
-+++ b/arch/arm/include/asm/sizes.h
-@@ -1,59 +1 @@
--/*
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-- */
--/*  Size definitions
-- *  Copyright (C) ARM Limited 1998. All rights reserved.
-- */
--
--#ifndef __sizes_h
--#define __sizes_h                       1
--
--/* handy sizes */
--#define SZ_16				0x00000010
--#define SZ_32				0x00000020
--#define SZ_64				0x00000040
--#define SZ_128				0x00000080
--#define SZ_256				0x00000100
--#define SZ_512				0x00000200
--
--#define SZ_1K                           0x00000400
--#define SZ_2K                           0x00000800
--#define SZ_4K                           0x00001000
--#define SZ_8K                           0x00002000
--#define SZ_16K                          0x00004000
--#define SZ_32K                          0x00008000
--#define SZ_64K                          0x00010000
--#define SZ_128K                         0x00020000
--#define SZ_256K                         0x00040000
--#define SZ_512K                         0x00080000
--
--#define SZ_1M                           0x00100000
--#define SZ_2M                           0x00200000
--#define SZ_4M                           0x00400000
--#define SZ_8M                           0x00800000
--#define SZ_16M                          0x01000000
--#define SZ_32M                          0x02000000
--#define SZ_48M                          0x03000000
--#define SZ_64M                          0x04000000
--#define SZ_128M                         0x08000000
--#define SZ_256M                         0x10000000
--#define SZ_512M                         0x20000000
--
--#define SZ_1G                           0x40000000
--#define SZ_2G                           0x80000000
--
--#endif
--
--/*         END */
-+#include <asm-generic/sizes.h>
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+--- a/arch/x86/kernel/check.c
++++ b/arch/x86/kernel/check.c
+@@ -106,8 +106,8 @@ void __init setup_bios_corruption_check(
+ 		addr += size;
+ 	}
+ 
+-	printk(KERN_INFO "Scanning %d areas for low memory corruption\n",
+-	       num_scan_areas);
++	if (num_scan_areas)
++		printk(KERN_INFO "Scanning %d areas for low memory corruption\n", num_scan_areas);
+ }
+ 
+ 
+@@ -143,12 +143,12 @@ static void check_corruption(struct work
+ {
+ 	check_for_bios_corruption();
+ 	schedule_delayed_work(&bios_check_work,
+-		round_jiffies_relative(corruption_check_period*HZ)); 
++		round_jiffies_relative(corruption_check_period*HZ));
+ }
+ 
+ static int start_periodic_check_for_corruption(void)
+ {
+-	if (!memory_corruption_check || corruption_check_period == 0)
++	if (!num_scan_areas || !memory_corruption_check || corruption_check_period == 0)
+ 		return 0;
+ 
+ 	printk(KERN_INFO "Scanning for low memory corruption every %d seconds\n",
+
 
