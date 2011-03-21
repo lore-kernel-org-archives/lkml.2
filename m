@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab1CUXRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:17:54 -0400
-Received: from kroah.org ([198.145.64.141]:52561 "EHLO coco.kroah.org"
+	id S932301Ab1CUX3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:29:22 -0400
+Received: from kroah.org ([198.145.64.141]:52608 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755648Ab1CUXRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:43 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:23 2011
-Message-Id: <20110321230323.627053023@clark.kroah.org>
+	id S932258Ab1CUXRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:55 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:24 2011
+Message-Id: <20110321230324.877035901@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:35 -0700
+Date: Mon, 21 Mar 2011 16:01:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [19/78] ath9k_hw: read and backup AR_WA register value even before chip reset on.
+Subject: [31/78] rtl8187: Change rate-control feedback
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Senthil Balasubramanian <senthilkumar@atheros.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 0a8d7cb0c8182df7a28ad719780071178c386f0f upstream.
+commit 6410db593e8c1b2b79a2f18554310d6da9415584 upstream.
 
-We need to read and backup AR_WA register value permanently and reading
-this after the chip is awakened results in this register being zeroed out.
+The driver for the RTL8187L chips returns IEEE80211_TX_STAT_ACK for all
+packets, even if the maximum number of retries was exhausted. In addition
+it fails to setup max_rates in the ieee80211_hw struct, This behavior
+may be responsible for the problems noted in Bug 14168. As the bug is very
+old, testers have not been found, and I do not have the case where the
+indicated signal is less than -70 dBm.
 
-This seems to fix the ASPM with L1 enabled issue that we have observed.
-The laptop becomes very slow and hangs mostly with ASPM L1 enabled without
-this fix.
-
-Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/net/wireless/rtl818x/rtl8187/dev.c     |   25 ++++++++++++++++++++-----
+ drivers/net/wireless/rtl818x/rtl8187/rtl8187.h |    2 ++
+ 2 files changed, 22 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -495,6 +495,15 @@ static int __ath9k_hw_init(struct ath_hw
- 	if (ah->hw_version.devid == AR5416_AR9100_DEVID)
- 		ah->hw_version.macVersion = AR_SREV_VERSION_9100;
- 
-+	/*
-+	 * Read back AR_WA into a permanent copy and set bits 14 and 17.
-+	 * We need to do this to avoid RMW of this register. We cannot
-+	 * read the reg when chip is asleep.
+--- a/drivers/net/wireless/rtl818x/rtl8187/dev.c
++++ b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+@@ -871,23 +871,35 @@ static void rtl8187_work(struct work_str
+ 	/* The RTL8187 returns the retry count through register 0xFFFA. In
+ 	 * addition, it appears to be a cumulative retry count, not the
+ 	 * value for the current TX packet. When multiple TX entries are
+-	 * queued, the retry count will be valid for the last one in the queue.
+-	 * The "error" should not matter for purposes of rate setting. */
++	 * waiting in the queue, the retry count will be the total for all.
++	 * The "error" may matter for purposes of rate setting, but there is
++	 * no other choice with this hardware.
 +	 */
-+	ah->WARegVal = REG_READ(ah, AR_WA);
-+	ah->WARegVal |= (AR_WA_D3_L1_DISABLE |
-+			 AR_WA_ASPM_TIMER_BASED_DISABLE);
+ 	struct rtl8187_priv *priv = container_of(work, struct rtl8187_priv,
+ 				    work.work);
+ 	struct ieee80211_tx_info *info;
+ 	struct ieee80211_hw *dev = priv->dev;
+ 	static u16 retry;
+ 	u16 tmp;
++	u16 avg_retry;
++	int length;
+ 
+ 	mutex_lock(&priv->conf_mutex);
+ 	tmp = rtl818x_ioread16(priv, (__le16 *)0xFFFA);
++	length = skb_queue_len(&priv->b_tx_status.queue);
++	if (unlikely(!length))
++		length = 1;
++	if (unlikely(tmp < retry))
++		tmp = retry;
++	avg_retry = (tmp - retry) / length;
+ 	while (skb_queue_len(&priv->b_tx_status.queue) > 0) {
+ 		struct sk_buff *old_skb;
+ 
+ 		old_skb = skb_dequeue(&priv->b_tx_status.queue);
+ 		info = IEEE80211_SKB_CB(old_skb);
+-		info->status.rates[0].count = tmp - retry + 1;
++		info->status.rates[0].count = avg_retry + 1;
++		if (info->status.rates[0].count > RETRY_COUNT)
++			info->flags &= ~IEEE80211_TX_STAT_ACK;
+ 		ieee80211_tx_status_irqsafe(dev, old_skb);
+ 	}
+ 	retry = tmp;
+@@ -933,8 +945,8 @@ static int rtl8187_start(struct ieee8021
+ 		rtl818x_iowrite32(priv, &priv->map->TX_CONF,
+ 				  RTL818X_TX_CONF_HW_SEQNUM |
+ 				  RTL818X_TX_CONF_DISREQQSIZE |
+-				  (7 << 8  /* short retry limit */) |
+-				  (7 << 0  /* long retry limit */) |
++				  (RETRY_COUNT << 8  /* short retry limit */) |
++				  (RETRY_COUNT << 0  /* long retry limit */) |
+ 				  (7 << 21 /* MAX TX DMA */));
+ 		rtl8187_init_urbs(dev);
+ 		rtl8187b_init_status_urb(dev);
+@@ -1378,6 +1390,9 @@ static int __devinit rtl8187_probe(struc
+ 	dev->flags = IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
+ 		     IEEE80211_HW_SIGNAL_DBM |
+ 		     IEEE80211_HW_RX_INCLUDES_FCS;
++	/* Initialize rate-control variables */
++	dev->max_rates = 1;
++	dev->max_rate_tries = RETRY_COUNT;
+ 
+ 	eeprom.data = dev;
+ 	eeprom.register_read = rtl8187_eeprom_register_read;
+--- a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
++++ b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
+@@ -35,6 +35,8 @@
+ #define RFKILL_MASK_8187_89_97	0x2
+ #define RFKILL_MASK_8198	0x4
+ 
++#define RETRY_COUNT		7
 +
- 	if (!ath9k_hw_set_reset_reg(ah, ATH9K_RESET_POWER_ON)) {
- 		ath_err(common, "Couldn't reset chip\n");
- 		return -EIO;
-@@ -563,14 +572,6 @@ static int __ath9k_hw_init(struct ath_hw
- 
- 	ath9k_hw_init_mode_regs(ah);
- 
--	/*
--	 * Read back AR_WA into a permanent copy and set bits 14 and 17.
--	 * We need to do this to avoid RMW of this register. We cannot
--	 * read the reg when chip is asleep.
--	 */
--	ah->WARegVal = REG_READ(ah, AR_WA);
--	ah->WARegVal |= (AR_WA_D3_L1_DISABLE |
--			 AR_WA_ASPM_TIMER_BASED_DISABLE);
- 
- 	if (ah->is_pciexpress)
- 		ath9k_hw_configpcipowersave(ah, 0, 0);
+ struct rtl8187_rx_info {
+ 	struct urb *urb;
+ 	struct ieee80211_hw *dev;
 
 
