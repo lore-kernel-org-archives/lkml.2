@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab1CUIUm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 04:20:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60567 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab1CUIUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 04:20:39 -0400
-Date: Mon, 21 Mar 2011 09:20:38 +0100 (CET)
-From: Michael Matz <matz@suse.de>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, libc-alpha@sourceware.org,
-        GCC Development <gcc@gcc.gnu.org>, LKML <linux-kernel@vger.kernel.org>,
-        x32-abi@googlegroups.com
-Subject: Re: X32 psABI status update
-In-Reply-To: <AANLkTimxWQZvtpe374Yju0O9BDMxDfBHsc1y3+c=M7D+@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1103210907530.20892@wotan.suse.de>
-References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
- <201103210108.49780.vapier@gentoo.org> <AANLkTikSJDGEWCqazvAKHUC8_MoOP-+vyFOjyCmrA9dL@mail.gmail.com>
- <201103210153.10145.vapier@gentoo.org> <AANLkTimxWQZvtpe374Yju0O9BDMxDfBHsc1y3+c=M7D+@mail.gmail.com>
+	id S1752298Ab1CUIVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 04:21:36 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35106 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab1CUIVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 04:21:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=GGdT1U+zDv4GS7VYUDT6UtT7175z4m1bu/ZrRG0Yu6YDY03S4lgIAjNlb2I2ltrFPI
+         v3qhQhJCBKTLdgsddvDu6ktPS+DfVAJYhtAzOD6huUbVOp7J+texbj1i7Bc7ZgU5/I8i
+         yFhJO28nkveCacUQOxjpFVMWK5w97gmTJ4uX4=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110321122615.8a639909.sfr@canb.auug.org.au>
+References: <20110321122615.8a639909.sfr@canb.auug.org.au>
+Date: Mon, 21 Mar 2011 09:21:34 +0100
+X-Google-Sender-Auth: EdgmRxMGaDexlQYmvPAuHFm86SA
+Message-ID: <AANLkTikoF9fkZshaoop7gfuCKjjtUjbwwOG6hWyeGCHJ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the mfd tree with Linus' tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Philippe Langlais <philippe.langlais@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2011/3/21 Stephen Rothwell <sfr@canb.auug.org.au>:
 
-On Sun, 20 Mar 2011, H.J. Lu wrote:
+> I fixed them up (see below) and can carry the fix as necessary.
 
-> I don't think it will help x32 and I think it will make it harder to add 
-> x32 support. I still want to see a real usage before I add it.
+Fix looks correct, Sam if you push this to the MFD tree before
+the pull request I'll be happy.
 
-% cat real-world.c
-/* intptr_t; what's that? */
-union space_saving_htab_element {
-  void *generic_pointer;
-  /* Usually we need a long for a pointer, but I just figured out
-     that on x32 an int is enough and smaller.  My program
-     now needs half as much memory, supi!  */
-#ifdef __x32__
-  unsigned int as_number;
-#else
-  unsigned long as_number;
-#endif
-};
-
-
-Ciao,
-Michael.
-PS: Of course you and I wouldn't write such code, but Mikes point was that
-there might be some that do.  I could probably construct an example where 
-it would matter for real involving inline asm that for some reason has to 
-slightly differ depending on x32-ness.
+Yours,
+Linus Walleij
