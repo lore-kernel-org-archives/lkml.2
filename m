@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1CUPWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 11:22:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51910 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab1CUPWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 11:22:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [held lock freed] Re: [GIT] Networking
-Date: Mon, 21 Mar 2011 16:22:40 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <20110320.195156.226769634.davem@davemloft.net> <201103211550.10694.arnd@arndb.de> <1300719332.2884.370.camel@edumazet-laptop>
-In-Reply-To: <1300719332.2884.370.camel@edumazet-laptop>
+	id S1752227Ab1CUP0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:26:35 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:58915 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146Ab1CUP0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 11:26:33 -0400
+Message-ID: <4D876ECA.4010503@nokia.com>
+Date: Mon, 21 Mar 2011 17:29:14 +0200
+From: Roger Quadros <roger.quadros@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: ext Alan Stern <stern@rowland.harvard.edu>
+CC: <gregkh@suse.de>, <sshtylyov@mvista.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] usb: gadget: storage: Add fsg_get_toc helper
+References: <Pine.LNX.4.44L0.1103211017240.1978-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1103211017240.1978-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103211622.40851.arnd@arndb.de>
-X-Provags-ID: V02:K0:jP6LH9g9aBpEi9SbLlawonh9d6SXrVwSSjHxWMj0FgT
- pcE0YS/kyd1CmbkvUFHKZY+EjjpbRdafPK3U1M7Eeh6E6qiXJH
- 1I2s79yU5epzmLszUEPdHNYjBdSM94E9zKm/nOZ0lBxjSp2iCR
- gLRBzIQdIvPGCKUcKC2nKNxzhaCKpLpuwudLNw7jWfM224Kt3u
- oW1GUff3mPAPsVHZlolmw==
+X-Originating-IP: [172.21.37.109]
+X-OriginalArrivalTime: 21 Mar 2011 15:26:16.0676 (UTC) FILETIME=[521EC240:01CBE7DC]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 March 2011, Eric Dumazet wrote:
-> > diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
-> > index 4680b1e..b2cf1db 100644
-> > --- a/net/x25/af_x25.c
-> > +++ b/net/x25/af_x25.c
-> > @@ -669,8 +669,8 @@ static int x25_release(struct socket *sock)
-> >  
-> >       sock_orphan(sk);
-> >  out:
-> > -     release_sock(sk);
-> >       sock_put(sk);
-> > +     release_sock(sk);
-> >       return 0;
-> >  }
-> >  
-> 
-> Hmm, x25_release() looks fine, I believe no fix is needed.
-> 
+On 03/21/2011 04:20 PM, ext Alan Stern wrote:
+> On Mon, 21 Mar 2011, Roger Quadros wrote:
+>
+>> From: Roger Quadros<roger.quadros@nokia.com>
+>>
+>> fsg_get_toc can be used by both storage gadgets to build a CD-ROM
+>> Table of Contents which can be used as data for READ_TOC command.
+>> Currently fsg_get_toc supports two TOC formats, i.e.
+>> format 0: Formatted TOC and format 2: Raw TOC.
+>>
+>> Raw TOC is required for CD-ROM emulation to work with Mac OS-X.
+>>
+>> Signed-off-by: Roger Quadros<roger.quadros@nokia.com>
+>> ---
+>>   drivers/usb/gadget/storage_common.c |   68 +++++++++++++++++++++++++++++++++++
+>>   1 files changed, 68 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+>> index b015561..d47f148 100644
+>> --- a/drivers/usb/gadget/storage_common.c
+>> +++ b/drivers/usb/gadget/storage_common.c
+>> @@ -655,6 +655,74 @@ static void store_cdrom_address(u8 *dest, int msf, u32 addr)
+>>   	}
+>>   }
+>>
+>> +/**
+>> + * fsg_get_toc() - Builds a TOC with required format @format.
+>> + * @curlun: The LUN for which the TOC has to be built
+>> + * @msf: Min Sec Frame format or LBA format for address
+>> + * @format: TOC format code
+>> + * @buf: The buffer into which the TOC is built
+>> + *
+>> + * Builds a Table of Content which can be used as data for READ_TOC command.
+>> + * The TOC simulates a single session, single track CD-ROM mode 1 disc.
+>> + *
+>> + * Returns number of bytes written to @buf, -EINVAL if format not supported.
+>> + */
+>> +static int fsg_get_toc(struct fsg_lun *curlun, int msf, int format, u8 *buf)
+>> +{
+>> +	int i, len;
+>> +	switch (format) {
+>> +	case 0:
+>> +		/* Formatted TOC */
+>> +		len = 4 + 2*8;		/* 4 byte header + 2 descriptors */
+>> +		memset(buf, 0, len);
+>> +		len -= 2;		/* TOC Length excludes length field */
+>> +		buf[1] = len;		/* TOC data length */
+>
+> These two lines are wrong.  You should do:
+>
+> 		buf[1] = len - 2;	/* TOC data length excludes header */
+>
+> The way it is now, the function ends up returning 18 instead of 20,
+> causing the wrong amount of data to be transmitted.
 
-D'oh. You're right of course. My patch would introduce the bug,
-not fix it. Updated patch below.
+Yes indeed.
 
-	Arnd
-8<-------------------------
-net/appletalk: fix atalk_release use after free
+>
+>> +		buf[2] = 1;		/* First track number */
+>> +		buf[3] = 1;		/* Last track number */
+>> +		buf[5] = 0x16;		/* Data track, copying allowed */
+>> +		buf[6] = 0x01;		/* Only track is number 1 */
+>> +		store_cdrom_address(&buf[8], msf, 0);
+>> +
+>> +		buf[13] = 0x16;		/* Lead-out track is data */
+>> +		buf[14] = 0xAA;		/* Lead-out track number */
+>> +		store_cdrom_address(&buf[16], msf, curlun->num_sectors);
+>> +		return len;
+>> +		break;
+>> +
+>> +	case 2:
+>> +		/* Raw TOC */
+>> +		len = 4 + 3*11;		/* 4 byte header + 3 descriptors */
+>> +		memset(buf, 0, len);	/* Header + A0, A1&  A2 descriptors */
+>> +		len -= 2;		/* TOC Length excludes length field */
+>> +		buf[1] = len;		/* TOC data length */
+>
+> Same thing here.  I'm surprised it worked during testing.  Did you
+> really check to see that the correct data was being sent?
 
-The BKL removal in appletalk introduced a use-after-free problem,
-where atalk_destroy_socket frees a sock, but we still release
-the socket lock on it.
+I too am surprised. I tried playing a few videos without problems.
+After you pointed out the problem I ran a checksum on the files and they match!!
 
-An easy fix is to take an extra reference on the sock and sock_put
-it when returning from atalk_release.
+But thanks for pointing out, I'll send a new patch.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-index 3d4f4b0..206e771 100644
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1051,6 +1051,7 @@ static int atalk_release(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
- 
-+	sock_hold(sk);
- 	lock_sock(sk);
- 	if (sk) {
- 		sock_orphan(sk);
-@@ -1058,6 +1059,8 @@ static int atalk_release(struct socket *sock)
- 		atalk_destroy_socket(sk);
- 	}
- 	release_sock(sk);
-+	sock_put(sk);
-+
- 	return 0;
- }
- 
+-- 
+regards,
+-roger
