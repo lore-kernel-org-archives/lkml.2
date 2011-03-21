@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503Ab1CUXV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:21:59 -0400
-Received: from kroah.org ([198.145.64.141]:52814 "EHLO coco.kroah.org"
+	id S932506Ab1CUXWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:22:10 -0400
+Received: from kroah.org ([198.145.64.141]:52810 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932443Ab1CUXSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:35 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:29 2011
-Message-Id: <20110321230328.992521583@clark.kroah.org>
+	id S932438Ab1CUXSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:28 2011
+Message-Id: <20110321230328.877752001@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:27 -0700
+Date: Mon, 21 Mar 2011 16:02:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [71/78] [PARISC] fix per-cpu flag problem in the cpu affinity checkers
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>
+Subject: [70/78] HID: Do not create input devices for feature reports
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit 9804c9eaeacfe78651052c5ddff31099f60ef78c upstream.
+commit f635bd11c8d332d917fb9a4cad3071b2357d5b2a upstream.
 
-The CHECK_IRQ_PER_CPU is wrong, it should be checking
-irq_to_desc(irq)->status not just irq.
+When the multi input quirk is set, there is a new input device
+created for every feature report. Since the idea is to present
+features per hid device, not per input device, revert back to
+the original report loop and change the feature_mapping() callback
+to not take the input device as argument.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Tested-by: Benjamin Tissoires <benjmain.tissoires@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/kernel/irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-input.c      |   30 +++++++++++++++++++++---------
+ drivers/hid/hid-multitouch.c |    2 +-
+ include/linux/hid.h          |    2 +-
+ 3 files changed, 23 insertions(+), 11 deletions(-)
 
---- a/arch/parisc/kernel/irq.c
-+++ b/arch/parisc/kernel/irq.c
-@@ -108,7 +108,7 @@ int cpu_check_affinity(unsigned int irq,
- 	int cpu_dest;
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -290,14 +290,6 @@ static void hidinput_configure_usage(str
+ 		goto ignore;
+ 	}
  
- 	/* timer and ipi have to always be received on all CPUs */
--	if (CHECK_IRQ_PER_CPU(irq)) {
-+	if (CHECK_IRQ_PER_CPU(irq_to_desc(irq)->status)) {
- 		/* Bad linux design decision.  The mask has already
- 		 * been set; we must reset it */
- 		cpumask_setall(irq_desc[irq].affinity);
+-	if (field->report_type == HID_FEATURE_REPORT) {
+-		if (device->driver->feature_mapping) {
+-			device->driver->feature_mapping(device, hidinput, field,
+-				usage);
+-		}
+-		goto ignore;
+-	}
+-
+ 	if (device->driver->input_mapping) {
+ 		int ret = device->driver->input_mapping(device, hidinput, field,
+ 				usage, &bit, &max);
+@@ -835,6 +827,24 @@ static void hidinput_close(struct input_
+ 	hid_hw_close(hid);
+ }
+ 
++static void report_features(struct hid_device *hid)
++{
++	struct hid_driver *drv = hid->driver;
++	struct hid_report_enum *rep_enum;
++	struct hid_report *rep;
++	int i, j;
++
++	if (!drv->feature_mapping)
++		return;
++
++	rep_enum = &hid->report_enum[HID_FEATURE_REPORT];
++	list_for_each_entry(rep, &rep_enum->report_list, list)
++		for (i = 0; i < rep->maxfield; i++)
++			for (j = 0; j < rep->field[i]->maxusage; j++)
++				drv->feature_mapping(hid, rep->field[i],
++						     rep->field[i]->usage + j);
++}
++
+ /*
+  * Register the input device; print a message.
+  * Configure the input layer interface
+@@ -863,7 +873,9 @@ int hidinput_connect(struct hid_device *
+ 			return -1;
+ 	}
+ 
+-	for (k = HID_INPUT_REPORT; k <= HID_FEATURE_REPORT; k++) {
++	report_features(hid);
++
++	for (k = HID_INPUT_REPORT; k <= HID_OUTPUT_REPORT; k++) {
+ 		if (k == HID_OUTPUT_REPORT &&
+ 			hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
+ 			continue;
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -122,7 +122,7 @@ struct mt_class mt_classes[] = {
+ 	{ }
+ };
+ 
+-static void mt_feature_mapping(struct hid_device *hdev, struct hid_input *hi,
++static void mt_feature_mapping(struct hid_device *hdev,
+ 		struct hid_field *field, struct hid_usage *usage)
+ {
+ 	if (usage->hid == HID_DG_INPUTMODE) {
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -638,7 +638,7 @@ struct hid_driver {
+ 			struct hid_input *hidinput, struct hid_field *field,
+ 			struct hid_usage *usage, unsigned long **bit, int *max);
+ 	void (*feature_mapping)(struct hid_device *hdev,
+-			struct hid_input *hidinput, struct hid_field *field,
++			struct hid_field *field,
+ 			struct hid_usage *usage);
+ #ifdef CONFIG_PM
+ 	int (*suspend)(struct hid_device *hdev, pm_message_t message);
 
 
