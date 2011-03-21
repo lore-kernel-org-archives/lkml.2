@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab1CUKwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 06:52:07 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34624 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab1CUKwF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 06:52:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lkeL8aGKQb6bYxLVAhggBvrJvezfBw7wWRm+j+tDyMA9a7vULq5MBIzVvLJbedvOYx
-         Jol8BLb9RG94sYqyf+7AJ0kcJIeJ4JVZ6OzczZmKvlkhHeEfLfYMGaAOao6Bn0xnMciZ
-         3G/VfKDa878Xq0Fi7JOmToSPHzklyFmV6G1Ng=
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1103210907530.20892@wotan.suse.de>
-References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
-	<201103210108.49780.vapier@gentoo.org>
-	<AANLkTikSJDGEWCqazvAKHUC8_MoOP-+vyFOjyCmrA9dL@mail.gmail.com>
-	<201103210153.10145.vapier@gentoo.org>
-	<AANLkTimxWQZvtpe374Yju0O9BDMxDfBHsc1y3+c=M7D+@mail.gmail.com>
-	<Pine.LNX.4.64.1103210907530.20892@wotan.suse.de>
-Date: Mon, 21 Mar 2011 03:52:04 -0700
-Message-ID: <AANLkTikYxVzFjLQFNvEy2FBmuO76PJPA5JuLgoUGzPF0@mail.gmail.com>
-Subject: Re: X32 psABI status update
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Michael Matz <matz@suse.de>
-Cc: Mike Frysinger <vapier@gentoo.org>, libc-alpha@sourceware.org,
-        GCC Development <gcc@gcc.gnu.org>, LKML <linux-kernel@vger.kernel.org>,
-        x32-abi@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753222Ab1CUK4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 06:56:31 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:64630 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753087Ab1CUK41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 06:56:27 -0400
+From: Roger Quadros <roger.quadros@nokia.com>
+To: gregkh@suse.de
+Cc: stern@rowland.harvard.edu, sshtylyov@mvista.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/3] usb: gadget: file_storage: Make CD-ROM emulation work with Mac OS-X
+Date: Mon, 21 Mar 2011 12:59:18 +0200
+Message-Id: <1300705159-24386-3-git-send-email-roger.quadros@nokia.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1300705159-24386-2-git-send-email-roger.quadros@nokia.com>
+References: <1300705159-24386-1-git-send-email-roger.quadros@nokia.com>
+ <1300705159-24386-2-git-send-email-roger.quadros@nokia.com>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 1:20 AM, Michael Matz <matz@suse.de> wrote:
-> Hi,
->
-> On Sun, 20 Mar 2011, H.J. Lu wrote:
->
->> I don't think it will help x32 and I think it will make it harder to add
->> x32 support. I still want to see a real usage before I add it.
->
-> % cat real-world.c
-> /* intptr_t; what's that? */
-> union space_saving_htab_element {
->  void *generic_pointer;
->  /* Usually we need a long for a pointer, but I just figured out
->     that on x32 an int is enough and smaller.  My program
->     now needs half as much memory, supi!  */
-> #ifdef __x32__
->  unsigned int as_number;
-> #else
->  unsigned long as_number;
-> #endif
-> };
+From: Roger Quadros <roger.quadros@nokia.com>
 
-That is the wrong way to support x32.  You should remove "#ifdef __x32__",
-which only shows __x32__ shouldn't be used/needed.
+Mac OS-X expects CD-ROM TOC in raw format (i.e. format:2). It also
+sends the READ_TOC CDB in old style SFF8020i format. i.e. 2 format bits
+are encoded in MSBs of CDB byte 9.
 
->
-> Ciao,
-> Michael.
-> PS: Of course you and I wouldn't write such code, but Mikes point was that
-> there might be some that do.  I could probably construct an example where
-> it would matter for real involving inline asm that for some reason has to
-> slightly differ depending on x32-ness.
->
+This patch will enable CD-ROM emulation to work with Mac OS-X. Tested on
+Mac OS X v10.6.3.
 
-I  am still waiting for a real example.
+Signed-off-by: Roger Quadros <roger.quadros@nokia.com>
+---
+ drivers/usb/gadget/file_storage.c |   31 ++++++++++++++++++-------------
+ 1 files changed, 18 insertions(+), 13 deletions(-)
 
+diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+index a6eacb5..03beb2e 100644
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -1696,6 +1696,8 @@ static int do_read_toc(struct fsg_dev *fsg, struct fsg_buffhd *bh)
+ 	int		msf = fsg->cmnd[1] & 0x02;
+ 	int		start_track = fsg->cmnd[6];
+ 	u8		*buf = (u8 *) bh->buf;
++	u8		format;
++	int		ret;
+ 
+ 	if ((fsg->cmnd[1] & ~0x02) != 0 ||		/* Mask away MSF */
+ 			start_track > 1) {
+@@ -1703,18 +1705,21 @@ static int do_read_toc(struct fsg_dev *fsg, struct fsg_buffhd *bh)
+ 		return -EINVAL;
+ 	}
+ 
+-	memset(buf, 0, 20);
+-	buf[1] = (20-2);		/* TOC data length */
+-	buf[2] = 1;			/* First track number */
+-	buf[3] = 1;			/* Last track number */
+-	buf[5] = 0x16;			/* Data track, copying allowed */
+-	buf[6] = 0x01;			/* Only track is number 1 */
+-	store_cdrom_address(&buf[8], msf, 0);
++	format = fsg->cmnd[2] & 0xf;
++	/*
++	 * Check if CDB is old style SFF-8020i
++	 * i.e. format is in 2 MSBs of byte 9
++	 * Mac OS-X host sends us this.
++	 */
++	if (format == 0)
++		format = (fsg->cmnd[9] >> 6) & 0x3;
+ 
+-	buf[13] = 0x16;			/* Lead-out track is data */
+-	buf[14] = 0xAA;			/* Lead-out track number */
+-	store_cdrom_address(&buf[16], msf, curlun->num_sectors);
+-	return 20;
++	ret = fsg_get_toc(curlun, msf, format, buf);
++	if (ret < 0) {
++		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
++		return -EINVAL;
++	}
++	return ret;
+ }
+ 
+ 
+@@ -2486,7 +2491,7 @@ static int do_scsi_command(struct fsg_dev *fsg)
+ 			goto unknown_cmnd;
+ 		fsg->data_size_from_cmnd = get_unaligned_be16(&fsg->cmnd[7]);
+ 		if ((reply = check_command(fsg, 10, DATA_DIR_TO_HOST,
+-				(7<<6) | (1<<1), 1,
++				(0xf<<6) | (1<<1), 1,
+ 				"READ TOC")) == 0)
+ 			reply = do_read_toc(fsg, bh);
+ 		break;
 -- 
-H.J.
+1.6.0.4
+
