@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab1CUX4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:56:06 -0400
-Received: from kroah.org ([198.145.64.141]:49131 "EHLO coco.kroah.org"
+	id S1755117Ab1CUXOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:14:04 -0400
+Received: from kroah.org ([198.145.64.141]:49065 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab1CUXOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:14:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:54 2011
-Message-Id: <20110321231054.493495216@clark.kroah.org>
+	id S1754896Ab1CUXN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:57 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:53 2011
+Message-Id: <20110321231053.367702305@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:17 -0700
+Date: Mon, 21 Mar 2011 16:10:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [37/44] [PARISC] fix per-cpu flag problem in the cpu affinity checkers
+        Przemyslaw Bruski <pbruskispam@op.pl>, Takashi Iwai <tiwai@suse.de>
+Subject: [26/44] ALSA: ctxfi - Fix SPDIF status retrieval
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Przemyslaw Bruski <pbruskispam@op.pl>
 
-commit 9804c9eaeacfe78651052c5ddff31099f60ef78c upstream.
+commit f164753a263bfd2daaf3e0273b179de7e099c57d upstream.
 
-The CHECK_IRQ_PER_CPU is wrong, it should be checking
-irq_to_desc(irq)->status not just irq.
+SDPIF status retrieval always returned the default settings instead of
+the actual ones.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Przemyslaw Bruski <pbruskispam@op.pl>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/kernel/irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/ctxfi/ctmixer.c |   19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
---- a/arch/parisc/kernel/irq.c
-+++ b/arch/parisc/kernel/irq.c
-@@ -117,7 +117,7 @@ int cpu_check_affinity(unsigned int irq,
- 	int cpu_dest;
+--- a/sound/pci/ctxfi/ctmixer.c
++++ b/sound/pci/ctxfi/ctmixer.c
+@@ -566,19 +566,6 @@ static int ct_spdif_get_mask(struct snd_
+ 	return 0;
+ }
  
- 	/* timer and ipi have to always be received on all CPUs */
--	if (CHECK_IRQ_PER_CPU(irq)) {
-+	if (CHECK_IRQ_PER_CPU(irq_to_desc(irq)->status)) {
- 		/* Bad linux design decision.  The mask has already
- 		 * been set; we must reset it */
- 		cpumask_setall(irq_desc[irq].affinity);
+-static int ct_spdif_default_get(struct snd_kcontrol *kcontrol,
+-				struct snd_ctl_elem_value *ucontrol)
+-{
+-	unsigned int status = SNDRV_PCM_DEFAULT_CON_SPDIF;
+-
+-	ucontrol->value.iec958.status[0] = (status >> 0) & 0xff;
+-	ucontrol->value.iec958.status[1] = (status >> 8) & 0xff;
+-	ucontrol->value.iec958.status[2] = (status >> 16) & 0xff;
+-	ucontrol->value.iec958.status[3] = (status >> 24) & 0xff;
+-
+-	return 0;
+-}
+-
+ static int ct_spdif_get(struct snd_kcontrol *kcontrol,
+ 			struct snd_ctl_elem_value *ucontrol)
+ {
+@@ -586,6 +573,10 @@ static int ct_spdif_get(struct snd_kcont
+ 	unsigned int status;
+ 
+ 	atc->spdif_out_get_status(atc, &status);
++
++	if (status == 0)
++		status = SNDRV_PCM_DEFAULT_CON_SPDIF;
++
+ 	ucontrol->value.iec958.status[0] = (status >> 0) & 0xff;
+ 	ucontrol->value.iec958.status[1] = (status >> 8) & 0xff;
+ 	ucontrol->value.iec958.status[2] = (status >> 16) & 0xff;
+@@ -629,7 +620,7 @@ static struct snd_kcontrol_new iec958_de
+ 	.name		= SNDRV_CTL_NAME_IEC958("", PLAYBACK, DEFAULT),
+ 	.count		= 1,
+ 	.info		= ct_spdif_info,
+-	.get		= ct_spdif_default_get,
++	.get		= ct_spdif_get,
+ 	.put		= ct_spdif_put,
+ 	.private_value	= MIXER_IEC958_DEFAULT
+ };
 
 
