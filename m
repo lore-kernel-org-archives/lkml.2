@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab1CUOuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 10:50:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59875 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab1CUOuQ (ORCPT
+	id S1753526Ab1CUOx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 10:53:29 -0400
+Received: from mailout06.t-online.de ([194.25.134.19]:56701 "EHLO
+	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab1CUOx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 10:50:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [held lock freed] Re: [GIT] Networking
-Date: Mon, 21 Mar 2011 15:50:10 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <20110320.195156.226769634.davem@davemloft.net> <20110321125320.GA23490@elte.hu> <1300714346.2884.284.camel@edumazet-laptop>
-In-Reply-To: <1300714346.2884.284.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Mon, 21 Mar 2011 10:53:27 -0400
+X-Greylist: delayed 979 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 10:53:27 EDT
+Subject: [PATCH v2] uio_netx: Add support for netPLC cards
+From: Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@suse.de, hjk@hansjkoch.de, manut@linutronix.de
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Mar 2011 15:36:35 +0100
+Message-ID: <1300718195.3457.43.camel@ubuntu-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103211550.10694.arnd@arndb.de>
-X-Provags-ID: V02:K0:dcQ5+EnWx0WacMJqOEZQKdnoCe//eMlv590RzMK+GXd
- z9BcAqEE73v/AEG/s9CBF6mcTZRATVRMd8GDH4l85oG4PN9OCH
- 0JE0D3gE80U0Kq2lT/Y/oF/FgSoNRUspxbe3Glwy0+TUSxZg6W
- tYOpX5mUqH5b39uRNsTz3K1u4YdPMOIuYDle2brI6rsldQh3BJ
- gO9+fL7ua6S3ou4+e1NLQ==
+X-ID: rCR67-ZAQt6ENjiatI6RlzURPSBlK5t2TmGbh96urKOHKrc9gnjt8KEss3vJ9U9HFOZjAjFO8D
+X-TOI-MSGID: 8d44253c-87a3-4c37-a0eb-ba6d4ba252ab
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 March 2011, Eric Dumazet wrote:
-> [PATCH] ipx: fix ipx_release()
-> 
-> Commit b0d0d915d1d1a0 (remove the BKL) added a regression, because
-> sock_put() can free memory while we are going to use it later.
-> 
-> Fix is to delay sock_put() after release_sock().
-> 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+This patch adds support for Hilscher / IBHsoftec netPLC cards to uio_netx userspace IO driver.
 
-Your fix looks good, thanks Eric!
+Changes from v1 -> v2:
+Fixed whitespace errors reported by scripts/checkpatch.pl which were caused by email client.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>
+---
+ drivers/uio/uio_netx.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-I believe I made the same mistake in atalk_release and x25_release:
-
-8<------------
-net: fix atalk_release and x25_release
-
-The recent BKL removal has introduced a use-after-free problem
-in multiple network protocols. This fixes the problem in appletalk
-and x25 by ensuring that we call the final sock_put() after
-releasing the socket lock.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-index 3d4f4b0..206e771 100644
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1051,6 +1051,7 @@ static int atalk_release(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
+diff --git a/drivers/uio/uio_netx.c b/drivers/uio/uio_netx.c
+index 5ffdb48..a879fd5 100644
+--- a/drivers/uio/uio_netx.c
++++ b/drivers/uio/uio_netx.c
+@@ -18,6 +18,9 @@
  
-+	sock_hold(sk);
- 	lock_sock(sk);
- 	if (sk) {
- 		sock_orphan(sk);
-@@ -1058,6 +1059,8 @@ static int atalk_release(struct socket *sock)
- 		atalk_destroy_socket(sk);
- 	}
- 	release_sock(sk);
-+	sock_put(sk);
-+
- 	return 0;
- }
+ #define PCI_VENDOR_ID_HILSCHER		0x15CF
+ #define PCI_DEVICE_ID_HILSCHER_NETX	0x0000
++#define PCI_DEVICE_ID_HILSCHER_NETPLC	0x0010
++#define PCI_SUBDEVICE_ID_NETPLC_RAM	0x0000
++#define PCI_SUBDEVICE_ID_NETPLC_FLASH	0x0001
+ #define PCI_SUBDEVICE_ID_NXSB_PCA	0x3235
+ #define PCI_SUBDEVICE_ID_NXPCA		0x3335
  
-diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
-index 4680b1e..b2cf1db 100644
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -669,8 +669,8 @@ static int x25_release(struct socket *sock)
- 
- 	sock_orphan(sk);
- out:
--	release_sock(sk);
- 	sock_put(sk);
-+	release_sock(sk);
- 	return 0;
- }
- 
+@@ -66,6 +69,10 @@ static int __devinit netx_pci_probe(struct pci_dev *dev,
+ 		bar = 0;
+ 		info->name = "netx";
+ 		break;
++	case PCI_DEVICE_ID_HILSCHER_NETPLC:
++		bar = 0;
++		info->name = "netplc";
++		break;
+ 	default:
+ 		bar = 2;
+ 		info->name = "netx_plx";
+@@ -134,6 +141,18 @@ static struct pci_device_id netx_pci_ids[] = {
+ 		.subdevice =	0,
+ 	},
+ 	{
++		.vendor =       PCI_VENDOR_ID_HILSCHER,
++		.device =       PCI_DEVICE_ID_HILSCHER_NETPLC,
++		.subvendor =    PCI_VENDOR_ID_HILSCHER,
++		.subdevice =    PCI_SUBDEVICE_ID_NETPLC_RAM,
++	},
++	{
++		.vendor =       PCI_VENDOR_ID_HILSCHER,
++		.device =       PCI_DEVICE_ID_HILSCHER_NETPLC,
++		.subvendor =    PCI_VENDOR_ID_HILSCHER,
++		.subdevice =    PCI_SUBDEVICE_ID_NETPLC_FLASH,
++	},
++	{
+ 		.vendor =	PCI_VENDOR_ID_PLX,
+ 		.device =	PCI_DEVICE_ID_PLX_9030,
+ 		.subvendor =	PCI_VENDOR_ID_PLX,
+
+
