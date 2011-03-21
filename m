@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab1CUXfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:35:43 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:34695 "EHLO mx2.netapp.com"
+	id S1755805Ab1CUXf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:35:29 -0400
+Received: from kroah.org ([198.145.64.141]:49673 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755583Ab1CUXfi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:35:38 -0400
-X-IronPort-AV: E=Sophos;i="4.63,222,1299484800"; 
-   d="scan'208";a="533012589"
-Subject: Re: problem with nfs4: rpciod seems to loop in rpc_shutdown_client
- forever
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Wolfgang Walter <wolfgang.walter@stwm.de>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <20110321232857.GC472@fieldses.org>
-References: <201103182349.22331.wolfgang.walter@stwm.de>
-	 <20110321232857.GC472@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 21 Mar 2011 19:35:36 -0400
-Message-ID: <1300750536.26546.31.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-X-OriginalArrivalTime: 21 Mar 2011 23:35:38.0315 (UTC) FILETIME=[AF0551B0:01CBE820]
+	id S932111Ab1CUXQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:16:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:17 2011
+Message-Id: <20110321230717.734025282@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Mon, 21 Mar 2011 16:07:22 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Manoj Iyer <manoj.iyer@canonical.com>, Chris Ball <cjb@laptop.org>
+Subject: [83/87] mmc: sdhci: Add Ricoh e823 PCI ID
+In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-21 at 19:28 -0400, J. Bruce Fields wrote:
-> On Fri, Mar 18, 2011 at 11:49:21PM +0100, Wolfgang Walter wrote:
-> > Hello,
-> > 
-> > I have a problem with our nfs-server (stable 2.6.32.33 but also with
-> > .31 or .32 and probably older ones): sometimes
-> > one or more rpciod get stuck. I used
-> > 
-> > 	rpcdebug -m rpc -s all
-> > 
-> > I get messages as the following one about every second:
-> > 
-> > Mar 18 11:15:37 au kernel: [44640.906793] RPC:       killing all tasks for client ffff88041c51de00
-> > Mar 18 11:15:38 au kernel: [44641.906793] RPC:       killing all tasks for client ffff88041c51de00
-> > Mar 18 11:15:39 au kernel: [44642.906795] RPC:       killing all tasks for client ffff88041c51de00
-> > Mar 18 11:15:40 au kernel: [44643.906793] RPC:       killing all tasks for client ffff88041c51de00
-> > Mar 18 11:15:41 au kernel: [44644.906795] RPC:       killing all tasks for client ffff88041c51de00
-> > Mar 18 11:15:42 au kernel: [44645.906794] RPC:       killing all tasks for client ffff88041c51de00
-> > 
-> > and I get this messages:
-> > 
-> > Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5 ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:rpc_exit_task q:none
-> > 
-> > My theorie is this one:
-> > 
-> > * this async task is runnable but does not progress (calling rpc_exit_task).
-> > * this is because the same rpciod which handles this task loops in
-> >   rpc_shutdown_client waiting for this task to go away.
-> > * because rpc_shutdown_client is called from an async rpc, too
-> 
-> Off hand I don't see any place where rpc_shutdown_client() is called
-> from rpciod; do you?
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-The only case I could think of would be if we're still calling mntput()
-from some RPC callback. In principle we should only be doing that from
-the rpc_call_ops->rpc_callback() from within the nfsiod thread rather
-than rpciod.
+------------------
 
-Is it possible this might be another instance of the nfs_commit_inode()
-busy-loop?
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+commit 5fd11c0754fa069b6aba64b65734aa2fb193552d upstream.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/mmc/host/sdhci-pci.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -454,6 +454,14 @@ static const struct pci_device_id pci_id
+ 	},
+ 
+ 	{
++		.vendor         = PCI_VENDOR_ID_RICOH,
++		.device         = 0xe823,
++		.subvendor      = PCI_ANY_ID,
++		.subdevice      = PCI_ANY_ID,
++		.driver_data    = (kernel_ulong_t)&sdhci_ricoh_mmc,
++	},
++
++	{
+ 		.vendor		= PCI_VENDOR_ID_ENE,
+ 		.device		= PCI_DEVICE_ID_ENE_CB712_SD,
+ 		.subvendor	= PCI_ANY_ID,
+
 
