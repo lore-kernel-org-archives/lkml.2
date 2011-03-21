@@ -1,117 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab1CUFWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 01:22:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58700 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab1CUFWw convert rfc822-to-8bit (ORCPT
+	id S1752827Ab1CUFa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 01:30:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53715 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab1CUFaY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 01:22:52 -0400
-From: "Janorkar, Mayuresh" <mayur@ti.com>
-To: Carl Vanderlip <carlv@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-CC: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Mar 2011 10:52:37 +0530
-Subject: RE: [PATCH 15/20] video: msm: convert printk to pr_*
-Thread-Topic: [PATCH 15/20] video: msm: convert printk to pr_*
-Thread-Index: AcvlvTALkrKZYtYqRXeKzt5EyxPAbQByp3MQ
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EB7F@dbde02.ent.ti.com>
-References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
- <1300485552-27519-1-git-send-email-carlv@codeaurora.org>
-In-Reply-To: <1300485552-27519-1-git-send-email-carlv@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Mar 2011 01:30:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HLqaWzV+6Mnu67XntJjbF8XhsWZDgsAb3AHn8Wu5vLD1fPKMG2Qz36pNXPZaWVdmTz
+         PDSrS5zCwIzhuCcKu94gJSMdkNVV0o1wtiD0WYRApTU2Vy2Kgv6A5S5HwDOSq1PIUCf6
+         DqGhN5BKc82Grrf5xyWIIBvpjAlfY367i43BU=
 MIME-Version: 1.0
+In-Reply-To: <20110321033926.GP22723@ZenIV.linux.org.uk>
+References: <AANLkTi=5pSyJVqOQUJ8wXbNpXogWcRdavswx9my0OzEX@mail.gmail.com>
+	<20110321033926.GP22723@ZenIV.linux.org.uk>
+Date: Mon, 21 Mar 2011 08:30:23 +0300
+Message-ID: <AANLkTinKPfYdbAQWuzi5Wf-HadLfjT0hmDnMwJwkwf8N@mail.gmail.com>
+Subject: Re: 2.6.39-rc0: umount tmpfs hangs
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21 March 2011 06:39, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Mar 21, 2011 at 05:24:08AM +0300, Alexander Beregalov wrote:
+>> Hi
+>>
+>> kernel is 2.6.38-06507-ga952baa
+>>
+>> /etc/init.d/swap stop
+>> runs
+>> umount -a -t tmpfs
+>>
+>> which is hangs at
+>>
+>> $cat /proc/4453/stack
+>> [<c1066332>] rcu_barrier_sched+0x32/0x40
+>> [<c109fdca>] deactivate_locked_super+0x3a/0x60
+>> [<c10a05f6>] deactivate_super+0x46/0x60
+>> [<c10b6f2a>] mntput_no_expire+0x5a/0x90
+>> [<c10b7a6d>] sys_umount+0x5d/0x300
+>> [<c10b7d29>] sys_oldumount+0x19/0x20
+>> [<c136eb50>] sysenter_do_call+0x12/0x36
+>> [<ffffffff>] 0xffffffff
+>
+> rcu_barrier() hanging for some reason...  I really wonder what's going
+> on there - missing rcu_read_unlock()?  Could you try to reproduce that
+> sucker and, if possible, bisect it?
 
-
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
-> owner@vger.kernel.org] On Behalf Of Carl Vanderlip
-> Sent: Saturday, March 19, 2011 3:29 AM
-> To: David Brown; Daniel Walker; Bryan Huntsman
-> Cc: Brian Swetland; Dima Zavin; Rebecca Schultz Zavin; Colin Cross; linux-
-> fbdev@vger.kernel.org; Carl Vanderlip; linux-arm-
-> kernel@lists.infradead.org; linux-arm-msm@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH 15/20] video: msm: convert printk to pr_*
-> 
-> Reword debugging messages to use pr_err and pr_warning
-> 
-> Authors:
-> Dima Zavin <dima@android.com>
-> Rebecca Schultz Zavin <rebecca@android.com>
-> Colin Cross <ccross@android.com>
-> 
-> Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
-> ---
->  drivers/video/msm/mdp.c |   11 ++++-------
->  1 files changed, 4 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/video/msm/mdp.c b/drivers/video/msm/mdp.c
-> index 8184ca9..b03204d 100644
-> --- a/drivers/video/msm/mdp.c
-> +++ b/drivers/video/msm/mdp.c
-> @@ -42,16 +42,13 @@ DEFINE_MUTEX(mdp_mutex);
-> 
->  static int locked_enable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
->  {
-> -	int ret = 0;
-> -
->  	BUG_ON(!mask);
-> 
->  	/* if the mask bits are already set return an error, this interrupt
->  	 * is already enabled */
->  	if (mdp_irq_mask & mask) {
-> -		printk(KERN_ERR "mdp irq already on already on %x %x\n",
-> -		       mdp_irq_mask, mask);
-> -		ret = -1;
-> +		pr_err("mdp irq already on %x %x\n", mdp_irq_mask, mask);
-> +		return -1;
-
-Please use standard error codes.
-http://lxr.linux.no/#linux+v2.6.38/include/asm-generic/errno-base.h
-The code would be more readable.
-Plus it would help in debugging.
-
->  	}
->  	/* if the mdp irq is not already enabled enable it */
->  	if (!mdp_irq_mask) {
-> @@ -172,9 +169,9 @@ static int mdp_wait(struct mdp_info *mdp, uint32_t
-> mask, wait_queue_head_t *wq)
-> 
->  	spin_lock_irqsave(&mdp->lock, irq_flags);
->  	if (mdp_irq_mask & mask) {
-> +		pr_warning("%s: timeout waiting for mdp to complete 0x%x\n",
-> +			   __func__, mask);
->  		locked_disable_mdp_irq(mdp, mask);
-> -		printk(KERN_WARNING "timeout waiting for mdp to complete
-> %x\n",
-> -		       mask);
->  		ret = -ETIMEDOUT;
->  	}
->  	spin_unlock_irqrestore(&mdp->lock, irq_flags);
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Yes, it's reproducible, but I'm bisecting another issue and have few
+more such issues with the current kernel.
