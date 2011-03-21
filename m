@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab1CUSXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:23:38 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:57308 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751161Ab1CUSXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:23:36 -0400
-Date: Mon, 21 Mar 2011 13:22:35 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
-Message-ID: <20110321182235.GA14562@sgi.com>
-References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <20110321175110.GL1239@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110321175110.GL1239@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1754095Ab1CUSY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:24:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64488 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161Ab1CUSY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:24:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,220,1299484800"; 
+   d="scan'208";a="615783429"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>, David Woodhouse <dwmw2@infradead.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [RFC] pstore: Don't use persistent store for normal shutdown
+Date: Mon, 21 Mar 2011 11:24:23 -0700
+Message-Id: <4d8797d74168a6441@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 01:51:10PM -0400, Don Zickus wrote:
-> On Mon, Mar 21, 2011 at 07:26:51PM +0300, Cyrill Gorcunov wrote:
-> > On 03/21/2011 07:14 PM, Ingo Molnar wrote:
-> > > 
-> > > * Jack Steiner <steiner@sgi.com> wrote:
-> > > 
-> > >> This fixes a problem seen on UV systems handling NMIs from the node controller.
-> > >> The original code used the DIE notifier as the hook to get to the UV NMI
-> > >> handler. This does not work if performance counters are active - the hw_perf
-> > >> code consumes the NMI and the UV handler is not called.
-> 
-> Well that is a bug in the perf code.  We have been dealing with 'perf'
-> swallowing NMIs for a couple of releases now.  I think we got rid of most
-> of the cases (p4 and acme's core2 quad are the only cases I know that are
-> still an issue).
-> 
-> I would much prefer to investigate the reason why this is happening
-> because the perf nmi handler is supposed to check the global interrupt bit
-> to determine if the perf counters caused the nmi or not otherwise fall
-> through to other handler like SGI's nmi button in this case.
+In commit 04c6862c055fb687c90d9652f32c11a063df15cf
+kmsg_dump: add kmsg_dump() calls to the reboot, halt, poweroff and emergency_restart paths
 
-The patch that I posted is based on a RHEL6.1 patch that I'm running internally.
-Unless something has very recently changed in the RH sources, the perf
-NMI handler unconditionally returns NOTIFY_STOP if it handles an NMI.
-If no NMI was handled, it returns NOTIFY_DONE. This sometimes works
-and allows the platform generated NMI to be processed but if both NMI
-sources trigger at about he same time, the lower priority event
-will be lost.
+Seiji Aguchi added kmsg_dump options for all the "normal" ways
+that a system can be shut down (KEXEC, RESTART, HALT and POWEROFF).
+It doesn't seem useful to save the kernel log to persistent store
+in these cases.
 
-The root cause of the problem is that architecturally, x86 does not
-have a way to identifies the source(s) that cause an NMI. If multiple
-events occur at about the same time, there is no way that I can see that the
-OS can detect it.
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-> 
-> My first impression is the skip nmi logic in the perf handler is probably
-> accidentally thinking the SGI external nmi is the perf's 'extra' nmi it is
-> supposed to skip and thus swallows it.  At least that is the impression I
+---
 
-Agree
+My /dev/pstore changes have been merged - and I immediately noticed that they
+now save a record on every shutdown.  Some simple detective work with git found
+that kmsg_dump now has some new "reasons" for calling its subscribers.
 
+This patch excludes the four "normal shutdown" cases from being logged
+to persistent store, on the assumption that we don't want to clutter up
+a limited amount of storage space with routine data.  My presumption is
+that there is some other subscriber to kmsg_dump that is doing something
+with these reason codes ... is that right?  Or do you think that we should
+save the tail of kernel log into persistent store for every shutdown?
 
-> get from the RedHat bugzilla which says SGI is running 'perf top', getting
-> a hang, then pressing their nmi button to see the stack traces.
-> 
-> Jack,
-> 
-> I worked through a number of these issues upstream and I already talked to
-> George and Russ over here at RedHat about working through the issue over
-> here with them.  They can help me get access to your box to help debug.
+Perhaps we could save less data for these new reasons? Other ideas?
 
-Russ is right down the hall.
-
-
---- jack
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index ce9ad84..4ca44c6 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -61,15 +61,34 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	unsigned long	s1_start, s2_start;
+ 	unsigned long	l1_cpy, l2_cpy;
+ 	unsigned long	size, total = 0;
+-	char		*dst;
++	char		*dst, *why;
+ 	u64		id;
+ 	int		hsize, part = 1;
+ 
++	switch (reason) {
++	case KMSG_DUMP_KEXEC:
++	case KMSG_DUMP_RESTART:
++	case KMSG_DUMP_HALT:
++	case KMSG_DUMP_POWEROFF:
++		return;
++	case KMSG_DUMP_OOPS:
++		why = "oops";
++		break;
++	case KMSG_DUMP_PANIC:
++		why = "panic";
++		break;
++	case KMSG_DUMP_EMERG:
++		why = "emergency";
++		break;
++	default:
++		why = "unknown";
++		break;
++	}
+ 	mutex_lock(&psinfo->buf_mutex);
+ 	oopscount++;
+ 	while (total < kmsg_bytes) {
+ 		dst = psinfo->buf;
+-		hsize = sprintf(dst, "Oops#%d Part%d\n", oopscount, part++);
++		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part++);
+ 		size = psinfo->bufsize - hsize;
+ 		dst += hsize;
+ 
