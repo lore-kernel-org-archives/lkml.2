@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab1CUTaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 15:30:00 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:18080 "EHLO
+	id S1754192Ab1CUTgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 15:36:01 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18176 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab1CUT36 (ORCPT
+	with ESMTP id S1754069Ab1CUTf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 15:29:58 -0400
-Date: Mon, 21 Mar 2011 20:29:49 +0100 (CET)
+	Mon, 21 Mar 2011 15:35:58 -0400
+Date: Mon, 21 Mar 2011 20:35:49 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
-Subject: [PATCH][resend] Don't leak memory in failure paths of
- gfs2_acl_get()
-Message-ID: <alpine.LNX.2.00.1103212025500.15815@swampdragon.chaosbits.net>
+To: linux-nfs@vger.kernel.org
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Milton Miller <miltonm@bga.com>, Chuck Lever <chuck.lever@oracle.com>,
+        linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        bfields@fieldses.org
+Subject: [PATCH][resend] Remove pointless memset in nfsacl_encode()
+Message-ID: <alpine.LNX.2.00.1103212031550.15815@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -21,53 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fs/gfs2/acl.c::gfs2_acl_get() we may leak memory in failure scenarios.
-gfs2_xattr_acl_get() may return <=0 after having dynamically allocated 
-memory for its last argument ('data' in the gfs2_acl_get() caller) and in 
-that case the caller leaks the memory.
-This patch initializes 'data' to NULL and calls kfree() on 'data' in the 
-failure paths. This ensures that we always free the memory on failure or 
-that we just call kfree(NULL) on failures where no memory has actually 
-been allocated yet.
+Remove pointless memset() in nfsacl_encode().
+
+Thanks to Trond Myklebust <Trond.Myklebust@netapp.com> for pointing out 
+that it is not needed since posix_acl_init() will set everything 
+regardless..
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- acl.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ nfsacl.c |    1 -
+ 1 file changed, 1 deletion(-)
 
- Patch against Linus' tree as of right now.
- Compile tested only.
+ Patch against up-to-date Linus' tree.
 
-diff --git a/fs/gfs2/acl.c b/fs/gfs2/acl.c
-index cbc0715..7d231fb 100644
---- a/fs/gfs2/acl.c
-+++ b/fs/gfs2/acl.c
-@@ -42,7 +42,7 @@ static struct posix_acl *gfs2_acl_get(struct gfs2_inode *ip, int type)
- {
- 	struct posix_acl *acl;
- 	const char *name;
--	char *data;
-+	char *data = NULL;
- 	int len;
+diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
+index 84c27d6..ec0f277 100644
+--- a/fs/nfs_common/nfsacl.c
++++ b/fs/nfs_common/nfsacl.c
+@@ -117,7 +117,6 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
+ 		 * invoked in contexts where a memory allocation failure is
+ 		 * fatal.  Fortunately this fake ACL is small enough to
+ 		 * construct on the stack. */
+-		memset(acl2, 0, sizeof(acl2));
+ 		posix_acl_init(acl2, 4);
  
- 	if (!ip->i_eattr)
-@@ -57,10 +57,14 @@ static struct posix_acl *gfs2_acl_get(struct gfs2_inode *ip, int type)
- 		return ERR_PTR(-EINVAL);
- 
- 	len = gfs2_xattr_acl_get(ip, name, &data);
--	if (len < 0)
-+	if (len < 0) {
-+		kfree(data);
- 		return ERR_PTR(len);
--	if (len == 0)
-+	}
-+	if (len == 0) {
-+		kfree(data);
- 		return NULL;
-+	}
- 
- 	acl = posix_acl_from_xattr(data, len);
- 	kfree(data);
+ 		/* Insert entries in canonical order: other orders seem
+
 
 
 -- 
