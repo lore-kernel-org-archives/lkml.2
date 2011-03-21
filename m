@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab1CUX0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:26:55 -0400
-Received: from kroah.org ([198.145.64.141]:52660 "EHLO coco.kroah.org"
+	id S932408Ab1CUX1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:27:11 -0400
+Received: from kroah.org ([198.145.64.141]:52652 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932310Ab1CUXSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:06 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
-Message-Id: <20110321230326.026712153@clark.kroah.org>
+	id S932303Ab1CUXSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:04 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:25 2011
+Message-Id: <20110321230325.835334141@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:58 -0700
+Date: Mon, 21 Mar 2011 16:01:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
+        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [42/78] ALSA: hda - fix digital mic selection in mixer on 92HD8X codecs
+Subject: [40/78] ALSA: HDA: Fixup unnecessary volume control index on Realtek ALC88x
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 094a42452abd5564429045e210281c6d22e67fca upstream.
+commit 7e59e097c09b82760bb0fe08b0fa2b704d76c3f4 upstream.
 
-When the mux for digital mic is different from the mux for other mics,
-the current auto-parser doesn't handle them in a right way but provides
-only one mic.  This patch fixes the issue.
+Without this change, a volume control named "Surround" or "Side" would
+get an unnecessary index, causing it to be ignored by the vmaster and
+PulseAudio.
 
-Signed-off-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+Tested-by: Bartłomiej Żogała <nusch88@gmail.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -757,7 +757,7 @@ static int stac92xx_mux_enum_put(struct
- 	struct sigmatel_spec *spec = codec->spec;
- 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
- 	const struct hda_input_mux *imux = spec->input_mux;
--	unsigned int idx, prev_idx;
-+	unsigned int idx, prev_idx, didx;
- 
- 	idx = ucontrol->value.enumerated.item[0];
- 	if (idx >= imux->num_items)
-@@ -769,7 +769,8 @@ static int stac92xx_mux_enum_put(struct
- 		snd_hda_codec_write_cache(codec, spec->mux_nids[adc_idx], 0,
- 					  AC_VERB_SET_CONNECT_SEL,
- 					  imux->items[idx].index);
--		if (prev_idx >= spec->num_analog_muxes) {
-+		if (prev_idx >= spec->num_analog_muxes &&
-+		    spec->mux_nids[adc_idx] != spec->dmux_nids[adc_idx]) {
- 			imux = spec->dinput_mux;
- 			/* 0 = analog */
- 			snd_hda_codec_write_cache(codec,
-@@ -779,9 +780,13 @@ static int stac92xx_mux_enum_put(struct
- 		}
- 	} else {
- 		imux = spec->dinput_mux;
-+		/* first dimux item is hardcoded to select analog imux,
-+		 * so lets skip it
-+		 */
-+		didx = idx - spec->num_analog_muxes + 1;
- 		snd_hda_codec_write_cache(codec, spec->dmux_nids[adc_idx], 0,
- 					  AC_VERB_SET_CONNECT_SEL,
--					  imux->items[idx - 1].index);
-+					  imux->items[didx].index);
- 	}
- 	spec->cur_mux[adc_idx] = idx;
- 	return 1;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5207,16 +5207,19 @@ static int alc880_auto_create_multi_out_
+ 				return err;
+ 		} else {
+ 			const char *name = pfx;
+-			if (!name)
++			int index = i;
++			if (!name) {
+ 				name = chname[i];
++				index = 0;
++			}
+ 			err = __add_pb_vol_ctrl(spec, ALC_CTL_WIDGET_VOL,
+-						name, i,
++						name, index,
+ 					  HDA_COMPOSE_AMP_VAL(nid, 3, 0,
+ 							      HDA_OUTPUT));
+ 			if (err < 0)
+ 				return err;
+ 			err = __add_pb_sw_ctrl(spec, ALC_CTL_BIND_MUTE,
+-					       name, i,
++					       name, index,
+ 					  HDA_COMPOSE_AMP_VAL(nid, 3, 2,
+ 							      HDA_INPUT));
+ 			if (err < 0)
 
 
