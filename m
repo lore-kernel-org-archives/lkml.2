@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab1CUQhG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 12:37:06 -0400
-Received: from realvnc.com ([146.101.152.142]:45700 "EHLO realvnc.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753619Ab1CUQhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 12:37:04 -0400
-X-Greylist: delayed 2668 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 12:37:03 EDT
-From: Toby Gray <toby.gray@realvnc.com>
-To: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Toby Gray <toby.gray@realvnc.com>
-Subject: [PATCH] USB: cdc-acm: Prevent data loss when filling tty buffer.
-Date: Mon, 21 Mar 2011 15:52:25 +0000
-Message-Id: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753827Ab1CUQiG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 12:38:06 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33110 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753675Ab1CUQiE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 12:38:04 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=sBudN7vSV74Diu7c7xvXjUN8ogdjAFgZkhRWlOGWAT9BiaL/0+Z213CYYXh+bnG4sJ/7H58v5UcImRwURw6sUvJvBOG6vK8bcXQG+rwBbsvFK8HocrK+agcbnLvvHU0c;
+Date: Mon, 21 Mar 2011 09:37:58 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI/ACPI: Report ASPM support to BIOS if not disabled
+ from command line
+Message-ID: <20110321093758.0c029496@jbarnes-desktop>
+In-Reply-To: <201103181841.28636.rjw@sisk.pl>
+References: <201103051321.51856.rjw@sisk.pl>
+	<20110318012556.GA13851@srcf.ucam.org>
+	<20110317214152.503adac8@jbarnes-x200>
+	<201103181841.28636.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When sending large quantities of data through a CDC ACM channel it is possible
-for data to be lost when attempting to copy the data to the tty buffer. This
-occurs due to the return value from tty_insert_flip_string not being checked.
+On Fri, 18 Mar 2011 18:41:28 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-This patch adds checking for how many bytes have been inserted into the tty
-buffer and returns any remaining bytes back to the filled read buffer list.
+> On Friday, March 18, 2011, Jesse Barnes wrote:
+> > On Fri, 18 Mar 2011 01:25:56 +0000
+> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > 
+> > > On Fri, Mar 18, 2011 at 10:10:20AM +0900, Kenji Kaneshige wrote:
+> > > > Jesse,
+> > > >
+> > > > This patch fixes the problem that PCIe hotplug no longer work in
+> > > > 2.6.38 on my platform (ASPM is disabled　through ACPI FADT in my
+> > > > platform). I think this need to be applied soon.
+> > > >
+> > > > Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> > > > Tested-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> > > 
+> > > Yes, I think we need to look at -stable for this one.
+> > 
+> > Ok, thanks guys.  I'll queue it up in -fixes and send it to Linus after
+> > my 2.6.39 pull req with a cc for stable.
+> 
+> Well, I thought you could simply include it into the pull request. :-)
 
-Signed-off-by: Toby Gray <toby.gray@realvnc.com>
----
- drivers/usb/class/cdc-acm.c |   28 ++++++++++++++++++++++++----
- 1 files changed, 24 insertions(+), 4 deletions(-)
+Applied, I'll send it to Linus this week.
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index f492a7f..63133c7 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -392,6 +392,7 @@ static void acm_rx_tasklet(unsigned long _acm)
- 	struct acm_ru *rcv;
- 	unsigned long flags;
- 	unsigned char throttled;
-+	int copied;
- 
- 	dbg("Entering acm_rx_tasklet");
- 
-@@ -423,12 +424,14 @@ next_buffer:
- 
- 	dbg("acm_rx_tasklet: procesing buf 0x%p, size = %d", buf, buf->size);
- 
-+	copied = 0;
- 	if (tty) {
- 		spin_lock_irqsave(&acm->throttle_lock, flags);
- 		throttled = acm->throttle;
- 		spin_unlock_irqrestore(&acm->throttle_lock, flags);
- 		if (!throttled) {
--			tty_insert_flip_string(tty, buf->base, buf->size);
-+			copied = tty_insert_flip_string(tty,
-+							buf->base, buf->size);
- 			tty_flip_buffer_push(tty);
- 		} else {
- 			tty_kref_put(tty);
-@@ -440,9 +443,26 @@ next_buffer:
- 		}
- 	}
- 
--	spin_lock_irqsave(&acm->read_lock, flags);
--	list_add(&buf->list, &acm->spare_read_bufs);
--	spin_unlock_irqrestore(&acm->read_lock, flags);
-+	if (copied == buf->size || !tty) {
-+		spin_lock_irqsave(&acm->read_lock, flags);
-+		list_add(&buf->list, &acm->spare_read_bufs);
-+		spin_unlock_irqrestore(&acm->read_lock, flags);
-+	} else {
-+		tty_kref_put(tty);
-+		dbg("Partial buffer fill");
-+		if (copied > 0) {
-+			memmove(buf->base,
-+				buf->base + copied,
-+				buf->size - copied);
-+			buf->size -= copied;
-+		}
-+
-+		spin_lock_irqsave(&acm->read_lock, flags);
-+		list_add(&buf->list, &acm->filled_read_bufs);
-+		spin_unlock_irqrestore(&acm->read_lock, flags);
-+		return;
-+	}
-+
- 	goto next_buffer;
- 
- urbs:
+Thanks,
 -- 
-1.7.0.4
-
+Jesse Barnes, Intel Open Source Technology Center
