@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901Ab1CUGSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 02:18:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44030 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab1CUGSe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 02:18:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rSkVK4/KrovpjwI2S0y/aA2hj6pvCR6+r+Jp2VGr3A50Od0i2Wo5iLgknx60A7xbSZ
-         857sRYmXAAsJUTQYlBOnzzMYzTtXgp3NCqDO5+VQq9pg5VOyc0SFGvd3yamWU3VONao4
-         JAUq/vEYPyg+vmDNwLnDKDqf6zrIg7b4BKqBQ=
+	id S1752063Ab1CUGkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 02:40:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44167 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751771Ab1CUGkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 02:40:14 -0400
+Message-ID: <4D86F2C2.9080707@redhat.com>
+Date: Mon, 21 Mar 2011 14:40:02 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110321055413.GT22723@ZenIV.linux.org.uk>
-References: <AANLkTi=5pSyJVqOQUJ8wXbNpXogWcRdavswx9my0OzEX@mail.gmail.com>
-	<20110321033926.GP22723@ZenIV.linux.org.uk>
-	<AANLkTinKPfYdbAQWuzi5Wf-HadLfjT0hmDnMwJwkwf8N@mail.gmail.com>
-	<20110321055413.GT22723@ZenIV.linux.org.uk>
-Date: Mon, 21 Mar 2011 09:18:33 +0300
-Message-ID: <AANLkTinXHoruafH6wa0NH8N+GxYTABLzGr9BiRXV2+AN@mail.gmail.com>
-Subject: Re: 2.6.39-rc0: umount tmpfs hangs
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Matthew Garrett <mjg@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        Takao Indoh <tindoh@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Len Brown <lenb@kernel.org>, linux-doc@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
+References: <1299766243-494-1-git-send-email-amwang@redhat.com> <20110310143923.GB29464@redhat.com> <m1oc5ig90b.fsf@fess.ebiederm.org> <20110310185019.GB23105@srcf.ucam.org>
+In-Reply-To: <20110310185019.GB23105@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 March 2011 08:54, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Mar 21, 2011 at 08:30:23AM +0300, Alexander Beregalov wrote:
->
->> > rcu_barrier() hanging for some reason... ??I really wonder what's going
->> > on there - missing rcu_read_unlock()? ??Could you try to reproduce that
->> > sucker and, if possible, bisect it?
->>
->> Yes, it's reproducible, but I'm bisecting another issue and have few
->> more such issues with the current kernel.
->
-> Could you post the reproducer?  Simple mounting tmpfs and umount explicitly
-> doesn't seem to trigger it; doing some IO on that fs doesn't change that,
-> ditto for umount done by shutdown instead of doing it manually...
+Eric, any comments?
 
-For me it is just shutting down.
-While bisecting another issue I found this range for bisection:
-ceda86a108671294052cbf51660097b6534672f5 good
-7a6362800cb7d1d618a697a650c7aaed3eb39320 bad
+Matthew, seems you agree on this patch, may I have your ACK?
 
-but only if the bug is 100% reproducible with my test, I can't be sure yet.
+Thanks.
+
+于 2011年03月11日 02:50, Matthew Garrett 写道:
+> On Thu, Mar 10, 2011 at 09:50:28AM -0800, Eric W. Biederman wrote:
+>
+>> Move all EFI calls that the kernel does (on x86) into a special section
+>> of the bzImage that the bootloader can run.  This works very well for
+>> the x86 BIOS and it should also work very well for EFI.  Among other
+>> things by having a special 32bit and a special 64bit section this solves
+>> the what flavor of EFI problem are we running on problem.
+>
+> There's no benefit in calling any EFI methods in the kernel if we have
+> no intention of making further calls later. If we intent on making
+> further calls later then this approach doesn't work well.
+>
+>> Never perform any EFI calls once the kernel is initialized, last I
+>> looked all of the EFI calls that were interesting to perform at runtime
+>> were a subset of what ACPI can do, and ACPI is a easier to deal with
+>> long term.
+>
+> With the exception of reboot, I don't see any overlap between the EFI
+> runtime services and ACPI.
+>
+>> Kexec and kdump can easily pass the gather data from the first kernel to
+>> the second kernel like we do for the normal bios paramsters today.
+>
+> Doing that's not a problem. The real problem is that passing a virtual
+> map to EFI is a one-shot event. The information we need to provide to
+> the second kernel isn't a set of parameters - it's the whole memory map,
+> and we need to depend on the kernel to be able to set up the same map
+> again.
+>
+>> As a fly in the ointment that leaves the question of how do we set EFI
+>> variables.  It is needed functionality when we are installing, and
+>> occasionally nice to have.  But it is a very rare slow path.  I would
+>> isolate the EFI after the kernel has booted to exactly to that one case.
+>> Either with a special driver or a some flavor of virtualization from
+>> userspace like we used to do for video card initialization.
+>
+> Also capsule updating (not that we implement that at present, but
+> vendors will want it). But, again, if you want to push this out to some
+> sort of magic then we can just drop pretty much all of the kernel EFI
+> support.
+>
+>> The current design of EFI in the x86 kernel is crap.  We seem to have
+>> advanced past the early adopter hack anything together to make it work
+>> stage.  So let's stop adding hacks and write something that won't give
+>> us a long term support problems.
+>
+> We're using EFI exactly as it's designed to be used at the moment. The
+> only problem is that nobody ever thought people would try to do anything
+> like booting one OS into another OS that has different ideas about
+> address space layout, but that's a problem with the spec and not our
+> implementation.
+>
+
