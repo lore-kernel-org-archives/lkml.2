@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab1CUPwB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 11:52:01 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34165 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab1CUPv6 (ORCPT
+	id S1753595Ab1CUPxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:53:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47532 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab1CUPxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 11:51:58 -0400
-Date: Mon, 21 Mar 2011 08:51:43 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        driverdevel <devel@driverdev.osuosl.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] staging/rtl81*: build as loadable modules only
-Message-Id: <20110321085143.8eccf9bb.randy.dunlap@oracle.com>
-In-Reply-To: <20110321144038.830fa54b.sfr@canb.auug.org.au>
-References: <20110321144038.830fa54b.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D877415.0142,ss=1,fgs=0
+	Mon, 21 Mar 2011 11:53:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=qGCm3HwwaCcpuLs9NXS7lX94zRTEd8bf3tp2YpJaSnrWvrm/vPI8S6O01Lh0EgwZhg
+         u0jMuHT9mYIVc3VvcA0zpkpeUO/Pq+mUWb8Yz4tfXfsSdvUjoKHpk8fIpb2H12Q8cdn5
+         PS0Sj5sabU1tUSjYfEcF7ATKNHLJY46YH/CSk=
+Date: Mon, 21 Mar 2011 18:52:21 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] rapidio: potential null deref on failure path
+Message-ID: <20110321153609.GR2008@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	"Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+	Matt Porter <mporter@kernel.crashing.org>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <20110319044032.GC2008@bicker>
+ <0CE8B6BE3C4AD74AB97D9D29BD24E55201A588F5@CORPEXCH1.na.ads.idt.com>
+ <20110321145948.GP2008@bicker>
+ <0CE8B6BE3C4AD74AB97D9D29BD24E55201A5897F@CORPEXCH1.na.ads.idt.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55201A5897F@CORPEXCH1.na.ads.idt.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, Mar 21, 2011 at 08:15:33AM -0700, Bounine, Alexandre wrote:
+> In this case I agree. 
+> Do you want me to move this patch up or you have your own path for it?
+> 
 
-These 3 drivers contain much duplicated (triplicated) code, so
-building them as built-in results in many errors like:
+Could you take it, please? 
 
-(.text+0x1b160): multiple definition of `ieee80211_sta_ps_sleep'
+regards,
+dan carpenter
 
-Prevent this configuration by making them all buildable only as
-loadable modules (similar to the vt665[56] patch last week).
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/staging/rtl8187se/Kconfig |    1 +
- drivers/staging/rtl8192e/Kconfig  |    1 +
- drivers/staging/rtl8192u/Kconfig  |    1 +
- 3 files changed, 3 insertions(+)
-
---- linux-next-20110321.orig/drivers/staging/rtl8187se/Kconfig
-+++ linux-next-20110321/drivers/staging/rtl8187se/Kconfig
-@@ -1,6 +1,7 @@
- config R8187SE
- 	tristate "RealTek RTL8187SE Wireless LAN NIC driver"
- 	depends on PCI && WLAN
-+	depends on m
- 	select WIRELESS_EXT
- 	select WEXT_PRIV
- 	select EEPROM_93CX6
---- linux-next-20110321.orig/drivers/staging/rtl8192e/Kconfig
-+++ linux-next-20110321/drivers/staging/rtl8192e/Kconfig
-@@ -1,6 +1,7 @@
- config RTL8192E
- 	tristate "RealTek RTL8192E Wireless LAN NIC driver"
- 	depends on PCI && WLAN
-+	depends on m
- 	select WIRELESS_EXT
- 	select WEXT_PRIV
- 	select CRYPTO
---- linux-next-20110321.orig/drivers/staging/rtl8192u/Kconfig
-+++ linux-next-20110321/drivers/staging/rtl8192u/Kconfig
-@@ -1,6 +1,7 @@
- config RTL8192U
- 	tristate "RealTek RTL8192U Wireless LAN NIC driver"
- 	depends on PCI && WLAN && USB
-+	depends on m
- 	select WIRELESS_EXT
- 	select WEXT_PRIV
- 	select CRYPTO
