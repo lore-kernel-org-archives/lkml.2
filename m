@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab1CUPRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 11:17:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64927 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab1CUPRK convert rfc822-to-8bit (ORCPT
+	id S1752082Ab1CUPWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:22:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51910 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1CUPWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 11:17:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mIBkEEG2NT+lZWc8jPDzaDnSH/FSxzlFX2zVnIrsCuI63ec8w+r7guSvgL6K93m/sP
-         zrEmly0IZZD7+j7V5OssPOAhTyMGkLtXr/7385hPdw/wRrotL1YUZC2Ar8FSgExspU2O
-         K+Vnyvkd5T+/97+HYtaMGX+OypgRJi4r1aqTg=
+	Mon, 21 Mar 2011 11:22:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [held lock freed] Re: [GIT] Networking
+Date: Mon, 21 Mar 2011 16:22:40 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <20110320.195156.226769634.davem@davemloft.net> <201103211550.10694.arnd@arndb.de> <1300719332.2884.370.camel@edumazet-laptop>
+In-Reply-To: <1300719332.2884.370.camel@edumazet-laptop>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimwa4hvTzX+S1E08rwUKYrGB76GiZoE5LhHjGyu@mail.gmail.com>
-References: <AANLkTimwa4hvTzX+S1E08rwUKYrGB76GiZoE5LhHjGyu@mail.gmail.com>
-Date: Mon, 21 Mar 2011 23:16:54 +0800
-Message-ID: <AANLkTikQW__eD5v59BqWOrzMoW5NVPDwkNYG2vfgRhjy@mail.gmail.com>
-Subject: Re: usb-serial gadget -- windows xp not working
-From: Xiaofan Chen <xiaofanc@gmail.com>
-To: nidhi mittal hada <nidhimittal19@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103211622.40851.arnd@arndb.de>
+X-Provags-ID: V02:K0:jP6LH9g9aBpEi9SbLlawonh9d6SXrVwSSjHxWMj0FgT
+ pcE0YS/kyd1CmbkvUFHKZY+EjjpbRdafPK3U1M7Eeh6E6qiXJH
+ 1I2s79yU5epzmLszUEPdHNYjBdSM94E9zKm/nOZ0lBxjSp2iCR
+ gLRBzIQdIvPGCKUcKC2nKNxzhaCKpLpuwudLNw7jWfM224Kt3u
+ oW1GUff3mPAPsVHZlolmw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 10:43 PM, nidhi mittal hada
-<nidhimittal19@gmail.com> wrote:
-> Hi all
-> I tried using g_serial driver for using my BeagleBoard (BB)  as usb
-> serial gadget to connect it to windows xp host.
-> using this link
-> http://www.mjmwired.net/kernel/Documentation/usb/gadget_serial.txt
->
-> The command
-> modprobe g_serial executed properly  on BB (gadget) and It gets
-> identified successfully on Linus host(ubuntu) when connected through
-> usb wire.
->
-> But
-> when the gadget connected to Windows XP .
-> Host XP identifies a new hardware in device manager ...But the step of
-> installing the .inf file obtained from
-> http://www.mjmwired.net/kernel/Documentation/usb/linux-cdc-acm.inf
-> does not succeed !!!
+On Monday 21 March 2011, Eric Dumazet wrote:
+> > diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
+> > index 4680b1e..b2cf1db 100644
+> > --- a/net/x25/af_x25.c
+> > +++ b/net/x25/af_x25.c
+> > @@ -669,8 +669,8 @@ static int x25_release(struct socket *sock)
+> >  
+> >       sock_orphan(sk);
+> >  out:
+> > -     release_sock(sk);
+> >       sock_put(sk);
+> > +     release_sock(sk);
+> >       return 0;
+> >  }
+> >  
+> 
+> Hmm, x25_release() looks fine, I believe no fix is needed.
+> 
 
-The inf file indeed has some bugs. But I doubt that is your problem.
-http://www.microchip.com/forums/fb.ashx?m=488342
+D'oh. You're right of course. My patch would introduce the bug,
+not fix it. Updated patch below.
 
-mchpcdc.inf (and its derivatives)
+	Arnd
+8<-------------------------
+net/appletalk: fix atalk_release use after free
 
- [DestinationDirs]
- FakeModemCopyFileSection=12            ; <------ add this line
- DefaultDestDir=12
+The BKL removal in appletalk introduced a use-after-free problem,
+where atalk_destroy_socket frees a sock, but we still release
+the socket lock on it.
 
- [DriverInstall.nt]
- include=mdmcpq.inf
- ;; CopyFiles = DriverCopyFiles.nt      ; <------ wrong one: reference
-to this INF file
- CopyFiles = FakeModemCopyFileSection   ; <------ right one: reference
-to a section in mdmcpq.inf
- AddReg=DriverInstall.nt.AddReg
+An easy fix is to take an extra reference on the sock and sock_put
+it when returning from atalk_release.
 
- ;; [DriverCopyFiles.nt]                ; <------ delete these lines
- ;; usbser.sys,,,0x20                   ; <------
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-
-> As i found after googling --  i changed the product ID Vendor ID in
-> .inf file ..as found for my gadget.
-> But the problem persists.!!!
->
-
-If you have used the VID/PID for other experiment, then you will got
-problems. You can use usbdeview to get Windows to forget about
-the VID/PID combination.
-http://www.nirsoft.net/utils/usb_devices_view.html
-
-Or you can use pnputil if you have WDK.
-http://msdn.microsoft.com/en-us/library/ff550419(v=vs.85).aspx
-
--- 
-Xiaofan
+index 3d4f4b0..206e771 100644
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1051,6 +1051,7 @@ static int atalk_release(struct socket *sock)
+ {
+ 	struct sock *sk = sock->sk;
+ 
++	sock_hold(sk);
+ 	lock_sock(sk);
+ 	if (sk) {
+ 		sock_orphan(sk);
+@@ -1058,6 +1059,8 @@ static int atalk_release(struct socket *sock)
+ 		atalk_destroy_socket(sk);
+ 	}
+ 	release_sock(sk);
++	sock_put(sk);
++
+ 	return 0;
+ }
+ 
