@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab1CURwu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:52:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785Ab1CURwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:52:46 -0400
-Date: Mon, 21 Mar 2011 18:43:06 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: [PATCH 7/8] job control: Notify the real parent of job control
-	events regardless of ptrace
-Message-ID: <20110321174306.GA29895@redhat.com>
-References: <1299614199-25142-1-git-send-email-tj@kernel.org> <1299614199-25142-8-git-send-email-tj@kernel.org>
+	id S1754011Ab1CURw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:52:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42265 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab1CURww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:52:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=XaNPQKbbjBWL2pePt1D4SAhlREvjSx9DanIAswm4DR0Kpdhr0BBR+aD89U3Ouas7Rc
+         BwhPNSDG+OdvLy2kdrbGXxaGIkF/EecWj4f50aybHN53GMrvPT4Q58pU3Kku2tH4dWAq
+         Tg8Bhzmg9TL08bt9aX4O2hfLQiWBxcEvMxtlU=
+Message-ID: <4D878F7A.7070506@gmail.com>
+Date: Mon, 21 Mar 2011 20:48:42 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299614199-25142-8-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jack Steiner <steiner@sgi.com>
+CC: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
+References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <4D878042.9080708@gmail.com> <4D878445.6090709@gmail.com> <20110321170832.GC12718@sgi.com> <4D87888D.4050400@gmail.com> <20110321173413.GA13916@sgi.com>
+In-Reply-To: <20110321173413.GA13916@sgi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08, Tejun Heo wrote:
->
-> With recent changes, job control and ptrace stopped states are
-> properly separated and accessible to the real parent and the ptracer
-> respectively; however, notifications of job control stopped/continued
-> events to the real parent while ptraced are still missing.
+On 03/21/2011 08:34 PM, Jack Steiner wrote:
+....
+>>>>
+>>>>   I must admit I've missed the fact that Jack has tried NMIs priorities, right?
+>>>> x86_platform_ops seems to be a cleaner indeed (btw I think p4 pmu kgdb issue
+>>>> is exactly the same problem) but same time this might end up in over-swelled
+>>>> ideas behind this small code snippet. Dunno. Probably we need some per-cpu
+>>>> system status for nmi reasons other than unknown nmis...
+>>>
+>>> We use KDB internally, and yes, it has the same issue. The version of the
+>>> patch that uses KDB OR's the "handled" status for both KDB & the UV NMI handler.
+>>> If either KDB or the UV NMI handler returns "handled", the code in traps.c exits
+>>> after the call to the first die notifier.
+>>>
+>>> Not particularily pretty but I could not find a better way to do it.
+>>>
+>>> --- jack
+>>
+>>   Another option might be to add pre-nmi notifier chain, which of course
+>> not much differ from platform ops but I guess platform ops stands mostly
+>> for one-shot events while chain might be more flexible. Ie I mean something
+>> like
+>>
+>> 	if (notify_pre_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+>> 		return;
+> 
+> You still need to process both chains in order to handle the case where both
+> hw_perf & the SGI BMC raise NMIs at about the same time.
+> 
+> --- jack
 
-Yes, great.
+yes, but I meant to simply call this chain before the regular notify_die. Anyway
+it would look ugly as hell too.
 
->  /*
-> + * Test whether the target task of the usual cldstop notification - the
-> + * real_parent of the group_leader of @child - is the ptracer.
-> + */
-> +static bool real_parent_is_ptracer(struct task_struct *child)
-> +{
-> +	return child->parent == child->group_leader->real_parent;
-> +}
-
-Again, I am not sure we do not need same_thread_group(), but this
-is minor.
-
-Hmm... in fact I can't convince myself we really need to look at
-child->group_leader, will recheck... Anyway, this is minor too.
-
-> @@ -1757,7 +1768,20 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
->  	spin_unlock_irq(&current->sighand->siglock);
->  	read_lock(&tasklist_lock);
->  	if (may_ptrace_stop()) {
-> -		do_notify_parent_cldstop(current, task_ptrace(current), why);
-> +		/*
-> +		 * Notify parents of the stop.
-> +		 *
-> +		 * While ptraced, there are two parents - the ptracer and
-> +		 * the real_parent of the group_leader.  The ptracer should
-> +		 * know about every stop while the real parent is only
-> +		 * interested in the completion of group stop.  The states
-> +		 * for the two don't interact with each other.  Notify
-> +		 * separately unless they're gonna be duplicates.
-> +		 */
-> +		do_notify_parent_cldstop(current, true, why);
-> +		if (gstop_done && !real_parent_is_ptracer(current))
-> +			do_notify_parent_cldstop(current, false, why);
-
-OK.
-
-But what about "else" branch? If gstop_done == T but debugger has gone
-between spin_unlock(siglock) and read_lock(tasklist), we should do
-something.
-
-ptrace_untrace() restores GROUP_STOP_PENDING in this case, so this task
-will stop again. But notification is lost.
-
-Just in case, it is not that I blame this patch. Just I think we need
-a bit more changes here. Unless I missed something.
-
-> @@ -2017,10 +2041,24 @@ relock:
->
-> +		/*
-> +		 * Notify the parent that we're continuing.  This event is
-> +		 * always per-process and doesn't make whole lot of sense
-> +		 * for ptracers, who shouldn't consume the state via
-> +		 * wait(2) either, but, for backward compatibility, notify
-> +		 * the ptracer of the group leader too unless it's gonna be
-> +		 * a duplicate.
-> +		 */
->  		read_lock(&tasklist_lock);
-> +
-> +		do_notify_parent_cldstop(current, false, why);
-
-Nice,
-
->  		leader = current->group_leader;
-> +		if (task_ptrace(leader) && !real_parent_is_ptracer(leader))
-> +			do_notify_parent_cldstop(leader, true, why);
-
-Well, yes... This is ugly but compatible and documented, so I agree.
-
-Oleg.
-
+-- 
+    Cyrill
