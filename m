@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab1CUJUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 05:20:36 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:58646 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092Ab1CUJUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 05:20:34 -0400
-X-ASG-Debug-ID: 1300699232-01de284cf896c40001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D87185C.4070001@fusionio.com>
-Date: Mon, 21 Mar 2011 10:20:28 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752025Ab1CUJdH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 05:33:07 -0400
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:52540 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751296Ab1CUJdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 05:33:05 -0400
+Date: Mon, 21 Mar 2011 11:32:57 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: balbi@ti.com, Stefan Bigler <stefan.bigler@keymile.com>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: TTY loosing data with u_serial gadget
+Message-ID: <20110321093255.GE1837@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <4D8121F6.9060600@keymile.com>
+ <20110317000408.GA18911@kroah.com>
+ <4D8389EC.5030704@keymile.com>
+ <20110318170801.GA2857@legolas.emea.dhcp.ti.com>
+ <20110318180657.11570887@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>
-Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task  plugging
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	 <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>	 <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>	 <20110316173148.GC13562@redhat.com>	 <1300323609.2337.117.camel@sli10-conroe>  <4D81D7D5.7000806@fusionio.com>	 <1300430212.2337.141.camel@sli10-conroe> <4D83560E.8000002@fusionio.com>	 <4D83639A.3060407@fusionio.com> <1300690368.2337.148.camel@sli10-conroe>
-X-ASG-Orig-Subj: Re: [PATCH 04/10] block: initial patch for on-stack per-task  plugging
-In-Reply-To: <1300690368.2337.148.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1300699232
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58528
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110318180657.11570887@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-21 07:52, Shaohua Li wrote:
->> Gave it a quick test spin, as suspected it had a few issues. This one
->> seems to work. Can you toss it through that workload and see if it fares
->> better?
-> yes, this fully restores the regression I saw. But I have accounting
-> issue:
+On Fri, Mar 18, 2011 at 06:06:57PM +0000, Alan Cox wrote:
+> > I had the same problem while I was working at Nokia developing the N900.
+> > I even sent a patch (twice) with Alan Cox on the loop but nothing has
+> > happened.
+> 
+> http://lkml.indiana.edu/hypermail/linux/kernel/0910.0/02347.html
+> 
+> is I assume the thread you are talking about - which ground to a halt
+> without actually figuring out what you were seeing and what was really
+> going on.
+> 
+> http://permalink.gmane.org/gmane.linux.usb.general/28976
+> 
+> would be the second generation one which was somewhat longer after I
+> ceased to be tty maintainer so I can't really say it never got upstream.
+> 
+> I still think its the right thing to do, so perhaps it's worth reposting
+> it, especially if it fixes this case too.
 
-Great!
-
-> 1. The merged request is already accounted when it's added into plug
-> list
-
-Good catch. I've updated the patch and merged it now, integrating this
-accounting fix.
-
-> 2. drive_stat_acct() is called without any protection in
-> __make_request(). So there is race for in_flight accounting. The race
-> exists after stack plug is added, so not because of this issue.
-> Below is the extra patch I need to do the test.
-
-Looks fine. Can I add your signed-off-by to this patch? I'll merge it as
-a separate fix.
+Ok, I'll update that patch and re-send. I'll compile test on x86 and
+boot test on an ARM box, so it would be cool to have Acks from several
+people before applying, just in case.
 
 -- 
-Jens Axboe
-
+balbi
