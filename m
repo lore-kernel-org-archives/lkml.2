@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab1CUXm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:42:27 -0400
-Received: from kroah.org ([198.145.64.141]:49548 "EHLO coco.kroah.org"
+	id S932624Ab1CUXml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:42:41 -0400
+Received: from kroah.org ([198.145.64.141]:49541 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754977Ab1CUXP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:59 -0400
+	id S1755501Ab1CUXP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:58 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:15 2011
-Message-Id: <20110321230715.512657828@clark.kroah.org>
+Message-Id: <20110321230715.411200500@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:00 -0700
+Date: Mon, 21 Mar 2011 16:06:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
+        Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Renninger <trenn@suse.de>,
         Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [61/87] PCI: sysfs: Fix failure path for addition of "vpd" attribute
+Subject: [60/87] PCI: do not create quirk I/O regions below PCIBIOS_MIN_IO for ICH
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 0f12a4e29368a9476076515881d9ef4e5876c6e2 upstream.
+commit 87e3dc3855430bd254370afc79f2ed92250f5b7c upstream.
 
-Commit 280c73d ("PCI: centralize the capabilities code in
-pci-sysfs.c") changed the initialisation of the "rom" and "vpd"
-attributes, and made the failure path for the "vpd" attribute
-incorrect.  We must free the new attribute structure (attr), but
-instead we currently free dev->vpd->attr.  That will normally be NULL,
-resulting in a memory leak, but it might be a stale pointer, resulting
-in a double-free.
+Some broken BIOSes on ICH4 chipset report an ACPI region which is in
+conflict with legacy IDE ports when ACPI is disabled. Even though the
+regions overlap, IDE ports are working correctly (we cannot find out
+the decoding rules on chipsets).
 
-Found by inspection; compile-tested only.
+So the only problem is the reported region itself, if we don't reserve
+the region in the quirk everything works as expected.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+This patch avoids reserving any quirk regions below PCIBIOS_MIN_IO
+which is 0x1000. Some regions might be (and are by a fast google
+query) below this border, but the only difference is that they won't
+be reserved anymore. They should still work though the same as before.
+
+The conflicts look like (1f.0 is bridge, 1f.1 is IDE ctrl):
+pci 0000:00:1f.1: address space collision: [io 0x0170-0x0177] conflicts with 0000:00:1f.0 [io  0x0100-0x017f]
+
+At 0x0100 a 128 bytes long ACPI region is reported in the quirk for
+ICH4. ata_piix then fails to find disks because the IDE legacy ports
+are zeroed:
+ata_piix 0000:00:1f.1: device not available (can't reserve [io 0x0000-0x0007])
+
+References: https://bugzilla.novell.com/show_bug.cgi?id=558740
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci-sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/quirks.c |   32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -1088,7 +1088,7 @@ static int pci_create_capabilities_sysfs
- 		attr->write = write_vpd_attr;
- 		retval = sysfs_create_bin_file(&dev->dev.kobj, attr);
- 		if (retval) {
--			kfree(dev->vpd->attr);
-+			kfree(attr);
- 			return retval;
- 		}
- 		dev->vpd->attr = attr;
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -554,18 +554,30 @@ static void __devinit quirk_ich4_lpc_acp
+ 	u32 region;
+ 	u8 enable;
+ 
++	/*
++	 * The check for PCIBIOS_MIN_IO is to ensure we won't create a conflict
++	 * with low legacy (and fixed) ports. We don't know the decoding
++	 * priority and can't tell whether the legacy device or the one created
++	 * here is really at that address.  This happens on boards with broken
++	 * BIOSes.
++	*/
++
+ 	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+ 	if (enable & ICH4_ACPI_EN) {
+ 		pci_read_config_dword(dev, ICH_PMBASE, &region);
+-		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+-				"ICH4 ACPI/GPIO/TCO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++					"ICH4 ACPI/GPIO/TCO");
+ 	}
+ 
+ 	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
+ 	if (enable & ICH4_GPIO_EN) {
+ 		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
+-		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
+-				"ICH4 GPIO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 64,
++					PCI_BRIDGE_RESOURCES + 1, "ICH4 GPIO");
+ 	}
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
+@@ -587,15 +599,19 @@ static void __devinit ich6_lpc_acpi_gpio
+ 	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+ 	if (enable & ICH6_ACPI_EN) {
+ 		pci_read_config_dword(dev, ICH_PMBASE, &region);
+-		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+-				"ICH6 ACPI/GPIO/TCO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++					"ICH6 ACPI/GPIO/TCO");
+ 	}
+ 
+ 	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
+ 	if (enable & ICH4_GPIO_EN) {
+ 		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
+-		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
+-				"ICH6 GPIO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 64,
++					PCI_BRIDGE_RESOURCES + 1, "ICH6 GPIO");
+ 	}
+ }
+ 
 
 
