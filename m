@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab1CUAnS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 20:43:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38589 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab1CUAnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 20:43:15 -0400
-Date: Mon, 21 Mar 2011 11:43:06 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the block tree with Linus' tree
-Message-Id: <20110321114306.3d91bfb5.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752502Ab1CUAyV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 20:54:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59191 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752382Ab1CUAyT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 20:54:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110319085802.GA18336@sepie.suse.cz>
+References: <20110319085802.GA18336@sepie.suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 Mar 2011 17:53:24 -0700
+Message-ID: <AANLkTin5vYaU83K0YOdD1OgCS24LA8XBSvNfmGFnjhGF@mail.gmail.com>
+Subject: Re: [GIT] kbuild core updates for 2.6.39-rc1
+To: Michal Marek <mmarek@suse.cz>
+Cc: bp@alien8.de, dot@dotat.at, mikew@google.com, randy.dunlap@oracle.com,
+        u.kleine-koenig@pengutronix.de, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Sat, Mar 19, 2011 at 1:58 AM, Michal Marek <mmarek@suse.cz> wrote:
+>
+> * Section mismatch analysis enabled by default
+>  - there are only a few warnings for defconfig builds,
+>    all{yes,mod}config still has a lot of them. Depending on the general
+>    perception of this change, we might disable it later in the rc phase
+>    again.
 
-Today's linux-next merge of the block tree got a conflict in fs/super.c
-between commit 9d412a43c3b2 ("vfs: split off vfsmount-related parts of
-vfs_kern_mount()") from Linus' tree and commit 95f28604a65b ("fs: assign
-sb->s_bdi to default_backing_dev_info if the bdi is going away") from the
-block tree.
+No.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+We don't enable stuff like this by default. Not when it actually
+changes some really fundamental compiler flags, and thus the whole "we
+can disable it late in -rc again" is a totally broken option, since if
+we have any compiler issues, we'd want to know it early.
 
-diff --cc fs/super.c
-index e848649,0d89e93..0000000
---- a/fs/super.c
-+++ b/fs/super.c
-@@@ -928,17 -989,25 +929,18 @@@ mount_fs(struct file_system_type *type
-  			goto out_free_secdata;
-  	}
-  
- -	if (type->mount) {
- -		root = type->mount(type, flags, name, data);
- -		if (IS_ERR(root)) {
- -			error = PTR_ERR(root);
- -			goto out_free_secdata;
- -		}
- -		mnt->mnt_root = root;
- -		mnt->mnt_sb = root->d_sb;
- -	} else {
- -		error = type->get_sb(type, flags, name, data, mnt);
- -		if (error < 0)
- -			goto out_free_secdata;
- +	root = type->mount(type, flags, name, data);
- +	if (IS_ERR(root)) {
- +		error = PTR_ERR(root);
- +		goto out_free_secdata;
-  	}
- -	BUG_ON(!mnt->mnt_sb);
- -	WARN_ON(!mnt->mnt_sb->s_bdi);
- -	WARN_ON(mnt->mnt_sb->s_bdi == &default_backing_dev_info);
- -	mnt->mnt_sb->s_flags |= MS_BORN;
- +	sb = root->d_sb;
- +	BUG_ON(!sb);
- +	WARN_ON(!sb->s_bdi);
-++	WARN_ON(sb->s_bdi == &default_backing_dev_info);
- +	sb->s_flags |= MS_BORN;
-  
- -	error = security_sb_kern_mount(mnt->mnt_sb, flags, secdata);
- +	error = security_sb_kern_mount(sb, flags, secdata);
-  	if (error)
-  		goto out_sb;
-  
+And we _know_ we are going to disable it, since it enables the "don't
+inline" flag to gcc for called-once functions. So there's no question
+at all what the default should be in any release kernel.
+
+Anyway - in general, enabling options like this had better have some
+_seriously_ major reasons. IOW, major known issues that just have to
+be sorted out and cannot be sorted out any other way. That doesn't
+seem to be the case here.
+
+WE DO NOT EVER ENABLE NEW THINGS BY DEFAULT. I know, I know - every
+developer always thinks that _his_ code is special and magically so
+important that it should be enabled by default, but no, that is simply
+not the case. The only reason to enable something by default is that
+it used to never be a config option in the first place, so if somebody
+builds a new kernel, and he used to just silently get the feature,
+then the new config option is still on by default.
+
+Not pulling. This is a pet peeve of mine. We don't use "set to 'y' on
+default" as a way to trick people into enabling code. No, no, no.
+
+                             Linus
