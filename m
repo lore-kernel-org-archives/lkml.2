@@ -1,81 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab1CUXdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:33:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49623 "EHLO smtps.tip.net.au"
+	id S1755836Ab1CUXdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:33:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36849 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755636Ab1CUXdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:33:09 -0400
-Date: Tue, 22 Mar 2011 10:33:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Woodhouse <david.woodhouse@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	id S1755684Ab1CUXdw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:33:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.63,222,1299484800"; 
+   d="scan'208";a="406096137"
+From: "Zhao, Yu" <yu.zhao@intel.com>
+To: Greg KH <gregkh@suse.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jarkko Lavinen <jarkko.lavinen@nokia.com>
-Subject: Re: linux-next: build failure after merge of the block tree
-Message-Id: <20110322103300.c934a540.sfr@canb.auug.org.au>
-In-Reply-To: <4D81E64F.2020909@kernel.dk>
-References: <20110314161919.15e6d983.sfr@canb.auug.org.au>
-	<20110317103218.ca7f63bf.sfr@canb.auug.org.au>
-	<4D81E010.1090808@kernel.dk>
-	<1300358170.2589.50.camel@macbook.infradead.org>
-	<4D81E64F.2020909@kernel.dk>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__22_Mar_2011_10_33_00_+1100_zB1BGkGCxpF5TIBL"
+        "stable@kernel.org" <stable@kernel.org>
+CC: "stable-review@kernel.org" <stable-review@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Date: Tue, 22 Mar 2011 07:33:31 +0800
+Subject: RE: [46/78] PCI: remove quirk for pre-production systems
+Thread-Topic: [46/78] PCI: remove quirk for pre-production systems
+Thread-Index: AcvoHkGEfAuys6x3Rxqc3D713h05vQAAdkAw
+Message-ID: <F0B985DC7CF4974ABCD947B7FAF9C5A4B492D469@pgsmsx507.gar.corp.intel.com>
+References: <20110321230346.GA14681@kroah.com>
+ <20110321230326.450195228@clark.kroah.org>
+In-Reply-To: <20110321230326.450195228@clark.kroah.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Mar_2011_10_33_00_+1100_zB1BGkGCxpF5TIBL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi everyone,
+I am quite sure that the Zhao Yu you want to send email to is not me. So would you please check email address and let the right man receive it?
 
-Hi Guys,
+Thanks,
 
-On Thu, 17 Mar 2011 11:45:35 +0100 Jens Axboe <axboe@kernel.dk> wrote:
->
-> On 2011-03-17 11:36, David Woodhouse wrote:
-> > On Thu, 2011-03-17 at 10:18 +0000, Jens Axboe wrote:
-> >>
-> >> Can you point me at the commit in question? Generally,
-> >> elv_queue_empty()
-> >> can be replaced by blk_peek_request().=20
-> >=20
-> > The interesting commit is this one:
-> > http://git.infradead.org/mtd-2.6.git/commitdiff/c7519dbf6
-> >=20
-> > The point of it is to enable this
-> > http://git.infradead.org/mtd-2.6.git/commitdiff/a32159024
->=20
-> OK, can you commit a change just changing that to blk_peek_request()?
-> That'll avoid the conflict.
+Leo, Zhao
 
-I am still reverting those three commits from the mtd tree ...  David, I
-assume that you are going to want to ask Linus to merge the mtd tree at
-some point soon?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__22_Mar_2011_10_33_00_+1100_zB1BGkGCxpF5TIBL
-Content-Type: application/pgp-signature
+-----Original Message-----
+From: Greg KH [mailto:gregkh@suse.de] 
+Sent: Tuesday, March 22, 2011 7:02 AM
+To: linux-kernel@vger.kernel.org; stable@kernel.org
+Cc: stable-review@kernel.org; torvalds@linux-foundation.org; akpm@linux-foundation.org; alan@lxorguk.ukuu.org.uk; Brandeburg, Jesse; Zhao, Yu; Jesse Barnes
+Subject: [46/78] PCI: remove quirk for pre-production systems
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-iQEcBAEBAgAGBQJNh+AsAAoJEDMEi1NhKgbsgj8H/j8xgt9/yaPKWbY8Zvqqa9/M
-WyII1zfhoI0lIXj6pRhac3AbiQgrumUnk+7Cc7fBpvatwVRvhWgXEJKIVNE84gqD
-tYmIj06ase+h58zcg9Ma4w/kiA0/Id+tNu8KkR6IeAkn/lnYz1XGowt2HcG2pp+V
-qtf9FTLDYa6B7dHzm1vRhjqu5qA0LAQMHmm8XirgUrwJMiU944IUWuc7GeK6t5Cp
-cvPJWzE32TIWEDxsojfFLU0AKrkcb8TYD2i1HT3lzPSEuOaY4bH7lXWsV9h4ITS3
-mEmRlshJiAyC1zf4goIzDBA/9o8VgtPTrj8AVhqgbiKjTvDN5S9wMZx1XBLt/Vg=
-=YyJk
------END PGP SIGNATURE-----
+------------------
 
---Signature=_Tue__22_Mar_2011_10_33_00_+1100_zB1BGkGCxpF5TIBL--
+From: Brandeburg, Jesse <jesse.brandeburg@intel.com>
+
+commit b99af4b002e4908d1a5cdaf424529bdf1dc69768 upstream.
+
+Revert commit 7eb93b175d4de9438a4b0af3a94a112cb5266944
+Author: Yu Zhao <yu.zhao@intel.com>
+Date:   Fri Apr 3 15:18:11 2009 +0800
+
+    PCI: SR-IOV quirk for Intel 82576 NIC
+
+    If BIOS doesn't allocate resources for the SR-IOV BARs, zero the Flash
+    BAR and program the SR-IOV BARs to use the old Flash Memory Space.
+
+    Please refer to Intel 82576 Gigabit Ethernet Controller Datasheet
+    section 7.9.2.14.2 for details.
+    http://download.intel.com/design/network/datashts/82576_Datasheet.pdf
+
+    Signed-off-by: Yu Zhao <yu.zhao@intel.com>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+This quirk was added before SR-IOV was in production and now all machines that
+originally had this issue alreayd have bios updates to correct the issue. The
+quirk itself is no longer needed and in fact causes bugs if run.  Remove it.
+
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+CC: Yu Zhao <yu.zhao@intel.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/pci/quirks.c |   52 ---------------------------------------------------
+ 1 file changed, 52 deletions(-)
+
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2618,58 +2618,6 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
+ 
+ #endif /* CONFIG_PCI_MSI */
+ 
+-#ifdef CONFIG_PCI_IOV
+-
+-/*
+- * For Intel 82576 SR-IOV NIC, if BIOS doesn't allocate resources for the
+- * SR-IOV BARs, zero the Flash BAR and program the SR-IOV BARs to use the
+- * old Flash Memory Space.
+- */
+-static void __devinit quirk_i82576_sriov(struct pci_dev *dev)
+-{
+-	int pos, flags;
+-	u32 bar, start, size;
+-
+-	if (PAGE_SIZE > 0x10000)
+-		return;
+-
+-	flags = pci_resource_flags(dev, 0);
+-	if ((flags & PCI_BASE_ADDRESS_SPACE) !=
+-			PCI_BASE_ADDRESS_SPACE_MEMORY ||
+-	    (flags & PCI_BASE_ADDRESS_MEM_TYPE_MASK) !=
+-			PCI_BASE_ADDRESS_MEM_TYPE_32)
+-		return;
+-
+-	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_SRIOV);
+-	if (!pos)
+-		return;
+-
+-	pci_read_config_dword(dev, pos + PCI_SRIOV_BAR, &bar);
+-	if (bar & PCI_BASE_ADDRESS_MEM_MASK)
+-		return;
+-
+-	start = pci_resource_start(dev, 1);
+-	size = pci_resource_len(dev, 1);
+-	if (!start || size != 0x400000 || start & (size - 1))
+-		return;
+-
+-	pci_resource_flags(dev, 1) = 0;
+-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_1, 0);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR, start);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR + 12, start + size / 2);
+-
+-	dev_info(&dev->dev, "use Flash Memory Space for SR-IOV BARs\n");
+-}
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10c9, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e6, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e7, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
+-
+-#endif	/* CONFIG_PCI_IOV */
+-
+ /* Allow manual resource allocation for PCI hotplug bridges
+  * via pci=hpmemsize=nnM and pci=hpiosize=nnM parameters. For
+  * some PCI-PCI hotplug bridges, like PLX 6254 (former HINT HB6),
+
+
