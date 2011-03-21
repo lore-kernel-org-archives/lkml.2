@@ -1,90 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1CUWeu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 18:34:50 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:6102 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab1CUWer (ORCPT
+	id S1754777Ab1CUWey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 18:34:54 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41441 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740Ab1CUWeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 18:34:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=NyR0IpdiJk6iFv+QSMFH08IP1yCIFEBEx9BC4KcoEZKoQ8VA/X2SfH2XyWtxeYXF5
-	CfMHT8XLJmOFcjStoVWGQ==
-From: David Sharp <dhsharp@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: mrubin@google.com, David Sharp <dhsharp@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH perf 1/2] perf: trace-event-parse: support additional operators: '!', '~',  and '!='
-Date: Mon, 21 Mar 2011 15:34:05 -0700
-Message-Id: <1300746846-28245-2-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1300746846-28245-1-git-send-email-dhsharp@google.com>
-References: <1300746846-28245-1-git-send-email-dhsharp@google.com>
+	Mon, 21 Mar 2011 18:34:50 -0400
+Date: Mon, 21 Mar 2011 22:34:08 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: Hot plug issue on 2.6.38
+Message-ID: <20110321223408.GA17412@srcf.ucam.org>
+References: <201103052254.48515.rjw@sisk.pl> <201103170119.17647.rjw@sisk.pl> <AANLkTim39fjrAp4OW_MfpbZkz-YYW5E2NOHuo1j=svmW@mail.gmail.com> <201103172222.33336.rjw@sisk.pl> <20110317215609.GA5917@xanatos> <20110321222705.GA4139@xanatos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110321222705.GA4139@xanatos>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the unary operators '!' and '~', and support '!=' so that
-it is differentiated from '!'.
+Try setting CONFIG_HOTPLUG_PCI_ACPI to y as well, just to rule that out?
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/trace-event-parse.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 73a0222..67fe01a 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -1107,6 +1107,9 @@ static int get_op_prio(char *op)
- {
- 	if (!op[1]) {
- 		switch (op[0]) {
-+		case '~':
-+		case '!':
-+			return 4;
- 		case '*':
- 		case '/':
- 		case '%':
-@@ -1184,6 +1187,7 @@ process_op(struct event *event, struct print_arg *arg, char **tok)
- 			return EVENT_ERROR;
- 		}
- 		switch (token[0]) {
-+		case '~':
- 		case '!':
- 		case '+':
- 		case '-':
-@@ -2109,6 +2113,21 @@ static unsigned long long eval_num_arg(void *data, int size,
- 		left = eval_num_arg(data, size, event, arg->op.left);
- 		right = eval_num_arg(data, size, event, arg->op.right);
- 		switch (arg->op.op[0]) {
-+		case '!':
-+			switch (arg->op.op[1]) {
-+			case 0:
-+				val = !right;
-+				break;
-+			case '=':
-+				val = left != right;
-+				break;
-+			default:
-+				die("unknown op '%s'", arg->op.op);
-+			}
-+			break;
-+		case '~':
-+			val = ~right;
-+			break;
- 		case '|':
- 			if (arg->op.op[1])
- 				val = left || right;
 -- 
-1.7.3.1
-
+Matthew Garrett | mjg59@srcf.ucam.org
