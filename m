@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1CUObD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 10:31:03 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51215 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1CUObB (ORCPT
+	id S1753470Ab1CUOeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 10:34:37 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:41126 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909Ab1CUOef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 10:31:01 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Dave Chinner <david@fromorbit.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
-In-reply-to: <20110321140451.GA7153@quack.suse.cz>
-References: <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <20110321140451.GA7153@quack.suse.cz>
-Date: Mon, 21 Mar 2011 10:24:41 -0400
-Message-Id: <1300716666-sup-2087@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt358.oracle.com [141.146.40.158]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D87610A.010A,ss=1,fgs=0
+	Mon, 21 Mar 2011 10:34:35 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 21 Mar 2011 15:34:17 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire updates post 2.6.38
+Message-ID: <20110321153417.586f5e2a@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Jan Kara's message of 2011-03-21 10:04:51 -0400:
-> On Fri 18-03-11 17:07:55, Darrick J. Wong wrote:
-> > > > Ok, here's what I have so far.  I took everyone's suggestions of where to add
-> > > > calls to wait_on_page_writeback, which seems to handle the multiple-write case
-> > > > adequately.  Unfortunately, it is still possible to generate checksum errors by
-> > > > scribbling furiously on a mmap'd region, even after adding the writeback wait
-> > > > in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
-> > > > removing its wait_for_page_writeback call, so I suspect there's a bit more
-> > > > going on in btrfs than I've been able to figure out.
-> > 
-> > I wonder, is it possible for this to happen:
-> > 
-> > 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
-> >    but there's no ongoing writeback, so it returns without delay.
-> > 2. Thread A starts writing furiously to the page.
-> > 3. Thread B runs fsync() or something that results in the page being
-> >    checksummed and scheduled for writeout.
-> > 4. Thread A continues to write furiously(!) on that same page before the
-> >    controller finishes the DMA transfer.
-> > 5. Disk gets the page, which now doesn't match its checksum, and *boom*
->   What happens on writepage (see mm/page-writeback.c:write_cache_pages())
-> is:
->   lock_page(page)
->   ...
->   clear_page_dirty_for_io() - removes PageDirty, marks page as read-only in
->     PTE
->   ...
->   set_page_writeback() (happens e.g. in __block_write_full_page() called
-> from filesystem's writepage implementation).
->   unlock_page(page)
-> 
->   So if you compute the checksum after set_page_writeback() is done in the
-> writepage() implementation (you cannot use __block_write_full_page() in
-> that case) and you call wait_on_page_writeback() in ext4_page_mkwrite()
-> under page lock, you should be safe. If you do all this and still see
-> errors, something is broken I'd say...
+Linus, please pull from the for-linus branch at
 
-Looking at the ext4_page_mkwrite, it does this:
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
 
-lock the page
-check for holes
-unlock the page
-if (no_holes)
-	return;
+to receive the following updates for the IEEE 1394 (FireWire) subsystem.
+This series contains various housekeeping bits, a fix for a bug that bites
+with a firewire sound driver which was merged three days ago via ALSA, and
+improved compatibility with some rare quirky devices.
 
-write_begin/write_end
-return
+Topmost three changes were committed way after you opened the merge
+window, but these contain said quirk handling and I would have sent them
+to you even outside of a merge window.
 
-So, to have page_mkwrite work, you need to wait for writeback with the
-page locked in both the no holes case and after the
-write_begin/write_end.  write_begin will dirty the page, so someone can
-wander in and start the IO while we are still in page_mkwrite.
+Thanks.
 
-This is untested and uncompiled, but it should
-do the trick.
+Clemens Ladisch (9):
+      firewire: ohci: log dead DMA contexts
+      firewire: cdev: remove unneeded idr_find() from complete_transaction()
+      firewire: cdev: always wait for outbound transactions to complete
+      firewire: cdev: remove unneeded reference
+      firewire: core: fix card->reset_jiffies overflow
+      firewire: core: rename some variables
+      firewire: ohci: prevent iso completion callbacks after context stop
+      firewire: ohci: prevent starting of iso contexts with empty queue
+      firewire: core: increase default SPLIT_TIMEOUT value
 
-Jan, did you get rid of all the buffer head based writeback for
-data=ordered in ext4?  That's my only other idea, that someone is doing
-writeback directly without taking the page lock.
+Oleg Drokin (1):
+      firewire: ohci: Misleading kfree in ohci.c::pci_probe/remove
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 9f7f9e4..8a75e12 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5880,6 +5880,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (page_has_buffers(page)) {
- 		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
- 					ext4_bh_unmapped)) {
-+			wait_on_page_writeback(page);
- 			unlock_page(page);
- 			goto out_unlock;
- 		}
-@@ -5901,6 +5902,16 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (ret < 0)
- 		goto out_unlock;
- 	ret = 0;
-+
-+	/*
-+	 * write_begin/end might have created a dirty page and someone
-+	 * could wander in and start the IO.  Make sure that hasn't
-+	 * happened
-+	 */
-+	lock_page(page);
-+	wait_on_page_writeback(page);
-+	unlock_page(page);
-+
- out_unlock:
- 	if (ret)
- 		ret = VM_FAULT_SIGBUS;
+Stefan Richter (4):
+      firewire: nosy: should work on Power Mac G4 PCI too
+      firewire: ohci: omit IntEvent.busReset check rom AT queueing
+      firewire: sbp2: revert obsolete 'fix stall with "Unsolicited response"'
+      firewire: core: ignore link-active bit of new nodes, fix device recognition
 
+ drivers/firewire/Kconfig         |    3 +-
+ drivers/firewire/core-card.c     |   21 +++++++---
+ drivers/firewire/core-cdev.c     |   54 +++++++++++++-----------
+ drivers/firewire/core-device.c   |   22 ++++++----
+ drivers/firewire/core-iso.c      |   22 +++++-----
+ drivers/firewire/core-topology.c |    2 +-
+ drivers/firewire/ohci.c          |   85 ++++++++++++++++++++++++++++---------
+ drivers/firewire/sbp2.c          |   11 +----
+ include/linux/firewire.h         |    2 +-
+ 9 files changed, 140 insertions(+), 82 deletions(-)
+-- 
+Stefan Richter
+-=====-==-== --== =-=-=
+http://arcgraph.de/sr/
