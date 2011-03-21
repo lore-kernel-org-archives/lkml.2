@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab1CUXOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:14:09 -0400
-Received: from kroah.org ([198.145.64.141]:49117 "EHLO coco.kroah.org"
+	id S1755207Ab1CUXOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:14:16 -0400
+Received: from kroah.org ([198.145.64.141]:49135 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab1CUXOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:14:06 -0400
+	id S1755161Ab1CUXOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:14:09 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:54 2011
-Message-Id: <20110321231054.276488661@clark.kroah.org>
+Message-Id: <20110321231054.600920736@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:15 -0700
+Date: Mon, 21 Mar 2011 16:10:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [35/44] isdn: avoid calling tty_ldisc_flush() in atomic context
+        Roman Fietze <roman.fietze@telemotive.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [38/44] i2c: Fix typo in instantiating-devices document
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Roman Fietze <roman.fietze@telemotive.de>
 
-commit bc10f96757bd6ab3721510df8defa8f21c32f974 upstream.
+commit 6ced9e6b3901af4ab6ac0a11231402c888286ea6 upstream.
 
-Remove the call to tty_ldisc_flush() from the RESULT_NO_CARRIER
-branch of isdn_tty_modem_result(), as already proposed in commit
-00409bb045887ec5e7b9e351bc080c38ab6bfd33.
-This avoids a "sleeping function called from invalid context" BUG
-when the hardware driver calls the statcallb() callback with
-command==ISDN_STAT_DHUP in atomic context, which in turn calls
-isdn_tty_modem_result(RESULT_NO_CARRIER, ~), and from there,
-tty_ldisc_flush() which may sleep.
+The struct i2c_board_info member holding the name is "type", not
+"name".
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/i4l/isdn_tty.c |    6 ------
- 1 file changed, 6 deletions(-)
+ Documentation/i2c/instantiating-devices |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -2635,12 +2635,6 @@ isdn_tty_modem_result(int code, modem_in
- 		if ((info->flags & ISDN_ASYNC_CLOSING) || (!info->tty)) {
- 			return;
- 		}
--#ifdef CONFIG_ISDN_AUDIO
--		if ( !info->vonline )
--			tty_ldisc_flush(info->tty);
--#else
--		tty_ldisc_flush(info->tty);
--#endif
- 		if ((info->flags & ISDN_ASYNC_CHECK_CD) &&
- 		    (!((info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) &&
- 		       (info->flags & ISDN_ASYNC_CALLOUT_NOHUP)))) {
+--- a/Documentation/i2c/instantiating-devices
++++ b/Documentation/i2c/instantiating-devices
+@@ -100,7 +100,7 @@ static int __devinit usb_hcd_pnx4008_pro
+ 	(...)
+ 	i2c_adap = i2c_get_adapter(2);
+ 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
+-	strlcpy(i2c_info.name, "isp1301_pnx", I2C_NAME_SIZE);
++	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
+ 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
+ 						   normal_i2c);
+ 	i2c_put_adapter(i2c_adap);
 
 
