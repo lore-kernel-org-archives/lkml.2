@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab1CUXsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:48:20 -0400
-Received: from kroah.org ([198.145.64.141]:49371 "EHLO coco.kroah.org"
+	id S1754951Ab1CUXPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:15:30 -0400
+Received: from kroah.org ([198.145.64.141]:49256 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754987Ab1CUXPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:32 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
-Message-Id: <20110321230712.680406240@clark.kroah.org>
+	id S1754987Ab1CUXPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:19 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
+Message-Id: <20110321230711.337361825@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:33 -0700
+Date: Mon, 21 Mar 2011 16:06:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [34/87] x86: stop_machine_text_poke() should issue sync_core()
+        Andrey Vagin <avagin@openvz.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [21/87] x86/mm: Handle mm_fault_error() in kernel space
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,70 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit 0e00f7aed6af21fc09b2a94d28bc34e449bd3a53 upstream.
+commit f86268549f424f83b9eb0963989270e14fbfc3de upstream.
 
-Intel Archiecture Software Developer's Manual section 7.1.3 specifies that a
-core serializing instruction such as "cpuid" should be executed on _each_ core
-before the new instruction is made visible.
+mm_fault_error() should not execute oom-killer, if page fault
+occurs in kernel space.  E.g. in copy_from_user()/copy_to_user().
 
-Failure to do so can lead to unspecified behavior (Intel XMC erratas include
-General Protection Fault in the list), so we should avoid this at all cost.
+This would happen if we find ourselves in OOM on a
+copy_to_user(), or a copy_from_user() which faults.
 
-This problem can affect modified code executed by interrupt handlers after
-interrupt are re-enabled at the end of stop_machine, because no core serializing
-instruction is executed between the code modification and the moment interrupts
-are reenabled.
+Without this patch, the kernels hangs up in copy_from_user(),
+because OOM killer sends SIG_KILL to current process, but it
+can't handle a signal while in syscall, then the kernel returns
+to copy_from_user(), reexcute current command and provokes
+page_fault again.
 
-Because stop_machine_text_poke performs the text modification from the first CPU
-decrementing stop_machine_first, modified code executed in thread context is
-also affected by this problem. To explain why, we have to split the CPUs in two
-categories: the CPU that initiates the text modification (calls text_poke_smp)
-and all the others. The scheduler, executed on all other CPUs after
-stop_machine, issues an "iret" core serializing instruction, and therefore
-handles core serialization for all these CPUs. However, the text modification
-initiator can continue its execution on the same thread and access the modified
-text without any scheduler call. Given that the CPU that initiates the code
-modification is not guaranteed to be the one actually performing the code
-modification, it falls into the XMC errata.
+With this patch the kernel return -EFAULT from copy_from_user().
 
-Q: Isn't this executed from an IPI handler, which will return with IRET (a
-   serializing instruction) anyway?
-A: No, now stop_machine uses per-cpu workqueue, so that handler will be
-   executed from worker threads. There is no iret anymore.
+The code, which checks that page fault occurred in kernel space,
+has been copied from do_sigbus().
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-LKML-Reference: <20110303160137.GB1590@Krystal>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+This situation is handled by the same way on powerpc, xtensa,
+tile, ...
+
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <201103092322.p29NMNPH001682@imap1.linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/alternative.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/mm/fault.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -417,7 +417,12 @@ int alternatives_text_reserved(void *sta
- 				return 1;
- 		}
- 	}
--
-+	/*
-+	 * Intel Archiecture Software Developer's Manual section 7.1.3 specifies
-+	 * that a core serializing instruction such as "cpuid" should be
-+	 * executed on _each_ core before the new instruction is made visible.
-+	 */
-+	sync_core();
- 	return 0;
- }
- #endif
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -827,6 +827,13 @@ mm_fault_error(struct pt_regs *regs, uns
+ 	       unsigned long address, unsigned int fault)
+ {
+ 	if (fault & VM_FAULT_OOM) {
++		/* Kernel mode? Handle exceptions or die: */
++		if (!(error_code & PF_USER)) {
++			up_read(&current->mm->mmap_sem);
++			no_context(regs, error_code, address);
++			return;
++		}
++
+ 		out_of_memory(regs, error_code, address);
+ 	} else {
+ 		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
 
 
