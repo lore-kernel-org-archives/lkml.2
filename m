@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab1CVAAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 20:00:00 -0400
-Received: from kroah.org ([198.145.64.141]:48994 "EHLO coco.kroah.org"
+	id S1754936Ab1CUXNk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:13:40 -0400
+Received: from kroah.org ([198.145.64.141]:48926 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754822Ab1CUXNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:13:43 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:52 2011
-Message-Id: <20110321231052.295989662@clark.kroah.org>
+	id S1754856Ab1CUXNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:33 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:51 2011
+Message-Id: <20110321231051.264232047@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:09:55 -0700
+Date: Mon, 21 Mar 2011 16:09:45 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, linux-mips@linux-mips.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [15/44] x86, quirk: Fix SB600 revision check
+        Florian Fainelli <florian@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [05/44] MIPS: MTX-1: Make au1000_eth probe all PHY addresses
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit 1d3e09a304e6c4e004ca06356578b171e8735d3c upstream.
+commit bf3a1eb85967dcbaae42f4fcb53c2392cec32677 upstream.
 
-Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
-(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
-systems) introduced a regression. It removed some SB600 specific
-code to determine the revision ID without adapting a
-corresponding revision ID check for SB600.
+When au1000_eth probes the MII bus for PHY address, if we do not set
+au1000_eth platform data's phy_search_highest_address, the MII probing
+logic will exit early and will assume a valid PHY is found at address 0.
+For MTX-1, the PHY is at address 31, and without this patch, the link
+detection/speed/duplex would not work correctly.
 
-See this mail thread:
-
-  http://marc.info/?l=linux-kernel&m=129980296006380&w=2
-
-This patch adapts the corresponding check to cover all SB600
-revisions.
-
-Tested-by: Wang Lei <f3d27b@gmail.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <20110315143137.GD29499@alberich.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+To: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/2111/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/early-quirks.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/mips/alchemy/mtx-1/platform.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -161,7 +161,12 @@ static void __init ati_bugs_contd(int nu
- 	if (rev >= 0x40)
- 		acpi_fix_pin2_polarity = 1;
+--- a/arch/mips/alchemy/mtx-1/platform.c
++++ b/arch/mips/alchemy/mtx-1/platform.c
+@@ -28,6 +28,8 @@
+ #include <linux/mtd/physmap.h>
+ #include <mtd/mtd-abi.h>
  
--	if (rev > 0x13)
-+	/*
-+	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
-+	 * SB700: revisions 0x39, 0x3a, ...
-+	 * SB800: revisions 0x40, 0x41, ...
-+	 */
-+	if (rev >= 0x39)
- 		return;
++#include <asm/mach-au1x00/au1xxx_eth.h>
++
+ static struct gpio_keys_button mtx1_gpio_button[] = {
+ 	{
+ 		.gpio = 207,
+@@ -140,10 +142,17 @@ static struct __initdata platform_device
+ 	&mtx1_mtd,
+ };
  
- 	if (acpi_use_timer_override)
++static struct au1000_eth_platform_data mtx1_au1000_eth0_pdata = {
++	.phy_search_highest_addr	= 1,
++	.phy1_search_mac0 		= 1,
++};
++
+ static int __init mtx1_register_devices(void)
+ {
+ 	int rc;
+ 
++	au1xxx_override_eth_cfg(0, &mtx1_au1000_eth0_pdata);
++
+ 	rc = gpio_request(mtx1_gpio_button[0].gpio,
+ 					mtx1_gpio_button[0].desc);
+ 	if (rc < 0) {
 
 
