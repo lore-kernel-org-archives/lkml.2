@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab1CUXS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:18:56 -0400
-Received: from kroah.org ([198.145.64.141]:52770 "EHLO coco.kroah.org"
+	id S932546Ab1CUXTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:19:00 -0400
+Received: from kroah.org ([198.145.64.141]:52792 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932399Ab1CUXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:26 -0400
+	id S932316Ab1CUXSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:28 2011
-Message-Id: <20110321230328.084333057@clark.kroah.org>
+Message-Id: <20110321230328.502106599@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:18 -0700
+Date: Mon, 21 Mar 2011 16:02:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [62/78] perf, powerpc: Handle events that raise an exception without overflowing
+        Paul McKinney <paulmck@linux.vnet.ibm.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: [66/78] call_function_many: add missing ordering
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +26,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Milton Miller <miltonm@bga.com>
 
-commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 upstream.
+commit 45a5791920ae643eafc02e2eedef1a58e341b736 upstream.
 
-Events on POWER7 can roll back if a speculative event doesn't
-eventually complete. Unfortunately in some rare cases they will
-raise a performance monitor exception. We need to catch this to
-ensure we reset the PMC. In all cases the PMC will be 256 or less
-cycles from overflow.
+Paul McKenney's review pointed out two problems with the barriers in the
+2.6.38 update to the smp call function many code.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20110309143842.6c22845e@kryten>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+First, a barrier that would force the func and info members of data to
+be visible before their consumption in the interrupt handler was
+missing.  This can be solved by adding a smp_wmb between setting the
+func and info members and setting setting the cpumask; this will pair
+with the existing and required smp_rmb ordering the cpumask read before
+the read of refs.  This placement avoids the need a second smp_rmb in
+the interrupt handler which would be executed on each of the N cpus
+executing the call request.  (I was thinking this barrier was present
+but was not).
+
+Second, the previous write to refs (establishing the zero that we the
+interrupt handler was testing from all cpus) was performed by a third
+party cpu.  This would invoke transitivity which, as a recient or
+concurrent addition to memory-barriers.txt now explicitly states, would
+require a full smp_mb().
+
+However, we know the cpumask will only be set by one cpu (the data
+owner) and any preivous iteration of the mask would have cleared by the
+reading cpu.  By redundantly writing refs to 0 on the owning cpu before
+the smp_wmb, the write to refs will follow the same path as the writes
+that set the cpumask, which in turn allows us to keep the barrier in the
+interrupt handler a smp_rmb instead of promoting it to a smp_mb (which
+will be be executed by N cpus for each of the possible M elements on the
+list).
+
+I moved and expanded the comment about our (ab)use of the rcu list
+primitives for the concurrent walk earlier into this function.  I
+considered moving the first two paragraphs to the queue list head and
+lock, but felt it would have been too disconected from the code.
+
+Cc: Paul McKinney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/include/asm/reg.h   |    1 +
- arch/powerpc/kernel/perf_event.c |   24 +++++++++++++++++++++++-
- 2 files changed, 24 insertions(+), 1 deletion(-)
+ kernel/smp.c |   46 +++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 33 insertions(+), 13 deletions(-)
 
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -880,6 +880,7 @@
- #define PV_970		0x0039
- #define PV_POWER5	0x003A
- #define PV_POWER5p	0x003B
-+#define PV_POWER7	0x003F
- #define PV_970FX	0x003C
- #define PV_630		0x0040
- #define PV_630p	0x0041
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -1269,6 +1269,28 @@ unsigned long perf_instruction_pointer(s
- 	return ip;
- }
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -483,23 +483,42 @@ void smp_call_function_many(const struct
  
-+static bool pmc_overflow(unsigned long val)
-+{
-+	if ((int)val < 0)
-+		return true;
-+
-+	/*
-+	 * Events on POWER7 can roll back if a speculative event doesn't
-+	 * eventually complete. Unfortunately in some rare cases they will
-+	 * raise a performance monitor exception. We need to catch this to
-+	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
-+	 * cycles from overflow.
+ 	data = &__get_cpu_var(cfd_data);
+ 	csd_lock(&data->csd);
+-	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
+ 
+-	data->csd.func = func;
+-	data->csd.info = info;
+-	cpumask_and(data->cpumask, mask, cpu_online_mask);
+-	cpumask_clear_cpu(this_cpu, data->cpumask);
++	/* This BUG_ON verifies our reuse assertions and can be removed */
++	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
+ 
+ 	/*
++	 * The global call function queue list add and delete are protected
++	 * by a lock, but the list is traversed without any lock, relying
++	 * on the rcu list add and delete to allow safe concurrent traversal.
+ 	 * We reuse the call function data without waiting for any grace
+ 	 * period after some other cpu removes it from the global queue.
+-	 * This means a cpu might find our data block as it is writen.
+-	 * The interrupt handler waits until it sees refs filled out
+-	 * while its cpu mask bit is set; here we may only clear our
+-	 * own cpu mask bit, and must wait to set refs until we are sure
+-	 * previous writes are complete and we have obtained the lock to
+-	 * add the element to the queue.
++	 * This means a cpu might find our data block as it is being
++	 * filled out.
 +	 *
-+	 * We only do this if the first pass fails to find any overflowing
-+	 * PMCs because a user might set a period of less than 256 and we
-+	 * don't want to mistakenly reset them.
-+	 */
-+	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
-+		return true;
++	 * We hold off the interrupt handler on the other cpu by
++	 * ordering our writes to the cpu mask vs our setting of the
++	 * refs counter.  We assert only the cpu owning the data block
++	 * will set a bit in cpumask, and each bit will only be cleared
++	 * by the subject cpu.  Each cpu must first find its bit is
++	 * set and then check that refs is set indicating the element is
++	 * ready to be processed, otherwise it must skip the entry.
++	 *
++	 * On the previous iteration refs was set to 0 by another cpu.
++	 * To avoid the use of transitivity, set the counter to 0 here
++	 * so the wmb will pair with the rmb in the interrupt handler.
+ 	 */
++	atomic_set(&data->refs, 0);	/* convert 3rd to 1st party write */
 +
-+	return false;
-+}
++	data->csd.func = func;
++	data->csd.info = info;
 +
- /*
-  * Performance monitor interrupt stuff
-  */
-@@ -1316,7 +1338,7 @@ static void perf_event_interrupt(struct
- 			if (is_limited_pmc(i + 1))
- 				continue;
- 			val = read_pmc(i + 1);
--			if ((int)val < 0)
-+			if (pmc_overflow(val))
- 				write_pmc(i + 1, 0);
- 		}
- 	}
++	/* Ensure 0 refs is visible before mask.  Also orders func and info */
++	smp_wmb();
++
++	/* We rely on the "and" being processed before the store */
++	cpumask_and(data->cpumask, mask, cpu_online_mask);
++	cpumask_clear_cpu(this_cpu, data->cpumask);
+ 
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+@@ -509,8 +528,9 @@ void smp_call_function_many(const struct
+ 	 */
+ 	list_add_rcu(&data->csd.list, &call_function.queue);
+ 	/*
+-	 * We rely on the wmb() in list_add_rcu to order the writes
+-	 * to func, data, and cpumask before this write to refs.
++	 * We rely on the wmb() in list_add_rcu to complete our writes
++	 * to the cpumask before this write to refs, which indicates
++	 * data is on the list and is ready to be processed.
+ 	 */
+ 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
 
 
