@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab1CUXTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:19:10 -0400
-Received: from kroah.org ([198.145.64.141]:52850 "EHLO coco.kroah.org"
+	id S932483Ab1CUXSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:18:42 -0400
+Received: from kroah.org ([198.145.64.141]:52704 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932326Ab1CUXSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:41 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:29 2011
-Message-Id: <20110321230329.612836554@clark.kroah.org>
+	id S932236Ab1CUXSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:15 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:27 2011
+Message-Id: <20110321230326.954736609@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:33 -0700
+Date: Mon, 21 Mar 2011 16:02:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>,
-        Kevin Hilman <khilman@ti.com>
-Subject: [77/78] davinci: DM644x EVM: register MUSB device earlier
+        Takashi Iwai <tiwai@suse.de>
+Subject: [51/78] ALSA: aloop - Fix possible IRQ lock inversion
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 60d97a840175d3becb2e6de36537a5cdfc0ec3a9 upstream.
+commit 98d21df431ad55281e1abf780f8d51e3391900b2 upstream.
 
-The MUSB driver doesn't see its platform device on DM644x EVM board anymore
-since commit 73b089b052a69020b953312a624a6e1eb5b81fab (usb: musb: split davinci
-to its own platform_driver) because the new probe is called as subsys_initcall()
-now, and the device is registered later than that by the board code.  Move the
-registration to davinci_evm_init() -- it's safe to do so because the MUSB core
-device still gets initialized as fs_initcall() -- which is late enough for the
-I2C GPIO expander (which controls VBUS) to be initialized.
+loopback_pos_update() can be called in the timer callback, thus the lock
+held should be irq-safe.  Otherwise you'll get AB/BA deadlock together
+with substream->self_group.lock.
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
+Reported-and-tested-by: Knut Petersen <Knut_Petersen@t-online.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-davinci/board-dm644x-evm.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ sound/drivers/aloop.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
---- a/arch/arm/mach-davinci/board-dm644x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-@@ -440,11 +440,6 @@ evm_u35_setup(struct i2c_client *client,
- 	gpio_request(gpio + 7, "nCF_SEL");
- 	gpio_direction_output(gpio + 7, 1);
+--- a/sound/drivers/aloop.c
++++ b/sound/drivers/aloop.c
+@@ -482,8 +482,9 @@ static unsigned int loopback_pos_update(
+ 			cable->streams[SNDRV_PCM_STREAM_CAPTURE];
+ 	unsigned long delta_play = 0, delta_capt = 0;
+ 	unsigned int running;
++	unsigned long flags;
  
--	/* irlml6401 switches over 1A, in under 8 msec;
--	 * now it can be managed by nDRV_VBUS ...
--	 */
--	davinci_setup_usb(1000, 8);
--
- 	return 0;
+-	spin_lock(&cable->lock);	
++	spin_lock_irqsave(&cable->lock, flags);
+ 	running = cable->running ^ cable->pause;
+ 	if (running & (1 << SNDRV_PCM_STREAM_PLAYBACK)) {
+ 		delta_play = jiffies - dpcm_play->last_jiffies;
+@@ -495,10 +496,8 @@ static unsigned int loopback_pos_update(
+ 		dpcm_capt->last_jiffies += delta_capt;
+ 	}
+ 
+-	if (delta_play == 0 && delta_capt == 0) {
+-		spin_unlock(&cable->lock);
+-		return running;
+-	}
++	if (delta_play == 0 && delta_capt == 0)
++		goto unlock;
+ 		
+ 	if (delta_play > delta_capt) {
+ 		loopback_bytepos_update(dpcm_play, delta_play - delta_capt,
+@@ -510,14 +509,14 @@ static unsigned int loopback_pos_update(
+ 		delta_capt = delta_play;
+ 	}
+ 
+-	if (delta_play == 0 && delta_capt == 0) {
+-		spin_unlock(&cable->lock);
+-		return running;
+-	}
++	if (delta_play == 0 && delta_capt == 0)
++		goto unlock;
++
+ 	/* note delta_capt == delta_play at this moment */
+ 	loopback_bytepos_update(dpcm_capt, delta_capt, BYTEPOS_UPDATE_COPY);
+ 	loopback_bytepos_update(dpcm_play, delta_play, BYTEPOS_UPDATE_POSONLY);
+-	spin_unlock(&cable->lock);
++ unlock:
++	spin_unlock_irqrestore(&cable->lock, flags);
+ 	return running;
  }
  
-@@ -705,6 +700,9 @@ static __init void davinci_evm_init(void
- 	davinci_serial_init(&uart_config);
- 	dm644x_init_asp(&dm644x_evm_snd_data);
- 
-+	/* irlml6401 switches over 1A, in under 8 msec */
-+	davinci_setup_usb(1000, 8);
-+
- 	soc_info->emac_pdata->phy_id = DM644X_EVM_PHY_ID;
- 	/* Register the fixup for PHY on DaVinci */
- 	phy_register_fixup_for_uid(LXT971_PHY_ID, LXT971_PHY_MASK,
 
 
