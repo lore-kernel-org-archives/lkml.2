@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab1CUQdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 12:33:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53458 "EHLO mx1.suse.de"
+	id S1753792Ab1CUQhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 12:37:06 -0400
+Received: from realvnc.com ([146.101.152.142]:45700 "EHLO realvnc.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534Ab1CUQdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 12:33:39 -0400
-Subject: Re: [build failure] Re: [GIT PULL] First round of SCSI updates for
- 2.6.38 merge window
-From: James Bottomley <James.Bottomley@suse.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110321122111.GA17237@elte.hu>
-References: <1300392635.17266.5.camel@mulgrave.site>
-	 <20110321122111.GA17237@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 11:33:31 -0500
-Message-ID: <1300725211.10634.20.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8bit
+	id S1753619Ab1CUQhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 12:37:04 -0400
+X-Greylist: delayed 2668 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 12:37:03 EDT
+From: Toby Gray <toby.gray@realvnc.com>
+To: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Toby Gray <toby.gray@realvnc.com>
+Subject: [PATCH] USB: cdc-acm: Prevent data loss when filling tty buffer.
+Date: Mon, 21 Mar 2011 15:52:25 +0000
+Message-Id: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-21 at 13:21 +0100, Ingo Molnar wrote:
-> * James Bottomley <James.Bottomley@suse.de> wrote:
-> 
-> > This represents the usual round of driver updates (fcoe, lpfc,
-> qla2xxx, > zfcp, bnx2i, mpt2sas, megaraid_sas, iscsi, cxgbi and hpsa)
-> plus one new > driver (bnx2fc) and as a bonus we move libsas from the
-> old libata eh to > the new one paving the way for junking the old one
-> (once we can get ipr > converted).
-> 
-> The new bnx2fc driver does not build with module support disabled:
-> 
->  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:17: error: dereferencing
-> pointer to incomplete type  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:28:
-> error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
->   drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:17: error: dereferencing
-> pointer to incomplete type  drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:28:
-> error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
-> 
-> and this build breakage has been reported to you two weeks ago:
-> 
->  http://lkml.org/lkml/2011/3/2/468
+When sending large quantities of data through a CDC ACM channel it is possible
+for data to be lost when attempting to copy the data to the tty buffer. This
+occurs due to the return value from tty_insert_flip_string not being checked.
 
-The actual fix is here:
+This patch adds checking for how many bytes have been inserted into the tty
+buffer and returns any remaining bytes back to the filled read buffer list.
 
-http://git.kernel.org/?p=linux/kernel/git/jejb/scsi-misc-2.6.git;a=commit;h=e81460b20107ae83a7541d12b14114ea731a86fc
+Signed-off-by: Toby Gray <toby.gray@realvnc.com>
+---
+ drivers/usb/class/cdc-acm.c |   28 ++++++++++++++++++++++++----
+ 1 files changed, 24 insertions(+), 4 deletions(-)
 
-it just took time to secure agreement on this.  The ultimate fixes to
-FCoE will be in the next merge window.
-
-James
-
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index f492a7f..63133c7 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -392,6 +392,7 @@ static void acm_rx_tasklet(unsigned long _acm)
+ 	struct acm_ru *rcv;
+ 	unsigned long flags;
+ 	unsigned char throttled;
++	int copied;
+ 
+ 	dbg("Entering acm_rx_tasklet");
+ 
+@@ -423,12 +424,14 @@ next_buffer:
+ 
+ 	dbg("acm_rx_tasklet: procesing buf 0x%p, size = %d", buf, buf->size);
+ 
++	copied = 0;
+ 	if (tty) {
+ 		spin_lock_irqsave(&acm->throttle_lock, flags);
+ 		throttled = acm->throttle;
+ 		spin_unlock_irqrestore(&acm->throttle_lock, flags);
+ 		if (!throttled) {
+-			tty_insert_flip_string(tty, buf->base, buf->size);
++			copied = tty_insert_flip_string(tty,
++							buf->base, buf->size);
+ 			tty_flip_buffer_push(tty);
+ 		} else {
+ 			tty_kref_put(tty);
+@@ -440,9 +443,26 @@ next_buffer:
+ 		}
+ 	}
+ 
+-	spin_lock_irqsave(&acm->read_lock, flags);
+-	list_add(&buf->list, &acm->spare_read_bufs);
+-	spin_unlock_irqrestore(&acm->read_lock, flags);
++	if (copied == buf->size || !tty) {
++		spin_lock_irqsave(&acm->read_lock, flags);
++		list_add(&buf->list, &acm->spare_read_bufs);
++		spin_unlock_irqrestore(&acm->read_lock, flags);
++	} else {
++		tty_kref_put(tty);
++		dbg("Partial buffer fill");
++		if (copied > 0) {
++			memmove(buf->base,
++				buf->base + copied,
++				buf->size - copied);
++			buf->size -= copied;
++		}
++
++		spin_lock_irqsave(&acm->read_lock, flags);
++		list_add(&buf->list, &acm->filled_read_bufs);
++		spin_unlock_irqrestore(&acm->read_lock, flags);
++		return;
++	}
++
+ 	goto next_buffer;
+ 
+ urbs:
+-- 
+1.7.0.4
 
