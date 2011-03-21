@@ -1,149 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab1CUX2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:28:48 -0400
-Received: from kroah.org ([198.145.64.141]:52615 "EHLO coco.kroah.org"
+	id S932544Ab1CUX3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:29:05 -0400
+Received: from fieldses.org ([174.143.236.118]:48346 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262Ab1CUXR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:56 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:25 2011
-Message-Id: <20110321230324.974219507@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:48 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [32/78] USB: isp1760: Implement solution for erratum 2
-In-Reply-To: <20110321230346.GA14681@kroah.com>
+	id S932297Ab1CUX3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:29:00 -0400
+Date: Mon, 21 Mar 2011 19:28:57 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Wolfgang Walter <wolfgang.walter@stwm.de>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: problem with nfs4: rpciod seems to loop in rpc_shutdown_client
+ forever
+Message-ID: <20110321232857.GC472@fieldses.org>
+References: <201103182349.22331.wolfgang.walter@stwm.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201103182349.22331.wolfgang.walter@stwm.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Mar 18, 2011 at 11:49:21PM +0100, Wolfgang Walter wrote:
+> Hello,
+> 
+> I have a problem with our nfs-server (stable 2.6.32.33 but also with
+> .31 or .32 and probably older ones): sometimes
+> one or more rpciod get stuck. I used
+> 
+> 	rpcdebug -m rpc -s all
+> 
+> I get messages as the following one about every second:
+> 
+> Mar 18 11:15:37 au kernel: [44640.906793] RPC:       killing all tasks for client ffff88041c51de00
+> Mar 18 11:15:38 au kernel: [44641.906793] RPC:       killing all tasks for client ffff88041c51de00
+> Mar 18 11:15:39 au kernel: [44642.906795] RPC:       killing all tasks for client ffff88041c51de00
+> Mar 18 11:15:40 au kernel: [44643.906793] RPC:       killing all tasks for client ffff88041c51de00
+> Mar 18 11:15:41 au kernel: [44644.906795] RPC:       killing all tasks for client ffff88041c51de00
+> Mar 18 11:15:42 au kernel: [44645.906794] RPC:       killing all tasks for client ffff88041c51de00
+> 
+> and I get this messages:
+> 
+> Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5 ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:rpc_exit_task q:none
+> 
+> My theorie is this one:
+> 
+> * this async task is runnable but does not progress (calling rpc_exit_task).
+> * this is because the same rpciod which handles this task loops in
+>   rpc_shutdown_client waiting for this task to go away.
+> * because rpc_shutdown_client is called from an async rpc, too
 
-------------------
+Off hand I don't see any place where rpc_shutdown_client() is called
+from rpciod; do you?
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> At the beginning is is always one or more tasks as above.
+> 
+> Once a rpciod hangs more an more other tasks hang forever:
+> 
+> Mar 18 22:45:57 au kernel: [86061.778809] -pid- flgs status -client- --rqstp- -timeout ---ops--
+> Mar 18 22:45:57 au kernel: [86061.778819]   300 0281    -13 ffff8801ef5d0600   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:call_refreshresult q:none
+> Mar 18 22:45:57 au kernel: [86061.778823]   289 0281      0 ffff880142a49800 ffff8802a1dde000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778827]   286 0281      0 ffff880349f57e00 ffff88010affe000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778830]   283 0281      0 ffff88041d19ac00 ffff880418650000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none
 
-commit b14e840d04dba211fbdc930247e379085623eacd upstream.
+There's a lot of these GETPORT calls.  Is portmap/rpcbind down?
 
-The document says:
-|2.1 Problem description
-|    When at least two USB devices are simultaneously running, it is observed that
-|    sometimes the INT corresponding to one of the USB devices stops occurring. This may
-|    be observed sometimes with USB-to-serial or USB-to-network devices.
-|    The problem is not noticed when only USB mass storage devices are running.
-|2.2 Implication
-|    This issue is because of the clearing of the respective Done Map bit on reading the ATL
-|    PTD Done Map register when an INT is generated by another PTD completion, but is not
-|    found set on that read access. In this situation, the respective Done Map bit will remain
-|    reset and no further INT will be asserted so the data transfer corresponding to that USB
-|    device will stop.
-|2.3 Workaround
-|    An SOF INT can be used instead of an ATL INT with polling on Done bits. A time-out can
-|    be implemented and if a certain Done bit is never set, verification of the PTD completion
-|    can be done by reading PTD contents (valid bit).
-|    This is a proven workaround implemented in software.
+--b.
 
-Russell King run into this with an USB-to-serial converter. This patch
-implements his suggestion to enable the high frequent SOF interrupt only
-at the time we have ATL packages queued. It goes even one step further
-and enables the SOF interrupt only if we have more than one ATL packet
-queued at the same time.
-
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/host/isp1760-hcd.c |   22 ++++++++++++++++------
- drivers/usb/host/isp1760-hcd.h |    1 +
- 2 files changed, 17 insertions(+), 6 deletions(-)
-
---- a/drivers/usb/host/isp1760-hcd.c
-+++ b/drivers/usb/host/isp1760-hcd.c
-@@ -33,6 +33,7 @@ struct isp1760_hcd {
- 	struct inter_packet_info atl_ints[32];
- 	struct inter_packet_info int_ints[32];
- 	struct memory_chunk memory_pool[BLOCKS];
-+	u32 atl_queued;
- 
- 	/* periodic schedule support */
- #define	DEFAULT_I_TDPS		1024
-@@ -850,6 +851,11 @@ static void enqueue_an_ATL_packet(struct
- 	skip_map &= ~queue_entry;
- 	isp1760_writel(skip_map, hcd->regs + HC_ATL_PTD_SKIPMAP_REG);
- 
-+	priv->atl_queued++;
-+	if (priv->atl_queued == 2)
-+		isp1760_writel(INTERRUPT_ENABLE_SOT_MASK,
-+				hcd->regs + HC_INTERRUPT_ENABLE);
-+
- 	buffstatus = isp1760_readl(hcd->regs + HC_BUFFER_STATUS_REG);
- 	buffstatus |= ATL_BUFFER;
- 	isp1760_writel(buffstatus, hcd->regs + HC_BUFFER_STATUS_REG);
-@@ -992,6 +998,7 @@ static void do_atl_int(struct usb_hcd *u
- 		u32 dw3;
- 
- 		status = 0;
-+		priv->atl_queued--;
- 
- 		queue_entry = __ffs(done_map);
- 		done_map &= ~(1 << queue_entry);
-@@ -1054,11 +1061,6 @@ static void do_atl_int(struct usb_hcd *u
- 			 * device is not able to send data fast enough.
- 			 * This happens mostly on slower hardware.
- 			 */
--			printk(KERN_NOTICE "Reloading ptd %p/%p... qh %p read: "
--					"%d of %zu done: %08x cur: %08x\n", qtd,
--					urb, qh, PTD_XFERRED_LENGTH(dw3),
--					qtd->length, done_map,
--					(1 << queue_entry));
- 
- 			/* RL counter = ERR counter */
- 			dw3 &= ~(0xf << 19);
-@@ -1086,6 +1088,11 @@ static void do_atl_int(struct usb_hcd *u
- 			priv_write_copy(priv, (u32 *)&ptd, usb_hcd->regs +
- 					atl_regs, sizeof(ptd));
- 
-+			priv->atl_queued++;
-+			if (priv->atl_queued == 2)
-+				isp1760_writel(INTERRUPT_ENABLE_SOT_MASK,
-+				    usb_hcd->regs + HC_INTERRUPT_ENABLE);
-+
- 			buffstatus = isp1760_readl(usb_hcd->regs +
- 					HC_BUFFER_STATUS_REG);
- 			buffstatus |= ATL_BUFFER;
-@@ -1191,6 +1198,9 @@ static void do_atl_int(struct usb_hcd *u
- 		skip_map = isp1760_readl(usb_hcd->regs +
- 				HC_ATL_PTD_SKIPMAP_REG);
- 	}
-+	if (priv->atl_queued <= 1)
-+		isp1760_writel(INTERRUPT_ENABLE_MASK,
-+				usb_hcd->regs + HC_INTERRUPT_ENABLE);
- }
- 
- static void do_intl_int(struct usb_hcd *usb_hcd)
-@@ -1770,7 +1780,7 @@ static irqreturn_t isp1760_irq(struct us
- 		goto leave;
- 
- 	isp1760_writel(imask, usb_hcd->regs + HC_INTERRUPT_REG);
--	if (imask & HC_ATL_INT)
-+	if (imask & (HC_ATL_INT | HC_SOT_INT))
- 		do_atl_int(usb_hcd);
- 
- 	if (imask & HC_INTL_INT)
---- a/drivers/usb/host/isp1760-hcd.h
-+++ b/drivers/usb/host/isp1760-hcd.h
-@@ -69,6 +69,7 @@ void deinit_kmem_cache(void);
- 
- #define HC_INTERRUPT_ENABLE	0x314
- #define INTERRUPT_ENABLE_MASK	(HC_INTL_INT | HC_ATL_INT | HC_EOT_INT)
-+#define INTERRUPT_ENABLE_SOT_MASK	(HC_INTL_INT | HC_SOT_INT | HC_EOT_INT)
- 
- #define HC_ISO_INT		(1 << 9)
- #define HC_ATL_INT		(1 << 8)
-
-
+> Mar 18 22:45:57 au kernel: [86061.778833]   280 0281      0 ffff880380561400 ffff8803d3b7a000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778837]   277 0281      0 ffff8803ef73ac00 ffff88010af50000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778840]   274 0281      0 ffff880302c31c00 ffff8803e92b6000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778844]   271 0281      0 ffff8803c44d0600 ffff88002687e000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778847]   234 0281   -110 ffff8801f414b000 ffff880005382000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_connect_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778851]   233 0281   -110 ffff8802c9945800 ffff880050382000        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778855]   235 0281   -110 ffff8802c9945800 ffff880050382150        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778858]   236 0281   -110 ffff8802c9945800 ffff8800503822a0        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778861]   237 0281   -110 ffff8802c9945800 ffff8800503823f0        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778864]   238 0281   -110 ffff8802c9945800 ffff880050382540        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778867]   239 0281   -110 ffff8802c9945800 ffff880050382690        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778870]   240 0281   -110 ffff8802c9945800 ffff8800503827e0        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778874]   241 0281   -110 ffff8802c9945800 ffff880050382930        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778877]   242 0281   -110 ffff8802c9945800 ffff880050382a80        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778880]   243 0281   -110 ffff8802c9945800 ffff880050382bd0        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778884]   244 0281   -110 ffff8802c9945800 ffff880050382d20        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778887]   245 0281   -110 ffff8802c9945800 ffff880050382e70        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778890]   246 0281   -110 ffff8802c9945800 ffff880050382fc0        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778893]   247 0281   -110 ffff8802c9945800 ffff880050383110        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778896]   248 0281   -110 ffff8802c9945800 ffff880050383260        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778899]   249 0281   -110 ffff8802c9945800 ffff8800503833b0        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_bind_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778903]   250 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778906]   251 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778909]   252 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778912]   253 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778915]   254 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778919]   255 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778922]   256 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778925]   257 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778928]   258 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778931]   259 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778935]   260 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778938]   261 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778941]   262 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778945]   263 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778948]   264 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778951]   265 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778954]   266 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778958]   267 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778961]   268 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778964]   269 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 UNLOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778967]   272 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 LOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778971]   275 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 LOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778974]   278 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 LOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778977]   281 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 LOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778980]   284 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 LOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778983]   287 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 LOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778987]   290 0281    -11 ffff8802c9945800   (null)        0 ffffffff81721440 lockdv4 LOCK_RES a:call_reserveresult q:xprt_backlog
+> Mar 18 22:45:57 au kernel: [86061.778990]   232 0281   -110 ffff8803d3bc6000 ffff8803d5eaa000        0 ffffffff817a3fd0 rpcbindv2 GETPORT a:call_connect_status q:none
+> Mar 18 22:45:57 au kernel: [86061.778993]   230 0281    -13 ffff8801ef5d0200   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:call_refreshresult q:none
+> Mar 18 22:45:57 au kernel: [86061.778997]   180 0281    -13 ffff880341e36800   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:call_refreshresult q:none
+> Mar 18 22:45:57 au kernel: [86061.779000]   179 0281    -13 ffff88027dc01000   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:call_refreshresult q:none
+> Mar 18 22:45:57 au kernel: [86061.779003]   178 0281    -13 ffff8801bddac600   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:call_refreshresult q:none
+> Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5 ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:rpc_exit_task q:none
+> 
+> I think I saw hanging rpciods once in a while but since we use kerberos we
+> have it very often.
+> 
+> 
+> My theorie may be completely bogus and there is another reason, I'm not
+> familiar with the code.
+> 
+> Regards,
+> -- 
+> Wolfgang Walter
+> Studentenwerk München
+> Anstalt des öffentlichen Rechts
