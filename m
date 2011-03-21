@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab1CUXoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:44:09 -0400
-Received: from kroah.org ([198.145.64.141]:49502 "EHLO coco.kroah.org"
+	id S1755538Ab1CUXoH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:44:07 -0400
+Received: from kroah.org ([198.145.64.141]:49507 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755341Ab1CUXPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:51 -0400
+	id S1755460Ab1CUXPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:52 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
-Message-Id: <20110321230714.678550422@clark.kroah.org>
+Message-Id: <20110321230714.782320798@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:52 -0700
+Date: Mon, 21 Mar 2011 16:06:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
+        Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [53/87] ALSA: HDA: Realtek ALC88x: Do not over-initialize speakers and hp that are primary outputs
+Subject: [54/87] ALSA: hda - fix digital mic selection in mixer on 92HD8X codecs
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
 
-commit 0a3fabe30e1a3b2037a12b863b8c45fffce38ee9 upstream.
+commit 094a42452abd5564429045e210281c6d22e67fca upstream.
 
-Do not initialize again the what has already been initialized as
-multi outs, as this breaks surround speakers.
+When the mux for digital mic is different from the mux for other mics,
+the current auto-parser doesn't handle them in a right way but provides
+only one mic.  This patch fixes the issue.
 
-Tested-by: Bartłomiej Żogała <nusch88@gmail.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |   37 +++++++++++++++++++++----------------
- 1 file changed, 21 insertions(+), 16 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -10736,23 +10736,28 @@ static void alc882_auto_init_hp_out(stru
- 	hda_nid_t pin, dac;
- 	int i;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -749,7 +749,7 @@ static int stac92xx_mux_enum_put(struct
+ 	struct sigmatel_spec *spec = codec->spec;
+ 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
+ 	const struct hda_input_mux *imux = spec->input_mux;
+-	unsigned int idx, prev_idx;
++	unsigned int idx, prev_idx, didx;
  
--	for (i = 0; i < ARRAY_SIZE(spec->autocfg.hp_pins); i++) {
--		pin = spec->autocfg.hp_pins[i];
--		if (!pin)
--			break;
--		dac = spec->multiout.hp_nid;
--		if (!dac)
--			dac = spec->multiout.dac_nids[0]; /* to front */
--		alc882_auto_set_output_and_unmute(codec, pin, PIN_HP, dac);
-+	if (spec->autocfg.line_out_type != AUTO_PIN_HP_OUT) {
-+		for (i = 0; i < ARRAY_SIZE(spec->autocfg.hp_pins); i++) {
-+			pin = spec->autocfg.hp_pins[i];
-+			if (!pin)
-+				break;
-+			dac = spec->multiout.hp_nid;
-+			if (!dac)
-+				dac = spec->multiout.dac_nids[0]; /* to front */
-+			alc882_auto_set_output_and_unmute(codec, pin, PIN_HP, dac);
-+		}
+ 	idx = ucontrol->value.enumerated.item[0];
+ 	if (idx >= imux->num_items)
+@@ -761,7 +761,8 @@ static int stac92xx_mux_enum_put(struct
+ 		snd_hda_codec_write_cache(codec, spec->mux_nids[adc_idx], 0,
+ 					  AC_VERB_SET_CONNECT_SEL,
+ 					  imux->items[idx].index);
+-		if (prev_idx >= spec->num_analog_muxes) {
++		if (prev_idx >= spec->num_analog_muxes &&
++		    spec->mux_nids[adc_idx] != spec->dmux_nids[adc_idx]) {
+ 			imux = spec->dinput_mux;
+ 			/* 0 = analog */
+ 			snd_hda_codec_write_cache(codec,
+@@ -771,9 +772,13 @@ static int stac92xx_mux_enum_put(struct
+ 		}
+ 	} else {
+ 		imux = spec->dinput_mux;
++		/* first dimux item is hardcoded to select analog imux,
++		 * so lets skip it
++		 */
++		didx = idx - spec->num_analog_muxes + 1;
+ 		snd_hda_codec_write_cache(codec, spec->dmux_nids[adc_idx], 0,
+ 					  AC_VERB_SET_CONNECT_SEL,
+-					  imux->items[idx - 1].index);
++					  imux->items[didx].index);
  	}
--	for (i = 0; i < ARRAY_SIZE(spec->autocfg.speaker_pins); i++) {
--		pin = spec->autocfg.speaker_pins[i];
--		if (!pin)
--			break;
--		dac = spec->multiout.extra_out_nid[0];
--		if (!dac)
--			dac = spec->multiout.dac_nids[0]; /* to front */
--		alc882_auto_set_output_and_unmute(codec, pin, PIN_OUT, dac);
-+
-+	if (spec->autocfg.line_out_type != AUTO_PIN_SPEAKER_OUT) {
-+		for (i = 0; i < ARRAY_SIZE(spec->autocfg.speaker_pins); i++) {
-+			pin = spec->autocfg.speaker_pins[i];
-+			if (!pin)
-+				break;
-+			dac = spec->multiout.extra_out_nid[0];
-+			if (!dac)
-+				dac = spec->multiout.dac_nids[0]; /* to front */
-+			alc882_auto_set_output_and_unmute(codec, pin, PIN_OUT, dac);
-+		}
- 	}
- }
- 
+ 	spec->cur_mux[adc_idx] = idx;
+ 	return 1;
 
 
