@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab1CUITi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 04:19:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33271 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1CUITf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 04:19:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=r88/kwIfArnuW9pG4dH1lQaYLp3yyIMD2tma1ctTOAjuvcmTBaKgghKAWF3V/dKKxl
-         54HBfJov1Oz3UTJt2HjaY/lrqAf6zH9CM4vZ3luJ+OPb+9byHqY2Hn3ZuiM23q7s87UC
-         +qoVaggEg1EgiBlAJ7vyc6dPnx54TiCKUtrGM=
-Subject: Re: [PATCH v2] net: add Faraday FTGMAC100 Gigabit Ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ratbert@faraday-tech.com
-In-Reply-To: <AANLkTinibrF_bJBbYwCSnGv1iD_9Dn7uBn2cqgcTrKHi@mail.gmail.com>
-References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1300355238-1619-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1300357457.3133.92.camel@edumazet-laptop>
-	 <AANLkTino6LzGTZF4fNSkV9pbAfnmAc8wJjk0L8HfHDiJ@mail.gmail.com>
-	 <1300361405.3133.175.camel@edumazet-laptop>
-	 <AANLkTinibrF_bJBbYwCSnGv1iD_9Dn7uBn2cqgcTrKHi@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 09:19:29 +0100
-Message-ID: <1300695569.2831.535.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752221Ab1CUIUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 04:20:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60567 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751726Ab1CUIUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 04:20:39 -0400
+Date: Mon, 21 Mar 2011 09:20:38 +0100 (CET)
+From: Michael Matz <matz@suse.de>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, libc-alpha@sourceware.org,
+        GCC Development <gcc@gcc.gnu.org>, LKML <linux-kernel@vger.kernel.org>,
+        x32-abi@googlegroups.com
+Subject: Re: X32 psABI status update
+In-Reply-To: <AANLkTimxWQZvtpe374Yju0O9BDMxDfBHsc1y3+c=M7D+@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1103210907530.20892@wotan.suse.de>
+References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
+ <201103210108.49780.vapier@gentoo.org> <AANLkTikSJDGEWCqazvAKHUC8_MoOP-+vyFOjyCmrA9dL@mail.gmail.com>
+ <201103210153.10145.vapier@gentoo.org> <AANLkTimxWQZvtpe374Yju0O9BDMxDfBHsc1y3+c=M7D+@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 21 mars 2011 à 15:54 +0800, Po-Yu Chuang a écrit :
-> It seems to work fine so far at least the driver is not broken, but I did not
-> see much difference in performance though. How do I know if GRO is
-> working indeed?
+Hi,
 
-maybe you receive one interrupt per incoming frame, and your cpu is fast
-enough to handle the load.
+On Sun, 20 Mar 2011, H.J. Lu wrote:
 
-tcpdump should show big incoming TCP frames (multi segment)
+> I don't think it will help x32 and I think it will make it harder to add 
+> x32 support. I still want to see a real usage before I add it.
 
-(GRO only helps TCP receivers)
-
-Example here :
-
-
-09:16:32.372949 IP 192.168.20.110.55446 > 192.168.20.108.ssh: .
-2372863:2374311(1448) ack 3136 win 73 <nop,nop,timestamp 317934201
-257881345>
-
-09:16:32.372975 IP 192.168.20.110.55446 > 192.168.20.108.ssh: .
-2374311:2377207(2896) ack 3136 win 73 <nop,nop,timestamp 317934201
-257881345>
+% cat real-world.c
+/* intptr_t; what's that? */
+union space_saving_htab_element {
+  void *generic_pointer;
+  /* Usually we need a long for a pointer, but I just figured out
+     that on x32 an int is enough and smaller.  My program
+     now needs half as much memory, supi!  */
+#ifdef __x32__
+  unsigned int as_number;
+#else
+  unsigned long as_number;
+#endif
+};
 
 
-Here, you can see GRO work, since 2nd "frame" is the result of two MTU
-sized frames. 
-
-
-
+Ciao,
+Michael.
+PS: Of course you and I wouldn't write such code, but Mikes point was that
+there might be some that do.  I could probably construct an example where 
+it would matter for real involving inline asm that for some reason has to 
+slightly differ depending on x32-ness.
