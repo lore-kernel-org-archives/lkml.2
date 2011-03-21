@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab1CUNbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 09:31:00 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:52658 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751176Ab1CUNa4 convert rfc822-to-8bit (ORCPT
+	id S1753456Ab1CUNcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 09:32:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33639 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab1CUNcS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 09:30:56 -0400
-X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
-	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
-	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
-Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
-        linux-kernel@vger.kernel.org, konrad@darnok.org
-In-Reply-To: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
-References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 21 Mar 2011 09:32:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=SYfVbLGotzugQV0BHWN7CTZZTkKfNmBv6Xg/t001z2TKf6qC+ghtLPMnnYJMXP2bvi
+         XjT3+iE7hXw9it7W01m4lM8ESJaNs/GcyI35yKDkeRh9FTB0ki4FQ7f5dunrz7XV2ZSY
+         WCcZB4fEKbm6BcliddJqPMemT4HPeCUJg6wes=
+MIME-Version: 1.0
+In-Reply-To: <20110321090240.GD3784@polaris.bitmath.org>
+References: <1300454876-5017-1-git-send-email-benjamin.tissoires@enac.fr>
+	<1300454876-5017-5-git-send-email-benjamin.tissoires@enac.fr>
+	<20110321090240.GD3784@polaris.bitmath.org>
+Date: Mon, 21 Mar 2011 14:32:16 +0100
+X-Google-Sender-Auth: uuiMknuzsdFVpGhqzS_E3GmGGl4
+Message-ID: <AANLkTimx6YR_ByHDeqyMmSuE659xyRNkaAoOffTp_RgC@mail.gmail.com>
+Subject: Re: [PATCH v3 4/5] hid-multitouch: refactor initialization of ABS_MT_ORIENTATION
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 21 Mar 2011 14:11:07 +0100
-Message-ID: <1300713067.8042.13.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fre, 2011-01-07 at 12:11 -0500, Konrad Rzeszutek Wilk wrote: 
-> 
-> 1) The 'NULL' when doing dma_alloc_coherent is unsightly. I was toying
-> with modifying the TTM API to pass in 'struct device' or 'struct pci_device'
-> but figured it would make first sense to get your guys input before heading that route.
+Hi Henrik,
 
-It's worse than unsightly: It breaks TTM on PPC. See
-arch/powerpc/include/asm/dma-mapping.h: get_dma_ops() returns NULL if
-NULL is passed in for the device, and most of its callers BUG in that
-case. The exception being dma_supported(), so a possible solution might
-be to use that for checking if dma_alloc_coherent can be used.
+On Mon, Mar 21, 2011 at 10:02, Henrik Rydberg <rydberg@euromail.se> wrote:
+> On Fri, Mar 18, 2011 at 02:27:55PM +0100, Benjamin Tissoires wrote:
+>> No semantic changes, it's just easier to read the code.
+>
+> Please augment this commit message.
 
-Dave, please prevent this change from entering mainline before there's a
-solution for this.
+How about:
 
+"The way the input_set_abs_params was called for the new composite
+field ABS_MT_ORIENTATION was not very clear at second reading.
+We can remove the non-necessary call to set_abs and use the simple
+call to input_set_abs_params."
 
--- 
-Earthling Michel DÃ¤nzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+Cheers,
+Benjamin
+
+>
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>> Reviewed-by: Stéphane Chatty <chatty@enac.fr>
+>> ---
+>
+> Thanks,
+> Henrik
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
