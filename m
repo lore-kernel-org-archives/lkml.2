@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1CUJKd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 05:10:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43546 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab1CUJKa convert rfc822-to-8bit (ORCPT
+	id S1751340Ab1CUJPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 05:15:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45654 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab1CUJPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 05:10:30 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Jiri Kosina <jkosina@suse.cz>
-Subject: Re: "usb_wwan: error case of resume" (16871dcac) is buggy
-Date: Mon, 21 Mar 2011 10:11:07 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-References: <alpine.LNX.2.00.1103210130260.19969@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1103210130260.19969@pobox.suse.cz>
+	Mon, 21 Mar 2011 05:15:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=T58IXNOBAImMPqHtOqh/Q7ij9g5JQ5RZtCa3a/YDjAp53AAyAXkEReY3emAZ1WaYPD
+         b7iOeusClrwk2j0JmOjmOUH+GCC6/IYZiNZ3qV+KF7iPtblePhXmsORWg6wHTGIZa0cE
+         tOXZoKCQ8Ac4Q4xvqYWjsyphSETzEFXm9FWto=
+Message-ID: <4D87173D.50906@suse.cz>
+Date: Mon, 21 Mar 2011 10:15:41 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103211011.07282.oneukum@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Jack Stone <jwjstone@fastmail.fm>, Mac <kmac@poczta.fm>,
+        linux-kernel@vger.kernel.org, linux-ppp@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: 'scheduling while atomic' during ppp connection on 2.6.37.1 and
+ 2.6.38
+References: <fuopaigyaypsqveewtjx@pwmq>	<4D864A82.4090104@fastmail.fm> <20110320215826.79cadfe2@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110320215826.79cadfe2@lxorguk.ukuu.org.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 21. März 2011, 01:36:45 schrieb Jiri Kosina:
-> Hi,
+On 03/20/2011 10:58 PM, Alan Cox wrote:
+>> +        spin_lock_irqsave(&dc->spin_mutex, flags);
+>>           if (port->port.count)
+>>               room = kfifo_avail(&port->fifo_ul);
+>> -        mutex_unlock(&port->tty_sem);
+>> +        spin_unlock_irqrestore(&dc->spin_mutex, flags);
 > 
-> the commit in subject make the kernel with CONFIG_PM_RUNTIME unset fail 
-> during compilation, as struct dev_pm_info doesn't have whole bunch of 
-> members in such case.
-> 
-> The commit in question adds this code:
-> 
-> 	/* we have to throw away the rest */
-> 	do {
-> 		unbusy_queued_urb(urb, portdata);
-> 		//extremely dirty
-> 		atomic_dec(&port->serial->interface->dev.power.usage_count);
-> 	} while ((urb = usb_get_from_anchor(&portdata->delayed)));
-> 
-> The 'extermely dirty' comment makes me a bit nervous whether the patch 
-> below is correct or some more thinking would be necessary.
+> dc->spin_mutex does not protect port->port.count.
 
-I've since posted a clean patch, although your fix looks correct to me.
-The problem was that I was unsure about the locking during resume().
-I rather wrote a layering violation than risk a deadlock in an error path
-hard to test. But I did not feel well doing it.
+Neither port->tty_sem did.
 
-	Regards
-		Oliver
+Anyway is the test needed at all? I.e. could
+tty->ops->write/chars_in_buffer/ntty_write_room be called with
+port->port.count == 0 at all?
+
+And the lock should not as well be needed. Kfifo assures atomicity where
+there is only one reader and one writer which should be the case here.
+Unless tty->ops->write can be called in parallel. And it should not,
+that's what's tty->atomic_write_lock for.
+
+thanks,
+-- 
+js
+suse labs
