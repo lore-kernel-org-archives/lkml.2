@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab1CUMoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:44:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33046 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab1CUMoH (ORCPT
+	id S1753310Ab1CUMtR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 08:49:17 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:51062 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187Ab1CUMtP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:44:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=PoyxwUynBw7YyJg4NXvNvkj9tXPr775+PK6LfVhdyPEbmSTzvz39Fnc/et58SWQHtT
-         MSHd7vbcHamV2U2KHQfTRrps7hagP98H/fR8C19PrcAfKrzzDjuA09hRzC60by/E69GL
-         K/E3huDGB27FOhYVzvU/UWFP7nvt2DVB3Fnik=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: a.zummo@towertech.it
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 0/2] rtc: sc3: Fix compilation errors.
-Date: Mon, 21 Mar 2011 13:43:54 +0100
-Message-Id: <1300711436-32296-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 21 Mar 2011 08:49:15 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [patch] rapidio: potential null deref on failure path
+Date: Mon, 21 Mar 2011 05:49:06 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201A588F5@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <20110319044032.GC2008@bicker>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [patch] rapidio: potential null deref on failure path
+Thread-Index: Acvl8NU6alY6lA+kRX2aAkODWhk8ygB1SgGA
+References: <20110319044032.GC2008@bicker>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Dan Carpenter" <error27@gmail.com>,
+        "Matt Porter" <mporter@kernel.crashing.org>
+Cc: <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mini2440_defconfig compilation (possibly also others) are broken
-with change : https://lkml.org/lkml/2011/3/15/354
+Better to combine both conditions:
 
-Function s3c_rtc_setpie was remove but not all references
-was removed too.
+if (rio_is_switch(rdev) && rswitch->route_table))
+ 		kfree(rswitch->route_table);
 
-Marek Belisko (2):
-  rtc: s3c: Fix compilation error in s3c_rtc_release.
-  rtc: s3c: Fix compilation error in s3c_rtc_remove.
+Because there is situation when routine fails to allocate route_table
+for a switch.
 
- drivers/rtc/rtc-s3c.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Alex. 
 
+
+-----Original Message-----
+From: Dan Carpenter [mailto:error27@gmail.com] 
+Sent: Saturday, March 19, 2011 12:41 AM
+To: Matt Porter
+Cc: Bounine, Alexandre; linux-kernel@vger.kernel.org;
+kernel-janitors@vger.kernel.org
+Subject: [patch] rapidio: potential null deref on failure path
+
+If rio is not a switch then "rswitch" is null.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
+index a50391b..3a59d5f 100644
+--- a/drivers/rapidio/rio-scan.c
++++ b/drivers/rapidio/rio-scan.c
+@@ -517,7 +517,7 @@ static struct rio_dev __devinit
+*rio_setup_device(struct rio_net *net,
+ 	return rdev;
+ 
+ cleanup:
+-	if (rswitch->route_table)
++	if (rio_is_switch(rdev))
+ 		kfree(rswitch->route_table);
+ 
+ 	kfree(rdev);
