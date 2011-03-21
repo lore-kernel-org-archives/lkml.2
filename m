@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab1CUXR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:17:57 -0400
-Received: from kroah.org ([198.145.64.141]:52566 "EHLO coco.kroah.org"
+	id S932374Ab1CUX2Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:28:25 -0400
+Received: from kroah.org ([198.145.64.141]:52622 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755662Ab1CUXRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:45 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:23 2011
-Message-Id: <20110321230323.726518271@clark.kroah.org>
+	id S932152Ab1CUXR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:58 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:25 2011
+Message-Id: <20110321230325.187263717@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:36 -0700
+Date: Mon, 21 Mar 2011 16:01:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [20/78] ath9k_hw: Fix incorrect macversion and macrev checks
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [34/78] USB: move usbcore away from hcd->state
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,269 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Senthil Balasubramanian <senthilkumar@atheros.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit ac45c12dfb3f727a5a7a3332ed9c11b4a5ab287e upstream.
+commit 9b37596a2e860404503a3f2a6513db60c296bfdc upstream.
 
-There are few places where we are checking for macversion and revsions
-before RTC is powered ON. However we are reading the macversion and
-revisions only after RTC is powered ON and so both macversion and
-revisions are actully zero and this leads to incorrect srev checks
+The hcd->state variable is a disaster.  It's not clearly owned by
+either usbcore or the host controller drivers, and they both change it
+from time to time, potentially stepping on each other's toes.  It's
+not protected by any locks.  And there's no mechanism to prevent it
+from going through an invalid transition.
 
-Incorrect srev checks can cause registers to be configured wrongly and can
-cause unexpected behavior. Fixing this seems to address the ASPM issue that
-we have observed. The laptop becomes very slow and hangs mostly with ASPM L1
-enabled without this fix.
+This patch (as1451) takes a first step toward fixing these problems.
+As it turns out, usbcore uses hcd->state for essentially only two
+things: checking whether the controller's root hub is running and
+checking whether the controller has died.  Therefore the patch adds
+two new atomic bitflags to the hcd structure, to store these pieces of
+information.  The new flags are used only by usbcore, and a private
+spinlock prevents invalid combinations (a dead controller's root hub
+cannot be running).
 
-fix this by reading the macversion and revisisons even before we start
-using them. There is no reason why should we delay reading this info
-until RTC is powered on as this is just a register information.
+The patch does not change the places where usbcore sets hcd->state,
+since HCDs may depend on them.  Furthermore, there is one place in
+usb_hcd_irq() where usbcore still must use hcd->state: An HCD's
+interrupt handler can implicitly indicate that the controller died by
+setting hcd->state to HC_STATE_HALT.  Nevertheless, the new code is a
+big improvement over the current code.
 
-Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The patch makes one other change.  The hcd_bus_suspend() and
+hcd_bus_resume() routines now check first whether the host controller
+has died; if it has then they return immediately without calling the
+HCD's bus_suspend or bus_resume methods.
+
+This fixes the major problem reported in Bugzilla #29902: The system
+fails to suspend after a host controller dies during system resume.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Alex Terekhov <a.terekhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd-pci.c |   13 ++++------
+ drivers/usb/core/hcd.c     |   55 +++++++++++++++++++++++++++++++++------------
+ include/linux/usb/hcd.h    |    4 +++
+ 3 files changed, 51 insertions(+), 21 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -504,6 +504,8 @@ static int __ath9k_hw_init(struct ath_hw
- 	ah->WARegVal |= (AR_WA_D3_L1_DISABLE |
- 			 AR_WA_ASPM_TIMER_BASED_DISABLE);
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -363,8 +363,7 @@ static int check_root_hub_suspended(stru
+ 	struct pci_dev		*pci_dev = to_pci_dev(dev);
+ 	struct usb_hcd		*hcd = pci_get_drvdata(pci_dev);
  
-+	ath9k_hw_read_revisions(ah);
-+
- 	if (!ath9k_hw_set_reset_reg(ah, ATH9K_RESET_POWER_ON)) {
- 		ath_err(common, "Couldn't reset chip\n");
- 		return -EIO;
-@@ -1083,8 +1085,6 @@ static bool ath9k_hw_set_reset_power_on(
- 		return false;
+-	if (!(hcd->state == HC_STATE_SUSPENDED ||
+-			hcd->state == HC_STATE_HALT)) {
++	if (HCD_RH_RUNNING(hcd)) {
+ 		dev_warn(dev, "Root hub is not suspended\n");
+ 		return -EBUSY;
+ 	}
+@@ -386,7 +385,7 @@ static int suspend_common(struct device
+ 	if (retval)
+ 		return retval;
+ 
+-	if (hcd->driver->pci_suspend) {
++	if (hcd->driver->pci_suspend && !HCD_DEAD(hcd)) {
+ 		/* Optimization: Don't suspend if a root-hub wakeup is
+ 		 * pending and it would cause the HCD to wake up anyway.
+ 		 */
+@@ -427,7 +426,7 @@ static int resume_common(struct device *
+ 	struct usb_hcd		*hcd = pci_get_drvdata(pci_dev);
+ 	int			retval;
+ 
+-	if (hcd->state != HC_STATE_SUSPENDED) {
++	if (HCD_RH_RUNNING(hcd)) {
+ 		dev_dbg(dev, "can't resume, not suspended!\n");
+ 		return 0;
+ 	}
+@@ -442,7 +441,7 @@ static int resume_common(struct device *
+ 
+ 	clear_bit(HCD_FLAG_SAW_IRQ, &hcd->flags);
+ 
+-	if (hcd->driver->pci_resume) {
++	if (hcd->driver->pci_resume && !HCD_DEAD(hcd)) {
+ 		if (event != PM_EVENT_AUTO_RESUME)
+ 			wait_for_companions(pci_dev, hcd);
+ 
+@@ -475,10 +474,10 @@ static int hcd_pci_suspend_noirq(struct
+ 
+ 	pci_save_state(pci_dev);
+ 
+-	/* If the root hub is HALTed rather than SUSPENDed,
++	/* If the root hub is dead rather than suspended,
+ 	 * disallow remote wakeup.
+ 	 */
+-	if (hcd->state == HC_STATE_HALT)
++	if (HCD_DEAD(hcd))
+ 		device_set_wakeup_enable(dev, 0);
+ 	dev_dbg(dev, "wakeup: %d\n", device_may_wakeup(dev));
+ 
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -983,7 +983,7 @@ static int register_root_hub(struct usb_
+ 		spin_unlock_irq (&hcd_root_hub_lock);
+ 
+ 		/* Did the HC die before the root hub was registered? */
+-		if (hcd->state == HC_STATE_HALT)
++		if (HCD_DEAD(hcd) || hcd->state == HC_STATE_HALT)
+ 			usb_hc_died (hcd);	/* This time clean up */
  	}
  
--	ath9k_hw_read_revisions(ah);
--
- 	return ath9k_hw_set_reset(ah, ATH9K_RESET_WARM);
- }
+@@ -1089,13 +1089,10 @@ int usb_hcd_link_urb_to_ep(struct usb_hc
+ 	 * Check the host controller's state and add the URB to the
+ 	 * endpoint's queue.
+ 	 */
+-	switch (hcd->state) {
+-	case HC_STATE_RUNNING:
+-	case HC_STATE_RESUMING:
++	if (HCD_RH_RUNNING(hcd)) {
+ 		urb->unlinked = 0;
+ 		list_add_tail(&urb->urb_list, &urb->ep->urb_list);
+-		break;
+-	default:
++	} else {
+ 		rc = -ESHUTDOWN;
+ 		goto done;
+ 	}
+@@ -1913,7 +1910,7 @@ int usb_hcd_get_frame_number (struct usb
+ {
+ 	struct usb_hcd	*hcd = bus_to_hcd(udev->bus);
  
+-	if (!HC_IS_RUNNING (hcd->state))
++	if (!HCD_RH_RUNNING(hcd))
+ 		return -ESHUTDOWN;
+ 	return hcd->driver->get_frame_number (hcd);
+ }
+@@ -1930,9 +1927,15 @@ int hcd_bus_suspend(struct usb_device *r
+ 
+ 	dev_dbg(&rhdev->dev, "bus %s%s\n",
+ 			(msg.event & PM_EVENT_AUTO ? "auto-" : ""), "suspend");
++	if (HCD_DEAD(hcd)) {
++		dev_dbg(&rhdev->dev, "skipped %s of dead bus\n", "suspend");
++		return 0;
++	}
++
+ 	if (!hcd->driver->bus_suspend) {
+ 		status = -ENOENT;
+ 	} else {
++		clear_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
+ 		hcd->state = HC_STATE_QUIESCING;
+ 		status = hcd->driver->bus_suspend(hcd);
+ 	}
+@@ -1940,7 +1943,12 @@ int hcd_bus_suspend(struct usb_device *r
+ 		usb_set_device_state(rhdev, USB_STATE_SUSPENDED);
+ 		hcd->state = HC_STATE_SUSPENDED;
+ 	} else {
+-		hcd->state = old_state;
++		spin_lock_irq(&hcd_root_hub_lock);
++		if (!HCD_DEAD(hcd)) {
++			set_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
++			hcd->state = old_state;
++		}
++		spin_unlock_irq(&hcd_root_hub_lock);
+ 		dev_dbg(&rhdev->dev, "bus %s fail, err %d\n",
+ 				"suspend", status);
+ 	}
+@@ -1955,9 +1963,13 @@ int hcd_bus_resume(struct usb_device *rh
+ 
+ 	dev_dbg(&rhdev->dev, "usb %s%s\n",
+ 			(msg.event & PM_EVENT_AUTO ? "auto-" : ""), "resume");
++	if (HCD_DEAD(hcd)) {
++		dev_dbg(&rhdev->dev, "skipped %s of dead bus\n", "resume");
++		return 0;
++	}
+ 	if (!hcd->driver->bus_resume)
+ 		return -ENOENT;
+-	if (hcd->state == HC_STATE_RUNNING)
++	if (HCD_RH_RUNNING(hcd))
+ 		return 0;
+ 
+ 	hcd->state = HC_STATE_RESUMING;
+@@ -1966,10 +1978,15 @@ int hcd_bus_resume(struct usb_device *rh
+ 	if (status == 0) {
+ 		/* TRSMRCY = 10 msec */
+ 		msleep(10);
+-		usb_set_device_state(rhdev, rhdev->actconfig
+-				? USB_STATE_CONFIGURED
+-				: USB_STATE_ADDRESS);
+-		hcd->state = HC_STATE_RUNNING;
++		spin_lock_irq(&hcd_root_hub_lock);
++		if (!HCD_DEAD(hcd)) {
++			usb_set_device_state(rhdev, rhdev->actconfig
++					? USB_STATE_CONFIGURED
++					: USB_STATE_ADDRESS);
++			set_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
++			hcd->state = HC_STATE_RUNNING;
++		}
++		spin_unlock_irq(&hcd_root_hub_lock);
+ 	} else {
+ 		hcd->state = old_state;
+ 		dev_dbg(&rhdev->dev, "bus %s fail, err %d\n",
+@@ -2080,7 +2097,7 @@ irqreturn_t usb_hcd_irq (int irq, void *
+ 	 */
+ 	local_irq_save(flags);
+ 
+-	if (unlikely(hcd->state == HC_STATE_HALT || !HCD_HW_ACCESSIBLE(hcd))) {
++	if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd))) {
+ 		rc = IRQ_NONE;
+ 	} else if (hcd->driver->irq(hcd) == IRQ_NONE) {
+ 		rc = IRQ_NONE;
+@@ -2114,6 +2131,8 @@ void usb_hc_died (struct usb_hcd *hcd)
+ 	dev_err (hcd->self.controller, "HC died; cleaning up\n");
+ 
+ 	spin_lock_irqsave (&hcd_root_hub_lock, flags);
++	clear_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
++	set_bit(HCD_FLAG_DEAD, &hcd->flags);
+ 	if (hcd->rh_registered) {
+ 		clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
+ 
+@@ -2256,6 +2275,12 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	 */
+ 	device_init_wakeup(&rhdev->dev, 1);
+ 
++	/* HCD_FLAG_RH_RUNNING doesn't matter until the root hub is
++	 * registered.  But since the controller can die at any time,
++	 * let's initialize the flag before touching the hardware.
++	 */
++	set_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
++
+ 	/* "reset" is misnamed; its role is now one-time init. the controller
+ 	 * should already have been reset (and boot firmware kicked off etc).
+ 	 */
+@@ -2323,6 +2348,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	return retval;
+ 
+ error_create_attr_group:
++	clear_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
+ 	if (HC_IS_RUNNING(hcd->state))
+ 		hcd->state = HC_STATE_QUIESCING;
+ 	spin_lock_irq(&hcd_root_hub_lock);
+@@ -2375,6 +2401,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+ 	usb_get_dev(rhdev);
+ 	sysfs_remove_group(&rhdev->dev.kobj, &usb_bus_attr_group);
+ 
++	clear_bit(HCD_FLAG_RH_RUNNING, &hcd->flags);
+ 	if (HC_IS_RUNNING (hcd->state))
+ 		hcd->state = HC_STATE_QUIESCING;
+ 
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -99,6 +99,8 @@ struct usb_hcd {
+ #define HCD_FLAG_POLL_RH		2	/* poll for rh status? */
+ #define HCD_FLAG_POLL_PENDING		3	/* status has changed? */
+ #define HCD_FLAG_WAKEUP_PENDING		4	/* root hub is resuming? */
++#define HCD_FLAG_RH_RUNNING		5	/* root hub is running? */
++#define HCD_FLAG_DEAD			6	/* controller has died? */
+ 
+ 	/* The flags can be tested using these macros; they are likely to
+ 	 * be slightly faster than test_bit().
+@@ -108,6 +110,8 @@ struct usb_hcd {
+ #define HCD_POLL_RH(hcd)	((hcd)->flags & (1U << HCD_FLAG_POLL_RH))
+ #define HCD_POLL_PENDING(hcd)	((hcd)->flags & (1U << HCD_FLAG_POLL_PENDING))
+ #define HCD_WAKEUP_PENDING(hcd)	((hcd)->flags & (1U << HCD_FLAG_WAKEUP_PENDING))
++#define HCD_RH_RUNNING(hcd)	((hcd)->flags & (1U << HCD_FLAG_RH_RUNNING))
++#define HCD_DEAD(hcd)		((hcd)->flags & (1U << HCD_FLAG_DEAD))
+ 
+ 	/* Flags that get set only during HCD registration or removal. */
+ 	unsigned		rh_registered:1;/* is root hub registered? */
 
 
