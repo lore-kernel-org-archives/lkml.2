@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab1CUJPt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 05:15:49 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45654 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab1CUJPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 05:15:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=T58IXNOBAImMPqHtOqh/Q7ij9g5JQ5RZtCa3a/YDjAp53AAyAXkEReY3emAZ1WaYPD
-         b7iOeusClrwk2j0JmOjmOUH+GCC6/IYZiNZ3qV+KF7iPtblePhXmsORWg6wHTGIZa0cE
-         tOXZoKCQ8Ac4Q4xvqYWjsyphSETzEFXm9FWto=
-Message-ID: <4D87173D.50906@suse.cz>
-Date: Mon, 21 Mar 2011 10:15:41 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1751410Ab1CUJUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 05:20:36 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:58646 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751092Ab1CUJUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 05:20:34 -0400
+X-ASG-Debug-ID: 1300699232-01de284cf896c40001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D87185C.4070001@fusionio.com>
+Date: Mon, 21 Mar 2011 10:20:28 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Jack Stone <jwjstone@fastmail.fm>, Mac <kmac@poczta.fm>,
-        linux-kernel@vger.kernel.org, linux-ppp@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: 'scheduling while atomic' during ppp connection on 2.6.37.1 and
- 2.6.38
-References: <fuopaigyaypsqveewtjx@pwmq>	<4D864A82.4090104@fastmail.fm> <20110320215826.79cadfe2@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110320215826.79cadfe2@lxorguk.ukuu.org.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Shaohua Li <shaohua.li@intel.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [PATCH 04/10] block: initial patch for on-stack per-task  plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	 <1295659049-2688-5-git-send-email-jaxboe@fusionio.com>	 <AANLkTimEyLdYhCc7Ft4i-=us5kTVDAB5GtNOnvabhmUH@mail.gmail.com>	 <20110316173148.GC13562@redhat.com>	 <1300323609.2337.117.camel@sli10-conroe>  <4D81D7D5.7000806@fusionio.com>	 <1300430212.2337.141.camel@sli10-conroe> <4D83560E.8000002@fusionio.com>	 <4D83639A.3060407@fusionio.com> <1300690368.2337.148.camel@sli10-conroe>
+X-ASG-Orig-Subj: Re: [PATCH 04/10] block: initial patch for on-stack per-task  plugging
+In-Reply-To: <1300690368.2337.148.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1300699232
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.58528
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2011 10:58 PM, Alan Cox wrote:
->> +        spin_lock_irqsave(&dc->spin_mutex, flags);
->>           if (port->port.count)
->>               room = kfifo_avail(&port->fifo_ul);
->> -        mutex_unlock(&port->tty_sem);
->> +        spin_unlock_irqrestore(&dc->spin_mutex, flags);
-> 
-> dc->spin_mutex does not protect port->port.count.
+On 2011-03-21 07:52, Shaohua Li wrote:
+>> Gave it a quick test spin, as suspected it had a few issues. This one
+>> seems to work. Can you toss it through that workload and see if it fares
+>> better?
+> yes, this fully restores the regression I saw. But I have accounting
+> issue:
 
-Neither port->tty_sem did.
+Great!
 
-Anyway is the test needed at all? I.e. could
-tty->ops->write/chars_in_buffer/ntty_write_room be called with
-port->port.count == 0 at all?
+> 1. The merged request is already accounted when it's added into plug
+> list
 
-And the lock should not as well be needed. Kfifo assures atomicity where
-there is only one reader and one writer which should be the case here.
-Unless tty->ops->write can be called in parallel. And it should not,
-that's what's tty->atomic_write_lock for.
+Good catch. I've updated the patch and merged it now, integrating this
+accounting fix.
 
-thanks,
+> 2. drive_stat_acct() is called without any protection in
+> __make_request(). So there is race for in_flight accounting. The race
+> exists after stack plug is added, so not because of this issue.
+> Below is the extra patch I need to do the test.
+
+Looks fine. Can I add your signed-off-by to this patch? I'll merge it as
+a separate fix.
+
 -- 
-js
-suse labs
+Jens Axboe
+
