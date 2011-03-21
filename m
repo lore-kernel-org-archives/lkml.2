@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1CUWqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 18:46:07 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:44150 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754749Ab1CUWqC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 18:46:02 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+c/eJH3PmczZSI/BBN66ZHI4x2toCiv6Ho7Qmo43
-	SoYj5MDIB/MNUa
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 2/2] viafb: initialize margins correct
-Date: Mon, 21 Mar 2011 23:01:27 +0000
-Message-Id: <1300748487-9883-3-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <1300748487-9883-1-git-send-email-FlorianSchandinat@gmx.de>
-References: <1300748487-9883-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1754788Ab1CUWvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 18:51:37 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51499 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754506Ab1CUWvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 18:51:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: Hot plug issue on 2.6.38
+Date: Mon, 21 Mar 2011 23:51:12 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+References: <201103052254.48515.rjw@sisk.pl> <20110317215609.GA5917@xanatos> <20110321222705.GA4139@xanatos>
+In-Reply-To: <20110321222705.GA4139@xanatos>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103212351.12696.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch initializes the margins for the initial mode correct.
-This is required to get the desired initial refresh rate. Also do
-more verbose sanity checking to prevent misbehavior.
+On Monday, March 21, 2011, Sarah Sharp wrote:
+> > On Thu, Mar 17, 2011 at 10:22:33PM +0100, Rafael J. Wysocki wrote:
+> > > On Thursday, March 17, 2011, Yinghai Lu wrote:
+> > > > her .config does not define PCI_MMCONFIG
+> > > > 
+> > > > #
+> > > > # Bus options (PCI etc.)
+> > > > #
+> > > > CONFIG_PCI=y
+> > > > CONFIG_PCI_DIRECT=y
+> > > > # CONFIG_PCI_MMCONFIG is not set
+> > > 
+> > > Ah, good catch, thanks!
+> > > 
+> > > @Sarah: you need to set that for PCI Express to work in general.
+> 
+> I compiled 2.6.38 with CONFIG_PCI_MMCONFIG=y, and I'm no longer getting
+> "irq nobody cared" messages.  However, PCI express hot plug seems to
+> just not work for the xHCI PCI device.  Nothing appears in dmesg when I
+> plug in the Express Card, and the device doesn't appear in lspci.
+> However, I can get the card to show up if I run
+> 
+> 	echo 1 > /sys/bus/pci/rescan
+> 
+> PCI hot-remove doesn't seem to work either.  The xHCI driver notices the
+> device got removed when the debugging polling loop runs, but the
+> driver's PCI remove functions are never called.  A rescan of the bus
+> doesn't help, and the device still shows up in lspci (although all the
+> registers are read as 0xffff). dmesg and lspci after the device has been
+> removed is attached.
+> 
+> I've tried turning on all the PCI config options that look relavant; my
+> .config is attached.  I've turned on PCI debug too.  The only thing that
+> looks PCI related that I don't have turned on is ACPI_PCI_SLOT.  Do I
+> need that?
+> 
+> I'm not sure how to debug this hot plug issue further.
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
----
- drivers/video/via/viafbdev.c |   31 +++++++++++--------------------
- 1 files changed, 11 insertions(+), 20 deletions(-)
+Well, we still don't seem to call the _OSC on this machine.  At least your
+dmesg output doesn't indicate so.
 
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index fd6a15f..9d9bb9b 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1806,14 +1806,9 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
- 	default_var.xres_virtual = default_xres;
- 	default_var.yres_virtual = default_yres;
- 	default_var.bits_per_pixel = viafb_bpp;
--	default_var.pixclock =
--	    viafb_get_pixclock(default_xres, default_yres, viafb_refresh);
--	default_var.left_margin = (default_xres >> 3) & 0xf8;
--	default_var.right_margin = 32;
--	default_var.upper_margin = 16;
--	default_var.lower_margin = 4;
--	default_var.hsync_len = default_var.left_margin;
--	default_var.vsync_len = 4;
-+	viafb_fill_var_timing_info(&default_var, viafb_get_refresh(
-+		default_var.xres, default_var.yres, viafb_refresh),
-+		viafb_get_mode(default_var.xres, default_var.yres));
- 	viafb_setup_fixinfo(&viafbinfo->fix, viaparinfo);
- 	viafbinfo->var = default_var;
- 
-@@ -1852,15 +1847,9 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
- 		default_var.xres_virtual = viafb_second_virtual_xres;
- 		default_var.yres_virtual = viafb_second_virtual_yres;
- 		default_var.bits_per_pixel = viafb_bpp1;
--		default_var.pixclock =
--		    viafb_get_pixclock(viafb_second_xres, viafb_second_yres,
--		    viafb_refresh1);
--		default_var.left_margin = (viafb_second_xres >> 3) & 0xf8;
--		default_var.right_margin = 32;
--		default_var.upper_margin = 16;
--		default_var.lower_margin = 4;
--		default_var.hsync_len = default_var.left_margin;
--		default_var.vsync_len = 4;
-+		viafb_fill_var_timing_info(&default_var, viafb_get_refresh(
-+			default_var.xres, default_var.yres, viafb_refresh1),
-+			viafb_get_mode(default_var.xres, default_var.yres));
- 
- 		viafb_setup_fixinfo(&viafbinfo1->fix, viaparinfo1);
- 		viafb_check_var(&default_var, viafbinfo1);
-@@ -2015,15 +2004,17 @@ static int __init viafb_setup(char *options)
-  */
- int __init viafb_init(void)
- {
--	u32 dummy;
-+	u32 dummy_x, dummy_y;
- #ifndef MODULE
- 	char *option = NULL;
- 	if (fb_get_options("viafb", &option))
- 		return -ENODEV;
- 	viafb_setup(option);
- #endif
--	if (parse_mode(viafb_mode, &dummy, &dummy)
--		|| parse_mode(viafb_mode1, &dummy, &dummy)
-+	if (parse_mode(viafb_mode, &dummy_x, &dummy_y)
-+		|| !viafb_get_mode(dummy_x, dummy_y)
-+		|| parse_mode(viafb_mode1, &dummy_x, &dummy_y)
-+		|| !viafb_get_mode(dummy_x, dummy_y)
- 		|| viafb_bpp < 0 || viafb_bpp > 32
- 		|| viafb_bpp1 < 0 || viafb_bpp1 > 32
- 		|| parse_active_dev())
--- 
-1.6.3.2
+Do you have the patch from:
 
+https://patchwork.kernel.org/patch/604371/
+
+applied?
+
+Rafael
