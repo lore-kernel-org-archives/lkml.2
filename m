@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab1CUXSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:18:14 -0400
-Received: from kroah.org ([198.145.64.141]:52598 "EHLO coco.kroah.org"
+	id S932435Ab1CUXSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:18:32 -0400
+Received: from kroah.org ([198.145.64.141]:52670 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932236Ab1CUXRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:24 2011
-Message-Id: <20110321230324.567633354@clark.kroah.org>
+	id S932319Ab1CUXSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:08 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
+Message-Id: <20110321230326.220660706@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:44 -0700
+Date: Mon, 21 Mar 2011 16:02:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [28/78] USB: serial: ch341: add new id
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Michael Poole <mdpoole@troilus.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [44/78] HID: hid-magicmouse: Correct touch orientation direction
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,39 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: wangyanqing <udknight@gmail.com>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit d0781383038e983a63843a9a6a067ed781db89c1 upstream.
+commit 2d9ca4e9f393d81d8f37ed37505aecbf3a5e1bd6 upstream.
 
-I picked up a new DAK-780EX(professional digitl reverb/mix system),
-which use CH341T chipset to communication with computer on 3/2011
-and the CH341T's vendor code is 1a86
+The magic trackpad and mouse both report touch orientation in opposite
+direction to the bcm5974 driver and what is written in
+Documents/input/multi-touch-protocol.txt. This patch reverts the
+direction, so that all in-kernel devices with this feature behave the
+same way.
 
-Looking up the CH341T's vendor and product id's I see:
+Since no known application has been utilizing this information yet, it
+seems appropriate also for stable.
 
-1a86  QinHeng Electronics
-  5523  CH341 in serial mode, usb to serial port converter
-
-CH341T,CH341 are the products of the same company, maybe
-have some common hardware, and I test the ch341.c works
-well with CH341T
-
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael Poole <mdpoole@troilus.org>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ch341.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hid/hid-magicmouse.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -75,6 +75,7 @@ static int debug;
- static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x4348, 0x5523) },
- 	{ USB_DEVICE(0x1a86, 0x7523) },
-+	{ USB_DEVICE(0x1a86, 0x5523) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -258,7 +258,7 @@ static void magicmouse_emit_touch(struct
+ 		input_report_abs(input, ABS_MT_TRACKING_ID, id);
+ 		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
+ 		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
+-		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
++		input_report_abs(input, ABS_MT_ORIENTATION, -orientation);
+ 		input_report_abs(input, ABS_MT_POSITION_X, x);
+ 		input_report_abs(input, ABS_MT_POSITION_Y, y);
+ 
+@@ -397,7 +397,7 @@ static void magicmouse_setup_input(struc
+ 		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
+ 		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 4, 0);
+ 		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 4, 0);
+-		input_set_abs_params(input, ABS_MT_ORIENTATION, -32, 31, 1, 0);
++		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
+ 
+ 		/* Note: Touch Y position from the device is inverted relative
+ 		 * to how pointer motion is reported (and relative to how USB
 
 
