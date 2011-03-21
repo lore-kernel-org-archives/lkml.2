@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab1CUWvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 18:51:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51499 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab1CUWvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 18:51:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: Hot plug issue on 2.6.38
-Date: Mon, 21 Mar 2011 23:51:12 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201103052254.48515.rjw@sisk.pl> <20110317215609.GA5917@xanatos> <20110321222705.GA4139@xanatos>
-In-Reply-To: <20110321222705.GA4139@xanatos>
+	id S1754799Ab1CUWza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 18:55:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63869 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754506Ab1CUWz2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 18:55:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=ELku8QGwN5nFJq4ikMQUjr3A/6rI+mGTTwSidCfKbwlTKveup40m7JX8hp43HD3BE3
+         LHlLgiWUmwbdN+recC1B39Kw9xIpVFBIPZbmrnKIOvGl7CLCIWSDptvSAUfWrqA2mhuZ
+         Jq5zjQV7hstqv+0/c6tL6UI22SwGjBXsGepnU=
+Message-ID: <4D87D75C.7020704@suse.cz>
+Date: Mon, 21 Mar 2011 23:55:24 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Mauro Carvalho Chehab <maurochehab@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com
+Subject: Re: [PATCH v2 -resend#1 1/1] V4L: videobuf, don't use dma addr as
+ physical
+References: <1298885822-10083-1-git-send-email-jslaby@suse.cz> <20110228145301.GC10846@dumpdata.com> <4D6BC3AE.903@suse.cz> <4D6BE756.1090800@infradead.org> <4D87D47B.80206@gmail.com>
+In-Reply-To: <4D87D47B.80206@gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103212351.12696.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 21, 2011, Sarah Sharp wrote:
-> > On Thu, Mar 17, 2011 at 10:22:33PM +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, March 17, 2011, Yinghai Lu wrote:
-> > > > her .config does not define PCI_MMCONFIG
-> > > > 
-> > > > #
-> > > > # Bus options (PCI etc.)
-> > > > #
-> > > > CONFIG_PCI=y
-> > > > CONFIG_PCI_DIRECT=y
-> > > > # CONFIG_PCI_MMCONFIG is not set
-> > > 
-> > > Ah, good catch, thanks!
-> > > 
-> > > @Sarah: you need to set that for PCI Express to work in general.
-> 
-> I compiled 2.6.38 with CONFIG_PCI_MMCONFIG=y, and I'm no longer getting
-> "irq nobody cared" messages.  However, PCI express hot plug seems to
-> just not work for the xHCI PCI device.  Nothing appears in dmesg when I
-> plug in the Express Card, and the device doesn't appear in lspci.
-> However, I can get the card to show up if I run
-> 
-> 	echo 1 > /sys/bus/pci/rescan
-> 
-> PCI hot-remove doesn't seem to work either.  The xHCI driver notices the
-> device got removed when the debugging polling loop runs, but the
-> driver's PCI remove functions are never called.  A rescan of the bus
-> doesn't help, and the device still shows up in lspci (although all the
-> registers are read as 0xffff). dmesg and lspci after the device has been
-> removed is attached.
-> 
-> I've tried turning on all the PCI config options that look relavant; my
-> .config is attached.  I've turned on PCI debug too.  The only thing that
-> looks PCI related that I don't have turned on is ACPI_PCI_SLOT.  Do I
-> need that?
-> 
-> I'm not sure how to debug this hot plug issue further.
+On 03/21/2011 11:43 PM, Mauro Carvalho Chehab wrote:
+> As I got no return, and the patch looked sane, I've reviewed the comment myself,
 
-Well, we still don't seem to call the _OSC on this machine.  At least your
-dmesg output doesn't indicate so.
+Aha, I forgot to send it. Sorry.
 
-Do you have the patch from:
+It looks OK.
 
-https://patchwork.kernel.org/patch/604371/
+> Author: Jiri Slaby <jslaby@suse.cz>
+> Date:   Mon Feb 28 06:37:02 2011 -0300
+> 
+>     [media] V4L: videobuf, don't use dma addr as physical
+>     
+>     mem->dma_handle is a dma address obtained by dma_alloc_coherent which
+>     needn't be a physical address in presence of IOMMU, as
+>     a hardware IOMMU can (and most likely) will return a bus address where
+>     physical != bus address.
+>     
+>     So ensure we are remapping (remap_pfn_range) the right page in
+>     __videobuf_mmap_mapper by using virt_to_phys(mem->vaddr) and not
+>     mem->dma_handle.
+>     
+>     While at it, use PFN_DOWN instead of explicit shift.
+>     
+>     Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>     Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>     Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> 
+> diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
+> index c969111..19d3e4a 100644
+> --- a/drivers/media/video/videobuf-dma-contig.c
+> +++ b/drivers/media/video/videobuf-dma-contig.c
+> @@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+>  
+>         vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>         retval = remap_pfn_range(vma, vma->vm_start,
+> -                            mem->dma_handle >> PAGE_SHIFT,
+> +                          PFN_DOWN(virt_to_phys(mem->vaddr))
+>                                  size, vma->vm_page_prot);
+>         if (retval) {
+>                 dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
 
-applied?
-
-Rafael
+thanks,
+-- 
+js
+suse labs
