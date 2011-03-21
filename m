@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1CUXQF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:16:05 -0400
-Received: from kroah.org ([198.145.64.141]:49488 "EHLO coco.kroah.org"
+	id S1755886Ab1CUXi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:38:56 -0400
+Received: from kroah.org ([198.145.64.141]:49579 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755445Ab1CUXPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:48 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
-Message-Id: <20110321230714.362030638@clark.kroah.org>
+	id S1755363Ab1CUXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:16:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:16 2011
+Message-Id: <20110321230715.914624518@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:49 -0700
+Date: Mon, 21 Mar 2011 16:07:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [50/87] xhci: Fix cycle bit calculation during stall handling.
+        Przemyslaw Bruski <pbruskispam@op.pl>, Takashi Iwai <tiwai@suse.de>
+Subject: [65/87] ALSA: ctxfi - Fix SPDIF status retrieval
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Przemyslaw Bruski <pbruskispam@op.pl>
 
-commit 01a1fdb9a7afa5e3c14c9316d6f380732750b4e4 upstream.
+commit f164753a263bfd2daaf3e0273b179de7e099c57d upstream.
 
-When an endpoint stalls, we need to update the xHCI host's internal
-dequeue pointer to move it past the stalled transfer.  This includes
-updating the cycle bit (TRB ownership bit) if we have moved the dequeue
-pointer past a link TRB with the toggle cycle bit set.
+SDPIF status retrieval always returned the default settings instead of
+the actual ones.
 
-When we're trying to find the new dequeue segment, find_trb_seg() is
-supposed to keep track of whether we've passed any link TRBs with the
-toggle cycle bit set.  However, this while loop's body
-
-	while (cur_seg->trbs > trb ||
-			&cur_seg->trbs[TRBS_PER_SEGMENT - 1] < trb) {
-
-Will never get executed if the ring only contains one segment.
-find_trb_seg() will return immediately, without updating the new cycle
-bit.  Since find_trb_seg() has no idea where in the segment the TD that
-stalled was, make the caller, xhci_find_new_dequeue_state(), check for
-this special case and update the cycle bit accordingly.
-
-This patch should be queued to kernels all the way back to 2.6.31.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Przemyslaw Bruski <pbruskispam@op.pl>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ sound/pci/ctxfi/ctmixer.c |   19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -505,6 +505,20 @@ void xhci_find_new_dequeue_state(struct
- 		state->new_cycle_state = ~(state->new_cycle_state) & 0x1;
- 	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
+--- a/sound/pci/ctxfi/ctmixer.c
++++ b/sound/pci/ctxfi/ctmixer.c
+@@ -566,19 +566,6 @@ static int ct_spdif_get_mask(struct snd_
+ 	return 0;
+ }
  
-+	/*
-+	 * If there is only one segment in a ring, find_trb_seg()'s while loop
-+	 * will not run, and it will return before it has a chance to see if it
-+	 * needs to toggle the cycle bit.  It can't tell if the stalled transfer
-+	 * ended just before the link TRB on a one-segment ring, or if the TD
-+	 * wrapped around the top of the ring, because it doesn't have the TD in
-+	 * question.  Look for the one-segment case where stalled TRB's address
-+	 * is greater than the new dequeue pointer address.
-+	 */
-+	if (ep_ring->first_seg == ep_ring->first_seg->next &&
-+			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
-+		state->new_cycle_state ^= 0x1;
-+	xhci_dbg(xhci, "Cycle state = 0x%x\n", state->new_cycle_state);
+-static int ct_spdif_default_get(struct snd_kcontrol *kcontrol,
+-				struct snd_ctl_elem_value *ucontrol)
+-{
+-	unsigned int status = SNDRV_PCM_DEFAULT_CON_SPDIF;
+-
+-	ucontrol->value.iec958.status[0] = (status >> 0) & 0xff;
+-	ucontrol->value.iec958.status[1] = (status >> 8) & 0xff;
+-	ucontrol->value.iec958.status[2] = (status >> 16) & 0xff;
+-	ucontrol->value.iec958.status[3] = (status >> 24) & 0xff;
+-
+-	return 0;
+-}
+-
+ static int ct_spdif_get(struct snd_kcontrol *kcontrol,
+ 			struct snd_ctl_elem_value *ucontrol)
+ {
+@@ -586,6 +573,10 @@ static int ct_spdif_get(struct snd_kcont
+ 	unsigned int status;
+ 
+ 	atc->spdif_out_get_status(atc, &status);
 +
- 	/* Don't update the ring cycle state for the producer (us). */
- 	xhci_dbg(xhci, "New dequeue segment = %p (virtual)\n",
- 			state->new_deq_seg);
++	if (status == 0)
++		status = SNDRV_PCM_DEFAULT_CON_SPDIF;
++
+ 	ucontrol->value.iec958.status[0] = (status >> 0) & 0xff;
+ 	ucontrol->value.iec958.status[1] = (status >> 8) & 0xff;
+ 	ucontrol->value.iec958.status[2] = (status >> 16) & 0xff;
+@@ -629,7 +620,7 @@ static struct snd_kcontrol_new iec958_de
+ 	.name		= SNDRV_CTL_NAME_IEC958("", PLAYBACK, DEFAULT),
+ 	.count		= 1,
+ 	.info		= ct_spdif_info,
+-	.get		= ct_spdif_default_get,
++	.get		= ct_spdif_get,
+ 	.put		= ct_spdif_put,
+ 	.private_value	= MIXER_IEC958_DEFAULT
+ };
 
 
