@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab1CUXRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:17:52 -0400
-Received: from kroah.org ([198.145.64.141]:52553 "EHLO coco.kroah.org"
+	id S1755672Ab1CUXRp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:17:45 -0400
+Received: from kroah.org ([198.145.64.141]:52545 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628Ab1CUXRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:41 -0400
+	id S1755607Ab1CUXRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:39 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:23 2011
-Message-Id: <20110321230323.398806390@clark.kroah.org>
+Message-Id: <20110321230323.198119382@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:33 -0700
+Date: Mon, 21 Mar 2011 16:01:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [17/78] drm/radeon/kms: fix typo in atom overscan setup
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        James Morris <jmorris@namei.org>
+Subject: [15/78] TOMOYO: Fix memory leak upon file open.
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 942b0e95c34f1ba432d08e1c0288ed032d32c3b2 upstream.
+commit eae61f3c829439f8f9121b5cd48a14be04df451f upstream.
 
-Typo in the aspect scale setup.
+In tomoyo_check_open_permission() since 2.6.36, TOMOYO was by error
+recalculating already calculated pathname when checking allow_rewrite
+permission. As a result, memory will leak whenever a file is opened for writing
+without O_APPEND flag. Also, performance will degrade because TOMOYO is
+calculating pathname regardless of profile configuration.
+This patch fixes the leak and performance degrade.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ security/tomoyo/file.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -61,8 +61,8 @@ static void atombios_overscan_setup(stru
- 			args.usOverscanLeft = cpu_to_le16((adjusted_mode->crtc_hdisplay - (a2 / mode->crtc_vdisplay)) / 2);
- 			args.usOverscanRight = cpu_to_le16((adjusted_mode->crtc_hdisplay - (a2 / mode->crtc_vdisplay)) / 2);
- 		} else if (a2 > a1) {
--			args.usOverscanLeft = cpu_to_le16((adjusted_mode->crtc_vdisplay - (a1 / mode->crtc_hdisplay)) / 2);
--			args.usOverscanRight = cpu_to_le16((adjusted_mode->crtc_vdisplay - (a1 / mode->crtc_hdisplay)) / 2);
-+			args.usOverscanTop = cpu_to_le16((adjusted_mode->crtc_vdisplay - (a1 / mode->crtc_hdisplay)) / 2);
-+			args.usOverscanBottom = cpu_to_le16((adjusted_mode->crtc_vdisplay - (a1 / mode->crtc_hdisplay)) / 2);
- 		}
- 		break;
- 	case RMX_FULL:
+--- a/security/tomoyo/file.c
++++ b/security/tomoyo/file.c
+@@ -927,7 +927,7 @@ int tomoyo_check_open_permission(struct
+ 				 struct path *path, const int flag)
+ {
+ 	const u8 acc_mode = ACC_MODE(flag);
+-	int error = -ENOMEM;
++	int error = 0;
+ 	struct tomoyo_path_info buf;
+ 	struct tomoyo_request_info r;
+ 	int idx;
+@@ -938,9 +938,6 @@ int tomoyo_check_open_permission(struct
+ 	buf.name = NULL;
+ 	r.mode = TOMOYO_CONFIG_DISABLED;
+ 	idx = tomoyo_read_lock();
+-	if (!tomoyo_get_realpath(&buf, path))
+-		goto out;
+-	error = 0;
+ 	/*
+ 	 * If the filename is specified by "deny_rewrite" keyword,
+ 	 * we need to check "allow_rewrite" permission when the filename is not
 
 
