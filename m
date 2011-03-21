@@ -1,62 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab1CUIEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 04:04:21 -0400
+	id S1751857Ab1CUIEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 04:04:34 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:42334 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab1CUIET (ORCPT
+	with ESMTP id S1751750Ab1CUIE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 04:04:19 -0400
+	Mon, 21 Mar 2011 04:04:29 -0400
 From: Shawn Guo <shawn.guo@linaro.org>
 To: devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, sameo@linux.intel.com, grant.likely@secretlab.ca
-Subject: [PATCH 0/5] make sdhci device drivers self registered
-Date: Mon, 21 Mar 2011 16:06:58 +0800
-Message-Id: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
+        patches@linaro.org, sameo@linux.intel.com, grant.likely@secretlab.ca,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 1/5] mmc: sdhci: make sdhci-esdhc-imx driver self registered
+Date: Mon, 21 Mar 2011 16:06:59 +0800
+Message-Id: <1300694823-8300-2-git-send-email-shawn.guo@linaro.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
+References: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is to take sdhci device driver specific things out
-from sdhci-pltfm.c and make them self registered. Here are the
-differences it makes.
+The patch turns the common stuff to in sdhci-pltfm.c into functions,
+and add sdhci-esdhc-imx its own .probe and .remove which in turn call
+into the common functions, so that sdhci-esdhc-imx driver registers
+itself and keep all sdhci-esdhc-imx specific things like
+sdhci_esdhc_imx_pdata away from sdhci-pltfm.c which is common.
 
- * Get the sdhci device driver follow the Linux trend that driver
-   take the registration by its own
- * sdhci-pltfm.c becomes significantly simpler and only has common
-   support functions there
- * All sdhci device specific stuff are going back its own driver
- * The dt and non-dt support share the same pair of .probe and
-   .remove hooks.
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+---
+ drivers/mmc/host/sdhci-esdhc-imx.c |   98 +++++++++++++++++++++++++++++-------
+ drivers/mmc/host/sdhci-pltfm.c     |   84 +++++++++++++++++++++++++++++--
+ drivers/mmc/host/sdhci-pltfm.h     |   11 ++++-
+ 3 files changed, 169 insertions(+), 24 deletions(-)
 
-The first one patch adds common support function into sdhci-pltfm.c
-when changing sdhci-esdhc-imx driver, while the last one cleans up
-sdhci-pltfm.c when changing sdhci-tegra driver.
+diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+index 9b82910..6585620 100644
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -100,15 +100,39 @@ static unsigned int esdhc_pltfm_get_min_clock(struct sdhci_host *host)
+ 	return clk_get_rate(pltfm_host->clk) / 256 / 16;
+ }
+ 
+-static int esdhc_pltfm_init(struct sdhci_host *host, struct sdhci_pltfm_data *pdata)
++static struct sdhci_ops sdhci_esdhc_ops = {
++	.read_w = esdhc_readw_le,
++	.write_w = esdhc_writew_le,
++	.write_b = esdhc_writeb_le,
++	.set_clock = esdhc_set_clock,
++	.get_max_clock = esdhc_pltfm_get_max_clock,
++	.get_min_clock = esdhc_pltfm_get_min_clock,
++};
++
++static struct sdhci_pltfm_data sdhci_esdhc_imx_pdata = {
++	.quirks = ESDHC_DEFAULT_QUIRKS | SDHCI_QUIRK_BROKEN_ADMA,
++	/* ADMA has issues. Might be fixable */
++	.ops = &sdhci_esdhc_ops,
++};
++
++static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
+ {
+-	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_pltfm_host *pltfm_host;
++	struct sdhci_host *host;
+ 	struct clk *clk;
++	int ret;
++
++	host = sdhci_pltfm_init(pdev, &sdhci_esdhc_imx_pdata);
++	if (!host)
++		return -ENOMEM;
++
++	pltfm_host = sdhci_priv(host);
+ 
+ 	clk = clk_get(mmc_dev(host->mmc), NULL);
+ 	if (IS_ERR(clk)) {
+ 		dev_err(mmc_dev(host->mmc), "clk err\n");
+-		return PTR_ERR(clk);
++		ret = PTR_ERR(clk);
++		goto err_clk_get;
+ 	}
+ 	clk_enable(clk);
+ 	pltfm_host->clk = clk;
+@@ -120,30 +144,68 @@ static int esdhc_pltfm_init(struct sdhci_host *host, struct sdhci_pltfm_data *pd
+ 	if (cpu_is_mx25() || cpu_is_mx35())
+ 		host->quirks |= SDHCI_QUIRK_NO_MULTIBLOCK;
+ 
++	ret = sdhci_add_host(host);
++	if (ret)
++		goto err_add_host;
++
+ 	return 0;
++
++err_add_host:
++	clk_disable(pltfm_host->clk);
++	clk_put(pltfm_host->clk);
++err_clk_get:
++	sdhci_pltfm_free(pdev);
++	return ret;
+ }
+ 
+-static void esdhc_pltfm_exit(struct sdhci_host *host)
++static int __devexit sdhci_esdhc_imx_remove(struct platform_device *pdev)
+ {
++	struct sdhci_host *host = platform_get_drvdata(pdev);
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	int dead = 0;
++	u32 scratch;
++
++	dead = 0;
++	scratch = readl(host->ioaddr + SDHCI_INT_STATUS);
++	if (scratch == (u32)-1)
++		dead = 1;
++
++	sdhci_remove_host(host, dead);
+ 
+ 	clk_disable(pltfm_host->clk);
+ 	clk_put(pltfm_host->clk);
++
++	sdhci_pltfm_free(pdev);
++
++	return 0;
+ }
+ 
+-static struct sdhci_ops sdhci_esdhc_ops = {
+-	.read_w = esdhc_readw_le,
+-	.write_w = esdhc_writew_le,
+-	.write_b = esdhc_writeb_le,
+-	.set_clock = esdhc_set_clock,
+-	.get_max_clock = esdhc_pltfm_get_max_clock,
+-	.get_min_clock = esdhc_pltfm_get_min_clock,
++static struct platform_driver sdhci_esdhc_imx_driver = {
++	.driver		= {
++		.name	= "sdhci-esdhc-imx",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= sdhci_esdhc_imx_probe,
++	.remove		= __devexit_p(sdhci_esdhc_imx_remove),
++#ifdef CONFIG_PM
++	.suspend	= sdhci_pltfm_suspend,
++	.resume		= sdhci_pltfm_resume,
++#endif
+ };
+ 
+-struct sdhci_pltfm_data sdhci_esdhc_imx_pdata = {
+-	.quirks = ESDHC_DEFAULT_QUIRKS | SDHCI_QUIRK_BROKEN_ADMA,
+-	/* ADMA has issues. Might be fixable */
+-	.ops = &sdhci_esdhc_ops,
+-	.init = esdhc_pltfm_init,
+-	.exit = esdhc_pltfm_exit,
+-};
++static int __init sdhci_esdhc_imx_init(void)
++{
++	return platform_driver_register(&sdhci_esdhc_imx_driver);
++}
++
++static void __exit sdhci_esdhc_imx_exit(void)
++{
++	platform_driver_unregister(&sdhci_esdhc_imx_driver);
++}
++
++module_init(sdhci_esdhc_imx_init);
++module_exit(sdhci_esdhc_imx_exit);
++
++MODULE_DESCRIPTION("SDHCI driver for i.MX eSDHC");
++MODULE_AUTHOR("Wolfram Sang <w.sang@pengutronix.de>");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
+index ccc04ac..38b8cb4 100644
+--- a/drivers/mmc/host/sdhci-pltfm.c
++++ b/drivers/mmc/host/sdhci-pltfm.c
+@@ -44,6 +44,83 @@
+ static struct sdhci_ops sdhci_pltfm_ops = {
+ };
+ 
++struct sdhci_host *sdhci_pltfm_init(struct platform_device *pdev,
++				    struct sdhci_pltfm_data *pdata)
++{
++	struct sdhci_host *host;
++	struct sdhci_pltfm_host *pltfm_host;
++	struct resource *iomem;
++	int ret;
++
++	iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!iomem) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	if (resource_size(iomem) < 0x100)
++		dev_err(&pdev->dev, "Invalid iomem size!\n");
++
++	/* Some PCI-based MFD need the parent here */
++	if (pdev->dev.parent != &platform_bus)
++		host = sdhci_alloc_host(pdev->dev.parent, sizeof(*pltfm_host));
++	else
++		host = sdhci_alloc_host(&pdev->dev, sizeof(*pltfm_host));
++
++	if (IS_ERR(host)) {
++		ret = PTR_ERR(host);
++		goto err;
++	}
++
++	pltfm_host = sdhci_priv(host);
++
++	host->hw_name = "SDHCI";
++	if (pdata && pdata->ops)
++		host->ops = pdata->ops;
++	else
++		host->ops = &sdhci_pltfm_ops;
++	if (pdata)
++		host->quirks = pdata->quirks;
++	host->irq = platform_get_irq(pdev, 0);
++
++	if (!request_mem_region(iomem->start, resource_size(iomem),
++		mmc_hostname(host->mmc))) {
++		dev_err(&pdev->dev, "cannot request region\n");
++		ret = -EBUSY;
++		goto err_request;
++	}
++
++	host->ioaddr = ioremap(iomem->start, resource_size(iomem));
++	if (!host->ioaddr) {
++		dev_err(&pdev->dev, "failed to remap registers\n");
++		ret = -ENOMEM;
++		goto err_remap;
++	}
++
++	platform_set_drvdata(pdev, host);
++
++	return host;
++
++err_remap:
++	release_mem_region(iomem->start, resource_size(iomem));
++err_request:
++	sdhci_free_host(host);
++err:
++	pr_err("%s failed %d\n", __func__, ret);
++	return NULL;
++}
++
++void sdhci_pltfm_free(struct platform_device *pdev)
++{
++	struct sdhci_host *host = platform_get_drvdata(pdev);
++	struct resource *iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++
++	iounmap(host->ioaddr);
++	release_mem_region(iomem->start, resource_size(iomem));
++	sdhci_free_host(host);
++	platform_set_drvdata(pdev, NULL);
++}
++
+ /*****************************************************************************\
+  *                                                                           *
+  * Device probing/removal                                                    *
+@@ -198,9 +275,6 @@ static const struct platform_device_id sdhci_pltfm_ids[] = {
+ #ifdef CONFIG_MMC_SDHCI_CNS3XXX
+ 	{ "sdhci-cns3xxx", (kernel_ulong_t)&sdhci_cns3xxx_pdata },
+ #endif
+-#ifdef CONFIG_MMC_SDHCI_ESDHC_IMX
+-	{ "sdhci-esdhc-imx", (kernel_ulong_t)&sdhci_esdhc_imx_pdata },
+-#endif
+ #ifdef CONFIG_MMC_SDHCI_DOVE
+ 	{ "sdhci-dove", (kernel_ulong_t)&sdhci_dove_pdata },
+ #endif
+@@ -212,14 +286,14 @@ static const struct platform_device_id sdhci_pltfm_ids[] = {
+ MODULE_DEVICE_TABLE(platform, sdhci_pltfm_ids);
+ 
+ #ifdef CONFIG_PM
+-static int sdhci_pltfm_suspend(struct platform_device *dev, pm_message_t state)
++int sdhci_pltfm_suspend(struct platform_device *dev, pm_message_t state)
+ {
+ 	struct sdhci_host *host = platform_get_drvdata(dev);
+ 
+ 	return sdhci_suspend_host(host, state);
+ }
+ 
+-static int sdhci_pltfm_resume(struct platform_device *dev)
++int sdhci_pltfm_resume(struct platform_device *dev)
+ {
+ 	struct sdhci_host *host = platform_get_drvdata(dev);
+ 
+diff --git a/drivers/mmc/host/sdhci-pltfm.h b/drivers/mmc/host/sdhci-pltfm.h
+index c67523d..8357eba 100644
+--- a/drivers/mmc/host/sdhci-pltfm.h
++++ b/drivers/mmc/host/sdhci-pltfm.h
+@@ -13,6 +13,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/types.h>
++#include <linux/platform_device.h>
+ #include <linux/mmc/sdhci-pltfm.h>
+ 
+ struct sdhci_pltfm_host {
+@@ -21,9 +22,17 @@ struct sdhci_pltfm_host {
+ };
+ 
+ extern struct sdhci_pltfm_data sdhci_cns3xxx_pdata;
+-extern struct sdhci_pltfm_data sdhci_esdhc_imx_pdata;
+ extern struct sdhci_pltfm_data sdhci_dove_pdata;
+ extern struct sdhci_pltfm_data sdhci_tegra_pdata;
+ extern struct sdhci_pltfm_data sdhci_tegra_dt_pdata;
+ 
++struct sdhci_host *sdhci_pltfm_init(struct platform_device *pdev,
++				    struct sdhci_pltfm_data *pdata);
++void sdhci_pltfm_free(struct platform_device *pdev);
++
++#ifdef CONFIG_PM
++int sdhci_pltfm_suspend(struct platform_device *dev, pm_message_t state);
++int sdhci_pltfm_resume(struct platform_device *dev);
++#endif
++
+ #endif /* _DRIVERS_MMC_SDHCI_PLTFM_H */
+-- 
+1.7.1
 
-Only the patch of sdhci-esdhc-imx are tested on hardware, and others
-are just build tested.  And it is based on the tree below.
-
-  git://git.secretlab.ca/git/linux-2.6.git devicetree/test
-
-Comments are welcomed and appreciated.
-
-Regards,
-Shawn
-
-Shawn Guo (5):
-      mmc: sdhci: make sdhci-esdhc-imx driver self registered
-      mmc: sdhci: make sdhci-cns3xxx driver self registered
-      mmc: sdhci: make sdhci-dove driver self registered
-      mmc: sdhci: make sdhci-tegra driver self registered
-      mmc: sdhci: update Makefile/Kconfig for sdhci_pltfm change
-
- drivers/mmc/host/Kconfig           |   24 +++--
- drivers/mmc/host/Makefile          |   11 +-
- drivers/mmc/host/sdhci-cns3xxx.c   |   68 +++++++++++++-
- drivers/mmc/host/sdhci-dove.c      |   70 +++++++++++++-
- drivers/mmc/host/sdhci-esdhc-imx.c |   98 +++++++++++++++----
- drivers/mmc/host/sdhci-pltfm.c     |  165 ++-----------------------------
- drivers/mmc/host/sdhci-pltfm.h     |   14 ++-
- drivers/mmc/host/sdhci-tegra.c     |  189 +++++++++++++++++++++---------------
