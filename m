@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab1CUOIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 10:08:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8308 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab1CUOIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 10:08:22 -0400
-Date: Mon, 21 Mar 2011 10:07:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Lina Lu <lulina_nuaa@foxmail.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: cfq-iosched.c: panic in cfq_dispatch_requests
-Message-ID: <20110321140737.GA2694@redhat.com>
-References: <201103201523220468314@foxmail.com>
+	id S1753442Ab1CUOJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 10:09:42 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48919 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753194Ab1CUOJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 10:09:40 -0400
+Date: Mon, 21 Mar 2011 10:09:38 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oneukum@suse.de>
+cc: Jiri Kosina <jkosina@suse.cz>, Greg KH <gregkh@suse.de>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: "usb_wwan: error case of resume" (16871dcac) is buggy
+In-Reply-To: <201103211011.07282.oneukum@suse.de>
+Message-ID: <Pine.LNX.4.44L0.1103211006170.1978-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103201523220468314@foxmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 20, 2011 at 03:23:23PM +0800, Lina Lu wrote:
-> Hi Vivek,
+On Mon, 21 Mar 2011, Oliver Neukum wrote:
+
+> Am Montag, 21. März 2011, 01:36:45 schrieb Jiri Kosina:
+> > Hi,
+> > 
+> > the commit in subject make the kernel with CONFIG_PM_RUNTIME unset fail 
+> > during compilation, as struct dev_pm_info doesn't have whole bunch of 
+> > members in such case.
+> > 
+> > The commit in question adds this code:
+> > 
+> > 	/* we have to throw away the rest */
+> > 	do {
+> > 		unbusy_queued_urb(urb, portdata);
+> > 		//extremely dirty
+> > 		atomic_dec(&port->serial->interface->dev.power.usage_count);
+> > 	} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+> > 
+> > The 'extermely dirty' comment makes me a bit nervous whether the patch 
+> > below is correct or some more thinking would be necessary.
 > 
-> I did some test with blkio weight policy these days. The kernel panic 
-> once in a while. 
-> 	
-> >From the calltrace, It 's in func cfq_dispatch_requests(+0x058D).
-> And I caught a divide by zero error with system monitor tools.
+> I've since posted a clean patch, although your fix looks correct to me.
 
-Hi Lina,
+In fact the original code and Jiri's fix are both wrong.  The layering 
+violation here is not only inelegant, it is downright buggy.
 
-Can you please paste the full backtrace here.
+The USB core contains its own usage_count for interfaces, in parallel 
+with the usage_count in interface->dev.power.  Bypassing the USB layer 
+in this way causes the two counts to get out of sync, which will lead 
+to errors.
 
-> 	
-> The panic happens when I first set 100 weight to two IO pids, then 
-> change the weight to 200, and begin to perform IO. The kernel panic
-> accurately when the IO begin.
+Oliver's new fix is correct.
 
-So you notice this only if weights are changed otherwise not?
+Alan Stern
 
-Recently Justin fixed a bug in CFQ where crash can happen when weights
-are changed. This fix in Jens's block tree. Can you please apply this
-patch and see if it resolves your issue too.
-
-commit 8184f93eced1e304721c2a55c00d87d5a14f8907
-Author: Justin TerAvest <teravest@google.com>
-Date:   Thu Mar 17 16:12:36 2011 +0100
-
-    cfq-iosched: Don't update group weights when on service tree
-
-Thanks
-Vivek
