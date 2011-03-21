@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab1CUXSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:18:10 -0400
-Received: from kroah.org ([198.145.64.141]:52595 "EHLO coco.kroah.org"
+	id S932510Ab1CUX03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:26:29 -0400
+Received: from kroah.org ([198.145.64.141]:52678 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932235Ab1CUXRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:24 2011
-Message-Id: <20110321230324.461996461@clark.kroah.org>
+	id S932321Ab1CUXSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:10 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
+Message-Id: <20110321230326.450195228@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:43 -0700
+Date: Mon, 21 Mar 2011 16:02:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [27/78] USB: serial: option: Apply OPTION_BLACKLIST_SENDSETUP also for ZTE MF626
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Yu Zhao <yu.zhao@intel.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [46/78] PCI: remove quirk for pre-production systems
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Brandeburg, Jesse <jesse.brandeburg@intel.com>
 
-commit 7a89e4cb9cdaba92f5fbc509945cf4e3c48db4e2 upstream.
+commit b99af4b002e4908d1a5cdaf424529bdf1dc69768 upstream.
 
-On https://bugs.launchpad.net/ubuntu/+source/linux/+bug/636091, one of
-the cases reported is a big timeout on option_send_setup, which causes
-some side effects as tty_lock is held. Looks like some of ZTE MF626
-devices also don't like the RTS/DTR setting in option_send_setup, like
-with 4G XS Stick W14. The reporter confirms which this it solves the
-long freezes in his system.
+Revert commit 7eb93b175d4de9438a4b0af3a94a112cb5266944
+Author: Yu Zhao <yu.zhao@intel.com>
+Date:   Fri Apr 3 15:18:11 2009 +0800
 
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+    PCI: SR-IOV quirk for Intel 82576 NIC
+
+    If BIOS doesn't allocate resources for the SR-IOV BARs, zero the Flash
+    BAR and program the SR-IOV BARs to use the old Flash Memory Space.
+
+    Please refer to Intel 82576 Gigabit Ethernet Controller Datasheet
+    section 7.9.2.14.2 for details.
+    http://download.intel.com/design/network/datashts/82576_Datasheet.pdf
+
+    Signed-off-by: Yu Zhao <yu.zhao@intel.com>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+This quirk was added before SR-IOV was in production and now all machines that
+originally had this issue alreayd have bios updates to correct the issue. The
+quirk itself is no longer needed and in fact causes bugs if run.  Remove it.
+
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+CC: Yu Zhao <yu.zhao@intel.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/pci/quirks.c |   52 ---------------------------------------------------
+ 1 file changed, 52 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -652,7 +652,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0028, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0029, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0030, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF626, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF626, 0xff,
-+	  0xff, 0xff), .driver_info = (kernel_ulong_t)&four_g_w14_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0032, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0033, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0034, 0xff, 0xff, 0xff) },
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2618,58 +2618,6 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
+ 
+ #endif /* CONFIG_PCI_MSI */
+ 
+-#ifdef CONFIG_PCI_IOV
+-
+-/*
+- * For Intel 82576 SR-IOV NIC, if BIOS doesn't allocate resources for the
+- * SR-IOV BARs, zero the Flash BAR and program the SR-IOV BARs to use the
+- * old Flash Memory Space.
+- */
+-static void __devinit quirk_i82576_sriov(struct pci_dev *dev)
+-{
+-	int pos, flags;
+-	u32 bar, start, size;
+-
+-	if (PAGE_SIZE > 0x10000)
+-		return;
+-
+-	flags = pci_resource_flags(dev, 0);
+-	if ((flags & PCI_BASE_ADDRESS_SPACE) !=
+-			PCI_BASE_ADDRESS_SPACE_MEMORY ||
+-	    (flags & PCI_BASE_ADDRESS_MEM_TYPE_MASK) !=
+-			PCI_BASE_ADDRESS_MEM_TYPE_32)
+-		return;
+-
+-	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_SRIOV);
+-	if (!pos)
+-		return;
+-
+-	pci_read_config_dword(dev, pos + PCI_SRIOV_BAR, &bar);
+-	if (bar & PCI_BASE_ADDRESS_MEM_MASK)
+-		return;
+-
+-	start = pci_resource_start(dev, 1);
+-	size = pci_resource_len(dev, 1);
+-	if (!start || size != 0x400000 || start & (size - 1))
+-		return;
+-
+-	pci_resource_flags(dev, 1) = 0;
+-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_1, 0);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR, start);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR + 12, start + size / 2);
+-
+-	dev_info(&dev->dev, "use Flash Memory Space for SR-IOV BARs\n");
+-}
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10c9, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e6, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e7, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
+-
+-#endif	/* CONFIG_PCI_IOV */
+-
+ /* Allow manual resource allocation for PCI hotplug bridges
+  * via pci=hpmemsize=nnM and pci=hpiosize=nnM parameters. For
+  * some PCI-PCI hotplug bridges, like PLX 6254 (former HINT HB6),
 
 
