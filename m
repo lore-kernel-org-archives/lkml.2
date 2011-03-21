@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab1CUXNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:13:40 -0400
-Received: from kroah.org ([198.145.64.141]:48926 "EHLO coco.kroah.org"
+	id S1755271Ab1CVAAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 20:00:19 -0400
+Received: from kroah.org ([198.145.64.141]:48992 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754856Ab1CUXNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:13:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:51 2011
-Message-Id: <20110321231051.264232047@clark.kroah.org>
+	id S1754945Ab1CUXNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:52 2011
+Message-Id: <20110321231052.198549685@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:09:45 -0700
+Date: Mon, 21 Mar 2011 16:09:54 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, linux-mips@linux-mips.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Fainelli <florian@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [05/44] MIPS: MTX-1: Make au1000_eth probe all PHY addresses
+        Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [14/44] IB/cm: Bump reference count on cm_id before invoking callback
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Fainelli <florian@openwrt.org>
+From: Sean Hefty <sean.hefty@intel.com>
 
-commit bf3a1eb85967dcbaae42f4fcb53c2392cec32677 upstream.
+commit 29963437a48475036353b95ab142bf199adb909e upstream.
 
-When au1000_eth probes the MII bus for PHY address, if we do not set
-au1000_eth platform data's phy_search_highest_address, the MII probing
-logic will exit early and will assume a valid PHY is found at address 0.
-For MTX-1, the PHY is at address 31, and without this patch, the link
-detection/speed/duplex would not work correctly.
+When processing a SIDR REQ, the ib_cm allocates a new cm_id.  The
+refcount of the cm_id is initialized to 1.  However, cm_process_work
+will decrement the refcount after invoking all callbacks.  The result
+is that the cm_id will end up with refcount set to 0 by the end of the
+sidr req handler.
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-To: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/2111/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+If a user tries to destroy the cm_id, the destruction will proceed,
+under the incorrect assumption that no other threads are referencing
+the cm_id.  This can lead to a crash when the cm callback thread tries
+to access the cm_id.
+
+This problem was noticed as part of a larger investigation with kernel
+crashes in the rdma_cm when running on a real time OS.
+
+Signed-off-by: Sean Hefty <sean.hefty@intel.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/mips/alchemy/mtx-1/platform.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/infiniband/core/cm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/mips/alchemy/mtx-1/platform.c
-+++ b/arch/mips/alchemy/mtx-1/platform.c
-@@ -28,6 +28,8 @@
- #include <linux/mtd/physmap.h>
- #include <mtd/mtd-abi.h>
+--- a/drivers/infiniband/core/cm.c
++++ b/drivers/infiniband/core/cm.c
+@@ -2986,6 +2986,7 @@ static int cm_sidr_req_handler(struct cm
+ 		goto out; /* No match. */
+ 	}
+ 	atomic_inc(&cur_cm_id_priv->refcount);
++	atomic_inc(&cm_id_priv->refcount);
+ 	spin_unlock_irq(&cm.lock);
  
-+#include <asm/mach-au1x00/au1xxx_eth.h>
-+
- static struct gpio_keys_button mtx1_gpio_button[] = {
- 	{
- 		.gpio = 207,
-@@ -140,10 +142,17 @@ static struct __initdata platform_device
- 	&mtx1_mtd,
- };
- 
-+static struct au1000_eth_platform_data mtx1_au1000_eth0_pdata = {
-+	.phy_search_highest_addr	= 1,
-+	.phy1_search_mac0 		= 1,
-+};
-+
- static int __init mtx1_register_devices(void)
- {
- 	int rc;
- 
-+	au1xxx_override_eth_cfg(0, &mtx1_au1000_eth0_pdata);
-+
- 	rc = gpio_request(mtx1_gpio_button[0].gpio,
- 					mtx1_gpio_button[0].desc);
- 	if (rc < 0) {
+ 	cm_id_priv->id.cm_handler = cur_cm_id_priv->id.cm_handler;
 
 
