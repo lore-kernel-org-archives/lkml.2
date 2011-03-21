@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1CUSeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:34:00 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:43605 "EHLO mx01.d-labs.de"
+	id S1754209Ab1CUSeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:34:04 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:43617 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab1CUSd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:33:58 -0400
+	id S1751161Ab1CUSeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:34:01 -0400
 From: Florian Mickler <florian@mickler.org>
 To: mchehab@infradead.org
 Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
@@ -13,56 +13,65 @@ Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, js@linuxtv.org,
         aet@rasterburn.org, pb@linuxtv.org, mkrufky@linuxtv.org,
         nick@nick-andrew.net, max@veneto.com, janne-dvb@grunau.be,
         Florian Mickler <florian@mickler.org>
-Subject: [PATCH 0/6] get rid of on-stack dma buffers
-Date: Mon, 21 Mar 2011 19:33:40 +0100
-Message-Id: <1300732426-18958-1-git-send-email-florian@mickler.org>
+Subject: [PATCH 1/6] [media] a800: get rid of on-stack dma buffers
+Date: Mon, 21 Mar 2011 19:33:41 +0100
+Message-Id: <1300732426-18958-2-git-send-email-florian@mickler.org>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1300732426-18958-1-git-send-email-florian@mickler.org>
+References: <1300732426-18958-1-git-send-email-florian@mickler.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+usb_control_msg initiates (and waits for completion of) a dma transfer using
+the supplied buffer. That buffer thus has to be seperately allocated on
+the heap.
 
-These patches get rid of on-stack dma buffers for some of the dvb-usb drivers. 
-I do not own the hardware, so these are only compile tested. I would 
-appreciate testing and review.
-They were previously sent to the list, but some error on my side
-prevented (some of?) them from beeing delivered to all parties (the lists).
+In lib/dma_debug.c the function check_for_stack even warns about it:
+	WARNING: at lib/dma-debug.c:866 check_for_stack
 
-These changes are motivated by 
-https://bugzilla.kernel.org/show_bug.cgi?id=15977 .
+Note: This change is tested to compile only, as I don't have the hardware.
 
-The patches which got tested already were submitted to Mauro (and
-lkml/linux-media) yesterday seperately. Those fix this same issue for ec168,
-ce6230, au6610 and lmedm04. 
+Signed-off-by: Florian Mickler <florian@mickler.org>
+---
+ drivers/media/dvb/dvb-usb/a800.c |   17 +++++++++++++----
+ 1 files changed, 13 insertions(+), 4 deletions(-)
 
-A fix for vp702x has been submitted seperately for review on the list. I have
-similiar fixes like the vp702x-fix for dib0700 (overlooked some on-stack
-buffers in there in my original submission as well) and gp8psk, but I am
-holding them back 'till I got time to recheck those and getting some feedback
-on vp702x.
-
-Please review and test.
-
-Regards,
-Flo
-
-Florian Mickler (6):
-  [media] a800: get rid of on-stack dma buffers
-  [media v2] vp7045: get rid of on-stack dma buffers
-  [media] friio: get rid of on-stack dma buffers
-  [media] dw2102: get rid of on-stack dma buffer
-  [media] m920x: get rid of on-stack dma buffers
-  [media] opera1: get rid of on-stack dma buffer
-
- drivers/media/dvb/dvb-usb/a800.c   |   17 ++++++++++---
- drivers/media/dvb/dvb-usb/dw2102.c |   10 ++++++-
- drivers/media/dvb/dvb-usb/friio.c  |   23 ++++++++++++++---
- drivers/media/dvb/dvb-usb/m920x.c  |   33 ++++++++++++++++--------
- drivers/media/dvb/dvb-usb/opera1.c |   31 +++++++++++++++--------
- drivers/media/dvb/dvb-usb/vp7045.c |   47 ++++++++++++++++++++++++++----------
- 6 files changed, 116 insertions(+), 45 deletions(-)
-
+diff --git a/drivers/media/dvb/dvb-usb/a800.c b/drivers/media/dvb/dvb-usb/a800.c
+index 53b93a4..fe2366b 100644
+--- a/drivers/media/dvb/dvb-usb/a800.c
++++ b/drivers/media/dvb/dvb-usb/a800.c
+@@ -78,17 +78,26 @@ static struct rc_map_table rc_map_a800_table[] = {
+ 
+ static int a800_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
+ {
+-	u8 key[5];
++	int ret;
++	u8 *key = kmalloc(5, GFP_KERNEL);
++	if (!key)
++		return -ENOMEM;
++
+ 	if (usb_control_msg(d->udev,usb_rcvctrlpipe(d->udev,0),
+ 				0x04, USB_TYPE_VENDOR | USB_DIR_IN, 0, 0, key, 5,
+-				2000) != 5)
+-		return -ENODEV;
++				2000) != 5) {
++		ret = -ENODEV;
++		goto out;
++	}
+ 
+ 	/* call the universal NEC remote processor, to find out the key's state and event */
+ 	dvb_usb_nec_rc_key_to_event(d,key,event,state);
+ 	if (key[0] != 0)
+ 		deb_rc("key: %x %x %x %x %x\n",key[0],key[1],key[2],key[3],key[4]);
+-	return 0;
++	ret = 0;
++out:
++	kfree(key);
++	return ret;
+ }
+ 
+ /* USB Driver stuff */
 -- 
 1.7.4.1
 
