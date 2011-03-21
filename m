@@ -1,85 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1CUDu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 23:50:28 -0400
-Received: from 30.mail-out.ovh.net ([213.186.62.213]:56239 "HELO
-	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752659Ab1CUDu0 (ORCPT
+	id S1751433Ab1CUEYe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 00:24:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56451 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab1CUEYc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 23:50:26 -0400
-Message-ID: <4D86CAFE.5050408@example.com>
-Date: Mon, 21 Mar 2011 04:50:22 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110307 Icedove/3.0.11
+	Mon, 21 Mar 2011 00:24:32 -0400
+From: "Janorkar, Mayuresh" <mayur@ti.com>
+To: Carl Vanderlip <carlv@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+CC: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Mar 2011 09:54:00 +0530
+Subject: RE: [PATCH 01/20] video: msm: Fix typo 'mpd'->'mdp'
+Thread-Topic: [PATCH 01/20] video: msm: Fix typo 'mpd'->'mdp'
+Thread-Index: AcvlvQwFZv51CkX5R0SfKovaFjwfFwBwiXbg
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EABA@dbde02.ent.ti.com>
+References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
+ <1300485095-26923-1-git-send-email-carlv@codeaurora.org>
+In-Reply-To: <1300485095-26923-1-git-send-email-carlv@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: hayeswang <hayeswang@realtek.com>
-CC: "'Francois Romieu'" <romieu@fr.zoreil.com>,
-        "'Mike Galbraith'" <efault@gmx.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, benh@debian.org
-Subject: Re: Where to get the network NIC's firmware? rtl_nic/rtl8105e-1.fw
-References: <201103101209.p2AC9YdZ014233@violet.fr.zoreil.com> <20110316202220.GA14741@electric-eye.fr.zoreil.com> <4D8244F4.3020500@example.com> <7F300D72A54145B2BC4AF2E1CBE0CA10@realtek.com.tw>
-In-Reply-To: <7F300D72A54145B2BC4AF2E1CBE0CA10@realtek.com.tw>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 14627410115926847965
-X-Ovh-Remote: 178.36.63.3 (178-36-63-3.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.03.2011 03:47, hayeswang wrote:
->
->
->> -----Original Message-----
->> From: Piotr Hosowicz [mailto:piotr@hosowicz.com]
->> Sent: Friday, March 18, 2011 1:29 AM
->> To: Francois Romieu
->> Cc: Mike Galbraith; LKML; Hayeswang; benh@debian.org
->> Subject: Re: Where to get the network NIC's firmware?
->> rtl_nic/rtl8105e-1.fw
->>
->> On 16.03.2011 21:22, Francois Romieu wrote:
->>> You can get it there:
->>>
->>>
->> http://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.g
->>> it
->>>
->> git://git.kernel.org/pub/scm/linux/kernel/git/romieu/linux-firmware.gi
->>> t
->>>
->>> It has already been submitted to the maintainer of linux-firmware.
->>
->> Hello,
->>
->> The problem persists, I have on disk:
->>
->> # ls /lib/firmware/rtl_nic/
->> rtl8105e-1.fw  rtl8168d-1.fw  rtl8168d-2.fw  rtl8168e-1.fw
->> rtl8168e-2.fw
->>
->
-> Excuse me. I don't understand what your question is. Do you mean you cannot
-> build the kernel without the firmware? Or, you just don't know where to download
-> the firmware? Or, your NIC work abnormally after loading the firmware?
->
->> From your information, I see the firmware in the correct path
-> "/lib/firmeare/rtl_nic/", so it seems fine.
 
-Nevermind, the problem was in the kernel (bug), not firmware. Sorry for 
-the noise.
 
-Regards,
+> -----Original Message-----
+> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
+> owner@vger.kernel.org] On Behalf Of Carl Vanderlip
+> Sent: Saturday, March 19, 2011 3:22 AM
+> To: Russell King; David Brown; Daniel Walker; Bryan Huntsman
+> Cc: Brian Swetland; Dima Zavin; Rebecca Schultz Zavin; Colin Cross; linux-
+> fbdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-arm-
+> msm@vger.kernel.org; linux-kernel@vger.kernel.org; Carl Vanderlip
+> Subject: [PATCH 01/20] video: msm: Fix typo 'mpd'->'mdp'
+> 
+> From: Brian Swetland <swetland@google.com>
+> 
+> Trivial fix
 
-Piotr Hosowicz
+The Subject line states that you are only changing a typo from mpd to mdp.
+The description doesn't state anything more.
+But the patch is changing Copyright info also.
+> 
+> Authors:
+> Dima Zavin <dima@android.com>
+> Rebecca Schultz Zavin <rebecca@android.com>
+> Colin Cross <ccross@android.com>
+> 
+> Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
+> ---
+>  arch/arm/mach-msm/include/mach/msm_fb.h |    2 +-
+>  drivers/video/msm/mdp.c                 |    8 ++++----
+>  drivers/video/msm/mdp_ppp.c             |   10 +++++-----
+>  drivers/video/msm/msm_fb.c              |    1 -
+>  4 files changed, 10 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/arm/mach-msm/include/mach/msm_fb.h b/arch/arm/mach-
+> msm/include/mach/msm_fb.h
+> index 1f4fc81..da11719 100644
+> --- a/arch/arm/mach-msm/include/mach/msm_fb.h
+> +++ b/arch/arm/mach-msm/include/mach/msm_fb.h
+> @@ -114,7 +114,7 @@ struct mdp_blit_req;
+>  struct fb_info;
+>  struct mdp_device {
+>  	struct device dev;
+> -	void (*dma)(struct mdp_device *mpd, uint32_t addr,
+> +	void (*dma)(struct mdp_device *mdp, uint32_t addr,
+>  		    uint32_t stride, uint32_t w, uint32_t h, uint32_t x,
+>  		    uint32_t y, struct msmfb_callback *callback, int
+> interface);
+>  	void (*dma_wait)(struct mdp_device *mdp);
+> diff --git a/drivers/video/msm/mdp.c b/drivers/video/msm/mdp.c
+> index c3636d5..45af97d 100644
+> --- a/drivers/video/msm/mdp.c
+> +++ b/drivers/video/msm/mdp.c
+> @@ -2,7 +2,7 @@
+>   *
+>   * MSM MDP Interface (used by framebuffer core)
+>   *
+> - * Copyright (C) 2007 QUALCOMM Incorporated
+> + * Copyright (C) 2007, 2011 Code Aurora Forum. All rights reserved.
 
--- 
-Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
-- Który aktor amerykañski jest mê¿em Nicole Kidman?
-- Forrest Gump.
-NP:  -
-NB: 2.6.38-20110319-1638-net++
+It is a change from 2007 to 2011 and the company name is being changed.
+I think it should be mentioned in the Subject/Description.
+
+>   * Copyright (C) 2007 Google Incorporated
+>   *
+>   * This software is licensed under the terms of the GNU General Public
+> @@ -288,7 +288,7 @@ int mdp_blit(struct mdp_device *mdp_dev, struct
+> fb_info *fb,
+>  	/* WORKAROUND FOR HARDWARE BUG IN BG TILE FETCH */
+>  	if (unlikely(req->src_rect.h == 0 ||
+>  		     req->src_rect.w == 0)) {
+> -		printk(KERN_ERR "mpd_ppp: src img of zero size!\n");
+> +		printk(KERN_ERR "mdp_ppp: src img of zero size!\n");
+>  		return -EINVAL;
+>  	}
+>  	if (unlikely(req->dst_rect.h == 0 ||
+> @@ -298,13 +298,13 @@ int mdp_blit(struct mdp_device *mdp_dev, struct
+> fb_info *fb,
+>  	/* do this first so that if this fails, the caller can always
+>  	 * safely call put_img */
+>  	if (unlikely(get_img(&req->src, fb, &src_start, &src_len,
+> &src_file))) {
+> -		printk(KERN_ERR "mpd_ppp: could not retrieve src image from "
+> +		printk(KERN_ERR "mdp_ppp: could not retrieve src image from "
+>  				"memory\n");
+>  		return -EINVAL;
+>  	}
+> 
+>  	if (unlikely(get_img(&req->dst, fb, &dst_start, &dst_len,
+> &dst_file))) {
+> -		printk(KERN_ERR "mpd_ppp: could not retrieve dst image from "
+> +		printk(KERN_ERR "mdp_ppp: could not retrieve dst image from "
+>  				"memory\n");
+>  		return -EINVAL;
+>  	}
+> diff --git a/drivers/video/msm/mdp_ppp.c b/drivers/video/msm/mdp_ppp.c
+> index 4ff001f..2b04027 100644
+> --- a/drivers/video/msm/mdp_ppp.c
+> +++ b/drivers/video/msm/mdp_ppp.c
+> @@ -1,6 +1,6 @@
+>  /* drivers/video/msm/mdp_ppp.c
+>   *
+> - * Copyright (C) 2007 QUALCOMM Incorporated
+> + * Copyright (C) 2007, 2011 Code Aurora Forum. All rights reserved.
+
+Same here.
+
+>   * Copyright (C) 2007 Google Incorporated
+>   *
+>   * This software is licensed under the terms of the GNU General Public
+> @@ -650,7 +650,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
+> mdp_blit_req *req,
+> 
+>  	if (unlikely(req->src.format >= MDP_IMGTYPE_LIMIT ||
+>  		     req->dst.format >= MDP_IMGTYPE_LIMIT)) {
+> -		printk(KERN_ERR "mpd_ppp: img is of wrong format\n");
+> +		printk(KERN_ERR "mdp_ppp: img is of wrong format\n");
+>  		return -EINVAL;
+>  	}
+> 
+> @@ -658,7 +658,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
+> mdp_blit_req *req,
+>  		     req->src_rect.y > req->src.height ||
+>  		     req->dst_rect.x > req->dst.width ||
+>  		     req->dst_rect.y > req->dst.height)) {
+> -		printk(KERN_ERR "mpd_ppp: img rect is outside of img!\n");
+> +		printk(KERN_ERR "mdp_ppp: img rect is outside of img!\n");
+>  		return -EINVAL;
+>  	}
+> 
+> @@ -694,7 +694,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
+> mdp_blit_req *req,
+> 
+>  	if (!valid_src_dst(src_start, src_len, dst_start, dst_len, req,
+>  			   &regs)) {
+> -		printk(KERN_ERR "mpd_ppp: final src or dst location is "
+> +		printk(KERN_ERR "mdp_ppp: final src or dst location is "
+>  			"invalid, are you trying to make an image too large "
+>  			"or to place it outside the screen?\n");
+>  		return -EINVAL;
+> @@ -708,7 +708,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
+> mdp_blit_req *req,
+>  		regs.op |= PPP_OP_DITHER_EN;
+>  	blit_blend(req, &regs);
+>  	if (blit_scale(mdp, req, &regs)) {
+> -		printk(KERN_ERR "mpd_ppp: error computing scale for img.\n");
+> +		printk(KERN_ERR "mdp_ppp: error computing scale for img.\n");
+>  		return -EINVAL;
+>  	}
+>  	blit_blur(mdp, req, &regs);
+> diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
+> index 5436aeb..04d0067 100644
+> --- a/drivers/video/msm/msm_fb.c
+> +++ b/drivers/video/msm/msm_fb.c
+> @@ -321,7 +321,6 @@ error:
+>  	mutex_unlock(&msmfb->panel_init_lock);
+>  }
+> 
+> -
+>  static int msmfb_check_var(struct fb_var_screeninfo *var, struct fb_info
+> *info)
+>  {
+>  	if ((var->xres != info->var.xres) ||
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
