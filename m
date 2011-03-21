@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab1CUIQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 04:16:45 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52638 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1CUIQk (ORCPT
+	id S1752055Ab1CUITi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 04:19:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33271 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab1CUITf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 04:16:40 -0400
+	Mon, 21 Mar 2011 04:19:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=hvXQoOEX9RMGVsHVk4I5djoKXkAHQtfbqPjudxuUsFfJVw7zggOKuDqbM+zg7fd8XT
-         arjbXRB+04kA/Wi6e2bcnUuewaWc1+LbKe6oPEWMBtVg6+02HTQC+GnZ0JDD9QiAualM
-         lgUwnFHdZk9ZSePt37WIGlqBlcvjcVN5ULsL8=
-MIME-Version: 1.0
-In-Reply-To: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
-References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
-Date: Mon, 21 Mar 2011 09:16:39 +0100
-X-Google-Sender-Auth: paQ2cklNwdMVMyywMbNjgPDxoaQ
-Message-ID: <AANLkTimTfOyhDR6BsHD_1VvzOPGbYqo6L784wPkQMi_8@mail.gmail.com>
-Subject: Re: [RFC PATCHv4 0/7] HSI framework and drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Carlos Chinea <carlos.chinea@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        pawel.szyszuk@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=r88/kwIfArnuW9pG4dH1lQaYLp3yyIMD2tma1ctTOAjuvcmTBaKgghKAWF3V/dKKxl
+         54HBfJov1Oz3UTJt2HjaY/lrqAf6zH9CM4vZ3luJ+OPb+9byHqY2Hn3ZuiM23q7s87UC
+         +qoVaggEg1EgiBlAJ7vyc6dPnx54TiCKUtrGM=
+Subject: Re: [PATCH v2] net: add Faraday FTGMAC100 Gigabit Ethernet driver
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ratbert@faraday-tech.com
+In-Reply-To: <AANLkTinibrF_bJBbYwCSnGv1iD_9Dn7uBn2cqgcTrKHi@mail.gmail.com>
+References: <1299744517-1896-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1300355238-1619-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1300357457.3133.92.camel@edumazet-laptop>
+	 <AANLkTino6LzGTZF4fNSkV9pbAfnmAc8wJjk0L8HfHDiJ@mail.gmail.com>
+	 <1300361405.3133.175.camel@edumazet-laptop>
+	 <AANLkTinibrF_bJBbYwCSnGv1iD_9Dn7uBn2cqgcTrKHi@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Mar 2011 09:19:29 +0100
+Message-ID: <1300695569.2831.535.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/14 Carlos Chinea <carlos.chinea@nokia.com>:
+Le lundi 21 mars 2011 à 15:54 +0800, Po-Yu Chuang a écrit :
+> It seems to work fine so far at least the driver is not broken, but I did not
+> see much difference in performance though. How do I know if GRO is
+> working indeed?
 
-> Here you have the fourth round of the HSI framework patches.
+maybe you receive one interrupt per incoming frame, and your cpu is fast
+enough to handle the load.
 
-I'd like to notify that this out-of-tree framework is also in use for
-the ST-Ericsson
-Ux500s, and we've had great success with it. You can add my:
+tcpdump should show big incoming TCP frames (multi segment)
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+(GRO only helps TCP receivers)
 
-Possibly some ST-Ericsson people can add Tested-by tags as well.
+Example here :
 
-We will integrate Ux500 support whenever it's suitable, either after the merge
-or as add-on patches for Carlos patch series. (If Carlos would like to keep
-them in his series.)
 
-Yours,
-Linus Walleij
+09:16:32.372949 IP 192.168.20.110.55446 > 192.168.20.108.ssh: .
+2372863:2374311(1448) ack 3136 win 73 <nop,nop,timestamp 317934201
+257881345>
+
+09:16:32.372975 IP 192.168.20.110.55446 > 192.168.20.108.ssh: .
+2374311:2377207(2896) ack 3136 win 73 <nop,nop,timestamp 317934201
+257881345>
+
+
+Here, you can see GRO work, since 2nd "frame" is the result of two MTU
+sized frames. 
+
+
+
