@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636Ab1CUXmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:42:43 -0400
-Received: from kroah.org ([198.145.64.141]:49533 "EHLO coco.kroah.org"
+	id S1755484Ab1CUXPz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:15:55 -0400
+Received: from kroah.org ([198.145.64.141]:49393 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755488Ab1CUXP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:57 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:15 2011
-Message-Id: <20110321230715.300876493@clark.kroah.org>
+	id S1754967Ab1CUXPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
+Message-Id: <20110321230712.885736359@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:58 -0700
+Date: Mon, 21 Mar 2011 16:06:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Renninger <trenn@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [59/87] PCI: add more checking to ICH region quirks
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [36/87] drm: Hold the mode mutex whilst probing for sysfs status
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,100 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit cdb9755849fbaf2bb9c0a009ba5baa817a0f152d upstream.
+commit 007c80a5497a3f9c8393960ec6e6efd30955dcb1 upstream.
 
-Per ICH4 and ICH6 specs, ACPI and GPIO regions are valid iff ACPI_EN
-and GPIO_EN bits are set to 1. Add checks for these bits into the
-quirks prior to the region creation.
+As detect will use hw registers and may modify structures, it needs to be
+serialised by use of the dev->mode_config.mutex. Make it so.
 
-While at it, name the constants by macros.
+Otherwise, we may cause random crashes as the sysfs file is queried
+whilst a concurrent hotplug poll is being run. For example:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+[ 1189.189626] BUG: unable to handle kernel NULL pointer dereference at 00000100
+[ 1189.189821] IP: [<e0c22019>] intel_tv_detect_type+0xa2/0x203 [i915]
+[ 1189.190020] *pde = 00000000
+[ 1189.190104] Oops: 0000 [#1] SMP
+[ 1189.190209] last sysfs file: /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-SVIDEO-1/status
+[ 1189.190412] Modules linked in: mperf cpufreq_conservative cpufreq_userspace cpufreq_powersave cpufreq_stats decnet uinput fuse loop joydev snd_hd a_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm i915 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq drm_kms_helper snd_timer uvcvideo d rm snd_seq_device eeepc_laptop tpm_tis usbhid videodev i2c_algo_bit v4l1_compat snd sparse_keymap i2c_core hid serio_raw tpm psmouse evdev tpm_bios rfkill shpchp ac processor rng_c ore battery video power_supply soundcore pci_hotplug button output snd_page_alloc usb_storage uas ext3 jbd mbcache sd_mod crc_t10dif ata_generic ahci libahci ata_piix libata uhci_h cd ehci_hcd scsi_mod usbcore thermal atl2 thermal_sys nls_base [last unloaded: scsi_wait_scan]
+[ 1189.192007]
+[ 1189.192007] Pid: 1464, comm: upowerd Not tainted 2.6.37-2-686 #1 ASUSTeK Computer INC. 701/701
+[ 1189.192007] EIP: 0060:[<e0c22019>] EFLAGS: 00010246 CPU: 0
+[ 1189.192007] EIP is at intel_tv_detect_type+0xa2/0x203 [i915]
+[ 1189.192007] EAX: 00000000 EBX: dca74000 ECX: e0f68004 EDX: 00068004
+[ 1189.192007] ESI: dd110c00 EDI: 400c0c37 EBP: dca7429c ESP: de365e2c
+[ 1189.192007]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[ 1189.192007] Process upowerd (pid: 1464, ti=de364000 task=dcc8acb0 task.ti=de364000)
+[ 1189.192007] Stack: Mar 15 03:43:23 hostname kernel: [ 1189.192007]  e0c2cda4 70000000 400c0c30 00000000 dd111000 de365e54 de365f24 dd110c00
+[ 1189.192007]  e0c22203 01000000 00000003 00000000 00000000 00000000 00000000 4353544e
+[ 1189.192007]  30383420 00000069 00000000 00000000 00000000 00000000 00000000 00000000
+[ 1189.192007] Call Trace: Mar 15 03:43:23 hostname kernel: [ 1189.192007]  [<e0c22203>] ?  intel_tv_detect+0x89/0x12d [i915]
+[ 1189.192007]  [<e0a9dcef>] ?  status_show+0x0/0x2f [drm]
+[ 1189.192007]  [<e0a9dd03>] ?  status_show+0x14/0x2f [drm]
+
+[Digression: what is upowerd doing reading those power hungry files?]
+
+Reported-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   49 +++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 39 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/drm_sysfs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -533,6 +533,17 @@ static void __devinit quirk_piix4_acpi(s
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82371AB_3,	quirk_piix4_acpi);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	quirk_piix4_acpi);
- 
-+#define ICH_PMBASE	0x40
-+#define ICH_ACPI_CNTL	0x44
-+#define  ICH4_ACPI_EN	0x10
-+#define  ICH6_ACPI_EN	0x80
-+#define ICH4_GPIOBASE	0x58
-+#define ICH4_GPIO_CNTL	0x5c
-+#define  ICH4_GPIO_EN	0x10
-+#define ICH6_GPIOBASE	0x48
-+#define ICH6_GPIO_CNTL	0x4c
-+#define  ICH6_GPIO_EN	0x10
-+
- /*
-  * ICH4, ICH4-M, ICH5, ICH5-M ACPI: Three IO regions pointed to by longwords at
-  *	0x40 (128 bytes of ACPI, GPIO & TCO registers)
-@@ -541,12 +552,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
+--- a/drivers/gpu/drm/drm_sysfs.c
++++ b/drivers/gpu/drm/drm_sysfs.c
+@@ -158,8 +158,15 @@ static ssize_t status_show(struct device
  {
- 	u32 region;
-+	u8 enable;
- 
--	pci_read_config_dword(dev, 0x40, &region);
--	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
--
--	pci_read_config_dword(dev, 0x58, &region);
--	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
-+	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
-+	if (enable & ICH4_ACPI_EN) {
-+		pci_read_config_dword(dev, ICH_PMBASE, &region);
-+		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
-+				"ICH4 ACPI/GPIO/TCO");
-+	}
+ 	struct drm_connector *connector = to_drm_connector(device);
+ 	enum drm_connector_status status;
++	int ret;
 +
-+	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
-+	if (enable & ICH4_GPIO_EN) {
-+		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
-+		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
-+				"ICH4 GPIO");
-+	}
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AB_0,		quirk_ich4_lpc_acpi);
-@@ -562,12 +582,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- static void __devinit ich6_lpc_acpi_gpio(struct pci_dev *dev)
- {
- 	u32 region;
-+	u8 enable;
++	ret = mutex_lock_interruptible(&connector->dev->mode_config.mutex);
++	if (ret)
++		return ret;
  
--	pci_read_config_dword(dev, 0x40, &region);
--	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH6 ACPI/GPIO/TCO");
--
--	pci_read_config_dword(dev, 0x48, &region);
--	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH6 GPIO");
-+	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
-+	if (enable & ICH6_ACPI_EN) {
-+		pci_read_config_dword(dev, ICH_PMBASE, &region);
-+		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
-+				"ICH6 ACPI/GPIO/TCO");
-+	}
+ 	status = connector->funcs->detect(connector, true);
++	mutex_unlock(&connector->dev->mode_config.mutex);
 +
-+	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
-+	if (enable & ICH4_GPIO_EN) {
-+		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
-+		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
-+				"ICH6 GPIO");
-+	}
+ 	return snprintf(buf, PAGE_SIZE, "%s\n",
+ 			drm_get_connector_status_name(status));
  }
- 
- static void __devinit ich6_lpc_generic_decode(struct pci_dev *dev, unsigned reg, const char *name, int dynsize)
 
 
