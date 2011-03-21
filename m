@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab1CUULF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 16:11:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64840 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab1CUULD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 16:11:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OJ9YfQxNUjmlwSPherAEMlRhCsyduYwsMzQIoTTXDhOogcjlZBP0Yq1hrEC857rNT5
-         eOXGndUq01GMOVAkgOLr59PUKllXyhK54RgICVYINqlX8H8gP84PmpjjhyDgTseUunVS
-         eYVufmXLsX5JFEQHDM7wV9JxaQpI1cFWxY/h8=
-Subject: Re: [GIT] Networking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTinN3qszBjbJdkXb2TPBkAW0mXGC=Ri1zKL9gdNg@mail.gmail.com>
-References: <20110320.195156.226769634.davem@davemloft.net>
-	 <AANLkTinN3qszBjbJdkXb2TPBkAW0mXGC=Ri1zKL9gdNg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 21:10:55 +0100
-Message-ID: <1300738255.2837.1.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754445Ab1CUUOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 16:14:32 -0400
+Received: from kroah.org ([198.145.64.141]:56356 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753969Ab1CUUOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 16:14:30 -0400
+Date: Mon, 21 Mar 2011 13:14:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Brownell <david-b@pacbell.net>
+Subject: Re: Standard handling of boolean attributes in sysfs.
+Message-ID: <20110321201411.GA1704@kroah.com>
+References: <4D87AEE0.8000807@cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D87AEE0.8000807@cam.ac.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 21 mars 2011 à 12:24 -0700, Linus Torvalds a écrit :
-> On Sun, Mar 20, 2011 at 7:51 PM, David Miller <davem@davemloft.net> wrote:
-> >
-> > 1) The R8169 PHY fix from Eric Dumazet, which I see you've added to
-> >   your tree too. :-)
+On Mon, Mar 21, 2011 at 08:02:40PM +0000, Jonathan Cameron wrote:
+> Hi All,
 > 
-> Yeah, since my machine didn't have networking without it, and I could
-> test it myself, I didn't wait to pull.
+> Just wondering what the feeling would be about having
+> a utility function similar to sysfs_streq to provide a
+> consistent option for all those sysfs attributes out there
+> where
 > 
-> That said, I'm delaying this pull request due to the known issues with
-> it - let me know when you've updated it with the fix for the
-> use-after-free fixes and the slab corruptor (the latter of which I
-> haven't seen a patch for yet)
+> 1, on, true -> 1
+> 0, off, false -> 0
+> 
+> Or does such a beast already exist and I'm just being unobservant?
 
-Seems to be related to one typo, but still we have to find the
-corruption
+We have the one in debugfs that I think people use for sysfs.  Have you
+looked at that?
 
-diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-index b799cea..33733c8 100644
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -3605,7 +3605,7 @@ int __net_init __ip_vs_control_init(struct net *net)
- 
- 	/* procfs stats */
- 	ipvs->tot_stats.cpustats = alloc_percpu(struct ip_vs_cpu_stats);
--	if (ipvs->tot_stats.cpustats) {
-+	if (!ipvs->tot_stats.cpustats) {
- 		pr_err("%s(): alloc_percpu.\n", __func__);
- 		return -ENOMEM;
- 	}
+thanks,
 
-
+greg k-h
