@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab1CUIFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 04:05:16 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34292 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab1CUIFK (ORCPT
+	id S1752406Ab1CUIFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 04:05:21 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:36665 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab1CUIFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 04:05:10 -0400
-From: Shawn Guo <shawn.guo@linaro.org>
-To: devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, sameo@linux.intel.com, grant.likely@secretlab.ca,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 5/5] mmc: sdhci: update Makefile/Kconfig for sdhci_pltfm change
-Date: Mon, 21 Mar 2011 16:07:03 +0800
-Message-Id: <1300694823-8300-6-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
-References: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
+	Mon, 21 Mar 2011 04:05:12 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Cong Wang <amwang@redhat.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-kernel@vger.kernel.org, Takao Indoh <tindoh@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Len Brown <lenb@kernel.org>,
+        linux-doc@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+References: <1299766243-494-1-git-send-email-amwang@redhat.com>
+	<20110310143923.GB29464@redhat.com> <m1oc5ig90b.fsf@fess.ebiederm.org>
+	<20110310185019.GB23105@srcf.ucam.org> <4D86F2C2.9080707@redhat.com>
+Date: Mon, 21 Mar 2011 01:05:04 -0700
+In-Reply-To: <4D86F2C2.9080707@redhat.com> (Cong Wang's message of "Mon, 21
+	Mar 2011 14:40:02 +0800")
+Message-ID: <m1hbawkifj.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX197yiOIkFjMPIsO7gGfh8Nm0iY+f5vViuk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Cong Wang <amwang@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [Patch] acpi: introduce "acpi_addr=" parameter for kdump
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sdhci_pltfm.c becomes a file only having common support functions
-than a driver with its registeration before.  The patch is to update
-Makefile and Kconfig to let MMC_SDHCI_PLTFM be selected by specific
-SDHCI device drivers.
+Cong Wang <amwang@redhat.com> writes:
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
----
- drivers/mmc/host/Kconfig  |   24 +++++++++++++-----------
- drivers/mmc/host/Makefile |   11 +++++------
- 2 files changed, 18 insertions(+), 17 deletions(-)
+> Eric, any comments?
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index afe8c6f..1db9347 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -113,20 +113,17 @@ config MMC_SDHCI_OF_HLWD
- 	  If unsure, say N.
- 
- config MMC_SDHCI_PLTFM
--	tristate "SDHCI support on the platform specific bus"
-+	bool
- 	depends on MMC_SDHCI
- 	help
--	  This selects the platform specific bus support for Secure Digital Host
--	  Controller Interface.
--
--	  If you have a controller with this interface, say Y or M here.
--
--	  If unsure, say N.
-+	  This selects the platform common function support for Secure Digital
-+	  Host Controller Interface.
- 
- config MMC_SDHCI_CNS3XXX
- 	bool "SDHCI support on the Cavium Networks CNS3xxx SoC"
- 	depends on ARCH_CNS3XXX
--	depends on MMC_SDHCI_PLTFM
-+	depends on MMC_SDHCI
-+	select MMC_SDHCI_PLTFM
- 	help
- 	  This selects the SDHCI support for CNS3xxx System-on-Chip devices.
- 
-@@ -134,7 +131,9 @@ config MMC_SDHCI_CNS3XXX
- 
- config MMC_SDHCI_ESDHC_IMX
- 	bool "SDHCI platform support for the Freescale eSDHC i.MX controller"
--	depends on MMC_SDHCI_PLTFM && (ARCH_MX25 || ARCH_MX35 || ARCH_MX5)
-+	depends on ARCH_MX25 || ARCH_MX35 || ARCH_MX5
-+	depends on MMC_SDHCI
-+	select MMC_SDHCI_PLTFM
- 	select MMC_SDHCI_IO_ACCESSORS
- 	help
- 	  This selects the Freescale eSDHC controller support on the platform
-@@ -145,7 +144,8 @@ config MMC_SDHCI_ESDHC_IMX
- config MMC_SDHCI_DOVE
- 	bool "SDHCI support on Marvell's Dove SoC"
- 	depends on ARCH_DOVE
--	depends on MMC_SDHCI_PLTFM
-+	depends on MMC_SDHCI
-+	select MMC_SDHCI_PLTFM
- 	select MMC_SDHCI_IO_ACCESSORS
- 	help
- 	  This selects the Secure Digital Host Controller Interface in
-@@ -155,7 +155,9 @@ config MMC_SDHCI_DOVE
- 
- config MMC_SDHCI_TEGRA
- 	tristate "SDHCI platform support for the Tegra SD/MMC Controller"
--	depends on MMC_SDHCI_PLTFM && ARCH_TEGRA
-+	depends on ARCH_TEGRA
-+	depends on MMC_SDHCI
-+	select MMC_SDHCI_PLTFM
- 	select MMC_SDHCI_IO_ACCESSORS
- 	help
- 	  This selects the Tegra SD/MMC controller. If you have a Tegra
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index e834fb2..1d8e43d 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -36,12 +36,11 @@ obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
- obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
- obj-$(CONFIG_MMC_USHC)		+= ushc.o
- 
--obj-$(CONFIG_MMC_SDHCI_PLTFM)			+= sdhci-platform.o
--sdhci-platform-y				:= sdhci-pltfm.o
--sdhci-platform-$(CONFIG_MMC_SDHCI_CNS3XXX)	+= sdhci-cns3xxx.o
--sdhci-platform-$(CONFIG_MMC_SDHCI_ESDHC_IMX)	+= sdhci-esdhc-imx.o
--sdhci-platform-$(CONFIG_MMC_SDHCI_DOVE)		+= sdhci-dove.o
--sdhci-platform-$(CONFIG_MMC_SDHCI_TEGRA)	+= sdhci-tegra.o
-+obj-$(CONFIG_MMC_SDHCI_PLTFM)		+= sdhci-pltfm.o
-+obj-$(CONFIG_MMC_SDHCI_CNS3XXX)		+= sdhci-cns3xxx.o
-+obj-$(CONFIG_MMC_SDHCI_ESDHC_IMX)	+= sdhci-esdhc-imx.o
-+obj-$(CONFIG_MMC_SDHCI_DOVE)		+= sdhci-dove.o
-+obj-$(CONFIG_MMC_SDHCI_TEGRA)		+= sdhci-tegra.o
- 
- obj-$(CONFIG_MMC_SDHCI_OF)	+= sdhci-of.o
- sdhci-of-y				:= sdhci-of-core.o
--- 
-1.7.1
+You have my Nack.
 
+We are doing stupid and unnecessary things, that cause us problems with
+EFI.  If we stop doing those stupid and unnecessary things we won't have
+problems.
+
+So I don't see the point of adding more stupid and unnecessary work, so
+we can continue to do stupid and unnecessary things and cause ourselves
+problems.
+
+Eric
