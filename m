@@ -1,150 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab1CUXww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:52:52 -0400
-Received: from kroah.org ([198.145.64.141]:49246 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755269Ab1CUXPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:06 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:10 2011
-Message-Id: <20110321230710.084728567@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:08 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [09/87] NFS: NFSROOT should default to "proto=udp"
-In-Reply-To: <20110321230732.GA26510@kroah.com>
+	id S932541Ab1CUXxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:53:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53026 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755293Ab1CUXwu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:52:50 -0400
+Date: Mon, 21 Mar 2011 16:52:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: menage@google.com, lizf@cn.fujitsu.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] list.h: add debug version of list_empty
+Message-Id: <20110321165206.1deaf0ab.akpm@linux-foundation.org>
+In-Reply-To: <1300194523-19325-2-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1300194523-19325-1-git-send-email-ext-phil.2.carmody@nokia.com>
+	<1300194523-19325-2-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 15 Mar 2011 15:08:42 +0200
+Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
 
-------------------
+> Heed the notice in list_del: "Note: list_empty() on entry does not
+> return true after this, the entry is in an undefined state.", and
+> check for precisely that condition.
+> 
+> There are currently a few instances in the code of this sequence:
+>     if(!list_empty(pnode))
+>         list_del(pnode);
+> which seems to be useless or dangerous if intended to protect from
+> repeated del's. And given that I've seen an oops pointing to a
+> dereference of poison in such a list_empty, I'm veering towards
+> dangerous. This patch would make such errors obvious.
+> 
+> Nothing is changed in the non-DEBUG_LIST build.
+> 
+> ...
+>
+> +
+> +/**
+> + * list_empty - tests whether a list is empty
+> + * @head: the list to test.
+> + */
+> +int list_empty(const struct list_head *head)
+> +{
+> +	if ((head->prev == LIST_POISON2) || (head->prev == LIST_POISON1))
+> +		WARN(1, "list_empty performed on a node "
+> +		     "at %p removed from a list.\n", head);
+> +	else
+> +		WARN((head->prev == head) != (head->next == head),
+> +		     "list_empty corruption. %p<-%p->%p is half-empty.\n",
+> +		     head->prev, head, head->next);
+> +
+> +	return head->next == head;
+> +}
+> +EXPORT_SYMBOL(list_empty);
 
-From: Chuck Lever <chuck.lever@oracle.com>
+The second warning here is triggering maybe a hundred times from all
+over the place just when booting the kernel.
 
-commit 53d4737580535e073963b91ce87d4216e434fab5 upstream.
-
-There have been a number of recent reports that NFSROOT is no longer
-working with default mount options, but fails only with certain NICs.
-
-Brian Downing <bdowning@lavos.net> bisected to commit 56463e50 "NFS:
-Use super.c for NFSROOT mount option parsing".  Among other things,
-this commit changes the default mount options for NFSROOT to use TCP
-instead of UDP as the underlying transport.
-
-TCP seems less able to deal with NICs that are slow to initialize.
-The system logs that have accompanied reports of problems all show
-that NFSROOT attempts to establish a TCP connection before the NIC is
-fully initialized, and thus the TCP connection attempt fails.
-
-When a TCP connection attempt fails during a mount operation, the
-NFS stack needs to fail the operation.  Usually user space knows how
-and when to retry it.  The network layer does not report a distinct
-error code for this particular failure mode.  Thus, there isn't a
-clean way for the RPC client to see that it needs to retry in this
-case, but not in others.
-
-Because NFSROOT is used in some environments where it is not possible
-to update the kernel command line to specify "udp", the proper thing
-to do is change NFSROOT to use UDP by default, as it did before commit
-56463e50.
-
-To make it easier to see how to change default mount options for
-NFSROOT and to distinguish default settings from mandatory settings,
-I've adjusted a couple of areas to document the specifics.
-
-root_nfs_cat() is also modified to deal with commas properly when
-concatenating strings containing mount option lists.  This keeps
-root_nfs_cat() call sites simpler, now that we may be concatenating
-multiple mount option strings.
-
-Tested-by: Brian Downing <bdowning@lavos.net>
-Tested-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/nfs/nfsroot.c |   29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
-
---- a/fs/nfs/nfsroot.c
-+++ b/fs/nfs/nfsroot.c
-@@ -86,11 +86,14 @@
- /* Default path we try to mount. "%s" gets replaced by our IP address */
- #define NFS_ROOT		"/tftpboot/%s"
- 
-+/* Default NFSROOT mount options. */
-+#define NFS_DEF_OPTIONS		"udp"
-+
- /* Parameters passed from the kernel command line */
- static char nfs_root_parms[256] __initdata = "";
- 
- /* Text-based mount options passed to super.c */
--static char nfs_root_options[256] __initdata = "";
-+static char nfs_root_options[256] __initdata = NFS_DEF_OPTIONS;
- 
- /* Address of NFS server */
- static __be32 servaddr __initdata = htonl(INADDR_NONE);
-@@ -160,8 +163,14 @@ static int __init root_nfs_copy(char *de
- }
- 
- static int __init root_nfs_cat(char *dest, const char *src,
--				  const size_t destlen)
-+			       const size_t destlen)
- {
-+	size_t len = strlen(dest);
-+
-+	if (len && dest[len - 1] != ',')
-+		if (strlcat(dest, ",", destlen) > destlen)
-+			return -1;
-+
- 	if (strlcat(dest, src, destlen) > destlen)
- 		return -1;
- 	return 0;
-@@ -194,16 +203,6 @@ static int __init root_nfs_parse_options
- 		if (root_nfs_cat(nfs_root_options, incoming,
- 						sizeof(nfs_root_options)))
- 			return -1;
--
--	/*
--	 * Possibly prepare for more options to be appended
--	 */
--	if (nfs_root_options[0] != '\0' &&
--	    nfs_root_options[strlen(nfs_root_options)] != ',')
--		if (root_nfs_cat(nfs_root_options, ",",
--						sizeof(nfs_root_options)))
--			return -1;
--
- 	return 0;
- }
- 
-@@ -217,7 +216,7 @@ static int __init root_nfs_parse_options
-  */
- static int __init root_nfs_data(char *cmdline)
- {
--	char addr_option[sizeof("nolock,addr=") + INET_ADDRSTRLEN + 1];
-+	char mand_options[sizeof("nolock,addr=") + INET_ADDRSTRLEN + 1];
- 	int len, retval = -1;
- 	char *tmp = NULL;
- 	const size_t tmplen = sizeof(nfs_export_path);
-@@ -244,9 +243,9 @@ static int __init root_nfs_data(char *cm
- 	 * Append mandatory options for nfsroot so they override
- 	 * what has come before
- 	 */
--	snprintf(addr_option, sizeof(addr_option), "nolock,addr=%pI4",
-+	snprintf(mand_options, sizeof(mand_options), "nolock,addr=%pI4",
- 			&servaddr);
--	if (root_nfs_cat(nfs_root_options, addr_option,
-+	if (root_nfs_cat(nfs_root_options, mand_options,
- 						sizeof(nfs_root_options)))
- 		goto out_optionstoolong;
- 
+Here's the first two:
 
 
+[   64.295941] WARNING: at lib/list_debug.c:89 list_empty+0x79/0x85()
+[   64.296129] list_empty corruption. ffff880255bcb788<-ffff880255bcb788->ffff88024c3a3c20 is half-empty.
+[   64.296443] Modules linked in: autofs4 sunrpc ipv6 dm_mirror dm_region_hash dm_log dm_multipath dm_mod video sbs sbshc battery ac lp parport sg option usb_wwan ide_cd_mod cdrom usbserial serio_raw floppy snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device button snd_pcm_oss snd_mixer_oss snd_pcm snd_timer i2c_i801 i2c_core snd soundcore snd_page_alloc shpchp pcspkr ehci_hcd ohci_hcd uhci_hcd
+[   64.299193] Pid: 3637, comm: cp Tainted: G        W   2.6.38 #1
+[   64.299363] Call Trace:
+[   64.299531]  [<ffffffff81037ba4>] warn_slowpath_common+0x80/0x98
+[   64.299700]  [<ffffffff81037c50>] warn_slowpath_fmt+0x41/0x43
+[   64.299887]  [<ffffffff811af661>] list_empty+0x79/0x85
+[   64.300074]  [<ffffffff81383581>] unix_write_space+0xa5/0x10e
+[   64.300246]  [<ffffffff813834dc>] ? unix_write_space+0x0/0x10e
+[   64.300418]  [<ffffffff812fc62a>] sock_wfree+0x31/0x51
+[   64.300586]  [<ffffffff81381bef>] unix_destruct_scm+0xc0/0xcd
+[   64.300755]  [<ffffffff812feef6>] skb_release_head_state+0x7f/0xb0
+[   64.300928]  [<ffffffff8130035a>] __kfree_skb+0x11/0x7c
+[   64.301096]  [<ffffffff813003ed>] consume_skb+0x28/0x2a
+[   64.301264]  [<ffffffff813826eb>] unix_stream_recvmsg+0x5ad/0x778
+[   64.301450]  [<ffffffff810508a2>] ? autoremove_wake_function+0x0/0x38
+[   64.301623]  [<ffffffff812f76c2>] sock_aio_read+0x148/0x160
+[   64.301793]  [<ffffffff81172bb9>] ? file_has_perm+0x90/0x9e
+[   64.301961]  [<ffffffff812f757a>] ? sock_aio_read+0x0/0x160
+[   64.302130]  [<ffffffff810d2a9b>] do_sync_readv_writev+0xbc/0xfb
+[   64.302303]  [<ffffffff81170840>] ? security_file_permission+0x80/0x89
+[   64.302472]  [<ffffffff810d3116>] do_readv_writev+0xb6/0x182
+[   64.302641]  [<ffffffff812f8896>] ? sys_connect+0x78/0x9e
+[   64.302822]  [<ffffffff810d3355>] vfs_readv+0x3e/0x49
+[   64.302989]  [<ffffffff810d341f>] sys_readv+0x48/0x72
+[   64.303158]  [<ffffffff813b323b>] system_call_fastpath+0x16/0x1b
+[   64.303326] ---[ end trace 713534840f2a9415 ]---
+[  180.120065] ------------[ cut here ]------------
+[  180.120154] WARNING: at lib/list_debug.c:89 list_empty+0x79/0x85()
+[  180.120213] list_empty corruption. ffff88025fefd9d0<-ffff88025fefd9d0->ffff880235647c20 is half-empty.
+[  180.120306] Modules linked in: autofs4 sunrpc ipv6 dm_mirror dm_region_hash dm_log dm_multipath dm_mod video sbs sbshc battery ac lp parport sg option usb_wwan ide_cd_mod cdrom usbserial serio_raw floppy snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device button snd_pcm_oss snd_mixer_oss snd_pcm snd_timer i2c_i801 i2c_core snd soundcore snd_page_alloc shpchp pcspkr ehci_hcd ohci_hcd uhci_hcd
+[  180.122547] Pid: 6241, comm: sh Tainted: G        W   2.6.38 #1
+[  180.122603] Call Trace:
+[  180.122670]  [<ffffffff81037ba4>] warn_slowpath_common+0x80/0x98
+[  180.122728]  [<ffffffff81037c50>] warn_slowpath_fmt+0x41/0x43
+[  180.122785]  [<ffffffff81055b73>] ? local_clock+0x2b/0x3c
+[  180.122841]  [<ffffffff811af661>] list_empty+0x79/0x85
+[  180.122906]  [<ffffffff8105085c>] __wake_up_bit+0x1c/0x3d
+[  180.122964]  [<ffffffff810938d4>] unlock_page+0x25/0x29
+[  180.123020]  [<ffffffff810aaa16>] __do_fault+0x3da/0x411
+[  180.123077]  [<ffffffff810ab5c0>] handle_pte_fault+0x289/0x79a
+[  180.123146]  [<ffffffff813ad8d8>] ? _raw_spin_unlock+0x26/0x2a
+[  180.123205]  [<ffffffff810acf19>] handle_mm_fault+0x1c6/0x1de
+[  180.123263]  [<ffffffff813b0931>] do_page_fault+0x3cc/0x3f1
+[  180.123320]  [<ffffffff813adb40>] ? restore_args+0x0/0x30
+[  180.123388]  [<ffffffff811ab27d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[  180.123445]  [<ffffffff813add2f>] page_fault+0x1f/0x30
+[  180.123501] ---[ end trace 713534840f2a9416 ]---
