@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab1CUSrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:47:17 -0400
-Received: from smtp208.alice.it ([82.57.200.104]:50741 "EHLO smtp208.alice.it"
+	id S1754028Ab1CUSrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:47:37 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:50744 "EHLO smtp208.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab1CUSrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:47:15 -0400
+	id S1753344Ab1CUSrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:47:16 -0400
 From: Antonio Ospite <ospite@studenti.unina.it>
 To: linux-mmc@vger.kernel.org
 Cc: Antonio Ospite <ospite@studenti.unina.it>,
@@ -15,9 +15,9 @@ Cc: Antonio Ospite <ospite@studenti.unina.it>,
         Ernst Schwab <eschwab@online.de>, Sonic Zhang <sonic.zhang@analog.com>,
         Linus Walleij <linus.walleij@stericsson.com>,
         openezx-devel@lists.openezx.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] mmc_spi.c: factor out a mmc_spi_setpower() function
-Date: Mon, 21 Mar 2011 19:46:41 +0100
-Message-Id: <1300733202-27316-4-git-send-email-ospite@studenti.unina.it>
+Subject: [PATCH 4/4] mmc_spi.c: add support for the regulator framework
+Date: Mon, 21 Mar 2011 19:46:42 +0100
+Message-Id: <1300733202-27316-5-git-send-email-ospite@studenti.unina.it>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
 References: <1300733202-27316-1-git-send-email-ospite@studenti.unina.it>
@@ -26,81 +26,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out a mmc_spi_setpower() function so to make changing it more
-elegant without adding too much stuff to mmc_spi_set_ios().
+Add support for powering up SD cards driven by regulators.
+This makes the mmc_spi driver work also with the Motorola A910 phone.
 
 Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 ---
- drivers/mmc/host/mmc_spi.c |   43 +++++++++++++++++++++++++++++++------------
- 1 files changed, 31 insertions(+), 12 deletions(-)
+ drivers/mmc/host/mmc_spi.c |   61 +++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 49 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
-index fe0fdc4..5e4b2c7 100644
+index 5e4b2c7..d5fe841 100644
 --- a/drivers/mmc/host/mmc_spi.c
 +++ b/drivers/mmc/host/mmc_spi.c
-@@ -1221,6 +1221,26 @@ static void mmc_spi_shutdownsequence(struct mmc_spi_host *host)
- 	}
+@@ -31,6 +31,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/crc7.h>
+ #include <linux/crc-itu-t.h>
++#include <linux/regulator/consumer.h>
+ #include <linux/scatterlist.h>
+ 
+ #include <linux/mmc/host.h>
+@@ -150,11 +151,13 @@ struct mmc_spi_host {
+ 	 */
+ 	void			*ones;
+ 	dma_addr_t		ones_dma;
++
++	struct regulator	*vcc;
+ };
+ 
+ static inline int mmc_spi_canpower(struct mmc_spi_host *host)
+ {
+-	return host->pdata && host->pdata->setpower;
++	return (host->pdata && host->pdata->setpower) || host->vcc;
  }
  
-+static inline int mmc_spi_setpower(struct mmc_spi_host *host,
-+					unsigned char power_mode,
-+					unsigned int vdd)
-+{
-+	/* switch power on/off if possible, accounting for
-+	 * max 250msec powerup time if needed.
-+	 */
-+	if (mmc_spi_canpower(host)) {
-+		switch (power_mode) {
-+		case MMC_POWER_OFF:
-+		case MMC_POWER_UP:
+ /****************************************************************************/
+@@ -1225,17 +1228,35 @@ static inline int mmc_spi_setpower(struct mmc_spi_host *host,
+ 					unsigned char power_mode,
+ 					unsigned int vdd)
+ {
++	if (!mmc_spi_canpower(host))
++		return -ENOSYS;
++
+ 	/* switch power on/off if possible, accounting for
+ 	 * max 250msec powerup time if needed.
+ 	 */
+-	if (mmc_spi_canpower(host)) {
+-		switch (power_mode) {
+-		case MMC_POWER_OFF:
+-		case MMC_POWER_UP:
++	switch (power_mode) {
++	case MMC_POWER_OFF:
++		if (host->vcc) {
++			int ret = mmc_regulator_set_ocr(host->mmc,
++							host->vcc, 0);
++			if (ret)
++				return ret;
++		} else {
 +			host->pdata->setpower(&host->spi->dev, vdd);
-+			if (power_mode == MMC_POWER_UP)
-+				msleep(host->powerup_msecs);
++		}
++		break;
++
++	case MMC_POWER_UP:
++		if (host->vcc) {
++			int ret = mmc_regulator_set_ocr(host->mmc,
++							host->vcc, vdd);
++			if (ret)
++				return ret;
++		} else {
+ 			host->pdata->setpower(&host->spi->dev, vdd);
+-			if (power_mode == MMC_POWER_UP)
+-				msleep(host->powerup_msecs);
+ 		}
++		msleep(host->powerup_msecs);
++		break;
+ 	}
+ 
+ 	return 0;
+@@ -1420,12 +1441,28 @@ static int mmc_spi_probe(struct spi_device *spi)
+ 	 * and power switching gpios.
+ 	 */
+ 	host->pdata = mmc_spi_get_pdata(spi);
+-	if (host->pdata)
+-		mmc->ocr_avail = host->pdata->ocr_mask;
+-	if (!mmc->ocr_avail) {
+-		dev_warn(&spi->dev, "ASSUMING 3.2-3.4 V slot power\n");
+-		mmc->ocr_avail = MMC_VDD_32_33|MMC_VDD_33_34;
++#ifdef CONFIG_REGULATOR
++	host->vcc = regulator_get(mmc_dev(host->mmc), "vmmc");
++
++	if (IS_ERR(host->vcc)) {
++		host->vcc = NULL;
++	} else {
++		host->mmc->ocr_avail = mmc_regulator_get_ocrmask(host->vcc);
++		if (host->pdata && host->pdata->ocr_mask)
++			dev_warn(mmc_dev(host->mmc),
++				"ocr_mask/setpower will not be used\n");
+ 	}
++#endif
++	if (host->vcc == NULL) {
++		/* fall-back to platform data */
++		if (host->pdata)
++			mmc->ocr_avail = host->pdata->ocr_mask;
++		if (!mmc->ocr_avail) {
++			dev_warn(&spi->dev, "ASSUMING 3.2-3.4 V slot power\n");
++			mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 +		}
 +	}
 +
-+	return 0;
-+}
-+
- static char *mmc_powerstring(u8 power_mode)
- {
- 	switch (power_mode) {
-@@ -1236,24 +1256,23 @@ static void mmc_spi_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	struct mmc_spi_host *host = mmc_priv(mmc);
- 
- 	if (host->power_mode != ios->power_mode) {
-+		int ret;
- 
- 		dev_dbg(&host->spi->dev, "mmc_spi: power %s (%d)%s\n",
- 				mmc_powerstring(ios->power_mode),
- 				ios->vdd,
- 				mmc_spi_canpower(host) ? ", can switch" : "");
- 
--		/* switch power on/off if possible, accounting for
--		 * max 250msec powerup time if needed.
--		 */
--		if (mmc_spi_canpower(host)) {
--			switch (ios->power_mode) {
--			case MMC_POWER_OFF:
--			case MMC_POWER_UP:
--				host->pdata->setpower(&host->spi->dev,
--						ios->vdd);
--				if (ios->power_mode == MMC_POWER_UP)
--					msleep(host->powerup_msecs);
--			}
-+		ret = mmc_spi_setpower(host, ios->power_mode, ios->vdd);
-+		if (ret) {
-+			dev_err(mmc_dev(mmc), "unable to set power\n");
-+			/*
-+			 * The .set_ios() function in the mmc_host_ops
-+			 * struct return void, and failing to set the
-+			 * power should be rare so we print an error and
-+			 * return here.
-+			 */
-+			return;
- 		}
- 
- 		/* See 6.4.1 in the simplified SD card physical spec 2.0 */
+ 	if (mmc_spi_canpower(host)) {
+ 		host->powerup_msecs = host->pdata->powerup_msecs;
+ 		if (!host->powerup_msecs || host->powerup_msecs > 250)
 -- 
 1.7.4.1
 
