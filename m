@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1CUW6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 18:58:34 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51513 "EHLO ogre.sisk.pl"
+	id S1754824Ab1CUXBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:01:08 -0400
+Received: from tundra.namei.org ([65.99.196.166]:32776 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab1CUW6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 18:58:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: Suspend/resume regression in Toshiba A11 since 2.6.34-rc4
-Date: Mon, 21 Mar 2011 23:58:43 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <20110318220034.GA10162@herton-IdeaPad-Y430> <201103192152.52645.rjw@sisk.pl> <20110321115240.GA1655@herton-IdeaPad-Y430>
-In-Reply-To: <20110321115240.GA1655@herton-IdeaPad-Y430>
+	id S1754506Ab1CUXBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:01:05 -0400
+Date: Tue, 22 Mar 2011 10:01:00 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+cc: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Peter Huewe <huewe.external.infineon@googlemail.com>
+Subject: Re: [GIT PULL] TPM driver robustness fixes
+In-Reply-To: <4D81708D.5090607@linux.vnet.ibm.com>
+Message-ID: <alpine.LRH.2.00.1103220956350.14837@tundra.namei.org>
+References: <4D81708D.5090607@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103212358.43614.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 21, 2011, Herton Ronaldo Krzesinski wrote:
-> On Sat, Mar 19, 2011 at 09:52:52PM +0100, Rafael J. Wysocki wrote:
-> > On Saturday, March 19, 2011, Herton Ronaldo Krzesinski wrote:
-> > > On Fri, Mar 18, 2011 at 11:38:52PM +0100, Rafael J. Wysocki wrote:
-> > > > On Friday, March 18, 2011, Herton Ronaldo Krzesinski wrote:
-> > > > > This regression is old, but discovered recently. Since 2.6.34-rc4,
-> > > > > a Toshiba Tecra A11 machine resumes without video for the first time.
-> > > > > Here is the strange thing reported, on the first suspend/resume, when
-> > > > > the machine wakes up the video is blank, but the machine is up (just the
-> > > > > screen is black). If you suspend again, on second resume the video comes
-> > > > > back normally.
-> > > > > 
-> > > > > Helping the reporter bisecting the problem, we narrowed down the bug to
-> > > > > this commit:
-> > > > > 
-> > > > > commit ac7729da880e742613129ee6dea0045328670d2d
-> > > > > Author: Rafael J. Wysocki <rjw@sisk.pl>
-> > > > > Date:   Mon Apr 5 01:43:51 2010 +0200
-> > > > > 
-> > > > >     ACPI / PM: Move ACPI video resume to a PM notifier
-> > > > > 
-> > > > > And reverting this commit on 2.6.38 still made the problem go away.
-> > > > > Looking at the commit above I don't saw any problem, and perhaps we have
-> > > > > some bad bios here which by moving the resume of acpi video later
-> > > > > triggers this bug. Also strange that on second suspend/resume everything
-> > > > > is normal... (the regression here is just the video is blank on first
-> > > > > resume).
-> > > > > 
-> > > > > I asked the reporter to try to increase brightness logged in remotely
-> > > > > when the video is blank after first resume, but this didn't have any
-> > > > > effect.
-> > > > > 
-> > > > > This was reported in https://bugs.launchpad.net/bugs/719620 (if reading
-> > > > > I recommend to skip to comment #58 and later), I can't think of any
-> > > > > solution besides trying to move acpi video resume perhaps back and
-> > > > > depend on video device being resume first. I asked for more debugging
-> > > > > information but got nothing unfortunately which could diagnose better
-> > > > > this...
-> > > > 
-> > > > What graphics driver is used?
-> > > 
-> > > i915
-> > 
-> > In the KMS mode I guess?
+On Wed, 16 Mar 2011, Rajiv Andrade wrote:
+
+> Hi James,
 > 
-> Yes, in KMS mode.
+> 
+> The following changes since commit 2e270d84223262a38d4755c61d55f5c73ea89e56:
+> 
+>   Merge branch 'for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2011-03-16
+> 13:26:17 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+> 
+> Peter Huewe (3):
+> 
+>       This patch changes the call of tpm_transmit by supplying the size of the
+> userspace buffer instead of TPM_BUFSIZE
+> 
+>       This patch fixes information leakage to the userspace by initializing
+> the data buffer to zero
+> 
+>       Since the buffer might contain security related data it might be a good
+> idea to zero the buffer after we have copied it to userspace.
 
-OK, I have no idea how to fix this.
+These patches don't have proper subjects.
 
-Matthew, can you please have a look here?
+Also:
 
-Rafael
+                if (copy_to_user(buf, chip->data_buffer, ret_size))
+                        ret_size = -EFAULT;
++               memset(chip->data_buffer, 0, ret_size);
+
+
+Consider what happens in memset if copy_to_user fails.
+
+One of the patches is flagged with "Discussion needed ...", without any 
+evidence of that the discussion happened.
+
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
