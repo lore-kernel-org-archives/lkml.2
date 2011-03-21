@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1CUK4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 06:56:54 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:64636 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172Ab1CUK41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 06:56:27 -0400
-From: Roger Quadros <roger.quadros@nokia.com>
-To: gregkh@suse.de
-Cc: stern@rowland.harvard.edu, sshtylyov@mvista.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/3] usb: gadget: storage: Make CD-ROM emulation work with Mac OS-X
-Date: Mon, 21 Mar 2011 12:59:16 +0200
-Message-Id: <1300705159-24386-1-git-send-email-roger.quadros@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-X-Nokia-AV: Clean
+	id S1753024Ab1CULAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 07:00:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35488 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab1CULAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 07:00:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=x8utISbCgsQKPw/rxcPJVdwhrvvCgADBiruMwWYM6hiTvlOHg5DS4LuJzTZA2cqsBg
+         tuti+gIRezB5MWdiWf0IEFfCNAcsTGHRI3xhuA7H67UgD+Ibw+qlrMxCy38dDJmoE58Y
+         VBNUiihqMR/yxNHiVgjVMSM+mt55aQknYMGGs=
+Message-ID: <4D872FB6.5000605@gmail.com>
+Date: Mon, 21 Mar 2011 12:00:06 +0100
+From: roel <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] osst: wrong index used in inner loop
+References: <4D8509D1.6080107@gmail.com> <20110321100300P.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20110321100300P.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 21-03-11 02:02, FUJITA Tomonori wrote:
+> On Sat, 19 Mar 2011 20:53:53 +0100
+> roel <roel.kluin@gmail.com> wrote:
+> 
+>> Index i was already used in the outer loop.
+>>
+>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+>> ---
+>>  drivers/scsi/osst.c |    5 +++--
+>>  1 files changed, 3 insertions(+), 2 deletions(-)
+>>
+>> I'm not sure if this is the right fix, maybe a break or return
+>> is missing?
+> 
+> What are you trying to fix with this patch?
 
-Mac OS-X expects CD-ROM TOC in raw format (i.e. format:2). It also
-sends the READ_TOC CDB in old style SFF8020i format. i.e. 2 format bits
-are encoded in MSBs of CDB byte 9.
+`i' is used as an index in both the outer loop at 4689 and the
+inner loop at 4705.
 
-The first patch introduces a fsg_get_toc() helper which builds the
-Table of Contents (TOC) that can be used for the READ_TOC command.
-The remaining two patches simply make file_storage gadget and mass_storage
-gadget use the new helper function.
+if the UNIT_ATTENTION branch is taken `i' is overwritten after the
+loop at 4705 and becomes ST_NBR_PARTITIONS + 1, i.e. 5.
 
-Changes in v2:
-- Review comments incorporated.
+So the loop at 4689 may not loop ten times when the UNIT_ATTENTION
+branch is taken. It may loop 5 times or more than ten or hot spin,
+dependent how often the UNIT_ATTENTION branch is taken. I'm not
+familiar with this driver, but it looked buggy to me.
 
----
-Roger Quadros (3):
-  usb: gadget: storage: Add fsg_get_toc helper
-  usb: gadget: file_storage: Make CD-ROM emulation work with Mac OS-X
-  usb: gadget: f_mass_storage: Make CD-ROM emulation work with Mac OS-X
-
- drivers/usb/gadget/f_mass_storage.c |   31 +++++++++-------
- drivers/usb/gadget/file_storage.c   |   31 +++++++++-------
- drivers/usb/gadget/storage_common.c |   68 +++++++++++++++++++++++++++++++++++
- 3 files changed, 104 insertions(+), 26 deletions(-)
-
+Roel
