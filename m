@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab1CUXVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:21:07 -0400
-Received: from kroah.org ([198.145.64.141]:52842 "EHLO coco.kroah.org"
+	id S932467Ab1CUXV1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:21:27 -0400
+Received: from kroah.org ([198.145.64.141]:52832 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932467Ab1CUXSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:39 -0400
+	id S932458Ab1CUXSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:38 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:29 2011
-Message-Id: <20110321230329.520630561@clark.kroah.org>
+Message-Id: <20110321230329.319552315@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:32 -0700
+Date: Mon, 21 Mar 2011 16:02:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jan Beulich <jbeulich@novell.com>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <kees.cook@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [76/78] x86, binutils, xen: Fix another wrong size directive
+        Manoj Iyer <manoj.iyer@canonical.com>, Chris Ball <cjb@laptop.org>
+Subject: [74/78] mmc: sdhci: Add Ricoh e823 PCI ID
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,75 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander van Heukelum <heukelum@fastmail.fm>
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
-commit 371c394af27ab7d1e58a66bc19d9f1f3ac1f67b4 upstream.
+commit 5fd11c0754fa069b6aba64b65734aa2fb193552d upstream.
 
-The latest binutils (2.21.0.20110302/Ubuntu) breaks the build
-yet another time, under CONFIG_XEN=y due to a .size directive that
-refers to a slightly differently named (hence, to the now very
-strict and unforgiving assembler, non-existent) symbol.
-
-[ mingo:
-
-   This unnecessary build breakage caused by new binutils
-   version 2.21 gets escallated back several kernel releases spanning
-   several years of Linux history, affecting over 130,000 upstream
-   kernel commits (!), on CONFIG_XEN=y 64-bit kernels (i.e. essentially
-   affecting all major Linux distro kernel configs).
-
-   Git annotate tells us that this slight debug symbol code mismatch
-   bug has been introduced in 2008 in commit 3d75e1b8:
-
-     3d75e1b8        (Jeremy Fitzhardinge    2008-07-08 15:06:49 -0700 1231) ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-
-   The 'bug' is just a slight assymetry in ENTRY()/END()
-   debug-symbols sequences, with lots of assembly code between the
-   ENTRY() and the END():
-
-     ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-       ...
-     END(do_hypervisor_callback)
-
-   Human reviewers almost never catch such small mismatches, and binutils
-   never even warned about it either.
-
-   This new binutils version thus breaks the Xen build on all upstream kernels
-   since v2.6.27, out of the blue.
-
-   This makes a straightforward Git bisection of all 64-bit Xen-enabled kernels
-   impossible on such binutils, for a bisection window of over hundred
-   thousand historic commits. (!)
-
-   This is a major fail on the side of binutils and binutils needs to turn
-   this show-stopper build failure into a warning ASAP. ]
-
-Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jan Beulich <jbeulich@novell.com>
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <kees.cook@canonical.com>
-LKML-Reference: <1299877178-26063-1-git-send-email-heukelum@fastmail.fm>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/entry_64.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/host/sdhci-pci.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1248,7 +1248,7 @@ ENTRY(xen_do_hypervisor_callback)   # do
- 	decl PER_CPU_VAR(irq_count)
- 	jmp  error_exit
- 	CFI_ENDPROC
--END(do_hypervisor_callback)
-+END(xen_do_hypervisor_callback)
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -547,6 +547,14 @@ static const struct pci_device_id pci_id
+ 	},
  
- /*
-  * Hypervisor uses this for application faults while it executes.
+ 	{
++		.vendor         = PCI_VENDOR_ID_RICOH,
++		.device         = 0xe823,
++		.subvendor      = PCI_ANY_ID,
++		.subdevice      = PCI_ANY_ID,
++		.driver_data    = (kernel_ulong_t)&sdhci_ricoh_mmc,
++	},
++
++	{
+ 		.vendor		= PCI_VENDOR_ID_ENE,
+ 		.device		= PCI_DEVICE_ID_ENE_CB712_SD,
+ 		.subvendor	= PCI_ANY_ID,
 
 
