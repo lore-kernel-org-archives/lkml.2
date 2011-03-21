@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab1CUX0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:26:43 -0400
-Received: from kroah.org ([198.145.64.141]:52675 "EHLO coco.kroah.org"
+	id S932528Ab1CUX0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:26:55 -0400
+Received: from kroah.org ([198.145.64.141]:52660 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206Ab1CUXSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:10 -0400
+	id S932310Ab1CUXSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:06 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
-Message-Id: <20110321230326.337552390@clark.kroah.org>
+Message-Id: <20110321230326.026712153@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:01 -0700
+Date: Mon, 21 Mar 2011 16:01:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [45/78] HID: add support for Ortek PKB-1700
+        Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [42/78] ALSA: hda - fix digital mic selection in mixer on 92HD8X codecs
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
 
-commit 270fdc0748bd3f7b625caff985f2fcf8e2185ec7 upstream.
+commit 094a42452abd5564429045e210281c6d22e67fca upstream.
 
-As reported on http://ubuntuforums.org/showthread.php?t=1594007 the
-PKB-1700 needs same special handling as WKB-2000. This change is
-originally based on patch posted by user asmoore82 on the Ubuntu
-forums.
+When the mux for digital mic is different from the mux for other mics,
+the current auto-parser doesn't handle them in a right way but provides
+only one mic.  This patch fixes the issue.
 
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/Kconfig     |    4 ++--
- drivers/hid/hid-core.c  |    1 +
- drivers/hid/hid-ids.h   |    1 +
- drivers/hid/hid-ortek.c |    3 ++-
- 4 files changed, 6 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -319,10 +319,10 @@ config HID_NTRIG
- 	Support for N-Trig touch screen.
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -757,7 +757,7 @@ static int stac92xx_mux_enum_put(struct
+ 	struct sigmatel_spec *spec = codec->spec;
+ 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
+ 	const struct hda_input_mux *imux = spec->input_mux;
+-	unsigned int idx, prev_idx;
++	unsigned int idx, prev_idx, didx;
  
- config HID_ORTEK
--	tristate "Ortek WKB-2000 wireless keyboard and mouse trackpad"
-+	tristate "Ortek PKB-1700/WKB-2000 wireless keyboard and mouse trackpad"
- 	depends on USB_HID
- 	---help---
--	Support for Ortek WKB-2000 wireless keyboard + mouse trackpad.
-+	Support for Ortek PKB-1700/WKB-2000 wireless keyboard + mouse trackpad.
- 
- config HID_PANTHERLORD
- 	tristate "Pantherlord/GreenAsia game controller"
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1400,6 +1400,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -466,6 +466,7 @@
- #define USB_DEVICE_ID_ONTRAK_ADU100	0x0064
- 
- #define USB_VENDOR_ID_ORTEK		0x05a4
-+#define USB_DEVICE_ID_ORTEK_PKB1700	0x1700
- #define USB_DEVICE_ID_ORTEK_WKB2000	0x2000
- 
- #define USB_VENDOR_ID_PANJIT		0x134c
---- a/drivers/hid/hid-ortek.c
-+++ b/drivers/hid/hid-ortek.c
-@@ -1,5 +1,5 @@
- /*
-- *  HID driver for Ortek WKB-2000 (wireless keyboard + mouse trackpad).
-+ *  HID driver for Ortek PKB-1700/WKB-2000 (wireless keyboard + mouse trackpad).
-  *  Fixes LogicalMaximum error in USB report description, see
-  *  http://bugzilla.kernel.org/show_bug.cgi?id=14787
-  *
-@@ -30,6 +30,7 @@ static __u8 *ortek_report_fixup(struct h
- }
- 
- static const struct hid_device_id ortek_devices[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
- 	{ }
- };
+ 	idx = ucontrol->value.enumerated.item[0];
+ 	if (idx >= imux->num_items)
+@@ -769,7 +769,8 @@ static int stac92xx_mux_enum_put(struct
+ 		snd_hda_codec_write_cache(codec, spec->mux_nids[adc_idx], 0,
+ 					  AC_VERB_SET_CONNECT_SEL,
+ 					  imux->items[idx].index);
+-		if (prev_idx >= spec->num_analog_muxes) {
++		if (prev_idx >= spec->num_analog_muxes &&
++		    spec->mux_nids[adc_idx] != spec->dmux_nids[adc_idx]) {
+ 			imux = spec->dinput_mux;
+ 			/* 0 = analog */
+ 			snd_hda_codec_write_cache(codec,
+@@ -779,9 +780,13 @@ static int stac92xx_mux_enum_put(struct
+ 		}
+ 	} else {
+ 		imux = spec->dinput_mux;
++		/* first dimux item is hardcoded to select analog imux,
++		 * so lets skip it
++		 */
++		didx = idx - spec->num_analog_muxes + 1;
+ 		snd_hda_codec_write_cache(codec, spec->dmux_nids[adc_idx], 0,
+ 					  AC_VERB_SET_CONNECT_SEL,
+-					  imux->items[idx - 1].index);
++					  imux->items[didx].index);
+ 	}
+ 	spec->cur_mux[adc_idx] = idx;
+ 	return 1;
 
 
