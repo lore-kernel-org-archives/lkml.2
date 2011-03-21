@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1CUXpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:45:01 -0400
-Received: from kroah.org ([198.145.64.141]:49475 "EHLO coco.kroah.org"
+	id S1755438Ab1CUXpe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:45:34 -0400
+Received: from kroah.org ([198.145.64.141]:49465 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755427Ab1CUXPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:45 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
-Message-Id: <20110321230714.048700278@clark.kroah.org>
+	id S1754952Ab1CUXPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:43 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:13 2011
+Message-Id: <20110321230713.844681800@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:46 -0700
+Date: Mon, 21 Mar 2011 16:06:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [47/87] ehci: Check individual port status registers on resume
+        Tuomas Kulve <tuomas@kulve.fi>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Subject: [45/87] staging: tidspbridge: protect dmm_map properly
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Felipe Contreras <felipe.contreras@nokia.com>
 
-commit 294d95f2cbc2aef5346258f216cd9df570e271a5 upstream.
+commit ab42abf33a3efdf754710a0a513c00c40854cd61 upstream.
 
-If a device plug/unplug is detected on an ATI SB700 USB controller in D3,
-it appears to set the port status register but not the controller status
-register. As a result we'll fail to detect the plug event. Check the port
-status register on resume as well in order to catch this case.
+We need to protect not only the dmm_map list, but the individual
+map_obj's, otherwise, we might be building the scatter-gather list with
+garbage. So, use the existing proc_lock for that.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+I observed race conditions which caused kernel panics while running
+stress tests, also, Tuomas Kulve found it happening quite often in
+Gumstix Over. This patch fixes those.
+
+Cc: Tuomas Kulve <tuomas@kulve.fi>
+Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
+Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hub.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ drivers/staging/tidspbridge/rmgr/proc.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -106,6 +106,27 @@ static void ehci_handover_companion_port
- 	ehci->owned_ports = 0;
- }
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -781,12 +781,14 @@ int proc_begin_dma(void *hprocessor, voi
+ 							(u32)pmpu_addr,
+ 							ul_size, dir);
  
-+static int ehci_port_change(struct ehci_hcd *ehci)
-+{
-+	int i = HCS_N_PORTS(ehci->hcs_params);
++	mutex_lock(&proc_lock);
 +
-+	/* First check if the controller indicates a change event */
-+
-+	if (ehci_readl(ehci, &ehci->regs->status) & STS_PCD)
-+		return 1;
-+
-+	/*
-+	 * Not all controllers appear to update this while going from D3 to D0,
-+	 * so check the individual port status registers as well
-+	 */
-+
-+	while (i--)
-+		if (ehci_readl(ehci, &ehci->regs->port_status[i]) & PORT_CSC)
-+			return 1;
-+
-+	return 0;
-+}
-+
- static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
- 		bool suspending, bool do_wakeup)
- {
-@@ -173,7 +194,7 @@ static void ehci_adjust_port_wakeup_flag
+ 	/* find requested memory are in cached mapping information */
+ 	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
+ 	if (!map_obj) {
+ 		pr_err("%s: find_containing_mapping failed\n", __func__);
+ 		status = -EFAULT;
+-		goto err_out;
++		goto no_map;
  	}
  
- 	/* Does the root hub have a port wakeup pending? */
--	if (!suspending && (ehci_readl(ehci, &ehci->regs->status) & STS_PCD))
-+	if (!suspending && ehci_port_change(ehci))
- 		usb_hcd_resume_root_hub(ehci_to_hcd(ehci));
+ 	if (memory_give_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
+@@ -795,6 +797,8 @@ int proc_begin_dma(void *hprocessor, voi
+ 		status = -EFAULT;
+ 	}
  
- 	spin_unlock_irqrestore(&ehci->lock, flags);
++no_map:
++	mutex_unlock(&proc_lock);
+ err_out:
+ 
+ 	return status;
+@@ -819,21 +823,24 @@ int proc_end_dma(void *hprocessor, void
+ 							(u32)pmpu_addr,
+ 							ul_size, dir);
+ 
++	mutex_lock(&proc_lock);
++
+ 	/* find requested memory are in cached mapping information */
+ 	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
+ 	if (!map_obj) {
+ 		pr_err("%s: find_containing_mapping failed\n", __func__);
+ 		status = -EFAULT;
+-		goto err_out;
++		goto no_map;
+ 	}
+ 
+ 	if (memory_regain_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
+ 		pr_err("%s: InValid address parameters %p %x\n",
+ 		       __func__, pmpu_addr, ul_size);
+ 		status = -EFAULT;
+-		goto err_out;
+ 	}
+ 
++no_map:
++	mutex_unlock(&proc_lock);
+ err_out:
+ 	return status;
+ }
+@@ -1726,9 +1733,8 @@ int proc_un_map(void *hprocessor, void *
+ 		    (p_proc_object->hbridge_context, va_align, size_align);
+ 	}
+ 
+-	mutex_unlock(&proc_lock);
+ 	if (status)
+-		goto func_end;
++		goto unmap_failed;
+ 
+ 	/*
+ 	 * A successful unmap should be followed by removal of map_obj
+@@ -1737,6 +1743,9 @@ int proc_un_map(void *hprocessor, void *
+ 	 */
+ 	remove_mapping_information(pr_ctxt, (u32) map_addr, size_align);
+ 
++unmap_failed:
++	mutex_unlock(&proc_lock);
++
+ func_end:
+ 	dev_dbg(bridge, "%s: hprocessor: 0x%p map_addr: 0x%p status: 0x%x\n",
+ 		__func__, hprocessor, map_addr, status);
 
 
