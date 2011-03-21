@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab1CTXjv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 19:39:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35862 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab1CTXjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 19:39:49 -0400
-From: Pawel Osciak <pawel@osciak.com>
-To: linux-kernel@vger.kernel.org
-Cc: m.szyprowski@samsung.com, akpm@linux-foundation.org,
-        Pawel Osciak <pawel@osciak.com>
-Subject: [PATCH] MAINTAINERS: Add videobuf2 maintainers
-Date: Sun, 20 Mar 2011 16:39:39 -0700
-Message-Id: <1300664379-25360-1-git-send-email-pawel@osciak.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752409Ab1CUAgs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 20:36:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51339 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752283Ab1CUAgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 20:36:46 -0400
+Date: Mon, 21 Mar 2011 01:36:45 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Greg KH <gregkh@suse.de>, oneukum@suse.cz
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: "usb_wwan: error case of resume" (16871dcac) is buggy
+Message-ID: <alpine.LNX.2.00.1103210130260.19969@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add maintainers for the videobuf2 V4L2 driver framework.
+Hi,
 
-Signed-off-by: Pawel Osciak <pawel@osciak.com>
+the commit in subject make the kernel with CONFIG_PM_RUNTIME unset fail 
+during compilation, as struct dev_pm_info doesn't have whole bunch of 
+members in such case.
+
+The commit in question adds this code:
+
+	/* we have to throw away the rest */
+	do {
+		unbusy_queued_urb(urb, portdata);
+		//extremely dirty
+		atomic_dec(&port->serial->interface->dev.power.usage_count);
+	} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+
+The 'extermely dirty' comment makes me a bit nervous whether the patch 
+below is correct or some more thinking would be necessary.
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] USB: usb_wvan: fix compilation for !CONFIG_PM_RUNTIME case
+
+With CONFIG_PM_RUNTIME unset, struct dev_pm_info doesn't have
+usage count which is used only for run-time power management
+purposes.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- MAINTAINERS |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/usb/serial/usb_wwan.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c7a41b1..a5be079 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6665,6 +6665,14 @@ S:	Maintained
- F:	Documentation/filesystems/vfat.txt
- F:	fs/fat/
- 
-+VIDEOBUF2 FRAMEWORK
-+M:	Pawel Osciak <pawel@osciak.com>
-+M:	Marek Szyprowski <m.szyprowski@samsung.com>
-+L:	linux-media@vger.kernel.org
-+S:	Maintained
-+F:	drivers/media/video/videobuf2-*
-+F:	include/media/videobuf2-*
-+
- VIRTIO CONSOLE DRIVER
- M:	Amit Shah <amit.shah@redhat.com>
- L:	virtualization@lists.linux-foundation.org
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index a65ddd5..8b456dc 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -698,8 +698,10 @@ static void play_delayed(struct usb_serial_port *port)
+ 			/* we have to throw away the rest */
+ 			do {
+ 				unbusy_queued_urb(urb, portdata);
+-				//extremely dirty
++#ifdef CONFIG_PM_RUNTIME
++				/* extremely dirty */
+ 				atomic_dec(&port->serial->interface->dev.power.usage_count);
++#endif
+ 			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+ 			break;
+ 		}
 -- 
-1.7.4.1
+1.7.3.1
 
