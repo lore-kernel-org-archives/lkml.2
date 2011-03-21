@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab1CULAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 07:00:14 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35488 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab1CULAL (ORCPT
+	id S1753115Ab1CULCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 07:02:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38434 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752650Ab1CULCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 07:00:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=x8utISbCgsQKPw/rxcPJVdwhrvvCgADBiruMwWYM6hiTvlOHg5DS4LuJzTZA2cqsBg
-         tuti+gIRezB5MWdiWf0IEFfCNAcsTGHRI3xhuA7H67UgD+Ibw+qlrMxCy38dDJmoE58Y
-         VBNUiihqMR/yxNHiVgjVMSM+mt55aQknYMGGs=
-Message-ID: <4D872FB6.5000605@gmail.com>
-Date: Mon, 21 Mar 2011 12:00:06 +0100
-From: roel <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] osst: wrong index used in inner loop
-References: <4D8509D1.6080107@gmail.com> <20110321100300P.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110321100300P.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 21 Mar 2011 07:02:06 -0400
+Date: Mon, 21 Mar 2011 11:02:14 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jack Stone <jwjstone@fastmail.fm>, Mac <kmac@poczta.fm>,
+        linux-kernel@vger.kernel.org, linux-ppp@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: 'scheduling while atomic' during ppp connection on 2.6.37.1 and
+ 2.6.38
+Message-ID: <20110321110214.5174f1b2@lxorguk.ukuu.org.uk>
+In-Reply-To: <4D87173D.50906@suse.cz>
+References: <fuopaigyaypsqveewtjx@pwmq>
+	<4D864A82.4090104@fastmail.fm>
+	<20110320215826.79cadfe2@lxorguk.ukuu.org.uk>
+	<4D87173D.50906@suse.cz>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21-03-11 02:02, FUJITA Tomonori wrote:
-> On Sat, 19 Mar 2011 20:53:53 +0100
-> roel <roel.kluin@gmail.com> wrote:
-> 
->> Index i was already used in the outer loop.
->>
->> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
->> ---
->>  drivers/scsi/osst.c |    5 +++--
->>  1 files changed, 3 insertions(+), 2 deletions(-)
->>
->> I'm not sure if this is the right fix, maybe a break or return
->> is missing?
-> 
-> What are you trying to fix with this patch?
+> Anyway is the test needed at all? I.e. could
+> tty->ops->write/chars_in_buffer/ntty_write_room be called with
+> port->port.count == 0 at all?
 
-`i' is used as an index in both the outer loop at 4689 and the
-inner loop at 4705.
+I'm not entirely sure what the Nozomi driver is trying to do. Generally
+any case a driver is looking at port->port.count it's a bug and should
+not matter with the tty krefs. However the chances are it should be
+testing *something* instead in this case.
 
-if the UNIT_ATTENTION branch is taken `i' is overwritten after the
-loop at 4705 and becomes ST_NBR_PARTITIONS + 1, i.e. 5.
-
-So the loop at 4689 may not loop ten times when the UNIT_ATTENTION
-branch is taken. It may loop 5 times or more than ten or hot spin,
-dependent how often the UNIT_ATTENTION branch is taken. I'm not
-familiar with this driver, but it looked buggy to me.
-
-Roel
+Alan
