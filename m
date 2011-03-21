@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab1CUQp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 12:45:59 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38617 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751492Ab1CUQp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 12:45:58 -0400
-Subject: [GIT PULL] parisc updates for the 2.6.38 merge window
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 11:45:54 -0500
-Message-ID: <1300725954.10634.28.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1753906Ab1CUQtw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 12:49:52 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38049 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753790Ab1CUQtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 12:49:51 -0400
+Date: Mon, 21 Mar 2011 17:49:37 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+        Zeng Zhaoming <b32542@freescale.com>
+Subject: Re: [build failure] Re: [GIT PULL] sound updates for 2.6.39-rc1
+Message-ID: <20110321164937.GA6381@elte.hu>
+References: <s5hr5a4ttfi.wl%tiwai@suse.de>
+ <20110321153719.GA12325@elte.hu>
+ <20110321155836.GE2570@opensource.wolfsonmicro.com>
+ <20110321161102.GB23614@elte.hu>
+ <20110321163849.GF2570@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110321163849.GF2570@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two major changes in this: one is our full conversion to the
-generic IRQ handlers thanks to tglx and the other is switching us to use
-tmpalias flushing (a change which means that our coherency no-longer
-relies on the mechanics of page tables being present).  We still have
-quite a lot of work to do, but the change to tmpalias flushing is at
-last allowing us to track down some of the very infrequent coherency
-issues on the platform.
 
-The patch is available here:
+* Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
-master.kernel.org:/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#for-linus
+> On Mon, Mar 21, 2011 at 05:11:02PM +0100, Ingo Molnar wrote:
+> > * Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> 
+> > > As indicated that's not a good fix since the affected code is all runtime 
+> > > conditional already. [...]
+> 
+> > Well, AFAICS Randy's patch correctly expresses current infrastructure 
+> > dependencies the driver has.
+> 
+> That's because the driver code is trivially broken, though - the build
+> test has identified a flaw in the driver which we should fix.
 
-The short changelog is:
+Trivially broken how? Your mail in the original thread, if i read it right, 
+only claimed that it depends on CONFIG_REGULATOR being present while ideally it 
+should be invariant to the value of CONFIG_REGULATOR:
 
-James Bottomley (3):
-      [PARISC] fix vmap flush/invalidate
-      eliminate special FLUSH flag from page table
-      parisc: flush pages through tmpalias space
+ | Since the regulator on the device is optional this isn't the best fix, the 
+ | code should be updated to support building without regulator.
 
-Thomas Gleixner (2):
-      [PARISC] Convert to new irq_chip functions
-      [PARISC] fix per-cpu flag problem in the cpu affinity checkers
+If there is some *other* bug there as well then of course it should be fixed 
+instead of worked around.
 
-And the diffstat
+Thanks,
 
- arch/parisc/Kconfig                  |    1 +
- arch/parisc/include/asm/cacheflush.h |   31 +++--
- arch/parisc/include/asm/irq.h        |   13 +--
- arch/parisc/include/asm/pgtable.h    |   14 +--
- arch/parisc/kernel/cache.c           |  109 +++-------------
- arch/parisc/kernel/entry.S           |  217 +++++++++++++++++-------------
- arch/parisc/kernel/irq.c             |   64 +++++----
- arch/parisc/kernel/pacache.S         |  245 +++++++++++++++-------------------
- drivers/parisc/dino.c                |   22 ++--
- drivers/parisc/eisa.c                |   12 +-
- drivers/parisc/gsc.c                 |   22 ++--
- drivers/parisc/iosapic.c             |   40 +++---
- drivers/parisc/superio.c             |   12 +-
- 13 files changed, 375 insertions(+), 427 deletions(-)
-
-James
-
-
+	Ingo
