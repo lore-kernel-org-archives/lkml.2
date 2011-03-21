@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1CUJCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 05:02:05 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:57784 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752422Ab1CUJCE (ORCPT
+	id S1752425Ab1CUJKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 05:10:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43546 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161Ab1CUJKa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 05:02:04 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 21 Mar 2011 10:05:33 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 5/5] hid-multitouch: migrate 3M PCT touch screens to
- hid-multitouch
-Message-ID: <20110321090533.GE3784@polaris.bitmath.org>
-References: <1300454876-5017-1-git-send-email-benjamin.tissoires@enac.fr>
- <1300454876-5017-6-git-send-email-benjamin.tissoires@enac.fr>
+	Mon, 21 Mar 2011 05:10:30 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Jiri Kosina <jkosina@suse.cz>
+Subject: Re: "usb_wwan: error case of resume" (16871dcac) is buggy
+Date: Mon, 21 Mar 2011 10:11:07 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc8-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+References: <alpine.LNX.2.00.1103210130260.19969@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1103210130260.19969@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1300454876-5017-6-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1Q1azf-00015V-4n.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Q1azf-00015V-4n e39bdf280fb105c4cfe2354e59b9f5b8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103211011.07282.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
-
-On Fri, Mar 18, 2011 at 02:27:56PM +0100, Benjamin Tissoires wrote:
-> This patch merges the hid-3m-pct driver into hid-multitouch.
-> To keep devices working the same way they used to with hid-3m-pct,
-> we need to add two signal/noise ratios for width and height.
-> We also need to work on width/height to send proper
-> ABS_MT_ORIENTATION flag.
+Am Montag, 21. März 2011, 01:36:45 schrieb Jiri Kosina:
+> Hi,
 > 
-> Importing 3M into hid-multitouch also solved the bug in which
-> devices handling width and height in their report descriptors
-> did not show ABS_MT_TOUCH_MAJOR and ABS_MT_TOUCH_MINOR.
+> the commit in subject make the kernel with CONFIG_PM_RUNTIME unset fail 
+> during compilation, as struct dev_pm_info doesn't have whole bunch of 
+> members in such case.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> Reviewed-by: Stéphane Chatty <chatty@enac.fr>
-> ---
+> The commit in question adds this code:
+> 
+> 	/* we have to throw away the rest */
+> 	do {
+> 		unbusy_queued_urb(urb, portdata);
+> 		//extremely dirty
+> 		atomic_dec(&port->serial->interface->dev.power.usage_count);
+> 	} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+> 
+> The 'extermely dirty' comment makes me a bit nervous whether the patch 
+> below is correct or some more thinking would be necessary.
 
-The patch _looks_ good, but I have problems getting this to work on a
-3M2256. What devices were this one tested on so far?
+I've since posted a clean patch, although your fix looks correct to me.
+The problem was that I was unsure about the locking during resume().
+I rather wrote a layering violation than risk a deadlock in an error path
+hard to test. But I did not feel well doing it.
 
-Henrik
+	Regards
+		Oliver
