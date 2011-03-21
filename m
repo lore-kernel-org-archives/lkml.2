@@ -1,85 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab1CUQLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 12:11:43 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34425 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab1CUQLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 12:11:39 -0400
-Date: Mon, 21 Mar 2011 17:11:02 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-        Zeng Zhaoming <b32542@freescale.com>
-Subject: Re: [build failure] Re: [GIT PULL] sound updates for 2.6.39-rc1
-Message-ID: <20110321161102.GB23614@elte.hu>
-References: <s5hr5a4ttfi.wl%tiwai@suse.de>
- <20110321153719.GA12325@elte.hu>
- <20110321155836.GE2570@opensource.wolfsonmicro.com>
+	id S1753744Ab1CUQNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 12:13:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34694 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909Ab1CUQNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 12:13:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PruLm6rxjUk++HXwx1MqkBSJk7u5nlWAjfWvw4DSmJErBfx3SJAAUIQNdkIiBe3x8J
+         ZTddZrvoO46DAtK40v5t8v+/aHnsm97JVhuc/aANdK4zEaNSr8ywkZTOVoA8J/IjYcwM
+         56UyHTRVzzLZmOQZmVbMYbBJsS0CZhfrpsq/E=
+Date: Mon, 21 Mar 2011 17:12:36 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 3/8] job control: Fix ptracer wait(2) hang and explain
+ notask_error clearing
+Message-ID: <20110321161236.GF12003@htj.dyndns.org>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org>
+ <1299614199-25142-4-git-send-email-tj@kernel.org>
+ <20110321151941.GA20917@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110321155836.GE2570@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110321151941.GA20917@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-
-> On Mon, Mar 21, 2011 at 04:37:19PM +0100, Ingo Molnar wrote:
+On Mon, Mar 21, 2011 at 04:19:41PM +0100, Oleg Nesterov wrote:
+> > +		/*
+> > +		 * Allow access to stopped/continued state via zombie by
+> > +		 * falling through.  Clearing of notask_error is complex.
+> > +		 *
+> > +		 * When !@ptrace:
+> > +		 *
+> > +		 * If WEXITED is set, notask_error should naturally be
+> > +		 * cleared.  If not, subset of WSTOPPED|WCONTINUED is set,
+> > +		 * so, if there are live subthreads, there are events to
+> > +		 * wait for.  If all subthreads are dead, it's still safe
+> > +		 * to clear - this function will be called again in finite
+> > +		 * amount time once all the subthreads are released and
+> > +		 * will then return without clearing.
+> > +		 *
+> > +		 * When @ptrace:
+> > +		 *
+> > +		 * Stopped state is per-task and thus can't change once the
+> > +		 * target task dies, so notask_error should be cleared only
+> > +		 * if WCONTINUED is set.
+> > +		 */
+> > +		if (likely(!ptrace) || (wo->wo_flags & WCONTINUED))
+> > +			wo->notask_error = 0;
 > 
-> > has been pushed upstream - although the build breakage was reported against 
-> > linux-next two weeks ago, with fix provided, in this lkml thread:
-> > 
-> >   [PATCH -next] soc: sgtl5000 uses regulator interfaces
+> I don't understand this part. Suppose that this task is not traced and
+> its real parent does do_wait(WEXITED). We shouldn't return -ECHLD in
+> this case (EXIT_ZOMBIE && delay_group_leader()).
 > 
-> Zheng, you said you'd provide a better patch for this but I've heard
-> nothing since?  It's a trivial change you need to make...
+> If the task is traced and debugger does do_wait(WEXITED) we should not
+> return -ECHLD too.
 > 
-> > Please do not push known-broken code upstream.
+> So I think this patch is wrong in its current state. Hmm, I just noticed
+> the comment says "If WEXITED is set, notask_error should ...", but this
+> is not what the code does?
+
+That comment is for !@ptrace, so the code and comment are in sync, but
+yes, if WEXITED is set, notask_error better be cleared regardless of
+@ptrace.
+
+> But the main problem is, I do not think do_wait() should block in this
+> case, and thus I am starting to think this patch is not "complete".
 > 
-> That seems like an overreaction, it'll only show up in fairly unrealstic 
-> randconfigs [...]
-
-I've seen it trigger with a likelyhood of about 20%, that's not unrealistic.
-
-> [...] and can be trivially avoided by anyone who actually needs the driver - 
-> core things like all*config won't be affected, and right now it'll only come 
-> up at all if you enable SND_SOC_ALL_CODECS which is purely about build 
-> coverage.
+> I mean, we are going to add the user-visible change, and I agree the
+> current behaviour looks strange. But if we change this code, perhaps
+> the tracer should ignore delay_group_leader() at all (unless we are
+> going to do wait_task_zombie) ?
 > 
-> > Randy's fix below resolved the bug for me.
+> Your test-case could use waitid(WEXITED) instead WSTOPPED with the same
+> result, it should hang. Why it hangs? The tracee is dead, we can't do
+> ptrace(PTRACE_DETACH), and we can do nothing until other threads exit.
+> This looks equally strange.
 > 
-> As indicated that's not a good fix since the affected code is all runtime 
-> conditional already. [...]
+> IOW. Assuming that ptrace == T and WEXITED is set, perhaps we should
+> do something like this pseudo-code
+> 
+> 	if (p->exit_state == EXIT_ZOMBIE) {
+> 		if (!delay_group_leader(p))
+> 			return wait_task_zombie(wo, p);
+> 
+> 		ptrace_unlink();
+> 		wait_task_zombie(WNOWAIT);
+> 	}
+> 
+> However. This is another user-visible change, we need another discussion
+> even if I am right. In particular, it is not clear what should we do
+> if parent == real_parent. And probably this can confuse gdb, but iirc
+> gdb already have the problems with the dead leader anyway.
 
-Well, AFAICS Randy's patch correctly expresses current infrastructure 
-dependencies the driver has.
+Interesting point.  Yeah, I agree.  wait(WEXITED) from the ptracer
+should only wait for the tracee itself, not the group.  When they are
+one and the same, I don't think we need to do anything differently
+from now.
 
-If it's undesirable to disable the driver in the (unlikely but possible) 
-SND_SOC_ALL_CODECS=y but !REGULATOR case, i.e. if it's desirable to have the 
-driver build more widely, then that can be enhanced further - but first please 
-get things to build.
+If we change the behavior that way, it would also fit better with the
+rest of the new behavior where the real parent and ptracer have
+separate roles when wait(2)ing for stopped states.
 
-> [...]  It'd be more likely to impede than help the sort of build coverage 
-> tests where one would encounter it.
+The question is how the change would affect the existing users.  When
+the debugee is a direct child, nothing will change.  When attaching to
+a separate group, I don't think it even matters.  Does gdb handle
+group leader any differently from the rest when attached to an
+unrelated group?
 
-It's an invariant mostly - both Randy's and my testing will find breakages 
-regardless of how restrictively enabled this driver is.
+Thanks.
 
-Thanks,
-
-	Ingo
+-- 
+tejun
