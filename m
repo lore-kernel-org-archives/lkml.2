@@ -1,622 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab1CUIIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 04:08:30 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48685 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab1CUII0 (ORCPT
+	id S1751830Ab1CUINA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 04:13:00 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:55719 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab1CUIM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 04:08:26 -0400
-Date: Mon, 21 Mar 2011 17:08:24 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v7] MAX8997/8966 MFD: Add IRQ control feature
-In-reply-to: <20110321135910.267f367f.sfr@canb.auug.org.au>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Kyungmin Park <kyungmin.park@samsung.com>, myungjoo.ham@gmail.com
-Message-id: <1300694904-29856-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.1
-Content-transfer-encoding: 7BIT
-References: <20110321135910.267f367f.sfr@canb.auug.org.au>
-X-OriginalArrivalTime: 21 Mar 2011 08:08:24.0580 (UTC)
- FILETIME=[26BB0C40:01CBE79F]
+	Mon, 21 Mar 2011 04:12:56 -0400
+Date: Mon, 21 Mar 2011 08:12:53 +0000 (GMT)
+From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
+Subject: Re: linux-next: build failure after merge of the final tree (mfd tree
+ related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20110321080907058@myungjoo.ham
+Msgkey: 20110321080907058@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20110321080907058@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <24090250.39821300695171946.JavaMail.weblogic@epml12>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p2L8D7KY030233
 
-This patch enables IRQ handling for MAX8997/8966 chips.
+> Sender : Stephen Rothwell<sfr@canb.auug.org.au>
+> Date : 2011-03-21 11:59 (GMT+09:00)
+> Title : linux-next: build failure after merge of the final tree (mfd tree related)
+> 
+> Hi Sam,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/mfd/max8997-irq.c:170: error: unknown field 'bus_lock' specified in initializer
+> drivers/mfd/max8997-irq.c:170: warning: initialization from incompatible pointer type
+> drivers/mfd/max8997-irq.c:171: error: unknown field 'bus_sync_unlock' specified in initializer
+> drivers/mfd/max8997-irq.c:171: warning: initialization from incompatible pointer type
+> drivers/mfd/max8997-irq.c:172: error: unknown field 'mask' specified in initializer
+> drivers/mfd/max8997-irq.c:172: warning: initialization from incompatible pointer type
+> drivers/mfd/max8997-irq.c:173: error: unknown field 'unmask' specified in initializer
+> drivers/mfd/max8997-irq.c:173: warning: initialization from incompatible pointer type
+> 
+> Caused by commit d7d21d394c9d ("mfd: Add MAX8997/8966 IRQ control feature").
+> 
+> The presence of these fields depends on
+> CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED not being set.
+> 
+> I have reverted that commit for today.
 
-Please note that Fuel-Gauge-related IRQs are not implemented in this
-initial release. The fuel gauge module in MAX8997 is identical to
-MAX17042, which is already in Linux kernel. In order to use the
-already-existing MAX17042 driver for fuel gauge module in MAX8997, the
-main interrupt handler of MAX8997 should relay related interrupts to
-MAX17042 driver. However, in order to do this, we need to modify
-MAX17042 driver as well because MAX17042 driver does not have any
-interrupt handlers for now. We are not going to implement this in this
-initial release as it is not crucial in basic operations of MAX8997.
+Hello Stephen,
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
---
-The changes from previous patch
-v7
-removed RTC patch from the series as applied
-with comments from Stephen
-	- Removed dependencies on not setting
-	"CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED"
-v6
-with comments from Samuel
-	- IRQ register bit values use macros
-corrected GPIO interrupt handling
-RTC configuration bit values use macros
-v5
-with comments from Mark
-	- Style updated for PMIC
-	- Revised side-effect calculation
-	In the range given, choose a setting without side-effect
-	then, choose a setting with the least side-effect if allowed.
-Added comments on FUEL-GAUGE issue in IRQ
+I've just submitted a corrected patch that works with
+CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED being either set or unset.
+Because it appears that we still have targets with deprecated functions,
+I left the deprecated functions working as well as the new ones.
 
-v4
-with comments from Randy:
-	- Spelling errors in Kconfig
-with comments from Minsung Kim:
-	- RTC month bit error.
+Thank you.
 
-v3
-with comments from Joe:
-	- Style updated for IRQ and RTC
-with comments from Mark
-	- Style updated for RTC and PMIC
-Merged support for RTC and IRQ
+- MyungJoo.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+> 
+>
 
-v2
-with comments from Samuel:
-	- Style updated for MFD
-with comments from Mark:
-	- Updated API for next and 2.6.38
-	- Style updated for regulators
-Support for hibernation
-Support for bulk register access
-Corrected register names
-Added RTC/IRQ registers
-LDO access bug fixed
-Support for regulator suspend state control
----
- drivers/mfd/Makefile                |    2 +-
- drivers/mfd/max8997-irq.c           |  425 +++++++++++++++++++++++++++++++++++
- include/linux/mfd/max8997-private.h |   21 ++
- include/linux/mfd/max8997.h         |    7 +-
- 4 files changed, 452 insertions(+), 3 deletions(-)
- create mode 100644 drivers/mfd/max8997-irq.c
 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index f6662e3..4cff10c 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -60,7 +60,7 @@ obj-$(CONFIG_UCB1400_CORE)	+= ucb1400_core.o
- obj-$(CONFIG_PMIC_DA903X)	+= da903x.o
- max8925-objs			:= max8925-core.o max8925-i2c.o
- obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
--obj-$(CONFIG_MFD_MAX8997)	+= max8997.o
-+obj-$(CONFIG_MFD_MAX8997)	+= max8997.o max8997-irq.o
- obj-$(CONFIG_MFD_MAX8998)	+= max8998.o max8998-irq.o
- 
- pcf50633-objs			:= pcf50633-core.o pcf50633-irq.o
-diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
-new file mode 100644
-index 0000000..b9894ba
---- /dev/null
-+++ b/drivers/mfd/max8997-irq.c
-@@ -0,0 +1,425 @@
-+/*
-+ * max8997-irq.c - Interrupt controller support for MAX8997
-+ *
-+ * Copyright (C) 2011 Samsung Electronics Co.Ltd
-+ * MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * This driver is based on max8998-irq.c
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-+#include <linux/mfd/max8997.h>
-+#include <linux/mfd/max8997-private.h>
-+
-+static const u8 max8997_mask_reg[] = {
-+	[PMIC_INT1] = MAX8997_REG_INT1MSK,
-+	[PMIC_INT2] = MAX8997_REG_INT2MSK,
-+	[PMIC_INT3] = MAX8997_REG_INT3MSK,
-+	[PMIC_INT4] = MAX8997_REG_INT4MSK,
-+	[FUEL_GAUGE] = MAX8997_REG_INVALID,
-+	[MUIC_INT1] = MAX8997_MUIC_REG_INTMASK1,
-+	[MUIC_INT2] = MAX8997_MUIC_REG_INTMASK2,
-+	[MUIC_INT3] = MAX8997_MUIC_REG_INTMASK3,
-+	[GPIO_LOW] = MAX8997_REG_INVALID,
-+	[GPIO_HI] = MAX8997_REG_INVALID,
-+	[FLASH_STATUS] = MAX8997_REG_INVALID,
-+};
-+
-+static struct i2c_client *get_i2c(struct max8997_dev *max8997,
-+				enum max8997_irq_source src)
-+{
-+	switch (src) {
-+	case PMIC_INT1 ... PMIC_INT4:
-+		return max8997->i2c;
-+	case FUEL_GAUGE:
-+		return NULL;
-+	case MUIC_INT1 ... MUIC_INT3:
-+		return max8997->muic;
-+	case GPIO_LOW ... GPIO_HI:
-+		return max8997->i2c;
-+	case FLASH_STATUS:
-+		return max8997->i2c;
-+	default:
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+struct max8997_irq_data {
-+	int mask;
-+	enum max8997_irq_source group;
-+};
-+
-+#define DECLARE_IRQ(idx, _group, _mask)		\
-+	[(idx)] = { .group = (_group), .mask = (_mask) }
-+static const struct max8997_irq_data max8997_irqs[] = {
-+	DECLARE_IRQ(MAX8997_PMICIRQ_PWRONR,	PMIC_INT1, 1 << 0),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_PWRONF,	PMIC_INT1, 1 << 1),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_PWRON1SEC,	PMIC_INT1, 1 << 3),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_JIGONR,	PMIC_INT1, 1 << 4),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_JIGONF,	PMIC_INT1, 1 << 5),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_LOWBAT2,	PMIC_INT1, 1 << 6),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_LOWBAT1,	PMIC_INT1, 1 << 7),
-+
-+	DECLARE_IRQ(MAX8997_PMICIRQ_JIGR,	PMIC_INT2, 1 << 0),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_JIGF,	PMIC_INT2, 1 << 1),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_MR,		PMIC_INT2, 1 << 2),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_DVS1OK,	PMIC_INT2, 1 << 3),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_DVS2OK,	PMIC_INT2, 1 << 4),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_DVS3OK,	PMIC_INT2, 1 << 5),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_DVS4OK,	PMIC_INT2, 1 << 6),
-+
-+	DECLARE_IRQ(MAX8997_PMICIRQ_CHGINS,	PMIC_INT3, 1 << 0),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_CHGRM,	PMIC_INT3, 1 << 1),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_DCINOVP,	PMIC_INT3, 1 << 2),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_TOPOFFR,	PMIC_INT3, 1 << 3),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_CHGRSTF,	PMIC_INT3, 1 << 5),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_MBCHGTMEXPD,	PMIC_INT3, 1 << 7),
-+
-+	DECLARE_IRQ(MAX8997_PMICIRQ_RTC60S,	PMIC_INT4, 1 << 0),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_RTCA1,	PMIC_INT4, 1 << 1),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_RTCA2,	PMIC_INT4, 1 << 2),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_SMPL_INT,	PMIC_INT4, 1 << 3),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_RTC1S,	PMIC_INT4, 1 << 4),
-+	DECLARE_IRQ(MAX8997_PMICIRQ_WTSR,	PMIC_INT4, 1 << 5),
-+
-+	DECLARE_IRQ(MAX8997_MUICIRQ_ADCError,	MUIC_INT1, 1 << 2),
-+	DECLARE_IRQ(MAX8997_MUICIRQ_ADCLow,	MUIC_INT1, 1 << 1),
-+	DECLARE_IRQ(MAX8997_MUICIRQ_ADC,	MUIC_INT1, 1 << 0),
-+
-+	DECLARE_IRQ(MAX8997_MUICIRQ_VBVolt,	MUIC_INT2, 1 << 4),
-+	DECLARE_IRQ(MAX8997_MUICIRQ_DBChg,	MUIC_INT2, 1 << 3),
-+	DECLARE_IRQ(MAX8997_MUICIRQ_DCDTmr,	MUIC_INT2, 1 << 2),
-+	DECLARE_IRQ(MAX8997_MUICIRQ_ChgDetRun,	MUIC_INT2, 1 << 1),
-+	DECLARE_IRQ(MAX8997_MUICIRQ_ChgTyp,	MUIC_INT2, 1 << 0),
-+
-+	DECLARE_IRQ(MAX8997_MUICIRQ_OVP,	MUIC_INT3, 1 << 2),
-+};
-+
-+#ifdef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
-+static void max8997_irq_lock(struct irq_data *data)
-+{
-+	struct max8997_dev *max8997 = get_irq_chip_data(data->irq);
-+
-+	mutex_lock(&max8997->irqlock);
-+}
-+
-+static void max8997_irq_sync_unlock(struct irq_data *data)
-+{
-+	struct max8997_dev *max8997 = get_irq_chip_data(data->irq);
-+	int i;
-+
-+	for (i = 0; i < MAX8997_IRQ_GROUP_NR; i++) {
-+		u8 mask_reg = max8997_mask_reg[i];
-+		struct i2c_client *i2c = get_i2c(max8997, i);
-+
-+		if (mask_reg == MAX8997_REG_INVALID ||
-+				IS_ERR_OR_NULL(i2c))
-+			continue;
-+		max8997->irq_masks_cache[i] = max8997->irq_masks_cur[i];
-+
-+		max8997_write_reg(i2c, max8997_mask_reg[i],
-+				max8997->irq_masks_cur[i]);
-+	}
-+
-+	mutex_unlock(&max8997->irqlock);
-+}
-+
-+static void max8997_irq_mask(struct irq_data *data)
-+{
-+	max8997->irq_masks_cur[irq_data->group] |= irq_data->mask;
-+}
-+
-+static void max8997_irq_unmask(struct irq_data *data)
-+{
-+	max8997->irq_masks_cur[irq_data->group] &= ~irq_data->mask;
-+}
-+
-+#else /* CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED */
-+static const inline struct max8997_irq_data *
-+irq_to_max8997_irq(struct max8997_dev *max8997, int irq)
-+{
-+	return &max8997_irqs[irq - max8997->irq_base];
-+}
-+
-+static void max8997_irq_lock(unsigned int irq)
-+{
-+	struct max8997_dev *max8997 = get_irq_chip_data(irq);
-+
-+	mutex_lock(&max8997->irqlock);
-+}
-+
-+static void max8997_irq_sync_unlock(unsigned int irq)
-+{
-+	struct max8997_dev *max8997 = get_irq_chip_data(irq);
-+	int i;
-+
-+	for (i = 0; i < MAX8997_IRQ_GROUP_NR; i++) {
-+		u8 mask_reg = max8997_mask_reg[i];
-+		struct i2c_client *i2c = get_i2c(max8997, i);
-+
-+		if (mask_reg == MAX8997_REG_INVALID ||
-+				IS_ERR_OR_NULL(i2c))
-+			continue;
-+		max8997->irq_masks_cache[i] = max8997->irq_masks_cur[i];
-+
-+		max8997_write_reg(i2c, max8997_mask_reg[i],
-+				max8997->irq_masks_cur[i]);
-+	}
-+
-+	mutex_unlock(&max8997->irqlock);
-+}
-+
-+static void max8997_irq_mask(unsigned int irq)
-+{
-+	struct max8997_dev *max8997 = get_irq_chip_data(irq);
-+	const struct max8997_irq_data *irq_data = irq_to_max8997_irq(max8997,
-+									irq);
-+
-+	max8997->irq_masks_cur[irq_data->group] |= irq_data->mask;
-+}
-+
-+static void max8997_irq_unmask(unsigned int irq)
-+{
-+	struct max8997_dev *max8997 = get_irq_chip_data(irq);
-+	const struct max8997_irq_data *irq_data = irq_to_max8997_irq(max8997,
-+									irq);
-+
-+	max8997->irq_masks_cur[irq_data->group] &= ~irq_data->mask;
-+}
-+#endif /* CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED */
-+
-+static struct irq_chip max8997_irq_chip = {
-+	.name			= "max8997",
-+#ifdef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
-+	.irq_bus_lock		= max8997_irq_lock,
-+	.irq_bus_sync_unlock	= max8997_irq_sync_unlock,
-+	.irq_mask		= max8997_irq_mask,
-+	.irq_unmask		= max8997_irq_unmask,
-+#else /* CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED */
-+	.bus_lock		= max8997_irq_lock,
-+	.bus_sync_unlock	= max8997_irq_sync_unlock,
-+	.mask			= max8997_irq_mask,
-+	.unmask			= max8997_irq_unmask,
-+#endif /* CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED */
-+};
-+
-+#define MAX8997_IRQSRC_PMIC		(1 << 1)
-+#define MAX8997_IRQSRC_FUELGAUGE	(1 << 2)
-+#define MAX8997_IRQSRC_MUIC		(1 << 3)
-+#define MAX8997_IRQSRC_GPIO		(1 << 4)
-+#define MAX8997_IRQSRC_FLASH		(1 << 5)
-+static irqreturn_t max8997_irq_thread(int irq, void *data)
-+{
-+	struct max8997_dev *max8997 = data;
-+	u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
-+	u8 irq_src;
-+	int ret;
-+	int i;
-+
-+	ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, &irq_src);
-+	if (ret < 0) {
-+		dev_err(max8997->dev, "Failed to read interrupt source: %d\n",
-+				ret);
-+		return IRQ_NONE;
-+	}
-+
-+	if (irq_src & MAX8997_IRQSRC_PMIC) {
-+		/* PMIC INT1 ~ INT4 */
-+		max8997_bulk_read(max8997->i2c, MAX8997_REG_INT1, 4,
-+				&irq_reg[PMIC_INT1]);
-+	}
-+	if (irq_src & MAX8997_IRQSRC_FUELGAUGE) {
-+		/*
-+		 * TODO: FUEL GAUGE
-+		 *
-+		 * This is to be supported by Max17042 driver. When
-+		 * an interrupt incurs here, it should be relayed to a
-+		 * Max17042 device that is connected (probably by
-+		 * platform-data). However, we do not have interrupt
-+		 * handling in Max17042 driver currently. The Max17042 IRQ
-+		 * driver should be ready to be used as a stand-alone device and
-+		 * a Max8997-dependent device. Because it is not ready in
-+		 * Max17042-side and it is not too critical in operating
-+		 * Max8997, we do not implement this in initial releases.
-+		 */
-+		irq_reg[FUEL_GAUGE] = 0;
-+	}
-+	if (irq_src & MAX8997_IRQSRC_MUIC) {
-+		/* MUIC INT1 ~ INT3 */
-+		max8997_bulk_read(max8997->muic, MAX8997_MUIC_REG_INT1, 3,
-+				&irq_reg[MUIC_INT1]);
-+	}
-+	if (irq_src & MAX8997_IRQSRC_GPIO) {
-+		/* GPIO Interrupt */
-+		u8 gpio_info[MAX8997_NUM_GPIO];
-+
-+		irq_reg[GPIO_LOW] = 0;
-+		irq_reg[GPIO_HI] = 0;
-+
-+		max8997_bulk_read(max8997->i2c, MAX8997_REG_GPIOCNTL1,
-+				MAX8997_NUM_GPIO, gpio_info);
-+		for (i = 0; i < MAX8997_NUM_GPIO; i++) {
-+			bool interrupt = false;
-+
-+			switch (gpio_info[i] & MAX8997_GPIO_INT_MASK) {
-+			case MAX8997_GPIO_INT_BOTH:
-+				if (max8997->gpio_status[i] != gpio_info[i])
-+					interrupt = true;
-+				break;
-+			case MAX8997_GPIO_INT_RISE:
-+				if ((max8997->gpio_status[i] != gpio_info[i]) &&
-+				    (gpio_info[i] & MAX8997_GPIO_DATA_MASK))
-+					interrupt = true;
-+				break;
-+			case MAX8997_GPIO_INT_FALL:
-+				if ((max8997->gpio_status[i] != gpio_info[i]) &&
-+				    !(gpio_info[i] & MAX8997_GPIO_DATA_MASK))
-+					interrupt = true;
-+				break;
-+			default:
-+				break;
-+			}
-+
-+			if (interrupt) {
-+				if (i < 8)
-+					irq_reg[GPIO_LOW] |= (1 << i);
-+				else
-+					irq_reg[GPIO_HI] |= (1 << (i - 8));
-+			}
-+
-+		}
-+	}
-+	if (irq_src & MAX8997_IRQSRC_FLASH) {
-+		/* Flash Status Interrupt */
-+		ret = max8997_read_reg(max8997->i2c, MAX8997_REG_FLASHSTATUS,
-+				&irq_reg[FLASH_STATUS]);
-+	}
-+
-+	/* Apply masking */
-+	for (i = 0; i < MAX8997_IRQ_GROUP_NR; i++)
-+		irq_reg[i] &= ~max8997->irq_masks_cur[i];
-+
-+	/* Report */
-+	for (i = 0; i < MAX8997_IRQ_NR; i++) {
-+		if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask)
-+			handle_nested_irq(max8997->irq_base + i);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+int max8997_irq_resume(struct max8997_dev *max8997)
-+{
-+	if (max8997->irq && max8997->irq_base)
-+		max8997_irq_thread(max8997->irq_base, max8997);
-+	return 0;
-+}
-+
-+int max8997_irq_init(struct max8997_dev *max8997)
-+{
-+	int i;
-+	int cur_irq;
-+	int ret;
-+	u8 val;
-+
-+	if (!max8997->irq) {
-+		dev_warn(max8997->dev, "No interrupt specified.\n");
-+		max8997->irq_base = 0;
-+		return 0;
-+	}
-+
-+	if (!max8997->irq_base) {
-+		dev_err(max8997->dev, "No interrupt base specified.\n");
-+		return 0;
-+	}
-+
-+	mutex_init(&max8997->irqlock);
-+
-+	/* Mask individual interrupt sources */
-+	for (i = 0; i < MAX8997_IRQ_GROUP_NR; i++) {
-+		struct i2c_client *i2c;
-+
-+		max8997->irq_masks_cur[i] = 0xff;
-+		max8997->irq_masks_cache[i] = 0xff;
-+		i2c = get_i2c(max8997, i);
-+
-+		if (IS_ERR_OR_NULL(i2c))
-+			continue;
-+		if (max8997_mask_reg[i] == MAX8997_REG_INVALID)
-+			continue;
-+
-+		max8997_write_reg(i2c, max8997_mask_reg[i], 0xff);
-+	}
-+
-+	for (i = 0; i < MAX8997_NUM_GPIO; i++) {
-+		max8997->gpio_status[i] = (max8997_read_reg(max8997->i2c,
-+						MAX8997_REG_GPIOCNTL1 + i,
-+						&val)
-+					& MAX8997_GPIO_DATA_MASK) ?
-+					true : false;
-+	}
-+
-+	/* Register with genirq */
-+	for (i = 0; i < MAX8997_IRQ_NR; i++) {
-+		cur_irq = i + max8997->irq_base;
-+		set_irq_chip_data(cur_irq, max8997);
-+		set_irq_chip_and_handler(cur_irq, &max8997_irq_chip,
-+				handle_edge_irq);
-+		set_irq_nested_thread(cur_irq, 1);
-+#ifdef CONFIG_ARM
-+		set_irq_flags(cur_irq, IRQF_VALID);
-+#else
-+		set_irq_noprobe(cur_irq);
-+#endif
-+	}
-+
-+	ret = request_threaded_irq(max8997->irq, NULL, max8997_irq_thread,
-+			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+			"max8997-irq", max8997);
-+
-+	if (ret) {
-+		dev_err(max8997->dev, "Failed to request IRQ %d: %d\n",
-+				max8997->irq, ret);
-+		return ret;
-+	}
-+
-+	if (!max8997->ono)
-+		return 0;
-+
-+	ret = request_threaded_irq(max8997->ono, NULL, max8997_irq_thread,
-+			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING |
-+			IRQF_ONESHOT, "max8997-ono", max8997);
-+
-+	if (ret)
-+		dev_err(max8997->dev, "Failed to request ono-IRQ %d: %d\n",
-+				max8997->ono, ret);
-+
-+	return 0;
-+}
-+
-+void max8997_irq_exit(struct max8997_dev *max8997)
-+{
-+	if (max8997->ono)
-+		free_irq(max8997->ono, max8997);
-+
-+	if (max8997->irq)
-+		free_irq(max8997->irq, max8997);
-+}
-diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-index 93a9477..69d1010 100644
---- a/include/linux/mfd/max8997-private.h
-+++ b/include/linux/mfd/max8997-private.h
-@@ -24,6 +24,8 @@
- 
- #include <linux/i2c.h>
- 
-+#define MAX8997_REG_INVALID	(0xff)
-+
- enum max8997_pmic_reg {
- 	MAX8997_REG_PMIC_ID0	= 0x00,
- 	MAX8997_REG_PMIC_ID1	= 0x01,
-@@ -313,6 +315,7 @@ enum max8997_irq {
- #define MAX8997_REG_BUCK2DVS(x)	(MAX8997_REG_BUCK2DVS1 + (x) - 1)
- #define MAX8997_REG_BUCK5DVS(x)	(MAX8997_REG_BUCK5DVS1 + (x) - 1)
- 
-+#define MAX8997_NUM_GPIO	12
- struct max8997_dev {
- 	struct device *dev;
- 	struct i2c_client *i2c; /* 0xcc / PMIC, Battery Control, and FLASH */
-@@ -324,11 +327,19 @@ struct max8997_dev {
- 	int type;
- 	struct platform_device *battery; /* battery control (not fuel gauge) */
- 
-+	int irq;
-+	int ono;
-+	int irq_base;
- 	bool wakeup;
-+	struct mutex irqlock;
-+	int irq_masks_cur[MAX8997_IRQ_GROUP_NR];
-+	int irq_masks_cache[MAX8997_IRQ_GROUP_NR];
- 
- 	/* For hibernation */
- 	u8 reg_dump[MAX8997_REG_PMIC_END + MAX8997_MUIC_REG_END +
- 		MAX8997_HAPTIC_REG_END];
-+
-+	bool gpio_status[MAX8997_NUM_GPIO];
- };
- 
- enum max8997_types {
-@@ -336,6 +347,10 @@ enum max8997_types {
- 	TYPE_MAX8966,
- };
- 
-+extern int max8997_irq_init(struct max8997_dev *max8997);
-+extern void max8997_irq_exit(struct max8997_dev *max8997);
-+extern int max8997_irq_resume(struct max8997_dev *max8997);
-+
- extern int max8997_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
- extern int max8997_bulk_read(struct i2c_client *i2c, u8 reg, int count,
- 				u8 *buf);
-@@ -344,4 +359,10 @@ extern int max8997_bulk_write(struct i2c_client *i2c, u8 reg, int count,
- 				u8 *buf);
- extern int max8997_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask);
- 
-+#define MAX8997_GPIO_INT_BOTH	(0x3 << 4)
-+#define MAX8997_GPIO_INT_RISE	(0x2 << 4)
-+#define MAX8997_GPIO_INT_FALL	(0x1 << 4)
-+
-+#define MAX8997_GPIO_INT_MASK	(0x3 << 4)
-+#define MAX8997_GPIO_DATA_MASK	(0x1 << 2)
- #endif /*  __LINUX_MFD_MAX8997_PRIV_H */
-diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
-index cb671b3..60931d0 100644
---- a/include/linux/mfd/max8997.h
-+++ b/include/linux/mfd/max8997.h
-@@ -78,8 +78,11 @@ struct max8997_regulator_data {
- };
- 
- struct max8997_platform_data {
--	bool wakeup;
--	/* IRQ: Not implemented */
-+	/* IRQ */
-+	int irq_base;
-+	int ono;
-+	int wakeup;
-+
- 	/* ---- PMIC ---- */
- 	struct max8997_regulator_data *regulators;
- 	int num_regulators;
--- 
-1.7.1
-
+ MyungJoo Ham (ÇÔ¸íÁÖ)
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: +82-10-6714-2858 / office: +82-31-279-8033ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
