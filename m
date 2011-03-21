@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab1CUO6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 10:58:19 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:56391 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab1CUO6R convert rfc822-to-8bit (ORCPT
+	id S1753497Ab1CUPBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:01:39 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51994 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab1CUPBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 10:58:17 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>, Greg KH <gregkh@suse.de>,
-        "Olaf Hering" <olaf@aepfle.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] hv: use sync_bitops when interacting with the hypervisor
-Thread-Topic: [PATCH] hv: use sync_bitops when interacting with the
- hypervisor
-Thread-Index: AQHL5827AryHuDVrIk+hbeQS3kp3ipQ4SOqAgAACD4D//5XoIA==
-Date: Mon, 21 Mar 2011 14:58:15 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56233FC96B2@TK5EX14MBXC118.redmond.corp.microsoft.com>
-References: <20110321134137.GA29305@aepfle.de>
- <20110321140927.GA7358@suse.de>
- <A1F3067C9B68744AA19F6802BAB8FFDC087559@TK5EX14MBXC223.redmond.corp.microsoft.com>
-In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC087559@TK5EX14MBXC223.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Mar 2011 11:01:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=P/fsCwsth5Dzhw5QkiTXUHDiL6FyI3R8/Omv99DAUuWq1B345OFUKHGVmZ2sMfbHG/
+         VzX9d2Qooh75gFt3SdxKcIZNqEePW987Rsbq/I9utyOBXXNMeZWwrxQa6ucR5pHh14NC
+         WCHjzTLOLvDVd7kxdT2xgb6WTHLj5yUIYx58w=
+Date: Mon, 21 Mar 2011 17:59:48 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] rapidio: potential null deref on failure path
+Message-ID: <20110321145948.GP2008@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	"Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+	Matt Porter <mporter@kernel.crashing.org>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <20110319044032.GC2008@bicker>
+ <0CE8B6BE3C4AD74AB97D9D29BD24E55201A588F5@CORPEXCH1.na.ads.idt.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55201A588F5@CORPEXCH1.na.ads.idt.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Haiyang Zhang
-> Sent: Monday, March 21, 2011 7:17 AM
-> To: Greg KH; Olaf Hering
-> Cc: Hank Janssen; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH] hv: use sync_bitops when interacting with the
-> hypervisor
-> > From: Greg KH [mailto:gregkh@suse.de]
-> >
-> > Great!  Can I get an Acked-by from Hank or Haiyang on this as well
-> > before I apply it?
+On Mon, Mar 21, 2011 at 05:49:06AM -0700, Bounine, Alexandre wrote:
+> Better to combine both conditions:
 > 
-> Our testing team has verified Olaf's fix.
-> Thanks,
+> if (rio_is_switch(rdev) && rswitch->route_table))
+>  		kfree(rswitch->route_table);
+> 
+> Because there is situation when routine fails to allocate route_table
+> for a switch.
 > 
 
-Yep, it worked great.  Thank you Olaf for doing this!
+kfree() accepts NULL pointers.  People have been removing these checks
+all over the tree by the hundreds...  Sorry I should have mentioned 
+that.
 
-Hank.
+regards,
+dan carpenter
+
 
