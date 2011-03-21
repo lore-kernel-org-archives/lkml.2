@@ -1,63 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab1CUO3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 10:29:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab1CUO3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 10:29:02 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] FS: lookup_mnt() is only used in the core fs routines now
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Mon, 21 Mar 2011 14:28:58 +0000
-Message-ID: <20110321142858.19914.74627.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753481Ab1CUObD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 10:31:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51215 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab1CUObB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 10:31:01 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Dave Chinner <david@fromorbit.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
+In-reply-to: <20110321140451.GA7153@quack.suse.cz>
+References: <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com> <20110308045626.GD1956@dastard> <20110319000755.GD1110@tux1.beaverton.ibm.com> <20110321140451.GA7153@quack.suse.cz>
+Date: Mon, 21 Mar 2011 10:24:41 -0400
+Message-Id: <1300716666-sup-2087@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D87610A.010A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lookup_mnt() is only used in the core fs routines now, so it doesn't need to
-be globally declared anymore.  It isn't exported to modules at the moment, so
-nothing that can be modularised seems to be using it.
+Excerpts from Jan Kara's message of 2011-03-21 10:04:51 -0400:
+> On Fri 18-03-11 17:07:55, Darrick J. Wong wrote:
+> > > > Ok, here's what I have so far.  I took everyone's suggestions of where to add
+> > > > calls to wait_on_page_writeback, which seems to handle the multiple-write case
+> > > > adequately.  Unfortunately, it is still possible to generate checksum errors by
+> > > > scribbling furiously on a mmap'd region, even after adding the writeback wait
+> > > > in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
+> > > > removing its wait_for_page_writeback call, so I suspect there's a bit more
+> > > > going on in btrfs than I've been able to figure out.
+> > 
+> > I wonder, is it possible for this to happen:
+> > 
+> > 1. Thread A mmaps a page and tries to write to it.  ext4_page_mkwrite executes,
+> >    but there's no ongoing writeback, so it returns without delay.
+> > 2. Thread A starts writing furiously to the page.
+> > 3. Thread B runs fsync() or something that results in the page being
+> >    checksummed and scheduled for writeout.
+> > 4. Thread A continues to write furiously(!) on that same page before the
+> >    controller finishes the DMA transfer.
+> > 5. Disk gets the page, which now doesn't match its checksum, and *boom*
+>   What happens on writepage (see mm/page-writeback.c:write_cache_pages())
+> is:
+>   lock_page(page)
+>   ...
+>   clear_page_dirty_for_io() - removes PageDirty, marks page as read-only in
+>     PTE
+>   ...
+>   set_page_writeback() (happens e.g. in __block_write_full_page() called
+> from filesystem's writepage implementation).
+>   unlock_page(page)
+> 
+>   So if you compute the checksum after set_page_writeback() is done in the
+> writepage() implementation (you cannot use __block_write_full_page() in
+> that case) and you call wait_on_page_writeback() in ext4_page_mkwrite()
+> under page lock, you should be safe. If you do all this and still see
+> errors, something is broken I'd say...
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Looking at the ext4_page_mkwrite, it does this:
 
- fs/internal.h          |    1 +
- include/linux/dcache.h |    1 -
- 2 files changed, 1 insertions(+), 1 deletions(-)
+lock the page
+check for holes
+unlock the page
+if (no_holes)
+	return;
 
-diff --git a/fs/internal.h b/fs/internal.h
-index 1719154..8318059 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -64,6 +64,7 @@ extern int copy_mount_string(const void __user *, char **);
- 
- extern unsigned int mnt_get_count(struct vfsmount *mnt);
- extern struct vfsmount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
-+extern struct vfsmount *lookup_mnt(struct path *);
- extern void mnt_set_mountpoint(struct vfsmount *, struct dentry *,
- 				struct vfsmount *);
- extern void release_mounts(struct list_head *);
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 1a87760..f2afed4 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -416,7 +416,6 @@ static inline bool d_mountpoint(struct dentry *dentry)
- 	return dentry->d_flags & DCACHE_MOUNTED;
- }
- 
--extern struct vfsmount *lookup_mnt(struct path *);
- extern struct dentry *lookup_create(struct nameidata *nd, int is_dir);
- 
- extern int sysctl_vfs_cache_pressure;
+write_begin/write_end
+return
+
+So, to have page_mkwrite work, you need to wait for writeback with the
+page locked in both the no holes case and after the
+write_begin/write_end.  write_begin will dirty the page, so someone can
+wander in and start the IO while we are still in page_mkwrite.
+
+This is untested and uncompiled, but it should
+do the trick.
+
+Jan, did you get rid of all the buffer head based writeback for
+data=ordered in ext4?  That's my only other idea, that someone is doing
+writeback directly without taking the page lock.
+
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 9f7f9e4..8a75e12 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -5880,6 +5880,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	if (page_has_buffers(page)) {
+ 		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
+ 					ext4_bh_unmapped)) {
++			wait_on_page_writeback(page);
+ 			unlock_page(page);
+ 			goto out_unlock;
+ 		}
+@@ -5901,6 +5902,16 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	if (ret < 0)
+ 		goto out_unlock;
+ 	ret = 0;
++
++	/*
++	 * write_begin/end might have created a dirty page and someone
++	 * could wander in and start the IO.  Make sure that hasn't
++	 * happened
++	 */
++	lock_page(page);
++	wait_on_page_writeback(page);
++	unlock_page(page);
++
+ out_unlock:
+ 	if (ret)
+ 		ret = VM_FAULT_SIGBUS;
 
