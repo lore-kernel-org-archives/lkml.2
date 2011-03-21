@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab1CUXbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:31:36 -0400
-Received: from kroah.org ([198.145.64.141]:52570 "EHLO coco.kroah.org"
+	id S1755783Ab1CUXbv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:31:51 -0400
+Received: from kroah.org ([198.145.64.141]:52558 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673Ab1CUXRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:45 -0400
+	id S1755643Ab1CUXRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:42 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:23 2011
-Message-Id: <20110321230323.829763534@clark.kroah.org>
+Message-Id: <20110321230323.519320783@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:37 -0700
+Date: Mon, 21 Mar 2011 16:01:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [21/78] ath9k: remove support for the FIF_PROMISC_IN_BSS filter flag
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [18/78] drm: Hold the mode mutex whilst probing for sysfs status
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 2e286947f1294239527c11f9f466ddce6466455b upstream.
+commit 007c80a5497a3f9c8393960ec6e6efd30955dcb1 upstream.
 
-The hardware rx filter flag triggered by FIF_PROMISC_IN_BSS is overly broad
-and covers even frames with PHY errors. When this flag is enabled, this message
-shows up frequently during scanning or hardware resets:
+As detect will use hw registers and may modify structures, it needs to be
+serialised by use of the dev->mode_config.mutex. Make it so.
 
-ath: Could not stop RX, we could be confusing the DMA engine when we start RX up
+Otherwise, we may cause random crashes as the sysfs file is queried
+whilst a concurrent hotplug poll is being run. For example:
 
-Since promiscuous mode is usually not particularly useful, yet enabled by
-default by bridging (either used normally in 4-addr mode, or with hacks
-for various virtualization software), we should sacrifice it for better
-reliability during normal operation.
+[ 1189.189626] BUG: unable to handle kernel NULL pointer dereference at 00000100
+[ 1189.189821] IP: [<e0c22019>] intel_tv_detect_type+0xa2/0x203 [i915]
+[ 1189.190020] *pde = 00000000
+[ 1189.190104] Oops: 0000 [#1] SMP
+[ 1189.190209] last sysfs file: /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-SVIDEO-1/status
+[ 1189.190412] Modules linked in: mperf cpufreq_conservative cpufreq_userspace cpufreq_powersave cpufreq_stats decnet uinput fuse loop joydev snd_hd a_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm i915 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq drm_kms_helper snd_timer uvcvideo d rm snd_seq_device eeepc_laptop tpm_tis usbhid videodev i2c_algo_bit v4l1_compat snd sparse_keymap i2c_core hid serio_raw tpm psmouse evdev tpm_bios rfkill shpchp ac processor rng_c ore battery video power_supply soundcore pci_hotplug button output snd_page_alloc usb_storage uas ext3 jbd mbcache sd_mod crc_t10dif ata_generic ahci libahci ata_piix libata uhci_h cd ehci_hcd scsi_mod usbcore thermal atl2 thermal_sys nls_base [last unloaded: scsi_wait_scan]
+[ 1189.192007]
+[ 1189.192007] Pid: 1464, comm: upowerd Not tainted 2.6.37-2-686 #1 ASUSTeK Computer INC. 701/701
+[ 1189.192007] EIP: 0060:[<e0c22019>] EFLAGS: 00010246 CPU: 0
+[ 1189.192007] EIP is at intel_tv_detect_type+0xa2/0x203 [i915]
+[ 1189.192007] EAX: 00000000 EBX: dca74000 ECX: e0f68004 EDX: 00068004
+[ 1189.192007] ESI: dd110c00 EDI: 400c0c37 EBP: dca7429c ESP: de365e2c
+[ 1189.192007]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[ 1189.192007] Process upowerd (pid: 1464, ti=de364000 task=dcc8acb0 task.ti=de364000)
+[ 1189.192007] Stack: Mar 15 03:43:23 hostname kernel: [ 1189.192007]  e0c2cda4 70000000 400c0c30 00000000 dd111000 de365e54 de365f24 dd110c00
+[ 1189.192007]  e0c22203 01000000 00000003 00000000 00000000 00000000 00000000 4353544e
+[ 1189.192007]  30383420 00000069 00000000 00000000 00000000 00000000 00000000 00000000
+[ 1189.192007] Call Trace: Mar 15 03:43:23 hostname kernel: [ 1189.192007]  [<e0c22203>] ?  intel_tv_detect+0x89/0x12d [i915]
+[ 1189.192007]  [<e0a9dcef>] ?  status_show+0x0/0x2f [drm]
+[ 1189.192007]  [<e0a9dd03>] ?  status_show+0x14/0x2f [drm]
 
-This patch leaves it enabled if there are active monitor mode interfaces, since
-it's very useful for debugging.
+[Digression: what is upowerd doing reading those power hungry files?]
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/recv.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/gpu/drm/drm_sysfs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -439,9 +439,7 @@ u32 ath_calcrxfilter(struct ath_softc *s
- 	 * mode interface or when in monitor mode. AP mode does not need this
- 	 * since it receives all in-BSS frames anyway.
- 	 */
--	if (((sc->sc_ah->opmode != NL80211_IFTYPE_AP) &&
--	     (sc->rx.rxfilter & FIF_PROMISC_IN_BSS)) ||
--	    (sc->sc_ah->is_monitoring))
-+	if (sc->sc_ah->is_monitoring)
- 		rfilt |= ATH9K_RX_FILTER_PROM;
+--- a/drivers/gpu/drm/drm_sysfs.c
++++ b/drivers/gpu/drm/drm_sysfs.c
+@@ -158,8 +158,15 @@ static ssize_t status_show(struct device
+ {
+ 	struct drm_connector *connector = to_drm_connector(device);
+ 	enum drm_connector_status status;
++	int ret;
++
++	ret = mutex_lock_interruptible(&connector->dev->mode_config.mutex);
++	if (ret)
++		return ret;
  
- 	if (sc->rx.rxfilter & FIF_CONTROL)
+ 	status = connector->funcs->detect(connector, true);
++	mutex_unlock(&connector->dev->mode_config.mutex);
++
+ 	return snprintf(buf, PAGE_SIZE, "%s\n",
+ 			drm_get_connector_status_name(status));
+ }
 
 
