@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab1CUXRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:17:40 -0400
-Received: from kroah.org ([198.145.64.141]:52508 "EHLO coco.kroah.org"
+	id S1755810Ab1CUXcX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:32:23 -0400
+Received: from kroah.org ([198.145.64.141]:52539 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153Ab1CUXRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:32 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:22 2011
-Message-Id: <20110321230322.471313518@clark.kroah.org>
+	id S1755202Ab1CUXRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:23 2011
+Message-Id: <20110321230323.087225761@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:24 -0700
+Date: Mon, 21 Mar 2011 16:01:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [08/78] libata: fix hotplug for drivers which dont implement LPM
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [14/78] x86: stop_machine_text_poke() should issue sync_core()
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit eb0e85e36b971ec31610eda7e3ff5c11c1c44785 upstream.
+commit 0e00f7aed6af21fc09b2a94d28bc34e449bd3a53 upstream.
 
-ata_eh_analyze_serror() suppresses hotplug notifications if LPM is
-being used because LPM generates spurious hotplug events.  It compared
-whether link->lpm_policy was different from ATA_LPM_MAX_POWER to
-determine whether LPM is enabled; however, this is incorrect as for
-drivers which don't implement LPM, lpm_policy is always
-ATA_LPM_UNKNOWN.  This disabled hotplug detection for all drivers
-which don't implement LPM.
+Intel Archiecture Software Developer's Manual section 7.1.3 specifies that a
+core serializing instruction such as "cpuid" should be executed on _each_ core
+before the new instruction is made visible.
 
-Fix it by comparing whether lpm_policy is greater than
-ATA_LPM_MAX_POWER.
+Failure to do so can lead to unspecified behavior (Intel XMC erratas include
+General Protection Fault in the list), so we should avoid this at all cost.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+This problem can affect modified code executed by interrupt handlers after
+interrupt are re-enabled at the end of stop_machine, because no core serializing
+instruction is executed between the code modification and the moment interrupts
+are reenabled.
+
+Because stop_machine_text_poke performs the text modification from the first CPU
+decrementing stop_machine_first, modified code executed in thread context is
+also affected by this problem. To explain why, we have to split the CPUs in two
+categories: the CPU that initiates the text modification (calls text_poke_smp)
+and all the others. The scheduler, executed on all other CPUs after
+stop_machine, issues an "iret" core serializing instruction, and therefore
+handles core serialization for all these CPUs. However, the text modification
+initiator can continue its execution on the same thread and access the modified
+text without any scheduler call. Given that the CPU that initiates the code
+modification is not guaranteed to be the one actually performing the code
+modification, it falls into the XMC errata.
+
+Q: Isn't this executed from an IPI handler, which will return with IRET (a
+   serializing instruction) anyway?
+A: No, now stop_machine uses per-cpu workqueue, so that handler will be
+   executed from worker threads. There is no iret anymore.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+LKML-Reference: <20110303160137.GB1590@Krystal>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-eh.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/alternative.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -1618,7 +1618,7 @@ static void ata_eh_analyze_serror(struct
- 	 * host links.  For disabled PMP links, only N bit is
- 	 * considered as X bit is left at 1 for link plugging.
- 	 */
--	if (link->lpm_policy != ATA_LPM_MAX_POWER)
-+	if (link->lpm_policy > ATA_LPM_MAX_POWER)
- 		hotplug_mask = 0;	/* hotplug doesn't work w/ LPM */
- 	else if (!(link->flags & ATA_LFLAG_DISABLED) || ata_is_host_link(link))
- 		hotplug_mask = SERR_PHYRDY_CHG | SERR_DEV_XCHG;
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -620,7 +620,12 @@ static int __kprobes stop_machine_text_p
+ 		flush_icache_range((unsigned long)p->addr,
+ 				   (unsigned long)p->addr + p->len);
+ 	}
+-
++	/*
++	 * Intel Archiecture Software Developer's Manual section 7.1.3 specifies
++	 * that a core serializing instruction such as "cpuid" should be
++	 * executed on _each_ core before the new instruction is made visible.
++	 */
++	sync_core();
+ 	return 0;
+ }
+ 
 
 
