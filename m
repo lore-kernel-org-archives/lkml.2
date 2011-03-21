@@ -1,48 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab1CUHGR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 03:06:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:5829 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab1CUHGO (ORCPT
+	id S1752367Ab1CUHUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 03:20:51 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40327 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab1CUHUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 03:06:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6291"; a="81097095"
-Message-ID: <4D86F8E1.8060502@codeaurora.org>
-Date: Mon, 21 Mar 2011 12:36:09 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.14) Gecko/20110221 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, Mohan Pallaka <mpallaka@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/2] input: misc: Add support for isa1200 chip
-References: <1299496182-26177-1-git-send-email-mpallaka@codeaurora.org> <1299496182-26177-3-git-send-email-mpallaka@codeaurora.org>
-In-Reply-To: <1299496182-26177-3-git-send-email-mpallaka@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Mar 2011 03:20:49 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6291"; a="80896289"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCHv2] ARM: Merge v6 and v7 DEBUG_LL DCC support
+Date: Mon, 21 Mar 2011 00:20:47 -0700
+Message-Id: <1300692047-32445-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.1.343.ga91df
+In-Reply-To: <20110320092629.GB16646@n2100.arm.linux.org.uk>
+References: <20110320092629.GB16646@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+The inline assembly differences for v6 vs. v7 are purely
+optimizations. On a v7 processor, an mrc with the pc sets the
+condition codes to the 28-31 bits of the register being read. It
+just so happens that the TX/RX full bits the DCC support code is
+testing for are high enough in the register to be put into the
+condition codes. On a v6 processor, this "feature" isn't
+implemented and thus we have to do the usual read, mask, test
+operations to check for TX/RX full. Thus, we can drop the v7
+implementation and just use the v6 implementation for both.
 
-On 3/7/2011 4:39 PM, Mohan Pallaka wrote:
-> From: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> isa1200 chip can be used to generate vibrations to indicate
-> silent alerts, providing gaming haptic actions or vibrations
-> in response to touches. It can operate in two modes, pwm
-> generation and pwm input mode. Pwm generation mode requires
-> external clock and pwm input mode needs the pwm signal to be
-> given as input to the chip.
-> 
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Could you please review this patch series?
+Russell King wrote:
+> This patch needs updating for the changes that were in my tree for many
+> months, and are now in mainline.
 
----Trilok Soni
+Yes sorry. I noticed this when rebasing against linus' tree. I'll base
+patches of your for-next tree when sending to you next time.
 
+Changes since v1:
+ * Refreshed against rmk/for-next
+
+ arch/arm/boot/compressed/head.S |   10 +---------
+ arch/arm/boot/compressed/misc.c |   12 +-----------
+ arch/arm/kernel/debug.S         |   19 +------------------
+ 3 files changed, 3 insertions(+), 38 deletions(-)
+
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index 84ac4d6..adf583c 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -21,20 +21,12 @@
+ 
+ #if defined(CONFIG_DEBUG_ICEDCC)
+ 
+-#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K)
++#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K) || defined(CONFIG_CPU_V7)
+ 		.macro	loadsp, rb, tmp
+ 		.endm
+ 		.macro	writeb, ch, rb
+ 		mcr	p14, 0, \ch, c0, c5, 0
+ 		.endm
+-#elif defined(CONFIG_CPU_V7)
+-		.macro	loadsp, rb, tmp
+-		.endm
+-		.macro	writeb, ch, rb
+-wait:		mrc	p14, 0, pc, c0, c1, 0
+-		bcs	wait
+-		mcr	p14, 0, \ch, c0, c5, 0
+-		.endm
+ #elif defined(CONFIG_CPU_XSCALE)
+ 		.macro	loadsp, rb, tmp
+ 		.endm
+diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
+index 4657e87..2df3826 100644
+--- a/arch/arm/boot/compressed/misc.c
++++ b/arch/arm/boot/compressed/misc.c
+@@ -36,7 +36,7 @@ extern void error(char *x);
+ 
+ #ifdef CONFIG_DEBUG_ICEDCC
+ 
+-#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K)
++#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K) || defined(CONFIG_CPU_V7)
+ 
+ static void icedcc_putc(int ch)
+ {
+@@ -52,16 +52,6 @@ static void icedcc_putc(int ch)
+ 	asm("mcr p14, 0, %0, c0, c5, 0" : : "r" (ch));
+ }
+ 
+-#elif defined(CONFIG_CPU_V7)
+-
+-static void icedcc_putc(int ch)
+-{
+-	asm(
+-	"wait:	mrc	p14, 0, pc, c0, c1, 0			\n\
+-		bcs	wait					\n\
+-		mcr     p14, 0, %0, c0, c5, 0			"
+-	: : "r" (ch));
+-}
+ 
+ #elif defined(CONFIG_CPU_XSCALE)
+ 
+diff --git a/arch/arm/kernel/debug.S b/arch/arm/kernel/debug.S
+index d2d983b..bcd66e0 100644
+--- a/arch/arm/kernel/debug.S
++++ b/arch/arm/kernel/debug.S
+@@ -25,7 +25,7 @@
+ 		.macro	addruart, rp, rv
+ 		.endm
+ 
+-#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K)
++#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K) || defined(CONFIG_CPU_V7)
+ 
+ 		.macro	senduart, rd, rx
+ 		mcr	p14, 0, \rd, c0, c5, 0
+@@ -49,23 +49,6 @@
+ 1002:
+ 		.endm
+ 
+-#elif defined(CONFIG_CPU_V7)
+-
+-		.macro	senduart, rd, rx
+-		mcr	p14, 0, \rd, c0, c5, 0
+-		.endm
+-
+-		.macro	busyuart, rd, rx
+-busy:		mrc	p14, 0, pc, c0, c1, 0
+-		bcs	busy
+-		.endm
+-
+-		.macro	waituart, rd, rx
+-wait:		mrc	p14, 0, pc, c0, c1, 0
+-		bcs	wait
+-
+-		.endm
+-
+ #elif defined(CONFIG_CPU_XSCALE)
+ 
+ 		.macro	senduart, rd, rx
 -- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
