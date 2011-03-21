@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1CUX03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:26:29 -0400
-Received: from kroah.org ([198.145.64.141]:52678 "EHLO coco.kroah.org"
+	id S932522Ab1CUX0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:26:43 -0400
+Received: from kroah.org ([198.145.64.141]:52675 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932321Ab1CUXSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932206Ab1CUXSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Mar 2011 19:18:10 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
-Message-Id: <20110321230326.450195228@clark.kroah.org>
+Message-Id: <20110321230326.337552390@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:02 -0700
+Date: Mon, 21 Mar 2011 16:02:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Yu Zhao <yu.zhao@intel.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [46/78] PCI: remove quirk for pre-production systems
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [45/78] HID: add support for Ortek PKB-1700
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,100 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brandeburg, Jesse <jesse.brandeburg@intel.com>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit b99af4b002e4908d1a5cdaf424529bdf1dc69768 upstream.
+commit 270fdc0748bd3f7b625caff985f2fcf8e2185ec7 upstream.
 
-Revert commit 7eb93b175d4de9438a4b0af3a94a112cb5266944
-Author: Yu Zhao <yu.zhao@intel.com>
-Date:   Fri Apr 3 15:18:11 2009 +0800
+As reported on http://ubuntuforums.org/showthread.php?t=1594007 the
+PKB-1700 needs same special handling as WKB-2000. This change is
+originally based on patch posted by user asmoore82 on the Ubuntu
+forums.
 
-    PCI: SR-IOV quirk for Intel 82576 NIC
-
-    If BIOS doesn't allocate resources for the SR-IOV BARs, zero the Flash
-    BAR and program the SR-IOV BARs to use the old Flash Memory Space.
-
-    Please refer to Intel 82576 Gigabit Ethernet Controller Datasheet
-    section 7.9.2.14.2 for details.
-    http://download.intel.com/design/network/datashts/82576_Datasheet.pdf
-
-    Signed-off-by: Yu Zhao <yu.zhao@intel.com>
-    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
-This quirk was added before SR-IOV was in production and now all machines that
-originally had this issue alreayd have bios updates to correct the issue. The
-quirk itself is no longer needed and in fact causes bugs if run.  Remove it.
-
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-CC: Yu Zhao <yu.zhao@intel.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   52 ---------------------------------------------------
- 1 file changed, 52 deletions(-)
+ drivers/hid/Kconfig     |    4 ++--
+ drivers/hid/hid-core.c  |    1 +
+ drivers/hid/hid-ids.h   |    1 +
+ drivers/hid/hid-ortek.c |    3 ++-
+ 4 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2618,58 +2618,6 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -319,10 +319,10 @@ config HID_NTRIG
+ 	Support for N-Trig touch screen.
  
- #endif /* CONFIG_PCI_MSI */
+ config HID_ORTEK
+-	tristate "Ortek WKB-2000 wireless keyboard and mouse trackpad"
++	tristate "Ortek PKB-1700/WKB-2000 wireless keyboard and mouse trackpad"
+ 	depends on USB_HID
+ 	---help---
+-	Support for Ortek WKB-2000 wireless keyboard + mouse trackpad.
++	Support for Ortek PKB-1700/WKB-2000 wireless keyboard + mouse trackpad.
  
--#ifdef CONFIG_PCI_IOV
--
--/*
-- * For Intel 82576 SR-IOV NIC, if BIOS doesn't allocate resources for the
-- * SR-IOV BARs, zero the Flash BAR and program the SR-IOV BARs to use the
-- * old Flash Memory Space.
-- */
--static void __devinit quirk_i82576_sriov(struct pci_dev *dev)
--{
--	int pos, flags;
--	u32 bar, start, size;
--
--	if (PAGE_SIZE > 0x10000)
--		return;
--
--	flags = pci_resource_flags(dev, 0);
--	if ((flags & PCI_BASE_ADDRESS_SPACE) !=
--			PCI_BASE_ADDRESS_SPACE_MEMORY ||
--	    (flags & PCI_BASE_ADDRESS_MEM_TYPE_MASK) !=
--			PCI_BASE_ADDRESS_MEM_TYPE_32)
--		return;
--
--	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_SRIOV);
--	if (!pos)
--		return;
--
--	pci_read_config_dword(dev, pos + PCI_SRIOV_BAR, &bar);
--	if (bar & PCI_BASE_ADDRESS_MEM_MASK)
--		return;
--
--	start = pci_resource_start(dev, 1);
--	size = pci_resource_len(dev, 1);
--	if (!start || size != 0x400000 || start & (size - 1))
--		return;
--
--	pci_resource_flags(dev, 1) = 0;
--	pci_write_config_dword(dev, PCI_BASE_ADDRESS_1, 0);
--	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR, start);
--	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR + 12, start + size / 2);
--
--	dev_info(&dev->dev, "use Flash Memory Space for SR-IOV BARs\n");
--}
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10c9, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e6, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e7, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
--
--#endif	/* CONFIG_PCI_IOV */
--
- /* Allow manual resource allocation for PCI hotplug bridges
-  * via pci=hpmemsize=nnM and pci=hpiosize=nnM parameters. For
-  * some PCI-PCI hotplug bridges, like PLX 6254 (former HINT HB6),
+ config HID_PANTHERLORD
+ 	tristate "Pantherlord/GreenAsia game controller"
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1400,6 +1400,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -466,6 +466,7 @@
+ #define USB_DEVICE_ID_ONTRAK_ADU100	0x0064
+ 
+ #define USB_VENDOR_ID_ORTEK		0x05a4
++#define USB_DEVICE_ID_ORTEK_PKB1700	0x1700
+ #define USB_DEVICE_ID_ORTEK_WKB2000	0x2000
+ 
+ #define USB_VENDOR_ID_PANJIT		0x134c
+--- a/drivers/hid/hid-ortek.c
++++ b/drivers/hid/hid-ortek.c
+@@ -1,5 +1,5 @@
+ /*
+- *  HID driver for Ortek WKB-2000 (wireless keyboard + mouse trackpad).
++ *  HID driver for Ortek PKB-1700/WKB-2000 (wireless keyboard + mouse trackpad).
+  *  Fixes LogicalMaximum error in USB report description, see
+  *  http://bugzilla.kernel.org/show_bug.cgi?id=14787
+  *
+@@ -30,6 +30,7 @@ static __u8 *ortek_report_fixup(struct h
+ }
+ 
+ static const struct hid_device_id ortek_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+ 	{ }
+ };
 
 
