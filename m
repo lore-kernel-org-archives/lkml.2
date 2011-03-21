@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab1CUX3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:29:52 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:55444 "EHLO trinity.fluff.org"
+	id S932279Ab1CUXai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:30:38 -0400
+Received: from kroah.org ([198.145.64.141]:52592 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932240Ab1CUXRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:53 -0400
-Date: Mon, 21 Mar 2011 23:17:39 +0000
-From: Ben Dooks <ben-linux@fluff.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Belisko Marek <marek.belisko@gmail.com>, alsa-devel@alsa-project.org,
-        tiwai@suse.de, linux-kernel@vger.kernel.org, perex@perex.cz,
-        ben-linux@fluff.org, linux-arm-kernel@lists.infradead.org,
-        lrg@slimlogic.co.uk
-Subject: Re: [PATCH RFC] arm: mini2440: Fix uda134x codec problem.
-Message-ID: <20110321231739.GE9995@trinity.fluff.org>
-References: <1299703580-3957-1-git-send-email-marek.belisko@open-nandra.com> <20110311121704.GF1760@opensource.wolfsonmicro.com> <AANLkTintYQ=qO3PALBL-bkiYKQFw0+JiW3=-oZmkRhZ1@mail.gmail.com> <20110311122637.GH1760@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110311122637.GH1760@opensource.wolfsonmicro.com>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+	id S932066Ab1CUXRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:50 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:24 2011
+Message-Id: <20110321230324.368110856@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Mon, 21 Mar 2011 16:01:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>
+Subject: [26/78] USB: serial/kobil_sct, fix potential tty NULL dereference
+In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 11, 2011 at 12:26:37PM +0000, Mark Brown wrote:
-> On Fri, Mar 11, 2011 at 01:23:37PM +0100, Belisko Marek wrote:
-> 
-> > You're right. I think sending whole patch to help understand what
-> > I'm trying to do (because wasn't sure). You apply just asoc part right?
-> > Thanks for comments!
-> 
-> I applied everything, Ben has said he is very busy so it seemed easiest
-> to just merge the whole thing.
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
-That's fine, and as long as it doesn't mess up other merges I'm generally
-ok with this.
+------------------
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+From: Jiri Slaby <jslaby@suse.cz>
 
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+commit 6960f40a954619857e7095a6179eef896f297077 upstream.
+
+Make sure that we check the return value of tty_port_tty_get.
+Sometimes it may return NULL and we later dereference that.
+
+The only place here is in kobil_read_int_callback, so fix it.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/serial/kobil_sct.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/serial/kobil_sct.c
++++ b/drivers/usb/serial/kobil_sct.c
+@@ -372,7 +372,7 @@ static void kobil_read_int_callback(stru
+ 	}
+ 
+ 	tty = tty_port_tty_get(&port->port);
+-	if (urb->actual_length) {
++	if (tty && urb->actual_length) {
+ 
+ 		/* BEGIN DEBUG */
+ 		/*
+
 
