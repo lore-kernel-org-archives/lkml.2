@@ -1,125 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab1CUX3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:29:22 -0400
-Received: from kroah.org ([198.145.64.141]:52608 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932258Ab1CUXRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:24 2011
-Message-Id: <20110321230324.877035901@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:47 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [31/78] rtl8187: Change rate-control feedback
-In-Reply-To: <20110321230346.GA14681@kroah.com>
+	id S932559Ab1CUX3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:29:34 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:46466 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293Ab1CUX32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:29:28 -0400
+Date: Tue, 22 Mar 2011 08:29:21 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Julian Anastasov <ja@ssi.bg>
+Subject: Re: [slab poison overwritten] Re: [GIT] Networking
+Message-ID: <20110321232921.GG22625@verge.net.au>
+References: <20110320.195156.226769634.davem@davemloft.net>
+ <20110321125320.GA23490@elte.hu>
+ <1300714346.2884.284.camel@edumazet-laptop>
+ <20110321161528.GA28580@elte.hu>
+ <20110321164238.GA5303@elte.hu>
+ <20110321173941.GB3892@elte.hu>
+ <1300730838.2884.578.camel@edumazet-laptop>
+ <1300738540.2837.5.camel@edumazet-laptop>
+ <20110321221357.GF22625@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110321221357.GF22625@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.38-stable review patch.  If anyone has any objections, please let us know.
+On Tue, Mar 22, 2011 at 07:13:58AM +0900, Simon Horman wrote:
+> On Mon, Mar 21, 2011 at 09:15:40PM +0100, Eric Dumazet wrote:
+> > Le lundi 21 mars 2011 à 19:07 +0100, Eric Dumazet a écrit :
+> > > Le lundi 21 mars 2011 à 18:39 +0100, Ingo Molnar a écrit :
+> > > > here's the same but with kallsyms enabled.
+> > > > 
+> > > > Thanks,
+> > > > 
+> > > > 	Ingo
+> > > > 
+> > > > [    9.585627] initcall 0xffffffff81d5b806 returned 0 after 0 usecs
+> > > > [    9.588960] calling  0xffffffff81d5b9da @ 1
+> > > > [    9.592303] IPVS: Creating netns size=1272 id=0
+> > > > [    9.595646] IPVS: __ip_vs_control_init(): alloc_percpu.
+> > > > [    9.602298] IPVS: cannot register namespace.
+> > > > [    9.605627] IPVS: can't setup control
+> > > 
+> > > It seems IPVS is busted in case of memory allocation error in 
+> > > __ip_vs_control_init()
+> > > 
+> > > IPVS deinits its "struct netns_ipvs" space, but something (in IPVS) uses
+> > > it after free.
+> > > 
+> > > __ip_vs_init() seems to be called before ip_vs_init() completes
+> > > correctly. We then keep in net->ipvs a pointer to some freed memory.
+> > > 
+> > > Commit 14e405461e664b7 did some changes in this area
+> > > 
+> > > Simon, any idea ?
+> > > 
+> > > 
+> > 
+> > For the time being, we can avoid the false memory allocation error (and
+> > leak)
+> 
+> Sorry, that typo is my work.
 
-------------------
+With your patch applied I now see the following
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+ffff880003bbf1a0 corresponds to &ipvs->app_key in __ip_vs_app_init().
+I'll continue looking into this.
 
-commit 6410db593e8c1b2b79a2f18554310d6da9415584 upstream.
-
-The driver for the RTL8187L chips returns IEEE80211_TX_STAT_ACK for all
-packets, even if the maximum number of retries was exhausted. In addition
-it fails to setup max_rates in the ieee80211_hw struct, This behavior
-may be responsible for the problems noted in Bug 14168. As the bug is very
-old, testers have not been found, and I do not have the case where the
-indicated signal is less than -70 dBm.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/wireless/rtl818x/rtl8187/dev.c     |   25 ++++++++++++++++++++-----
- drivers/net/wireless/rtl818x/rtl8187/rtl8187.h |    2 ++
- 2 files changed, 22 insertions(+), 5 deletions(-)
-
---- a/drivers/net/wireless/rtl818x/rtl8187/dev.c
-+++ b/drivers/net/wireless/rtl818x/rtl8187/dev.c
-@@ -871,23 +871,35 @@ static void rtl8187_work(struct work_str
- 	/* The RTL8187 returns the retry count through register 0xFFFA. In
- 	 * addition, it appears to be a cumulative retry count, not the
- 	 * value for the current TX packet. When multiple TX entries are
--	 * queued, the retry count will be valid for the last one in the queue.
--	 * The "error" should not matter for purposes of rate setting. */
-+	 * waiting in the queue, the retry count will be the total for all.
-+	 * The "error" may matter for purposes of rate setting, but there is
-+	 * no other choice with this hardware.
-+	 */
- 	struct rtl8187_priv *priv = container_of(work, struct rtl8187_priv,
- 				    work.work);
- 	struct ieee80211_tx_info *info;
- 	struct ieee80211_hw *dev = priv->dev;
- 	static u16 retry;
- 	u16 tmp;
-+	u16 avg_retry;
-+	int length;
- 
- 	mutex_lock(&priv->conf_mutex);
- 	tmp = rtl818x_ioread16(priv, (__le16 *)0xFFFA);
-+	length = skb_queue_len(&priv->b_tx_status.queue);
-+	if (unlikely(!length))
-+		length = 1;
-+	if (unlikely(tmp < retry))
-+		tmp = retry;
-+	avg_retry = (tmp - retry) / length;
- 	while (skb_queue_len(&priv->b_tx_status.queue) > 0) {
- 		struct sk_buff *old_skb;
- 
- 		old_skb = skb_dequeue(&priv->b_tx_status.queue);
- 		info = IEEE80211_SKB_CB(old_skb);
--		info->status.rates[0].count = tmp - retry + 1;
-+		info->status.rates[0].count = avg_retry + 1;
-+		if (info->status.rates[0].count > RETRY_COUNT)
-+			info->flags &= ~IEEE80211_TX_STAT_ACK;
- 		ieee80211_tx_status_irqsafe(dev, old_skb);
- 	}
- 	retry = tmp;
-@@ -933,8 +945,8 @@ static int rtl8187_start(struct ieee8021
- 		rtl818x_iowrite32(priv, &priv->map->TX_CONF,
- 				  RTL818X_TX_CONF_HW_SEQNUM |
- 				  RTL818X_TX_CONF_DISREQQSIZE |
--				  (7 << 8  /* short retry limit */) |
--				  (7 << 0  /* long retry limit */) |
-+				  (RETRY_COUNT << 8  /* short retry limit */) |
-+				  (RETRY_COUNT << 0  /* long retry limit */) |
- 				  (7 << 21 /* MAX TX DMA */));
- 		rtl8187_init_urbs(dev);
- 		rtl8187b_init_status_urb(dev);
-@@ -1378,6 +1390,9 @@ static int __devinit rtl8187_probe(struc
- 	dev->flags = IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
- 		     IEEE80211_HW_SIGNAL_DBM |
- 		     IEEE80211_HW_RX_INCLUDES_FCS;
-+	/* Initialize rate-control variables */
-+	dev->max_rates = 1;
-+	dev->max_rate_tries = RETRY_COUNT;
- 
- 	eeprom.data = dev;
- 	eeprom.register_read = rtl8187_eeprom_register_read;
---- a/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
-+++ b/drivers/net/wireless/rtl818x/rtl8187/rtl8187.h
-@@ -35,6 +35,8 @@
- #define RFKILL_MASK_8187_89_97	0x2
- #define RFKILL_MASK_8198	0x4
- 
-+#define RETRY_COUNT		7
-+
- struct rtl8187_rx_info {
- 	struct urb *urb;
- 	struct ieee80211_hw *dev;
-
+[   12.610000] IPVS: Creating netns size=2456 id=0
+[   12.630000] IPVS: Registered protocols (TCP, UDP, SCTP, AH, ESP)
+[   12.640000] BUG: key ffff880003bbf1a0 not in .data!
+[   12.640000] ------------[ cut here ]------------
+[   12.640000] WARNING: at kernel/lockdep.c:2701
+lockdep_init_map+0x37b/0x570()
+[   12.640000] Hardware name: Bochs
+[   12.640000] Pid: 1, comm: swapper Tainted: G        W
+2.6.38-kexec-06330-g69b7efe-dirty #122
+[   12.650000] Call Trace:
+[   12.650000]  [<ffffffff8102e685>] warn_slowpath_common+0x75/0xb0
+[   12.650000]  [<ffffffff8102e6d5>] warn_slowpath_null+0x15/0x20
+[   12.650000]  [<ffffffff8105967b>] lockdep_init_map+0x37b/0x570
+[   12.650000]  [<ffffffff8105829d>] ? trace_hardirqs_on+0xd/0x10
+[   12.650000]  [<ffffffff81055ad8>] debug_mutex_init+0x38/0x50
+[   12.650000]  [<ffffffff8104bc4c>] __mutex_init+0x5c/0x70
+[   12.650000]  [<ffffffff81685ee7>] __ip_vs_app_init+0x64/0x86
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.660000]  [<ffffffff811b1c33>] T.620+0x43/0x170
+[   12.660000]  [<ffffffff811b1e9a>] ? register_pernet_subsys+0x1a/0x40
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.660000]  [<ffffffff811b1db7>] register_pernet_operations+0x57/0xb0
+[   12.660000]  [<ffffffff81685a3b>] ? ip_vs_init+0x0/0xff
+[   12.670000]  [<ffffffff811b1ea9>] register_pernet_subsys+0x29/0x40
+[   12.670000]  [<ffffffff81685f19>] ip_vs_app_init+0x10/0x12
+[   12.670000]  [<ffffffff81685a87>] ip_vs_init+0x4c/0xff
+[   12.670000]  [<ffffffff8166562c>] do_one_initcall+0x7a/0x12e
+[   12.670000]  [<ffffffff8166583e>] kernel_init+0x13e/0x1c2
+[   12.670000]  [<ffffffff8128c134>] kernel_thread_helper+0x4/0x10
+[   12.670000]  [<ffffffff8128ad40>] ? restore_args+0x0/0x30
+[   12.680000]  [<ffffffff81665700>] ? kernel_init+0x0/0x1c2
+[   12.680000]  [<ffffffff8128c130>] ? kernel_thread_helper+0x0/0x10
+[   12.680000] ---[ end trace 4eaa2a86a8e2da23 ]---
 
