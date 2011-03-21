@@ -1,199 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1CUTr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 15:47:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62963 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425Ab1CUTrZ convert rfc822-to-8bit (ORCPT
+	id S1754249Ab1CUTrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 15:47:42 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18364 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab1CUTrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 15:47:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qc9Ew1oTdPFsSthEHvRp5CEeHRvoB31vBggbKDlm/cGzkFXf51V/ORi9exybvCWXZN
-         y49bSDILCaRPJgkSQMu3oTcNxVoU+acC1x/m4wdnR7ZqWime1DK906jPsqm43twBWpTp
-         3eD1EAq1aEM0WZUL1LW4ouVrbU9EAfJpLojqM=
+	Mon, 21 Mar 2011 15:47:40 -0400
+Date: Mon, 21 Mar 2011 20:47:31 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-scsi@vger.kernel.org
+cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Youngdale <eric@andante.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mike Anderson <andmike@us.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH][SCSI][resend] Reduce sequential pointer derefs in scsi_error.c
+ and reduce size as well
+Message-ID: <alpine.LNX.2.00.1103212039060.15815@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1300727119.13307.3.camel@lade.trondhjem.org>
-References: <AANLkTik1jXk2qG6rKCtXMbVq6wFdz2oeXuZmAcfU_R8X@mail.gmail.com>
-	<1300727119.13307.3.camel@lade.trondhjem.org>
-Date: Mon, 21 Mar 2011 20:47:24 +0100
-Message-ID: <AANLkTi=nLVTF==Mt0RVpCv_OaY7Cw1DL763nnZQJWzwd@mail.gmail.com>
-Subject: Re: [NFS BUG] Resoruces leak caused by commit - NFS: Don't use
- vm_map_ram() in readdir (55ea499d60aefa3d03a77fc8590c26b5881faa92)
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: mkl@pengutronix.de, gregkh@suse.de, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trond,
+This patch reduces the number of sequential pointer derefs in 
+drivers/scsi/scsi_error.c
 
-yep, this one fixes the issue (applied to 2.6.37.4).
+This has been submitted a number of times over a couple of years. I 
+believe this version adresses all comments it has gathered over time. 
+Please apply or reject with a reason.
 
-Tested-by: Jacek Luczak <jacek.luczak.ext@nsn.com>
+The bennefits are:
 
-Thanks,
--Jacek
+ - makes the code easier to read. Lots of sequential derefs of the same
+   pointers is not easy on the eye.
 
-2011/3/21 Trond Myklebust <Trond.Myklebust@netapp.com>:
-> On Mon, 2011-03-21 at 17:53 +0100, Jacek Luczak wrote:
->> Hi,
->>
->> *BRIEF*: Reading lot of files from nfs mounted on directory lead to a
->> resources leak. Affected Kernels: 2.6.37.1-2.6.37.4, did not tested on
->> 2.6.38 (assume that issue is also there).
->>
->> Steps to reproduce:
->>  1) cd /some/nfs/mounted/dir
->>  2) find . -type f | wc -l
->> On healthy system this will give a number of files below the dir - in
->> my test env. this gives 692 files. On broken system after a while when
->> whole memory will be consumed this will throw:
->> find: memory exhausted
->>
->> Reproduced same with rsync to local storage:
->> sending incremental file list
->> [sender] expand file_list pointer array to 524288 bytes, did move
->> [sender] expand file_list pointer array to 1048576 bytes, did move
->> [sender] expand file_list pointer array to 2097152 bytes, did move
->> [sender] expand file_list pointer array to 4194304 bytes, did move
->> [sender] expand file_list pointer array to 8388608 bytes, did move
->> [sender] expand file_list pointer array to 16777216 bytes, did move
->> [sender] expand file_list pointer array to 33554432 bytes, did move
->> [sender] expand file_list pointer array to 67108864 bytes, did move
->> [sender] expand file_list pointer array to 134217728 bytes, did move
->> [sender] expand file_list pointer array to 268435456 bytes, did move
->> [sender] expand file_list pointer array to 402653184 bytes, did move
->> [sender] expand file_list pointer array to 536870912 bytes, did move
->> [sender] expand file_list pointer array to 671088640 bytes, did move
->> [sender] expand file_list pointer array to 805306368 bytes, did move
->> [sender] expand file_list pointer array to 939524096 bytes, did move
->> [sender] expand file_list pointer array to 1073741824 bytes, did move
->> Same results as with find - memory consumption bumps to all available space.
->>
->> Bisected this down to commit:
->> 55ea499d60aefa3d03a77fc8590c26b5881faa92 is the first bad commit
->> commit 55ea499d60aefa3d03a77fc8590c26b5881faa92
->> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
->> Date:   Sat Jan 8 17:45:38 2011 -0500
->>
->>     NFS: Don't use vm_map_ram() in readdir
->>
->>     commit 6650239a4b01077e80d5a4468562756d77afaa59 upstream.
->>
->>     vm_map_ram() is not available on NOMMU platforms, and causes trouble
->>     on incoherrent architectures such as ARM when we access the page data
->>     through both the direct and the virtual mapping.
->>
->>     The alternative is to use the direct mapping to access page data
->>     for the case when we are not crossing a page boundary, but to copy
->>     the data into a linear scratch buffer when we are accessing data
->>     that spans page boundaries.
->>
->>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->>     Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
->>     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->>
->> :040000 040000 b8416029d026cd8e43d6517bcce32ea86180d31a
->> 49dd8041519101ab68075b502ad18127f6ab86d4 M      fs
->> :040000 040000 9332a8f43f88b80dd11d76da0e35bfdfe345798f
->> 71b519dd4ce6fe70a9ecaa1e068bc56ea7c0cd4e M      include
->> :040000 040000 d4f45b70708f5d238eacececb9459c7a88d8ec77
->> f70bedd7247a37e14972448f5f1803edc1440fc4 M      net
->>
->> Reverting this commit fixes this issue.
->
-> Does the attached patch help? It fixes an old readdir decoding bug that
-> the above commit happened to expose.
->
-> Trond
-> --
-> Trond Myklebust
-> Linux NFS client maintainer
->
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
->
->
->
-> ---------- Wiadomo¶æ przekazana dalej ----------
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> To: stable@kernel.org
-> Date: Thu, 17 Mar 2011 21:54:39 -0400
-> Subject: [PATCH] NFS: Fix a decoding problem in nfs3_decode_dirent
-> When we decode a filename followed by an 8-byte cookie, we need to
-> consider the fact that the filename and cookie are 32-bit word aligned.
-> Presently, we may end up copying insufficient amounts of data when
-> xdr_inline_decode() needs to invoke xdr_copy_to_scratch to deal
-> with a page boundary.
->
-> The following patch fixes the issue by first decoding the filename, and
-> then decoding the cookie.
->
-> Reported-by: Neil Brown <neilb@suse.de>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Reviewed-by: NeilBrown <neilb@suse.de>
-> ---
-> Hi Greg,
->
-> This needs to be applied to 2.6.37 only. The bug in question was
-> inadvertently fixed by a series of cleanups in 2.6.38, but the patches
-> in question are too large to be backported. This patch is a minimal fix
-> that serves the same purpose.
->
->
->  fs/nfs/nfs2xdr.c |    6 ++++--
->  fs/nfs/nfs3xdr.c |    6 ++++--
->  2 files changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/nfs/nfs2xdr.c b/fs/nfs/nfs2xdr.c
-> index b382a1b..33a038d 100644
-> --- a/fs/nfs/nfs2xdr.c
-> +++ b/fs/nfs/nfs2xdr.c
-> @@ -477,11 +477,13 @@ nfs_decode_dirent(struct xdr_stream *xdr, struct nfs_entry *entry, struct nfs_se
->        entry->ino        = ntohl(*p++);
->        entry->len        = ntohl(*p++);
->
-> -       p = xdr_inline_decode(xdr, entry->len + 4);
-> +       p = xdr_inline_decode(xdr, entry->len);
->        if (unlikely(!p))
->                goto out_overflow;
->        entry->name       = (const char *) p;
-> -       p                += XDR_QUADLEN(entry->len);
-> +       p = xdr_inline_decode(xdr, 4);
-> +       if (unlikely(!p))
-> +               goto out_overflow;
->        entry->prev_cookie        = entry->cookie;
->        entry->cookie     = ntohl(*p++);
->
-> diff --git a/fs/nfs/nfs3xdr.c b/fs/nfs/nfs3xdr.c
-> index ba91236..dcd934f 100644
-> --- a/fs/nfs/nfs3xdr.c
-> +++ b/fs/nfs/nfs3xdr.c
-> @@ -614,11 +614,13 @@ nfs3_decode_dirent(struct xdr_stream *xdr, struct nfs_entry *entry, struct nfs_s
->        p = xdr_decode_hyper(p, &entry->ino);
->        entry->len  = ntohl(*p++);
->
-> -       p = xdr_inline_decode(xdr, entry->len + 8);
-> +       p = xdr_inline_decode(xdr, entry->len);
->        if (unlikely(!p))
->                goto out_overflow;
->        entry->name = (const char *) p;
-> -       p += XDR_QUADLEN(entry->len);
-> +       p = xdr_inline_decode(xdr, 8);
-> +       if (unlikely(!p))
-> +               goto out_overflow;
->        entry->prev_cookie = entry->cookie;
->        p = xdr_decode_hyper(p, &entry->cookie);
->
-> --
-> 1.7.4
->
->
->
+ - theoretically at least, just dereferencing the pointers once can allow
+   the compiler to generally slightly faster code, so in theory this could
+   also be a micro speed optimization.
+
+ - reduces size of object file.
+
+ - removes some pointless (mostly trailing) whitespace.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ scsi_error.c |   94 ++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 49 insertions(+), 45 deletions(-)
+
+ Patch against current Linus tree.
+
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 991de3c..633c239 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -3,14 +3,14 @@
+  *
+  *  SCSI error/timeout handling
+  *      Initial versions: Eric Youngdale.  Based upon conversations with
+- *                        Leonard Zubkoff and David Miller at Linux Expo, 
++ *                        Leonard Zubkoff and David Miller at Linux Expo,
+  *                        ideas originating from all over the place.
+  *
+  *	Restructured scsi_unjam_host and associated functions.
+  *	September 04, 2002 Mike Anderson (andmike@us.ibm.com)
+  *
+  *	Forward port of Russell King's (rmk@arm.linux.org.uk) changes and
+- *	minor  cleanups.
++ *	minor cleanups.
+  *	September 30, 2002 Mike Anderson (andmike@us.ibm.com)
+  */
+ 
+@@ -129,14 +129,15 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
+ {
+ 	struct scsi_cmnd *scmd = req->special;
+ 	enum blk_eh_timer_return rtn = BLK_EH_NOT_HANDLED;
++	struct Scsi_Host *host = scmd->device->host;
+ 
+ 	trace_scsi_dispatch_cmd_timeout(scmd);
+ 	scsi_log_completion(scmd, TIMEOUT_ERROR);
+ 
+-	if (scmd->device->host->transportt->eh_timed_out)
+-		rtn = scmd->device->host->transportt->eh_timed_out(scmd);
+-	else if (scmd->device->host->hostt->eh_timed_out)
+-		rtn = scmd->device->host->hostt->eh_timed_out(scmd);
++	if (host->transportt->eh_timed_out)
++		rtn = host->transportt->eh_timed_out(scmd);
++	else if (host->hostt->eh_timed_out)
++		rtn = host->hostt->eh_timed_out(scmd);
+ 
+ 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
+ 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD))) {
+@@ -195,7 +196,7 @@ static inline void scsi_eh_prt_fail_stats(struct Scsi_Host *shost,
+ 				++total_failures;
+ 				if (scmd->eh_eflags & SCSI_EH_CANCEL_CMD)
+ 					++cmd_cancel;
+-				else 
++				else
+ 					++cmd_failed;
+ 			}
+ 		}
+@@ -214,7 +215,7 @@ static inline void scsi_eh_prt_fail_stats(struct Scsi_Host *shost,
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(2, printk("Total of %d commands on %d"
+ 					  " devices require eh work\n",
+-				  total_failures, devices_failed));
++				   total_failures, devices_failed));
+ }
+ #endif
+ 
+@@ -294,7 +295,7 @@ static int scsi_check_sense(struct scsi_cmnd *scmd)
+ 			return NEEDS_RETRY;
+ 		}
+ 		/*
+-		 * if the device is in the process of becoming ready, we 
++		 * if the device is in the process of becoming ready, we
+ 		 * should retry.
+ 		 */
+ 		if ((sshdr.asc == 0x04) && (sshdr.ascq == 0x01))
+@@ -488,7 +489,7 @@ static int scsi_eh_completed_normally(struct scsi_cmnd *scmd)
+  */
+ static void scsi_eh_done(struct scsi_cmnd *scmd)
+ {
+-	struct completion     *eh_action;
++	struct completion *eh_action;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3,
+ 		printk("%s scmd: %p result: %x\n",
+@@ -507,22 +508,23 @@ static int scsi_try_host_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Host RST\n",
+ 					  __func__));
+ 
+-	if (!scmd->device->host->hostt->eh_host_reset_handler)
++	if (!hostt->eh_host_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_host_reset_handler(scmd);
++	rtn = hostt->eh_host_reset_handler(scmd);
+ 
+ 	if (rtn == SUCCESS) {
+-		if (!scmd->device->host->hostt->skip_settle_delay)
++		if (!hostt->skip_settle_delay)
+ 			ssleep(HOST_RESET_SETTLE_TIME);
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
+-		scsi_report_bus_reset(scmd->device->host,
+-				      scmd_channel(scmd));
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
++		scsi_report_bus_reset(host, scmd_channel(scmd));
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -536,22 +538,23 @@ static int scsi_try_bus_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Bus RST\n",
+ 					  __func__));
+ 
+-	if (!scmd->device->host->hostt->eh_bus_reset_handler)
++	if (!hostt->eh_bus_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_bus_reset_handler(scmd);
++	rtn = hostt->eh_bus_reset_handler(scmd);
+ 
+ 	if (rtn == SUCCESS) {
+-		if (!scmd->device->host->hostt->skip_settle_delay)
++		if (!hostt->skip_settle_delay)
+ 			ssleep(BUS_RESET_SETTLE_TIME);
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
+-		scsi_report_bus_reset(scmd->device->host,
+-				      scmd_channel(scmd));
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
++		scsi_report_bus_reset(host, scmd_channel(scmd));
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -577,16 +580,18 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+-	if (!scmd->device->host->hostt->eh_target_reset_handler)
++	if (!hostt->eh_target_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_target_reset_handler(scmd);
++	rtn = hostt->eh_target_reset_handler(scmd);
+ 	if (rtn == SUCCESS) {
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
+ 		__starget_for_each_device(scsi_target(scmd->device), NULL,
+ 					  __scsi_report_device_reset);
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -605,27 +610,28 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
+ static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
+ {
+ 	int rtn;
++	struct scsi_host_template *hostt = scmd->device->host->hostt;
+ 
+-	if (!scmd->device->host->hostt->eh_device_reset_handler)
++	if (!hostt->eh_device_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_device_reset_handler(scmd);
++	rtn = hostt->eh_device_reset_handler(scmd);
+ 	if (rtn == SUCCESS)
+ 		__scsi_report_device_reset(scmd->device, NULL);
+ 	return rtn;
+ }
+ 
+-static int scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
++static int scsi_try_to_abort_cmd(struct scsi_host_template *hostt, struct scsi_cmnd *scmd)
+ {
+-	if (!scmd->device->host->hostt->eh_abort_handler)
++	if (!hostt->eh_abort_handler)
+ 		return FAILED;
+ 
+-	return scmd->device->host->hostt->eh_abort_handler(scmd);
++	return hostt->eh_abort_handler(scmd);
+ }
+ 
+ static void scsi_abort_eh_cmnd(struct scsi_cmnd *scmd)
+ {
+-	if (scsi_try_to_abort_cmd(scmd) != SUCCESS)
++	if (scsi_try_to_abort_cmd(scmd->device->host->hostt, scmd) != SUCCESS)
+ 		if (scsi_try_bus_device_reset(scmd) != SUCCESS)
+ 			if (scsi_try_target_reset(scmd) != SUCCESS)
+ 				if (scsi_try_bus_reset(scmd) != SUCCESS)
+@@ -846,7 +852,7 @@ EXPORT_SYMBOL(scsi_eh_finish_cmd);
+  *
+  * Description:
+  *    See if we need to request sense information.  if so, then get it
+- *    now, so we have a better idea of what to do.  
++ *    now, so we have a better idea of what to do.
+  *
+  * Notes:
+  *    This has the unfortunate side effect that if a shost adapter does
+@@ -958,7 +964,7 @@ static int scsi_eh_abort_cmds(struct list_head *work_q,
+ 		SCSI_LOG_ERROR_RECOVERY(3, printk("%s: aborting cmd:"
+ 						  "0x%p\n", current->comm,
+ 						  scmd));
+-		rtn = scsi_try_to_abort_cmd(scmd);
++		rtn = scsi_try_to_abort_cmd(scmd->device->host->hostt, scmd);
+ 		if (rtn == SUCCESS || rtn == FAST_IO_FAIL) {
+ 			scmd->eh_eflags &= ~SCSI_EH_CANCEL_CMD;
+ 			if (!scsi_device_online(scmd->device) ||
+@@ -966,7 +972,6 @@ static int scsi_eh_abort_cmds(struct list_head *work_q,
+ 			    !scsi_eh_tur(scmd)) {
+ 				scsi_eh_finish_cmd(scmd, done_q);
+ 			}
+-				
+ 		} else
+ 			SCSI_LOG_ERROR_RECOVERY(3, printk("%s: aborting"
+ 							  " cmd failed:"
+@@ -1010,7 +1015,7 @@ static int scsi_eh_try_stu(struct scsi_cmnd *scmd)
+  *
+  * Notes:
+  *    If commands are failing due to not ready, initializing command required,
+- *	try revalidating the device, which will end up sending a start unit. 
++ *	try revalidating the device, which will end up sending a start unit.
+  */
+ static int scsi_eh_stu(struct Scsi_Host *shost,
+ 			      struct list_head *work_q,
+@@ -1064,7 +1069,7 @@ static int scsi_eh_stu(struct Scsi_Host *shost,
+  *    Try a bus device reset.  Still, look to see whether we have multiple
+  *    devices that are jammed or not - if we have multiple devices, it
+  *    makes no sense to try bus_device_reset - we really would need to try
+- *    a bus_reset instead. 
++ *    a bus_reset instead.
+  */
+ static int scsi_eh_bus_device_reset(struct Scsi_Host *shost,
+ 				    struct list_head *work_q,
+@@ -1164,7 +1169,7 @@ static int scsi_eh_target_reset(struct Scsi_Host *shost,
+ }
+ 
+ /**
+- * scsi_eh_bus_reset - send a bus reset 
++ * scsi_eh_bus_reset - send a bus reset
+  * @shost:	&scsi host being recovered.
+  * @work_q:     &list_head for pending commands.
+  * @done_q:	&list_head for processed commands.
+@@ -1181,7 +1186,7 @@ static int scsi_eh_bus_reset(struct Scsi_Host *shost,
+ 	 * we really want to loop over the various channels, and do this on
+ 	 * a channel by channel basis.  we should also check to see if any
+ 	 * of the failed commands are on soft_reset devices, and if so, skip
+-	 * the reset.  
++	 * the reset.
+ 	 */
+ 
+ 	for (channel = 0; channel <= shost->max_channel; channel++) {
+@@ -1223,7 +1228,7 @@ static int scsi_eh_bus_reset(struct Scsi_Host *shost,
+ }
+ 
+ /**
+- * scsi_eh_host_reset - send a host reset 
++ * scsi_eh_host_reset - send a host reset
+  * @work_q:	list_head for processed commands.
+  * @done_q:	list_head for processed commands.
+  */
+@@ -1376,7 +1381,7 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
+ 		return SUCCESS;
+ 		/*
+ 		 * when the low level driver returns did_soft_error,
+-		 * it is responsible for keeping an internal retry counter 
++		 * it is responsible for keeping an internal retry counter
+ 		 * in order to avoid endless loops (db)
+ 		 *
+ 		 * actually this is a bug in this function here.  we should
+@@ -1414,7 +1419,6 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
+ 			 */
+ 			break;
+ 		/* fallthrough */
+-
+ 	case DID_BUS_BUSY:
+ 	case DID_PARITY:
+ 		goto maybe_retry;
+@@ -1982,7 +1986,7 @@ int scsi_normalize_sense(const u8 *sense_buffer, int sb_len,
+ 		if (sb_len > 7)
+ 			sshdr->additional_length = sense_buffer[7];
+ 	} else {
+-		/* 
++		/*
+ 		 * fixed format
+ 		 */
+ 		if (sb_len > 2)
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
