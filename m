@@ -1,218 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab1CUQx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 12:53:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46581 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab1CUQxy convert rfc822-to-8bit (ORCPT
+	id S1753913Ab1CUQz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 12:55:56 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43786 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752220Ab1CUQzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 12:53:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=YEpRnGSyIOWWVllSo8MBA+lTccdKKGu6J0ReXmU82RMWTkgWcisOAyWZq6KW+fm8gp
-         zDvSHXN6vjxHHmm+Zjm4Zu4Vy4whosGQ5DwHVpBqaEPiFjtRZO9QzR4T3OTHS4XDarGQ
-         OQCzJj0u/ApMdjVSJOf/nWCoQaAD6SJNNuaic=
-MIME-Version: 1.0
-Date: Mon, 21 Mar 2011 17:53:53 +0100
-Message-ID: <AANLkTik1jXk2qG6rKCtXMbVq6wFdz2oeXuZmAcfU_R8X@mail.gmail.com>
-Subject: [NFS BUG] Resoruces leak caused by commit - NFS: Don't use
- vm_map_ram() in readdir (55ea499d60aefa3d03a77fc8590c26b5881faa92)
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Trond.Myklebust@netapp.com, mkl@pengutronix.de, gregkh@suse.de
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Mar 2011 12:55:54 -0400
+Date: Mon, 21 Mar 2011 16:56:12 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Toby Gray <toby.gray@realvnc.com>
+Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: cdc-acm: Prevent data loss when filling tty
+ buffer.
+Message-ID: <20110321165612.0f764046@lxorguk.ukuu.org.uk>
+In-Reply-To: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
+References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 21 Mar 2011 15:52:25 +0000
+Toby Gray <toby.gray@realvnc.com> wrote:
 
-*BRIEF*: Reading lot of files from nfs mounted on directory lead to a
-resources leak. Affected Kernels: 2.6.37.1-2.6.37.4, did not tested on
-2.6.38 (assume that issue is also there).
+> When sending large quantities of data through a CDC ACM channel it is possible
+> for data to be lost when attempting to copy the data to the tty buffer. This
+> occurs due to the return value from tty_insert_flip_string not being checked.
 
-Steps to reproduce:
- 1) cd /some/nfs/mounted/dir
- 2) find . –type f | wc –l
-On healthy system this will give a number of files below the dir - in
-my test env. this gives 692 files. On broken system after a while when
-whole memory will be consumed this will throw:
-find: memory exhausted
+For a tty that is normally the right thing to do - no flow control was
+asserted and the internal 64K of buffering was overrun so discard.
 
-Reproduced same with rsync to local storage:
-sending incremental file list
-[sender] expand file_list pointer array to 524288 bytes, did move
-[sender] expand file_list pointer array to 1048576 bytes, did move
-[sender] expand file_list pointer array to 2097152 bytes, did move
-[sender] expand file_list pointer array to 4194304 bytes, did move
-[sender] expand file_list pointer array to 8388608 bytes, did move
-[sender] expand file_list pointer array to 16777216 bytes, did move
-[sender] expand file_list pointer array to 33554432 bytes, did move
-[sender] expand file_list pointer array to 67108864 bytes, did move
-[sender] expand file_list pointer array to 134217728 bytes, did move
-[sender] expand file_list pointer array to 268435456 bytes, did move
-[sender] expand file_list pointer array to 402653184 bytes, did move
-[sender] expand file_list pointer array to 536870912 bytes, did move
-[sender] expand file_list pointer array to 671088640 bytes, did move
-[sender] expand file_list pointer array to 805306368 bytes, did move
-[sender] expand file_list pointer array to 939524096 bytes, did move
-[sender] expand file_list pointer array to 1073741824 bytes, did move
-Same results as with find – memory consumption bumps to all available space.
+> This patch adds checking for how many bytes have been inserted into the tty
+> buffer and returns any remaining bytes back to the filled read buffer list.
 
-Bisected this down to commit:
-55ea499d60aefa3d03a77fc8590c26b5881faa92 is the first bad commit
-commit 55ea499d60aefa3d03a77fc8590c26b5881faa92
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Sat Jan 8 17:45:38 2011 -0500
+How does ACM handle flow control - is the expectation that it gets flow
+controlled in hardware by not having the opportunity to send bits
+to the host end ? If so this seems to make sense.
 
-    NFS: Don't use vm_map_ram() in readdir
 
-    commit 6650239a4b01077e80d5a4468562756d77afaa59 upstream.
+> +	copied = 0;
 
-    vm_map_ram() is not available on NOMMU platforms, and causes trouble
-    on incoherrent architectures such as ARM when we access the page data
-    through both the direct and the virtual mapping.
+Surely copied = buf->size is the no tty assumption "we had the lot and
+discarded it"
 
-    The alternative is to use the direct mapping to access page data
-    for the case when we are not crossing a page boundary, but to copy
-    the data into a linear scratch buffer when we are accessing data
-    that spans page boundaries.
+>  	if (tty) {
+>  		spin_lock_irqsave(&acm->throttle_lock, flags);
+>  		throttled = acm->throttle;
+>  		spin_unlock_irqrestore(&acm->throttle_lock, flags);
+>  		if (!throttled) {
+> -			tty_insert_flip_string(tty, buf->base, buf->size);
+> +			copied = tty_insert_flip_string(tty,
+> +							buf->base, buf->size);
+>  			tty_flip_buffer_push(tty);
+>  		} else {
+>  			tty_kref_put(tty);
+> @@ -440,9 +443,26 @@ next_buffer:
+>  		}
+>  	}
+>  
+> -	spin_lock_irqsave(&acm->read_lock, flags);
+> -	list_add(&buf->list, &acm->spare_read_bufs);
+> -	spin_unlock_irqrestore(&acm->read_lock, flags);
+> +	if (copied == buf->size || !tty) {
 
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Which would simplify this lot
 
-:040000 040000 b8416029d026cd8e43d6517bcce32ea86180d31a
-49dd8041519101ab68075b502ad18127f6ab86d4 M      fs
-:040000 040000 9332a8f43f88b80dd11d76da0e35bfdfe345798f
-71b519dd4ce6fe70a9ecaa1e068bc56ea7c0cd4e M      include
-:040000 040000 d4f45b70708f5d238eacececb9459c7a88d8ec77
-f70bedd7247a37e14972448f5f1803edc1440fc4 M      net
+> +		spin_lock_irqsave(&acm->read_lock, flags);
+> +		list_add(&buf->list, &acm->spare_read_bufs);
+> +		spin_unlock_irqrestore(&acm->read_lock, flags);
+> +	} else {
+> +		tty_kref_put(tty);
+> +		dbg("Partial buffer fill");
+> +		if (copied > 0) {
+> +			memmove(buf->base,
+> +				buf->base + copied,
+> +				buf->size - copied);
+> +			buf->size -= copied;
+> +		}
 
-Reverting this commit fixes this issue.
+Would it not be cleaner to add a buf->head pointer that could simply be
+advanced so the code would become
 
-I did not find any record that could lead to similar issue.
+	buf->head += copied;
+	buf->size -= copied;
+	if (buf->size != 0)
+		list_add(&buf->list, &acm->filled_read_bufs);
 
--Jacek
+instead of all the memmove uglies ?
 
-BTW: Below you can see results of tracing find process stat in time
-(interval 5s), one can see that memory is consumed realllly fast:
-4632 (find) R 3978 4632 3978 34818 4632 4202496 928598 0 0 0 800 520 0
-0 20 0 1 0 43434 6509740032 928407 18446744073709551615 4194304
-4345760 1407370072175
-68 140737007214080 222122567691 0 0 0 0 0 0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 1287947 0 0 0 1120 700
-0 0 20 0 1 0 43434 6509740032 1287777 18446744073709551615 4194304
-4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0 0 0 17
-12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 1647203 0 0 0 1432 886
-0 0 20 0 1 0 43434 8657223680 1647015 18446744073709551615 4194304
-4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0 0 0 17
-12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 1995616 0 0 0 1726
-1092 0 0 20 0 1 0 43434 12952190976 1995445 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 2349570 0 0 0 2037
-1282 0 0 20 0 1 0 43434 12952190976 2349403 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122458887 0 0 0 0 0
-0 0 17 13 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 2714736 0 0 0 2346
-1472 0 0 20 0 1 0 43434 12952190976 2714581 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 13 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 3067401 0 0 0 2654
-1665 0 0 20 0 1 0 43434 17247158272 3067256 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 13 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 3429996 0 0 0 2957
-1862 0 0 20 0 1 0 43434 25837092864 3429860 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 13 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 3792783 0 0 0 3267
-2052 0 0 20 0 1 0 43434 25837092864 3792596 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 13 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 4155928 0 0 0 3577
-2242 0 0 20 0 1 0 43434 25837092864 4155794 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 13 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 4510661 0 0 0 3891
-2428 0 0 20 0 1 0 43434 25837092864 4510478 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 4869840 0 0 0 4206
-2612 0 0 20 0 1 0 43434 25837092864 4869650 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 5229534 0 0 0 4511
-2807 0 0 20 0 1 0 43434 25837092864 5229350 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 5569911 0 0 0 4810
-3009 0 0 20 0 1 0 43434 34427027456 5569714 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 5934627 0 0 0 5121
-3197 0 0 20 0 1 0 43434 34427027456 5934430 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 6299054 0 0 0 5441
-3377 0 0 20 0 1 0 43434 34427027456 6298882 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 6663125 0 0 0 5761
-3557 0 0 20 0 1 0 43434 34427027456 6662938 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 6982069 0 0 0 6031
-3787 0 0 20 0 1 0 43434 51606896640 6981906 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 7344531 0 0 0 6357
-3961 0 0 20 0 1 0 43434 51606896640 7344378 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122458890 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 7702709 0 0 0 6670
-4148 0 0 20 0 1 0 43434 51606896640 7702560 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 8057531 0 0 0 6998
-4319 0 0 20 0 1 0 43434 51606896640 8057376 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 8420823 0 0 0 7303
-4514 0 0 20 0 1 0 43434 51606896640 8420640 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 8784294 0 0 0 7607
-4709 0 0 20 0 1 0 43434 51606896640 8784102 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 9147287 0 0 0 7904
-4913 0 0 20 0 1 0 43434 51606896640 9147102 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 9509736 0 0 0 8212
-5104 0 0 20 0 1 0 43434 51606896640 9509574 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 9872277 0 0 0 8521
-5295 0 0 20 0 1 0 43434 51606896640 9872112 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 10234354 0 0 0 8840
-5475 0 0 20 0 1 0 43434 51606896640 10234188 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 10596443 0 0 0 9158
-5658 0 0 20 0 1 0 43434 51606896640 10596264 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122567691 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
-4632 (find) R 3978 4632 3978 34818 4632 4202496 10958728 0 0 0 9463
-5852 0 0 20 0 1 0 43434 51606896640 10958538 18446744073709551615
-4194304 4345760 140737007217568 140737007214080 222122458890 0 0 0 0 0
-0 0 17 12 0 0 0 0 0
+
