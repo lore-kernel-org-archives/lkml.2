@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab1CUQ0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 12:26:44 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:53022 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab1CUQ0l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 12:26:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xqwO0WfgSD7sE/k4soChfBr0ruGNZoWH46REIkIsBqfXjNsXEjZfaSm3VeWdi6Nr+p
-         VrqnXkcI8prKTH3fUPqEnY1RAa7yb/cX6Vl50Lhz1P+fB15ZavIMFbqw/aOvx7Yic9J4
-         LvjNOGKM0k/OtGad29EyqPl0D92V0aiISPiRY=
-MIME-Version: 1.0
-In-Reply-To: <1300713844-8167-1-git-send-email-j.neuschaefer@gmx.net>
-References: <1300713844-8167-1-git-send-email-j.neuschaefer@gmx.net>
-Date: Mon, 21 Mar 2011 18:26:41 +0200
-X-Google-Sender-Auth: Ff2GQ4TBxNhGdmKkX5AN_PCPwkM
-Message-ID: <AANLkTin7B+=-n_Tm4id15rG2B0hEqCBKAxMLerENgMqa@mail.gmail.com>
-Subject: Re: [PATCH] staging: winbond/mto.c: remove unused variables
-From: Pekka Enberg <penberg@kernel.org>
-To: =?ISO-8859-1?Q?Jonathan_Neusch=E4fer?= <j.neuschaefer@gmx.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Pavel Machek <pavel@ucw.cz>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753757Ab1CUQ1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 12:27:08 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:39292 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab1CUQ1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 12:27:06 -0400
+From: Aaro Koskinen <aaro.koskinen@nokia.com>
+To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@nokia.com>
+Subject: [PATCH] input: tsc2005: fix locking issue
+Date: Mon, 21 Mar 2011 18:24:10 +0200
+Message-Id: <1300724650-6641-1-git-send-email-aaro.koskinen@nokia.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 3:24 PM, Jonathan Neuschäfer
-<j.neuschaefer@gmx.net> wrote:
-> They are unused since commit a22517fec0b13b5813932a3583a2b11a2ee17f5d:
->
->    Staging: w35und: remove dead code from mto.c
->
-> Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
+Commit 0b950d3 (Input: tsc2005 - add open/close) introduced a
+locking issue with the ESD watchdog: __tsc2005_disable() is calling
+cancel_delayed_work_sync() with mutex held, and the work also needs the
+same mutex.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Fix the problem by using cancel_delayed_work() on disable. If
+the ESD work was running it will check if the device is closed
+or suspended, and in that case it will do nothing and skip
+re-arming. cancel_delayed_work_sync() is still needed when the module
+is removed.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+---
+ drivers/input/touchscreen/tsc2005.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
+index 8742061..3a15587 100644
+--- a/drivers/input/touchscreen/tsc2005.c
++++ b/drivers/input/touchscreen/tsc2005.c
+@@ -345,7 +345,7 @@ static void __tsc2005_disable(struct tsc2005 *ts)
+ 	disable_irq(ts->spi->irq);
+ 	del_timer_sync(&ts->penup_timer);
+ 
+-	cancel_delayed_work_sync(&ts->esd_work);
++	cancel_delayed_work(&ts->esd_work);
+ 
+ 	enable_irq(ts->spi->irq);
+ }
+@@ -479,6 +479,12 @@ static void tsc2005_esd_work(struct work_struct *work)
+ 
+ 	mutex_lock(&ts->mutex);
+ 
++	/* The device has been just closed or suspended. */
++	if (!ts->opened || ts->suspended) {
++		mutex_unlock(&ts->mutex);
++		return;
++	}
++
+ 	if (time_is_after_jiffies(ts->last_valid_interrupt +
+ 				  msecs_to_jiffies(ts->esd_timeout)))
+ 		goto out;
+@@ -685,6 +691,7 @@ static int __devexit tsc2005_remove(struct spi_device *spi)
+ 
+ 	free_irq(ts->spi->irq, ts);
+ 	input_unregister_device(ts->idev);
++	cancel_delayed_work_sync(&ts->esd_work);
+ 	kfree(ts);
+ 
+ 	spi_set_drvdata(spi, NULL);
+-- 
+1.5.6.5
+
