@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab1CUXSg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:18:36 -0400
-Received: from kroah.org ([198.145.64.141]:52686 "EHLO coco.kroah.org"
+	id S932503Ab1CUXV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:21:59 -0400
+Received: from kroah.org ([198.145.64.141]:52814 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932235Ab1CUXSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:11 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
-Message-Id: <20110321230326.553417193@clark.kroah.org>
+	id S932443Ab1CUXSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:35 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:29 2011
+Message-Id: <20110321230328.992521583@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:03 -0700
+Date: Mon, 21 Mar 2011 16:02:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Renninger <trenn@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [47/78] PCI: add more checking to ICH region quirks
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [71/78] [PARISC] fix per-cpu flag problem in the cpu affinity checkers
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,100 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit cdb9755849fbaf2bb9c0a009ba5baa817a0f152d upstream.
+commit 9804c9eaeacfe78651052c5ddff31099f60ef78c upstream.
 
-Per ICH4 and ICH6 specs, ACPI and GPIO regions are valid iff ACPI_EN
-and GPIO_EN bits are set to 1. Add checks for these bits into the
-quirks prior to the region creation.
+The CHECK_IRQ_PER_CPU is wrong, it should be checking
+irq_to_desc(irq)->status not just irq.
 
-While at it, name the constants by macros.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   49 +++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 39 insertions(+), 10 deletions(-)
+ arch/parisc/kernel/irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -533,6 +533,17 @@ static void __devinit quirk_piix4_acpi(s
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82371AB_3,	quirk_piix4_acpi);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	quirk_piix4_acpi);
+--- a/arch/parisc/kernel/irq.c
++++ b/arch/parisc/kernel/irq.c
+@@ -108,7 +108,7 @@ int cpu_check_affinity(unsigned int irq,
+ 	int cpu_dest;
  
-+#define ICH_PMBASE	0x40
-+#define ICH_ACPI_CNTL	0x44
-+#define  ICH4_ACPI_EN	0x10
-+#define  ICH6_ACPI_EN	0x80
-+#define ICH4_GPIOBASE	0x58
-+#define ICH4_GPIO_CNTL	0x5c
-+#define  ICH4_GPIO_EN	0x10
-+#define ICH6_GPIOBASE	0x48
-+#define ICH6_GPIO_CNTL	0x4c
-+#define  ICH6_GPIO_EN	0x10
-+
- /*
-  * ICH4, ICH4-M, ICH5, ICH5-M ACPI: Three IO regions pointed to by longwords at
-  *	0x40 (128 bytes of ACPI, GPIO & TCO registers)
-@@ -541,12 +552,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
- {
- 	u32 region;
-+	u8 enable;
- 
--	pci_read_config_dword(dev, 0x40, &region);
--	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
--
--	pci_read_config_dword(dev, 0x58, &region);
--	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
-+	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
-+	if (enable & ICH4_ACPI_EN) {
-+		pci_read_config_dword(dev, ICH_PMBASE, &region);
-+		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
-+				"ICH4 ACPI/GPIO/TCO");
-+	}
-+
-+	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
-+	if (enable & ICH4_GPIO_EN) {
-+		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
-+		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
-+				"ICH4 GPIO");
-+	}
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AB_0,		quirk_ich4_lpc_acpi);
-@@ -562,12 +582,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_I
- static void __devinit ich6_lpc_acpi_gpio(struct pci_dev *dev)
- {
- 	u32 region;
-+	u8 enable;
- 
--	pci_read_config_dword(dev, 0x40, &region);
--	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH6 ACPI/GPIO/TCO");
--
--	pci_read_config_dword(dev, 0x48, &region);
--	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH6 GPIO");
-+	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
-+	if (enable & ICH6_ACPI_EN) {
-+		pci_read_config_dword(dev, ICH_PMBASE, &region);
-+		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
-+				"ICH6 ACPI/GPIO/TCO");
-+	}
-+
-+	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
-+	if (enable & ICH4_GPIO_EN) {
-+		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
-+		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
-+				"ICH6 GPIO");
-+	}
- }
- 
- static void __devinit ich6_lpc_generic_decode(struct pci_dev *dev, unsigned reg, const char *name, int dynsize)
+ 	/* timer and ipi have to always be received on all CPUs */
+-	if (CHECK_IRQ_PER_CPU(irq)) {
++	if (CHECK_IRQ_PER_CPU(irq_to_desc(irq)->status)) {
+ 		/* Bad linux design decision.  The mask has already
+ 		 * been set; we must reset it */
+ 		cpumask_setall(irq_desc[irq].affinity);
 
 
