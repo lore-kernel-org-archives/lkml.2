@@ -1,16 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab1CUFTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 01:19:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38405 "EHLO
+	id S1752783Ab1CUFVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 01:21:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38505 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab1CUFTK convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751805Ab1CUFU7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 01:19:10 -0400
+	Mon, 21 Mar 2011 01:20:59 -0400
 From: "Janorkar, Mayuresh" <mayur@ti.com>
-To: Carl Vanderlip <carlv@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
+To: Carl Vanderlip <carlv@codeaurora.org>, David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>
 CC: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
@@ -21,14 +19,14 @@ CC: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Mar 2011 10:48:47 +0530
-Subject: RE: [PATCH 11/20] video: msm: Add MDP FB DMA configuration
-Thread-Topic: [PATCH 11/20] video: msm: Add MDP FB DMA configuration
-Thread-Index: AcvlvSZDavaCA+xpQMqPYzQi3WcGzwByi3/w
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EB72@dbde02.ent.ti.com>
+Date: Mon, 21 Mar 2011 10:50:47 +0530
+Subject: RE: [PATCH 13/20] video: msm: Debugging for send_blit
+Thread-Topic: [PATCH 13/20] video: msm: Debugging for send_blit
+Thread-Index: AcvlvStqQSujE+7mRymDr+8NCM6W9wBymODw
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EB7A@dbde02.ent.ti.com>
 References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
- <1300485470-27360-1-git-send-email-carlv@codeaurora.org>
-In-Reply-To: <1300485470-27360-1-git-send-email-carlv@codeaurora.org>
+ <1300485510-27439-1-git-send-email-carlv@codeaurora.org>
+In-Reply-To: <1300485510-27439-1-git-send-email-carlv@codeaurora.org>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -46,15 +44,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > -----Original Message-----
 > From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
 > owner@vger.kernel.org] On Behalf Of Carl Vanderlip
-> Sent: Saturday, March 19, 2011 3:28 AM
-> To: Russell King; David Brown; Daniel Walker; Bryan Huntsman
+> Sent: Saturday, March 19, 2011 3:29 AM
+> To: David Brown; Daniel Walker; Bryan Huntsman
 > Cc: Brian Swetland; Dima Zavin; Rebecca Schultz Zavin; Colin Cross; linux-
 > fbdev@vger.kernel.org; Carl Vanderlip; linux-arm-
 > kernel@lists.infradead.org; linux-arm-msm@vger.kernel.org; linux-
 > kernel@vger.kernel.org
-> Subject: [PATCH 11/20] video: msm: Add MDP FB DMA configuration
+> Subject: [PATCH 13/20] video: msm: Debugging for send_blit
 > 
-> Setup configure_dma, check_output_format and set_output_format functions.
+> Allows for mdp_writel_dbg to be redefined as needed to debug blits.
 > 
 > Authors:
 > Dima Zavin <dima@android.com>
@@ -63,205 +61,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > 
 > Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
 > ---
->  arch/arm/mach-msm/include/mach/msm_fb.h |    3 ++
->  drivers/video/msm/mdp.c                 |   61
-> ++++++++++++++++++++++++++++++-
->  drivers/video/msm/mdp_hw.h              |   16 ++++++++
->  drivers/video/msm/msm_fb.c              |    5 ++-
->  4 files changed, 83 insertions(+), 2 deletions(-)
+>  drivers/video/msm/mdp_hw.h  |    2 +-
+>  drivers/video/msm/mdp_ppp.c |   61 ++++++++++++++++++++++----------------
+> ----
+>  2 files changed, 33 insertions(+), 30 deletions(-)
 > 
-> diff --git a/arch/arm/mach-msm/include/mach/msm_fb.h b/arch/arm/mach-
-> msm/include/mach/msm_fb.h
-> index 2d0899c..238ea2a 100644
-> --- a/arch/arm/mach-msm/include/mach/msm_fb.h
-> +++ b/arch/arm/mach-msm/include/mach/msm_fb.h
-> @@ -123,6 +123,9 @@ struct mdp_device {
->  	int (*blit)(struct mdp_device *mdp, struct fb_info *fb,
->  		    struct mdp_blit_req *req);
->  	void (*set_grp_disp)(struct mdp_device *mdp, uint32_t disp_id);
-> +	void (*configure_dma)(struct mdp_device *mdp);
-> +	int (*check_output_format)(struct mdp_device *mdp, int bpp);
-> +	int (*set_output_format)(struct mdp_device *mdp, int bpp);
->  };
-> 
->  struct class_interface;
-> diff --git a/drivers/video/msm/mdp.c b/drivers/video/msm/mdp.c
-> index 95e19e5..15241b4 100644
-> --- a/drivers/video/msm/mdp.c
-> +++ b/drivers/video/msm/mdp.c
-> @@ -223,7 +223,7 @@ static void mdp_dma_to_mddi(void *priv, uint32_t addr,
-> uint32_t stride,
->  		DMA_OUT_SEL_AHB |
->  		DMA_IBUF_NONCONTIGUOUS;
-> 
-> -	dma2_cfg |= DMA_IBUF_FORMAT_RGB565;
-> +	dma2_cfg |= mdp->format;
-> 
->  	dma2_cfg |= DMA_OUT_SEL_MDDI;
-> 
-> @@ -304,6 +304,62 @@ void put_img(struct file *src_file, struct file
-> *dst_file)
->  {
->  }
-> 
-> +void mdp_configure_dma(struct mdp_device *mdp_dev)
-> +{
-> +	struct mdp_info *mdp = container_of(mdp_dev, struct mdp_info,
-> mdp_dev);
-> +	uint32_t dma_cfg;
-> +
-> +	if (!mdp->dma_config_dirty)
-> +		return;
-> +	dma_cfg = mdp_readl(mdp, MDP_DMA_P_CONFIG);
-> +	dma_cfg &= ~DMA_IBUF_FORMAT_MASK;
-> +	dma_cfg &= ~DMA_PACK_PATTERN_MASK;
-> +	dma_cfg |= (mdp->format | mdp->pack_pattern);
-> +	mdp_writel(mdp, dma_cfg, MDP_DMA_P_CONFIG);
-> +	mdp->dma_config_dirty = false;
-> +
-> +	return;
-> +}
-> +
-> +int mdp_check_output_format(struct mdp_device *mdp_dev, int bpp)
-> +{
-> +	switch (bpp) {
-> +	case 16:
-> +	case 24:
-> +	case 32:
-> +		break;
-Why break?
-You can return with a value 0 from here.
-
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +
-> +int mdp_set_output_format(struct mdp_device *mdp_dev, int bpp)
-> +{
-> +	struct mdp_info *mdp = container_of(mdp_dev, struct mdp_info,
-> mdp_dev);
-> +	uint32_t format, pack_pattern;
-> +
-> +	switch (bpp) {
-> +	case 16:
-> +		format = DMA_IBUF_FORMAT_RGB565;
-> +		pack_pattern = DMA_PACK_PATTERN_RGB;
-> +		break;
-> +	case 24:
-> +	case 32:
-> +		format = DMA_IBUF_FORMAT_RGB888_OR_ARGB8888;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	if (format != mdp->format || pack_pattern != mdp->pack_pattern) {
-> +		mdp->format = format;
-> +		mdp->pack_pattern = pack_pattern;
-> +		mdp->dma_config_dirty = true;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  int mdp_blit_and_wait(struct mdp_info *mdp, struct mdp_blit_req *req,
->  		struct file *src_file, unsigned long src_start,
->  		unsigned long src_len, struct file *dst_file,
-> @@ -540,6 +596,9 @@ int mdp_probe(struct platform_device *pdev)
->  	mdp->mdp_dev.dma_wait = mdp_dma_wait;
->  	mdp->mdp_dev.blit = mdp_blit;
->  	mdp->mdp_dev.set_grp_disp = mdp_set_grp_disp;
-> +	mdp->mdp_dev.set_output_format = mdp_set_output_format;
-> +	mdp->mdp_dev.check_output_format = mdp_check_output_format;
-> +	mdp->mdp_dev.configure_dma = mdp_configure_dma;
-> 
->  	ret = mdp_out_if_register(&mdp->mdp_dev, MSM_MDDI_PMDH_INTERFACE,
-> mdp,
->  				  MDP_DMA_P_DONE, mdp_dma_to_mddi);
 > diff --git a/drivers/video/msm/mdp_hw.h b/drivers/video/msm/mdp_hw.h
-> index 34a204e..cc48218 100644
+> index acb48f5..fdf9e5e 100644
 > --- a/drivers/video/msm/mdp_hw.h
 > +++ b/drivers/video/msm/mdp_hw.h
-> @@ -42,6 +42,9 @@ struct mdp_info {
->  	int irq;
->  	struct clk *clk;
->  	struct mdp_out_interface out_if[MSM_MDP_NUM_INTERFACES];
-> +	int format;
-> +	int pack_pattern;
-> +	bool dma_config_dirty;
->  };
-> 
->  extern int mdp_out_if_register(struct mdp_device *mdp_dev, int interface,
-> @@ -183,6 +186,15 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
+> @@ -87,7 +87,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
 > mdp_blit_req *req,
->  #define MDP_TEST_CAPTURED_DCLK           (0xd0210)
->  #define MDP_TEST_MISR_CAPT_VAL_DCLK      (0xd0214)
->  #define MDP_LCDC_CTL                     (0xe0000)
+>  #define MDP_DISPLAY0_ADDR                (0x00054)
+>  #define MDP_DISPLAY1_ADDR                (0x00058)
+>  #define MDP_EBI2_PORTMAP_MODE            (0x0005c)
+> -#define MDP_MODE                         (0x00060)
+> +#define MDP_PPP_CMD_MODE                 (0x00060)
+>  #define MDP_TV_OUT_STATUS                (0x00064)
+>  #define MDP_HW_VERSION                   (0x00070)
+>  #define MDP_SW_RESET                     (0x00074)
+> diff --git a/drivers/video/msm/mdp_ppp.c b/drivers/video/msm/mdp_ppp.c
+> index 3d190b9..290c29a 100644
+> --- a/drivers/video/msm/mdp_ppp.c
+> +++ b/drivers/video/msm/mdp_ppp.c
+> @@ -331,45 +331,48 @@ static void get_chroma_addr(struct mdp_img *img,
+> struct mdp_rect *rect,
+>  	}
+>  }
+> 
+> +#define mdp_writel_dbg(mdp, val, reg) mdp_writel((mdp), (val), (reg))
 > +
-> +#define MDP_DMA_P_START                  (0x00044)
-> +#define MDP_DMA_P_CONFIG                 (0x90000)
-> +#define MDP_DMA_P_SIZE                   (0x90004)
-> +#define MDP_DMA_P_IBUF_ADDR              (0x90008)
-> +#define MDP_DMA_P_IBUF_Y_STRIDE          (0x9000c)
-> +#define MDP_DMA_P_OUT_XY                 (0x90010)
-> +#define MDP_DMA_P_COLOR_CORRECT_CONFIG   (0x90070)
+>  static int send_blit(const struct mdp_info *mdp, struct mdp_blit_req
+> *req,
+>  		     struct ppp_regs *regs, struct file *src_file,
+>  		     struct file *dst_file)
+>  {
+> -	mdp_writel(mdp, 1, 0x060);
+> -	mdp_writel(mdp, regs->src_rect, PPP_ADDR_SRC_ROI);
+> -	mdp_writel(mdp, regs->src0, PPP_ADDR_SRC0);
+> -	mdp_writel(mdp, regs->src1, PPP_ADDR_SRC1);
+> -	mdp_writel(mdp, regs->src_ystride, PPP_ADDR_SRC_YSTRIDE);
+> -	mdp_writel(mdp, regs->src_cfg, PPP_ADDR_SRC_CFG);
+> -	mdp_writel(mdp, regs->src_pack, PPP_ADDR_SRC_PACK_PATTERN);
+> -
+> -	mdp_writel(mdp, regs->op, PPP_ADDR_OPERATION);
+> -	mdp_writel(mdp, regs->phasex_init, PPP_ADDR_PHASEX_INIT);
+> -	mdp_writel(mdp, regs->phasey_init, PPP_ADDR_PHASEY_INIT);
+> -	mdp_writel(mdp, regs->phasex_step, PPP_ADDR_PHASEX_STEP);
+> -	mdp_writel(mdp, regs->phasey_step, PPP_ADDR_PHASEY_STEP);
+> -
+> -	mdp_writel(mdp, (req->alpha << 24) | (req->transp_mask & 0xffffff),
+> +#if 0
+> +	mdp_writel_dbg(mdp, 1, MDP_PPP_CMD_MODE);
+> +#endif
+Unused code? You can add a comment explaining why is this not being used couurently.
+
+> +	mdp_writel_dbg(mdp, regs->src_rect, PPP_ADDR_SRC_ROI);
+> +	mdp_writel_dbg(mdp, regs->src0, PPP_ADDR_SRC0);
+> +	mdp_writel_dbg(mdp, regs->src1, PPP_ADDR_SRC1);
+> +	mdp_writel_dbg(mdp, regs->src_ystride, PPP_ADDR_SRC_YSTRIDE);
+> +	mdp_writel_dbg(mdp, regs->src_cfg, PPP_ADDR_SRC_CFG);
+> +	mdp_writel_dbg(mdp, regs->src_pack, PPP_ADDR_SRC_PACK_PATTERN);
 > +
->  #define MDP_LCDC_HSYNC_CTL               (0xe0004)
->  #define MDP_LCDC_VSYNC_CTL               (0xe0008)
->  #define MDP_LCDC_ACTIVE_HCTL             (0xe000c)
-> @@ -629,8 +641,11 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
-> mdp_blit_req *req,
->  #define DMA_PACK_LOOSE 0
->  #define DMA_PACK_ALIGN_LSB 0
->  #define DMA_PACK_ALIGN_MSB (1<<7)
-> +#define DMA_PACK_PATTERN_MASK (0x3f<<8)
->  #define DMA_PACK_PATTERN_RGB \
->  	(MDP_GET_PACK_PATTERN(0, CLR_R, CLR_G, CLR_B, 2)<<8)
-> +#define DMA_PACK_PATTERN_BGR \
-> +	(MDP_GET_PACK_PATTERN(0, CLR_B, CLR_G, CLR_R, 2)<<8)
+> +	mdp_writel_dbg(mdp, regs->op, PPP_ADDR_OPERATION);
+> +	mdp_writel_dbg(mdp, regs->phasex_init, PPP_ADDR_PHASEX_INIT);
+> +	mdp_writel_dbg(mdp, regs->phasey_init, PPP_ADDR_PHASEY_INIT);
+> +	mdp_writel_dbg(mdp, regs->phasex_step, PPP_ADDR_PHASEX_STEP);
+> +	mdp_writel_dbg(mdp, regs->phasey_step, PPP_ADDR_PHASEY_STEP);
+> +
+> +	mdp_writel_dbg(mdp, regs->edge, PPP_ADDR_EDGE);
+> +	mdp_writel_dbg(mdp, (req->alpha << 24) | (req->transp_mask &
+> 0xffffff),
+>  	       PPP_ADDR_ALPHA_TRANSP);
 > 
->  #define DMA_OUT_SEL_AHB  0
->  #define DMA_OUT_SEL_MDDI (1<<14)
-> @@ -645,6 +660,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
-> mdp_blit_req *req,
+> -	mdp_writel(mdp, regs->dst_cfg, PPP_ADDR_DST_CFG);
+> -	mdp_writel(mdp, regs->dst_pack, PPP_ADDR_DST_PACK_PATTERN);
+> -	mdp_writel(mdp, regs->dst_rect, PPP_ADDR_DST_ROI);
+> -	mdp_writel(mdp, regs->dst0, PPP_ADDR_DST0);
+> -	mdp_writel(mdp, regs->dst1, PPP_ADDR_DST1);
+> -	mdp_writel(mdp, regs->dst_ystride, PPP_ADDR_DST_YSTRIDE);
+> +	mdp_writel_dbg(mdp, regs->dst_cfg, PPP_ADDR_DST_CFG);
+> +	mdp_writel_dbg(mdp, regs->dst_pack, PPP_ADDR_DST_PACK_PATTERN);
+> +	mdp_writel_dbg(mdp, regs->dst_rect, PPP_ADDR_DST_ROI);
+> +	mdp_writel_dbg(mdp, regs->dst0, PPP_ADDR_DST0);
+> +	mdp_writel_dbg(mdp, regs->dst1, PPP_ADDR_DST1);
+> +	mdp_writel_dbg(mdp, regs->dst_ystride, PPP_ADDR_DST_YSTRIDE);
 > 
->  #define DMA_IBUF_FORMAT_RGB565 (1<<20)
->  #define DMA_IBUF_FORMAT_RGB888_OR_ARGB8888 0
-> +#define DMA_IBUF_FORMAT_MASK (1 << 20)
-> 
->  #define DMA_IBUF_NONCONTIGUOUS (1<<21)
-> 
-> diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
-> index 6af8b41..ccd7417 100644
-> --- a/drivers/video/msm/msm_fb.c
-> +++ b/drivers/video/msm/msm_fb.c
-> @@ -332,7 +332,7 @@ static int msmfb_check_var(struct fb_var_screeninfo
-> *var, struct fb_info *info)
->  	if ((var->xres != info->var.xres) ||
->  	    (var->yres != info->var.yres) ||
->  	    (var->xoffset != info->var.xoffset) ||
-> -	    (var->bits_per_pixel != info->var.bits_per_pixel) ||
-> +	    (mdp->check_output_format(mdp, var->bits_per_pixel)) ||
->  	    (var->grayscale != info->var.grayscale))
->  		 return -EINVAL;
-> 
-> @@ -365,6 +365,7 @@ static int msmfb_set_par(struct fb_info *info)
->  		var->blue.length = 5;
->  	} else
->  		return -1;
-> +	mdp->set_output_format(mdp, var->bits_per_pixel);
->  	fix->line_length = var->xres * var->bits_per_pixel / 8;
-> 
+> -	mdp_writel(mdp, regs->edge, PPP_ADDR_EDGE);
+>  	if (regs->op & PPP_OP_BLEND_ON) {
+> -		mdp_writel(mdp, regs->dst0, PPP_ADDR_BG0);
+> -		mdp_writel(mdp, regs->dst1, PPP_ADDR_BG1);
+> -		mdp_writel(mdp, regs->dst_ystride, PPP_ADDR_BG_YSTRIDE);
+> -		mdp_writel(mdp, src_img_cfg[req->dst.format],
+> PPP_ADDR_BG_CFG);
+> -		mdp_writel(mdp, pack_pattern[req->dst.format],
+> -			   PPP_ADDR_BG_PACK_PATTERN);
+> +		mdp_writel_dbg(mdp, regs->bg0, PPP_ADDR_BG0);
+> +		mdp_writel_dbg(mdp, regs->bg1, PPP_ADDR_BG1);
+> +		mdp_writel_dbg(mdp, regs->bg_ystride, PPP_ADDR_BG_YSTRIDE);
+> +		mdp_writel_dbg(mdp, regs->bg_cfg, PPP_ADDR_BG_CFG);
+> +		mdp_writel_dbg(mdp, regs->bg_pack, PPP_ADDR_BG_PACK_PATTERN);
+>  	}
+>  	flush_imgs(req, regs, src_file, dst_file);
+> -	mdp_writel(mdp, 0x1000, MDP_DISPLAY0_START);
+> +	mdp_writel_dbg(mdp, 0x1000, MDP_DISPLAY0_START);
 >  	return 0;
-> @@ -519,6 +520,8 @@ static void setup_fb_info(struct msmfb_info *msmfb)
->  	fb_info->var.blue.length = 5;
->  	fb_info->var.blue.msb_right = 0;
-> 
-> +	mdp->set_output_format(mdp, fb_info->var.bits_per_pixel);
-> +
->  	r = fb_alloc_cmap(&fb_info->cmap, 16, 0);
->  	fb_info->pseudo_palette = PP;
+>  }
 > 
 > --
 > Sent by an employee of the Qualcomm Innovation Center, Inc.
