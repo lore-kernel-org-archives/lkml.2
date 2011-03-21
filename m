@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab1CUXOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:14:51 -0400
-Received: from kroah.org ([198.145.64.141]:49162 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755135Ab1CUXON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755191Ab1CUXON (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 21 Mar 2011 19:14:13 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:55 2011
-Message-Id: <20110321231054.978539818@clark.kroah.org>
+Received: from kroah.org ([198.145.64.141]:49122 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755135Ab1CUXOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:14:07 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:54 2011
+Message-Id: <20110321231054.377933321@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:22 -0700
+Date: Mon, 21 Mar 2011 16:10:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Milton Miller <miltonm@bga.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Subject: [42/44] powerpc: rtas_flash needs to use rtas_data_buf
+        Jan Beulich <jbeulich@novell.com>, Milton Miller <miltonm@bga.com>
+Subject: [36/44] smp_call_function_many: handle concurrent clearing of mask
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,144 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milton Miller <miltonm@us.ibm.com>
+From: Milton Miller <miltonm@bga.com>
 
-commit bd2b64a12bf55bec0d1b949e3dca3f8863409646 upstream.
+commit 723aae25d5cdb09962901d36d526b44d4be1051c upstream.
 
-When trying to flash a machine via the update_flash command, Anton received the
-following error:
+Mike Galbraith reported finding a lockup ("perma-spin bug") where the
+cpumask passed to smp_call_function_many was cleared by other cpu(s)
+while a cpu was preparing its call_data block, resulting in no cpu to
+clear the last ref and unlock the block.
 
-    Restarting system.
-    FLASH: kernel bug...flash list header addr above 4GB
+Having cpus clear their bit asynchronously could be useful on a mask of
+cpus that might have a translation context, or cpus that need a push to
+complete an rcu window.
 
-The code in question has a comment that the flash list should be in
-the kernel data and therefore under 4GB:
+Instead of adding a BUG_ON and requiring yet another cpumask copy, just
+detect the race and handle it.
 
-        /* NOTE: the "first" block list is a global var with no data
-         * blocks in the kernel data segment.  We do this because
-         * we want to ensure this block_list addr is under 4GB.
-         */
+Note: arch_send_call_function_ipi_mask must still handle an empty
+cpumask because the data block is globally visible before the that arch
+callback is made.  And (obviously) there are no guarantees to which cpus
+are notified if the mask is changed during the call; only cpus that were
+online and had their mask bit set during the whole call are guaranteed
+to be called.
 
-Unfortunately the Kconfig option is marked tristate which means the variable
-may not be in the kernel data and could be above 4GB.
-
-Instead of relying on the data segment being below 4GB, use the static
-data buffer allocated by the kernel for use by rtas.  Since we don't
-use the header struct directly anymore, convert it to a simple pointer.
-
-Reported-By: Anton Blanchard <anton@samba.org>
-Signed-Off-By: Milton Miller <miltonm@bga.com>
-Tested-By: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Reported-by: Mike Galbraith <efault@gmx.de>
+Reported-by: Jan Beulich <JBeulich@novell.com>
+Acked-by: Jan Beulich <jbeulich@novell.com>
+Signed-off-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/rtas_flash.c |   39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ kernel/smp.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/kernel/rtas_flash.c
-+++ b/arch/powerpc/kernel/rtas_flash.c
-@@ -93,12 +93,8 @@ struct flash_block_list {
- 	struct flash_block_list *next;
- 	struct flash_block blocks[FLASH_BLOCKS_PER_NODE];
- };
--struct flash_block_list_header { /* just the header of flash_block_list */
--	unsigned long num_blocks;
--	struct flash_block_list *next;
--};
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -388,7 +388,7 @@ void smp_call_function_many(const struct
+ {
+ 	struct call_function_data *data;
+ 	unsigned long flags;
+-	int cpu, next_cpu, this_cpu = smp_processor_id();
++	int refs, cpu, next_cpu, this_cpu = smp_processor_id();
  
--static struct flash_block_list_header rtas_firmware_flash_list = {0, NULL};
-+static struct flash_block_list *rtas_firmware_flash_list;
+ 	/*
+ 	 * Can deadlock when called with interrupts disabled.
+@@ -399,7 +399,7 @@ void smp_call_function_many(const struct
+ 	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
+ 		     && !oops_in_progress);
  
- /* Use slab cache to guarantee 4k alignment */
- static struct kmem_cache *flash_block_cache = NULL;
-@@ -107,13 +103,14 @@ static struct kmem_cache *flash_block_ca
+-	/* So, what's a CPU they want? Ignoring this one. */
++	/* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
+ 	cpu = cpumask_first_and(mask, cpu_online_mask);
+ 	if (cpu == this_cpu)
+ 		cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
+@@ -457,6 +457,13 @@ void smp_call_function_many(const struct
+ 	/* We rely on the "and" being processed before the store */
+ 	cpumask_and(data->cpumask, mask, cpu_online_mask);
+ 	cpumask_clear_cpu(this_cpu, data->cpumask);
++	refs = cpumask_weight(data->cpumask);
++
++	/* Some callers race with other cpus changing the passed mask */
++	if (unlikely(!refs)) {
++		csd_unlock(&data->csd);
++		return;
++	}
  
- /* Local copy of the flash block list.
-  * We only allow one open of the flash proc file and create this
-- * list as we go.  This list will be put in the
-- * rtas_firmware_flash_list var once it is fully read.
-+ * list as we go.  The rtas_firmware_flash_list varable will be
-+ * set once the data is fully read.
-  *
-  * For convenience as we build the list we use virtual addrs,
-  * we do not fill in the version number, and the length field
-  * is treated as the number of entries currently in the block
-- * (i.e. not a byte count).  This is all fixed on release.
-+ * (i.e. not a byte count).  This is all fixed when calling
-+ * the flash routine.
-  */
- 
- /* Status int must be first member of struct */
-@@ -200,16 +197,16 @@ static int rtas_flash_release(struct ino
- 	if (uf->flist) {    
- 		/* File was opened in write mode for a new flash attempt */
- 		/* Clear saved list */
--		if (rtas_firmware_flash_list.next) {
--			free_flash_list(rtas_firmware_flash_list.next);
--			rtas_firmware_flash_list.next = NULL;
-+		if (rtas_firmware_flash_list) {
-+			free_flash_list(rtas_firmware_flash_list);
-+			rtas_firmware_flash_list = NULL;
- 		}
- 
- 		if (uf->status != FLASH_AUTH)  
- 			uf->status = flash_list_valid(uf->flist);
- 
- 		if (uf->status == FLASH_IMG_READY) 
--			rtas_firmware_flash_list.next = uf->flist;
-+			rtas_firmware_flash_list = uf->flist;
- 		else
- 			free_flash_list(uf->flist);
- 
-@@ -592,7 +589,7 @@ static void rtas_flash_firmware(int rebo
- 	unsigned long rtas_block_list;
- 	int i, status, update_token;
- 
--	if (rtas_firmware_flash_list.next == NULL)
-+	if (rtas_firmware_flash_list == NULL)
- 		return;		/* nothing to do */
- 
- 	if (reboot_type != SYS_RESTART) {
-@@ -609,20 +606,25 @@ static void rtas_flash_firmware(int rebo
- 		return;
- 	}
- 
--	/* NOTE: the "first" block list is a global var with no data
--	 * blocks in the kernel data segment.  We do this because
--	 * we want to ensure this block_list addr is under 4GB.
-+	/*
-+	 * NOTE: the "first" block must be under 4GB, so we create
-+	 * an entry with no data blocks in the reserved buffer in
-+	 * the kernel data segment.
+ 	spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+@@ -470,7 +477,7 @@ void smp_call_function_many(const struct
+ 	 * to the cpumask before this write to refs, which indicates
+ 	 * data is on the list and is ready to be processed.
  	 */
--	rtas_firmware_flash_list.num_blocks = 0;
--	flist = (struct flash_block_list *)&rtas_firmware_flash_list;
-+	spin_lock(&rtas_data_buf_lock);
-+	flist = (struct flash_block_list *)&rtas_data_buf[0];
-+	flist->num_blocks = 0;
-+	flist->next = rtas_firmware_flash_list;
- 	rtas_block_list = virt_to_abs(flist);
- 	if (rtas_block_list >= 4UL*1024*1024*1024) {
- 		printk(KERN_ALERT "FLASH: kernel bug...flash list header addr above 4GB\n");
-+		spin_unlock(&rtas_data_buf_lock);
- 		return;
- 	}
+-	atomic_set(&data->refs, cpumask_weight(data->cpumask));
++	atomic_set(&data->refs, refs);
+ 	spin_unlock_irqrestore(&call_function.lock, flags);
  
- 	printk(KERN_ALERT "FLASH: preparing saved firmware image for flash\n");
- 	/* Update the block_list in place. */
-+	rtas_firmware_flash_list = NULL; /* too hard to backout on error */
- 	image_size = 0;
- 	for (f = flist; f; f = next) {
- 		/* Translate data addrs to absolute */
-@@ -663,6 +665,7 @@ static void rtas_flash_firmware(int rebo
- 		printk(KERN_ALERT "FLASH: unknown flash return code %d\n", status);
- 		break;
- 	}
-+	spin_unlock(&rtas_data_buf_lock);
- }
- 
- static void remove_flash_pde(struct proc_dir_entry *dp)
+ 	/*
 
 
