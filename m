@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab1CURJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:09:33 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:42568 "HELO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752220Ab1CURJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:09:31 -0400
-Date: Mon, 21 Mar 2011 12:08:32 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86, UV: Fix NMI handler for UV platforms
-Message-ID: <20110321170832.GC12718@sgi.com>
-References: <20110321160135.GA31562@sgi.com> <20110321161425.GC23614@elte.hu> <4D877C4B.9090602@gmail.com> <4D878042.9080708@gmail.com> <4D878445.6090709@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D878445.6090709@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753895Ab1CURKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:10:40 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:38505 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752220Ab1CURKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:10:38 -0400
+From: Aaro Koskinen <aaro.koskinen@nokia.com>
+To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@nokia.com>
+Subject: [PATCH] input: tsc2005: use relative jiffies to schedule the watchdog
+Date: Mon, 21 Mar 2011 19:07:51 +0200
+Message-Id: <1300727271-20120-1-git-send-email-aaro.koskinen@nokia.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 08:00:53PM +0300, Cyrill Gorcunov wrote:
-> On 03/21/2011 07:43 PM, Cyrill Gorcunov wrote:
-> ...
-> > 
-> > I think Jack might need to setup priority for his notifier, like
-> > 
-> > static struct notifier_block uv_dump_stack_nmi_nb = {
-> > 	.notifier_call	= uv_handle_nmi,
-> > 	.priority	= NMI_LOCAL_HIGH_PRIOR+1,
-> > };
-> > 
-> > so it would be called before perf nmi. Don, am I right?
-> > 
-> > Since for perf nmis we do have
-> > 
-> > static __read_mostly struct notifier_block perf_event_nmi_notifier = {
-> > 	.notifier_call		= perf_event_nmi_handler,
-> > 	.next			= NULL,
-> > 	.priority		= NMI_LOCAL_LOW_PRIOR,
-> > };
-> > 
-> 
->   I must admit I've missed the fact that Jack has tried NMIs priorities, right?
-> x86_platform_ops seems to be a cleaner indeed (btw I think p4 pmu kgdb issue
-> is exactly the same problem) but same time this might end up in over-swelled
-> ideas behind this small code snippet. Dunno. Probably we need some per-cpu
-> system status for nmi reasons other than unknown nmis...
+Use relative jiffies to schedule the watchdog. Otherwise it will run
+like a mad one.
 
-We use KDB internally, and yes, it has the same issue. The version of the
-patch that uses KDB OR's the "handled" status for both KDB & the UV NMI handler.
-If either KDB or the UV NMI handler returns "handled", the code in traps.c exits
-after the call to the first die notifier.
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+---
+ drivers/input/touchscreen/tsc2005.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Not particularily pretty but I could not find a better way to do it.
+diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
+index 3a15587..ea7f436 100644
+--- a/drivers/input/touchscreen/tsc2005.c
++++ b/drivers/input/touchscreen/tsc2005.c
+@@ -358,7 +358,7 @@ static void __tsc2005_enable(struct tsc2005 *ts)
+ 	if (ts->esd_timeout && ts->set_reset) {
+ 		ts->last_valid_interrupt = jiffies;
+ 		schedule_delayed_work(&ts->esd_work,
+-				round_jiffies(jiffies +
++				round_jiffies_relative(
+ 					msecs_to_jiffies(ts->esd_timeout)));
+ 	}
+ 
+@@ -518,7 +518,7 @@ static void tsc2005_esd_work(struct work_struct *work)
+ out:
+ 	/* re-arm the watchdog */
+ 	schedule_delayed_work(&ts->esd_work,
+-			      round_jiffies(jiffies +
++			      round_jiffies_relative(
+ 					msecs_to_jiffies(ts->esd_timeout)));
+ 	mutex_unlock(&ts->mutex);
+ }
+-- 
+1.5.6.5
 
---- jack
