@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab1CUXjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:39:25 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51891 "EHLO ogre.sisk.pl"
+	id S932422Ab1CUXjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:39:22 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51892 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932238Ab1CUXjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932242Ab1CUXjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Mar 2011 19:39:07 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 5/6] cpufreq: Use syscore_ops for boot CPU suspend/resume (v2)
-Date: Tue, 22 Mar 2011 00:38:01 +0100
+Subject: [PATCH 6/6] Introduce ARCH_NO_SYSDEV_OPS config option (v2)
+Date: Tue, 22 Mar 2011 00:38:49 +0100
 User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
         Kay Sievers <kay.sievers@suse.de>,
@@ -25,175 +25,157 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103220038.02116.rjw@sisk.pl>
+Message-Id: <201103220038.49425.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The cpufreq subsystem uses sysdev suspend and resume for
-executing cpufreq_suspend() and cpufreq_resume(), respectively,
-during system suspend, after interrupts have been switched off on the
-boot CPU, and during system resume, while interrupts are still off on
-the boot CPU.  In both cases the other CPUs are off-line at the
-relevant point (either they have been switched off via CPU hotplug
-during suspend, or they haven't been switched on yet during resume).
-For this reason, although it may seem that cpufreq_suspend() and
-cpufreq_resume() are executed for all CPUs in the system, they are
-only called for the boot CPU in fact, which is quite confusing.
+Introduce Kconfig option allowing architectures where sysdev
+operations used during system suspend, resume and shutdown have been
+completely replaced with struct sycore_ops operations to avoid
+building sysdev code that will never be used.
 
-To remove the confusion and to prepare for elimiating sysdev
-suspend and resume operations from the kernel enirely, convernt
-cpufreq to using a struct syscore_ops object for the boot CPU
-suspend and resume and rename the callbacks so that their names
-reflect their purpose.  In addition, put some explanatory remarks
-into their kerneldoc comments.
+Make callbacks in struct sys_device and struct sysdev_driver depend
+on ARCH_NO_SYSDEV_OPS to allows us to verify if all of the references
+have been actually removed from the code the given architecture
+depends on.
+
+Make x86 select ARCH_NO_SYSDEV_OPS.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/cpufreq/cpufreq.c |   66 ++++++++++++++++++----------------------------
- 1 file changed, 26 insertions(+), 40 deletions(-)
+ arch/x86/Kconfig       |    1 +
+ drivers/base/Kconfig   |    7 +++++++
+ drivers/base/sys.c     |    3 ++-
+ include/linux/device.h |    4 ++++
+ include/linux/pm.h     |   10 ++++++++--
+ include/linux/sysdev.h |    7 +++++--
+ 6 files changed, 27 insertions(+), 5 deletions(-)
 
-Index: linux-2.6/drivers/cpufreq/cpufreq.c
+Index: linux-2.6/include/linux/pm.h
 ===================================================================
---- linux-2.6.orig/drivers/cpufreq/cpufreq.c
-+++ linux-2.6/drivers/cpufreq/cpufreq.c
-@@ -28,6 +28,7 @@
- #include <linux/cpu.h>
- #include <linux/completion.h>
- #include <linux/mutex.h>
-+#include <linux/syscore_ops.h>
+--- linux-2.6.orig/include/linux/pm.h
++++ linux-2.6/include/linux/pm.h
+@@ -529,13 +529,19 @@ struct dev_power_domain {
+  */
  
- #include <trace/events/power.h>
- 
-@@ -1340,35 +1341,31 @@ out:
- }
- EXPORT_SYMBOL(cpufreq_get);
- 
-+static struct sysdev_driver cpufreq_sysdev_driver = {
-+	.add		= cpufreq_add_dev,
-+	.remove		= cpufreq_remove_dev,
-+};
+ #ifdef CONFIG_PM_SLEEP
+-extern void device_pm_lock(void);
++#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
++extern int sysdev_suspend(pm_message_t state);
+ extern int sysdev_resume(void);
++#else
++static inline int sysdev_suspend(pm_message_t state) { return 0; }
++static inline int sysdev_resume(void) { return 0; }
++#endif
 +
++extern void device_pm_lock(void);
+ extern void dpm_resume_noirq(pm_message_t state);
+ extern void dpm_resume_end(pm_message_t state);
  
- /**
-- *	cpufreq_suspend - let the low level driver prepare for suspend
-+ * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
-+ *
-+ * This function is only executed for the boot processor.  The other CPUs
-+ * have been put offline by means of CPU hotplug.
-  */
+ extern void device_pm_unlock(void);
+-extern int sysdev_suspend(pm_message_t state);
+ extern int dpm_suspend_noirq(pm_message_t state);
+ extern int dpm_suspend_start(pm_message_t state);
+ 
+Index: linux-2.6/include/linux/sysdev.h
+===================================================================
+--- linux-2.6.orig/include/linux/sysdev.h
++++ linux-2.6/include/linux/sysdev.h
+@@ -33,12 +33,13 @@ struct sysdev_class {
+ 	const char *name;
+ 	struct list_head	drivers;
+ 	struct sysdev_class_attribute **attrs;
 -
--static int cpufreq_suspend(struct sys_device *sysdev, pm_message_t pmsg)
-+static int cpufreq_bp_suspend(void)
- {
- 	int ret = 0;
++	struct kset		kset;
++#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+ 	/* Default operations for these types of devices */
+ 	int	(*shutdown)(struct sys_device *);
+ 	int	(*suspend)(struct sys_device *, pm_message_t state);
+ 	int	(*resume)(struct sys_device *);
+-	struct kset		kset;
++#endif
+ };
  
--	int cpu = sysdev->id;
-+	int cpu = smp_processor_id();
- 	struct cpufreq_policy *cpu_policy;
- 
- 	dprintk("suspending cpu %u\n", cpu);
- 
--	if (!cpu_online(cpu))
--		return 0;
--
--	/* we may be lax here as interrupts are off. Nonetheless
--	 * we need to grab the correct cpu policy, as to check
--	 * whether we really run on this CPU.
--	 */
--
-+	/* If there's no policy for the boot CPU, we have nothing to do. */
- 	cpu_policy = cpufreq_cpu_get(cpu);
- 	if (!cpu_policy)
--		return -EINVAL;
--
--	/* only handle each CPU group once */
--	if (unlikely(cpu_policy->cpu != cpu))
--		goto out;
-+		return 0;
- 
- 	if (cpufreq_driver->suspend) {
- 		ret = cpufreq_driver->suspend(cpu_policy);
-@@ -1377,13 +1374,12 @@ static int cpufreq_suspend(struct sys_de
- 					"step on CPU %u\n", cpu_policy->cpu);
- 	}
- 
--out:
- 	cpufreq_cpu_put(cpu_policy);
- 	return ret;
- }
- 
- /**
-- *	cpufreq_resume -  restore proper CPU frequency handling after resume
-+ * cpufreq_bp_resume - Restore proper frequency handling of the boot CPU.
-  *
-  *	1.) resume CPUfreq hardware support (cpufreq_driver->resume())
-  *	2.) schedule call cpufreq_update_policy() ASAP as interrupts are
-@@ -1391,31 +1387,23 @@ out:
-  *	    what we believe it to be. This is a bit later than when it
-  *	    should be, but nonethteless it's better than calling
-  *	    cpufreq_driver->get() here which might re-enable interrupts...
-+ *
-+ * This function is only executed for the boot CPU.  The other CPUs have not
-+ * been turned on yet.
-  */
--static int cpufreq_resume(struct sys_device *sysdev)
-+static void cpufreq_bp_resume(void)
- {
- 	int ret = 0;
- 
--	int cpu = sysdev->id;
-+	int cpu = smp_processor_id();
- 	struct cpufreq_policy *cpu_policy;
- 
- 	dprintk("resuming cpu %u\n", cpu);
- 
--	if (!cpu_online(cpu))
--		return 0;
--
--	/* we may be lax here as interrupts are off. Nonetheless
--	 * we need to grab the correct cpu policy, as to check
--	 * whether we really run on this CPU.
--	 */
--
-+	/* If there's no policy for the boot CPU, we have nothing to do. */
- 	cpu_policy = cpufreq_cpu_get(cpu);
- 	if (!cpu_policy)
--		return -EINVAL;
--
--	/* only handle each CPU group once */
--	if (unlikely(cpu_policy->cpu != cpu))
--		goto fail;
-+		return;
- 
- 	if (cpufreq_driver->resume) {
- 		ret = cpufreq_driver->resume(cpu_policy);
-@@ -1430,14 +1418,11 @@ static int cpufreq_resume(struct sys_dev
- 
- fail:
- 	cpufreq_cpu_put(cpu_policy);
--	return ret;
- }
- 
--static struct sysdev_driver cpufreq_sysdev_driver = {
--	.add		= cpufreq_add_dev,
--	.remove		= cpufreq_remove_dev,
--	.suspend	= cpufreq_suspend,
--	.resume		= cpufreq_resume,
-+static struct syscore_ops cpufreq_syscore_ops = {
-+	.suspend	= cpufreq_bp_suspend,
-+	.resume		= cpufreq_bp_resume,
+ struct sysdev_class_attribute {
+@@ -76,9 +77,11 @@ struct sysdev_driver {
+ 	struct list_head	entry;
+ 	int	(*add)(struct sys_device *);
+ 	int	(*remove)(struct sys_device *);
++#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+ 	int	(*shutdown)(struct sys_device *);
+ 	int	(*suspend)(struct sys_device *, pm_message_t state);
+ 	int	(*resume)(struct sys_device *);
++#endif
  };
  
  
-@@ -2002,6 +1987,7 @@ static int __init cpufreq_core_init(void
- 	cpufreq_global_kobject = kobject_create_and_add("cpufreq",
- 						&cpu_sysdev_class.kset.kobj);
- 	BUG_ON(!cpufreq_global_kobject);
-+	register_syscore_ops(&cpufreq_syscore_ops);
+Index: linux-2.6/include/linux/device.h
+===================================================================
+--- linux-2.6.orig/include/linux/device.h
++++ linux-2.6/include/linux/device.h
+@@ -633,8 +633,12 @@ static inline int devtmpfs_mount(const c
+ /* drivers/base/power/shutdown.c */
+ extern void device_shutdown(void);
  
++#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+ /* drivers/base/sys.c */
+ extern void sysdev_shutdown(void);
++#else
++static inline void sysdev_shutdown(void) { }
++#endif
+ 
+ /* debugging and troubleshooting/diagnostic helpers. */
+ extern const char *dev_driver_string(const struct device *dev);
+Index: linux-2.6/arch/x86/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/x86/Kconfig
++++ linux-2.6/arch/x86/Kconfig
+@@ -71,6 +71,7 @@ config X86
+ 	select GENERIC_IRQ_SHOW
+ 	select IRQ_FORCED_THREADING
+ 	select USE_GENERIC_SMP_HELPERS if SMP
++	select ARCH_NO_SYSDEV_OPS
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+Index: linux-2.6/drivers/base/sys.c
+===================================================================
+--- linux-2.6.orig/drivers/base/sys.c
++++ linux-2.6/drivers/base/sys.c
+@@ -329,7 +329,7 @@ void sysdev_unregister(struct sys_device
+ }
+ 
+ 
+-
++#ifndef CONFIG_ARCH_NO_SYSDEV_OPS
+ /**
+  *	sysdev_shutdown - Shut down all system devices.
+  *
+@@ -524,6 +524,7 @@ int sysdev_resume(void)
  	return 0;
  }
+ EXPORT_SYMBOL_GPL(sysdev_resume);
++#endif /* CONFIG_ARCH_NO_SYSDEV_OPS */
+ 
+ int __init system_bus_init(void)
+ {
+Index: linux-2.6/drivers/base/Kconfig
+===================================================================
+--- linux-2.6.orig/drivers/base/Kconfig
++++ linux-2.6/drivers/base/Kconfig
+@@ -168,4 +168,11 @@ config SYS_HYPERVISOR
+ 	bool
+ 	default n
+ 
++config ARCH_NO_SYSDEV_OPS
++	bool
++	---help---
++	  To be selected by architectures that don't use sysdev class or
++	  sysdev driver power management (suspend/resume) and shutdown
++	  operations.
++
+ endmenu
 
