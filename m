@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab1CUXvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:51:33 -0400
-Received: from kroah.org ([198.145.64.141]:49270 "EHLO coco.kroah.org"
+	id S1755977Ab1CUXvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:51:55 -0400
+Received: from kroah.org ([198.145.64.141]:49265 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197Ab1CUXPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:17 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
-Message-Id: <20110321230711.135595339@clark.kroah.org>
+	id S1755276Ab1CUXPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:10 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:10 2011
+Message-Id: <20110321230710.503017570@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:18 -0700
+Date: Mon, 21 Mar 2011 16:06:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [19/87] x86/mm: Fix pgd_lock deadlock
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: [13/87] rt2x00: Fix crash on USB unplug
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,251 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Ivo van Doorn <ivdoorn@gmail.com>
 
-commit a79e53d85683c6dd9f99c90511028adc2043031f upstream.
+commit 070192dd2975c0e97bbdeac7623b755235c6db7d upstream.
 
-It's forbidden to take the page_table_lock with the irq disabled
-or if there's contention the IPIs (for tlb flushes) sent with
-the page_table_lock held will never run leading to a deadlock.
+By not scheduling the TX/RX completion worker threads
+when Radio is disabled, or hardware has been unplugged,
+the queues cannot be completely cleaned.
 
-Nobody takes the pgd_lock from irq context so the _irqsave can be
-removed.
+This causes crashes when the hardware has been unplugged while
+the radio is still enabled.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <201102162345.p1GNjMjm021738@imap1.linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/mm/fault.c    |    7 +++----
- arch/x86/mm/init_64.c  |    6 +++---
- arch/x86/mm/pageattr.c |   18 ++++++++----------
- arch/x86/mm/pgtable.c  |   11 ++++-------
- arch/x86/xen/mmu.c     |   10 ++++------
- 5 files changed, 22 insertions(+), 30 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00dev.c |   12 ++++++++++--
+ drivers/net/wireless/rt2x00/rt2x00usb.c |    8 ++------
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -229,15 +229,14 @@ void vmalloc_sync_all(void)
- 	for (address = VMALLOC_START & PMD_MASK;
- 	     address >= TASK_SIZE && address < FIXADDR_TOP;
- 	     address += PMD_SIZE) {
--
--		unsigned long flags;
- 		struct page *page;
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -486,6 +486,10 @@ void rt2x00lib_rxdone(struct queue_entry
+ 	unsigned int header_length;
+ 	int rate_idx;
  
--		spin_lock_irqsave(&pgd_lock, flags);
-+		spin_lock(&pgd_lock);
- 		list_for_each_entry(page, &pgd_list, lru) {
- 			spinlock_t *pgt_lock;
- 			pmd_t *ret;
++	if (!test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) ||
++	    !test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags))
++		goto submit_entry;
++
+ 	if (test_bit(ENTRY_DATA_IO_FAILED, &entry->flags))
+ 		goto submit_entry;
  
-+			/* the pgt_lock only for Xen */
- 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+@@ -570,9 +574,13 @@ void rt2x00lib_rxdone(struct queue_entry
+ 	entry->skb = skb;
  
- 			spin_lock(pgt_lock);
-@@ -247,7 +246,7 @@ void vmalloc_sync_all(void)
- 			if (!ret)
- 				break;
- 		}
--		spin_unlock_irqrestore(&pgd_lock, flags);
-+		spin_unlock(&pgd_lock);
- 	}
+ submit_entry:
+-	rt2x00dev->ops->lib->clear_entry(entry);
+-	rt2x00queue_index_inc(entry->queue, Q_INDEX);
++	entry->flags = 0;
+ 	rt2x00queue_index_inc(entry->queue, Q_INDEX_DONE);
++	if (test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) &&
++	    test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags)) {
++		rt2x00dev->ops->lib->clear_entry(entry);
++		rt2x00queue_index_inc(entry->queue, Q_INDEX);
++	}
  }
+ EXPORT_SYMBOL_GPL(rt2x00lib_rxdone);
  
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -105,18 +105,18 @@ void sync_global_pgds(unsigned long star
- 
- 	for (address = start; address <= end; address += PGDIR_SIZE) {
- 		const pgd_t *pgd_ref = pgd_offset_k(address);
--		unsigned long flags;
- 		struct page *page;
- 
- 		if (pgd_none(*pgd_ref))
- 			continue;
- 
--		spin_lock_irqsave(&pgd_lock, flags);
-+		spin_lock(&pgd_lock);
- 		list_for_each_entry(page, &pgd_list, lru) {
- 			pgd_t *pgd;
- 			spinlock_t *pgt_lock;
- 
- 			pgd = (pgd_t *)page_address(page) + pgd_index(address);
-+			/* the pgt_lock only for Xen */
- 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
- 			spin_lock(pgt_lock);
- 
-@@ -128,7 +128,7 @@ void sync_global_pgds(unsigned long star
- 
- 			spin_unlock(pgt_lock);
- 		}
--		spin_unlock_irqrestore(&pgd_lock, flags);
-+		spin_unlock(&pgd_lock);
- 	}
- }
- 
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -56,12 +56,10 @@ static unsigned long direct_pages_count[
- 
- void update_page_count(int level, unsigned long pages)
- {
--	unsigned long flags;
--
- 	/* Protect against CPA */
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	direct_pages_count[level] += pages;
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- }
- 
- static void split_page_count(int level)
-@@ -391,7 +389,7 @@ static int
- try_preserve_large_page(pte_t *kpte, unsigned long address,
- 			struct cpa_data *cpa)
- {
--	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
-+	unsigned long nextpage_addr, numpages, pmask, psize, addr, pfn;
- 	pte_t new_pte, old_pte, *tmp;
- 	pgprot_t old_prot, new_prot;
- 	int i, do_split = 1;
-@@ -400,7 +398,7 @@ try_preserve_large_page(pte_t *kpte, uns
- 	if (cpa->force_split)
- 		return 1;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	/*
- 	 * Check for races, another CPU might have split this page
- 	 * up already:
-@@ -495,14 +493,14 @@ try_preserve_large_page(pte_t *kpte, uns
- 	}
- 
- out_unlock:
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- 
- 	return do_split;
- }
- 
- static int split_large_page(pte_t *kpte, unsigned long address)
- {
--	unsigned long flags, pfn, pfninc = 1;
-+	unsigned long pfn, pfninc = 1;
- 	unsigned int i, level;
- 	pte_t *pbase, *tmp;
- 	pgprot_t ref_prot;
-@@ -516,7 +514,7 @@ static int split_large_page(pte_t *kpte,
- 	if (!base)
- 		return -ENOMEM;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	/*
- 	 * Check for races, another CPU might have split this page
- 	 * up for us already:
-@@ -588,7 +586,7 @@ out_unlock:
+--- a/drivers/net/wireless/rt2x00/rt2x00usb.c
++++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
+@@ -226,9 +226,7 @@ static void rt2x00usb_interrupt_txdone(s
+ 	 * Schedule the delayed work for reading the TX status
+ 	 * from the device.
  	 */
- 	if (base)
- 		__free_page(base);
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- 
- 	return 0;
+-	if (test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) &&
+-	    test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags))
+-		ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->txdone_work);
++	ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->txdone_work);
  }
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -121,14 +121,12 @@ static void pgd_ctor(struct mm_struct *m
  
- static void pgd_dtor(pgd_t *pgd)
- {
--	unsigned long flags; /* can be called from interrupt context */
--
- 	if (SHARED_KERNEL_PMD)
- 		return;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 	pgd_list_del(pgd);
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
+ static void rt2x00usb_kick_tx_entry(struct queue_entry *entry)
+@@ -424,9 +422,7 @@ static void rt2x00usb_interrupt_rxdone(s
+ 	 * Schedule the delayed work for reading the RX status
+ 	 * from the device.
+ 	 */
+-	if (test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags) &&
+-	    test_bit(DEVICE_STATE_ENABLED_RADIO, &rt2x00dev->flags))
+-		ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->rxdone_work);
++	ieee80211_queue_work(rt2x00dev->hw, &rt2x00dev->rxdone_work);
  }
  
  /*
-@@ -260,7 +258,6 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
- {
- 	pgd_t *pgd;
- 	pmd_t *pmds[PREALLOCATED_PMDS];
--	unsigned long flags;
- 
- 	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP);
- 
-@@ -280,12 +277,12 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
- 	 * respect to anything walking the pgd_list, so that they
- 	 * never see a partially populated pgd.
- 	 */
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 
- 	pgd_ctor(mm, pgd);
- 	pgd_prepopulate_pmd(mm, pgd, pmds);
- 
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- 
- 	return pgd;
- 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1362,10 +1362,9 @@ static void xen_pgd_pin(struct mm_struct
-  */
- void xen_mm_pin_all(void)
- {
--	unsigned long flags;
- 	struct page *page;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 
- 	list_for_each_entry(page, &pgd_list, lru) {
- 		if (!PagePinned(page)) {
-@@ -1374,7 +1373,7 @@ void xen_mm_pin_all(void)
- 		}
- 	}
- 
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- }
- 
- /*
-@@ -1475,10 +1474,9 @@ static void xen_pgd_unpin(struct mm_stru
-  */
- void xen_mm_unpin_all(void)
- {
--	unsigned long flags;
- 	struct page *page;
- 
--	spin_lock_irqsave(&pgd_lock, flags);
-+	spin_lock(&pgd_lock);
- 
- 	list_for_each_entry(page, &pgd_list, lru) {
- 		if (PageSavePinned(page)) {
-@@ -1488,7 +1486,7 @@ void xen_mm_unpin_all(void)
- 		}
- 	}
- 
--	spin_unlock_irqrestore(&pgd_lock, flags);
-+	spin_unlock(&pgd_lock);
- }
- 
- void xen_activate_mm(struct mm_struct *prev, struct mm_struct *next)
 
 
