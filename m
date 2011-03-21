@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab1CUXQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:16:37 -0400
-Received: from kroah.org ([198.145.64.141]:49698 "EHLO coco.kroah.org"
+	id S932118Ab1CUXQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:16:24 -0400
+Received: from kroah.org ([198.145.64.141]:49597 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932149Ab1CUXQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:27 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:18 2011
-Message-Id: <20110321230718.166337358@clark.kroah.org>
+	id S1755447Ab1CUXQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:16:10 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:16 2011
+Message-Id: <20110321230716.321202914@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:26 -0700
+Date: Mon, 21 Mar 2011 16:07:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [87/87] hwmon: (sht15) Fix integer overflow in humidity calculation
+        Stanislav Kinsbursky <skinsbursky@openvz.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [69/87] RPC: killing RPC tasks races fixed
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit ccd32e735de7a941906e093f8dca924bb05c5794 upstream.
+commit 8e26de238fd794c8ea56a5c98bf67c40cfeb051d upstream.
 
-An integer overflow occurs in the calculation of RHlinear when the
-relative humidity is greater than around 30%. The consequence is a subtle
-(but noticeable) error in the resulting humidity measurement.
+RPC task RPC_TASK_QUEUED bit is set must be checked before trying to wake up
+task rpc_killall_tasks() because task->tk_waitqueue can not be set (equal to
+NULL).
+Also, as Trond Myklebust mentioned, such approach (instead of checking
+tk_waitqueue to NULL) allows us to "optimise away the call to
+rpc_wake_up_queued_task() altogether for those
+tasks that aren't queued".
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
+Here is an example of dereferencing of tk_waitqueue equal to NULL:
+
+CPU 0               	CPU 1				CPU 2
+--------------------	---------------------	--------------------------
+nfs4_run_open_task
+rpc_run_task
+rpc_execute
+rpc_set_active
+rpc_make_runnable
+(waiting)
+			rpc_async_schedule
+			nfs4_open_prepare
+			nfs_wait_on_sequence
+						nfs_umount_begin
+						rpc_killall_tasks
+						rpc_wake_up_task
+						rpc_wake_up_queued_task
+						spin_lock(tk_waitqueue == NULL)
+						BUG()
+			rpc_sleep_on
+			spin_lock(&q->lock)
+			__rpc_sleep_on
+			task->tk_waitqueue = q
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@openvz.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/sht15.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/sunrpc/clnt.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/sht15.c
-+++ b/drivers/hwmon/sht15.c
-@@ -333,11 +333,11 @@ static inline int sht15_calc_humid(struc
- 
- 	const int c1 = -4;
- 	const int c2 = 40500; /* x 10 ^ -6 */
--	const int c3 = -2800; /* x10 ^ -9 */
-+	const int c3 = -28; /* x 10 ^ -7 */
- 
- 	RHlinear = c1*1000
- 		+ c2 * data->val_humid/1000
--		+ (data->val_humid * data->val_humid * c3)/1000000;
-+		+ (data->val_humid * data->val_humid * c3) / 10000;
- 	return (temp - 25000) * (10000 + 80 * data->val_humid)
- 		/ 1000000 + RHlinear;
- }
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -436,7 +436,9 @@ void rpc_killall_tasks(struct rpc_clnt *
+ 		if (!(rovr->tk_flags & RPC_TASK_KILLED)) {
+ 			rovr->tk_flags |= RPC_TASK_KILLED;
+ 			rpc_exit(rovr, -EIO);
+-			rpc_wake_up_queued_task(rovr->tk_waitqueue, rovr);
++			if (RPC_IS_QUEUED(rovr))
++				rpc_wake_up_queued_task(rovr->tk_waitqueue,
++							rovr);
+ 		}
+ 	}
+ 	spin_unlock(&clnt->cl_lock);
 
 
