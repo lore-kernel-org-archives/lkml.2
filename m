@@ -1,194 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1CUSZj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:25:39 -0400
-Received: from fox.seas.upenn.edu ([158.130.68.12]:41207 "EHLO
-	fox.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab1CUSZh (ORCPT
+	id S1754089Ab1CUS04 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:26:56 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:13626 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab1CUS0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:25:37 -0400
-Message-ID: <4D879810.9000408@seas.upenn.edu>
-Date: Mon, 21 Mar 2011 14:25:20 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+	Mon, 21 Mar 2011 14:26:55 -0400
+Message-ID: <4D879869.8060405@caviumnetworks.com>
+Date: Mon, 21 Mar 2011 11:26:49 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        micki@n-trig.com, chatty@enac.fr, dmitry.torokhov@gmail.com
-Subject: Re: [PATCH 2/2] hid-ntrig: calibration
-References: <1299829072-19489-1-git-send-email-rafi@seas.upenn.edu> <1299829072-19489-2-git-send-email-rafi@seas.upenn.edu> <20110321171550.GA4602@polaris.bitmath.org>
-In-Reply-To: <20110321171550.GA4602@polaris.bitmath.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] genirq: Add chip hooks for taking CPUs on/off
+ line.
+References: <1300484916-11133-1-git-send-email-ddaney@caviumnetworks.com> <1300484916-11133-2-git-send-email-ddaney@caviumnetworks.com> <alpine.LFD.2.00.1103192050400.2787@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103192050400.2787@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2011-03-21_06:2011-03-16,2011-03-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1012030000 definitions=main-1103210114
+X-OriginalArrivalTime: 21 Mar 2011 18:26:54.0308 (UTC) FILETIME=[8DDA2A40:01CBE7F5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-
-
-On 03/21/11 13:15, Henrik Rydberg wrote:
-> Hi Rafi,
-> 
-> On Fri, Mar 11, 2011 at 02:37:52AM -0500, Rafi Rubin wrote:
->> Adding a function to tell the device to run its calibration routine.
->> A number written to the sysfs specifies the duration of the calibration
->> in milliseconds
+On 03/19/2011 01:51 PM, Thomas Gleixner wrote:
+> On Fri, 18 Mar 2011, David Daney wrote:
+>> --- a/include/linux/irqdesc.h
+>> +++ b/include/linux/irqdesc.h
+>> @@ -178,6 +178,12 @@ static inline int irq_has_action(unsigned int irq)
+>>   	return desc->action != NULL;
+>>   }
 >>
->> Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
->> ---
-> 
-> This is great functionality, and from what it seems, it
-> works. However, the poking at the usb layer makes me wonder if there
-> is another way... Jiri? Dmitry? Awaiting answers from someone more
-> knowledgeable, please find some comments inline.
-> 
->> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
->> index 24ab6a5..ddf2c76 100644
->> --- a/drivers/hid/hid-ntrig.c
->> +++ b/drivers/hid/hid-ntrig.c
->> @@ -490,6 +490,53 @@ static ssize_t store_mode(struct device *dev,
->>  }
->>  static DEVICE_ATTR(mode, S_IWUSR | S_IRUGO, show_mode, store_mode);
->>  
->> +static ssize_t ntrig_calibrate(struct device *dev,
->> +			       struct device_attribute *attr,
->> +			       const char *buf, size_t count)
+>> +/* Test to see if the irq is currently enabled */
+>> +static inline int irq_desc_is_enabled(struct irq_desc *desc)
 >> +{
->> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
->> +	struct usb_device *usb_dev = hid_to_usb_dev(hdev);
->> +	struct usbhid_device *usbhid = hdev->driver_data;
->> +	int ret;
->> +	unsigned long t;
->> +	unsigned char *data;
->> +
->> +	if (strict_strtoul(buf, 0, &t))
->> +		return -EINVAL;
->> +
->> +	data = kmalloc(4, GFP_KERNEL);
->> +	if (!data)
->> +		return -ENOMEM;
->> +
->> +	spin_lock(&usbhid->lock);
->> +	set_bit(HID_DISCONNECTED, &usbhid->iofl);
->> +	spin_unlock(&usbhid->lock);
-> 
-> Perhaps an addition to the internal HID api instead of the above?
-
-I don't have a personal preference.  I figured this is probably unusual enough
-that there might not be a point in putting the support in the core, but that's
-part of the point of review by other people who know if this would be useful
-elsewhere.
-
->> +
->> +	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
->> +			      USB_REQ_CLEAR_FEATURE, USB_TYPE_CLASS
->> +			      | USB_RECIP_INTERFACE | USB_DIR_IN,
->> +			      0x30b, 1, data, 4, USB_CTRL_GET_TIMEOUT);
->> +	if (ret < 0)
->> +		goto fail;
-> 
-> How about launching restoration work here, instead of waiting?
-
-The user needs some feedback bracketing the calibration routine.  If one touches
-the screen during calibration alters the result and typically results in dead
-zones (a useful check to verify it works).
-
-Perhaps during the loading of the driver that would make more sense.  I hadn't
-really thought about it.
-
-
-I would like some pointers of how to use work queues.  That's the last item
-holding me back from sending in my new track and filter code for review.
-
->> +
->> +	msleep(t);
->> +
->> +	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
->> +			      USB_REQ_CLEAR_FEATURE, USB_TYPE_CLASS
->> +			      | USB_RECIP_INTERFACE | USB_DIR_IN,
->> +			      0x311, 1, data, 4, USB_CTRL_GET_TIMEOUT);
->> +
->> +fail:
->> +	kfree(data);
->> +	spin_lock(&usbhid->lock);
->> +	clear_bit(HID_DISCONNECTED, &usbhid->iofl);
->> +	spin_unlock(&usbhid->lock);
->> +	schedule_work(&usbhid->reset_work);
->> +
->> +	return (ret < 0) ? ret : count;
+>> +	return desc->depth == 0;
 >> +}
->> +static DEVICE_ATTR(calibrate, S_IWUSR, NULL, ntrig_calibrate);
+>
+> That want's to go into kernel/irq/internal.h
+
+I think I need to use this in my irq_chip.irq_unmask method.
+
+Consider this:
+
+
+CPU0                   CPU1
+handle_level_irq
+   lock
+   mask
+   handle_irq_event
+     unlock
+     .
+     .                  disable_irq
+     .
+     lock
+   unmask
+   unlock
+
+
+I need to know in my .unmask method if the interrupt has been disabled. 
+  If it has, I will not re-enable (unmask)it.
+
+>
+>>   #ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
+>>   static inline int irq_balancing_disabled(unsigned int irq)
+>>   {
+>> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+>> index c9c0601..40736f7 100644
+>> --- a/kernel/irq/chip.c
+>> +++ b/kernel/irq/chip.c
+>> @@ -689,3 +689,38 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+>>
+>>   	irq_put_desc_unlock(desc, flags);
+>>   }
 >> +
->>  static struct attribute *sysfs_attrs[] = {
->>  	&dev_attr_sensor_physical_width.attr,
->>  	&dev_attr_sensor_physical_height.attr,
->> @@ -502,6 +549,7 @@ static struct attribute *sysfs_attrs[] = {
->>  	&dev_attr_activation_height.attr,
->>  	&dev_attr_deactivate_slack.attr,
->>  	&dev_attr_mode.attr,
->> +	&dev_attr_calibrate.attr,
-> 
-> Maybe one could actually run the calibration at module load, or even
-> at start/stop? A few seconds of unresponsiveness might be ok at that
-> time.
+>> +void irq_cpu_online(unsigned int irq)
+>
+> Odd function name. It does not reflect that this is for per cpu
+> interrupts. So something like irq_xxx_per_cpu_irq(irq)
+> might be a bit more descriptive.
 
-I still have mixed feelings about that.  I like the idea, but I'm concerned
-about keeping hands off the screen during calibration.  This seems like a
-Hippocratic issue, first do no harm.  For the devices that are stable, I
-wouldn't be surprised if we actually make things worse more often than better.
+I am using it for per cpu interrupts, but I didn't want to impose that 
+policy on others.
 
-For the devices that are really screwed up (I've heard reports of machines that
-are stable for a few hours at best), we'll need something more active than load
-time calibration.
 
-I've been thinking for a while about using feedback from the filters to decide
-when its time to recalibrate (a problem that's closer to my day job than most of
-this).  In those cases it would be nice to either notify that it needs
-calibration, or in the extreme that calibration is already running and to keep
-hands off.
 
-I need to play more with short calibrations, I've played a bit, but not
-carefully.  If we can do some good with a few milliseconds of calibrations that
-would make auto-calibration more tempting.
+>
+>> +{
+>
+> So that's called on the cpu which goes online, right?
+>
 
-Also I don't know how frequent calibrations will affect the device.  If, for
-example, calibration is stored in flash that's only intended to be written a few
-hundred times we could wear it out pretty quickly.  If only we had some feedback
-from the folks that build these things....
+Yes.
 
->>  	NULL
->>  };
-> 
-> Thanks,
-> Henrik
-> 
+> I wonder whether we can add any sanity check to verify this.
+>
+> Though I would not worry too much about it. Calling that from a cpu
+> which is not going offline should have enough nasty side effects that
+> it's noticed during development. :)
+>
+>> +	unsigned long flags;
+>> +	struct irq_chip *chip;
+>> +	struct irq_desc *desc = irq_to_desc(irq);
+>
+> Needs to check !desc
 
-Thanks for the feedback,
-Rafi
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+OK.
 
-iQIcBAEBAgAGBQJNh5gQAAoJEPILXytRLnK2Kl0P+we4k9fhKOPx/VP7gW1l0KZT
-61PNdKXhMdeg4T4ZmOa2n6pz2xzfDozP+vuRJgkilS0eEz3TZqKvTdiiw0ykjZlK
-+Ko1a+T7gAN+ZnSP4AFFglF82K4mbW/Vd0vVwbbC3tUbyzwqxvPrLRxWKhgDJ6FY
-CP4i0jW4AJawpB3UoIVwli66X1DzD9RaPNqCJrQiSEDxcay6H1oPB3rwDKGdrZ51
-RMKsMaGF7kfeQ1SfrnDhrhEM/8tvs86FQTkHkZ2m2bHdjDEh3uMwfavCe7z4hWUL
-4Ln1RMc4fjBoudSMU20WkT38PyqnC5FMfhtxcP50SNjxzsDIQttXU6WE6xjBGAG1
-Jt0AKbM/nr3QjhlD7AbbC8NjvgP6JY4ZfneBm5e2tFATluzeRoTfY2e9m76PRr1t
-QUhdF26qKZf6Vzt7OnOSxHWH5SyL92C+3q0ScV0c7F8l0MFCnALKCxs7RXIPE1kT
-DCmN5fEp6SvtYdkWOtddvR3qex6gCipaUu4lq7mf/snHn4yw2iuMsisns0XGv7AU
-MRF0gwzYhWAkbeFvHPuhwE0/R10w7pZXXiPGyARH92nlpGJxOiHb6gZ32TdMUlm/
-h5DOhggXGI0wSLSAAP6BTz2f0+pMihTGNvlgKgu5AnvTbYS5coYkpufGQ+qKltHV
-oQHICuniy4uI6s88PrZ/
-=Fx2M
------END PGP SIGNATURE-----
+>
+>> +	raw_spin_lock_irqsave(&desc->lock, flags);
+>> +
+>> +	chip = irq_data_get_irq_chip(&desc->irq_data);
+>> +
+>> +	if (chip&&  chip->irq_cpu_online)
+>> +		chip->irq_cpu_online(&desc->irq_data,
+>> +				     irq_desc_is_enabled(desc));
+>> +
+>> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
+>> +}
+>> +
+>> +void irq_cpu_offline(unsigned int irq)
+>> +{
+>> +	unsigned long flags;
+>> +	struct irq_chip *chip;
+>> +	struct irq_desc *desc = irq_to_desc(irq);
+>
+> See above.
+>
+> Style nit: I prefer ordering:
+>
+> +	struct irq_desc *desc = irq_to_desc(irq);
+> +	struct irq_chip *chip;
+> +	unsigned long flags;
+>
+> For some reason, probably because I'm used to it, that's easier to
+> parse. But don't worry about that, I'll turn it around before sticking
+> it into git. :)
+>
+> Otherwise I'm fine with the approach itself.
+>
+> Though one question remains: should we just iterate over the irq space
+> and call the online/offline callbacks when available instead of having
+> the arch code do the iteration.
+>
+
+That would be good I think, especially for sparse irqs.
+
+In the case of the CPU going offline, the .irq_cpu_offline() may need to 
+adjust the affinity so that the irq no longer has affinity for the 
+off-lined CPU.
+
+This is something needed even for non-per-cpu interrupts.  Also I would 
+need a way to call irq_set_affinity() while holding the desc->lock.
+
+David Daney
+
