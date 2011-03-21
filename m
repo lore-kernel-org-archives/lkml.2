@@ -1,201 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab1CUVcz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 17:32:55 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:51502
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754399Ab1CUVcp (ORCPT
+	id S1754536Ab1CUVk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 17:40:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40715 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754378Ab1CUVk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 17:32:45 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <arnaud.patard@rtp-net.org>, <ra5478@freescale.com>,
-        <xiao-lizhang@freescale.com>, <festevam@gmail.com>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv5 3/4] ARM: mx51: Implement code to allow mx51 to enter WFI
-Date: Mon, 21 Mar 2011 16:30:37 -0500
-Message-ID: <1300743038-3901-3-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1300743038-3901-2-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1300743038-3901-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1300743038-3901-2-git-send-email-Dinh.Nguyen@freescale.com>
+	Mon, 21 Mar 2011 17:40:56 -0400
+X-Greylist: delayed 1639 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 17:40:55 EDT
+Date: Mon, 21 Mar 2011 22:13:22 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Daney <ddaney@caviumnetworks.com>
+cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] genirq: Add chip hooks for taking CPUs on/off
+ line.
+In-Reply-To: <4D879869.8060405@caviumnetworks.com>
+Message-ID: <alpine.LFD.2.00.1103212136430.24415@localhost6.localdomain6>
+References: <1300484916-11133-1-git-send-email-ddaney@caviumnetworks.com> <1300484916-11133-2-git-send-email-ddaney@caviumnetworks.com> <alpine.LFD.2.00.1103192050400.2787@localhost6.localdomain6> <4D879869.8060405@caviumnetworks.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On Mon, 21 Mar 2011, David Daney wrote:
 
-Implement code for MX51 that allows the SoC to enter WFI when
-arch_idle is called.
+> On 03/19/2011 01:51 PM, Thomas Gleixner wrote:
+> > On Fri, 18 Mar 2011, David Daney wrote:
+> > > --- a/include/linux/irqdesc.h
+> > > +++ b/include/linux/irqdesc.h
+> > > @@ -178,6 +178,12 @@ static inline int irq_has_action(unsigned int irq)
+> > >   	return desc->action != NULL;
+> > >   }
+> > > 
+> > > +/* Test to see if the irq is currently enabled */
+> > > +static inline int irq_desc_is_enabled(struct irq_desc *desc)
+> > > +{
+> > > +	return desc->depth == 0;
+> > > +}
+> > 
+> > That want's to go into kernel/irq/internal.h
+> 
+> I think I need to use this in my irq_chip.irq_unmask method.
+> 
+> Consider this:
+> 
+> 
+> CPU0                   CPU1
+> handle_level_irq
+>   lock
+>   mask
+>   handle_irq_event
+>     unlock
+>     .
+>     .                  disable_irq
+>     .
+>     lock
+>   unmask
+>   unlock
 
-This patch is also necessary for correctly suspending the system.
+handle level irq does:
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/Makefile              |    2 +-
- arch/arm/mach-mx5/system.c              |   85 +++++++++++++++++++++++++++++++
- arch/arm/plat-mxc/include/mach/mxc.h    |    9 +++
- arch/arm/plat-mxc/include/mach/system.h |    6 ++-
- 4 files changed, 100 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/mach-mx5/system.c
+	if (!(desc->istate & (IRQS_DISABLED | IRQS_ONESHOT)))
+		unmask_irq(desc);
+       
+So it does not call unmask.
 
-diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
-index 4f63048..0b9338c 100644
---- a/arch/arm/mach-mx5/Makefile
-+++ b/arch/arm/mach-mx5/Makefile
-@@ -3,7 +3,7 @@
- #
+> I need to know in my .unmask method if the interrupt has been disabled.  If it
+> has, I will not re-enable (unmask)it.
+
+It wont be called :)
  
- # Object file lists.
--obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o
-+obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o system.o
- obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
- 
- obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
-diff --git a/arch/arm/mach-mx5/system.c b/arch/arm/mach-mx5/system.c
-new file mode 100644
-index 0000000..f09c17f
---- /dev/null
-+++ b/arch/arm/mach-mx5/system.c
-@@ -0,0 +1,85 @@
-+/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <mach/hardware.h>
-+#include "crm_regs.h"
-+
-+/* set cpu low power mode before WFI instruction. This function is called
-+  * mx5 because it can be used for mx50, mx51, and mx53.*/
-+void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
-+{
-+	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
-+	u32 empgc0, empgc1;
-+	int stop_mode = 0;
-+
-+	/* always allow platform to issue a deep sleep mode request */
-+	plat_lpc = __raw_readl(MXC_CORTEXA8_PLAT_LPC) &
-+	    ~(MXC_CORTEXA8_PLAT_LPC_DSM);
-+	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
-+	arm_srpgcr = __raw_readl(MXC_SRPG_ARM_SRPGCR) & ~(MXC_SRPGCR_PCR);
-+	empgc0 = __raw_readl(MXC_SRPG_EMPGC0_SRPGCR) & ~(MXC_SRPGCR_PCR);
-+	empgc1 = __raw_readl(MXC_SRPG_EMPGC1_SRPGCR) & ~(MXC_SRPGCR_PCR);
-+
-+	switch (mode) {
-+	case WAIT_CLOCKED:
-+		break;
-+	case WAIT_UNCLOCKED:
-+		ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
-+		break;
-+	case WAIT_UNCLOCKED_POWER_OFF:
-+	case STOP_POWER_OFF:
-+		plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
-+			    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
-+		if (mode == WAIT_UNCLOCKED_POWER_OFF) {
-+			ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
-+			ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
-+			ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
-+			stop_mode = 0;
-+		} else {
-+			ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
-+			ccm_clpcr |= 0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET;
-+			ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
-+			ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
-+			stop_mode = 1;
-+		}
-+		arm_srpgcr |= MXC_SRPGCR_PCR;
-+
-+		if (tzic_enable_wake(1) != 0)
-+			return;
-+		break;
-+	case STOP_POWER_ON:
-+		ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
-+		break;
-+	default:
-+		printk(KERN_WARNING "UNKNOWN cpu power mode: %d\n", mode);
-+		return;
-+	}
-+
-+	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
-+	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
-+	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
-+
-+	/* Enable NEON SRPG for all but MX50TO1.0. */
-+	if (mx50_revision() != IMX_CHIP_REVISION_1_0)
-+		__raw_writel(arm_srpgcr, MXC_SRPG_NEON_SRPGCR);
-+
-+	if (stop_mode) {
-+		empgc0 |= MXC_SRPGCR_PCR;
-+		empgc1 |= MXC_SRPGCR_PCR;
-+
-+		__raw_writel(empgc0, MXC_SRPG_EMPGC0_SRPGCR);
-+		__raw_writel(empgc1, MXC_SRPG_EMPGC1_SRPGCR);
-+	}
-+}
-+
-diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
-index 7e07263..6c2a371 100644
---- a/arch/arm/plat-mxc/include/mach/mxc.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc.h
-@@ -181,6 +181,15 @@ struct cpu_op {
- 	u32 cpu_rate;
- };
- 
-+int tzic_enable_wake(int is_idle);
-+enum mxc_cpu_pwr_mode {
-+	WAIT_CLOCKED,		/* wfi only */
-+	WAIT_UNCLOCKED,		/* WAIT */
-+	WAIT_UNCLOCKED_POWER_OFF,	/* WAIT + SRPG */
-+	STOP_POWER_ON,		/* just STOP */
-+	STOP_POWER_OFF,		/* STOP + SRPG */
-+};
-+
- extern struct cpu_op *(*get_cpu_op)(int *op);
- #endif
- 
-diff --git a/arch/arm/plat-mxc/include/mach/system.h b/arch/arm/plat-mxc/include/mach/system.h
-index 95be51b..0417da9 100644
---- a/arch/arm/plat-mxc/include/mach/system.h
-+++ b/arch/arm/plat-mxc/include/mach/system.h
-@@ -20,6 +20,8 @@
- #include <mach/hardware.h>
- #include <mach/common.h>
- 
-+extern void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode);
-+
- static inline void arch_idle(void)
- {
- #ifdef CONFIG_ARCH_MXC91231
-@@ -54,7 +56,9 @@ static inline void arch_idle(void)
- 			"orr %0, %0, #0x00000004\n"
- 			"mcr p15, 0, %0, c1, c0, 0\n"
- 			: "=r" (reg));
--	} else
-+	} else if (cpu_is_mx51())
-+		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
-+	else
- 		cpu_do_idle();
- }
- 
--- 
-1.6.0.4
+> > 
+> > >   #ifndef CONFIG_GENERIC_HARDIRQS_NO_COMPAT
+> > >   static inline int irq_balancing_disabled(unsigned int irq)
+> > >   {
+> > > diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> > > index c9c0601..40736f7 100644
+> > > --- a/kernel/irq/chip.c
+> > > +++ b/kernel/irq/chip.c
+> > > @@ -689,3 +689,38 @@ void irq_modify_status(unsigned int irq, unsigned
+> > > long clr, unsigned long set)
+> > > 
+> > >   	irq_put_desc_unlock(desc, flags);
+> > >   }
+> > > +
+> > > +void irq_cpu_online(unsigned int irq)
+> > 
+> > Odd function name. It does not reflect that this is for per cpu
+> > interrupts. So something like irq_xxx_per_cpu_irq(irq)
+> > might be a bit more descriptive.
+> 
+> I am using it for per cpu interrupts, but I didn't want to impose that policy
+> on others.
+
+I can't imagine any other purpose for that.
+
+> > Though one question remains: should we just iterate over the irq space
+> > and call the online/offline callbacks when available instead of having
+> > the arch code do the iteration.
+> > 
+> 
+> That would be good I think, especially for sparse irqs.
+> 
+> In the case of the CPU going offline, the .irq_cpu_offline() may need to
+> adjust the affinity so that the irq no longer has affinity for the off-lined
+> CPU.
+> 
+> This is something needed even for non-per-cpu interrupts.  Also I would need a
+> way to call irq_set_affinity() while holding the desc->lock.
+
+Hmm. The offline fixup_irq() code is arch specific and usually calls
+desc->irq_data.chip->irq_set_affinity under desc->lock. I have not yet
+found an arch independent way to do that. Any ideas welcome.
+
+Thanks,
+
+	tglx
 
 
