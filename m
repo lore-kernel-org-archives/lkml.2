@@ -1,146 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab1CUSE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 14:04:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25492 "EHLO mga09.intel.com"
+	id S1754112Ab1CUSFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 14:05:09 -0400
+Received: from realvnc.com ([146.101.152.142]:44982 "EHLO realvnc.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081Ab1CUSE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 14:04:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.63,220,1299484800"; 
-   d="scan'208";a="722512314"
-Message-ID: <4D879328.1080006@intel.com>
-Date: Mon, 21 Mar 2011 11:04:24 -0700
-From: Joseph Cihula <joseph.cihula@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Wang, Shane" <shane.wang@intel.com>, "Wei, Gang" <gang.wei@intel.com>
-Subject: [PATCH] intel_iommu: disable all VT-d PMRs when TXT launched
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753909Ab1CUSFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 14:05:06 -0400
+From: Toby Gray <toby.gray@realvnc.com>
+To: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Toby Gray <toby.gray@realvnc.com>
+Subject: [PATCH v2] USB: cdc-acm: Prevent data loss when filling tty buffer.
+Date: Mon, 21 Mar 2011 18:04:58 +0000
+Message-Id: <1300730698-17099-1-git-send-email-toby.gray@realvnc.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
+References: <1300722745-2404-1-git-send-email-toby.gray@realvnc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel VT-d Protected Memory Regions (PMRs) are supposed to be disabled,
-on each VT-d engine, after DMA remapping is enabled on the engines.
-This is because the behavior of having both enabled is not deterministic
-and because, if TXT has been used to launch the kernel, the PMRs may be
-programmed to cover memory regions that will be used for DMA.
+When sending large quantities of data through a CDC ACM channel it is possible
+for data to be lost when attempting to copy the data to the tty buffer. This
+occurs due to the return value from tty_insert_flip_string not being checked.
 
-Under some circumstances (certain quirks detected, lack of multiple
-devices, etc.), the current code does not set up DMA remapping on some
-VT-d engines.  In such cases it also skips disabling the PMRs.  This
-causes failures when the kernel is launched with TXT (most often this
-occurs on the graphics engine and results in colored vertical bars on
-the display).
+This patch adds checking for how many bytes have been inserted into the tty
+buffer and returns any remaining bytes back to the filled read buffer list.
 
-This patch detects when the kernel has been launched with TXT and then
-disables the PMRs on all VT-d engines.  In some cases where the reason
-that remapping is not being enabled is due to possible ACPI DMAR table
-errors, the VT-d engine addresses may not be correct and thus not able
-to be safely programmed even to disable PMRs.  Because part of the TXT
-launch process is the verification of these addresses, it will always be
-safe to disable PMRs if the TXT launch has succeeded and hence only
-doing this in such cases.
+Signed-off-by: Toby Gray <toby.gray@realvnc.com>
+---
+ drivers/usb/class/cdc-acm.c |   25 +++++++++++++++++++++----
+ drivers/usb/class/cdc-acm.h |    1 +
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
-Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
-
-diff -uprN -X linux-2.6.38-rc3/Documentation/dontdiff
-linux-2.6.38-rc3/drivers/pci/intel-iommu.c
-linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c
---- linux-2.6.38-rc3/drivers/pci/intel-iommu.c	2011-01-31
-19:05:49.000000000 -0800
-+++ linux-2.6.38-rc3-vtd/drivers/pci/intel-iommu.c	2011-02-18
-15:42:36.778301210 -0800
-@@ -1299,7 +1299,7 @@ static void iommu_detach_domain(struct d
- static struct iova_domain reserved_iova_list;
- static struct lock_class_key reserved_rbtree_key;
-
--static void dmar_init_reserved_ranges(void)
-+static int dmar_init_reserved_ranges(void)
- {
- 	struct pci_dev *pdev = NULL;
- 	struct iova *iova;
-@@ -1313,8 +1313,10 @@ static void dmar_init_reserved_ranges(vo
- 	/* IOAPIC ranges shouldn't be accessed by DMA */
- 	iova = reserve_iova(&reserved_iova_list, IOVA_PFN(IOAPIC_RANGE_START),
- 		IOVA_PFN(IOAPIC_RANGE_END));
--	if (!iova)
-+	if (!iova) {
- 		printk(KERN_ERR "Reserve IOAPIC range failed\n");
-+		return -ENODEV;
-+	}
-
- 	/* Reserve all PCI MMIO to avoid peer-to-peer access */
- 	for_each_pci_dev(pdev) {
-@@ -1327,11 +1329,13 @@ static void dmar_init_reserved_ranges(vo
- 			iova = reserve_iova(&reserved_iova_list,
- 					    IOVA_PFN(r->start),
- 					    IOVA_PFN(r->end));
--			if (!iova)
-+			if (!iova) {
- 				printk(KERN_ERR "Reserve iova failed\n");
-+				return -ENODEV;
-+			}
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index f492a7f..f24d41c 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -363,6 +363,7 @@ static void acm_read_bulk(struct urb *urb)
+ 		dev_dbg(&acm->data->dev, "bulk rx status %d\n", status);
+ 
+ 	buf = rcv->buffer;
++	buf->head = buf->base;
+ 	buf->size = urb->actual_length;
+ 
+ 	if (likely(status == 0)) {
+@@ -392,6 +393,7 @@ static void acm_rx_tasklet(unsigned long _acm)
+ 	struct acm_ru *rcv;
+ 	unsigned long flags;
+ 	unsigned char throttled;
++	int copied;
+ 
+ 	dbg("Entering acm_rx_tasklet");
+ 
+@@ -423,12 +425,14 @@ next_buffer:
+ 
+ 	dbg("acm_rx_tasklet: procesing buf 0x%p, size = %d", buf, buf->size);
+ 
++	copied = buf->size;
+ 	if (tty) {
+ 		spin_lock_irqsave(&acm->throttle_lock, flags);
+ 		throttled = acm->throttle;
+ 		spin_unlock_irqrestore(&acm->throttle_lock, flags);
+ 		if (!throttled) {
+-			tty_insert_flip_string(tty, buf->base, buf->size);
++			copied = tty_insert_flip_string(tty,
++							buf->head, buf->size);
+ 			tty_flip_buffer_push(tty);
+ 		} else {
+ 			tty_kref_put(tty);
+@@ -440,9 +444,22 @@ next_buffer:
  		}
  	}
--
-+	return 0;
- }
-
- static void domain_reserve_special_ranges(struct dmar_domain *domain)
-@@ -2213,7 +2217,7 @@ static int __init iommu_prepare_static_i
- 	return 0;
- }
-
--int __init init_dmars(void)
-+static int __init init_dmars(int force_on)
- {
- 	struct dmar_drhd_unit *drhd;
- 	struct dmar_rmrr_unit *rmrr;
-@@ -2393,8 +2397,15 @@ int __init init_dmars(void)
- 	 *   enable translation
- 	 */
- 	for_each_drhd_unit(drhd) {
--		if (drhd->ignored)
-+		if (drhd->ignored) {
-+			/*
-+			 * we always have to disable PMRs or DMA may fail on
-+			 * this device
-+			 */
-+			if (force_on)
-+				iommu_disable_protect_mem_regions(drhd->iommu);
- 			continue;
-+		}
- 		iommu = drhd->iommu;
-
- 		iommu_flush_write_buffer(iommu);
-@@ -3297,12 +3308,21 @@ int __init intel_iommu_init(void)
- 	if (no_iommu || dmar_disabled)
- 		return -ENODEV;
-
--	iommu_init_mempool();
--	dmar_init_reserved_ranges();
-+	if (iommu_init_mempool()) {
-+		if (force_on)
-+			panic("tboot: Failed to initialize iommu memory\n");
-+		return 	-ENODEV;
+ 
+-	spin_lock_irqsave(&acm->read_lock, flags);
+-	list_add(&buf->list, &acm->spare_read_bufs);
+-	spin_unlock_irqrestore(&acm->read_lock, flags);
++	buf->head += copied;
++	buf->size -= copied;
++
++	if (buf->size == 0) {
++		spin_lock_irqsave(&acm->read_lock, flags);
++		list_add(&buf->list, &acm->spare_read_bufs);
++		spin_unlock_irqrestore(&acm->read_lock, flags);
++	} else {
++		tty_kref_put(tty);
++		dbg("Partial buffer fill");
++		spin_lock_irqsave(&acm->read_lock, flags);
++		list_add(&buf->list, &acm->filled_read_bufs);
++		spin_unlock_irqrestore(&acm->read_lock, flags);
++		return;
 +	}
 +
-+	if (dmar_init_reserved_ranges()) {
-+		if (force_on)
-+			panic("tboot: Failed to reserve iommu ranges\n");
-+		return 	-ENODEV;
-+	}
+ 	goto next_buffer;
+ 
+ urbs:
+diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
+index 5eeb570..d7581f6 100644
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -75,6 +75,7 @@ struct acm_rb {
+ 	struct list_head	list;
+ 	int			size;
+ 	unsigned char		*base;
++	unsigned char		*head;
+ 	dma_addr_t		dma;
+ };
+ 
+-- 
+1.7.0.4
 
- 	init_no_remapping_devices();
-
--	ret = init_dmars();
-+	ret = init_dmars(force_on);
- 	if (ret) {
- 		if (force_on)
- 			panic("tboot: Failed to initialize DMARs\n");
