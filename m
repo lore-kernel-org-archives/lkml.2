@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab1CUXgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:36:45 -0400
-Received: from kroah.org ([198.145.64.141]:49648 "EHLO coco.kroah.org"
+	id S1755857Ab1CUXgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:36:42 -0400
+Received: from kroah.org ([198.145.64.141]:49651 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754806Ab1CUXQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755503Ab1CUXQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Mar 2011 19:16:18 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:17 2011
-Message-Id: <20110321230717.138647778@clark.kroah.org>
+Message-Id: <20110321230717.230905118@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:16 -0700
+Date: Mon, 21 Mar 2011 16:07:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>, Milton Miller <miltonm@bga.com>
-Subject: [77/87] smp_call_function_many: handle concurrent clearing of mask
+        Shaohua Li <shaohua.li@intel.com>,
+        Mallick Asit K <asit.k.mallick@intel.com>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [78/87] x86: Flush TLB if PGD entry is changed in i386 PAE mode
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milton Miller <miltonm@bga.com>
+From: Shaohua Li <shaohua.li@intel.com>
 
-commit 723aae25d5cdb09962901d36d526b44d4be1051c upstream.
+commit 4981d01eada5354d81c8929d5b2836829ba3df7b upstream.
 
-Mike Galbraith reported finding a lockup ("perma-spin bug") where the
-cpumask passed to smp_call_function_many was cleared by other cpu(s)
-while a cpu was preparing its call_data block, resulting in no cpu to
-clear the last ref and unlock the block.
+According to intel CPU manual, every time PGD entry is changed in i386 PAE
+mode, we need do a full TLB flush. Current code follows this and there is
+comment for this too in the code.
 
-Having cpus clear their bit asynchronously could be useful on a mask of
-cpus that might have a translation context, or cpus that need a push to
-complete an rcu window.
+But current code misses the multi-threaded case. A changed page table
+might be used by several CPUs, every such CPU should flush TLB. Usually
+this isn't a problem, because we prepopulate all PGD entries at process
+fork. But when the process does munmap and follows new mmap, this issue
+will be triggered.
 
-Instead of adding a BUG_ON and requiring yet another cpumask copy, just
-detect the race and handle it.
+When it happens, some CPUs keep doing page faults:
 
-Note: arch_send_call_function_ipi_mask must still handle an empty
-cpumask because the data block is globally visible before the that arch
-callback is made.  And (obviously) there are no guarantees to which cpus
-are notified if the mask is changed during the call; only cpus that were
-online and had their mask bit set during the whole call are guaranteed
-to be called.
+  http://marc.info/?l=linux-kernel&m=129915020508238&w=2
 
-Reported-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+Tested-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+Cc: Mallick Asit K <asit.k.mallick@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>
+LKML-Reference: <1300246649.2337.95.camel@sli10-conroe>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/smp.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/pgtable-3level.h |   11 +++--------
+ arch/x86/mm/pgtable.c                 |    3 +--
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -440,7 +440,7 @@ void smp_call_function_many(const struct
+--- a/arch/x86/include/asm/pgtable-3level.h
++++ b/arch/x86/include/asm/pgtable-3level.h
+@@ -69,8 +69,6 @@ static inline void native_pmd_clear(pmd_
+ 
+ static inline void pud_clear(pud_t *pudp)
  {
- 	struct call_function_data *data;
- 	unsigned long flags;
--	int cpu, next_cpu, this_cpu = smp_processor_id();
-+	int refs, cpu, next_cpu, this_cpu = smp_processor_id();
+-	unsigned long pgd;
+-
+ 	set_pud(pudp, __pud(0));
  
  	/*
- 	 * Can deadlock when called with interrupts disabled.
-@@ -451,7 +451,7 @@ void smp_call_function_many(const struct
- 	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
- 		     && !oops_in_progress);
- 
--	/* So, what's a CPU they want? Ignoring this one. */
-+	/* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
- 	cpu = cpumask_first_and(mask, cpu_online_mask);
- 	if (cpu == this_cpu)
- 		cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
-@@ -509,6 +509,13 @@ void smp_call_function_many(const struct
- 	/* We rely on the "and" being processed before the store */
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
-+	refs = cpumask_weight(data->cpumask);
-+
-+	/* Some callers race with other cpus changing the passed mask */
-+	if (unlikely(!refs)) {
-+		csd_unlock(&data->csd);
-+		return;
-+	}
- 
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
-@@ -522,7 +529,7 @@ void smp_call_function_many(const struct
- 	 * to the cpumask before this write to refs, which indicates
- 	 * data is on the list and is ready to be processed.
+@@ -79,13 +77,10 @@ static inline void pud_clear(pud_t *pudp
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 *
+-	 * Make sure the pud entry we're updating is within the
+-	 * current pgd to avoid unnecessary TLB flushes.
++	 * Currently all places where pud_clear() is called either have
++	 * flush_tlb_mm() followed or don't need TLB flush (x86_64 code or
++	 * pud_clear_bad()), so we don't need TLB flush here.
  	 */
--	atomic_set(&data->refs, cpumask_weight(data->cpumask));
-+	atomic_set(&data->refs, refs);
- 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
+-	pgd = read_cr3();
+-	if (__pa(pudp) >= pgd && __pa(pudp) <
+-	    (pgd + sizeof(pgd_t)*PTRS_PER_PGD))
+-		write_cr3(pgd);
+ }
  
- 	/*
+ #ifdef CONFIG_SMP
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -168,8 +168,7 @@ void pud_populate(struct mm_struct *mm,
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 */
+-	if (mm == current->active_mm)
+-		write_cr3(read_cr3());
++	flush_tlb_mm(mm);
+ }
+ #else  /* !CONFIG_X86_PAE */
+ 
 
 
