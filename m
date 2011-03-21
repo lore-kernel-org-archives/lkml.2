@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab1CUXWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:22:13 -0400
-Received: from kroah.org ([198.145.64.141]:52806 "EHLO coco.kroah.org"
+	id S1755688Ab1CUXWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:22:41 -0400
+Received: from kroah.org ([198.145.64.141]:52800 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932319Ab1CUXSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:33 -0400
+	id S932430Ab1CUXSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:28 2011
-Message-Id: <20110321230328.786808023@clark.kroah.org>
+Message-Id: <20110321230328.695982501@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:25 -0700
+Date: Mon, 21 Mar 2011 16:02:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Torokhov <dtor@mail.ru>, Jiri Kosina <jkosina@suse.cz>
-Subject: [69/78] HID: ACRUX - activate the device immediately after binding
+        Shaohua Li <shaohua.li@intel.com>,
+        Mallick Asit K <asit.k.mallick@intel.com>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [68/78] x86: Flush TLB if PGD entry is changed in i386 PAE mode
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,135 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Shaohua Li <shaohua.li@intel.com>
 
-commit 0ae43810976bc969ee158510c4acbe70ed136e61 upstream.
+commit 4981d01eada5354d81c8929d5b2836829ba3df7b upstream.
 
-This device does not tolerate delayed opening and goes into a coma if
-we try to that. Ubuntu even has a crutch for udev that opened the device
-upon seeing it for the first time, but it did not work if we happened to
-boot with the device attached, since by the time userspace got around
-opening the device it was too late. Let's start the device immediately
-to deal with this issue.
+According to intel CPU manual, every time PGD entry is changed in i386 PAE
+mode, we need do a full TLB flush. Current code follows this and there is
+comment for this too in the code.
 
-Reported-by: Sergei Kolzun <x0r@dv-life.ru>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+But current code misses the multi-threaded case. A changed page table
+might be used by several CPUs, every such CPU should flush TLB. Usually
+this isn't a problem, because we prepopulate all PGD entries at process
+fork. But when the process does munmap and follows new mmap, this issue
+will be triggered.
+
+When it happens, some CPUs keep doing page faults:
+
+  http://marc.info/?l=linux-kernel&m=129915020508238&w=2
+
+Reported-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+Tested-by: Yasunori Goto<y-goto@jp.fujitsu.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+Cc: Mallick Asit K <asit.k.mallick@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>
+LKML-Reference: <1300246649.2337.95.camel@sli10-conroe>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/Kconfig    |   10 ++++++++--
- drivers/hid/Makefile   |    2 +-
- drivers/hid/hid-axff.c |   31 ++++++++++++++++++++++++++++---
- drivers/hid/hid-core.c |    2 --
- 4 files changed, 37 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/pgtable-3level.h |   11 +++--------
+ arch/x86/mm/pgtable.c                 |    3 +--
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -68,9 +68,15 @@ config HID_A4TECH
- 	---help---
- 	Support for A4 tech X5 and WOP-35 / Trust 450L mice.
+--- a/arch/x86/include/asm/pgtable-3level.h
++++ b/arch/x86/include/asm/pgtable-3level.h
+@@ -69,8 +69,6 @@ static inline void native_pmd_clear(pmd_
  
--config HID_ACRUX_FF
--	tristate "ACRUX force feedback"
-+config HID_ACRUX
-+	tristate "ACRUX game controller support"
- 	depends on USB_HID
-+	---help---
-+	Say Y here if you want to enable support for ACRUX game controllers.
-+
-+config HID_ACRUX_FF
-+	tristate "ACRUX force feedback support"
-+	depends on HID_ACRUX
- 	select INPUT_FF_MEMLESS
- 	---help---
- 	Say Y here if you want to enable force feedback support for ACRUX
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -27,7 +27,7 @@ endif
- 
- obj-$(CONFIG_HID_3M_PCT)	+= hid-3m-pct.o
- obj-$(CONFIG_HID_A4TECH)	+= hid-a4tech.o
--obj-$(CONFIG_HID_ACRUX_FF)	+= hid-axff.o
-+obj-$(CONFIG_HID_ACRUX)		+= hid-axff.o
- obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
- obj-$(CONFIG_HID_BELKIN)	+= hid-belkin.o
- obj-$(CONFIG_HID_CANDO)		+= hid-cando.o
---- a/drivers/hid/hid-axff.c
-+++ b/drivers/hid/hid-axff.c
-@@ -33,6 +33,8 @@
- #include <linux/hid.h>
- 
- #include "hid-ids.h"
-+
-+#ifdef CONFIG_HID_ACRUX_FF
- #include "usbhid/usbhid.h"
- 
- struct axff_device {
-@@ -109,6 +111,12 @@ err_free_mem:
- 	kfree(axff);
- 	return error;
- }
-+#else
-+static inline int axff_init(struct hid_device *hid)
-+{
-+	return 0;
-+}
-+#endif
- 
- static int ax_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ static inline void pud_clear(pud_t *pudp)
  {
-@@ -139,9 +147,25 @@ static int ax_probe(struct hid_device *h
- 			 error);
- 	}
+-	unsigned long pgd;
+-
+ 	set_pud(pudp, __pud(0));
  
-+	/*
-+	 * We need to start polling device right away, otherwise
-+	 * it will go into a coma.
-+	 */
-+	error = hid_hw_open(hdev);
-+	if (error) {
-+		dev_err(&hdev->dev, "hw open failed\n");
-+		return error;
-+	}
-+
- 	return 0;
+ 	/*
+@@ -79,13 +77,10 @@ static inline void pud_clear(pud_t *pudp
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 *
+-	 * Make sure the pud entry we're updating is within the
+-	 * current pgd to avoid unnecessary TLB flushes.
++	 * Currently all places where pud_clear() is called either have
++	 * flush_tlb_mm() followed or don't need TLB flush (x86_64 code or
++	 * pud_clear_bad()), so we don't need TLB flush here.
+ 	 */
+-	pgd = read_cr3();
+-	if (__pa(pudp) >= pgd && __pa(pudp) <
+-	    (pgd + sizeof(pgd_t)*PTRS_PER_PGD))
+-		write_cr3(pgd);
  }
  
-+static void ax_remove(struct hid_device *hdev)
-+{
-+	hid_hw_close(hdev);
-+	hid_hw_stop(hdev);
-+}
-+
- static const struct hid_device_id ax_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802), },
- 	{ }
-@@ -149,9 +173,10 @@ static const struct hid_device_id ax_dev
- MODULE_DEVICE_TABLE(hid, ax_devices);
+ #ifdef CONFIG_SMP
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -168,8 +168,7 @@ void pud_populate(struct mm_struct *mm,
+ 	 * section 8.1: in PAE mode we explicitly have to flush the
+ 	 * TLB via cr3 if the top-level pgd is changed...
+ 	 */
+-	if (mm == current->active_mm)
+-		write_cr3(read_cr3());
++	flush_tlb_mm(mm);
+ }
+ #else  /* !CONFIG_X86_PAE */
  
- static struct hid_driver ax_driver = {
--	.name = "acrux",
--	.id_table = ax_devices,
--	.probe = ax_probe,
-+	.name		= "acrux",
-+	.id_table	= ax_devices,
-+	.probe		= ax_probe,
-+	.remove		= ax_remove,
- };
- 
- static int __init ax_init(void)
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1256,9 +1256,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_WCP32PU) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_RP_649) },
--#if defined(CONFIG_HID_ACRUX_FF) || defined(CONFIG_HID_ACRUX_FF_MODULE)
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802) },
--#endif
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ATV_IRCONTROL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL4) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MIGHTYMOUSE) },
 
 
