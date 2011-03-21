@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab1CUXPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:36 -0400
-Received: from kroah.org ([198.145.64.141]:49328 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754861Ab1CUXPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:24 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
-Message-Id: <20110321230711.847229724@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:25 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Seth Heasley <seth.heasley@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [26/87] ahci: AHCI mode SATA patch for Intel DH89xxCC DeviceIDs
-In-Reply-To: <20110321230732.GA26510@kroah.com>
+	id S1755806Ab1CUXrP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:47:15 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56518 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab1CUXqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:46:37 -0400
+Date: Mon, 21 Mar 2011 23:46:29 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: checkpatch.pl: never finishes w/ specific file
+Message-ID: <20110321234629.GA5939@localhost>
+References: <201103021731.01598.toralf.foerster@gmx.de>
+ <20110316114752.GI1407@shadowen.org>
+ <201103211142.11317.toralf.foerster@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201103211142.11317.toralf.foerster@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Mon, Mar 21, 2011 at 11:42:10AM +0100, Toralf Förster wrote:
+> 
+> Andy Whitcroft wrote at 12:47:52
+> > Could you try your file with the one below and let me know:
+> > 
+> >  
+> > http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl
+> 
+> I've a question about line 1365 :
+> 	if ($realfile =~ m@^include/asm\/@) {
+> 
+> IMO either both "/" or none needs to be escaped, or ?
 
-------------------
+None as we are using '@' as the separator, however the extra \ is
+benign.
 
-From: Seth Heasley <seth.heasley@intel.com>
-
-commit a4a461a6df6c0481d5a3d61660ed97f5b539cf16 upstream.
-
-This patch adds the AHCI-mode SATA DeviceID for the Intel DH89xxCC PCH.
-
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/ata/ahci.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -260,6 +260,7 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x1d02), board_ahci }, /* PBG AHCI */
- 	{ PCI_VDEVICE(INTEL, 0x1d04), board_ahci }, /* PBG RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1d06), board_ahci }, /* PBG RAID */
-+	{ PCI_VDEVICE(INTEL, 0x2323), board_ahci }, /* DH89xxCC AHCI */
- 
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
-
-
+-apw
