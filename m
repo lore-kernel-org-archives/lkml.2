@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1CUUQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 16:16:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56739 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab1CUUQg (ORCPT
+	id S1754531Ab1CUURk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 16:17:40 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:44108 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754484Ab1CUURf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 16:16:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=BE/aJyfttKYj/ESm4YJNCJk7aUtWEB0hAKuj8Col2eQC+yv+AsOVLpZZYM8a9aMMfB
-         zTfoWUD2DraldWm/CVWlgAorPsEr6P5+Zp54RCm5J0C0IBx3pBflYDnFwCs1WIgXYIEU
-         Ag6Rrgg02X2VG4Bnh+S74wV/vszg8urlAI/Ks=
-Subject: Re: [slab poison overwritten] Re: [GIT] Networking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>
-In-Reply-To: <1300730838.2884.578.camel@edumazet-laptop>
-References: <20110320.195156.226769634.davem@davemloft.net>
-	 <20110321125320.GA23490@elte.hu>
-	 <1300714346.2884.284.camel@edumazet-laptop>
-	 <20110321161528.GA28580@elte.hu> <20110321164238.GA5303@elte.hu>
-	 <20110321173941.GB3892@elte.hu> <1300730838.2884.578.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 21:15:40 +0100
-Message-ID: <1300738540.2837.5.camel@edumazet-laptop>
+	Mon, 21 Mar 2011 16:17:35 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=DEH/M8AiRrKGte/4CsA22+V+WKLGLWknLMmnR8z4ERZnpl0dK9KGDvuulVLBwflApM2ZKObSMKrqgmGX+By43B9P5hTv/QJMUN3Xp2UnahvC5I3WITNPYdWblknOtK6x;
+Date: Mon, 21 Mar 2011 13:17:32 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Alan Ott <alan@signal11.us>
+Cc: Jonathan Corbet <corbet@lwn.net>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefani Seibold <stefani@seibold.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v5 0/2] Documentation and Sample for hidraw
+Message-Id: <20110321131732.8e8906a8.rdunlap@xenotime.net>
+In-Reply-To: <1300580985-10726-1-git-send-email-alan@signal11.us>
+References: <1297829209-10511-1-git-send-email-alan@signal11.us>
+	<1300580985-10726-1-git-send-email-alan@signal11.us>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 173.50.240.230 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 21 mars 2011 à 19:07 +0100, Eric Dumazet a écrit :
-> Le lundi 21 mars 2011 à 18:39 +0100, Ingo Molnar a écrit :
-> > here's the same but with kallsyms enabled.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
-> > [    9.585627] initcall 0xffffffff81d5b806 returned 0 after 0 usecs
-> > [    9.588960] calling  0xffffffff81d5b9da @ 1
-> > [    9.592303] IPVS: Creating netns size=1272 id=0
-> > [    9.595646] IPVS: __ip_vs_control_init(): alloc_percpu.
-> > [    9.602298] IPVS: cannot register namespace.
-> > [    9.605627] IPVS: can't setup control
-> 
-> It seems IPVS is busted in case of memory allocation error in 
-> __ip_vs_control_init()
-> 
-> IPVS deinits its "struct netns_ipvs" space, but something (in IPVS) uses
-> it after free.
-> 
-> __ip_vs_init() seems to be called before ip_vs_init() completes
-> correctly. We then keep in net->ipvs a pointer to some freed memory.
-> 
-> Commit 14e405461e664b7 did some changes in this area
-> 
-> Simon, any idea ?
-> 
-> 
+On Sat, 19 Mar 2011 20:29:43 -0400 Alan Ott wrote:
 
-For the time being, we can avoid the false memory allocation error (and
-leak)
+> Sorry I've been slack in getting v5 of this patch out. Because
+> it's been so long, I'll recap what happened last time:
+> 
+>  * Jon Corbet suggested that the example programs be moved into samples/ .
+>  * Randy Dunlap indicated his acked-by when this was done.
+> 
+> These patches add hidraw.txt to a new Documentation/hid/ directory.
+> 
+> It creates an example program which is now in samples/ with a Kconfig item.
+> 
+> The existing hiddev.txt has been moved from Documentation/usb/ to
+> Documentation/hid/
 
-Thanks
+Jiri,
 
-[PATCH] ipvs: fix a typo in __ip_vs_control_init()
+I suppose that you will merge these patches?
+or did you want me to do it?
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Julian Anastasov <ja@ssi.bg>
+
+> This is based on .38+
+> 
+> Alan Ott (2):
+>   HID: Documentation for hidraw
+>   HID: Move hiddev.txt to the new Documentation/HID directory
+> 
+>  Documentation/{usb => hid}/hiddev.txt |    0
+>  Documentation/hid/hidraw.txt          |  119 +++++++++++++++++++++++
+>  samples/Kconfig                       |    6 +
+>  samples/Makefile                      |    2 +-
+>  samples/hidraw/Makefile               |    8 ++
+>  samples/hidraw/hid-example.c          |  167 +++++++++++++++++++++++++++++++++
+>  6 files changed, 301 insertions(+), 1 deletions(-)
+>  rename Documentation/{usb => hid}/hiddev.txt (100%)
+>  create mode 100644 Documentation/hid/hidraw.txt
+>  create mode 100644 samples/hidraw/Makefile
+>  create mode 100644 samples/hidraw/hid-example.c
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-doc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 ---
- net/netfilter/ipvs/ip_vs_ctl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-index b799cea..33733c8 100644
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -3605,7 +3605,7 @@ int __net_init __ip_vs_control_init(struct net *net)
- 
- 	/* procfs stats */
- 	ipvs->tot_stats.cpustats = alloc_percpu(struct ip_vs_cpu_stats);
--	if (ipvs->tot_stats.cpustats) {
-+	if (!ipvs->tot_stats.cpustats) {
- 		pr_err("%s(): alloc_percpu.\n", __func__);
- 		return -ENOMEM;
- 	}
-
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
