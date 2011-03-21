@@ -1,213 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab1CUEYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 00:24:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56451 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab1CUEYc convert rfc822-to-8bit (ORCPT
+	id S1751612Ab1CUEcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 00:32:09 -0400
+Received: from [220.231.59.163] ([220.231.59.163]:53982 "EHLO
+	mail2.thunderst.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab1CUEcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 00:24:32 -0400
-From: "Janorkar, Mayuresh" <mayur@ti.com>
-To: Carl Vanderlip <carlv@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-CC: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Mar 2011 09:54:00 +0530
-Subject: RE: [PATCH 01/20] video: msm: Fix typo 'mpd'->'mdp'
-Thread-Topic: [PATCH 01/20] video: msm: Fix typo 'mpd'->'mdp'
-Thread-Index: AcvlvQwFZv51CkX5R0SfKovaFjwfFwBwiXbg
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EABA@dbde02.ent.ti.com>
-References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
- <1300485095-26923-1-git-send-email-carlv@codeaurora.org>
-In-Reply-To: <1300485095-26923-1-git-send-email-carlv@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 21 Mar 2011 00:32:08 -0400
+X-Greylist: delayed 1834 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 00:32:07 EDT
+Subject: Re: [PATCH] code cleanup on fs/super.c
+From: LiuQi <liuqi@thunderst.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Liu <lingjiujianke@gmail.com>, randy.dunlap@oracle.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dchinner@redhat.com
+In-Reply-To: <20110217173615.GJ22723@ZenIV.linux.org.uk>
+References: <AANLkTi=50m7xULN+Mob1942b+qBEgMcqUPDWSd3inan6@mail.gmail.com>
+	 <AANLkTim2fg5OUw2aZXA-4V4O7PUQ6T4mhoWxvjNdtYcc@mail.gmail.com>
+	 <20110217173615.GJ22723@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Mar 2011 12:00:58 +0800
+Message-ID: <1300680058.3967.11.camel@btg>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
-> owner@vger.kernel.org] On Behalf Of Carl Vanderlip
-> Sent: Saturday, March 19, 2011 3:22 AM
-> To: Russell King; David Brown; Daniel Walker; Bryan Huntsman
-> Cc: Brian Swetland; Dima Zavin; Rebecca Schultz Zavin; Colin Cross; linux-
-> fbdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-arm-
-> msm@vger.kernel.org; linux-kernel@vger.kernel.org; Carl Vanderlip
-> Subject: [PATCH 01/20] video: msm: Fix typo 'mpd'->'mdp'
+and this one?
+在 2011-02-17四的 17:36 +0000，Al Viro写道：
+> On Thu, Feb 17, 2011 at 08:20:31AM -0800, Linus Torvalds wrote:
+> > On Thu, Feb 17, 2011 at 12:59 AM, Steven Liu <lingjiujianke@gmail.com> wrote:
+> > >
+> > > ? Clean up the unsed code on fs/super.c, all filesystem using mount_bdev
+> > > ? and mount_nodev to replace get_sb_bdev and get_sb_nodev.
+> > 
+> > There might easily be external modules that still use this.
 > 
-> From: Brian Swetland <swetland@google.com>
+> *nod*
 > 
-> Trivial fix
-
-The Subject line states that you are only changing a typo from mpd to mdp.
-The description doesn't state anything more.
-But the patch is changing Copyright info also.
+> They would be trivial to convert from ->get_sb() to ->mount(), but until
+> we are ready to remove the former (next cycle, once ->mnt_devname stuff
+> gets tested and merged) there's no real reason to remove them.  Precisely
+> because the remaining instances of get_sb_bdev() and friends will be
+> trivial to remove when the time comes; it's not something that will be
+> an obstacle to transition.
 > 
-> Authors:
-> Dima Zavin <dima@android.com>
-> Rebecca Schultz Zavin <rebecca@android.com>
-> Colin Cross <ccross@android.com>
-> 
-> Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
-> ---
->  arch/arm/mach-msm/include/mach/msm_fb.h |    2 +-
->  drivers/video/msm/mdp.c                 |    8 ++++----
->  drivers/video/msm/mdp_ppp.c             |   10 +++++-----
->  drivers/video/msm/msm_fb.c              |    1 -
->  4 files changed, 10 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/arm/mach-msm/include/mach/msm_fb.h b/arch/arm/mach-
-> msm/include/mach/msm_fb.h
-> index 1f4fc81..da11719 100644
-> --- a/arch/arm/mach-msm/include/mach/msm_fb.h
-> +++ b/arch/arm/mach-msm/include/mach/msm_fb.h
-> @@ -114,7 +114,7 @@ struct mdp_blit_req;
->  struct fb_info;
->  struct mdp_device {
->  	struct device dev;
-> -	void (*dma)(struct mdp_device *mpd, uint32_t addr,
-> +	void (*dma)(struct mdp_device *mdp, uint32_t addr,
->  		    uint32_t stride, uint32_t w, uint32_t h, uint32_t x,
->  		    uint32_t y, struct msmfb_callback *callback, int
-> interface);
->  	void (*dma_wait)(struct mdp_device *mdp);
-> diff --git a/drivers/video/msm/mdp.c b/drivers/video/msm/mdp.c
-> index c3636d5..45af97d 100644
-> --- a/drivers/video/msm/mdp.c
-> +++ b/drivers/video/msm/mdp.c
-> @@ -2,7 +2,7 @@
->   *
->   * MSM MDP Interface (used by framebuffer core)
->   *
-> - * Copyright (C) 2007 QUALCOMM Incorporated
-> + * Copyright (C) 2007, 2011 Code Aurora Forum. All rights reserved.
-
-It is a change from 2007 to 2011 and the company name is being changed.
-I think it should be mentioned in the Subject/Description.
-
->   * Copyright (C) 2007 Google Incorporated
->   *
->   * This software is licensed under the terms of the GNU General Public
-> @@ -288,7 +288,7 @@ int mdp_blit(struct mdp_device *mdp_dev, struct
-> fb_info *fb,
->  	/* WORKAROUND FOR HARDWARE BUG IN BG TILE FETCH */
->  	if (unlikely(req->src_rect.h == 0 ||
->  		     req->src_rect.w == 0)) {
-> -		printk(KERN_ERR "mpd_ppp: src img of zero size!\n");
-> +		printk(KERN_ERR "mdp_ppp: src img of zero size!\n");
->  		return -EINVAL;
->  	}
->  	if (unlikely(req->dst_rect.h == 0 ||
-> @@ -298,13 +298,13 @@ int mdp_blit(struct mdp_device *mdp_dev, struct
-> fb_info *fb,
->  	/* do this first so that if this fails, the caller can always
->  	 * safely call put_img */
->  	if (unlikely(get_img(&req->src, fb, &src_start, &src_len,
-> &src_file))) {
-> -		printk(KERN_ERR "mpd_ppp: could not retrieve src image from "
-> +		printk(KERN_ERR "mdp_ppp: could not retrieve src image from "
->  				"memory\n");
->  		return -EINVAL;
->  	}
-> 
->  	if (unlikely(get_img(&req->dst, fb, &dst_start, &dst_len,
-> &dst_file))) {
-> -		printk(KERN_ERR "mpd_ppp: could not retrieve dst image from "
-> +		printk(KERN_ERR "mdp_ppp: could not retrieve dst image from "
->  				"memory\n");
->  		return -EINVAL;
->  	}
-> diff --git a/drivers/video/msm/mdp_ppp.c b/drivers/video/msm/mdp_ppp.c
-> index 4ff001f..2b04027 100644
-> --- a/drivers/video/msm/mdp_ppp.c
-> +++ b/drivers/video/msm/mdp_ppp.c
-> @@ -1,6 +1,6 @@
->  /* drivers/video/msm/mdp_ppp.c
->   *
-> - * Copyright (C) 2007 QUALCOMM Incorporated
-> + * Copyright (C) 2007, 2011 Code Aurora Forum. All rights reserved.
-
-Same here.
-
->   * Copyright (C) 2007 Google Incorporated
->   *
->   * This software is licensed under the terms of the GNU General Public
-> @@ -650,7 +650,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
-> mdp_blit_req *req,
-> 
->  	if (unlikely(req->src.format >= MDP_IMGTYPE_LIMIT ||
->  		     req->dst.format >= MDP_IMGTYPE_LIMIT)) {
-> -		printk(KERN_ERR "mpd_ppp: img is of wrong format\n");
-> +		printk(KERN_ERR "mdp_ppp: img is of wrong format\n");
->  		return -EINVAL;
->  	}
-> 
-> @@ -658,7 +658,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
-> mdp_blit_req *req,
->  		     req->src_rect.y > req->src.height ||
->  		     req->dst_rect.x > req->dst.width ||
->  		     req->dst_rect.y > req->dst.height)) {
-> -		printk(KERN_ERR "mpd_ppp: img rect is outside of img!\n");
-> +		printk(KERN_ERR "mdp_ppp: img rect is outside of img!\n");
->  		return -EINVAL;
->  	}
-> 
-> @@ -694,7 +694,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
-> mdp_blit_req *req,
-> 
->  	if (!valid_src_dst(src_start, src_len, dst_start, dst_len, req,
->  			   &regs)) {
-> -		printk(KERN_ERR "mpd_ppp: final src or dst location is "
-> +		printk(KERN_ERR "mdp_ppp: final src or dst location is "
->  			"invalid, are you trying to make an image too large "
->  			"or to place it outside the screen?\n");
->  		return -EINVAL;
-> @@ -708,7 +708,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
-> mdp_blit_req *req,
->  		regs.op |= PPP_OP_DITHER_EN;
->  	blit_blend(req, &regs);
->  	if (blit_scale(mdp, req, &regs)) {
-> -		printk(KERN_ERR "mpd_ppp: error computing scale for img.\n");
-> +		printk(KERN_ERR "mdp_ppp: error computing scale for img.\n");
->  		return -EINVAL;
->  	}
->  	blit_blur(mdp, req, &regs);
-> diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
-> index 5436aeb..04d0067 100644
-> --- a/drivers/video/msm/msm_fb.c
-> +++ b/drivers/video/msm/msm_fb.c
-> @@ -321,7 +321,6 @@ error:
->  	mutex_unlock(&msmfb->panel_init_lock);
->  }
-> 
-> -
->  static int msmfb_check_var(struct fb_var_screeninfo *var, struct fb_info
-> *info)
+> Typical conversion looks so:
+> -static int minix_get_sb(struct file_system_type *fs_type,
+> -       int flags, const char *dev_name, void *data, struct vfsmount *mnt)
+> +static struct dentry *minix_mount(struct file_system_type *fs_type,
+> +       int flags, const char *dev_name, void *data)
 >  {
->  	if ((var->xres != info->var.xres) ||
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> -       return get_sb_bdev(fs_type, flags, dev_name, data, minix_fill_super,
+> -                          mnt);
+> +       return mount_bdev(fs_type, flags, dev_name, data, minix_fill_super);
+>  }
+>  
+>  static struct file_system_type minix_fs_type = {
+>         .owner          = THIS_MODULE,
+>         .name           = "minix",
+> -       .get_sb         = minix_get_sb,
+> +       .mount          = minix_mount,
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> IOW, take foo_get_sb(), lose the vfsmount argument, call mount_bdev() instead
+> of get_sb_bdev() and you've got your replacement ->mount() instance.
+> 
+> The trickier conversions are for filesystems that may return a subtree
+> or mess with something unexpected in *mnt (like several nfs variants
+> do with mnt_devname, for very bad reasons).  But those won't be using
+> get_sb_bdev().  IOW, keeping that around until we are finished with
+> ->mount() is not going to cause us any trouble.
+> 
+> Right now the only surviving in-tree ->get_sb() instances are in nfs
+> due to mnt_devname abuse.  Once these are gone, ->get_sb() will be,
+> and a good riddance - it was a bad API choice.  Mine, at that ;-/
+> 
+> Basically, we used to have ->read_super(), which filled a superblock
+> allocated by VFS code.  Filesystem type flags were used by VFS to
+> decide what to do before calling ->read_super() (basically "does
+> that want block device or is it anonymous").  It returned NULL or
+> the same struct super_block * it received to fill.
+> 
+> Then we switched to ->get_sb(), which asked for allocation itself and
+> did things like opening block device/grabbing anon device as well, so
+> that VFS code around mount() path could be nice and fs_type-agnostic.
+> 
+> That's when get_sb_bdev() et.al. had appeared - they did work common
+> for e.g. fs on block device, with callback provided by the caller to
+> do the rest of work.
+> 
+> We still were returning struct super_block *.  Note, however, that this
+> was *NOT* a superblock constructor - we were allowed to return a new
+> reference to existing superblock as well (and that was immediately used
+> for things like procfs, etc.)
+> 
+> About the same time we got vfsmount tree - each contained a reference
+> to superblock and root of dentry subtree on it.  mount --bind allowed
+> to create a new vfsmount with ->mnt_root pointing at the root of subtree
+> smaller than the entire dentry tree for ->mnt_sb, but normal mount
+> still gave us the whole thing.  Not a problem, we just set ->mnt_root
+> to ->mnt_sb->s_root when we mounted a filesystem.
+> 
+> Then NFS folks had come and said "we want mount() to give us a subtree
+> of existing superblock".  Now ->mnt_root could not be derived from
+> ->mnt_sb.  Original proposal, IIRC, was to have root dentry returned
+> via struct dentry **, which was ugly.  I proposed to avoid the problems
+> with returning two values (superblock + dentry) by passing vfsmount we were
+> going to put them into anyway.
+> 
+> What I had missed at the time was that while ->mnt_root could not be
+> derived from ->mnt_sb, there was another property that still held:
+> mnt->mnt_root->d_sb == mnt->mnt_sb.  And that held for all vfsmounts,
+> full tree or not.  In other words, we didn't need to return the pair;
+> we just needed to turn the thing over and return *dentry*, deriving
+> superblock from it.  No need to pass half-filled vfsmount to fs code,
+> no need to call helper to set it, no need to do direct assignments
+> if we want a smaller subtree.
+> 
+> Alas, we went with "let's pass struct vfsmount * to be filled" variant.
+> Of course, the structure passed is the structure abused, so we ended up
+> growing very odd uses of those half-filled vfsmounts.  Fortunately,
+> most turned out to be easy to get rid of.  The only tricky one is what
+> nfs ended up doing, but there's a sane solution for that one (still
+> needs to be merged).
+> 
+> So right now we have
+> 	* much saner interface available and used by almost everything in
+> tree.
+> 	* ->get_sb() still there for the sake of NFS; out-of-tree users
+> are strongly[1] recommended to convert to ->mount().
+> 	* ->get_sb() is going away very soon.
+> 	* common boilerplates for use in ->get_sb() are left around until
+> then.
+> 
+> [1] well, as strong as I can feel about out-of-tree users, which is not
+> a damn lot.
+
+
