@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab1CUXPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:53 -0400
-Received: from kroah.org ([198.145.64.141]:49353 "EHLO coco.kroah.org"
+	id S1755516Ab1CUXns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:43:48 -0400
+Received: from kroah.org ([198.145.64.141]:49510 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755283Ab1CUXP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:29 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
-Message-Id: <20110321230712.370561917@clark.kroah.org>
+	id S1755464Ab1CUXPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:53 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
+Message-Id: <20110321230714.877813896@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:30 -0700
+Date: Mon, 21 Mar 2011 16:06:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [31/87] IB/cm: Bump reference count on cm_id before invoking callback
+        Takashi Iwai <tiwai@suse.de>
+Subject: [55/87] ALSA: hda - Initialize special cases for input src in init phase
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sean Hefty <sean.hefty@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 29963437a48475036353b95ab142bf199adb909e upstream.
+commit 584c0c4c359bdac37d94157f8d7fc513d26c8328 upstream.
 
-When processing a SIDR REQ, the ib_cm allocates a new cm_id.  The
-refcount of the cm_id is initialized to 1.  However, cm_process_work
-will decrement the refcount after invoking all callbacks.  The result
-is that the cm_id will end up with refcount set to 0 by the end of the
-sidr req handler.
+Currently some special handling for the unusual case like dual-ADCs
+or a single-input-src is done in the tree-parse time in
+set_capture_mixer().  But this setup could be overwritten by static
+init verbs.
 
-If a user tries to destroy the cm_id, the destruction will proceed,
-under the incorrect assumption that no other threads are referencing
-the cm_id.  This can lead to a crash when the cm callback thread tries
-to access the cm_id.
+This patch moves the initialization into the init phase so that
+such input-src setup won't be lost.
 
-This problem was noticed as part of a larger investigation with kernel
-crashes in the rdma_cm when running on a real time OS.
-
-Signed-off-by: Sean Hefty <sean.hefty@intel.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/core/cm.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/infiniband/core/cm.c
-+++ b/drivers/infiniband/core/cm.c
-@@ -2989,6 +2989,7 @@ static int cm_sidr_req_handler(struct cm
- 		goto out; /* No match. */
- 	}
- 	atomic_inc(&cur_cm_id_priv->refcount);
-+	atomic_inc(&cm_id_priv->refcount);
- 	spin_unlock_irq(&cm.lock);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -393,6 +393,7 @@ struct alc_spec {
+ 	/* other flags */
+ 	unsigned int no_analog :1; /* digital I/O only */
+ 	unsigned int dual_adc_switch:1; /* switch ADCs (for ALC275) */
++	unsigned int single_input_src:1;
+ 	int init_amp;
+ 	int codec_variant;	/* flag for other variants */
  
- 	cm_id_priv->id.cm_handler = cur_cm_id_priv->id.cm_handler;
+@@ -3798,6 +3799,8 @@ static struct hda_amp_list alc880_lg_loo
+  * Common callbacks
+  */
+ 
++static void alc_init_special_input_src(struct hda_codec *codec);
++
+ static int alc_init(struct hda_codec *codec)
+ {
+ 	struct alc_spec *spec = codec->spec;
+@@ -3808,6 +3811,7 @@ static int alc_init(struct hda_codec *co
+ 
+ 	for (i = 0; i < spec->num_init_verbs; i++)
+ 		snd_hda_sequence_write(codec, spec->init_verbs[i]);
++	alc_init_special_input_src(codec);
+ 
+ 	if (spec->init_hook)
+ 		spec->init_hook(codec);
+@@ -5441,6 +5445,7 @@ static void fixup_single_adc(struct hda_
+ 			spec->capsrc_nids += i;
+ 		spec->adc_nids += i;
+ 		spec->num_adc_nids = 1;
++		spec->single_input_src = 1;
+ 	}
+ }
+ 
+@@ -5452,6 +5457,16 @@ static void fixup_dual_adc_switch(struct
+ 	init_capsrc_for_pin(codec, spec->int_mic.pin);
+ }
+ 
++/* initialize some special cases for input sources */
++static void alc_init_special_input_src(struct hda_codec *codec)
++{
++	struct alc_spec *spec = codec->spec;
++	if (spec->dual_adc_switch)
++		fixup_dual_adc_switch(codec);
++	else if (spec->single_input_src)
++		init_capsrc_for_pin(codec, spec->autocfg.inputs[0].pin);
++}
++
+ static void set_capture_mixer(struct hda_codec *codec)
+ {
+ 	struct alc_spec *spec = codec->spec;
+@@ -5467,7 +5482,7 @@ static void set_capture_mixer(struct hda
+ 		int mux = 0;
+ 		int num_adcs = spec->num_adc_nids;
+ 		if (spec->dual_adc_switch)
+-			fixup_dual_adc_switch(codec);
++			num_adcs = 1;
+ 		else if (spec->auto_mic)
+ 			fixup_automic_adc(codec);
+ 		else if (spec->input_mux) {
+@@ -5476,8 +5491,6 @@ static void set_capture_mixer(struct hda
+ 			else if (spec->input_mux->num_items == 1)
+ 				fixup_single_adc(codec);
+ 		}
+-		if (spec->dual_adc_switch)
+-			num_adcs = 1;
+ 		spec->cap_mixer = caps[mux][num_adcs - 1];
+ 	}
+ }
 
 
