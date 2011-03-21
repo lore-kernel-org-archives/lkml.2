@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab1CUWza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 18:55:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63869 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab1CUWz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 18:55:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=ELku8QGwN5nFJq4ikMQUjr3A/6rI+mGTTwSidCfKbwlTKveup40m7JX8hp43HD3BE3
-         LHlLgiWUmwbdN+recC1B39Kw9xIpVFBIPZbmrnKIOvGl7CLCIWSDptvSAUfWrqA2mhuZ
-         Jq5zjQV7hstqv+0/c6tL6UI22SwGjBXsGepnU=
-Message-ID: <4D87D75C.7020704@suse.cz>
-Date: Mon, 21 Mar 2011 23:55:24 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1754813Ab1CUW6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 18:58:34 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51513 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754506Ab1CUW6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 18:58:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: Suspend/resume regression in Toshiba A11 since 2.6.34-rc4
+Date: Mon, 21 Mar 2011 23:58:43 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+References: <20110318220034.GA10162@herton-IdeaPad-Y430> <201103192152.52645.rjw@sisk.pl> <20110321115240.GA1655@herton-IdeaPad-Y430>
+In-Reply-To: <20110321115240.GA1655@herton-IdeaPad-Y430>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <maurochehab@gmail.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com
-Subject: Re: [PATCH v2 -resend#1 1/1] V4L: videobuf, don't use dma addr as
- physical
-References: <1298885822-10083-1-git-send-email-jslaby@suse.cz> <20110228145301.GC10846@dumpdata.com> <4D6BC3AE.903@suse.cz> <4D6BE756.1090800@infradead.org> <4D87D47B.80206@gmail.com>
-In-Reply-To: <4D87D47B.80206@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103212358.43614.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2011 11:43 PM, Mauro Carvalho Chehab wrote:
-> As I got no return, and the patch looked sane, I've reviewed the comment myself,
-
-Aha, I forgot to send it. Sorry.
-
-It looks OK.
-
-> Author: Jiri Slaby <jslaby@suse.cz>
-> Date:   Mon Feb 28 06:37:02 2011 -0300
+On Monday, March 21, 2011, Herton Ronaldo Krzesinski wrote:
+> On Sat, Mar 19, 2011 at 09:52:52PM +0100, Rafael J. Wysocki wrote:
+> > On Saturday, March 19, 2011, Herton Ronaldo Krzesinski wrote:
+> > > On Fri, Mar 18, 2011 at 11:38:52PM +0100, Rafael J. Wysocki wrote:
+> > > > On Friday, March 18, 2011, Herton Ronaldo Krzesinski wrote:
+> > > > > This regression is old, but discovered recently. Since 2.6.34-rc4,
+> > > > > a Toshiba Tecra A11 machine resumes without video for the first time.
+> > > > > Here is the strange thing reported, on the first suspend/resume, when
+> > > > > the machine wakes up the video is blank, but the machine is up (just the
+> > > > > screen is black). If you suspend again, on second resume the video comes
+> > > > > back normally.
+> > > > > 
+> > > > > Helping the reporter bisecting the problem, we narrowed down the bug to
+> > > > > this commit:
+> > > > > 
+> > > > > commit ac7729da880e742613129ee6dea0045328670d2d
+> > > > > Author: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > > Date:   Mon Apr 5 01:43:51 2010 +0200
+> > > > > 
+> > > > >     ACPI / PM: Move ACPI video resume to a PM notifier
+> > > > > 
+> > > > > And reverting this commit on 2.6.38 still made the problem go away.
+> > > > > Looking at the commit above I don't saw any problem, and perhaps we have
+> > > > > some bad bios here which by moving the resume of acpi video later
+> > > > > triggers this bug. Also strange that on second suspend/resume everything
+> > > > > is normal... (the regression here is just the video is blank on first
+> > > > > resume).
+> > > > > 
+> > > > > I asked the reporter to try to increase brightness logged in remotely
+> > > > > when the video is blank after first resume, but this didn't have any
+> > > > > effect.
+> > > > > 
+> > > > > This was reported in https://bugs.launchpad.net/bugs/719620 (if reading
+> > > > > I recommend to skip to comment #58 and later), I can't think of any
+> > > > > solution besides trying to move acpi video resume perhaps back and
+> > > > > depend on video device being resume first. I asked for more debugging
+> > > > > information but got nothing unfortunately which could diagnose better
+> > > > > this...
+> > > > 
+> > > > What graphics driver is used?
+> > > 
+> > > i915
+> > 
+> > In the KMS mode I guess?
 > 
->     [media] V4L: videobuf, don't use dma addr as physical
->     
->     mem->dma_handle is a dma address obtained by dma_alloc_coherent which
->     needn't be a physical address in presence of IOMMU, as
->     a hardware IOMMU can (and most likely) will return a bus address where
->     physical != bus address.
->     
->     So ensure we are remapping (remap_pfn_range) the right page in
->     __videobuf_mmap_mapper by using virt_to_phys(mem->vaddr) and not
->     mem->dma_handle.
->     
->     While at it, use PFN_DOWN instead of explicit shift.
->     
->     Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->     Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->     Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
-> index c969111..19d3e4a 100644
-> --- a/drivers/media/video/videobuf-dma-contig.c
-> +++ b/drivers/media/video/videobuf-dma-contig.c
-> @@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
->  
->         vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->         retval = remap_pfn_range(vma, vma->vm_start,
-> -                            mem->dma_handle >> PAGE_SHIFT,
-> +                          PFN_DOWN(virt_to_phys(mem->vaddr))
->                                  size, vma->vm_page_prot);
->         if (retval) {
->                 dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
+> Yes, in KMS mode.
 
-thanks,
--- 
-js
-suse labs
+OK, I have no idea how to fix this.
+
+Matthew, can you please have a look here?
+
+Rafael
