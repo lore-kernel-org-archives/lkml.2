@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1CUXeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:34:36 -0400
-Received: from kroah.org ([198.145.64.141]:52494 "EHLO coco.kroah.org"
+	id S1755856Ab1CUXey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:34:54 -0400
+Received: from kroah.org ([198.145.64.141]:52481 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755590Ab1CUXRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:30 -0400
+	id S1755566Ab1CUXR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:22 2011
-Message-Id: <20110321230322.150626176@clark.kroah.org>
+Message-Id: <20110321230321.947442952@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:21 -0700
+Date: Mon, 21 Mar 2011 16:01:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kamal Mostafa <kamal@canonical.com>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [05/78] x86: Emit "mem=nopentium ignored" warning when not supported
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [03/78] ftrace: Fix memory leak with function graph and cpu hotplug
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +25,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 9a6d44b9adb777ca9549e88cd55bd8f2673c52a2 upstream.
+commit 868baf07b1a259f5f3803c1dc2777b6c358f83cf upstream.
 
-Emit warning when "mem=nopentium" is specified on any arch other
-than x86_32 (the only that arch supports it).
+When the fuction graph tracer starts, it needs to make a special
+stack for each task to save the real return values of the tasks.
+All running tasks have this stack created, as well as any new
+tasks.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-BugLink: http://bugs.launchpad.net/bugs/553464
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-LKML-Reference: <1296783486-23033-2-git-send-email-kamal@canonical.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+On CPU hot plug, the new idle task will allocate a stack as well
+when init_idle() is called. The problem is that cpu hotplug does
+not create a new idle_task. Instead it uses the idle task that
+existed when the cpu went down.
+
+ftrace_graph_init_task() will add a new ret_stack to the task
+that is given to it. Because a clone will make the task
+have a stack of its parent it does not check if the task's
+ret_stack is already NULL or not. When the CPU hotplug code
+starts a CPU up again, it will allocate a new stack even
+though one already existed for it.
+
+The solution is to treat the idle_task specially. In fact, the
+function_graph code already does, just not at init_idle().
+Instead of using the ftrace_graph_init_task() for the idle task,
+which that function expects the task to be a clone, have a
+separate ftrace_graph_init_idle_task(). Also, we will create a
+per_cpu ret_stack that is used by the idle task. When we call
+ftrace_graph_init_idle_task() it will check if the idle task's
+ret_stack is NULL, if it is, then it will assign it the per_cpu
+ret_stack.
+
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/e820.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ include/linux/ftrace.h |    2 +
+ kernel/sched.c         |    2 -
+ kernel/trace/ftrace.c  |   52 ++++++++++++++++++++++++++++++++++++++++++-------
+ 3 files changed, 48 insertions(+), 8 deletions(-)
 
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -847,12 +847,15 @@ static int __init parse_memopt(char *p)
- 	if (!p)
- 		return -EINVAL;
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -428,6 +428,7 @@ extern void unregister_ftrace_graph(void
  
--#ifdef CONFIG_X86_32
- 	if (!strcmp(p, "nopentium")) {
-+#ifdef CONFIG_X86_32
- 		setup_clear_cpu_cap(X86_FEATURE_PSE);
- 		return 0;
--	}
-+#else
-+		printk(KERN_WARNING "mem=nopentium ignored! (only supported on x86_32)\n");
-+		return -EINVAL;
- #endif
+ extern void ftrace_graph_init_task(struct task_struct *t);
+ extern void ftrace_graph_exit_task(struct task_struct *t);
++extern void ftrace_graph_init_idle_task(struct task_struct *t, int cpu);
+ 
+ static inline int task_curr_ret_stack(struct task_struct *t)
+ {
+@@ -451,6 +452,7 @@ static inline void unpause_graph_tracing
+ 
+ static inline void ftrace_graph_init_task(struct task_struct *t) { }
+ static inline void ftrace_graph_exit_task(struct task_struct *t) { }
++static inline void ftrace_graph_init_idle_task(struct task_struct *t, int cpu) { }
+ 
+ static inline int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 			  trace_func_graph_ent_t entryfunc)
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5572,7 +5572,7 @@ void __cpuinit init_idle(struct task_str
+ 	 * The idle tasks have their own, simple scheduling class:
+ 	 */
+ 	idle->sched_class = &idle_sched_class;
+-	ftrace_graph_init_task(idle);
++	ftrace_graph_init_idle_task(idle, cpu);
+ }
+ 
+ /*
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3328,7 +3328,7 @@ static int start_graph_tracing(void)
+ 	/* The cpu_boot init_task->ret_stack will never be freed */
+ 	for_each_online_cpu(cpu) {
+ 		if (!idle_task(cpu)->ret_stack)
+-			ftrace_graph_init_task(idle_task(cpu));
++			ftrace_graph_init_idle_task(idle_task(cpu), cpu);
+ 	}
+ 
+ 	do {
+@@ -3418,6 +3418,49 @@ void unregister_ftrace_graph(void)
+ 	mutex_unlock(&ftrace_lock);
+ }
+ 
++static DEFINE_PER_CPU(struct ftrace_ret_stack *, idle_ret_stack);
++
++static void
++graph_init_task(struct task_struct *t, struct ftrace_ret_stack *ret_stack)
++{
++	atomic_set(&t->tracing_graph_pause, 0);
++	atomic_set(&t->trace_overrun, 0);
++	t->ftrace_timestamp = 0;
++	/* make curr_ret_stack visable before we add the ret_stack */
++	smp_wmb();
++	t->ret_stack = ret_stack;
++}
++
++/*
++ * Allocate a return stack for the idle task. May be the first
++ * time through, or it may be done by CPU hotplug online.
++ */
++void ftrace_graph_init_idle_task(struct task_struct *t, int cpu)
++{
++	t->curr_ret_stack = -1;
++	/*
++	 * The idle task has no parent, it either has its own
++	 * stack or no stack at all.
++	 */
++	if (t->ret_stack)
++		WARN_ON(t->ret_stack != per_cpu(idle_ret_stack, cpu));
++
++	if (ftrace_graph_active) {
++		struct ftrace_ret_stack *ret_stack;
++
++		ret_stack = per_cpu(idle_ret_stack, cpu);
++		if (!ret_stack) {
++			ret_stack = kmalloc(FTRACE_RETFUNC_DEPTH
++					    * sizeof(struct ftrace_ret_stack),
++					    GFP_KERNEL);
++			if (!ret_stack)
++				return;
++			per_cpu(idle_ret_stack, cpu) = ret_stack;
++		}
++		graph_init_task(t, ret_stack);
 +	}
++}
++
+ /* Allocate a return stack for newly created task */
+ void ftrace_graph_init_task(struct task_struct *t)
+ {
+@@ -3433,12 +3476,7 @@ void ftrace_graph_init_task(struct task_
+ 				GFP_KERNEL);
+ 		if (!ret_stack)
+ 			return;
+-		atomic_set(&t->tracing_graph_pause, 0);
+-		atomic_set(&t->trace_overrun, 0);
+-		t->ftrace_timestamp = 0;
+-		/* make curr_ret_stack visable before we add the ret_stack */
+-		smp_wmb();
+-		t->ret_stack = ret_stack;
++		graph_init_task(t, ret_stack);
+ 	}
+ }
  
- 	userdef = 1;
- 	mem_size = memparse(p, &p);
 
 
