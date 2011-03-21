@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab1CUXPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:15:06 -0400
-Received: from kroah.org ([198.145.64.141]:49197 "EHLO coco.kroah.org"
+	id S932384Ab1CUXwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:52:49 -0400
+Received: from kroah.org ([198.145.64.141]:49253 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755240Ab1CUXPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:00 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:09 2011
-Message-Id: <20110321230709.377501781@clark.kroah.org>
+	id S1754902Ab1CUXPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:07 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:10 2011
+Message-Id: <20110321230710.202271726@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:01 -0700
+Date: Mon, 21 Mar 2011 16:06:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Antony Pavlov <antony@niisi.msk.ru>,
-        Guillaume LECERF <glecerf@gmail.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [02/87] mtd: jedec_probe: Change variable name from cfi_p to cfi
+        Timo Warns <warns@pre-sense.de>
+Subject: [10/87] Fix corrupted OSF partition table parsing
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,92 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antony Pavlov <antony@niisi.msk.ru>
+From: Timo Warns <Warns@pre-sense.de>
 
-commit efba2e313ea1b1bd69a7c4659263becf43bb1adc upstream.
+commit 1eafbfeb7bdf59cfe173304c76188f3fd5f1fd05 upstream.
 
-In the following commit, we'll need to use the CMD() macro in order to
-fix the initialisation of the sector_erase_cmd field. That requires the
-local variable to be called 'cfi', so change it first in a simple patch.
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating OSF partitions contains a bug that leaks data
+from kernel heap memory to userspace for certain corrupted OSF
+partitions.
 
-Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
-Acked-by: Guillaume LECERF <glecerf@gmail.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+In more detail:
+
+  for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
+
+iterates from 0 to d_npartitions - 1, where d_npartitions is read from
+the partition table without validation and partition is a pointer to an
+array of at most 8 d_partitions.
+
+Add the proper and obvious validation.
+
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+[ Changed the patch trivially to not repeat the whole le16_to_cpu()
+  thing, and to use an explicit constant for the magic value '8' ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/chips/jedec_probe.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ fs/partitions/osf.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/chips/jedec_probe.c
-+++ b/drivers/mtd/chips/jedec_probe.c
-@@ -1935,14 +1935,14 @@ static void jedec_reset(u32 base, struct
- }
+--- a/fs/partitions/osf.c
++++ b/fs/partitions/osf.c
+@@ -10,10 +10,13 @@
+ #include "check.h"
+ #include "osf.h"
  
- 
--static int cfi_jedec_setup(struct cfi_private *p_cfi, int index)
-+static int cfi_jedec_setup(struct cfi_private *cfi, int index)
++#define MAX_OSF_PARTITIONS 8
++
+ int osf_partition(struct parsed_partitions *state)
  {
- 	int i,num_erase_regions;
- 	uint8_t uaddr;
+ 	int i;
+ 	int slot = 1;
++	unsigned int npartitions;
+ 	Sector sect;
+ 	unsigned char *data;
+ 	struct disklabel {
+@@ -45,7 +48,7 @@ int osf_partition(struct parsed_partitio
+ 			u8  p_fstype;
+ 			u8  p_frag;
+ 			__le16 p_cpg;
+-		} d_partitions[8];
++		} d_partitions[MAX_OSF_PARTITIONS];
+ 	} * label;
+ 	struct d_partition * partition;
  
--	if (! (jedec_table[index].devtypes & p_cfi->device_type)) {
-+	if (!(jedec_table[index].devtypes & cfi->device_type)) {
- 		DEBUG(MTD_DEBUG_LEVEL1, "Rejecting potential %s with incompatible %d-bit device type\n",
--		      jedec_table[index].name, 4 * (1<<p_cfi->device_type));
-+		      jedec_table[index].name, 4 * (1<<cfi->device_type));
+@@ -63,7 +66,12 @@ int osf_partition(struct parsed_partitio
+ 		put_dev_sector(sect);
  		return 0;
  	}
- 
-@@ -1950,27 +1950,27 @@ static int cfi_jedec_setup(struct cfi_pr
- 
- 	num_erase_regions = jedec_table[index].nr_regions;
- 
--	p_cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
--	if (!p_cfi->cfiq) {
-+	cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
-+	if (!cfi->cfiq) {
- 		//xx printk(KERN_WARNING "%s: kmalloc failed for CFI ident structure\n", map->name);
- 		return 0;
- 	}
- 
--	memset(p_cfi->cfiq,0,sizeof(struct cfi_ident));
-+	memset(cfi->cfiq, 0, sizeof(struct cfi_ident));
- 
--	p_cfi->cfiq->P_ID = jedec_table[index].cmd_set;
--	p_cfi->cfiq->NumEraseRegions = jedec_table[index].nr_regions;
--	p_cfi->cfiq->DevSize = jedec_table[index].dev_size;
--	p_cfi->cfi_mode = CFI_MODE_JEDEC;
-+	cfi->cfiq->P_ID = jedec_table[index].cmd_set;
-+	cfi->cfiq->NumEraseRegions = jedec_table[index].nr_regions;
-+	cfi->cfiq->DevSize = jedec_table[index].dev_size;
-+	cfi->cfi_mode = CFI_MODE_JEDEC;
- 
- 	for (i=0; i<num_erase_regions; i++){
--		p_cfi->cfiq->EraseRegionInfo[i] = jedec_table[index].regions[i];
-+		cfi->cfiq->EraseRegionInfo[i] = jedec_table[index].regions[i];
- 	}
--	p_cfi->cmdset_priv = NULL;
-+	cfi->cmdset_priv = NULL;
- 
- 	/* This may be redundant for some cases, but it doesn't hurt */
--	p_cfi->mfr = jedec_table[index].mfr_id;
--	p_cfi->id = jedec_table[index].dev_id;
-+	cfi->mfr = jedec_table[index].mfr_id;
-+	cfi->id = jedec_table[index].dev_id;
- 
- 	uaddr = jedec_table[index].uaddr;
- 
-@@ -1978,8 +1978,8 @@ static int cfi_jedec_setup(struct cfi_pr
- 	   our brains explode when we see the datasheets talking about address
- 	   lines numbered from A-1 to A18. The CFI table has unlock addresses
- 	   in device-words according to the mode the device is connected in */
--	p_cfi->addr_unlock1 = unlock_addrs[uaddr].addr1 / p_cfi->device_type;
--	p_cfi->addr_unlock2 = unlock_addrs[uaddr].addr2 / p_cfi->device_type;
-+	cfi->addr_unlock1 = unlock_addrs[uaddr].addr1 / cfi->device_type;
-+	cfi->addr_unlock2 = unlock_addrs[uaddr].addr2 / cfi->device_type;
- 
- 	return 1;	/* ok */
- }
+-	for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
++	npartitions = le16_to_cpu(label->d_npartitions);
++	if (npartitions > MAX_OSF_PARTITIONS) {
++		put_dev_sector(sect);
++		return 0;
++	}
++	for (i = 0 ; i < npartitions; i++, partition++) {
+ 		if (slot == state->limit)
+ 		        break;
+ 		if (le32_to_cpu(partition->p_size))
 
 
