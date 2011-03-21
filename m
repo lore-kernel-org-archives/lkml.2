@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab1CURKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:10:40 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:38505 "EHLO mgw-da01.nokia.com"
+	id S1753928Ab1CURL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:11:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55208 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab1CURKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:10:38 -0400
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@nokia.com>
-Subject: [PATCH] input: tsc2005: use relative jiffies to schedule the watchdog
-Date: Mon, 21 Mar 2011 19:07:51 +0200
-Message-Id: <1300727271-20120-1-git-send-email-aaro.koskinen@nokia.com>
-X-Mailer: git-send-email 1.5.6.5
-X-Nokia-AV: Clean
+	id S1752259Ab1CURLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:11:55 -0400
+Subject: Re: [PATCH] tmpfs: implement security.capability xattrs
+From: Eric Paris <eparis@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <alpine.LSU.2.00.1103202108160.21738@sister.anvils>
+References: <20110111210710.32348.1642.stgit@paris.rdu.redhat.com>
+	 <AANLkTi=wyaLP6gFmNxajp+HtYu3B9_KGf2o4BnYA+rwy@mail.gmail.com>
+	 <AANLkTi=7GyY=O2eTupPXQijcnT_55a3RnHAruJpm_5Jo@mail.gmail.com>
+	 <alpine.LSU.2.00.1103202108160.21738@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Mar 2011 12:43:05 -0400
+Message-ID: <1300725785.2744.57.camel@unknown001a4b0c2895>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use relative jiffies to schedule the watchdog. Otherwise it will run
-like a mad one.
+On Sun, 2011-03-20 at 22:17 -0700, Hugh Dickins wrote:
+> On Wed, 2 Mar 2011, Eric Paris wrote:
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
----
- drivers/input/touchscreen/tsc2005.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> > >>  include/linux/shmem_fs.h |    8 +++
+> > >>  mm/shmem.c               |  112 ++++++++++++++++++++++++++++++++++++++++++++--
+> > >>  2 files changed, 116 insertions(+), 4 deletions(-)
+> 
+> No change to fs/Kconfig?  You seem to smuggle the xattr and security
+> support in under CONFIG_TMPFS_POSIX_ACL, and leave it unsupported
+> without.  It's probably a fair assumption that the people with that
+> option selected are the people who will be interested in this, so
+> no need for the maze of separate config options which a grownup
+> filesystem would have here.  But at the very least you need to say
+> more in the TMPFS_POSIX_ACL Kconfig entry (a new name may be more
+> trouble than it's worth).
 
-diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
-index 3a15587..ea7f436 100644
---- a/drivers/input/touchscreen/tsc2005.c
-+++ b/drivers/input/touchscreen/tsc2005.c
-@@ -358,7 +358,7 @@ static void __tsc2005_enable(struct tsc2005 *ts)
- 	if (ts->esd_timeout && ts->set_reset) {
- 		ts->last_valid_interrupt = jiffies;
- 		schedule_delayed_work(&ts->esd_work,
--				round_jiffies(jiffies +
-+				round_jiffies_relative(
- 					msecs_to_jiffies(ts->esd_timeout)));
- 	}
- 
-@@ -518,7 +518,7 @@ static void tsc2005_esd_work(struct work_struct *work)
- out:
- 	/* re-arm the watchdog */
- 	schedule_delayed_work(&ts->esd_work,
--			      round_jiffies(jiffies +
-+			      round_jiffies_relative(
- 					msecs_to_jiffies(ts->esd_timeout)));
- 	mutex_unlock(&ts->mutex);
- }
--- 
-1.5.6.5
+Will update text.
+
+> > >> @@ -2071,24 +2076,123 @@ static size_t shmem_xattr_security_list(struct dentry *dentry, char *list,
+> > >>                                        size_t list_len, const char *name,
+> > >>                                        size_t name_len, int handler_flags)
+> > >>  {
+> > >> -       return security_inode_listsecurity(dentry->d_inode, list, list_len);
+> > >> +       struct shmem_xattr *xattr;
+> > >> +       struct shmem_inode_info *shmem_i;
+> 
+> It's a nit, but (almost) everywhere else in shmem.c the shmem_inode_info
+> pointer is known as "info": easy for me to fix up if I care, but nicer
+> if you follow local custom.
+
+Will fix.  I certainly don't like breaking conventions needlessly.
+
+> > >> +       size_t used;
+> > >> +       char *buf = NULL;
+> > >> +
+> > >> +       used = security_inode_listsecurity(dentry->d_inode, list, list_len);
+> > >> +
+> > >> +       shmem_i = SHMEM_I(dentry->d_inode);
+> > >> +       if (list)
+> > >> +               buf = list + used;
+> 
+> This is the place that caused me most trouble.  On a minor note:
+> it worried me that security_inode_listsecurity() might return an
+> error, whereas I think you know and assume that the worst it can
+> return is 0 - might be worth a comment.
+
+Will fix.
+
+> But more major: I found it very odd that you collect one set of things
+> from security_inode_listsecurity(), then proceed to tack on some more
+> below from the shmem inode.  I looked at other filesystems (well, ext2!)
+> and couldn't find a precedent.  What's this about?  Is it because other
+> filesystems have an on-disk format which determines what they're capable
+> of, whereas tmpfs is plastic and can reflect what the running system has?
+> Or is it to allow for future xattrs which might be added to tmpfs, but
+> frankly I'd rather do without until they're defined?
+
+So there is a belief (based I think on an erroneous comment in the code
+somewhere which I plan to find and fix) that the VFS provides some form
+of generic xattr support if filesystems do not provide their own xattr
+support.  This isn't true.  What actually happens is that the VFS will
+directly call special LSM functions, if the filesystem provides no xattr
+methods.  If the filesystem provides any xattr methods, which tmpfs does
+when CONFIG_TMPFS_POSIX_ACL is set, then the VFS does different
+stupi^wmagic things with regard to xattr calls.  I only really know the
+SELinux LSM and will use it as an example, but I believe that SMACK does
+very similar things.  When you run with SELinux enabled it will provide
+support for ONLY security.selinux.  It provides this support by storing
+the security.selinux xattr information inside the inode->i_security->sid
+field.  I might be making this already weird interface even worse
+because I'm trying to take advantage of the SELinux handling for
+security.selinux rather than be required to store those in the
+shmem_inode_info as well.  Other filesystems don't play this trick.
+
+I'll try to rewrite the code to just be completely generic for
+security.* and see if it is cleaner even if we waste some space storing
+strings in ram we don't technically need to....
 
