@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab1CUM4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:56:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37665 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247Ab1CUM42 (ORCPT
+	id S1753402Ab1CUM5i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 08:57:38 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:51391 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753334Ab1CUM5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:56:28 -0400
-Date: Mon, 21 Mar 2011 12:56:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Nick Piggin <npiggin@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
-	format definitions
-Message-ID: <20110321125606.GC22222@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-9-git-send-email-catalin.marinas@arm.com> <AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com> <20110124214225.GO24104@n2100.arm.linux.org.uk> <AANLkTikH9tBTGCiJ-+dvhh1tajMVq_6ua41MMZmq48sC@mail.gmail.com>
+	Mon, 21 Mar 2011 08:57:37 -0400
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX1+x7C1Uap+xENy6VnxLZMdoQcM1Tkuc6XhSNJMZov
+	mp75FlcVZf+ixX
+From: =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+Subject: [PATCH] sched.h: fix a typo ("its")
+Date: Mon, 21 Mar 2011 13:54:00 +0100
+Message-Id: <1300712040-7778-1-git-send-email-j.neuschaefer@gmx.net>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikH9tBTGCiJ-+dvhh1tajMVq_6ua41MMZmq48sC@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 12:36:55PM +0000, Catalin Marinas wrote:
-> Any plans for the nopmd patches? I haven't seen them in -next or on the list.
+The sectence uses the possessive pronoun, which is spelled without
+an apostrophe.
 
-I dropped them again because of those pesky warnings, so again I'm not
-planning to push them this window as I don't wish to be deluged in
-people reporting the warnings.
+Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
+---
+ include/linux/sched.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-They really need fixing once we know how the LPAE stuff interacts with
-the change.  At the moment I've no idea whether the existing section
-support ends up at pgd or pmd level with LPAE.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index c15936f..e89f129 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -516,7 +516,7 @@ struct thread_group_cputimer {
+ struct autogroup;
+ 
+ /*
+- * NOTE! "signal_struct" does not have it's own
++ * NOTE! "signal_struct" does not have its own
+  * locking, because a shared signal_struct always
+  * implies a shared sighand_struct, so locking
+  * sighand_struct is always a proper superset of
+-- 
+1.7.4.1
 
-Obviously that matters as with LPAE, pgd and pmd are different hardware
-levels, but without LPAE they're the same hardware level.
