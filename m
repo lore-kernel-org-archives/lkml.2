@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab1CUVZV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 17:25:21 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39641 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab1CUVZR (ORCPT
+	id S1754411Ab1CUVco (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 17:32:44 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:28504
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753212Ab1CUVcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 17:25:17 -0400
-Subject: Re: [RFC-v4 00/12] iSCSI target v4.1.0-rc1 series for .39-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jesper Juhl <jj@chaosbits.net>
-In-Reply-To: <1300742107.10634.49.camel@mulgrave.site>
-References: <1300613497-2091-1-git-send-email-nab@linux-iscsi.org>
-	 <1300740867.21880.12.camel@haakon2.linux-iscsi.org>
-	 <1300741629.10634.46.camel@mulgrave.site>
-	 <1300741561.21880.22.camel@haakon2.linux-iscsi.org>
-	 <1300742107.10634.49.camel@mulgrave.site>
+	Mon, 21 Mar 2011 17:32:42 -0400
+X-SpamScore: 2
+X-BigFish: VS2(z616jzzz1202hzz8275bhz2dh2a8h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <arnaud.patard@rtp-net.org>, <ra5478@freescale.com>,
+        <xiao-lizhang@freescale.com>, <festevam@gmail.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv5 1/4] ARM: mx50: Add support to get the silicon revision
+Date: Mon, 21 Mar 2011 16:30:35 -0500
+Message-ID: <1300743038-3901-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
 Content-Type: text/plain
-Date: Mon, 21 Mar 2011 14:18:05 -0700
-Message-Id: <1300742285.21880.28.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-21 at 16:15 -0500, James Bottomley wrote:
-> On Mon, 2011-03-21 at 14:06 -0700, Nicholas A. Bellinger wrote:
-> > > OK ... so if you're ready, you can send the next one as a patch not rfc.
-> > > 
-> > 
-> > Ok, I will give 1-2 days for the final round of feedback on RFC-v4, and
-> > post the next series as [PATCH].  Please let me know if this should
-> > happen sooner in order not to miss the second round of SCSI patches
-> > going to Linus this week.
-> 
-> It's already way too late for that.  The last patches need to be in
-> today/tomorrow for the -next shakeout, so this will be .41 material.
-> 
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Mmmm, in that case I will send out a mergable patch for -next shakeout
-testing in the next hours, and will respin as necessary.
+For MX50, the HW_ADADIG_DIGPROG register in the ANATOP module will
+have the correct silicon revision:
 
-Thank you,
+Major       Minor   Description
+0x50        0x0     TO1.0
+0x50        0x1     TO1.1
 
---nab
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/cpu.c               |   39 +++++++++++++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/mx50.h |    4 +++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-mx5/cpu.c b/arch/arm/mach-mx5/cpu.c
+index df46b5e..c205494 100644
+--- a/arch/arm/mach-mx5/cpu.c
++++ b/arch/arm/mach-mx5/cpu.c
+@@ -21,6 +21,7 @@
+ static int cpu_silicon_rev = -1;
+ 
+ #define IIM_SREV 0x24
++#define MX50_HW_ADADIG_DIGPROG	0xB0
+ 
+ static int get_mx51_srev(void)
+ {
+@@ -107,6 +108,44 @@ int mx53_revision(void)
+ }
+ EXPORT_SYMBOL(mx53_revision);
+ 
++static int get_mx50_srev(void)
++{
++	void __iomem *anatop = ioremap(MX50_ANATOP_BASE_ADDR, SZ_8K);
++	u32 rev;
++
++	if (!anatop) {
++		cpu_silicon_rev = -EINVAL;
++		return 0;
++	}
++
++	rev = readl(anatop + MX50_HW_ADADIG_DIGPROG);
++	rev &= 0xff;
++
++	iounmap(anatop);
++	if (rev == 0x0)
++		return IMX_CHIP_REVISION_1_0;
++	else if (rev == 0x1)
++		return IMX_CHIP_REVISION_1_1;
++	return 0;
++}
++
++/*
++ * Returns:
++ *	the silicon revision of the cpu
++ *	-EINVAL - not a mx50
++ */
++int mx50_revision(void)
++{
++	if (!cpu_is_mx50())
++		return -EINVAL;
++
++	if (cpu_silicon_rev == -1)
++		cpu_silicon_rev = get_mx50_srev();
++
++	return cpu_silicon_rev;
++}
++EXPORT_SYMBOL(mx50_revision);
++
+ static int __init post_cpu_init(void)
+ {
+ 	unsigned int reg;
+diff --git a/arch/arm/plat-mxc/include/mach/mx50.h b/arch/arm/plat-mxc/include/mach/mx50.h
+index aaec2a6..5f2da75 100644
+--- a/arch/arm/plat-mxc/include/mach/mx50.h
++++ b/arch/arm/plat-mxc/include/mach/mx50.h
+@@ -282,4 +282,8 @@
+ #define MX50_INT_APBHDMA_CHAN6	116
+ #define MX50_INT_APBHDMA_CHAN7	117
+ 
++#if !defined(__ASSEMBLY__) && !defined(__MXC_BOOT_UNCOMPRESS)
++extern int mx50_revision(void);
++#endif
++
+ #endif /* ifndef __MACH_MX50_H__ */
+-- 
+1.6.0.4
 
 
