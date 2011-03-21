@@ -1,82 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab1CUOx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 10:53:29 -0400
-Received: from mailout06.t-online.de ([194.25.134.19]:56701 "EHLO
-	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab1CUOx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 10:53:27 -0400
-X-Greylist: delayed 979 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 10:53:27 EDT
-Subject: [PATCH v2] uio_netx: Add support for netPLC cards
-From: Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de, hjk@hansjkoch.de, manut@linutronix.de
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Mar 2011 15:36:35 +0100
-Message-ID: <1300718195.3457.43.camel@ubuntu-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-ID: rCR67-ZAQt6ENjiatI6RlzURPSBlK5t2TmGbh96urKOHKrc9gnjt8KEss3vJ9U9HFOZjAjFO8D
-X-TOI-MSGID: 8d44253c-87a3-4c37-a0eb-ba6d4ba252ab
+	id S1753534Ab1CUOzc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 10:55:32 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:12947
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753464Ab1CUOza convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 10:55:30 -0400
+X-SpamScore: -26
+X-BigFish: VS-26(zz542N1432N98dN9371Pzz1202hzz8275bh8275dhz2dh2a8h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "arnaud.patard@rtp-net.org" <arnaud.patard@rtp-net.org>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        "festevam@gmail.com" <festevam@gmail.com>
+Subject: RE: [PATCHv4 3/3] ARM: mx51: Add support for low power suspend on
+	MX51
+Thread-Topic: [PATCHv4 3/3] ARM: mx51: Add support for low power suspend on
+	MX51
+Thread-Index: AQHL5YC2qGpbnN+ny0GdHXKnXxUlY5Q349Ng
+Date: Mon, 21 Mar 2011 14:53:21 +0000
+Message-ID: <56132A77AB93C141BF06E6B96CA6CFEA1BC0AF@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <1300461684-21775-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300461684-21775-2-git-send-email-Dinh.Nguyen@freescale.com>
+ <1300461684-21775-3-git-send-email-Dinh.Nguyen@freescale.com>
+ <20110318152502.GO29758@n2100.arm.linux.org.uk>
+In-Reply-To: <20110318152502.GO29758@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.81.68.39]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for Hilscher / IBHsoftec netPLC cards to uio_netx userspace IO driver.
+Hi Russell,
 
-Changes from v1 -> v2:
-Fixed whitespace errors reported by scripts/checkpatch.pl which were caused by email client.
+>-----Original Message-----
+>From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of
+>Russell King - ARM Linux
+>Sent: Friday, March 18, 2011 10:25 AM
+>To: Nguyen Dinh-R00091
+>Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; s.hauer@pengutronix.de;
+>u.kleine-koenig@pengutronix.de; arnaud.patard@rtp-net.org; Vaidyanathan Ranjani-RA5478; Zhang Lily-
+>R58066; festevam@gmail.com
+>Subject: Re: [PATCHv4 3/3] ARM: mx51: Add support for low power suspend on MX51
+>
+>On Fri, Mar 18, 2011 at 10:21:24AM -0500, Dinh.Nguyen@freescale.com wrote:
+>> +#include <linux/suspend.h>
+>> +#include <linux/clk.h>
+>> +#include <asm/mach/map.h>
+>> +#include <asm/cacheflush.h>
+>> +#include <asm/tlb.h>
+>> +#include <mach/system.h>
+>> +#include "crm_regs.h"
+>
+>Why does the code below require asm/mach/map.h ?
 
-Signed-off-by: Daniel Trautmann <dtrautmann@ibhsoftec-sps.de>
----
- drivers/uio/uio_netx.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+map.h can be replaced by linux/io.h for the __raw_writel().
 
-diff --git a/drivers/uio/uio_netx.c b/drivers/uio/uio_netx.c
-index 5ffdb48..a879fd5 100644
---- a/drivers/uio/uio_netx.c
-+++ b/drivers/uio/uio_netx.c
-@@ -18,6 +18,9 @@
- 
- #define PCI_VENDOR_ID_HILSCHER		0x15CF
- #define PCI_DEVICE_ID_HILSCHER_NETX	0x0000
-+#define PCI_DEVICE_ID_HILSCHER_NETPLC	0x0010
-+#define PCI_SUBDEVICE_ID_NETPLC_RAM	0x0000
-+#define PCI_SUBDEVICE_ID_NETPLC_FLASH	0x0001
- #define PCI_SUBDEVICE_ID_NXSB_PCA	0x3235
- #define PCI_SUBDEVICE_ID_NXPCA		0x3335
- 
-@@ -66,6 +69,10 @@ static int __devinit netx_pci_probe(struct pci_dev *dev,
- 		bar = 0;
- 		info->name = "netx";
- 		break;
-+	case PCI_DEVICE_ID_HILSCHER_NETPLC:
-+		bar = 0;
-+		info->name = "netplc";
-+		break;
- 	default:
- 		bar = 2;
- 		info->name = "netx_plx";
-@@ -134,6 +141,18 @@ static struct pci_device_id netx_pci_ids[] = {
- 		.subdevice =	0,
- 	},
- 	{
-+		.vendor =       PCI_VENDOR_ID_HILSCHER,
-+		.device =       PCI_DEVICE_ID_HILSCHER_NETPLC,
-+		.subvendor =    PCI_VENDOR_ID_HILSCHER,
-+		.subdevice =    PCI_SUBDEVICE_ID_NETPLC_RAM,
-+	},
-+	{
-+		.vendor =       PCI_VENDOR_ID_HILSCHER,
-+		.device =       PCI_DEVICE_ID_HILSCHER_NETPLC,
-+		.subvendor =    PCI_VENDOR_ID_HILSCHER,
-+		.subdevice =    PCI_SUBDEVICE_ID_NETPLC_FLASH,
-+	},
-+	{
- 		.vendor =	PCI_VENDOR_ID_PLX,
- 		.device =	PCI_DEVICE_ID_PLX_9030,
- 		.subvendor =	PCI_VENDOR_ID_PLX,
+>Why does it require asm/tlb.h ?
+
+asm/tlb is for the local_flush_tlb_all() call.
+
+Thanks for your review.
+
+Dinh
+>
+>> +
+>> +static struct clk *gpc_dvfs_clk;
+>> +
+>> +static int mx5_suspend_enter(suspend_state_t state)
+>> +{
+>> +	if (gpc_dvfs_clk == NULL)
+>> +		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
+>> +
+>> +	if (gpc_dvfs_clk) {
+>> +		clk_enable(gpc_dvfs_clk);
+>> +		switch (state) {
+>> +		case PM_SUSPEND_MEM:
+>> +			mx5_cpu_lp_set(STOP_POWER_OFF);
+>> +			break;
+>> +		case PM_SUSPEND_STANDBY:
+>> +			mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+>> +			break;
+>> +		default:
+>> +			return -EINVAL;
+>> +		}
+>> +
+>> +		if (state == PM_SUSPEND_MEM) {
+>> +			local_flush_tlb_all();
+>> +			flush_cache_all();
+>> +
+>> +			/*clear the EMPGC0/1 bits */
+>> +			__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
+>> +			__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
+>> +		}
+>> +		cpu_do_idle();
+>> +		clk_disable(gpc_dvfs_clk);
+>> +	}else {
+>> +		printk(KERN_ERR "Cannot enter SRPG suspend -no gpc_dvfs clock!\n");
+>> +		return -EPERM;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int mx5_pm_valid(suspend_state_t state)
+>> +{
+>> +	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
+>> +}
+>> +
+>> +static const struct platform_suspend_ops mx5_suspend_ops = {
+>> +	.valid = mx5_pm_valid,
+>> +	.enter = mx5_suspend_enter,
+>> +};
+>> +
+>> +static int __init mx5_pm_init(void)
+>> +{
+>> +	if (cpu_is_mx51())
+>> +		suspend_set_ops(&mx5_suspend_ops);
+>> +
+>> +	return 0;
+>> +}
+>> +device_initcall(mx5_pm_init);
+>> --
+>> 1.6.0.4
+>>
+>>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
 
 
