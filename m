@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab1CUXW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:22:57 -0400
-Received: from kroah.org ([198.145.64.141]:52796 "EHLO coco.kroah.org"
+	id S932413Ab1CUXS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:18:28 -0400
+Received: from kroah.org ([198.145.64.141]:52665 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932422Ab1CUXSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:31 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:28 2011
-Message-Id: <20110321230328.604758248@clark.kroah.org>
+	id S932316Ab1CUXSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:07 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:26 2011
+Message-Id: <20110321230326.124854632@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:23 -0700
+Date: Mon, 21 Mar 2011 16:01:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>, Milton Miller <miltonm@bga.com>
-Subject: [67/78] smp_call_function_many: handle concurrent clearing of mask
+        Takashi Iwai <tiwai@suse.de>
+Subject: [43/78] ALSA: hda - Initialize special cases for input src in init phase
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milton Miller <miltonm@bga.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 723aae25d5cdb09962901d36d526b44d4be1051c upstream.
+commit 584c0c4c359bdac37d94157f8d7fc513d26c8328 upstream.
 
-Mike Galbraith reported finding a lockup ("perma-spin bug") where the
-cpumask passed to smp_call_function_many was cleared by other cpu(s)
-while a cpu was preparing its call_data block, resulting in no cpu to
-clear the last ref and unlock the block.
+Currently some special handling for the unusual case like dual-ADCs
+or a single-input-src is done in the tree-parse time in
+set_capture_mixer().  But this setup could be overwritten by static
+init verbs.
 
-Having cpus clear their bit asynchronously could be useful on a mask of
-cpus that might have a translation context, or cpus that need a push to
-complete an rcu window.
+This patch moves the initialization into the init phase so that
+such input-src setup won't be lost.
 
-Instead of adding a BUG_ON and requiring yet another cpumask copy, just
-detect the race and handle it.
-
-Note: arch_send_call_function_ipi_mask must still handle an empty
-cpumask because the data block is globally visible before the that arch
-callback is made.  And (obviously) there are no guarantees to which cpus
-are notified if the mask is changed during the call; only cpus that were
-online and had their mask bit set during the whole call are guaranteed
-to be called.
-
-Reported-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Jan Beulich <JBeulich@novell.com>
-Acked-by: Jan Beulich <jbeulich@novell.com>
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/smp.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -450,7 +450,7 @@ void smp_call_function_many(const struct
- {
- 	struct call_function_data *data;
- 	unsigned long flags;
--	int cpu, next_cpu, this_cpu = smp_processor_id();
-+	int refs, cpu, next_cpu, this_cpu = smp_processor_id();
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -394,6 +394,7 @@ struct alc_spec {
+ 	/* other flags */
+ 	unsigned int no_analog :1; /* digital I/O only */
+ 	unsigned int dual_adc_switch:1; /* switch ADCs (for ALC275) */
++	unsigned int single_input_src:1;
+ 	int init_amp;
+ 	int codec_variant;	/* flag for other variants */
  
- 	/*
- 	 * Can deadlock when called with interrupts disabled.
-@@ -461,7 +461,7 @@ void smp_call_function_many(const struct
- 	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
- 		     && !oops_in_progress && !early_boot_irqs_disabled);
+@@ -3919,6 +3920,8 @@ static struct hda_amp_list alc880_lg_loo
+  * Common callbacks
+  */
  
--	/* So, what's a CPU they want? Ignoring this one. */
-+	/* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
- 	cpu = cpumask_first_and(mask, cpu_online_mask);
- 	if (cpu == this_cpu)
- 		cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
-@@ -519,6 +519,13 @@ void smp_call_function_many(const struct
- 	/* We rely on the "and" being processed before the store */
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
-+	refs = cpumask_weight(data->cpumask);
++static void alc_init_special_input_src(struct hda_codec *codec);
 +
-+	/* Some callers race with other cpus changing the passed mask */
-+	if (unlikely(!refs)) {
-+		csd_unlock(&data->csd);
-+		return;
-+	}
+ static int alc_init(struct hda_codec *codec)
+ {
+ 	struct alc_spec *spec = codec->spec;
+@@ -3929,6 +3932,7 @@ static int alc_init(struct hda_codec *co
  
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
-@@ -532,7 +539,7 @@ void smp_call_function_many(const struct
- 	 * to the cpumask before this write to refs, which indicates
- 	 * data is on the list and is ready to be processed.
- 	 */
--	atomic_set(&data->refs, cpumask_weight(data->cpumask));
-+	atomic_set(&data->refs, refs);
- 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
+ 	for (i = 0; i < spec->num_init_verbs; i++)
+ 		snd_hda_sequence_write(codec, spec->init_verbs[i]);
++	alc_init_special_input_src(codec);
  
- 	/*
+ 	if (spec->init_hook)
+ 		spec->init_hook(codec);
+@@ -5590,6 +5594,7 @@ static void fixup_single_adc(struct hda_
+ 			spec->capsrc_nids += i;
+ 		spec->adc_nids += i;
+ 		spec->num_adc_nids = 1;
++		spec->single_input_src = 1;
+ 	}
+ }
+ 
+@@ -5601,6 +5606,16 @@ static void fixup_dual_adc_switch(struct
+ 	init_capsrc_for_pin(codec, spec->int_mic.pin);
+ }
+ 
++/* initialize some special cases for input sources */
++static void alc_init_special_input_src(struct hda_codec *codec)
++{
++	struct alc_spec *spec = codec->spec;
++	if (spec->dual_adc_switch)
++		fixup_dual_adc_switch(codec);
++	else if (spec->single_input_src)
++		init_capsrc_for_pin(codec, spec->autocfg.inputs[0].pin);
++}
++
+ static void set_capture_mixer(struct hda_codec *codec)
+ {
+ 	struct alc_spec *spec = codec->spec;
+@@ -5616,7 +5631,7 @@ static void set_capture_mixer(struct hda
+ 		int mux = 0;
+ 		int num_adcs = spec->num_adc_nids;
+ 		if (spec->dual_adc_switch)
+-			fixup_dual_adc_switch(codec);
++			num_adcs = 1;
+ 		else if (spec->auto_mic)
+ 			fixup_automic_adc(codec);
+ 		else if (spec->input_mux) {
+@@ -5625,8 +5640,6 @@ static void set_capture_mixer(struct hda
+ 			else if (spec->input_mux->num_items == 1)
+ 				fixup_single_adc(codec);
+ 		}
+-		if (spec->dual_adc_switch)
+-			num_adcs = 1;
+ 		spec->cap_mixer = caps[mux][num_adcs - 1];
+ 	}
+ }
 
 
