@@ -1,307 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1CUFRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 01:17:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35061 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729Ab1CUFRl convert rfc822-to-8bit (ORCPT
+	id S1752816Ab1CUFSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 01:18:08 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:16585 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab1CUFSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 01:17:41 -0400
-From: "Janorkar, Mayuresh" <mayur@ti.com>
-To: Carl Vanderlip <carlv@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-CC: Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Mar 2011 10:47:25 +0530
-Subject: RE: [PATCH 08/20] video: msm: Refactor mdp_regs
-Thread-Topic: [PATCH 08/20] video: msm: Refactor mdp_regs
-Thread-Index: AcvlvR5409WwMOJjQPGTiIr3ki1euwByfcwQ
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB033D22EB6E@dbde02.ent.ti.com>
-References: <1300484846-26393-1-git-send-email-carlv@codeaurora.org>
- <1300485404-27241-1-git-send-email-carlv@codeaurora.org>
-In-Reply-To: <1300485404-27241-1-git-send-email-carlv@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Mar 2011 01:18:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=nG1U66XJ4NW+wICKcYBsMFhGQlR7KlptQj37ciQs+lR3qhS3Q1g69ohndWXmX09cQE
+         BTtjiYs2NyckhuTEJ2Hw==
+Date: Sun, 20 Mar 2011 22:17:43 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Eric Paris <eparis@parisplace.org>
+cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] tmpfs: implement security.capability xattrs
+In-Reply-To: <AANLkTi=7GyY=O2eTupPXQijcnT_55a3RnHAruJpm_5Jo@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1103202108160.21738@sister.anvils>
+References: <20110111210710.32348.1642.stgit@paris.rdu.redhat.com> <AANLkTi=wyaLP6gFmNxajp+HtYu3B9_KGf2o4BnYA+rwy@mail.gmail.com> <AANLkTi=7GyY=O2eTupPXQijcnT_55a3RnHAruJpm_5Jo@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-2088098251-1300684679=:21738"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
+--8323584-2088098251-1300684679=:21738
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
-> owner@vger.kernel.org] On Behalf Of Carl Vanderlip
-> Sent: Saturday, March 19, 2011 3:27 AM
-> To: David Brown; Daniel Walker; Bryan Huntsman
-> Cc: Brian Swetland; Dima Zavin; Rebecca Schultz Zavin; Colin Cross; linux-
-> fbdev@vger.kernel.org; Carl Vanderlip; linux-arm-
-> kernel@lists.infradead.org; linux-arm-msm@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH 08/20] video: msm: Refactor mdp_regs
-> 
-> To begin splitting hw specific PPP operations into different files,
-> the mdp_regs struct will be moved into a new generic header file
-> for PPP operations.
-> 
-> Authors:
-> Dima Zavin <dima@android.com>
-> Rebecca Schultz Zavin <rebecca@android.com>
-> Colin Cross <ccross@android.com>
-> 
-> Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
-> ---
->  drivers/video/msm/mdp_ppp.c |   49 +++++++++++++-------------------------
-> ----
->  drivers/video/msm/mdp_ppp.h |   50
-> +++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 65 insertions(+), 34 deletions(-)
->  create mode 100644 drivers/video/msm/mdp_ppp.h
-> 
-> diff --git a/drivers/video/msm/mdp_ppp.c b/drivers/video/msm/mdp_ppp.c
-> index 2b04027..05f3e33 100644
-> --- a/drivers/video/msm/mdp_ppp.c
-> +++ b/drivers/video/msm/mdp_ppp.c
-> @@ -19,6 +19,7 @@
->  #include <mach/msm_fb.h>
-> 
->  #include "mdp_hw.h"
-> +#include "mdp_ppp.h"
->  #include "mdp_scale_tables.h"
-> 
->  #define DLOG(x...) do {} while (0)
-> @@ -27,28 +28,6 @@
->  static int downscale_y_table = MDP_DOWNSCALE_MAX;
->  static int downscale_x_table = MDP_DOWNSCALE_MAX;
-> 
-> -struct mdp_regs {
-> -	uint32_t src0;
-> -	uint32_t src1;
-> -	uint32_t dst0;
-> -	uint32_t dst1;
-> -	uint32_t src_cfg;
-> -	uint32_t dst_cfg;
-> -	uint32_t src_pack;
-> -	uint32_t dst_pack;
-> -	uint32_t src_rect;
-> -	uint32_t dst_rect;
-> -	uint32_t src_ystride;
-> -	uint32_t dst_ystride;
-> -	uint32_t op;
-> -	uint32_t src_bpp;
-> -	uint32_t dst_bpp;
-> -	uint32_t edge;
-> -	uint32_t phasex_init;
-> -	uint32_t phasey_init;
-> -	uint32_t phasex_step;
-> -	uint32_t phasey_step;
-> -};
-> 
->  static uint32_t pack_pattern[] = {
->  	PPP_ARRAY0(PACK_PATTERN)
-> @@ -88,7 +67,8 @@ static uint32_t bg_op_chroma[] = {
->  	PPP_ARRAY1(CHROMA_SAMP, BG)
->  };
-> 
-> -static void rotate_dst_addr_x(struct mdp_blit_req *req, struct mdp_regs
-> *regs)
-> +static void rotate_dst_addr_x(struct mdp_blit_req *req,
-> +			      struct ppp_regs *regs)
->  {
->  	regs->dst0 += (req->dst_rect.w -
->  		       min((uint32_t)16, req->dst_rect.w)) * regs->dst_bpp;
-> @@ -96,7 +76,8 @@ static void rotate_dst_addr_x(struct mdp_blit_req *req,
-> struct mdp_regs *regs)
->  		       min((uint32_t)16, req->dst_rect.w)) * regs->dst_bpp;
->  }
-> 
-> -static void rotate_dst_addr_y(struct mdp_blit_req *req, struct mdp_regs
-> *regs)
-> +static void rotate_dst_addr_y(struct mdp_blit_req *req,
-> +			      struct ppp_regs *regs)
->  {
->  	regs->dst0 += (req->dst_rect.h -
->  		       min((uint32_t)16, req->dst_rect.h)) *
-> @@ -107,7 +88,7 @@ static void rotate_dst_addr_y(struct mdp_blit_req *req,
-> struct mdp_regs *regs)
->  }
-> 
->  static void blit_rotate(struct mdp_blit_req *req,
-> -			struct mdp_regs *regs)
-> +			struct ppp_regs *regs)
->  {
->  	if (req->flags == MDP_ROT_NOP)
->  		return;
-> @@ -126,7 +107,7 @@ static void blit_rotate(struct mdp_blit_req *req,
->  		regs->op |= PPP_OP_FLIP_LR;
->  }
-> 
-> -static void blit_convert(struct mdp_blit_req *req, struct mdp_regs *regs)
-> +static void blit_convert(struct mdp_blit_req *req, struct ppp_regs *regs)
->  {
->  	if (req->src.format == req->dst.format)
->  		return;
-> @@ -165,7 +146,7 @@ static uint32_t transp_convert(struct mdp_blit_req
-> *req)
->  }
->  #undef GET_BIT_RANGE
-> 
-> -static void blit_blend(struct mdp_blit_req *req, struct mdp_regs *regs)
-> +static void blit_blend(struct mdp_blit_req *req, struct ppp_regs *regs)
->  {
->  	/* TRANSP BLEND */
->  	if (req->transp_mask != MDP_TRANSP_NOP) {
-> @@ -332,7 +313,7 @@ static void get_edge_info(uint32_t src, uint32_t
-> src_coord, uint32_t dst,
->  	*interp2 += src_coord;
->  }
-> 
-> -static int get_edge_cond(struct mdp_blit_req *req, struct mdp_regs *regs)
-> +static int get_edge_cond(struct mdp_blit_req *req, struct ppp_regs *regs)
->  {
->  	int32_t luma_interp[4];
->  	int32_t luma_repeat[4];
-> @@ -432,7 +413,7 @@ static int get_edge_cond(struct mdp_blit_req *req,
-> struct mdp_regs *regs)
->  }
-> 
->  static int blit_scale(const struct mdp_info *mdp, struct mdp_blit_req
-> *req,
-> -		      struct mdp_regs *regs)
-> +		      struct ppp_regs *regs)
->  {
->  	uint32_t phase_init_x, phase_init_y, phase_step_x, phase_step_y;
->  	uint32_t scale_factor_x, scale_factor_y;
-> @@ -500,7 +481,7 @@ static int blit_scale(const struct mdp_info *mdp,
-> struct mdp_blit_req *req,
->  }
-> 
->  static void blit_blur(const struct mdp_info *mdp, struct mdp_blit_req
-> *req,
-> -		      struct mdp_regs *regs)
-> +		      struct ppp_regs *regs)
->  {
->  	if (!(req->flags & MDP_BLUR))
->  		return;
-> @@ -534,7 +515,7 @@ static void get_len(struct mdp_img *img, struct
-> mdp_rect *rect, uint32_t bpp,
-> 
->  static int valid_src_dst(unsigned long src_start, unsigned long src_len,
->  			 unsigned long dst_start, unsigned long dst_len,
-> -			 struct mdp_blit_req *req, struct mdp_regs *regs)
-> +			 struct mdp_blit_req *req, struct ppp_regs *regs)
->  {
->  	unsigned long src_min_ok = src_start;
->  	unsigned long src_max_ok = src_start + src_len;
-> @@ -575,7 +556,7 @@ static int valid_src_dst(unsigned long src_start,
-> unsigned long src_len,
->  }
-> 
-> 
-> -static void flush_imgs(struct mdp_blit_req *req, struct mdp_regs *regs,
-> +static void flush_imgs(struct mdp_blit_req *req, struct ppp_regs *regs,
->  		       struct file *src_file, struct file *dst_file)
->  {
->  }
-> @@ -601,7 +582,7 @@ static void get_chroma_addr(struct mdp_img *img,
-> struct mdp_rect *rect,
->  }
-> 
->  static int send_blit(const struct mdp_info *mdp, struct mdp_blit_req
-> *req,
-> -		     struct mdp_regs *regs, struct file *src_file,
-> +		     struct ppp_regs *regs, struct file *src_file,
->  		     struct file *dst_file)
->  {
->  	mdp_writel(mdp, 1, 0x060);
-> @@ -646,7 +627,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct
-> mdp_blit_req *req,
->  		 struct file *src_file, unsigned long src_start, unsigned long
-> src_len,
->  		 struct file *dst_file, unsigned long dst_start, unsigned long
-> dst_len)
->  {
-> -	struct mdp_regs regs = {0};
-> +	struct ppp_regs regs = {0};
-> 
->  	if (unlikely(req->src.format >= MDP_IMGTYPE_LIMIT ||
->  		     req->dst.format >= MDP_IMGTYPE_LIMIT)) {
-> diff --git a/drivers/video/msm/mdp_ppp.h b/drivers/video/msm/mdp_ppp.h
-> new file mode 100644
-> index 0000000..ef3b125
-> --- /dev/null
-> +++ b/drivers/video/msm/mdp_ppp.h
-> @@ -0,0 +1,50 @@
-> +/* drivers/video/msm/mdp_ppp.h
-> + *
-> + * Copyright (C) 2009 Google Incorporated
+On Wed, 2 Mar 2011, Eric Paris wrote:
+> I know there exist thoughts on this patch somewhere on the internets.
+> Let 'em rip!  I can handle it!
+>=20
+> -Eric
+>=20
+> On Thu, Feb 17, 2011 at 4:27 PM, Eric Paris <eparis@parisplace.org> wrote=
+:
+> > Bueller? =A0Bueller? =A0Any thoughts? =A0Any problems?
+> >
 
-If you want correct copyright info (to 2009-2011) here.
+Sorry, Eric, I did spot it months ago, kept on picking it up and
+putting it down, never quite got to grips with it.  I did try it out,
+and so far as I could tell, it was working correctly.
 
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef _VIDEO_MSM_MDP_PPP_H_
-> +#define _VIDEO_MSM_MDP_PPP_H_
-> +
-> +#include <linux/types.h>
-> +
-> +struct ppp_regs {
-> +	uint32_t src0;
-> +	uint32_t src1;
-> +	uint32_t dst0;
-> +	uint32_t dst1;
-> +	uint32_t src_cfg;
-> +	uint32_t dst_cfg;
-> +	uint32_t src_pack;
-> +	uint32_t dst_pack;
-> +	uint32_t src_rect;
-> +	uint32_t dst_rect;
-> +	uint32_t src_ystride;
-> +	uint32_t dst_ystride;
-> +	uint32_t op;
-> +	uint32_t src_bpp;
-> +	uint32_t dst_bpp;
-> +	uint32_t edge;
-> +	uint32_t phasex_init;
-> +	uint32_t phasey_init;
-> +	uint32_t phasex_step;
-> +	uint32_t phasey_step;
-> +
-> +	uint32_t bg0;
-> +	uint32_t bg1;
-> +	uint32_t bg_cfg;
-> +	uint32_t bg_bpp;
-> +	uint32_t bg_pack;
-> +	uint32_t bg_ystride;
-> +};
-> +
-> +#endif /* _VIDEO_MSM_MDP_PPP_H_ */
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > On Tue, Jan 11, 2011 at 4:07 PM, Eric Paris <eparis@redhat.com> wrote:
+> >> This patch implements security.capability xattrs for tmpfs filesystems=
+=2E =A0The
+> >> feodra project, while trying to replace suid apps with file capabiliti=
+es,
+> >> realized that tmpfs, which is used on my build systems, does not suppo=
+rt file
+> >> capabilities and thus cannot be used to build packages which use file
+> >> capabilities. =A0The patch only implements security.capability but the=
+re is no
+> >> reason it could not be easily expanded to support *.* xattrs as most o=
+f the
+> >> work is already done. =A0I don't know what other xattrs are in use in =
+the world
+> >> or if they necessarily make sense on tmpfs so I didn't make this
+> >> implementation completely generic.
+> >>
+> >> The basic implementation is that I attach a
+> >> struct shmem_xattr {
+> >> =A0 =A0 =A0 =A0struct list_head list; /* anchored by shmem_inode_info-=
+>xattr_list */
+> >> =A0 =A0 =A0 =A0char *name;
+> >> =A0 =A0 =A0 =A0size_t size;
+> >> =A0 =A0 =A0 =A0char value[0];
+> >> };
+> >> Into the struct shmem_inode_info for each xattr that is set. =A0Since =
+I only
+> >> allow security.capability obviously this list is only every 0 or 1 ent=
+ry long.
+> >> I could have been a little simpler, but then the next person having to
+> >> implement an xattr would have to redo everything I did instead of me j=
+ust
+> >> doing 90% of their work =A0:)
+> >>
+> >> Signed-off-by: Eric Paris <eparis@redhat.com>
+
+I'm unfamiliar with xattrs, and found the security hooks, the way we
+dip into and out of them, quite confusing: not to mean that you need
+to add lots of comments, no, so long as it works, and is what people
+familiar the territory expect, that's okay.
+
+We do like tmpfs to be useful, but it was unclear to me from your
+comments above, whether this is just a toy implementation good for
+packaging, or a real implementation of security.capability.  I hope
+the latter - we do not want something half-baked that will cause
+trouble by breaking expectations down the line.
+
+If you can get Acks from James and Christoph, both of whom have been
+here before, then it's mostly fine by me; but a few comments below.
+
+> >> ---
+> >>
+> >> =A0include/linux/shmem_fs.h | =A0 =A08 +++
+> >> =A0mm/shmem.c =A0 =A0 =A0 =A0 =A0 =A0 =A0 | =A0112 +++++++++++++++++++=
++++++++++++++++++++++++++--
+> >> =A02 files changed, 116 insertions(+), 4 deletions(-)
+
+No change to fs/Kconfig?  You seem to smuggle the xattr and security
+support in under CONFIG_TMPFS_POSIX_ACL, and leave it unsupported
+without.  It's probably a fair assumption that the people with that
+option selected are the people who will be interested in this, so
+no need for the maze of separate config options which a grownup
+filesystem would have here.  But at the very least you need to say
+more in the TMPFS_POSIX_ACL Kconfig entry (a new name may be more
+trouble than it's worth).
+
+> >>
+> >> diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
+> >> index 399be5a..6f2ebb8 100644
+> >> --- a/include/linux/shmem_fs.h
+> >> +++ b/include/linux/shmem_fs.h
+> >> @@ -9,6 +9,13 @@
+> >>
+> >> =A0#define SHMEM_NR_DIRECT 16
+> >>
+> >> +struct shmem_xattr {
+> >> + =A0 =A0 =A0 struct list_head list; /* anchored by shmem_inode_info->=
+xattr_list */
+> >> + =A0 =A0 =A0 char *name;
+> >> + =A0 =A0 =A0 size_t size;
+> >> + =A0 =A0 =A0 char value[0];
+> >> +};
+> >> +
+> >> =A0struct shmem_inode_info {
+> >> =A0 =A0 =A0 =A0spinlock_t =A0 =A0 =A0 =A0 =A0 =A0 =A0lock;
+> >> =A0 =A0 =A0 =A0unsigned long =A0 =A0 =A0 =A0 =A0 flags;
+> >> @@ -19,6 +26,7 @@ struct shmem_inode_info {
+> >> =A0 =A0 =A0 =A0struct page =A0 =A0 =A0 =A0 =A0 =A0 *i_indirect; =A0 =
+=A0/* top indirect blocks page */
+> >> =A0 =A0 =A0 =A0swp_entry_t =A0 =A0 =A0 =A0 =A0 =A0 i_direct[SHMEM_NR_D=
+IRECT]; /* first blocks */
+> >> =A0 =A0 =A0 =A0struct list_head =A0 =A0 =A0 =A0swaplist; =A0 =A0 =A0 /=
+* chain of maybes on swap */
+> >> + =A0 =A0 =A0 struct list_head =A0 =A0 =A0 =A0xattr_list; =A0 =A0 /* l=
+ist of shmem_xattr */
+> >> =A0 =A0 =A0 =A0struct inode =A0 =A0 =A0 =A0 =A0 =A0vfs_inode;
+> >> =A0};
+> >>
+> >> diff --git a/mm/shmem.c b/mm/shmem.c
+> >> index 86cd21d..d2bacd6 100644
+> >> --- a/mm/shmem.c
+> >> +++ b/mm/shmem.c
+> >> @@ -822,6 +822,7 @@ static int shmem_notify_change(struct dentry *dent=
+ry, struct iattr *attr)
+> >> =A0static void shmem_evict_inode(struct inode *inode)
+> >> =A0{
+> >> =A0 =A0 =A0 =A0struct shmem_inode_info *info =3D SHMEM_I(inode);
+> >> + =A0 =A0 =A0 struct shmem_xattr *xattr, *nxattr;
+> >>
+> >> =A0 =A0 =A0 =A0if (inode->i_mapping->a_ops =3D=3D &shmem_aops) {
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0truncate_inode_pages(inode->i_mapping, =
+0);
+> >> @@ -834,6 +835,9 @@ static void shmem_evict_inode(struct inode *inode)
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0mutex_unlock(&shmem_swa=
+plist_mutex);
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0}
+> >> =A0 =A0 =A0 =A0}
+> >> +
+> >> + =A0 =A0 =A0 list_for_each_entry_safe(xattr, nxattr, &info->xattr_lis=
+t, list)
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 kfree(xattr);
+> >> =A0 =A0 =A0 =A0BUG_ON(inode->i_blocks);
+> >> =A0 =A0 =A0 =A0shmem_free_inode(inode->i_sb);
+> >> =A0 =A0 =A0 =A0end_writeback(inode);
+> >> @@ -1597,6 +1601,7 @@ static struct inode *shmem_get_inode(struct supe=
+r_block *sb, const struct inode
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0spin_lock_init(&info->lock);
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0info->flags =3D flags & VM_NORESERVE;
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0INIT_LIST_HEAD(&info->swaplist);
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 INIT_LIST_HEAD(&info->xattr_list);
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0cache_no_acl(inode);
+> >>
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0switch (mode & S_IFMT) {
+> >> @@ -2071,24 +2076,123 @@ static size_t shmem_xattr_security_list(struc=
+t dentry *dentry, char *list,
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =A0 =A0size_t list_len, const char *name,
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =A0 =A0size_t name_len, int handler_flags)
+> >> =A0{
+> >> - =A0 =A0 =A0 return security_inode_listsecurity(dentry->d_inode, list=
+, list_len);
+> >> + =A0 =A0 =A0 struct shmem_xattr *xattr;
+> >> + =A0 =A0 =A0 struct shmem_inode_info *shmem_i;
+
+It's a nit, but (almost) everywhere else in shmem.c the shmem_inode_info
+pointer is known as "info": easy for me to fix up if I care, but nicer
+if you follow local custom.
+
+> >> + =A0 =A0 =A0 size_t used;
+> >> + =A0 =A0 =A0 char *buf =3D NULL;
+> >> +
+> >> + =A0 =A0 =A0 used =3D security_inode_listsecurity(dentry->d_inode, li=
+st, list_len);
+> >> +
+> >> + =A0 =A0 =A0 shmem_i =3D SHMEM_I(dentry->d_inode);
+> >> + =A0 =A0 =A0 if (list)
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 buf =3D list + used;
+
+This is the place that caused me most trouble.  On a minor note:
+it worried me that security_inode_listsecurity() might return an
+error, whereas I think you know and assume that the worst it can
+return is 0 - might be worth a comment.
+
+But more major: I found it very odd that you collect one set of things
+from security_inode_listsecurity(), then proceed to tack on some more
+below from the shmem inode.  I looked at other filesystems (well, ext2!)
+and couldn't find a precedent.  What's this about?  Is it because other
+filesystems have an on-disk format which determines what they're capable
+of, whereas tmpfs is plastic and can reflect what the running system has?
+Or is it to allow for future xattrs which might be added to tmpfs, but
+frankly I'd rather do without until they're defined?
+
+If it needs to be like this, then please, I do want a comment on
+what's going on here.  If it need not be like this, then please
+delete what's not needed.
+
+> >> +
+> >> + =A0 =A0 =A0 spin_lock(&dentry->d_inode->i_lock);
+> >> + =A0 =A0 =A0 list_for_each_entry(xattr, &shmem_i->xattr_list, list) {
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 size_t len =3D XATTR_SECURITY_PREFIX_LEN=
+;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 len +=3D strlen(xattr->name) + 1;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (list_len - (used + len) >=3D 0 && bu=
+f) {
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 strncpy(buf, XATTR_SECUR=
+ITY_PREFIX, XATTR_SECURITY_PREFIX_LEN);
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 buf +=3D XATTR_SECURITY_=
+PREFIX_LEN;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 strncpy(buf, xattr->name=
+, strlen(xattr->name) + 1);
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 buf +=3D strlen(xattr->n=
+ame) + 1;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 }
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 used +=3D len;
+> >> + =A0 =A0 =A0 }
+> >> + =A0 =A0 =A0 spin_unlock(&dentry->d_inode->i_lock);
+> >> +
+> >> + =A0 =A0 =A0 return used;
+> >> =A0}
+> >>
+> >> =A0static int shmem_xattr_security_get(struct dentry *dentry, const ch=
+ar *name,
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0void *buffer, size_t size, int handler_=
+flags)
+> >> =A0{
+> >> + =A0 =A0 =A0 struct shmem_inode_info *shmem_i;
+
+"info" as above.
+
+> >> + =A0 =A0 =A0 struct shmem_xattr *xattr;
+> >> + =A0 =A0 =A0 int ret;
+> >> +
+> >> =A0 =A0 =A0 =A0if (strcmp(name, "") =3D=3D 0)
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0return -EINVAL;
+> >> - =A0 =A0 =A0 return xattr_getsecurity(dentry->d_inode, name, buffer, =
+size);
+> >> +
+> >> + =A0 =A0 =A0 ret =3D xattr_getsecurity(dentry->d_inode, name, buffer,=
+ size);
+> >> + =A0 =A0 =A0 if (ret !=3D -EOPNOTSUPP)
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return ret;
+> >> +
+> >> + =A0 =A0 =A0 /* if we make this generic this needs to go... */
+> >> + =A0 =A0 =A0 if (strcmp(name, XATTR_CAPS_SUFFIX))
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return -EOPNOTSUPP;
+> >> +
+> >> + =A0 =A0 =A0 ret =3D -ENODATA;
+> >> + =A0 =A0 =A0 shmem_i =3D SHMEM_I(dentry->d_inode);
+> >> +
+> >> + =A0 =A0 =A0 spin_lock(&dentry->d_inode->i_lock);
+> >> + =A0 =A0 =A0 list_for_each_entry(xattr, &shmem_i->xattr_list, list) {
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (!strcmp(name, xattr->name)) {
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 ret =3D xattr->size;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (buffer) {
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (size=
+ < xattr->size)
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =A0 ret =3D -ERANGE;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 else
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =A0 memcpy(buffer, xattr->value, xattr->size);
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 }
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 break;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 }
+> >> + =A0 =A0 =A0 }
+> >> + =A0 =A0 =A0 spin_unlock(&dentry->d_inode->i_lock);
+> >> + =A0 =A0 =A0 return ret;
+> >> =A0}
+> >>
+> >> =A0static int shmem_xattr_security_set(struct dentry *dentry, const ch=
+ar *name,
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0const void *value, size_t size, int fla=
+gs, int handler_flags)
+> >> =A0{
+> >> + =A0 =A0 =A0 int ret;
+> >> + =A0 =A0 =A0 struct inode *inode =3D dentry->d_inode;
+> >> + =A0 =A0 =A0 struct shmem_inode_info *shmem_i =3D SHMEM_I(inode);
+
+"info" as above.
+
+> >> + =A0 =A0 =A0 struct shmem_xattr *xattr;
+> >> + =A0 =A0 =A0 struct shmem_xattr *new_xattr;
+> >> + =A0 =A0 =A0 size_t len;
+> >> +
+> >> =A0 =A0 =A0 =A0if (strcmp(name, "") =3D=3D 0)
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0return -EINVAL;
+> >> - =A0 =A0 =A0 return security_inode_setsecurity(dentry->d_inode, name,=
+ value,
+> >> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =A0 =A0 size, flags);
+> >> + =A0 =A0 =A0 ret =3D security_inode_setsecurity(inode, name, value, s=
+ize, flags);
+> >> + =A0 =A0 =A0 if (ret !=3D -EOPNOTSUPP)
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return ret;
+> >> +
+> >> + =A0 =A0 =A0 /*
+> >> + =A0 =A0 =A0 =A0* We only store fcaps for now, but this could be a lo=
+t more generic.
+> >> + =A0 =A0 =A0 =A0* We could hold the prefix as well as the suffix in t=
+he xattr struct
+> >> + =A0 =A0 =A0 =A0* We would also need to hold a copy of the suffix rat=
+her than a
+> >> + =A0 =A0 =A0 =A0* pointer to XATTR_CAPS_SUFFIX
+> >> + =A0 =A0 =A0 =A0*/
+> >> + =A0 =A0 =A0 if (strcmp(name, XATTR_CAPS_SUFFIX))
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return -EOPNOTSUPP;
+> >> +
+> >> + =A0 =A0 =A0 /* wrap around? */
+> >> + =A0 =A0 =A0 len =3D sizeof(*new_xattr) + size;
+> >> + =A0 =A0 =A0 if (len <=3D sizeof(*new_xattr))
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return -ENOMEM;
+> >> +
+> >> + =A0 =A0 =A0 new_xattr =3D kmalloc(GFP_NOFS, len);
+> >> + =A0 =A0 =A0 if (!new_xattr)
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return -ENOMEM;
+> >> +
+> >> + =A0 =A0 =A0 new_xattr->name =3D XATTR_CAPS_SUFFIX;
+> >> + =A0 =A0 =A0 new_xattr->size =3D size;
+> >> + =A0 =A0 =A0 memcpy(new_xattr->value, value, size);
+> >> +
+> >> + =A0 =A0 =A0 spin_lock(&inode->i_lock);
+> >> + =A0 =A0 =A0 list_for_each_entry(xattr, &shmem_i->xattr_list, list) {
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (!strcmp(name, xattr->name)) {
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 list_replace(&xattr->lis=
+t, &new_xattr->list);
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 goto out;
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 }
+> >> + =A0 =A0 =A0 }
+> >> + =A0 =A0 =A0 list_add(&new_xattr->list, &shmem_i->xattr_list);
+> >> + =A0 =A0 =A0 xattr =3D NULL;
+> >> +out:
+> >> + =A0 =A0 =A0 spin_unlock(&inode->i_lock);
+> >> + =A0 =A0 =A0 kfree(xattr);
+> >> + =A0 =A0 =A0 return 0;
+> >> =A0}
+> >>
+> >> =A0static const struct xattr_handler shmem_xattr_security_handler =3D =
+{
+
+I'm sorry if my incomprehension depresses you: it did me!
+
+You'll laugh or cry if I admit to you that I was naive enough
+to believe that comment above shmem_xattr_security_list() which says
+ * Superblocks without xattr inode operations will get security.* xattr
+ * support from the VFS "for free".
+and wondered why you had to add any code at all.  Maybe you could say
+something better there.
+
+Thanks,
+Hugh
+--8323584-2088098251-1300684679=:21738--
