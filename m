@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1CUMtR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:49:17 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:51062 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753187Ab1CUMtP convert rfc822-to-8bit (ORCPT
+	id S1753324Ab1CUMwD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 08:52:03 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:52897 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab1CUMwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:49:15 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 21 Mar 2011 08:52:01 -0400
+X-SpamScore: -1
+X-BigFish: VS-1(zz1432N98dN1447Rzz1202hzzz2dh2a8h637h668h7fcim61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 21 Mar 2011 20:52:34 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Shawn Guo <shawn.guo@linaro.org>, <linaro-dev@lists.linaro.org>,
+        <sameo@linux.intel.com>, <patches@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] make sdhci device drivers self registered
+Message-ID: <20110321125233.GA28098@S2100-06.ap.freescale.net>
+References: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
+ <201103211339.45305.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [patch] rapidio: potential null deref on failure path
-Date: Mon, 21 Mar 2011 05:49:06 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201A588F5@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <20110319044032.GC2008@bicker>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [patch] rapidio: potential null deref on failure path
-Thread-Index: Acvl8NU6alY6lA+kRX2aAkODWhk8ygB1SgGA
-References: <20110319044032.GC2008@bicker>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Dan Carpenter" <error27@gmail.com>,
-        "Matt Porter" <mporter@kernel.crashing.org>
-Cc: <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201103211339.45305.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Better to combine both conditions:
+On Mon, Mar 21, 2011 at 01:39:45PM +0100, Arnd Bergmann wrote:
+[...]
+> 
+> Hi Shawn,
+> 
+Hi Arnd,
 
-if (rio_is_switch(rdev) && rswitch->route_table))
- 		kfree(rswitch->route_table);
+> The changes you make look very nice, great work there!
+> 
+> I think the split of the series into five patches is not ideal
+> because you have more interdependencies than necessary, and it's
+> not clear that the series can be safely bisected, especially
+> with the way you do all the Kconfig/Makefile updates at the
+> end.
+> 
+> A nicer way to partition the series would be
+> 
+> 1.   Add sdhci_pltfm_init helper
+> 2-5. Convert each of the users, including the respective
+>      Kconfig/Makefile changes
+> 6.   remove obsolete code from sdhci-pltfm.c
+> 
+> As I said, that's just a detail and the end result is the same.
+> If you don't get any other feedback and Chris is happy with the
+> changes, I wouldn't expect you to reshuffle all the patches just
+> for this.
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+Actually, I knew there should be better partition of the patch set,
+and it just did not come into my mind :)  You suggestion does look
+better.  I would take it in the next spin.
 
-Because there is situation when routine fails to allocate route_table
-for a switch.
+Thanks for the suggestion.
 
-Alex. 
+-- 
+Regards,
+Shawn
 
-
------Original Message-----
-From: Dan Carpenter [mailto:error27@gmail.com] 
-Sent: Saturday, March 19, 2011 12:41 AM
-To: Matt Porter
-Cc: Bounine, Alexandre; linux-kernel@vger.kernel.org;
-kernel-janitors@vger.kernel.org
-Subject: [patch] rapidio: potential null deref on failure path
-
-If rio is not a switch then "rswitch" is null.
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
-index a50391b..3a59d5f 100644
---- a/drivers/rapidio/rio-scan.c
-+++ b/drivers/rapidio/rio-scan.c
-@@ -517,7 +517,7 @@ static struct rio_dev __devinit
-*rio_setup_device(struct rio_net *net,
- 	return rdev;
- 
- cleanup:
--	if (rswitch->route_table)
-+	if (rio_is_switch(rdev))
- 		kfree(rswitch->route_table);
- 
- 	kfree(rdev);
