@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab1CUB5m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 21:57:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:46364 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1CUB5j (ORCPT
+	id S1752637Ab1CUCHX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 22:07:23 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36659
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752476Ab1CUCHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 21:57:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=vLkL1fWjw6pFr8ewwCME4Ss2uYGojKG+7Kr6uhfDL4yCgjunVTXtp3I0c5ERouANp/
-         3OypGgzj9QCNu7+J4g6Q==
-Date: Sun, 20 Mar 2011 18:57:26 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Kenny Simpson <theonetruekenny@yahoo.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: remap_file_pages doesn't like MAP_ANONYMOUS (but used to?)
-In-Reply-To: <559636.89511.qm@web39404.mail.mud.yahoo.com>
-Message-ID: <alpine.LSU.2.00.1103201847030.7192@sister.anvils>
-References: <559636.89511.qm@web39404.mail.mud.yahoo.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1742088116-1300672660=:7192"
-X-System-Of-Record: true
+	Sun, 20 Mar 2011 22:07:22 -0400
+Date: Sun, 20 Mar 2011 19:08:00 -0700 (PDT)
+Message-Id: <20110320.190800.193700848.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        jasowang@redhat.com, krkumar2@in.ibm.com
+Subject: Re: [PULL net-2.6] vhost: cleanups and fixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110317140403.GA16390@redhat.com>
+References: <20110317140403.GA16390@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Thu, 17 Mar 2011 16:04:04 +0200
 
---8323584-1742088116-1300672660=:7192
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+> The following changes since commit 1fc050a13473348f5c439de2bb41c8e92dba5588:
+> 
+>   ipv4: Cache source address in nexthop entries. (2011-03-07 20:54:48 -0800)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
+> 
+> Jason Wang (3):
+>       vhost-net: check the support of mergeable buffer outside the receive loop
+>       vhost-net: Unify the code of mergeable and big buffer handling
+>       vhost: lock receive queue, not the socket
+> 
+> Krishna Kumar (1):
+>       vhost: Cleanup vhost.c and net.c
+> 
+> Michael S. Tsirkin (2):
+>       vhost: copy_from_user -> __copy_from_user
+>       vhost-net: remove unlocked use of receive_queue
 
-On Sun, 20 Mar 2011, Kenny Simpson wrote:
-> --- On Sat, 3/19/11, Hugh Dickins <hughd@google.com> wrote:
-> > Thanks for reporting.=A0 It was a simple oversight: and
-> > until you came
-> > along, nobody noticed.=A0 Here's the patch, I'll pass it
-> > upstream shortly.
->=20
-> Since this bug has existed for a while, could it be pushed back to the va=
-rious stable/longterm branches as well? (as they all are affected)
->=20
-> Many thanks on the quick response!  Glad it was a simple oversight with a=
-n easy and obvious fix.
->=20
-> thanks again!
-> -Kenny
-
-It's a rare pleasure to be presented with such a straightforward bug!
-
-stable/longterm: well, I don't mind asking akpm to add a Cc: stable,
-but don't be surprised if he prefers not: although it was a regression
-back in 2.6.23, it's not a security issue, and the lack of interest
-between then and now doesn't make a strong argument for it.
-
-Andrew, if you're so inclined, please add a Cc: stable@kernel.org
-to [PATCH] shmem: let shared anonymous be nonlinear again
-
-Thanks,
-Hugh
---8323584-1742088116-1300672660=:7192--
+Pulled, thanks.
