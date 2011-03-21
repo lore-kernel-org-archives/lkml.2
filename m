@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab1CUXsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:48:36 -0400
-Received: from kroah.org ([198.145.64.141]:49363 "EHLO coco.kroah.org"
+	id S1755657Ab1CUXsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:48:53 -0400
+Received: from kroah.org ([198.145.64.141]:49358 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755366Ab1CUXPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:30 -0400
+	id S1755356Ab1CUXP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:29 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
-Message-Id: <20110321230712.568317359@clark.kroah.org>
+Message-Id: <20110321230712.472451468@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:32 -0700
+Date: Mon, 21 Mar 2011 16:06:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Michal Simek <monstr@monstr.eu>
-Subject: [33/87] microblaze: Fix /dev/zero corruption from __clear_user()
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [32/87] x86, quirk: Fix SB600 revision check
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven J. Magnani <steve@digidescorp.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit 6f3946b421395ff853bc0bcdab9c26b50ebbba8f upstream.
+commit 1d3e09a304e6c4e004ca06356578b171e8735d3c upstream.
 
-A userland read of more than PAGE_SIZE bytes from /dev/zero results in
-(a) not all of the bytes returned being zero, and
-(b) memory corruption due to zeroing of bytes beyond the user buffer.
+Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
+(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
+systems) introduced a regression. It removed some SB600 specific
+code to determine the revision ID without adapting a
+corresponding revision ID check for SB600.
 
-This is caused by improper constraints on the assembly __clear_user function.
-The constrints don't indicate to the compiler that the pointer argument is
-modified. Since the function is inline, this results in double-incrementing
-of the pointer when __clear_user() is invoked through a multi-page read() of
-/dev/zero.
+See this mail thread:
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-Acked-by: Michal Simek <monstr@monstr.eu>
+  http://marc.info/?l=linux-kernel&m=129980296006380&w=2
+
+This patch adapts the corresponding check to cover all SB600
+revisions.
+
+Tested-by: Wang Lei <f3d27b@gmail.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <20110315143137.GD29499@alberich.amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/microblaze/include/asm/uaccess.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/early-quirks.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/microblaze/include/asm/uaccess.h
-+++ b/arch/microblaze/include/asm/uaccess.h
-@@ -120,16 +120,16 @@ static inline unsigned long __must_check
- {
- 	/* normal memset with two words to __ex_table */
- 	__asm__ __volatile__ (				\
--			"1:	sb	r0, %2, r0;"	\
-+			"1:	sb	r0, %1, r0;"	\
- 			"	addik	%0, %0, -1;"	\
- 			"	bneid	%0, 1b;"	\
--			"	addik	%2, %2, 1;"	\
-+			"	addik	%1, %1, 1;"	\
- 			"2:			"	\
- 			__EX_TABLE_SECTION		\
- 			".word	1b,2b;"			\
- 			".previous;"			\
--		: "=r"(n)				\
--		: "0"(n), "r"(to)
-+		: "=r"(n), "=r"(to)			\
-+		: "0"(n), "1"(to)
- 	);
- 	return n;
- }
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -159,7 +159,12 @@ static void __init ati_bugs_contd(int nu
+ 	if (rev >= 0x40)
+ 		acpi_fix_pin2_polarity = 1;
+ 
+-	if (rev > 0x13)
++	/*
++	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
++	 * SB700: revisions 0x39, 0x3a, ...
++	 * SB800: revisions 0x40, 0x41, ...
++	 */
++	if (rev >= 0x39)
+ 		return;
+ 
+ 	if (acpi_use_timer_override)
 
 
