@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab1CUXc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:32:57 -0400
-Received: from kroah.org ([198.145.64.141]:52522 "EHLO coco.kroah.org"
+	id S1755826Ab1CUXdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:33:16 -0400
+Received: from kroah.org ([198.145.64.141]:52518 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932207Ab1CUXRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:35 -0400
+	id S932171Ab1CUXRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:34 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:22 2011
-Message-Id: <20110321230322.787438625@clark.kroah.org>
+Message-Id: <20110321230322.682284975@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:27 -0700
+Date: Mon, 21 Mar 2011 16:01:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [11/78] IB/cm: Bump reference count on cm_id before invoking callback
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [10/78] Increase OSF partition limit from 8 to 18
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sean Hefty <sean.hefty@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 29963437a48475036353b95ab142bf199adb909e upstream.
+commit 34d211a2d5df4984a35b18d8ccacbe1d10abb067 upstream.
 
-When processing a SIDR REQ, the ib_cm allocates a new cm_id.  The
-refcount of the cm_id is initialized to 1.  However, cm_process_work
-will decrement the refcount after invoking all callbacks.  The result
-is that the cm_id will end up with refcount set to 0 by the end of the
-sidr req handler.
+It turns out that while a maximum of 8 partitions may be what people
+"should" have had, you can actually fit up to 18 entries(*) in a sector.
 
-If a user tries to destroy the cm_id, the destruction will proceed,
-under the incorrect assumption that no other threads are referencing
-the cm_id.  This can lead to a crash when the cm callback thread tries
-to access the cm_id.
+And some people clearly were taking advantage of that, like Michael
+Cree, who had ten partitions on one of his OSF disks.
 
-This problem was noticed as part of a larger investigation with kernel
-crashes in the rdma_cm when running on a real time OS.
+(*) The OSF partition data starts at byte offset 64 in the first sector,
+    and the array of 16-byte partition entries start at offset 148 in
+    the on-disk partition structure.
 
-Signed-off-by: Sean Hefty <sean.hefty@intel.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reported-by: Michael Cree <mcree@orcon.net.nz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/core/cm.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/partitions/osf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/core/cm.c
-+++ b/drivers/infiniband/core/cm.c
-@@ -2989,6 +2989,7 @@ static int cm_sidr_req_handler(struct cm
- 		goto out; /* No match. */
- 	}
- 	atomic_inc(&cur_cm_id_priv->refcount);
-+	atomic_inc(&cm_id_priv->refcount);
- 	spin_unlock_irq(&cm.lock);
+--- a/fs/partitions/osf.c
++++ b/fs/partitions/osf.c
+@@ -10,7 +10,7 @@
+ #include "check.h"
+ #include "osf.h"
  
- 	cm_id_priv->id.cm_handler = cur_cm_id_priv->id.cm_handler;
+-#define MAX_OSF_PARTITIONS 8
++#define MAX_OSF_PARTITIONS 18
+ 
+ int osf_partition(struct parsed_partitions *state)
+ {
 
 
