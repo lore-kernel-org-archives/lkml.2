@@ -1,120 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab1CUXxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:53:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53026 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755293Ab1CUXwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:52:50 -0400
-Date: Mon, 21 Mar 2011 16:52:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: menage@google.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] list.h: add debug version of list_empty
-Message-Id: <20110321165206.1deaf0ab.akpm@linux-foundation.org>
-In-Reply-To: <1300194523-19325-2-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1300194523-19325-1-git-send-email-ext-phil.2.carmody@nokia.com>
-	<1300194523-19325-2-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755268Ab1CUXPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:15:06 -0400
+Received: from kroah.org ([198.145.64.141]:49197 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755240Ab1CUXPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:00 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:09 2011
+Message-Id: <20110321230709.377501781@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Mon, 21 Mar 2011 16:06:01 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Antony Pavlov <antony@niisi.msk.ru>,
+        Guillaume LECERF <glecerf@gmail.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [02/87] mtd: jedec_probe: Change variable name from cfi_p to cfi
+In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Mar 2011 15:08:42 +0200
-Phil Carmody <ext-phil.2.carmody@nokia.com> wrote:
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-> Heed the notice in list_del: "Note: list_empty() on entry does not
-> return true after this, the entry is in an undefined state.", and
-> check for precisely that condition.
-> 
-> There are currently a few instances in the code of this sequence:
->     if(!list_empty(pnode))
->         list_del(pnode);
-> which seems to be useless or dangerous if intended to protect from
-> repeated del's. And given that I've seen an oops pointing to a
-> dereference of poison in such a list_empty, I'm veering towards
-> dangerous. This patch would make such errors obvious.
-> 
-> Nothing is changed in the non-DEBUG_LIST build.
-> 
-> ...
->
-> +
-> +/**
-> + * list_empty - tests whether a list is empty
-> + * @head: the list to test.
-> + */
-> +int list_empty(const struct list_head *head)
-> +{
-> +	if ((head->prev == LIST_POISON2) || (head->prev == LIST_POISON1))
-> +		WARN(1, "list_empty performed on a node "
-> +		     "at %p removed from a list.\n", head);
-> +	else
-> +		WARN((head->prev == head) != (head->next == head),
-> +		     "list_empty corruption. %p<-%p->%p is half-empty.\n",
-> +		     head->prev, head, head->next);
-> +
-> +	return head->next == head;
-> +}
-> +EXPORT_SYMBOL(list_empty);
+------------------
 
-The second warning here is triggering maybe a hundred times from all
-over the place just when booting the kernel.
+From: Antony Pavlov <antony@niisi.msk.ru>
 
-Here's the first two:
+commit efba2e313ea1b1bd69a7c4659263becf43bb1adc upstream.
+
+In the following commit, we'll need to use the CMD() macro in order to
+fix the initialisation of the sector_erase_cmd field. That requires the
+local variable to be called 'cfi', so change it first in a simple patch.
+
+Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
+Acked-by: Guillaume LECERF <glecerf@gmail.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/mtd/chips/jedec_probe.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+
+--- a/drivers/mtd/chips/jedec_probe.c
++++ b/drivers/mtd/chips/jedec_probe.c
+@@ -1935,14 +1935,14 @@ static void jedec_reset(u32 base, struct
+ }
+ 
+ 
+-static int cfi_jedec_setup(struct cfi_private *p_cfi, int index)
++static int cfi_jedec_setup(struct cfi_private *cfi, int index)
+ {
+ 	int i,num_erase_regions;
+ 	uint8_t uaddr;
+ 
+-	if (! (jedec_table[index].devtypes & p_cfi->device_type)) {
++	if (!(jedec_table[index].devtypes & cfi->device_type)) {
+ 		DEBUG(MTD_DEBUG_LEVEL1, "Rejecting potential %s with incompatible %d-bit device type\n",
+-		      jedec_table[index].name, 4 * (1<<p_cfi->device_type));
++		      jedec_table[index].name, 4 * (1<<cfi->device_type));
+ 		return 0;
+ 	}
+ 
+@@ -1950,27 +1950,27 @@ static int cfi_jedec_setup(struct cfi_pr
+ 
+ 	num_erase_regions = jedec_table[index].nr_regions;
+ 
+-	p_cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
+-	if (!p_cfi->cfiq) {
++	cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
++	if (!cfi->cfiq) {
+ 		//xx printk(KERN_WARNING "%s: kmalloc failed for CFI ident structure\n", map->name);
+ 		return 0;
+ 	}
+ 
+-	memset(p_cfi->cfiq,0,sizeof(struct cfi_ident));
++	memset(cfi->cfiq, 0, sizeof(struct cfi_ident));
+ 
+-	p_cfi->cfiq->P_ID = jedec_table[index].cmd_set;
+-	p_cfi->cfiq->NumEraseRegions = jedec_table[index].nr_regions;
+-	p_cfi->cfiq->DevSize = jedec_table[index].dev_size;
+-	p_cfi->cfi_mode = CFI_MODE_JEDEC;
++	cfi->cfiq->P_ID = jedec_table[index].cmd_set;
++	cfi->cfiq->NumEraseRegions = jedec_table[index].nr_regions;
++	cfi->cfiq->DevSize = jedec_table[index].dev_size;
++	cfi->cfi_mode = CFI_MODE_JEDEC;
+ 
+ 	for (i=0; i<num_erase_regions; i++){
+-		p_cfi->cfiq->EraseRegionInfo[i] = jedec_table[index].regions[i];
++		cfi->cfiq->EraseRegionInfo[i] = jedec_table[index].regions[i];
+ 	}
+-	p_cfi->cmdset_priv = NULL;
++	cfi->cmdset_priv = NULL;
+ 
+ 	/* This may be redundant for some cases, but it doesn't hurt */
+-	p_cfi->mfr = jedec_table[index].mfr_id;
+-	p_cfi->id = jedec_table[index].dev_id;
++	cfi->mfr = jedec_table[index].mfr_id;
++	cfi->id = jedec_table[index].dev_id;
+ 
+ 	uaddr = jedec_table[index].uaddr;
+ 
+@@ -1978,8 +1978,8 @@ static int cfi_jedec_setup(struct cfi_pr
+ 	   our brains explode when we see the datasheets talking about address
+ 	   lines numbered from A-1 to A18. The CFI table has unlock addresses
+ 	   in device-words according to the mode the device is connected in */
+-	p_cfi->addr_unlock1 = unlock_addrs[uaddr].addr1 / p_cfi->device_type;
+-	p_cfi->addr_unlock2 = unlock_addrs[uaddr].addr2 / p_cfi->device_type;
++	cfi->addr_unlock1 = unlock_addrs[uaddr].addr1 / cfi->device_type;
++	cfi->addr_unlock2 = unlock_addrs[uaddr].addr2 / cfi->device_type;
+ 
+ 	return 1;	/* ok */
+ }
 
 
-[   64.295941] WARNING: at lib/list_debug.c:89 list_empty+0x79/0x85()
-[   64.296129] list_empty corruption. ffff880255bcb788<-ffff880255bcb788->ffff88024c3a3c20 is half-empty.
-[   64.296443] Modules linked in: autofs4 sunrpc ipv6 dm_mirror dm_region_hash dm_log dm_multipath dm_mod video sbs sbshc battery ac lp parport sg option usb_wwan ide_cd_mod cdrom usbserial serio_raw floppy snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device button snd_pcm_oss snd_mixer_oss snd_pcm snd_timer i2c_i801 i2c_core snd soundcore snd_page_alloc shpchp pcspkr ehci_hcd ohci_hcd uhci_hcd
-[   64.299193] Pid: 3637, comm: cp Tainted: G        W   2.6.38 #1
-[   64.299363] Call Trace:
-[   64.299531]  [<ffffffff81037ba4>] warn_slowpath_common+0x80/0x98
-[   64.299700]  [<ffffffff81037c50>] warn_slowpath_fmt+0x41/0x43
-[   64.299887]  [<ffffffff811af661>] list_empty+0x79/0x85
-[   64.300074]  [<ffffffff81383581>] unix_write_space+0xa5/0x10e
-[   64.300246]  [<ffffffff813834dc>] ? unix_write_space+0x0/0x10e
-[   64.300418]  [<ffffffff812fc62a>] sock_wfree+0x31/0x51
-[   64.300586]  [<ffffffff81381bef>] unix_destruct_scm+0xc0/0xcd
-[   64.300755]  [<ffffffff812feef6>] skb_release_head_state+0x7f/0xb0
-[   64.300928]  [<ffffffff8130035a>] __kfree_skb+0x11/0x7c
-[   64.301096]  [<ffffffff813003ed>] consume_skb+0x28/0x2a
-[   64.301264]  [<ffffffff813826eb>] unix_stream_recvmsg+0x5ad/0x778
-[   64.301450]  [<ffffffff810508a2>] ? autoremove_wake_function+0x0/0x38
-[   64.301623]  [<ffffffff812f76c2>] sock_aio_read+0x148/0x160
-[   64.301793]  [<ffffffff81172bb9>] ? file_has_perm+0x90/0x9e
-[   64.301961]  [<ffffffff812f757a>] ? sock_aio_read+0x0/0x160
-[   64.302130]  [<ffffffff810d2a9b>] do_sync_readv_writev+0xbc/0xfb
-[   64.302303]  [<ffffffff81170840>] ? security_file_permission+0x80/0x89
-[   64.302472]  [<ffffffff810d3116>] do_readv_writev+0xb6/0x182
-[   64.302641]  [<ffffffff812f8896>] ? sys_connect+0x78/0x9e
-[   64.302822]  [<ffffffff810d3355>] vfs_readv+0x3e/0x49
-[   64.302989]  [<ffffffff810d341f>] sys_readv+0x48/0x72
-[   64.303158]  [<ffffffff813b323b>] system_call_fastpath+0x16/0x1b
-[   64.303326] ---[ end trace 713534840f2a9415 ]---
-[  180.120065] ------------[ cut here ]------------
-[  180.120154] WARNING: at lib/list_debug.c:89 list_empty+0x79/0x85()
-[  180.120213] list_empty corruption. ffff88025fefd9d0<-ffff88025fefd9d0->ffff880235647c20 is half-empty.
-[  180.120306] Modules linked in: autofs4 sunrpc ipv6 dm_mirror dm_region_hash dm_log dm_multipath dm_mod video sbs sbshc battery ac lp parport sg option usb_wwan ide_cd_mod cdrom usbserial serio_raw floppy snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device button snd_pcm_oss snd_mixer_oss snd_pcm snd_timer i2c_i801 i2c_core snd soundcore snd_page_alloc shpchp pcspkr ehci_hcd ohci_hcd uhci_hcd
-[  180.122547] Pid: 6241, comm: sh Tainted: G        W   2.6.38 #1
-[  180.122603] Call Trace:
-[  180.122670]  [<ffffffff81037ba4>] warn_slowpath_common+0x80/0x98
-[  180.122728]  [<ffffffff81037c50>] warn_slowpath_fmt+0x41/0x43
-[  180.122785]  [<ffffffff81055b73>] ? local_clock+0x2b/0x3c
-[  180.122841]  [<ffffffff811af661>] list_empty+0x79/0x85
-[  180.122906]  [<ffffffff8105085c>] __wake_up_bit+0x1c/0x3d
-[  180.122964]  [<ffffffff810938d4>] unlock_page+0x25/0x29
-[  180.123020]  [<ffffffff810aaa16>] __do_fault+0x3da/0x411
-[  180.123077]  [<ffffffff810ab5c0>] handle_pte_fault+0x289/0x79a
-[  180.123146]  [<ffffffff813ad8d8>] ? _raw_spin_unlock+0x26/0x2a
-[  180.123205]  [<ffffffff810acf19>] handle_mm_fault+0x1c6/0x1de
-[  180.123263]  [<ffffffff813b0931>] do_page_fault+0x3cc/0x3f1
-[  180.123320]  [<ffffffff813adb40>] ? restore_args+0x0/0x30
-[  180.123388]  [<ffffffff811ab27d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-[  180.123445]  [<ffffffff813add2f>] page_fault+0x1f/0x30
-[  180.123501] ---[ end trace 713534840f2a9416 ]---
