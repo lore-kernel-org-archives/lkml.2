@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab1CUX1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:27:53 -0400
-Received: from kroah.org ([198.145.64.141]:52635 "EHLO coco.kroah.org"
+	id S932339Ab1CUX2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:28:08 -0400
+Received: from kroah.org ([198.145.64.141]:52627 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932289Ab1CUXSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:01 -0400
+	id S932283Ab1CUXR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:25 2011
-Message-Id: <20110321230325.523921838@clark.kroah.org>
+Message-Id: <20110321230325.300647459@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:53 -0700
+Date: Mon, 21 Mar 2011 16:01:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Zimmerman <paulz@synopsys.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [37/78] USB: Add support for SuperSpeed isoc endpoints
+Subject: [35/78] xhci: Update internal dequeue pointers after stalls.
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +25,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 500132a0f26ad7d9916102193cbc6c1b1becb373 upstream.
+commit bf161e85fb153c0dd5a95faca73fd6a9d237c389 upstream.
 
-Use the Mult and bMaxBurst values from the endpoint companion
-descriptor to calculate the max length of an isoc transfer.
+When an endpoint stalls, the xHCI driver must move the endpoint ring's
+dequeue pointer past the stalled transfer.  To do that, the driver issues
+a Set TR Dequeue Pointer command, which will complete some time later.
 
-Add USB_SS_MULT macro to access Mult field of bmAttributes, at
-Sarah's suggestion.
+Takashi was having issues with USB 1.1 audio devices that stalled, and his
+analysis of the code was that the old code would not update the xHCI
+driver's ring dequeue pointer after the command completes.  However, the
+dequeue pointer is set in xhci_find_new_dequeue_state(), just before the
+set command is issued to the hardware.
 
-This patch should be queued for the 2.6.36 and 2.6.37 stable trees, since
-those were the first kernels to have isochronous support for SuperSpeed
-devices.
+Setting the dequeue pointer before the Set TR Dequeue Pointer command
+completes is a dangerous thing to do, since the xHCI hardware can fail the
+command.  Instead, store the new dequeue pointer in the xhci_virt_ep
+structure, and update the ring's dequeue pointer when the Set TR dequeue
+pointer command completes.
 
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+While we're at it, make sure we can't queue another Set TR Dequeue Command
+while the first one is still being processed.  This just won't work with
+the internal xHCI state code.  I'm still not sure if this is the right
+thing to do, since we might have a case where a driver queues multiple
+URBs to a control ring, one of the URBs Stalls, and then the driver tries
+to cancel the second URB.  There may be a race condition there where the
+xHCI driver might try to issue multiple Set TR Dequeue Pointer commands,
+but I would have to think very hard about how the Stop Endpoint and
+cancellation code works.  Keep the fix simple until when/if we run into
+that case.
+
+This patch should be queued to kernels all the way back to 2.6.31.
+
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/urb.c  |   11 ++++++++++-
- include/linux/usb/ch9.h |    2 ++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-ring.c |   29 ++++++++++++++++++++++++++---
+ drivers/usb/host/xhci.h      |    9 +++++++++
+ 2 files changed, 35 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/core/urb.c
-+++ b/drivers/usb/core/urb.c
-@@ -366,7 +366,16 @@ int usb_submit_urb(struct urb *urb, gfp_
- 	if (xfertype == USB_ENDPOINT_XFER_ISOC) {
- 		int	n, len;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -506,9 +506,6 @@ void xhci_find_new_dequeue_state(struct
+ 	addr = xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr);
+ 	xhci_dbg(xhci, "New dequeue pointer = 0x%llx (DMA)\n",
+ 			(unsigned long long) addr);
+-	xhci_dbg(xhci, "Setting dequeue pointer in internal ring state.\n");
+-	ep_ring->dequeue = state->new_deq_ptr;
+-	ep_ring->deq_seg = state->new_deq_seg;
+ }
  
--		/* FIXME SuperSpeed isoc endpoints have up to 16 bursts */
-+		/* SuperSpeed isoc endpoints have up to 16 bursts of up to
-+		 * 3 packets each
-+		 */
-+		if (dev->speed == USB_SPEED_SUPER) {
-+			int     burst = 1 + ep->ss_ep_comp.bMaxBurst;
-+			int     mult = USB_SS_MULT(ep->ss_ep_comp.bmAttributes);
-+			max *= burst;
-+			max *= mult;
+ static void td_to_noop(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,
+@@ -951,9 +948,26 @@ static void handle_set_deq_completion(st
+ 	} else {
+ 		xhci_dbg(xhci, "Successful Set TR Deq Ptr cmd, deq = @%08llx\n",
+ 				ep_ctx->deq);
++		if (xhci_trb_virt_to_dma(dev->eps[ep_index].queued_deq_seg,
++					dev->eps[ep_index].queued_deq_ptr) ==
++				(ep_ctx->deq & ~(EP_CTX_CYCLE_MASK))) {
++			/* Update the ring's dequeue segment and dequeue pointer
++			 * to reflect the new position.
++			 */
++			ep_ring->deq_seg = dev->eps[ep_index].queued_deq_seg;
++			ep_ring->dequeue = dev->eps[ep_index].queued_deq_ptr;
++		} else {
++			xhci_warn(xhci, "Mismatch between completed Set TR Deq "
++					"Ptr command & xHCI internal state.\n");
++			xhci_warn(xhci, "ep deq seg = %p, deq ptr = %p\n",
++					dev->eps[ep_index].queued_deq_seg,
++					dev->eps[ep_index].queued_deq_ptr);
 +		}
+ 	}
+ 
+ 	dev->eps[ep_index].ep_state &= ~SET_DEQ_PENDING;
++	dev->eps[ep_index].queued_deq_seg = NULL;
++	dev->eps[ep_index].queued_deq_ptr = NULL;
+ 	/* Restart any rings with pending URBs */
+ 	ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ }
+@@ -3229,6 +3243,7 @@ static int queue_set_tr_deq(struct xhci_
+ 	u32 trb_ep_index = EP_ID_FOR_TRB(ep_index);
+ 	u32 trb_stream_id = STREAM_ID_FOR_TRB(stream_id);
+ 	u32 type = TRB_TYPE(TRB_SET_DEQ);
++	struct xhci_virt_ep *ep;
+ 
+ 	addr = xhci_trb_virt_to_dma(deq_seg, deq_ptr);
+ 	if (addr == 0) {
+@@ -3237,6 +3252,14 @@ static int queue_set_tr_deq(struct xhci_
+ 				deq_seg, deq_ptr);
+ 		return 0;
+ 	}
++	ep = &xhci->devs[slot_id]->eps[ep_index];
++	if ((ep->ep_state & SET_DEQ_PENDING)) {
++		xhci_warn(xhci, "WARN Cannot submit Set TR Deq Ptr\n");
++		xhci_warn(xhci, "A Set TR Deq Ptr command is pending.\n");
++		return 0;
++	}
++	ep->queued_deq_seg = deq_seg;
++	ep->queued_deq_ptr = deq_ptr;
+ 	return queue_command(xhci, lower_32_bits(addr) | cycle_state,
+ 			upper_32_bits(addr), trb_stream_id,
+ 			trb_slot_id | trb_ep_index | type, false);
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -644,6 +644,9 @@ struct xhci_ep_ctx {
+ #define AVG_TRB_LENGTH_FOR_EP(p)	((p) & 0xffff)
+ #define MAX_ESIT_PAYLOAD_FOR_EP(p)	(((p) & 0xffff) << 16)
+ 
++/* deq bitmasks */
++#define EP_CTX_CYCLE_MASK		(1 << 0)
 +
- 		/* "high bandwidth" mode, 1-3 packets/uframe? */
- 		if (dev->speed == USB_SPEED_HIGH) {
- 			int	mult = 1 + ((max >> 11) & 0x03);
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -585,6 +585,8 @@ struct usb_ss_ep_comp_descriptor {
- #define USB_DT_SS_EP_COMP_SIZE		6
- /* Bits 4:0 of bmAttributes if this is a bulk endpoint */
- #define USB_SS_MAX_STREAMS(p)		(1 << (p & 0x1f))
-+/* Bits 1:0 of bmAttributes if this is an isoc endpoint */
-+#define USB_SS_MULT(p)			(1 + ((p) & 0x3))
  
- /*-------------------------------------------------------------------------*/
- 
+ /**
+  * struct xhci_input_control_context
+@@ -746,6 +749,12 @@ struct xhci_virt_ep {
+ 	struct timer_list	stop_cmd_timer;
+ 	int			stop_cmds_pending;
+ 	struct xhci_hcd		*xhci;
++	/* Dequeue pointer and dequeue segment for a submitted Set TR Dequeue
++	 * command.  We'll need to update the ring's dequeue segment and dequeue
++	 * pointer after the command completes.
++	 */
++	struct xhci_segment	*queued_deq_seg;
++	union xhci_trb		*queued_deq_ptr;
+ 	/*
+ 	 * Sometimes the xHC can not process isochronous endpoint ring quickly
+ 	 * enough, and it will miss some isoc tds on the ring and generate
 
 
