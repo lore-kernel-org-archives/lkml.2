@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab1CUWCO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 18:02:14 -0400
-Received: from kroah.org ([198.145.64.141]:36575 "EHLO coco.kroah.org"
+	id S1754730Ab1CUWC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 18:02:27 -0400
+Received: from kroah.org ([198.145.64.141]:54325 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754589Ab1CUWCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 18:02:12 -0400
-Date: Mon, 21 Mar 2011 14:43:20 -0700
+	id S1754567Ab1CUWCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 18:02:23 -0400
+Date: Mon, 21 Mar 2011 14:45:01 -0700
 From: Greg KH <greg@kroah.com>
 To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 Cc: mananth@in.ibm.com, benh@kernel.crashing.org, stable@kernel.org,
         anton@samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [stable] [2/3] powerpc/kdump: Fix race in kdump shutdown
-Message-ID: <20110321214320.GA9546@kroah.com>
-References: <20110319181433.GC23832@linux.vnet.ibm.com>
+Subject: Re: [stable] [3/3] powerpc: rtas_flash needs to use rtas_data_buf
+Message-ID: <20110321214501.GB9546@kroah.com>
+References: <20110319181658.GD23832@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110319181433.GC23832@linux.vnet.ibm.com>
+In-Reply-To: <20110319181658.GD23832@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 19, 2011 at 11:44:33PM +0530, Kamalesh Babulal wrote:
-> 	powerpc/kdump: Fix race in kdump shutdown
+On Sat, Mar 19, 2011 at 11:46:58PM +0530, Kamalesh Babulal wrote:
+>     powerpc: rtas_flash needs to use rtas_data_buf
 > 
-> 	Commit: 60adec6226bbcf061d4c2d10944fced209d1847d upstream
+> 	Commit: bd2b64a12bf55bec0d1b949e3dca3f8863409646 upstream
 > 
-> 	When we are crashing, the crashing/primary CPU IPIs the secondaries to
-> 	turn off IRQs, go into real mode and wait in kexec_wait.  While this
-> 	is happening, the primary tears down all the MMU maps.  Unfortunately
-> 	the primary doesn't check to make sure the secondaries have entered
-> 	real mode before doing this.
+>     When trying to flash a machine via the update_flash command, Anton received the
+>     following error:
 > 
-> 	On PHYP machines, the secondaries can take a long time shutting down
-> 	the IRQ controller as RTAS calls are need.  These RTAS calls need to
-> 	be serialised which resilts in the secondaries contending in
-> 	lock_rtas() and hence taking a long time to shut down.
+>         Restarting system.
+>         FLASH: kernel bug...flash list header addr above 4GB
 > 
-> 	We've hit this on large POWER7 machines, where some secondaries are
-> 	still waiting in lock_rtas(), when the primary tears down the HPTEs.
+>     The code in question has a comment that the flash list should be in
+>     the kernel data and therefore under 4GB:
 > 
-> 	This patch makes sure all secondaries are in real mode before the
-> 	primary tears down the MMU.  It uses the new kexec_state entry in the
-> 	paca.  It times out if the secondaries don't reach real mode after
-> 	10sec.
+>             /* NOTE: the "first" block list is a global var with no data
+>              * blocks in the kernel data segment.  We do this because
+>              * we want to ensure this block_list addr is under 4GB.
+>              */
 > 
-> 	Signed-off-by: Michael Neuling <mikey@neuling.org>
-> 	Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>     Unfortunately the Kconfig option is marked tristate which means the variable
+>     may not be in the kernel data and could be above 4GB.
+> 
+>     Instead of relying on the data segment being below 4GB, use the static
+>     data buffer allocated by the kernel for use by rtas.  Since we don't
+>     use the header struct directly anymore, convert it to a simple pointer.
+> 
+>     Reported-By: Anton Blanchard <anton@samba.org>
+>     Signed-off-by: Milton Miller <miltonm@bga.com
+>     Tested-By: Anton Blanchard <anton@samba.org>
+>     Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 > 	Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-> 	cc: Anton Blanchard <anton@samba.org>
-
-Please don't indent these, I have to unindent them for every patch I
-apply from you, which is a pain.
-
-
 > ---
->  arch/powerpc/kernel/crash.c |   28 ++++++++++++++++++++++++++++
->  1 files changed, 28 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/crash.c b/arch/powerpc/kernel/crash.c
-> index b779818..706b622 100644
-> --- a/arch/powerpc/kernel/crash.c
-> +++ b/arch/powerpc/kernel/crash.c
-> @@ -153,6 +153,7 @@ static void crash_kexec_prepare_cpus(int cpu)
-> 		while (cpus_weight(cpus_in_crash) < ncpus)
-> 			cpu_relax();
-> 	}
-> +
-> 	/*
-> 	 * Make sure all CPUs are entered via soft-reset if the kdump is
-> 	 * invoked using soft-reset.
+> arch/powerpc/kernel/rtas_flash.c |   41 ++++++++++++++++++++-----------------
+>  1 files changed, 22 insertions(+), 19 deletions(-)
 
-That chunk is not in the upstream commit.  Please be more careful.
+This diffstat differs from what the original commit had:
+ arch/powerpc/kernel/rtas_flash.c |   39 +++++++++++++++++++++------------------
+ 1 file changed, 21 insertions(+), 18 deletions(-)
+
+So I went with the original commit, ok?
+
+Why are you diverging from the original?
+
+thanks,
 
 greg k-h
