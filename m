@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab1CUMVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:21:23 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38654 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751563Ab1CUMVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:21:21 -0400
-Date: Mon, 21 Mar 2011 13:21:11 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [build failure] Re: [GIT PULL] First round of SCSI updates for
- 2.6.38 merge window
-Message-ID: <20110321122111.GA17237@elte.hu>
-References: <1300392635.17266.5.camel@mulgrave.site>
+	id S1753024Ab1CUMWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 08:22:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37099 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab1CUMWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 08:22:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=PcYejwNXCUGoZBMY+VDx1ckJP6tPSjSnIww4yttQwU1B62HtLAIa/5sS+2xNmiWsdJ
+         dwGNZlVCAsxhG238cWTbKno3YZcr0+OQz1FdBPoReId9BaO75NUUazTl7JVWz1uWP4u/
+         JZk1k8yL9j7XOyU9M39UkYx0z4wY5xHiRxL9E=
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+To: Dan Carpenter <error27@gmail.com>
+Subject: Re: [patch] vlynq: fix resource size calculation
+Date: Mon, 21 Mar 2011 13:25:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-25-server; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <20110319043813.GA2008@bicker>
+In-Reply-To: <20110319043813.GA2008@bicker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1300392635.17266.5.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103211325.49061.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 19 March 2011 05:38:13 Dan Carpenter wrote:
+> The original code had an off-by-one error so we didn't release the
+> entire memory region on remove().
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-* James Bottomley <James.Bottomley@suse.de> wrote:
+Acked-by: Florian Fainelli <florian@openwrt.org>
 
-> This represents the usual round of driver updates (fcoe, lpfc, qla2xxx,
-> zfcp, bnx2i, mpt2sas, megaraid_sas, iscsi, cxgbi and hpsa) plus one new
-> driver (bnx2fc) and as a bonus we move libsas from the old libata eh to
-> the new one paving the way for junking the old one (once we can get ipr
-> converted).
+> 
+> diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
+> index f885c86..1d37553 100644
+> --- a/drivers/vlynq/vlynq.c
+> +++ b/drivers/vlynq/vlynq.c
+> @@ -764,7 +764,7 @@ static int vlynq_remove(struct platform_device *pdev)
+> 
+>  	device_unregister(&dev->dev);
+>  	iounmap(dev->local);
+> -	release_mem_region(dev->regs_start, dev->regs_end - dev->regs_start);
+> +	release_mem_region(dev->regs_start, dev->regs_end - dev->regs_start + 1);
+> 
+>  	kfree(dev);
 
-The new bnx2fc driver does not build with module support disabled:
-
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:17: error: dereferencing pointer to incomplete type
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815:28: error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:17: error: dereferencing pointer to incomplete type
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1878:28: error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
-
-and this build breakage has been reported to you two weeks ago:
-
- http://lkml.org/lkml/2011/3/2/468
-
-In the future please do not push broken code upstream or put it into 
-drivers/staging/scsi/ if it has outstanding problems. I'm using the hack below 
-for the time being.
-
-Thanks,
-
-	Ingo
-
--------------------->
->From dd6fd5ea95cba76a625e13910f35cd967ace7fe4 Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@elte.hu>
-Date: Mon, 21 Mar 2011 13:15:51 +0100
-Subject: [PATCH] <not for upstream> scsi: Disable the bnx2fc driver for the time being
-
-Does not build with CONFIG_MODULES disabled.
----
- drivers/scsi/bnx2fc/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/scsi/bnx2fc/Kconfig b/drivers/scsi/bnx2fc/Kconfig
-index 6a38080..6a111f0 100644
---- a/drivers/scsi/bnx2fc/Kconfig
-+++ b/drivers/scsi/bnx2fc/Kconfig
-@@ -1,6 +1,7 @@
- config SCSI_BNX2X_FCOE
- 	tristate "Broadcom NetXtreme II FCoE support"
- 	depends on PCI
-+	depends on BROKEN
- 	select NETDEVICES
- 	select NETDEV_1000
- 	select LIBFC
