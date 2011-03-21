@@ -1,308 +1,682 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab1CURiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:38:17 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49254 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581Ab1CURiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:38:14 -0400
-Date: Mon, 21 Mar 2011 18:37:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [slab poison overwritten] Re: [GIT] Networking
-Message-ID: <20110321173724.GA3892@elte.hu>
-References: <20110320.195156.226769634.davem@davemloft.net>
- <20110321125320.GA23490@elte.hu>
- <1300714346.2884.284.camel@edumazet-laptop>
- <20110321161528.GA28580@elte.hu>
- <20110321164238.GA5303@elte.hu>
+	id S1753994Ab1CURjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:39:20 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:36063 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab1CURjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:39:16 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D878D8B.6070902@cam.ac.uk>
+Date: Mon, 21 Mar 2011 17:40:27 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: cliff.cai@analog.com
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        drivers@analog.com, device-drivers-devel@blackfin.uclinux.org,
+        Cliff Cai <cliff@analog.com>
+Subject: Re: [PATCH RESEND v2]IIO driver for Analog Devices Digital Output
+ Gyroscope ADXRS450
+References: <1300526846-27183-1-git-send-email-cliff.cai@analog.com>
+In-Reply-To: <1300526846-27183-1-git-send-email-cliff.cai@analog.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110321164238.GA5303@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> I'm getting this memory corruption warning:
+On 03/19/11 09:27, cliff.cai@analog.com wrote:
+> From: Cliff Cai <cliff.cai@analog.com>
 > 
->    BUG kmalloc-1024: Poison overwritten
+> Change v2:v1:
+> 
+> Make modification according to Michael Hennerich's comments,
+> correct the spi transfer way,use existing sysfs interfaces.
+Hi Cliff,
 
-Find another one below - this seems to trigger closer to the corruption site.
+As you are proposing a couple of new interfaces we need to have documentation
+for them. They are quad and dynamic_null_correction.
+We need to first establish whether they are of general utility and hence
+should be in the main abi doc. The quadrature one isn't something I've
+seen before. Is it common in gyros?
 
-Thanks,
+Dynamic null correction looks like it should be gyro_z_calibbias to me
+but I could be wrong.  The doc says
+"
+The user can make small adjustments to the rateout of the device by asserting
+these bits. This 10-bit register allows the user to adjust the static
+rateout of the device by up to ±6.4°/sec.
+"
 
-	Ingo
+which makes me think it is an internally applied offset on the output signal
+and hence calibbias in our abi.
 
-[    9.585627] initcall 0xffffffff81d5b806 returned 0 after 0 usecs
-[    9.588960] calling  0xffffffff81d5b9da @ 1
-[    9.592303] IPVS: Creating netns size=1272 id=0
-[    9.595646] IPVS: __ip_vs_control_init(): alloc_percpu.
-[    9.602298] IPVS: cannot register namespace.
-[    9.605627] IPVS: can't setup control.
-[    9.615628] initcall 0xffffffff81d5b9da returned -12 after 22784 usecs
-[    9.618960] initcall 0xffffffff81d5b9da returned with error code -12 
-[    9.622291] calling  0xffffffff81d5c0c0 @ 1
-[    9.625625] IPVS: [wlc] scheduler registered.
-[    9.628957] initcall 0xffffffff81d5c0c0 returned 0 after 3254 usecs
-[    9.632291] calling  0xffffffff81d5c12b @ 1
-[    9.635635] IPVS: [lblc] scheduler registered.
-[    9.638957] initcall 0xffffffff81d5c12b returned 0 after 3254 usecs
-[    9.642290] calling  0xffffffff81d5c167 @ 1
-[    9.645623] IPVS: [dh] scheduler registered.
-[    9.648956] initcall 0xffffffff81d5c167 returned 0 after 3254 usecs
-[    9.652289] calling  0xffffffff81d5c179 @ 1
-[    9.655622] IPVS: [sh] scheduler registered.
-[    9.658955] initcall 0xffffffff81d5c179 returned 0 after 3254 usecs
-[    9.662289] calling  0xffffffff81d5c18b @ 1
-[    9.668955] IPVS: [nq] scheduler registered.
-[    9.672288] initcall 0xffffffff81d5c18b returned 0 after 3254 usecs
-[    9.676859] calling  0xffffffff81d5d589 @ 1
-[    9.679217] initcall 0xffffffff81d5d589 returned 0 after 0 usecs
-[    9.682288] calling  0xffffffff81d5d9fa @ 1
-[    9.685620] IPv4 over IPv4 tunneling driver
-[    9.689135] =============================================================================
-[    9.692285] BUG kmalloc-2048: Poison overwritten
-[    9.692285] -----------------------------------------------------------------------------
-[    9.692285] 
-[    9.692285] INFO: 0xffff88003cc2d6c0-0xffff88003cc2d6d7. First byte 0x0 instead of 0x6b
-[    9.692285] INFO: Allocated in 0xffffffff8178ad5c age=29 cpu=0 pid=1
-[    9.692285] INFO: Freed in 0xffffffff8178ac6c age=23 cpu=0 pid=1
-[    9.692285] INFO: Slab 0xffffea0000d4a8c0 objects=15 used=11 fp=0xffff88003cc2d2d0 flags=0x40000000000040c0
-[    9.692285] INFO: Object 0xffff88003cc2d2d0 @offset=21200 fp=0xffff88003cc2e360
-[    9.692285] 
-[    9.692285] Bytes b4 0xffff88003cc2d2c0:  00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a ........ZZZZZZZZ
-[    9.692285]   Object 0xffff88003cc2d2d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d2e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d2f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d300:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d310:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d320:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d330:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d340:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d350:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d360:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d370:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d380:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d390:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d3a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d3b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d3c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d3d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d3e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d3f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d400:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d410:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d420:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d430:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d440:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d450:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d460:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d470:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d480:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d490:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d4a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d4b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d4c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d4d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d4e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d4f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d500:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d510:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d520:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d530:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d540:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d550:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d560:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d570:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d580:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d590:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d5a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d5b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d5c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d5d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d5e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d5f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d600:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d610:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d620:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d630:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d640:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d650:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d660:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d670:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d680:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d690:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d6a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d6b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d6c0:  00 82 8b 01 6b 6b 6b 6b 48 82 cb 3c 00 88 ff ff ....kkkkH.ï¿½<..ï¿½ï¿½
-[    9.692285]   Object 0xffff88003cc2d6d0:  60 ae d0 81 ff ff ff ff 6b 6b 6b 6b 6b 6b 6b 6b `ï¿½ï¿½.ï¿½ï¿½ï¿½ï¿½kkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d6e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d6f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d700:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d710:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d720:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d730:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d740:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d750:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d760:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d770:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d780:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d790:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d7a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d7b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d7c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d7d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d7e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d7f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d800:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d810:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d820:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d830:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d840:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d850:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d860:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d870:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d880:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d890:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d8a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d8b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d8c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d8d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d8e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d8f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d900:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d910:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d920:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d930:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d940:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d950:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d960:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d970:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d980:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d990:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d9a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d9b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d9c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d9d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d9e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2d9f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da00:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da10:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da20:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da30:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da40:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da50:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da60:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da70:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da80:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2da90:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2daa0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2dab0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[    9.692285]   Object 0xffff88003cc2dac0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5 kkkkkkkkkkkkkkkï¿½
-[    9.692285]  Redzone 0xffff88003cc2dad0:  bb bb bb bb bb bb bb bb                         ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½        
-[    9.692285]  Padding 0xffff88003cc2db10:  5a 5a 5a 5a 5a 5a 5a 5a                         ZZZZZZZZ        
-[    9.692285] Pid: 1, comm: swapper Not tainted 2.6.38-tip-08708-g9ad1933-dirty #109455
-[    9.692285] Call Trace:
-[    9.692285]  [<ffffffff810c3c3c>] 0xffffffff810c3c3c
-[    9.692285]  [<ffffffff810c3f0f>] 0xffffffff810c3f0f
-[    9.692285]  [<ffffffff81798fbb>] ? 0xffffffff81798fbb
-[    9.692285]  [<ffffffff810c400c>] 0xffffffff810c400c
-[    9.692285]  [<ffffffff81798f31>] ? 0xffffffff81798f31
-[    9.692285]  [<ffffffff81798f31>] ? 0xffffffff81798f31
-[    9.692285]  [<ffffffff81798f31>] ? 0xffffffff81798f31
-[    9.692285]  [<ffffffff8193dbb7>] 0xffffffff8193dbb7
-[    9.692285]  [<ffffffff8193e253>] 0xffffffff8193e253
-[    9.692285]  [<ffffffff810c63bd>] 0xffffffff810c63bd
-[    9.692285]  [<ffffffff81798f31>] ? 0xffffffff81798f31
-[    9.692285]  [<ffffffff810aba3e>] 0xffffffff810aba3e
-[    9.692285]  [<ffffffff81798f31>] 0xffffffff81798f31
-[    9.692285]  [<ffffffff81821593>] 0xffffffff81821593
-[    9.692285]  [<ffffffff81821675>] 0xffffffff81821675
-[    9.692285]  [<ffffffff81821d40>] 0xffffffff81821d40
-[    9.692285]  [<ffffffff8136ad34>] ? 0xffffffff8136ad34
-[    9.692285]  [<ffffffff81072568>] 0xffffffff81072568
-[    9.692285]  [<ffffffff81072832>] 0xffffffff81072832
-[    9.692285]  [<ffffffff8178c87b>] 0xffffffff8178c87b
-[    9.692285]  [<ffffffff817913db>] 0xffffffff817913db
-[    9.692285]  [<ffffffff8179147e>] 0xffffffff8179147e
-[    9.692285]  [<ffffffff81d5d9d8>] 0xffffffff81d5d9d8
-[    9.692285]  [<ffffffff8178ae06>] 0xffffffff8178ae06
-[    9.692285]  [<ffffffff81d5d9fa>] ? 0xffffffff81d5d9fa
-[    9.692285]  [<ffffffff81d5d9fa>] ? 0xffffffff81d5d9fa
-[    9.692285]  [<ffffffff8178ae65>] 0xffffffff8178ae65
-[    9.692285]  [<ffffffff8194c949>] ? 0xffffffff8194c949
-[    9.692285]  [<ffffffff8178af96>] 0xffffffff8178af96
-[    9.692285]  [<ffffffff81d5da1b>] 0xffffffff81d5da1b
-[    9.692285]  [<ffffffff81d25aee>] 0xffffffff81d25aee
-[    9.692285]  [<ffffffff81d25c76>] 0xffffffff81d25c76
-[    9.692285]  [<ffffffff8194ea44>] 0xffffffff8194ea44
-[    9.692285]  [<ffffffff81d25bcf>] ? 0xffffffff81d25bcf
-[    9.692285]  [<ffffffff8194ea40>] ? 0xffffffff8194ea40
-[    9.692285] FIX kmalloc-2048: Restoring 0xffff88003cc2d6c0-0xffff88003cc2d6d7=0x6b
-[    9.692285] 
-[    9.692285] FIX kmalloc-2048: Marking all objects used
-[    9.692586] initcall 0xffffffff81d5d9fa returned 0 after 6509 usecs
-[    9.695620] calling  0xffffffff81d5da59 @ 1
-[    9.698952] GRE over IPv4 demultiplexor driver
-[    9.702287] initcall 0xffffffff81d5da59 returned 0 after 3254 usecs
-[    9.705619] calling  0xffffffff81d5da99 @ 1
-[    9.708953] initcall 0xffffffff81d5da99 returned 0 after 0 usecs
-[    9.712285] calling  0xffffffff81d5db01 @ 1
-[    9.715619] initcall 0xffffffff81d5db01 returned 0 after 0 usecs
-[    9.718951] calling  0xffffffff81d5db33 @ 1
-[    9.722285] initcall 0xffffffff81d5db33 returned 0 after 0 usecs
-[    9.725618] calling  0xffffffff81d5db4a @ 1
-[    9.728951] initcall 0xffffffff81d5db4a returned 0 after 0 usecs
-[    9.732284] calling  0xffffffff8183391a @ 1
-[    9.735618] initcall 0xffffffff8183391a returned 0 after 0 usecs
-[    9.738950] calling  0xffffffff81d5f616 @ 1
-[    9.742383] initcall 0xffffffff81d5f616 returned 0 after 0 usecs
-[    9.745616] calling  0xffffffff81d5f777 @ 1
-[    9.748986] initcall 0xffffffff81d5f777 returned 0 after 0 usecs
-[    9.752283] calling  0xffffffff81d5f895 @ 1
-[    9.755616] initcall 0xffffffff81d5f895 returned 0 after 0 usecs
-[    9.758949] calling  0xffffffff81d5f8ac @ 1
-[    9.762283] initcall 0xffffffff81d5f8ac returned 0 after 0 usecs
-[    9.765615] calling  0xffffffff81d5f8be @ 1
-[    9.768948] initcall 0xffffffff81d5f8be returned 0 after 0 usecs
-[    9.772281] calling  0xffffffff81d5f8e0 @ 1
-[    9.775634] ip_tables: (C) 2000-2006 Netfilter Core Team
-[    9.778948] initcall 0xffffffff81d5f8e0 returned 0 after 3254 usecs
-[    9.782281] calling  0xffffffff81d5f9e6 @ 1
-[    9.785650] initcall 0xffffffff81d5f9e6 returned 0 after 0 usecs
-[    9.788947] calling  0xffffffff81d5faee @ 1
-[    9.792304] initcall 0xffffffff81d5faee returned 0 after 0 usecs
-[    9.795613] calling  0xffffffff81d5fbc7 @ 1
-[    9.798970] initcall 0xffffffff81d5fbc7 returned 0 after 0 usecs
-[    9.802280] calling  0xffffffff81d5fc15 @ 1
-[    9.805613] initcall 0xffffffff81d5fc15 returned 0 after 0 usecs
-[    9.808946] calling  0xffffffff81d5fc27 @ 1
-[    9.812285] ipt_CLUSTERIP: ClusterIP Version 0.8 loaded successfully
-[    9.815612] initcall 0xffffffff81d5fc27 returned 0 after 3254 usecs
-[    9.818945] calling  0xffffffff81d5fcba @ 1
-[    9.822281] initcall 0xffffffff81d5fcba returned 0 after 0 usecs
-[    9.825611] calling  0xffffffff81d5fcf2 @ 1
-[    9.828967] initcall 0xffffffff81d5fcf2 returned 0 after 0 usecs
-[    9.832278] calling  0xffffffff81d5fd67 @ 1
-[    9.835611] initcall 0xffffffff81d5fd67 returned 0 after 0 usecs
-[    9.838944] calling  0xffffffff81d5fd79 @ 1
-[    9.842278] TCP westwood registered
-[    9.845610] initcall 0xffffffff81d5fd79 returned 0 after 3254 usecs
+Other than that, various minor nitpicks inline.
+
+Jonathan
+
+
+> 
+> Signed-off-by: Cliff Cai<cliff@analog.com>
+> ---
+>  drivers/staging/iio/gyro/Kconfig         |   10 +
+>  drivers/staging/iio/gyro/Makefile        |    3 +
+>  drivers/staging/iio/gyro/adxrs450.h      |   59 ++++
+>  drivers/staging/iio/gyro/adxrs450_core.c |  471 ++++++++++++++++++++++++++++++
+>  4 files changed, 543 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/iio/gyro/adxrs450.h
+>  create mode 100644 drivers/staging/iio/gyro/adxrs450_core.c
+> 
+> diff --git a/drivers/staging/iio/gyro/Kconfig b/drivers/staging/iio/gyro/Kconfig
+> index 236f15f..3432967 100644
+> --- a/drivers/staging/iio/gyro/Kconfig
+> +++ b/drivers/staging/iio/gyro/Kconfig
+> @@ -45,3 +45,13 @@ config ADIS16251
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called adis16251.
+> +
+> +config ADXRS450
+> +	tristate "Analog Devices ADXRS450 Digital Output Gyroscope SPI driver"
+> +	depends on SPI
+> +	help
+> +	  Say yes here to build support for Analog Devices ADXRS450 programmable
+> +	  digital output gyroscope.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called adxrs450.
+> diff --git a/drivers/staging/iio/gyro/Makefile b/drivers/staging/iio/gyro/Makefile
+> index 2764c15..2212240 100644
+> --- a/drivers/staging/iio/gyro/Makefile
+> +++ b/drivers/staging/iio/gyro/Makefile
+> @@ -17,3 +17,6 @@ obj-$(CONFIG_ADIS16260) += adis16260.o
+>  
+>  adis16251-y             := adis16251_core.o
+>  obj-$(CONFIG_ADIS16251) += adis16251.o
+> +
+> +adxrs450-y             := adxrs450_core.o
+> +obj-$(CONFIG_ADXRS450) += adxrs450.o
+> diff --git a/drivers/staging/iio/gyro/adxrs450.h b/drivers/staging/iio/gyro/adxrs450.h
+> new file mode 100644
+> index 0000000..4633ef9
+> --- /dev/null
+> +++ b/drivers/staging/iio/gyro/adxrs450.h
+> @@ -0,0 +1,59 @@
+> +#ifndef SPI_ADXRS450_H_
+> +#define SPI_ADXRS450_H_
+> +
+> +#define ADXRS450_STARTUP_DELAY	50 /* ms */
+> +
+> +/* The MSB for the spi commands */
+> +#define ADXRS450_SENSOR_DATA    0x20
+> +#define ADXRS450_WRITE_DATA	0x40
+> +#define ADXRS450_READ_DATA	0x80
+> +
+> +#define ADXRS450_RATE1	0x00	/* Rate Registers */
+> +#define ADXRS450_TEMP1	0x02	/* Temperature Registers */
+> +#define ADXRS450_LOCST1	0x04	/* Low CST Memory Registers */
+> +#define ADXRS450_HICST1	0x06	/* High CST Memory Registers */
+> +#define ADXRS450_QUAD1	0x08	/* Quad Memory Registers */
+> +#define ADXRS450_FAULT1	0x0A	/* Fault Registers */
+> +#define ADXRS450_PID1	0x0C	/* Part ID Register 1 */
+> +#define ADXRS450_PID0	0x0D	/* Part ID Register 0 */
+> +#define ADXRS450_SNH	0x0E	/* Serial Number Registers, 4 bytes */
+> +#define ADXRS450_SNL	0x10
+> +#define ADXRS450_DNC1	0x12	/* Dynamic Null Correction Registers */
+> +/* Check bits */
+> +#define ADXRS450_P	0x01
+> +#define ADXRS450_CHK	0x02
+> +#define ADXRS450_CST	0x04
+> +#define ADXRS450_PWR	0x08
+> +#define ADXRS450_POR	0x10
+> +#define ADXRS450_NVM	0x20
+> +#define ADXRS450_Q	0x40
+> +#define ADXRS450_PLL	0x80
+> +#define ADXRS450_UV	0x100
+> +#define ADXRS450_OV	0x200
+> +#define ADXRS450_AMP	0x400
+> +#define ADXRS450_FAIL	0x800
+> +
+> +#define ADXRS450_WRERR_MASK	(0x7 << 29)
+> +
+> +#define ADXRS450_MAX_RX 8
+> +#define ADXRS450_MAX_TX 8
+> +
+> +#define ADXRS450_GET_ST(a)	((a >> 26) & 0x3)
+> +
+> +/**
+> + * struct adxrs450_state - device instance specific data
+> + * @us:			actual spi_device
+> + * @indio_dev:		industrial I/O device structure
+> + * @tx:			transmit buffer
+> + * @rx:			recieve buffer
+> + * @buf_lock:		mutex to protect tx and rx
+> + **/
+> +struct adxrs450_state {
+> +	struct spi_device		*us;
+> +	struct iio_dev			*indio_dev;
+> +	u8				*tx;
+> +	u8				*rx;
+> +	struct mutex			buf_lock;
+> +};
+> +
+> +#endif /* SPI_ADXRS450_H_ */
+> diff --git a/drivers/staging/iio/gyro/adxrs450_core.c b/drivers/staging/iio/gyro/adxrs450_core.c
+> new file mode 100644
+> index 0000000..f4f9d49
+> --- /dev/null
+> +++ b/drivers/staging/iio/gyro/adxrs450_core.c
+> @@ -0,0 +1,471 @@
+> +/*
+> + * ADXRS450 Digital Output Gyroscope Driver
+> + *
+> + * Copyright 2010 Analog Devices Inc.
+> + *
+> + * Licensed under the GPL-2 or later.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <linux/gpio.h>
+> +#include <linux/delay.h>
+> +#include <linux/mutex.h>
+> +#include <linux/device.h>
+> +#include <linux/kernel.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/slab.h>
+> +#include <linux/sysfs.h>
+> +#include <linux/list.h>
+> +
+> +#include "../iio.h"
+> +#include "../sysfs.h"
+> +#include "gyro.h"
+> +#include "../adc/adc.h"
+> +
+> +#include "adxrs450.h"
+> +
+This is only used in one place, I'd hard code it there.
+> +#define DRIVER_NAME		"ADXRS450"
+> +
+> +/**
+> + * adxrs450_spi_read_reg_16() - read 2 bytes from a register pair
+> + * @dev: device associated with child of actual device (iio_dev or iio_trig)
+> + * @reg_address: the address of the lower of the two registers,which should be an even address,
+> + * Second register's address is reg_address + 1.
+> + * @val: somewhere to pass back the value read
+> + **/
+> +static int adxrs450_spi_read_reg_16(struct device *dev,
+> +		u8 reg_address,
+> +		u16 *val)
+> +{
+> +	struct spi_message msg;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
+> +	int ret;
+  The array only has one element. Please make it not be an array.
+> +	struct spi_transfer xfers[] = {
+> +		{
+> +			.tx_buf = st->tx,
+> +			.rx_buf = st->rx,
+> +			.bits_per_word = 8,
+> +			.len = 4,
+> +		},
+> +	};
+> +	/* Needs to send the command twice to get the wanted value */
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_READ_DATA | reg_address >> 7;
+> +	st->tx[1] = reg_address << 1;
+> +	st->tx[2] = 0;
+> +	st->tx[3] = 0;
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers[0], &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "problem while reading 16 bit register 0x%02x\n",
+> +				reg_address);
+> +		goto error_ret;
+> +	}
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers[0], &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "problem while reading 16 bit register 0x%02x\n",
+> +				reg_address);
+> +		goto error_ret;
+> +	}
+> +
+> +	*val = (st->rx[1] & 0x1f) << 11 | st->rx[2] << 3 | (st->rx[3] & 0xe0) >> 5;
+> +
+> +error_ret:
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * adxrs450_spi_write_reg_16() - write 2 bytes data to a register pair
+> + * @dev: device associated with child of actual device (iio_dev or iio_trig)
+If it's an iio_trig, casting it to an iio_dev will give you somewhat interresting
+results!
+> + * @reg_address: the address of the lower of the two registers,which should be an even address,
+> + * Second register's address is reg_address + 1.
+> + * @val: value to be written.
+> + **/
+> +static int adxrs450_spi_write_reg_16(struct device *dev,
+> +		u8 reg_address,
+> +		u16 *val)
+> +{
+> +	struct spi_message msg;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
+> +	int ret;
+Again, shouldn't be an array.
+> +	struct spi_transfer xfers[] = {
+> +		{
+> +			.tx_buf = st->tx,
+> +			.rx_buf = st->rx,
+> +			.bits_per_word = 8,
+> +			.len = 4,
+> +		},
+> +	};
+> +
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_WRITE_DATA | reg_address >> 7;
+> +	st->tx[1] = reg_address << 1 | *val >> 15;
+> +	st->tx[2] = *val >> 7;
+> +	st->tx[3] = *val << 1;
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers[0], &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "problem while writing 16 bit register 0x%02x\n",
+> +				reg_address);
+> +		goto error_ret;
+only going to next line so don't need the goto and as a result no need for the brackets
+either.
+> +	}
+> +
+> +error_ret:
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * adxrs450_spi_sensor_data() - read 2 bytes sensor data
+> + * @dev: device associated with child of actual device (iio_dev or iio_trig)
+> + * @val: somewhere to pass back the value read
+> + **/
+> +static int adxrs450_spi_sensor_data(struct device *dev, u16 *val)
+> +{
+> +	struct spi_message msg;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
+> +	int ret;
+Same array comment.
+> +	struct spi_transfer xfers[] = {
+> +		{
+> +			.tx_buf = st->tx,
+> +			.rx_buf = st->rx,
+> +			.bits_per_word = 8,
+> +			.len = 4,
+> +		}
+> +	};
+> +
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_SENSOR_DATA;
+> +	st->tx[1] = 0;
+> +	st->tx[2] = 0;
+> +	st->tx[3] = 0;
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers[0], &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "Problem while reading sensor data\n");
+> +		goto error_ret;
+> +	}
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers[0], &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "Problem while reading sensor data\n");
+> +		goto error_ret;
+> +	}
+> +
+> +	*val = (st->rx[0] & 0x03) << 14 | st->rx[1] << 6 | (st->rx[2] & 0xfc) >> 2;
+> +error_ret:
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+
+This looks to only be called from initial setup. Might as well just
+make it take an adxrs450_state directly and save the careful indirection
+that is currently going on to ensure it gets the same dev as the other write
+functions.
+> +/**
+> + * adxrs450_spi_initial() - use for initializing procedure.
+> + * @dev: device associated with child of actual device (iio_dev or iio_trig)
+> + * @val: somewhere to pass back the value read
+> + **/
+> +static int adxrs450_spi_initial(struct device *dev,
+> +		u32 *val, char chk)
+> +{
+> +	struct spi_message msg;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
+> +	int ret;
+Another unneeded array.
+> +	struct spi_transfer xfers[] = {
+> +		{
+> +			.tx_buf = st->tx,
+> +			.rx_buf = st->rx,
+> +			.bits_per_word = 8,
+> +			.len = 4,
+> +		},
+> +	};
+> +
+> +	mutex_lock(&st->buf_lock);
+> +	st->tx[0] = ADXRS450_SENSOR_DATA;
+> +	st->tx[1] = 0;
+> +	st->tx[2] = 0;
+> +	st->tx[3] = 0;
+> +	if (chk)
+> +		st->tx[3] |= (ADXRS450_CHK | ADXRS450_P);
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfers[0], &msg);
+> +	ret = spi_sync(st->us, &msg);
+> +	if (ret) {
+> +		dev_err(&st->us->dev, "Problem while reading initializing data\n");
+> +		goto error_ret;
+> +	}
+> +
+Looks like an endinaness conversion to me. be32tocpu.
+
+> +	*val = st->rx[0] << 24 | st->rx[1] << 16 | st->rx[2] << 8 | st->rx[3];
+> +
+> +error_ret:
+> +	mutex_unlock(&st->buf_lock);
+> +	return ret;
+> +}
+> +
+> +static ssize_t adxrs450_read_temp(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+> +{
+> +	int ret, len = 0;
+No need to initialize len.
+> +	u16 t;
+> +	ret = adxrs450_spi_read_reg_16(dev,
+> +			ADXRS450_TEMP1,
+> +			&t);
+> +	if (ret)
+> +		return ret;
+> +	len = sprintf(buf, "%d\n", t);
+> +	return len;
+> +}
+> +
+> +static ssize_t adxrs450_read_quad(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+> +{
+> +	int ret, len = 0;
+Same for this len
+> +	u16 t;
+> +	ret = adxrs450_spi_read_reg_16(dev,
+> +			ADXRS450_QUAD1,
+> +			&t);
+> +	if (ret)
+> +		return ret;
+> +	len = sprintf(buf, "%d\n", t);
+> +	return len;
+> +}
+> +
+> +static ssize_t adxrs450_write_dnc(struct device *dev,
+> +		struct device_attribute *attr,
+> +		const char *buf,
+> +		size_t len)
+> +{
+> +	int ret;
+> +	u16 val;
+> +
+> +	if (len == 0 || len > 2)
+> +		return -EINVAL;
+> +	memcpy(&val, buf, len);
+> +	ret = adxrs450_spi_write_reg_16(dev,
+> +			ADXRS450_DNC1,
+> +			&val);
+Err, so what is meant to be written to this?  Looks like you'll be
+dumping a random single character in to the register...
+Documentation would clear this up.
+
+> +	return ret ? ret : len;
+> +}
+> +
+> +static ssize_t adxrs450_read_sensor_data(struct device *dev,
+> +		struct device_attribute *attr,
+> +		char *buf)
+> +{
+> +	int ret, len = 0;
+another unneeded init of len
+> +	u16 t;
+> +
+> +	ret = adxrs450_spi_sensor_data(dev, &t);
+> +	if (ret)
+> +		return ret;
+> +
+> +	len = sprintf(buf, "%d\n", t);
+> +	return len;
+> +}
+> +
+> +/* Recommended Startup Sequence by spec */
+> +static int adxrs450_initial_setup(struct adxrs450_state *st)
+> +{
+> +	u32 t;
+> +	u16 data;
+> +	int ret;
+> +	struct device *dev = &st->indio_dev->dev;
+> +
+> +	msleep(ADXRS450_STARTUP_DELAY*2);
+> +	ret = adxrs450_spi_initial(dev, &t, 1);
+> +	if (ret)
+> +		return ret;
+> +	if (t != 0x01) {
+> +		dev_err(&st->us->dev, "The initial response is not correct!\n");
+> +		return -ENODEV;
+> +
+> +	}
+> +
+> +	msleep(ADXRS450_STARTUP_DELAY);
+> +	ret = adxrs450_spi_initial(dev, &t, 0);
+> +	if (ret)
+> +		return ret;
+> +
+> +	msleep(ADXRS450_STARTUP_DELAY);
+> +	ret = adxrs450_spi_initial(dev, &t, 0);
+> +	if (ret)
+> +		return ret;
+> +	if (((t & 0xff) | 0x01) != 0xff || ADXRS450_GET_ST(t) != 2) {
+> +		dev_err(&st->us->dev, "The second response is not correct!\n");
+> +		return -EIO;
+> +
+> +	}
+> +	ret = adxrs450_spi_initial(dev, &t, 0);
+> +	if (ret)
+> +		return ret;
+> +	if (((t & 0xff) | 0x01) != 0xff || ADXRS450_GET_ST(t) != 2) {
+> +		dev_err(&st->us->dev, "The third response is not correct!\n");
+> +		return -EIO;
+> +
+> +	}
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_FAULT1, &data);
+> +	if (ret)
+> +		return ret;
+> +	if (data & 0x0fff) {
+> +		dev_err(&st->us->dev, "The device is not in normal status!\n");
+> +		return -EINVAL;
+> +	}
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_PID1, &data);
+> +	if (ret)
+> +		return ret;
+> +	dev_info(&st->us->dev, "The Part ID is 0x%x\n", data);
+> +
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_SNL, &data);
+> +	if (ret)
+> +		return ret;
+> +	t = data;
+> +	ret = adxrs450_spi_read_reg_16(dev, ADXRS450_SNH, &data);
+> +	if (ret)
+> +		return ret;
+> +	t |= data << 16;
+> +	dev_info(&st->us->dev, "The Serial Number is 0x%x\n", t);
+> +
+> +	dev_info(&st->us->dev, "%s at CS%d\n", DRIVER_NAME,
+> +			st->us->chip_select);
+Not really useful info to the average reader of the log. Please
+clean this one out.
+> +
+> +	return 0;
+> +}
+> +
+I note there are two versions of this chip (from datasheet). We
+should probably support changing this axis according to which
+one we have.  Z is out of chip plane. The other two are arbitrary
+if we only have 1 axis on the chip.
+> +static IIO_DEV_ATTR_GYRO_Z(adxrs450_read_sensor_data, 0);
+> +static IIO_DEV_ATTR_TEMP_RAW(adxrs450_read_temp);
+> +static IIO_DEVICE_ATTR(quad, S_IRUGO,
+> +		adxrs450_read_quad, NULL, 0);
+> +static IIO_DEVICE_ATTR(dynamic_null_correction, S_IWUGO,
+IWUSR please. People get nervous for any greater permissions
+than that.
+> +		NULL, adxrs450_write_dnc, 0);
+> +static IIO_CONST_ATTR(name, "adxrs450");
+> +
+> +static struct attribute *adxrs450_attributes[] = {
+bonus blank line here. Please remove.
+> +
+> +	&iio_dev_attr_gyro_z_raw.dev_attr.attr,
+> +	&iio_dev_attr_temp_raw.dev_attr.attr,
+> +	&iio_dev_attr_quad.dev_attr.attr,
+> +	&iio_dev_attr_dynamic_null_correction.dev_attr.attr,
+> +	&iio_const_attr_name.dev_attr.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group adxrs450_attribute_group = {
+> +	.attrs = adxrs450_attributes,
+> +};
+> +
+> +static int __devinit adxrs450_probe(struct spi_device *spi)
+> +{
+> +	int ret, regdone = 0;
+> +	struct adxrs450_state *st = kzalloc(sizeof *st, GFP_KERNEL);
+> +	if (!st) {
+> +		ret =  -ENOMEM;
+> +		goto error_ret;
+> +	}
+> +	/* This is only used for removal purposes */
+> +	spi_set_drvdata(spi, st);
+> +
+> +	/* Allocate the comms buffers */
+> +	st->rx = kzalloc(sizeof(*st->rx)*ADXRS450_MAX_RX, GFP_KERNEL);
+> +	if (st->rx == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_free_st;
+> +	}
+> +	st->tx = kzalloc(sizeof(*st->tx)*ADXRS450_MAX_TX, GFP_KERNEL);
+> +	if (st->tx == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_free_rx;
+> +	}
+> +	st->us = spi;
+> +	mutex_init(&st->buf_lock);
+> +	/* setup the industrialio driver allocated elements */
+> +	st->indio_dev = iio_allocate_device();
+> +	if (st->indio_dev == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_free_tx;
+> +	}
+> +
+> +	st->indio_dev->dev.parent = &spi->dev;
+> +	st->indio_dev->attrs = &adxrs450_attribute_group;
+> +	st->indio_dev->dev_data = (void *)(st);
+> +	st->indio_dev->driver_module = THIS_MODULE;
+> +	st->indio_dev->modes = INDIO_DIRECT_MODE;
+> +
+> +	ret = iio_device_register(st->indio_dev);
+> +	if (ret)
+> +		goto error_free_dev;
+> +	regdone = 1;
+> +
+> +	/* Get the device into a sane initial state */
+> +	ret = adxrs450_initial_setup(st);
+> +	if (ret)
+> +		goto error_initial;
+> +	return 0;
+> +
+> +error_initial:
+> +error_free_dev:
+> +	if (regdone)
+> +		iio_device_unregister(st->indio_dev);
+> +	else
+> +		iio_free_device(st->indio_dev);
+> +error_free_tx:
+> +	kfree(st->tx);
+> +error_free_rx:
+> +	kfree(st->rx);
+> +error_free_st:
+> +	kfree(st);
+> +error_ret:
+> +	return ret;
+> +}
+> +
+> +/* fixme, confirm ordering in this function */
+> +static int adxrs450_remove(struct spi_device *spi)
+> +{
+> +	struct adxrs450_state *st = spi_get_drvdata(spi);
+
+Might as well just go with
+
+iio_device_unregister(st->indio_dev);
+> +	struct iio_dev *indio_dev = st->indio_dev;
+> +
+> +	iio_device_unregister(indio_dev);
+> +	kfree(st->tx);
+> +	kfree(st->rx);
+> +	kfree(st);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct spi_driver adxrs450_driver = {
+> +	.driver = {
+> +		.name = "adxrs450",
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.probe = adxrs450_probe,
+> +	.remove = __devexit_p(adxrs450_remove),
+> +};
+> +
+> +static __init int adxrs450_init(void)
+> +{
+> +	return spi_register_driver(&adxrs450_driver);
+> +}
+> +module_init(adxrs450_init);
+> +
+> +static __exit void adxrs450_exit(void)
+> +{
+> +	spi_unregister_driver(&adxrs450_driver);
+> +}
+> +module_exit(adxrs450_exit);
+> +
+> +MODULE_AUTHOR("Cliff Cai <cliff.cai@analog.com>");
+> +MODULE_DESCRIPTION("Analog Devices ADXRS450 Gyroscope SPI driver");
+> +MODULE_LICENSE("GPL v2");
+
