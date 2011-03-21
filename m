@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab1CUXsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:48:53 -0400
-Received: from kroah.org ([198.145.64.141]:49358 "EHLO coco.kroah.org"
+	id S1755351Ab1CUXP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:15:28 -0400
+Received: from kroah.org ([198.145.64.141]:49260 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755356Ab1CUXP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:29 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
-Message-Id: <20110321230712.472451468@clark.kroah.org>
+	id S1755291Ab1CUXPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:14 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:11 2011
+Message-Id: <20110321230710.932886650@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:31 -0700
+Date: Mon, 21 Mar 2011 16:06:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [32/87] x86, quirk: Fix SB600 revision check
+        Jovi Zhang <bookjovi@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [17/87] nfs: fix compilation warning
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Jovi Zhang <bookjovi@gmail.com>
 
-commit 1d3e09a304e6c4e004ca06356578b171e8735d3c upstream.
+commit 43b7c3f051dea504afccc39bcb56d8e26c2e0b77 upstream.
 
-Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
-(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
-systems) introduced a regression. It removed some SB600 specific
-code to determine the revision ID without adapting a
-corresponding revision ID check for SB600.
+this commit fix compilation warning as following:
+linux-2.6/fs/nfs/nfs4proc.c:3265: warning: comparison of distinct pointer types lacks a cast
 
-See this mail thread:
-
-  http://marc.info/?l=linux-kernel&m=129980296006380&w=2
-
-This patch adapts the corresponding check to cover all SB600
-revisions.
-
-Tested-by: Wang Lei <f3d27b@gmail.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <20110315143137.GD29499@alberich.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/early-quirks.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -159,7 +159,12 @@ static void __init ati_bugs_contd(int nu
- 	if (rev >= 0x40)
- 		acpi_fix_pin2_polarity = 1;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3226,7 +3226,7 @@ static int buf_to_pages_noslab(const voi
+ 	spages = pages;
  
--	if (rev > 0x13)
-+	/*
-+	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
-+	 * SB700: revisions 0x39, 0x3a, ...
-+	 * SB800: revisions 0x40, 0x41, ...
-+	 */
-+	if (rev >= 0x39)
- 		return;
+ 	do {
+-		len = min(PAGE_CACHE_SIZE, buflen);
++		len = min_t(size_t, PAGE_CACHE_SIZE, buflen);
+ 		newpage = alloc_page(GFP_KERNEL);
  
- 	if (acpi_use_timer_override)
+ 		if (newpage == NULL)
 
 
