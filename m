@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab1CUXgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:36:42 -0400
-Received: from kroah.org ([198.145.64.141]:49651 "EHLO coco.kroah.org"
+	id S932080Ab1CUXQP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:16:15 -0400
+Received: from kroah.org ([198.145.64.141]:49516 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755503Ab1CUXQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:18 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:17 2011
-Message-Id: <20110321230717.230905118@clark.kroah.org>
+	id S1755283Ab1CUXPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:54 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:15 2011
+Message-Id: <20110321230714.982268367@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:17 -0700
+Date: Mon, 21 Mar 2011 16:06:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>,
-        Mallick Asit K <asit.k.mallick@intel.com>,
-        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [78/87] x86: Flush TLB if PGD entry is changed in i386 PAE mode
+        Michael Poole <mdpoole@troilus.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [56/87] HID: hid-magicmouse: Correct touch orientation direction
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,80 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit 4981d01eada5354d81c8929d5b2836829ba3df7b upstream.
+commit 2d9ca4e9f393d81d8f37ed37505aecbf3a5e1bd6 upstream.
 
-According to intel CPU manual, every time PGD entry is changed in i386 PAE
-mode, we need do a full TLB flush. Current code follows this and there is
-comment for this too in the code.
+The magic trackpad and mouse both report touch orientation in opposite
+direction to the bcm5974 driver and what is written in
+Documents/input/multi-touch-protocol.txt. This patch reverts the
+direction, so that all in-kernel devices with this feature behave the
+same way.
 
-But current code misses the multi-threaded case. A changed page table
-might be used by several CPUs, every such CPU should flush TLB. Usually
-this isn't a problem, because we prepopulate all PGD entries at process
-fork. But when the process does munmap and follows new mmap, this issue
-will be triggered.
+Since no known application has been utilizing this information yet, it
+seems appropriate also for stable.
 
-When it happens, some CPUs keep doing page faults:
-
-  http://marc.info/?l=linux-kernel&m=129915020508238&w=2
-
-Reported-by: Yasunori Goto<y-goto@jp.fujitsu.com>
-Tested-by: Yasunori Goto<y-goto@jp.fujitsu.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Shaohua Li<shaohua.li@intel.com>
-Cc: Mallick Asit K <asit.k.mallick@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>
-LKML-Reference: <1300246649.2337.95.camel@sli10-conroe>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Michael Poole <mdpoole@troilus.org>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/pgtable-3level.h |   11 +++--------
- arch/x86/mm/pgtable.c                 |    3 +--
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/hid/hid-magicmouse.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/pgtable-3level.h
-+++ b/arch/x86/include/asm/pgtable-3level.h
-@@ -69,8 +69,6 @@ static inline void native_pmd_clear(pmd_
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -256,7 +256,7 @@ static void magicmouse_emit_touch(struct
+ 		input_report_abs(input, ABS_MT_TRACKING_ID, id);
+ 		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
+ 		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
+-		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
++		input_report_abs(input, ABS_MT_ORIENTATION, -orientation);
+ 		input_report_abs(input, ABS_MT_POSITION_X, x);
+ 		input_report_abs(input, ABS_MT_POSITION_Y, y);
  
- static inline void pud_clear(pud_t *pudp)
- {
--	unsigned long pgd;
--
- 	set_pud(pudp, __pud(0));
+@@ -395,7 +395,7 @@ static void magicmouse_setup_input(struc
+ 		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
+ 		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 4, 0);
+ 		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 4, 0);
+-		input_set_abs_params(input, ABS_MT_ORIENTATION, -32, 31, 1, 0);
++		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
  
- 	/*
-@@ -79,13 +77,10 @@ static inline void pud_clear(pud_t *pudp
- 	 * section 8.1: in PAE mode we explicitly have to flush the
- 	 * TLB via cr3 if the top-level pgd is changed...
- 	 *
--	 * Make sure the pud entry we're updating is within the
--	 * current pgd to avoid unnecessary TLB flushes.
-+	 * Currently all places where pud_clear() is called either have
-+	 * flush_tlb_mm() followed or don't need TLB flush (x86_64 code or
-+	 * pud_clear_bad()), so we don't need TLB flush here.
- 	 */
--	pgd = read_cr3();
--	if (__pa(pudp) >= pgd && __pa(pudp) <
--	    (pgd + sizeof(pgd_t)*PTRS_PER_PGD))
--		write_cr3(pgd);
- }
- 
- #ifdef CONFIG_SMP
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -168,8 +168,7 @@ void pud_populate(struct mm_struct *mm,
- 	 * section 8.1: in PAE mode we explicitly have to flush the
- 	 * TLB via cr3 if the top-level pgd is changed...
- 	 */
--	if (mm == current->active_mm)
--		write_cr3(read_cr3());
-+	flush_tlb_mm(mm);
- }
- #else  /* !CONFIG_X86_PAE */
- 
+ 		/* Note: Touch Y position from the device is inverted relative
+ 		 * to how pointer motion is reported (and relative to how USB
 
 
