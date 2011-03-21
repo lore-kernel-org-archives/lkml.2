@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab1CUXfd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:35:33 -0400
-Received: from kroah.org ([198.145.64.141]:49667 "EHLO coco.kroah.org"
+	id S1755881Ab1CUXfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:35:43 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:34695 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932107Ab1CUXQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:22 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:17 2011
-Message-Id: <20110321230717.640735102@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:21 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roman Fietze <roman.fietze@telemotive.de>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [82/87] i2c: Fix typo in instantiating-devices document
-In-Reply-To: <20110321230732.GA26510@kroah.com>
+	id S1755583Ab1CUXfi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:35:38 -0400
+X-IronPort-AV: E=Sophos;i="4.63,222,1299484800"; 
+   d="scan'208";a="533012589"
+Subject: Re: problem with nfs4: rpciod seems to loop in rpc_shutdown_client
+ forever
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Wolfgang Walter <wolfgang.walter@stwm.de>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+In-Reply-To: <20110321232857.GC472@fieldses.org>
+References: <201103182349.22331.wolfgang.walter@stwm.de>
+	 <20110321232857.GC472@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Mon, 21 Mar 2011 19:35:36 -0400
+Message-ID: <1300750536.26546.31.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-OriginalArrivalTime: 21 Mar 2011 23:35:38.0315 (UTC) FILETIME=[AF0551B0:01CBE820]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Mon, 2011-03-21 at 19:28 -0400, J. Bruce Fields wrote:
+> On Fri, Mar 18, 2011 at 11:49:21PM +0100, Wolfgang Walter wrote:
+> > Hello,
+> > 
+> > I have a problem with our nfs-server (stable 2.6.32.33 but also with
+> > .31 or .32 and probably older ones): sometimes
+> > one or more rpciod get stuck. I used
+> > 
+> > 	rpcdebug -m rpc -s all
+> > 
+> > I get messages as the following one about every second:
+> > 
+> > Mar 18 11:15:37 au kernel: [44640.906793] RPC:       killing all tasks for client ffff88041c51de00
+> > Mar 18 11:15:38 au kernel: [44641.906793] RPC:       killing all tasks for client ffff88041c51de00
+> > Mar 18 11:15:39 au kernel: [44642.906795] RPC:       killing all tasks for client ffff88041c51de00
+> > Mar 18 11:15:40 au kernel: [44643.906793] RPC:       killing all tasks for client ffff88041c51de00
+> > Mar 18 11:15:41 au kernel: [44644.906795] RPC:       killing all tasks for client ffff88041c51de00
+> > Mar 18 11:15:42 au kernel: [44645.906794] RPC:       killing all tasks for client ffff88041c51de00
+> > 
+> > and I get this messages:
+> > 
+> > Mar 18 22:45:57 au kernel: [86061.779008]   174 0381     -5 ffff88041c51de00   (null)        0 ffffffff817211a0 nfs4_cbv1 CB_NULL a:rpc_exit_task q:none
+> > 
+> > My theorie is this one:
+> > 
+> > * this async task is runnable but does not progress (calling rpc_exit_task).
+> > * this is because the same rpciod which handles this task loops in
+> >   rpc_shutdown_client waiting for this task to go away.
+> > * because rpc_shutdown_client is called from an async rpc, too
+> 
+> Off hand I don't see any place where rpc_shutdown_client() is called
+> from rpciod; do you?
 
-------------------
+The only case I could think of would be if we're still calling mntput()
+from some RPC callback. In principle we should only be doing that from
+the rpc_call_ops->rpc_callback() from within the nfsiod thread rather
+than rpciod.
 
-From: Roman Fietze <roman.fietze@telemotive.de>
+Is it possible this might be another instance of the nfs_commit_inode()
+busy-loop?
 
-commit 6ced9e6b3901af4ab6ac0a11231402c888286ea6 upstream.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-The struct i2c_board_info member holding the name is "type", not
-"name".
-
-Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- Documentation/i2c/instantiating-devices |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/Documentation/i2c/instantiating-devices
-+++ b/Documentation/i2c/instantiating-devices
-@@ -100,7 +100,7 @@ static int __devinit usb_hcd_pnx4008_pro
- 	(...)
- 	i2c_adap = i2c_get_adapter(2);
- 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
--	strlcpy(i2c_info.name, "isp1301_pnx", I2C_NAME_SIZE);
-+	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
- 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
- 						   normal_i2c, NULL);
- 	i2c_put_adapter(i2c_adap);
-
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
