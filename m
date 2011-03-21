@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab1CUX1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:27:30 -0400
-Received: from kroah.org ([198.145.64.141]:52647 "EHLO coco.kroah.org"
+	id S932410Ab1CUX1x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:27:53 -0400
+Received: from kroah.org ([198.145.64.141]:52635 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932295Ab1CUXSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:03 -0400
+	id S932289Ab1CUXSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:01 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:25 2011
-Message-Id: <20110321230325.727853948@clark.kroah.org>
+Message-Id: <20110321230325.523921838@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:55 -0700
+Date: Mon, 21 Mar 2011 16:01:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [39/78] ALSA: HDA: Fix volume control naming for surround speakers on Realtek auto-parser
+        Paul Zimmerman <paulz@synopsys.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [37/78] USB: Add support for SuperSpeed isoc endpoints
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
 
-commit ebbeb3d6aa22433c218da6f29fd7b3ebc89b87ea upstream.
+commit 500132a0f26ad7d9916102193cbc6c1b1becb373 upstream.
 
-When more than one pair of internal speakers is present, allow names
-according to their channels.
+Use the Mult and bMaxBurst values from the endpoint companion
+descriptor to calculate the max length of an isoc transfer.
 
-Tested-by: Bartłomiej Żogała <nusch88@gmail.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Add USB_SS_MULT macro to access Mult field of bmAttributes, at
+Sarah's suggestion.
+
+This patch should be queued for the 2.6.36 and 2.6.37 stable trees, since
+those were the first kernels to have isochronous support for SuperSpeed
+devices.
+
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/core/urb.c  |   11 ++++++++++-
+ include/linux/usb/ch9.h |    2 ++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5151,7 +5151,9 @@ static const char *alc_get_line_out_pfx(
+--- a/drivers/usb/core/urb.c
++++ b/drivers/usb/core/urb.c
+@@ -366,7 +366,16 @@ int usb_submit_urb(struct urb *urb, gfp_
+ 	if (xfertype == USB_ENDPOINT_XFER_ISOC) {
+ 		int	n, len;
  
- 	switch (cfg->line_out_type) {
- 	case AUTO_PIN_SPEAKER_OUT:
--		return "Speaker";
-+		if (cfg->line_outs == 1)
-+			return "Speaker";
-+		break;
- 	case AUTO_PIN_HP_OUT:
- 		return "Headphone";
- 	default:
+-		/* FIXME SuperSpeed isoc endpoints have up to 16 bursts */
++		/* SuperSpeed isoc endpoints have up to 16 bursts of up to
++		 * 3 packets each
++		 */
++		if (dev->speed == USB_SPEED_SUPER) {
++			int     burst = 1 + ep->ss_ep_comp.bMaxBurst;
++			int     mult = USB_SS_MULT(ep->ss_ep_comp.bmAttributes);
++			max *= burst;
++			max *= mult;
++		}
++
+ 		/* "high bandwidth" mode, 1-3 packets/uframe? */
+ 		if (dev->speed == USB_SPEED_HIGH) {
+ 			int	mult = 1 + ((max >> 11) & 0x03);
+--- a/include/linux/usb/ch9.h
++++ b/include/linux/usb/ch9.h
+@@ -585,6 +585,8 @@ struct usb_ss_ep_comp_descriptor {
+ #define USB_DT_SS_EP_COMP_SIZE		6
+ /* Bits 4:0 of bmAttributes if this is a bulk endpoint */
+ #define USB_SS_MAX_STREAMS(p)		(1 << (p & 0x1f))
++/* Bits 1:0 of bmAttributes if this is an isoc endpoint */
++#define USB_SS_MULT(p)			(1 + ((p) & 0x3))
+ 
+ /*-------------------------------------------------------------------------*/
+ 
 
 
