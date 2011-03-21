@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab1CUNNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 09:13:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59160 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab1CUNNR (ORCPT
+	id S1753415Ab1CUNTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 09:19:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46226 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287Ab1CUNTI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 09:13:17 -0400
-X-Authority-Analysis: v=1.1 cv=aqMe+0lCtaYvy4h0jyaoPGyq+DPF+P6rPG2xbekoY9Q= c=1 sm=0 a=d6KjmF4z1lEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=TNQApoaQx8nLwWLAopQA:9 a=Ag3VQhgm64_9YTiNb0Q451UmgM8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] checkpatch: Test for kmalloc/memset(0) pairs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alejandro Riveira =?ISO-8859-1?Q?Fern=E1ndez?= 
-	<ariveira@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Julia Lawall <julia@diku.dk>,
-        Pekka Enberg <penberg@kernel.org>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@shadowen.org>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nicolas Palix <npalix@diku.dk>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110320154827.7ba3358b@varda>
-References: <1300416744.16880.904.camel@gandalf.stny.rr.com>
-	 <20110317211548.646b04d2@tpl.lwn.net>
-	 <1300419170.16880.956.camel@gandalf.stny.rr.com>
-	 <AANLkTikZK278BR5o1fP_w2u5PUPbgub9QT4XxzSmEhL5@mail.gmail.com>
-	 <AANLkTi=2d8S_Pi8kuZMXAmNvHa_2KrOs6K+_FF6P7-pU@mail.gmail.com>
-	 <Pine.LNX.4.64.1103200852080.28495@ask.diku.dk>
-	 <AANLkTi=MMKvA-9pFiM1K_JSXjS71JLRCem8THnhu-0=N@mail.gmail.com>
-	 <Pine.LNX.4.64.1103201007430.28495@ask.diku.dk>
-	 <20110320105412.GA11266@elte.hu>  <20110320154827.7ba3358b@varda>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 21 Mar 2011 09:13:12 -0400
-Message-ID: <1300713192.16880.5789.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 21 Mar 2011 09:19:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VwDQu1zfIll0RAmbwzeQGvEbDTsoGhbV8Lke9u9UuzqiTRmHRXLt1xrQGWeD7w6DTq
+         KSWMvekN5fKcYFeCTobVfL/os+XPTNXletuedaKk/Rt5DG84ZGIBBuQYbbUxWUd6oHmY
+         iSpAu5CIIaepjmKCfWETaVITmP8M1yJBu0+xE=
+MIME-Version: 1.0
+In-Reply-To: <20110321125606.GC22222@n2100.arm.linux.org.uk>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
+	<1295891761-18366-9-git-send-email-catalin.marinas@arm.com>
+	<AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com>
+	<20110124214225.GO24104@n2100.arm.linux.org.uk>
+	<AANLkTikH9tBTGCiJ-+dvhh1tajMVq_6ua41MMZmq48sC@mail.gmail.com>
+	<20110321125606.GC22222@n2100.arm.linux.org.uk>
+Date: Mon, 21 Mar 2011 13:19:07 +0000
+X-Google-Sender-Auth: DN--ww7gQSeHPamwbEpgpmSStDQ
+Message-ID: <AANLkTimZ+b_yNf1-72AGUMcPbFRFuHVPtvf24VigRWK-@mail.gmail.com>
+Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
+ format definitions
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-20 at 15:48 +0100, Alejandro Riveira Fernández wrote:
-> El Sun, 20 Mar 2011 11:54:12 +0100
-> Ingo Molnar <mingo@elte.hu> escribió:
-> 
+On 21 March 2011 12:56, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> On Mon, Mar 21, 2011 at 12:36:55PM +0000, Catalin Marinas wrote:
+>> Any plans for the nopmd patches? I haven't seen them in -next or on the list.
+>
+> I dropped them again because of those pesky warnings, so again I'm not
+> planning to push them this window as I don't wish to be deluged in
+> people reporting the warnings.
+>
+> They really need fixing once we know how the LPAE stuff interacts with
+> the change. Â At the moment I've no idea whether the existing section
+> support ends up at pgd or pmd level with LPAE.
 
->  But a perl interpreter is not shipped with the kernel, is it? neither a
->  posix shell or a python interpreter ...
->  The scripts are already shipped with the kernel, the "interpreter" have
->  to be installed in the dev machine like you have to install perl, make,
->  gcc, etc
+With LPAE, the section should be at the pmd level (2nd level page
+table) as the PGDIR_SHIFT is 30. But if we standardise on using the
+pmd in both cases, macros like pmd_val() would expand to the right
+level with classic page tables (it goes up to pgd_val).
 
-We don't ship gcc either. Note, there are some cases where you need a
-perl interpreter to build the kernel.
+PMD_SHIFT also gets defined as PGDIR_SHIFT for the classic page
+tables. One of my patches in the series converts the existing code to
+PMD_SHIFT from PGDIR_SHIFT.
 
--- Steve
+I'm happy to give this a try if you have some existing patches for the
+classic page tables (I can even start from scratch but I don't want to
+duplicate work).
 
-
+-- 
+Catalin
