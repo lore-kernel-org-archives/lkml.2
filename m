@@ -1,105 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab1CUWOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 18:14:11 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48379 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab1CUWOI (ORCPT
+	id S1754721Ab1CUW1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 18:27:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35836 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab1CUW1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 18:14:08 -0400
-Date: Tue, 22 Mar 2011 07:13:58 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Julian Anastasov <ja@ssi.bg>
-Subject: Re: [slab poison overwritten] Re: [GIT] Networking
-Message-ID: <20110321221357.GF22625@verge.net.au>
-References: <20110320.195156.226769634.davem@davemloft.net>
- <20110321125320.GA23490@elte.hu>
- <1300714346.2884.284.camel@edumazet-laptop>
- <20110321161528.GA28580@elte.hu>
- <20110321164238.GA5303@elte.hu>
- <20110321173941.GB3892@elte.hu>
- <1300730838.2884.578.camel@edumazet-laptop>
- <1300738540.2837.5.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Mon, 21 Mar 2011 18:27:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wvWs2l2pJUBx8XwHIUkXxrd3T/QdZMYHLx646RPQjERJccKL4cfFGm6cNaPJxKwGMq
+         wAHFRrq6pczskH6qEmtzSmf9uAGG0JAgDX6MOccqWB04OLqmq8PRbCc0U6DzwNVHnYvD
+         F67ojMywtCLqCUE/M3cQ4deK+Jk49fWRpWVqQ=
+Subject: [RFC] posix-timers: RCU conversion
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: ben@iagu.net
+Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richard.cochran@omicron.at>
+In-Reply-To: <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
+References: <AANLkTikZZ4MXZjx_+6u-vKVSgxULQo2BkQKRO6K_vzFy@mail.gmail.com>
+	 <20110318123031.GB6066@8bytes.org>
+	 <AANLkTin2k1ZSLa0NG6pKBvHYnKEV21t8pEqzeJWNn_rR@mail.gmail.com>
+	 <4D871F6C.40207@redhat.com>
+	 <AANLkTintxnKRQ4rD4Wo8_MHU4yJVzYaRhR=GjnDMGwNj@mail.gmail.com>
+	 <AANLkTin8ZoUAVR2ajoV6cBFiUSe_Dof0_k60dcAGW3r-@mail.gmail.com>
+	 <4D875842.9050308@redhat.com>
+	 <AANLkTikWQS281kTtJ32-qo5U+w_BAak7qUwVhUQgOxxv@mail.gmail.com>
+	 <4D8773AA.8030408@redhat.com>
+	 <AANLkTin3Si1EAa=Va6f45vW-tYQ1Yk8dETXpHJHHHkxe@mail.gmail.com>
+	 <1300726498.2884.493.camel@edumazet-laptop> <4D8784A9.8040303@redhat.com>
+	 <1300727545.2884.513.camel@edumazet-laptop>
+	 <AANLkTinn7OKKKvBYe7KWsrReuYDdma5+8gHJHXdCacDY@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Mar 2011 23:27:09 +0100
+Message-ID: <1300746429.2837.20.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1300738540.2837.5.camel@edumazet-laptop>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 21, 2011 at 09:15:40PM +0100, Eric Dumazet wrote:
-> Le lundi 21 mars 2011 à 19:07 +0100, Eric Dumazet a écrit :
-> > Le lundi 21 mars 2011 à 18:39 +0100, Ingo Molnar a écrit :
-> > > here's the same but with kallsyms enabled.
-> > > 
-> > > Thanks,
-> > > 
-> > > 	Ingo
-> > > 
-> > > [    9.585627] initcall 0xffffffff81d5b806 returned 0 after 0 usecs
-> > > [    9.588960] calling  0xffffffff81d5b9da @ 1
-> > > [    9.592303] IPVS: Creating netns size=1272 id=0
-> > > [    9.595646] IPVS: __ip_vs_control_init(): alloc_percpu.
-> > > [    9.602298] IPVS: cannot register namespace.
-> > > [    9.605627] IPVS: can't setup control
-> > 
-> > It seems IPVS is busted in case of memory allocation error in 
-> > __ip_vs_control_init()
-> > 
-> > IPVS deinits its "struct netns_ipvs" space, but something (in IPVS) uses
-> > it after free.
-> > 
-> > __ip_vs_init() seems to be called before ip_vs_init() completes
-> > correctly. We then keep in net->ipvs a pointer to some freed memory.
-> > 
-> > Commit 14e405461e664b7 did some changes in this area
-> > 
-> > Simon, any idea ?
-> > 
-> > 
+Le lundi 21 mars 2011 à 23:57 +0545, Ben Nagy a écrit :
+> On Mon, Mar 21, 2011 at 10:57 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > Le lundi 21 mars 2011 à 19:02 +0200, Avi Kivity a écrit :
+> >
+> >> Any ideas on how to fix it?  We could pre-allocate IDs and batch them in
+> >> per-cpu caches, but it seems like a lot of work.
+> >>
+> >
+> > Hmm, I dont know what syscalls kvm do, but even a timer_gettime() has to
+> > lock this idr_lock.
+> >
+> > Sounds crazy, and should be fixed in kernel code, not kvm ;)
 > 
-> For the time being, we can avoid the false memory allocation error (and
-> leak)
+> Hi,
+> 
+> I'll need to work out a way I can make the perf.data available
+> (~100M), but here's the summary
+> 
+> http://paste.ubuntu.com/583425/
+> 
+> And here's the summary of the summary
+> 
+> # Overhead          Command         Shared Object
+>                 Symbol
+> # ........  ...............  ....................
+> ..........................................
+> #
+>     71.86%              kvm  [kernel.kallsyms]     [k] __ticket_spin_lock
+>                         |
+>                         --- __ticket_spin_lock
+>                            |
+>                            |--54.19%-- default_spin_lock_flags
+>                            |          _raw_spin_lock_irqsave
+>                            |          |
+>                            |           --54.14%-- __lock_timer
+>                            |                     |
+>                            |                     |--31.92%-- sys_timer_gettime
+>                            |                     |          system_call_fastpath
+>                            |                     |
+>                            |                      --22.22%-- sys_timer_settime
+>                            |                                system_call_fastpath
+>                            |
+>                            |--15.66%-- _raw_spin_lock
+> [...]
+> 
+> Which I guess seems to match what Eric just said.
+> 
+> I'll post a link to the full data tomorrow. Many thanks for the help
+> so far. If it's a kernel scaling limit then I guess we just wait until
+> the kernel gets better. :S I'll check it out with a linux guest
+> tomorrow anyway.
 
-Sorry, that typo is my work.
+Here is a quick & dirty patch to lower idr_lock use. You could try it
+eventually ;)
 
-> Thanks
-> 
-> [PATCH] ipvs: fix a typo in __ip_vs_control_init()
-> 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Simon Horman <horms@verge.net.au>
-> Cc: Julian Anastasov <ja@ssi.bg>
+Thanks
 
-Acked-by: Simon Horman <horms@verge.net.au>
+[RFC] posix-timers: RCU conversion
 
-> ---
->  net/netfilter/ipvs/ip_vs_ctl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-> index b799cea..33733c8 100644
-> --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> @@ -3605,7 +3605,7 @@ int __net_init __ip_vs_control_init(struct net *net)
->  
->  	/* procfs stats */
->  	ipvs->tot_stats.cpustats = alloc_percpu(struct ip_vs_cpu_stats);
-> -	if (ipvs->tot_stats.cpustats) {
-> +	if (!ipvs->tot_stats.cpustats) {
->  		pr_err("%s(): alloc_percpu.\n", __func__);
->  		return -ENOMEM;
->  	}
-> 
-> 
+Ben Nagy reported a scalability problem with KVM/QEMU that hit very hard
+a single spinlock (idr_lock) in posix-timers code.
+
+Even on a 16 cpu machine (2x4x2), a single test can show 98% of cpu time
+used in ticket_spin_lock
+
+Switching to RCU should be quite easy, IDR being already RCU ready.
+
+idr_lock should be locked only before an insert/delete, not a find.
+
+Reported-by: Ben Nagy <ben@iagu.net>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Richard Cochran <richard.cochran@omicron.at>
+---
+ include/linux/posix-timers.h |    1 +
+ kernel/posix-timers.c        |   26 ++++++++++++++------------
+ 2 files changed, 15 insertions(+), 12 deletions(-)
+
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index d51243a..5dc27ca 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -81,6 +81,7 @@ struct k_itimer {
+ 			unsigned long expires;
+ 		} mmtimer;
+ 	} it;
++	struct rcu_head rcu;
+ };
+ 
+ struct k_clock {
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 4c01249..e2a823a 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -491,6 +491,11 @@ static struct k_itimer * alloc_posix_timer(void)
+ 	return tmr;
+ }
+ 
++static void k_itimer_rcu_free(struct rcu_head *head)
++{
++	kmem_cache_free(posix_timers_cache, container_of(head, struct k_itimer, rcu));
++}
++
+ #define IT_ID_SET	1
+ #define IT_ID_NOT_SET	0
+ static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
+@@ -499,11 +504,12 @@ static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
+ 		unsigned long flags;
+ 		spin_lock_irqsave(&idr_lock, flags);
+ 		idr_remove(&posix_timers_id, tmr->it_id);
++		tmr->it_id = -1;
+ 		spin_unlock_irqrestore(&idr_lock, flags);
+ 	}
+ 	put_pid(tmr->it_pid);
+ 	sigqueue_free(tmr->sigq);
+-	kmem_cache_free(posix_timers_cache, tmr);
++	call_rcu(&tmr->rcu, k_itimer_rcu_free);
+ }
+ 
+ static struct k_clock *clockid_to_kclock(const clockid_t id)
+@@ -631,22 +637,18 @@ out:
+ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+ {
+ 	struct k_itimer *timr;
+-	/*
+-	 * Watch out here.  We do a irqsave on the idr_lock and pass the
+-	 * flags part over to the timer lock.  Must not let interrupts in
+-	 * while we are moving the lock.
+-	 */
+-	spin_lock_irqsave(&idr_lock, *flags);
++
++	rcu_read_lock();
+ 	timr = idr_find(&posix_timers_id, (int)timer_id);
+ 	if (timr) {
+-		spin_lock(&timr->it_lock);
+-		if (timr->it_signal == current->signal) {
+-			spin_unlock(&idr_lock);
++		spin_lock_irqsave(&timr->it_lock, *flags);
++		if (timr->it_id == (int)timer_id && timr->it_signal == current->signal) {
++			rcu_read_unlock();
+ 			return timr;
+ 		}
+-		spin_unlock(&timr->it_lock);
++		spin_unlock_irqrestore(&timr->it_lock, *flags);
+ 	}
+-	spin_unlock_irqrestore(&idr_lock, *flags);
++	rcu_read_unlock();
+ 
+ 	return NULL;
+ }
+
+
