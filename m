@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab1CUXzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:55:33 -0400
-Received: from kroah.org ([198.145.64.141]:49140 "EHLO coco.kroah.org"
+	id S1754902Ab1CUX4G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:56:06 -0400
+Received: from kroah.org ([198.145.64.141]:49131 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab1CUXOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:14:10 -0400
+	id S1755136Ab1CUXOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:14:08 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:54 2011
-Message-Id: <20110321231054.691939560@clark.kroah.org>
+Message-Id: <20110321231054.493495216@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:19 -0700
+Date: Mon, 21 Mar 2011 16:10:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [39/44] mmc: sdio: remember new card RCA when redetecting card
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [37/44] [PARISC] fix per-cpu flag problem in the cpu affinity checkers
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 0aab3995485b8a994bf29a995a008c9ea4a28054 upstream.
+commit 9804c9eaeacfe78651052c5ddff31099f60ef78c upstream.
 
-During redetection of a SDIO card, a request for a new card RCA
-was submitted to the card, but was then overwritten by the old RCA.
-This caused the card to be deselected instead of selected when using
-the incorrect RCA.  This bug's been present since the "oldcard"
-handling was introduced in 2.6.32.
+The CHECK_IRQ_PER_CPU is wrong, it should be checking
+irq_to_desc(irq)->status not just irq.
 
-Signed-off-by: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@stericsson.com>
-Reviewed-by: Pawel Wieczorkiewicz <pawel.wieczorkiewicz@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/core/sdio.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/parisc/kernel/irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -267,6 +267,14 @@ static int mmc_sdio_init_card(struct mmc
- 		if (err)
- 			goto remove;
+--- a/arch/parisc/kernel/irq.c
++++ b/arch/parisc/kernel/irq.c
+@@ -117,7 +117,7 @@ int cpu_check_affinity(unsigned int irq,
+ 	int cpu_dest;
  
-+		/*
-+		 * Update oldcard with the new RCA received from the SDIO
-+		 * device -- we're doing this so that it's updated in the
-+		 * "card" struct when oldcard overwrites that later.
-+		 */
-+		if (oldcard)
-+			oldcard->rca = card->rca;
-+
- 		mmc_set_bus_mode(host, MMC_BUSMODE_PUSHPULL);
- 	}
- 
+ 	/* timer and ipi have to always be received on all CPUs */
+-	if (CHECK_IRQ_PER_CPU(irq)) {
++	if (CHECK_IRQ_PER_CPU(irq_to_desc(irq)->status)) {
+ 		/* Bad linux design decision.  The mask has already
+ 		 * been set; we must reset it */
+ 		cpumask_setall(irq_desc[irq].affinity);
 
 
