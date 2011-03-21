@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab1CUXQe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:16:34 -0400
-Received: from kroah.org ([198.145.64.141]:49686 "EHLO coco.kroah.org"
+	id S932180Ab1CUXQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:16:31 -0400
+Received: from kroah.org ([198.145.64.141]:49663 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab1CUXQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:16:25 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:18 2011
-Message-Id: <20110321230717.944974511@clark.kroah.org>
+	id S932103Ab1CUXQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:16:21 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:17 2011
+Message-Id: <20110321230717.534602556@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:07:24 -0700
+Date: Mon, 21 Mar 2011 16:07:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jan Beulich <jbeulich@novell.com>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <kees.cook@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [85/87] x86, binutils, xen: Fix another wrong size directive
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [81/87] [PARISC] fix per-cpu flag problem in the cpu affinity checkers
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,75 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander van Heukelum <heukelum@fastmail.fm>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 371c394af27ab7d1e58a66bc19d9f1f3ac1f67b4 upstream.
+commit 9804c9eaeacfe78651052c5ddff31099f60ef78c upstream.
 
-The latest binutils (2.21.0.20110302/Ubuntu) breaks the build
-yet another time, under CONFIG_XEN=y due to a .size directive that
-refers to a slightly differently named (hence, to the now very
-strict and unforgiving assembler, non-existent) symbol.
+The CHECK_IRQ_PER_CPU is wrong, it should be checking
+irq_to_desc(irq)->status not just irq.
 
-[ mingo:
-
-   This unnecessary build breakage caused by new binutils
-   version 2.21 gets escallated back several kernel releases spanning
-   several years of Linux history, affecting over 130,000 upstream
-   kernel commits (!), on CONFIG_XEN=y 64-bit kernels (i.e. essentially
-   affecting all major Linux distro kernel configs).
-
-   Git annotate tells us that this slight debug symbol code mismatch
-   bug has been introduced in 2008 in commit 3d75e1b8:
-
-     3d75e1b8        (Jeremy Fitzhardinge    2008-07-08 15:06:49 -0700 1231) ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-
-   The 'bug' is just a slight assymetry in ENTRY()/END()
-   debug-symbols sequences, with lots of assembly code between the
-   ENTRY() and the END():
-
-     ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
-       ...
-     END(do_hypervisor_callback)
-
-   Human reviewers almost never catch such small mismatches, and binutils
-   never even warned about it either.
-
-   This new binutils version thus breaks the Xen build on all upstream kernels
-   since v2.6.27, out of the blue.
-
-   This makes a straightforward Git bisection of all 64-bit Xen-enabled kernels
-   impossible on such binutils, for a bisection window of over hundred
-   thousand historic commits. (!)
-
-   This is a major fail on the side of binutils and binutils needs to turn
-   this show-stopper build failure into a warning ASAP. ]
-
-Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jan Beulich <jbeulich@novell.com>
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <kees.cook@canonical.com>
-LKML-Reference: <1299877178-26063-1-git-send-email-heukelum@fastmail.fm>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/entry_64.S |    2 +-
+ arch/parisc/kernel/irq.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1238,7 +1238,7 @@ ENTRY(xen_do_hypervisor_callback)   # do
- 	decl PER_CPU_VAR(irq_count)
- 	jmp  error_exit
- 	CFI_ENDPROC
--END(do_hypervisor_callback)
-+END(xen_do_hypervisor_callback)
+--- a/arch/parisc/kernel/irq.c
++++ b/arch/parisc/kernel/irq.c
+@@ -108,7 +108,7 @@ int cpu_check_affinity(unsigned int irq,
+ 	int cpu_dest;
  
- /*
-  * Hypervisor uses this for application faults while it executes.
+ 	/* timer and ipi have to always be received on all CPUs */
+-	if (CHECK_IRQ_PER_CPU(irq)) {
++	if (CHECK_IRQ_PER_CPU(irq_to_desc(irq)->status)) {
+ 		/* Bad linux design decision.  The mask has already
+ 		 * been set; we must reset it */
+ 		cpumask_setall(irq_desc[irq].affinity);
 
 
