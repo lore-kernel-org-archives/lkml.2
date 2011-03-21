@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab1CUX42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:56:28 -0400
-Received: from kroah.org ([198.145.64.141]:49111 "EHLO coco.kroah.org"
+	id S932261Ab1CUX4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:56:31 -0400
+Received: from kroah.org ([198.145.64.141]:49105 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754860Ab1CUXOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:14:05 -0400
+	id S1755081Ab1CUXOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:14:04 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:54 2011
-Message-Id: <20110321231054.162297660@clark.kroah.org>
+Message-Id: <20110321231054.059663762@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:10:14 -0700
+Date: Mon, 21 Mar 2011 16:10:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>,
-        Mallick Asit K <asit.k.mallick@intel.com>,
-        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [34/44] x86: Flush TLB if PGD entry is changed in i386 PAE mode
+        Paul McKinney <paulmck@linux.vnet.ibm.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: [33/44] call_function_many: add missing ordering
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,80 +26,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: Milton Miller <miltonm@bga.com>
 
-commit 4981d01eada5354d81c8929d5b2836829ba3df7b upstream.
+commit 45a5791920ae643eafc02e2eedef1a58e341b736 upstream.
 
-According to intel CPU manual, every time PGD entry is changed in i386 PAE
-mode, we need do a full TLB flush. Current code follows this and there is
-comment for this too in the code.
+Paul McKenney's review pointed out two problems with the barriers in the
+2.6.38 update to the smp call function many code.
 
-But current code misses the multi-threaded case. A changed page table
-might be used by several CPUs, every such CPU should flush TLB. Usually
-this isn't a problem, because we prepopulate all PGD entries at process
-fork. But when the process does munmap and follows new mmap, this issue
-will be triggered.
+First, a barrier that would force the func and info members of data to
+be visible before their consumption in the interrupt handler was
+missing.  This can be solved by adding a smp_wmb between setting the
+func and info members and setting setting the cpumask; this will pair
+with the existing and required smp_rmb ordering the cpumask read before
+the read of refs.  This placement avoids the need a second smp_rmb in
+the interrupt handler which would be executed on each of the N cpus
+executing the call request.  (I was thinking this barrier was present
+but was not).
 
-When it happens, some CPUs keep doing page faults:
+Second, the previous write to refs (establishing the zero that we the
+interrupt handler was testing from all cpus) was performed by a third
+party cpu.  This would invoke transitivity which, as a recient or
+concurrent addition to memory-barriers.txt now explicitly states, would
+require a full smp_mb().
 
-  http://marc.info/?l=linux-kernel&m=129915020508238&w=2
+However, we know the cpumask will only be set by one cpu (the data
+owner) and any preivous iteration of the mask would have cleared by the
+reading cpu.  By redundantly writing refs to 0 on the owning cpu before
+the smp_wmb, the write to refs will follow the same path as the writes
+that set the cpumask, which in turn allows us to keep the barrier in the
+interrupt handler a smp_rmb instead of promoting it to a smp_mb (which
+will be be executed by N cpus for each of the possible M elements on the
+list).
 
-Reported-by: Yasunori Goto<y-goto@jp.fujitsu.com>
-Tested-by: Yasunori Goto<y-goto@jp.fujitsu.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Shaohua Li<shaohua.li@intel.com>
-Cc: Mallick Asit K <asit.k.mallick@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>
-LKML-Reference: <1300246649.2337.95.camel@sli10-conroe>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+I moved and expanded the comment about our (ab)use of the rcu list
+primitives for the concurrent walk earlier into this function.  I
+considered moving the first two paragraphs to the queue list head and
+lock, but felt it would have been too disconected from the code.
+
+Cc: Paul McKinney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/pgtable-3level.h |   11 +++--------
- arch/x86/mm/pgtable.c                 |    3 +--
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ kernel/smp.c |   46 +++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 33 insertions(+), 13 deletions(-)
 
---- a/arch/x86/include/asm/pgtable-3level.h
-+++ b/arch/x86/include/asm/pgtable-3level.h
-@@ -69,8 +69,6 @@ static inline void native_pmd_clear(pmd_
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -421,23 +421,42 @@ void smp_call_function_many(const struct
  
- static inline void pud_clear(pud_t *pudp)
- {
--	unsigned long pgd;
--
- 	set_pud(pudp, __pud(0));
+ 	data = &__get_cpu_var(cfd_data);
+ 	csd_lock(&data->csd);
+-	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
+ 
+-	data->csd.func = func;
+-	data->csd.info = info;
+-	cpumask_and(data->cpumask, mask, cpu_online_mask);
+-	cpumask_clear_cpu(this_cpu, data->cpumask);
++	/* This BUG_ON verifies our reuse assertions and can be removed */
++	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
  
  	/*
-@@ -79,13 +77,10 @@ static inline void pud_clear(pud_t *pudp
- 	 * section 8.1: in PAE mode we explicitly have to flush the
- 	 * TLB via cr3 if the top-level pgd is changed...
- 	 *
--	 * Make sure the pud entry we're updating is within the
--	 * current pgd to avoid unnecessary TLB flushes.
-+	 * Currently all places where pud_clear() is called either have
-+	 * flush_tlb_mm() followed or don't need TLB flush (x86_64 code or
-+	 * pud_clear_bad()), so we don't need TLB flush here.
++	 * The global call function queue list add and delete are protected
++	 * by a lock, but the list is traversed without any lock, relying
++	 * on the rcu list add and delete to allow safe concurrent traversal.
+ 	 * We reuse the call function data without waiting for any grace
+ 	 * period after some other cpu removes it from the global queue.
+-	 * This means a cpu might find our data block as it is writen.
+-	 * The interrupt handler waits until it sees refs filled out
+-	 * while its cpu mask bit is set; here we may only clear our
+-	 * own cpu mask bit, and must wait to set refs until we are sure
+-	 * previous writes are complete and we have obtained the lock to
+-	 * add the element to the queue.
++	 * This means a cpu might find our data block as it is being
++	 * filled out.
++	 *
++	 * We hold off the interrupt handler on the other cpu by
++	 * ordering our writes to the cpu mask vs our setting of the
++	 * refs counter.  We assert only the cpu owning the data block
++	 * will set a bit in cpumask, and each bit will only be cleared
++	 * by the subject cpu.  Each cpu must first find its bit is
++	 * set and then check that refs is set indicating the element is
++	 * ready to be processed, otherwise it must skip the entry.
++	 *
++	 * On the previous iteration refs was set to 0 by another cpu.
++	 * To avoid the use of transitivity, set the counter to 0 here
++	 * so the wmb will pair with the rmb in the interrupt handler.
  	 */
--	pgd = read_cr3();
--	if (__pa(pudp) >= pgd && __pa(pudp) <
--	    (pgd + sizeof(pgd_t)*PTRS_PER_PGD))
--		write_cr3(pgd);
- }
++	atomic_set(&data->refs, 0);	/* convert 3rd to 1st party write */
++
++	data->csd.func = func;
++	data->csd.info = info;
++
++	/* Ensure 0 refs is visible before mask.  Also orders func and info */
++	smp_wmb();
++
++	/* We rely on the "and" being processed before the store */
++	cpumask_and(data->cpumask, mask, cpu_online_mask);
++	cpumask_clear_cpu(this_cpu, data->cpumask);
  
- #ifdef CONFIG_SMP
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -159,8 +159,7 @@ void pud_populate(struct mm_struct *mm,
- 	 * section 8.1: in PAE mode we explicitly have to flush the
- 	 * TLB via cr3 if the top-level pgd is changed...
+ 	spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+@@ -447,8 +466,9 @@ void smp_call_function_many(const struct
  	 */
--	if (mm == current->active_mm)
--		write_cr3(read_cr3());
-+	flush_tlb_mm(mm);
- }
- #else  /* !CONFIG_X86_PAE */
- 
+ 	list_add_rcu(&data->csd.list, &call_function.queue);
+ 	/*
+-	 * We rely on the wmb() in list_add_rcu to order the writes
+-	 * to func, data, and cpumask before this write to refs.
++	 * We rely on the wmb() in list_add_rcu to complete our writes
++	 * to the cpumask before this write to refs, which indicates
++	 * data is on the list and is ready to be processed.
+ 	 */
+ 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	spin_unlock_irqrestore(&call_function.lock, flags);
 
 
