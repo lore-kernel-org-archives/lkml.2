@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab1CUXRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:17:35 -0400
-Received: from kroah.org ([198.145.64.141]:52487 "EHLO coco.kroah.org"
+	id S1755777Ab1CUXc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:32:57 -0400
+Received: from kroah.org ([198.145.64.141]:52522 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755585Ab1CUXR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:29 -0400
+	id S932207Ab1CUXRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:35 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:22 2011
-Message-Id: <20110321230322.046408793@clark.kroah.org>
+Message-Id: <20110321230322.787438625@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:20 -0700
+Date: Mon, 21 Mar 2011 16:01:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kamal Mostafa <kamal@canonical.com>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [04/78] x86: Fix panic when handling "mem={invalid}" param
+        Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [11/78] IB/cm: Bump reference count on cm_id before invoking callback
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Sean Hefty <sean.hefty@intel.com>
 
-commit 77eed821accf5dd962b1f13bed0680e217e49112 upstream.
+commit 29963437a48475036353b95ab142bf199adb909e upstream.
 
-Avoid removing all of memory and panicing when "mem={invalid}"
-is specified, e.g. mem=blahblah, mem=0, or mem=nopentium (on
-platforms other than x86_32).
+When processing a SIDR REQ, the ib_cm allocates a new cm_id.  The
+refcount of the cm_id is initialized to 1.  However, cm_process_work
+will decrement the refcount after invoking all callbacks.  The result
+is that the cm_id will end up with refcount set to 0 by the end of the
+sidr req handler.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-BugLink: http://bugs.launchpad.net/bugs/553464
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-LKML-Reference: <1296783486-23033-1-git-send-email-kamal@canonical.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+If a user tries to destroy the cm_id, the destruction will proceed,
+under the incorrect assumption that no other threads are referencing
+the cm_id.  This can lead to a crash when the cm callback thread tries
+to access the cm_id.
+
+This problem was noticed as part of a larger investigation with kernel
+crashes in the rdma_cm when running on a real time OS.
+
+Signed-off-by: Sean Hefty <sean.hefty@intel.com>
+Acked-by: Doug Ledford <dledford@redhat.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/e820.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/infiniband/core/cm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -856,6 +856,9 @@ static int __init parse_memopt(char *p)
+--- a/drivers/infiniband/core/cm.c
++++ b/drivers/infiniband/core/cm.c
+@@ -2989,6 +2989,7 @@ static int cm_sidr_req_handler(struct cm
+ 		goto out; /* No match. */
+ 	}
+ 	atomic_inc(&cur_cm_id_priv->refcount);
++	atomic_inc(&cm_id_priv->refcount);
+ 	spin_unlock_irq(&cm.lock);
  
- 	userdef = 1;
- 	mem_size = memparse(p, &p);
-+	/* don't remove all of memory when handling "mem={invalid}" param */
-+	if (mem_size == 0)
-+		return -EINVAL;
- 	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
- 
- 	return 0;
+ 	cm_id_priv->id.cm_handler = cur_cm_id_priv->id.cm_handler;
 
 
