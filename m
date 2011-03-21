@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab1CUMyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:54:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43150 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab1CUMyt (ORCPT
+	id S1753369Ab1CUM4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 08:56:32 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37665 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab1CUM42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:54:49 -0400
-Date: Mon, 21 Mar 2011 13:54:40 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org,
-        sameo@linux.intel.com, patches@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] make sdhci device drivers self registered
-Message-ID: <20110321125440.GE9686@pengutronix.de>
-References: <1300694823-8300-1-git-send-email-shawn.guo@linaro.org>
- <201103211339.45305.arnd@arndb.de>
+	Mon, 21 Mar 2011 08:56:28 -0400
+Date: Mon, 21 Mar 2011 12:56:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Nick Piggin <npiggin@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
+	format definitions
+Message-ID: <20110321125606.GC22222@n2100.arm.linux.org.uk>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-9-git-send-email-catalin.marinas@arm.com> <AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com> <20110124214225.GO24104@n2100.arm.linux.org.uk> <AANLkTikH9tBTGCiJ-+dvhh1tajMVq_6ua41MMZmq48sC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="//IivP0gvsAy3Can"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201103211339.45305.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikH9tBTGCiJ-+dvhh1tajMVq_6ua41MMZmq48sC@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 21, 2011 at 12:36:55PM +0000, Catalin Marinas wrote:
+> Any plans for the nopmd patches? I haven't seen them in -next or on the list.
 
---//IivP0gvsAy3Can
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I dropped them again because of those pesky warnings, so again I'm not
+planning to push them this window as I don't wish to be deluged in
+people reporting the warnings.
 
-> If you don't get any other feedback and Chris is happy with the
+They really need fixing once we know how the LPAE stuff interacts with
+the change.  At the moment I've no idea whether the existing section
+support ends up at pgd or pmd level with LPAE.
 
-I would like to have a look at it, please give me a few days.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---//IivP0gvsAy3Can
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk2HSpAACgkQD27XaX1/VRu2XACgpoIYAxXl7PBMt1ImAi1v//Ri
-DbsAoIKyxG8Tr4N5OIFQVDyca2g6Ic65
-=Uzdh
------END PGP SIGNATURE-----
-
---//IivP0gvsAy3Can--
+Obviously that matters as with LPAE, pgd and pmd are different hardware
+levels, but without LPAE they're the same hardware level.
