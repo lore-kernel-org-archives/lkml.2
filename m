@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab1CUPPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 11:15:42 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:56483 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041Ab1CUPPj convert rfc822-to-8bit (ORCPT
+	id S1752536Ab1CUPRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:17:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64927 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab1CUPRK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 11:15:39 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 21 Mar 2011 11:17:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mIBkEEG2NT+lZWc8jPDzaDnSH/FSxzlFX2zVnIrsCuI63ec8w+r7guSvgL6K93m/sP
+         zrEmly0IZZD7+j7V5OssPOAhTyMGkLtXr/7385hPdw/wRrotL1YUZC2Ar8FSgExspU2O
+         K+Vnyvkd5T+/97+HYtaMGX+OypgRJi4r1aqTg=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+In-Reply-To: <AANLkTimwa4hvTzX+S1E08rwUKYrGB76GiZoE5LhHjGyu@mail.gmail.com>
+References: <AANLkTimwa4hvTzX+S1E08rwUKYrGB76GiZoE5LhHjGyu@mail.gmail.com>
+Date: Mon, 21 Mar 2011 23:16:54 +0800
+Message-ID: <AANLkTikQW__eD5v59BqWOrzMoW5NVPDwkNYG2vfgRhjy@mail.gmail.com>
+Subject: Re: usb-serial gadget -- windows xp not working
+From: Xiaofan Chen <xiaofanc@gmail.com>
+To: nidhi mittal hada <nidhimittal19@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Subject: RE: [patch] rapidio: potential null deref on failure path
-Date: Mon, 21 Mar 2011 08:15:33 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201A5897F@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <20110321145948.GP2008@bicker>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [patch] rapidio: potential null deref on failure path
-Thread-Index: Acvn2b0I7Y9oFmUeQjyyyM1LF8YkbQAAK5PQ
-References: <20110319044032.GC2008@bicker> <0CE8B6BE3C4AD74AB97D9D29BD24E55201A588F5@CORPEXCH1.na.ads.idt.com> <20110321145948.GP2008@bicker>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Dan Carpenter" <error27@gmail.com>
-Cc: "Matt Porter" <mporter@kernel.crashing.org>,
-        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this case I agree. 
-Do you want me to move this patch up or you have your own path for it?
+On Mon, Mar 21, 2011 at 10:43 PM, nidhi mittal hada
+<nidhimittal19@gmail.com> wrote:
+> Hi all
+> I tried using g_serial driver for using my BeagleBoard (BB)  as usb
+> serial gadget to connect it to windows xp host.
+> using this link
+> http://www.mjmwired.net/kernel/Documentation/usb/gadget_serial.txt
+>
+> The command
+> modprobe g_serial executed properly  on BB (gadget) and It gets
+> identified successfully on Linus host(ubuntu) when connected through
+> usb wire.
+>
+> But
+> when the gadget connected to Windows XP .
+> Host XP identifies a new hardware in device manager ...But the step of
+> installing the .inf file obtained from
+> http://www.mjmwired.net/kernel/Documentation/usb/linux-cdc-acm.inf
+> does not succeed !!!
 
-Alex. 
+The inf file indeed has some bugs. But I doubt that is your problem.
+http://www.microchip.com/forums/fb.ashx?m=488342
 
------Original Message-----
-From: Dan Carpenter [mailto:error27@gmail.com] 
-Sent: Monday, March 21, 2011 11:00 AM
-To: Bounine, Alexandre
-Cc: Matt Porter; linux-kernel@vger.kernel.org;
-kernel-janitors@vger.kernel.org
-Subject: Re: [patch] rapidio: potential null deref on failure path
+mchpcdc.inf (and its derivatives)
 
-On Mon, Mar 21, 2011 at 05:49:06AM -0700, Bounine, Alexandre wrote:
-> Better to combine both conditions:
-> 
-> if (rio_is_switch(rdev) && rswitch->route_table))
->  		kfree(rswitch->route_table);
-> 
-> Because there is situation when routine fails to allocate route_table
-> for a switch.
-> 
+ [DestinationDirs]
+ FakeModemCopyFileSection=12            ; <------ add this line
+ DefaultDestDir=12
 
-kfree() accepts NULL pointers.  People have been removing these checks
-all over the tree by the hundreds...  Sorry I should have mentioned 
-that.
+ [DriverInstall.nt]
+ include=mdmcpq.inf
+ ;; CopyFiles = DriverCopyFiles.nt      ; <------ wrong one: reference
+to this INF file
+ CopyFiles = FakeModemCopyFileSection   ; <------ right one: reference
+to a section in mdmcpq.inf
+ AddReg=DriverInstall.nt.AddReg
 
-regards,
-dan carpenter
+ ;; [DriverCopyFiles.nt]                ; <------ delete these lines
+ ;; usbser.sys,,,0x20                   ; <------
 
 
+> As i found after googling --  i changed the product ID Vendor ID in
+> .inf file ..as found for my gadget.
+> But the problem persists.!!!
+>
+
+If you have used the VID/PID for other experiment, then you will got
+problems. You can use usbdeview to get Windows to forget about
+the VID/PID combination.
+http://www.nirsoft.net/utils/usb_devices_view.html
+
+Or you can use pnputil if you have WDK.
+http://msdn.microsoft.com/en-us/library/ff550419(v=vs.85).aspx
+
+-- 
+Xiaofan
