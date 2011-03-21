@@ -1,118 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab1CUPml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 11:42:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38028 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab1CUPmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 11:42:39 -0400
-Message-ID: <4D8771D5.40600@oracle.com>
-Date: Mon, 21 Mar 2011 08:42:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1753528Ab1CUPqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:46:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60721 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752220Ab1CUPqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 11:46:02 -0400
+Message-ID: <4D8772B6.80302@redhat.com>
+Date: Mon, 21 Mar 2011 11:45:58 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [build failure] Re: [GIT PULL] sound updates for 2.6.39-rc1
-References: <s5hr5a4ttfi.wl%tiwai@suse.de> <20110321153719.GA12325@elte.hu>
-In-Reply-To: <20110321153719.GA12325@elte.hu>
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org, dzickus@redhat.com
+Subject: Re: [PATCH]: SMBIOS: Add initial code and export version via sysfs
+References: <20110317135754.25241.88177.sendpatchset@prarit.bos.redhat.com> <20110317193023.GA16790@kroah.com> <4D826718.3030001@redhat.com> <20110317200701.GB17827@kroah.com>
+In-Reply-To: <20110317200701.GB17827@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt356.oracle.com [141.146.40.156]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4D8771DA.00BB,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/11 08:37, Ingo Molnar wrote:
-> 
-> * Takashi Iwai <tiwai@suse.de> wrote:
-> 
->> Linus,
->>
->> please pull sound updates for v2.6.39-rc1 from:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git for-linus
-> 
-> This build failure:
-> 
-> sound/built-in.o: In function `ldo_regulator_remove':
-> sgtl5000.c:(.text+0x82678): undefined reference to `regulator_unregister'
-> sound/built-in.o: In function `ldo_regulator_is_enabled':
-> sgtl5000.c:(.text+0x826c5): undefined reference to `rdev_get_drvdata'
-> sound/built-in.o: In function `ldo_regulator_disable':
-> sgtl5000.c:(.text+0x826ef): undefined reference to `rdev_get_drvdata'
-> sound/built-in.o: In function `ldo_regulator_enable':
-> sgtl5000.c:(.text+0x82756): undefined reference to `rdev_get_drvdata'
-> sound/built-in.o: In function `ldo_regulator_get_voltage':
-> sgtl5000.c:(.text+0x82815): undefined reference to `rdev_get_drvdata'
-> sound/built-in.o: In function `sgtl5000_probe':
-> 
-> has been pushed upstream - although the build breakage was reported against 
-> linux-next two weeks ago, with fix provided, in this lkml thread:
-> 
->   [PATCH -next] soc: sgtl5000 uses regulator interfaces
-> 
-> Please do not push known-broken code upstream.
-> 
-> Randy's fix below resolved the bug for me.
+gregkh wrote:
+>Sounds good, how are you going to do this?  In binary way (like efivars
+>does it) or in text files like the current DMI code does?
 
-The driver author did promise a different fix, but I haven't seen it.
+gregkh wrote:
+>What exactly are you
+>trying to achive?  What do you want to show in sysfs and how do you
+>expect it to look?
 
+Greg, sorry for repeating myself in some of the below.  You're right in your
+implication that I was not explaining myself very well.  I figured the
+best thing to do was to start my argument from the beginning...
 
-> Thanks,
-> 
-> 	Ingo
-> 
-> --------------------->
-> From 8c7c9a0622d5b1955628961ae193c12d948c1871 Mon Sep 17 00:00:00 2001
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> Date: Fri, 4 Mar 2011 17:33:57 -0800
-> Subject: [PATCH] soc: Sgtl5000 uses regulator interfaces
-> 
-> sgtl5000 uses regulator interfaces, so make selecting it depend
-> on REGULATOR.
-> 
->  sgtl5000.c:(.text+0x4ae33): undefined reference to `regulator_unregister'
->  sgtl5000.c:(.text+0x4af41): undefined reference to `rdev_get_drvdata'
->  sgtl5000.c:(.text+0x4b191): undefined reference to `regulator_register'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: alsa-devel@alsa-project.org
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Zeng Zhaoming <zhaoming.zeng@freescale.com>
-> LKML-Reference: <20110304173357.23d36116.randy.dunlap@oracle.com>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  sound/soc/codecs/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-> index d63c175..84818f5 100644
-> --- a/sound/soc/codecs/Kconfig
-> +++ b/sound/soc/codecs/Kconfig
-> @@ -36,7 +36,7 @@ config SND_SOC_ALL_CODECS
->  	select SND_SOC_MAX9850 if I2C
->  	select SND_SOC_MAX9877 if I2C
->  	select SND_SOC_PCM3008
-> -	select SND_SOC_SGTL5000 if I2C
-> +	select SND_SOC_SGTL5000 if I2C && REGULATOR
->  	select SND_SOC_SN95031 if INTEL_SCU_IPC
->  	select SND_SOC_SPDIF
->  	select SND_SOC_SSM2602 if I2C
+The last update to the DMI specification was in 2003.  It has since been
+replaced by SMBIOS.  A new SMBIOS specification was released in February
+2011.
 
+While looking at the SMBIOS related code in the kernel, I noticed that the
+DMI code was actually being overloaded to include SMBIOS structures and
+that other sections of code (ia64 setup, x86 setup & pci, Dell platform
+driver(s), the new PCI sysfs labe codel, hotplug drivers, the HP watchdog
+driver, and the sigmatel sound driver, all used a method to derive values
+from the SMBIOS structs.  Please note, that this list is very likely
+incomplete.  I only did a search on 'smbios' in the kernel.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+As I previously said, it would be nice if we did this in a single location
+instead of throughout the kernel, and fix the overloading of the DMI code
+currently in the kernel.
+
+For now, my intention is to leave the code as similar to the DMI code as
+possible.  That is, export the SMBIOS information via text files in
+sysfs (although the layout of the files will obviously change, see below).
+
+In this way we would limit the amount of change to external packages
+(ie, initscripts, network init, etc.) to hopefully only filename changes.
+
+I will create a new sysfs class, to temporarily exist next to the
+current /sys/devices/virtual/dmi entry, which would export values from
+SMBIOS.  I want to introduce this slowly and in several stages:
+
+1.  Introduce the new SMBIOS infrastructure in a [relatively] simple patch,
+and export the smbios version # to the kernel.
+
+The model I had in mind was:
+
+/sys/devices/virtual/smbios/id/
+
+/sys/devices/virtual/smbios/id/[type#]/...
+
+ie) a straight mapping of the smbios tables.  It should be up to the
+individual
+drivers & subsystems to link back to the files.  Of course, the SMBIOS code
+would provide lookup functions similar to the ones provided by the existing
+DMI code to aid drivers in their lookups.
+
+2.  Export all of the SMBIOS information in the current (Feb 2011) spec.  If
+all goes well I think the correct thing to do is to update
+feature-removal-schedule.txt with a well-defined timeline at this point.
+
+3.  Modify drivers to use the new SMBIOS table lookups, etc, instead of
+DMI table lookups.  This is relatively easy, IMO.  I will try to keep
+dmi* functions identical to the new smbios* lookup functions.  That code
+works
+well, and isn't in need of change.
+
+4.  Notify external userspace programs of the change.  To be honest, I
+haven't
+thought much about this other than to take a couple of systems and see what
+is using those values and let them know of the impending change.
+
+[This next part is wishful thinking ;)] ... I suppose at some point it
+would be
+possible to put in a printk into the *existing* DMI sysfs files to indicate
+that they were being deprecated.  I can certainly see how that would be
+frowned upon; while it would be a loud nasty warning, it also might be one
+of those warnings people just learn to ignore.
+
+5.  After a release (or some other set period of time defined in
+feature-removal-schedule.txt), remove the old DMI code.
+
+I'm hoping to lean on what you did for the udev change, Greg.  IIRC, you
+kept the old code and the new udev code in place for a while and then made
+the final change after some time.  I can see that would be the best idea
+here...
+
+P.
+
