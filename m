@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1CUOJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 10:09:42 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48919 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753194Ab1CUOJk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 10:09:40 -0400
-Date: Mon, 21 Mar 2011 10:09:38 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Oliver Neukum <oneukum@suse.de>
-cc: Jiri Kosina <jkosina@suse.cz>, Greg KH <gregkh@suse.de>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: "usb_wwan: error case of resume" (16871dcac) is buggy
-In-Reply-To: <201103211011.07282.oneukum@suse.de>
-Message-ID: <Pine.LNX.4.44L0.1103211006170.1978-100000@iolanthe.rowland.org>
+	id S1753460Ab1CUOPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 10:15:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47300 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab1CUOPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 10:15:04 -0400
+Date: Mon, 21 Mar 2011 07:09:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hv: use sync_bitops when interacting with the hypervisor
+Message-ID: <20110321140927.GA7358@suse.de>
+References: <20110321134137.GA29305@aepfle.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110321134137.GA29305@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Mar 2011, Oliver Neukum wrote:
-
-> Am Montag, 21. März 2011, 01:36:45 schrieb Jiri Kosina:
-> > Hi,
-> > 
-> > the commit in subject make the kernel with CONFIG_PM_RUNTIME unset fail 
-> > during compilation, as struct dev_pm_info doesn't have whole bunch of 
-> > members in such case.
-> > 
-> > The commit in question adds this code:
-> > 
-> > 	/* we have to throw away the rest */
-> > 	do {
-> > 		unbusy_queued_urb(urb, portdata);
-> > 		//extremely dirty
-> > 		atomic_dec(&port->serial->interface->dev.power.usage_count);
-> > 	} while ((urb = usb_get_from_anchor(&portdata->delayed)));
-> > 
-> > The 'extermely dirty' comment makes me a bit nervous whether the patch 
-> > below is correct or some more thinking would be necessary.
+On Mon, Mar 21, 2011 at 02:41:37PM +0100, Olaf Hering wrote:
+> Locking is required when tweaking bits located in a shared page, use the
+> sync_ version of bitops. Without this change vmbus_on_event() will miss
+> events and as a result, vmbus_isr() will not schedule the receive tasklet.
 > 
-> I've since posted a clean patch, although your fix looks correct to me.
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-In fact the original code and Jiri's fix are both wrong.  The layering 
-violation here is not only inelegant, it is downright buggy.
+Great!  Can I get an Acked-by from Hank or Haiyang on this as well
+before I apply it?
 
-The USB core contains its own usage_count for interfaces, in parallel 
-with the usage_count in interface->dev.power.  Bypassing the USB layer 
-in this way causes the two counts to get out of sync, which will lead 
-to errors.
+thanks,
 
-Oliver's new fix is correct.
-
-Alan Stern
-
+greg k-h
