@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1CUMgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 08:36:48 -0400
-Received: from mail.ttmail.com ([88.255.235.9]:15154 "EHLO mail2.ttmail.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab1CUMgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 08:36:45 -0400
-Message-ID: <00fa07b2-40623-0e026088008102@laptop>
-From: "Turk Telekom Bodrum" <turktelekom@turktelekombodrum.com>
-To: linux-kernel@vger.kernel.org
-Subject: TTNET =??Q?-T=DCRK?= TELEKOM FATURANIZA =??Q?CAZ=DDP TAKS=DDTLERLE
- B=DDLG=DDSAYARLAR?= STOKLARIMIZDA
-Date: Mon, 21 Mar 2011 14:36:40 +0200
+	id S1753277Ab1CUMg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 08:36:57 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64804 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab1CUMg4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 08:36:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=rBYO23ASATBsIPBS6ZJ1ehy9d8uZ5XGSNDd4UERZk1BkHQfmzylxSkLB5Hd18iJxVB
+         jbbNFdSPPtHgRS9gWXlDUE8aDAoXDWK8apkYBkq4UeU632cC2MPdCwOqEzxUH3vmP2oP
+         3H5CMP9wmZfEINFFfxUD8B1VPEAv1vGGUQqRY=
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-OriginalArrivalTime: 21 Mar 2011 12:36:41.0945 (UTC) FILETIME=[A1820490:01CBE7C4]
+In-Reply-To: <20110124214225.GO24104@n2100.arm.linux.org.uk>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
+	<1295891761-18366-9-git-send-email-catalin.marinas@arm.com>
+	<AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com>
+	<20110124214225.GO24104@n2100.arm.linux.org.uk>
+Date: Mon, 21 Mar 2011 12:36:55 +0000
+X-Google-Sender-Auth: 3ceKl3vIpWxYPHhEOxgtpBOtI9E
+Message-ID: <AANLkTikH9tBTGCiJ-+dvhh1tajMVq_6ua41MMZmq48sC@mail.gmail.com>
+Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
+ format definitions
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nick Piggin <npiggin@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merhaba,
-TTNET -TÜRK TELEKOM FATURANIZA CAZÝP TAKSÝTLERLE BÝLGÝSAYARLAR STOKLARIMIZDA .
-STOKLARIMIZDAKÝ BÝLGÝSAYARLAR VE ÖZELLÝKLERÝ AÞAÐIDA LÝSTELENMÝÞTÝR.
-STOKLAR TÜKENMEDEN SÝZLERÝ ÝÞ YERÝMÝZE BEKLÝYORUZ.
+Hi Russell,
 
+On 24 January 2011 21:42, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Jan 25, 2011 at 08:26:42AM +1100, Nick Piggin wrote:
+>> Too bad about the PAE thing; my condolences.
+>>
+>>
+>> On Tue, Jan 25, 2011 at 4:55 AM, Catalin Marinas
+>> <catalin.marinas@arm.com> wrote:
+>> > This patch introduces the pgtable-3level*.h files with definitions
+>> > specific to the LPAE page table format (3 levels of page tables).
+>>
+>> Seeing as you're shaking up these definitions, what do you think about
+>> switching from 4level-fixup.h to pgtable-nopud.h / pgtable-nopmd.h headers?
+>> One day eventually it would be nice to get rid of the fixup mode.
+>
+> I have patches to do this which I de-queued for the last merge window.
+> It's not entirely trivial and without problem. Â You can find the patches
+> in linux-next now.
+>
+> I was waiting for the new set of patches from Catalin before going back
+> and working out the solutions to some of those problems.
 
-Gökay Karadut
-Yönetici
-Anfora Telekom Ltd. Þti. 
-1 Nolu Türk Telekom Bayi
-Cevat Þakir cad.70/1 Bodrum/mugla
-2523139142-5052100242
+Any plans for the nopmd patches? I haven't seen them in -next or on the list.
 
+Thanks.
 
-HP 500B MASA ÜSTÜ BÝLGÝSAYAR 35x36 AY
-
-Ýþletim türü Intel® Pentium® E6700 (2M Cache, 3.20 GHz, 1066 FSB) 
-Ýþlemci Sistemi  Orijinal Windows® 7 Home Basic 
-Dahili bellek  320 GB HDD 
-Bellek kartý aygýtý 2GB 
-Ekran boyutu  20'' 
-Grafik kartý  NVIDIA 210 512MB Ayrýk 
-Ekran çözünürlüðü  1600x900 
-Dahili sürücü DVDRW Sürücü 
-Ara Baðlantýlar (2) PCIe x1 slots, (1) PCIe x16  
-Að arabirimi 10/100 Ethernet 
-Güç kaynaðý türü 300 Watt 
-Garanti 2 Yýl 
-Ürün rengi Siyah 
-
-CASPER NÝRVANA DÝZ ÜSTÜ BÝLGÝSAYAR  29,99x36 ay
-
-Ýþlemci türü Intel® Pentium® P6100 (3M Cache, 2.00 GHz) 
-Ýþletim Sistemi Orijinal Windows® 7 Starter 
-Dahili bellek 250 GB HDD 
-Bellek kartý aygýtý  2GB DDR3 
-Ekran boyutu  15.6" 
-Grafik kartý  Intel HD Graphics Ekran Kartý Onboard 
-Ekran çözünürlüðü  1366x768 
-Harici G/Ç baðlantý noktalarý  3 USB VGA 1LAN, 1HDMI, 1E-SATA 1PCI Ex 
-Web kamerasý 1.3 MP 
-Hoparlörler ve mikrofon VAR 
-Að arabirimi 10/100/1000 Ethernet LAN 
-Geniþ bant kablosuz Kablosuz Að Baðlantýsý 802.11 b/g/n 
-
-EXPER STYLE SÝYAH NABA NETBOOK  15,40x36 ay
-
-ÝÞLEMCÝ
- Intel® Atom N455 (1.66 GHz 667 MHz 512K Single Core) 
- 
-ÝÞLETÝM SÝSTEMÝ 
- Orijinal Windows® 7 Starter Edition 
- 
-RAM DIMM RIMM 
- 1 GB DDR3 Ram 
- 
-HARD DISK 
- 250 GB Sata HDD 
- 
-EKRAN 
- 10.1" WXGA (1.024x600) LED Ekran 
- 
-HOPARLÖR / MÝC 
- Tümleþik Stereo Hoparlör + Mikrofon 
- 
-MODEM/ETHERNET 
- 10/100 M.Bit Ethernet 
- 
-WIRELESS 
- 802.11g 54Mbps Kablosuz Að Baðlantýsý 
- 
-KLAVYE 
- Türkçe Q Klavye - Touchpad 
- 
-BLUETOOTH 
- Bluetooth Mevcut Deðil 
- 
-WEBCAM 
- Dahili 0.3MP Webcam 
- 
-DÝÐER 
- RJ45 , 2 X USB 2.0 Ports , Kart Okuyucu , Vga Out , Headphone Jack 
- 
-EBAT 
- 271mm(W) x 188,6mm(D) x 28mm(H) 
- 
-
-
+-- 
+Catalin
