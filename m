@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab1CVABa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 20:01:30 -0400
-Received: from kroah.org ([198.145.64.141]:48939 "EHLO coco.kroah.org"
+	id S1754889Ab1CUXNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:13:34 -0400
+Received: from kroah.org ([198.145.64.141]:48915 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab1CUXNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:13:35 -0400
+	id S1754506Ab1CUXNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:13:31 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:10:51 2011
-Message-Id: <20110321231051.466688015@clark.kroah.org>
+Message-Id: <20110321231051.037056323@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:09:47 -0700
+Date: Mon, 21 Mar 2011 16:09:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [07/44] ftrace: Fix memory leak with function graph and cpu hotplug
+        Axel Lin <axel.lin@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [03/44] mtd: add "platform:" prefix for platform modalias
 In-Reply-To: <20110321231105.GA1744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,151 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit 868baf07b1a259f5f3803c1dc2777b6c358f83cf upstream.
+commit c804c733846572ca85c2bba60c7fe6fa024dff18 upstream.
 
-When the fuction graph tracer starts, it needs to make a special
-stack for each task to save the real return values of the tasks.
-All running tasks have this stack created, as well as any new
-tasks.
+Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+with "platform:"), the platform modalias is prefixed with "platform:".
 
-On CPU hot plug, the new idle task will allocate a stack as well
-when init_idle() is called. The problem is that cpu hotplug does
-not create a new idle_task. Instead it uses the idle task that
-existed when the cpu went down.
-
-ftrace_graph_init_task() will add a new ret_stack to the task
-that is given to it. Because a clone will make the task
-have a stack of its parent it does not check if the task's
-ret_stack is already NULL or not. When the CPU hotplug code
-starts a CPU up again, it will allocate a new stack even
-though one already existed for it.
-
-The solution is to treat the idle_task specially. In fact, the
-function_graph code already does, just not at init_idle().
-Instead of using the ftrace_graph_init_task() for the idle task,
-which that function expects the task to be a clone, have a
-separate ftrace_graph_init_idle_task(). Also, we will create a
-per_cpu ret_stack that is used by the idle task. When we call
-ftrace_graph_init_idle_task() it will check if the idle task's
-ret_stack is NULL, if it is, then it will assign it the per_cpu
-ret_stack.
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/ftrace.h |    2 +
- kernel/sched.c         |    2 -
- kernel/trace/ftrace.c  |   52 ++++++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 48 insertions(+), 8 deletions(-)
+ drivers/mtd/nand/omap2.c      |    2 +-
+ drivers/mtd/onenand/generic.c |    2 +-
+ drivers/mtd/onenand/omap2.c   |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -412,6 +412,7 @@ extern void unregister_ftrace_graph(void
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1099,6 +1099,6 @@ static void __exit omap_nand_exit(void)
+ module_init(omap_nand_init);
+ module_exit(omap_nand_exit);
  
- extern void ftrace_graph_init_task(struct task_struct *t);
- extern void ftrace_graph_exit_task(struct task_struct *t);
-+extern void ftrace_graph_init_idle_task(struct task_struct *t, int cpu);
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Glue layer for NAND flash on TI OMAP boards");
+--- a/drivers/mtd/onenand/generic.c
++++ b/drivers/mtd/onenand/generic.c
+@@ -131,7 +131,7 @@ static struct platform_driver generic_on
+ 	.remove		= __devexit_p(generic_onenand_remove),
+ };
  
- static inline int task_curr_ret_stack(struct task_struct *t)
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ 
+ static int __init generic_onenand_init(void)
  {
-@@ -435,6 +436,7 @@ static inline void unpause_graph_tracing
+--- a/drivers/mtd/onenand/omap2.c
++++ b/drivers/mtd/onenand/omap2.c
+@@ -800,7 +800,7 @@ static void __exit omap2_onenand_exit(vo
+ module_init(omap2_onenand_init);
+ module_exit(omap2_onenand_exit);
  
- static inline void ftrace_graph_init_task(struct task_struct *t) { }
- static inline void ftrace_graph_exit_task(struct task_struct *t) { }
-+static inline void ftrace_graph_init_idle_task(struct task_struct *t, int cpu) { }
- 
- static inline int task_curr_ret_stack(struct task_struct *tsk)
- {
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -7290,7 +7290,7 @@ void __cpuinit init_idle(struct task_str
- 	 * The idle tasks have their own, simple scheduling class:
- 	 */
- 	idle->sched_class = &idle_sched_class;
--	ftrace_graph_init_task(idle);
-+	ftrace_graph_init_idle_task(idle, cpu);
- }
- 
- /*
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3172,7 +3172,7 @@ static int start_graph_tracing(void)
- 	/* The cpu_boot init_task->ret_stack will never be freed */
- 	for_each_online_cpu(cpu) {
- 		if (!idle_task(cpu)->ret_stack)
--			ftrace_graph_init_task(idle_task(cpu));
-+			ftrace_graph_init_idle_task(idle_task(cpu), cpu);
- 	}
- 
- 	do {
-@@ -3262,6 +3262,49 @@ void unregister_ftrace_graph(void)
- 	mutex_unlock(&ftrace_lock);
- }
- 
-+static DEFINE_PER_CPU(struct ftrace_ret_stack *, idle_ret_stack);
-+
-+static void
-+graph_init_task(struct task_struct *t, struct ftrace_ret_stack *ret_stack)
-+{
-+	atomic_set(&t->tracing_graph_pause, 0);
-+	atomic_set(&t->trace_overrun, 0);
-+	t->ftrace_timestamp = 0;
-+	/* make curr_ret_stack visable before we add the ret_stack */
-+	smp_wmb();
-+	t->ret_stack = ret_stack;
-+}
-+
-+/*
-+ * Allocate a return stack for the idle task. May be the first
-+ * time through, or it may be done by CPU hotplug online.
-+ */
-+void ftrace_graph_init_idle_task(struct task_struct *t, int cpu)
-+{
-+	t->curr_ret_stack = -1;
-+	/*
-+	 * The idle task has no parent, it either has its own
-+	 * stack or no stack at all.
-+	 */
-+	if (t->ret_stack)
-+		WARN_ON(t->ret_stack != per_cpu(idle_ret_stack, cpu));
-+
-+	if (ftrace_graph_active) {
-+		struct ftrace_ret_stack *ret_stack;
-+
-+		ret_stack = per_cpu(idle_ret_stack, cpu);
-+		if (!ret_stack) {
-+			ret_stack = kmalloc(FTRACE_RETFUNC_DEPTH
-+					    * sizeof(struct ftrace_ret_stack),
-+					    GFP_KERNEL);
-+			if (!ret_stack)
-+				return;
-+			per_cpu(idle_ret_stack, cpu) = ret_stack;
-+		}
-+		graph_init_task(t, ret_stack);
-+	}
-+}
-+
- /* Allocate a return stack for newly created task */
- void ftrace_graph_init_task(struct task_struct *t)
- {
-@@ -3277,12 +3320,7 @@ void ftrace_graph_init_task(struct task_
- 				GFP_KERNEL);
- 		if (!ret_stack)
- 			return;
--		atomic_set(&t->tracing_graph_pause, 0);
--		atomic_set(&t->trace_overrun, 0);
--		t->ftrace_timestamp = 0;
--		/* make curr_ret_stack visable before we add the ret_stack */
--		smp_wmb();
--		t->ret_stack = ret_stack;
-+		graph_init_task(t, ret_stack);
- 	}
- }
- 
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Jarkko Lavinen <jarkko.lavinen@nokia.com>");
+ MODULE_DESCRIPTION("Glue layer for OneNAND flash on OMAP2 / OMAP3");
 
 
