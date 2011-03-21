@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab1CURM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 13:12:57 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:54483 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753815Ab1CURMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 13:12:55 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 21 Mar 2011 18:15:50 +0100
-To: Rafi Rubin <rafi@seas.upenn.edu>
-Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        micki@n-trig.com, chatty@enac.fr, dmitry.torokhov@gmail.com
-Subject: Re: [PATCH 2/2] hid-ntrig: calibration
-Message-ID: <20110321171550.GA4602@polaris.bitmath.org>
-References: <1299829072-19489-1-git-send-email-rafi@seas.upenn.edu>
- <1299829072-19489-2-git-send-email-rafi@seas.upenn.edu>
+	id S1754013Ab1CURN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 13:13:27 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:35057 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751541Ab1CURN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 13:13:26 -0400
+Message-ID: <4D878733.6020700@interlog.com>
+Date: Mon, 21 Mar 2011 18:13:23 +0100
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299829072-19489-2-git-send-email-rafi@seas.upenn.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.254.52.20
-X-Scan-Result: No virus found in message 1Q1ieH-0003le-8V.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1Q1ieH-0003le-8V 84ae4beb11fa8c5b9c5d947ccab02415
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: "Martin K. Petersen" <martin.petersen@ORACLE.COM>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] lsscsi 0.25 beta 1, adds --size
+References: <4D7A870C.7040809@interlog.com>
+In-Reply-To: <4D7A870C.7040809@interlog.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafi,
+On 11-03-11 09:33 PM, Douglas Gilbert wrote:
+> Martin Petersen recently sent me some patches
+> to add a --size (or '-s') option to lsscsi:
+>
+> # lsscsi -s
+> [0:0:0:0] disk ATA INTEL SSD 2CV1 /dev/sda 80.0GB
+> [10:0:0:0] disk Linux scsi_debug 0004 /dev/sdb 1.09TB
+>
+> Martin and I had several hacks at this. Getting
+> utilities to work reliably with sysfs across various
+> kernel versions continues to be a crap shoot. So
+> I am putting this out as a beta and hoping that
+> anyone with problems will contact me (or Martin).
+>
+> Note that this logic decodes /sys/block/sda/size
+> (for example) so disks that are present but without
+> a block interface (e.g. physical disks in a RAID)
+> will not have a size shown ('-' is shown instead).
+>
+> Version 0.25 beta 1 is available at:
+> http://sg.danny.cz/scsi/lsscsi.html
+> More information can be found on that page including examples
+> and a Download section for the tarball:
+> http://sg.danny.cz/scsi/lsscsi-0.25b1.tgz
+> There are no debian or redhat packages built for this beta.
+>
+> Version 0.25 2011/03/04 [svn: r91]
+> - add sas_port and fc_remote_ports transport information
+> - print enclosure_device entry
+> - add '--size' option to show size of disks
+> - add '--protmode' option to show protection information mode
+>
+> Version 0.24 2010/06/12 [svn: r83]
+> .....
 
-On Fri, Mar 11, 2011 at 02:37:52AM -0500, Rafi Rubin wrote:
-> Adding a function to tell the device to run its calibration routine.
-> A number written to the sysfs specifies the duration of the calibration
-> in milliseconds
-> 
-> Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
-> ---
+Recent versions of lsscsi will fail to show block
+devices with recent kernels (e.g. lk 2.6.37 and
+lk 2.6.38) that have these .config settings:
+   CONFIG_SYSFS_DEPRECATED=y
+   CONFIG_SYSFS_DEPRECATED_V2=y
 
-This is great functionality, and from what it seems, it
-works. However, the poking at the usb layer makes me wonder if there
-is another way... Jiri? Dmitry? Awaiting answers from someone more
-knowledgeable, please find some comments inline.
+What will they dream up for _DEPRECATED_V3 ?
 
-> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-> index 24ab6a5..ddf2c76 100644
-> --- a/drivers/hid/hid-ntrig.c
-> +++ b/drivers/hid/hid-ntrig.c
-> @@ -490,6 +490,53 @@ static ssize_t store_mode(struct device *dev,
->  }
->  static DEVICE_ATTR(mode, S_IWUSR | S_IRUGO, show_mode, store_mode);
->  
-> +static ssize_t ntrig_calibrate(struct device *dev,
-> +			       struct device_attribute *attr,
-> +			       const char *buf, size_t count)
-> +{
-> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> +	struct usb_device *usb_dev = hid_to_usb_dev(hdev);
-> +	struct usbhid_device *usbhid = hdev->driver_data;
-> +	int ret;
-> +	unsigned long t;
-> +	unsigned char *data;
-> +
-> +	if (strict_strtoul(buf, 0, &t))
-> +		return -EINVAL;
-> +
-> +	data = kmalloc(4, GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	spin_lock(&usbhid->lock);
-> +	set_bit(HID_DISCONNECTED, &usbhid->iofl);
-> +	spin_unlock(&usbhid->lock);
+Doug Gilbert
 
-Perhaps an addition to the internal HID api instead of the above?
 
-> +
-> +	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-> +			      USB_REQ_CLEAR_FEATURE, USB_TYPE_CLASS
-> +			      | USB_RECIP_INTERFACE | USB_DIR_IN,
-> +			      0x30b, 1, data, 4, USB_CTRL_GET_TIMEOUT);
-> +	if (ret < 0)
-> +		goto fail;
-
-How about launching restoration work here, instead of waiting?
-
-> +
-> +	msleep(t);
-> +
-> +	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-> +			      USB_REQ_CLEAR_FEATURE, USB_TYPE_CLASS
-> +			      | USB_RECIP_INTERFACE | USB_DIR_IN,
-> +			      0x311, 1, data, 4, USB_CTRL_GET_TIMEOUT);
-> +
-> +fail:
-> +	kfree(data);
-> +	spin_lock(&usbhid->lock);
-> +	clear_bit(HID_DISCONNECTED, &usbhid->iofl);
-> +	spin_unlock(&usbhid->lock);
-> +	schedule_work(&usbhid->reset_work);
-> +
-> +	return (ret < 0) ? ret : count;
-> +}
-> +static DEVICE_ATTR(calibrate, S_IWUSR, NULL, ntrig_calibrate);
-> +
->  static struct attribute *sysfs_attrs[] = {
->  	&dev_attr_sensor_physical_width.attr,
->  	&dev_attr_sensor_physical_height.attr,
-> @@ -502,6 +549,7 @@ static struct attribute *sysfs_attrs[] = {
->  	&dev_attr_activation_height.attr,
->  	&dev_attr_deactivate_slack.attr,
->  	&dev_attr_mode.attr,
-> +	&dev_attr_calibrate.attr,
-
-Maybe one could actually run the calibration at module load, or even
-at start/stop? A few seconds of unresponsiveness might be ok at that
-time.
-
->  	NULL
->  };
-
-Thanks,
-Henrik
