@@ -1,131 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab1CUVDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 17:03:23 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:52770 "EHLO mx01.d-labs.de"
+	id S1754560Ab1CUVHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 17:07:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35441 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab1CUVDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 17:03:20 -0400
-Date: Mon, 21 Mar 2011 22:03:15 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, js@linuxtv.org, tskd2@yahoo.co.jp,
-        liplianin@me.by, g.marco@freenet.de, aet@rasterburn.org,
-        pb@linuxtv.org, mkrufky@linuxtv.org, nick@nick-andrew.net,
-        max@veneto.com, janne-dvb@grunau.be, Oliver Neukum <oliver@neukum.org>,
-        "Greg Kroah-Hartman" <greg@kroah.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Joerg Roedel <joerg.roedel@amd.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH 0/6] get rid of on-stack dma buffers
-Message-ID: <20110321220315.7545a61a@schatten.dmk.lab>
-In-Reply-To: <a08d026a-d4c3-4ee5-b01a-d561f755b1ec@email.android.com>
-References: <1300732426-18958-1-git-send-email-florian@mickler.org>
-	<a08d026a-d4c3-4ee5-b01a-d561f755b1ec@email.android.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+	id S1754237Ab1CUVHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 17:07:18 -0400
+Subject: Re: [RFC-v4 00/12] iSCSI target v4.1.0-rc1 series for .39-rc1
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Jesper Juhl <jj@chaosbits.net>
+In-Reply-To: <1300740867.21880.12.camel@haakon2.linux-iscsi.org>
+References: <1300613497-2091-1-git-send-email-nab@linux-iscsi.org>
+	 <1300740867.21880.12.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Mar 2011 16:07:09 -0500
+Message-ID: <1300741629.10634.46.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Mar 2011 15:26:43 -0400
-Andy Walls <awalls@md.metrocast.net> wrote:
-
-> Florian Mickler <florian@mickler.org> wrote:
+On Mon, 2011-03-21 at 13:54 -0700, Nicholas A. Bellinger wrote:
+> On Sun, 2011-03-20 at 02:31 -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > Greetings all,
+> > 
+> > This is the forth RFC series of the RisingTide Systems iSCSI target fabric
+> > module compatible with mainline target core v4 -> for-39 target infrastructure.
+> > 
+> > More information about iscsi_target_mod is available here:
+> > 
+> > http://linux-iscsi.org/wiki/ISCSI/configFS
+> > 
+> > This series contains the updated drivers/target/iscsi/ source tree for modern
+> > mainline code based on feedback from Christoph Hellwig that has been recently
+> > pushed into the lio-core-2.6.git/lio-4.1 development branch.  This includes
+> > another round of iSCSI network portal changes to use proper Linux/Net code
+> > w/ IPv6/IPv4 iscsi_np->np_sockaddr, conversion of iSCSI TX thread context
+> > to use schedule_timeout_interruptible(), and the renaming the majority of
+> > functions to use the 'iscsit_*' function prefix based upon hch's feedback.
+> > 
+> > This series is currently rebased against .38-FINAL using target core v4.0.0-rc7-ml.
+> > 
+> > The full RFC-v4 series for iscsi-target is available here:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-iscsi-target-v4
+> > 
+> > The changes from RFC-v3 -> RFC-v4 include:
+> > 
+> > *) Make iscsit_[free,stop]_session take conn_tmp reference first
+> > *) Convert NPF_NET_IPV* flags to AF_INET*
+> > *) Add missing unlock for iscsi_get_np
+> > *) Convert iscsi_target_tpg.c to use 'iscsit_' function prefixe
+> > *) Convert iscsi_target_device.c to use 'iscsit_' function pref
+> > *) Convert iscsi_target_seq_pdu_list.c to use 'iscsit_' functio
+> > *) Convert iscsi_target_datain_values.c to use 'iscsit_' functi
+> > *) Convert iscsi_target_tmr.c to use 'iscsit_' function prefixe
+> > *) Convert iscsi_target_nodeattrib.c to use 'iscsit_' function 
+> > *) Convert iscsi_target_erl*.c to use 'iscsit_' function prefix
+> > *) Convert iscsi_target_util.c to use 'iscsit_' function prefix
+> > *) Convert iscsi_target.c to use 'iscsit_' function prefixes
+> > *) Move iscsi_add_nopin into iscsi_target_util.c
+> > *) Move iscsi_ack_from_expstatsn into iscsi_target.c
+> > *) Drop needless iscsi_target_util.c wrappers
+> > *) Move extern target_core_fabric_ops functions into iscsi_targ
+> > *) Add comments for RX/TX nice usage and iscsi_release_commands
+> > *) Convert TX thread to use schedule_timeout_interruptible
+> > *) Fix potential NULL deference in iscsi_[free,stop]_session
+> > *) Fix iscsi_np shutdown race
+> > *) Drop iscsi_np->np_shutdown and ->np_state_lock
+> > *) Remove dead iscsi_tpg_free_network_portals code
+> > *) Remove remaining comment stubs
+> > *) Convert cases to wait_for_completion*_timeout
+> > *) Remove ad-hod debugging code
+> > 
+> > The changes from RFC-v2 -> RFC-v3 include:
+> > 
+> > *) Remove dead tpg shutdown code
+> > *) Remove dead struct iscsi_np_ex logic
+> > *) Fix up network portal handling
+> > *) Rename core_* prefixed functions to iscsit_*
+> > *) Convert semaphores to completion and mutex
+> > *) Convert iscsi_global members to global variables
+> > *) Cleanups for iscsi_target_login_thread logic
+> > *) Use SIGINT in iscsi_handle_login_thread_timeout()
+> > *) Cleanups for iscsi_thread_queue.c logic
+> > *) Drop MOD_TIMER and SETUP_TIMER macros
+> > *) Convert iscsi_index_t to use idr.h
+> > *) Remove CONN* and SESS* deference macros
+> > *) Update copyright and vendor
+> > *) Fix up remaining struct semaphore callbacks
+> > *) Renaming renaming non iscsi_target_* source files
+> > 
+> > The changes from RFC-v1 -> RFC-v2 include:
+> > 
+> > *) Drop extra crc32c_intel libcrypto magic from iscsi_login_setup_crypto()
+> > *) Fix padded login response payload breakage from initial iscsi_proto.h
+> >    conversion
+> > *) Cleanups for iscsi_target_core.h and conversion a number of definitions
+> >    to enums and inline defs
+> > *) Removal of '__' prefix around u32 and friends
+> > *) Other miscellanous checkpatch.pl cleanups
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > 
 > 
-> >Hi all!
-> >
-> >These patches get rid of on-stack dma buffers for some of the dvb-usb
-> >drivers. 
-> >I do not own the hardware, so these are only compile tested. I would 
-> >appreciate testing and review.
-> >They were previously sent to the list, but some error on my side
-> >prevented (some of?) them from beeing delivered to all parties (the
-> >lists).
-> >
-> >These changes are motivated by 
-> >https://bugzilla.kernel.org/show_bug.cgi?id=15977 .
-> >
-> >The patches which got tested already were submitted to Mauro (and
-> >lkml/linux-media) yesterday seperately. Those fix this same issue for
-> >ec168,
-> >ce6230, au6610 and lmedm04. 
-> >
-> >A fix for vp702x has been submitted seperately for review on the list.
-> >I have
-> >similiar fixes like the vp702x-fix for dib0700 (overlooked some
-> >on-stack
-> >buffers in there in my original submission as well) and gp8psk, but I
-> >am
-> >holding them back 'till I got time to recheck those and getting some
-> >feedback
-> >on vp702x.
-> >
-> >Please review and test.
-> >
-> >Regards,
-> >Flo
-> >
-> >Florian Mickler (6):
-> >  [media] a800: get rid of on-stack dma buffers
-> >  [media v2] vp7045: get rid of on-stack dma buffers
-> >  [media] friio: get rid of on-stack dma buffers
-> >  [media] dw2102: get rid of on-stack dma buffer
-> >  [media] m920x: get rid of on-stack dma buffers
-> >  [media] opera1: get rid of on-stack dma buffer
-> >
-> > drivers/media/dvb/dvb-usb/a800.c   |   17 ++++++++++---
-> > drivers/media/dvb/dvb-usb/dw2102.c |   10 ++++++-
-> > drivers/media/dvb/dvb-usb/friio.c  |   23 ++++++++++++++---
-> > drivers/media/dvb/dvb-usb/m920x.c  |   33 ++++++++++++++++--------
-> > drivers/media/dvb/dvb-usb/opera1.c |   31 +++++++++++++++--------
-> >drivers/media/dvb/dvb-usb/vp7045.c |   47
-> >++++++++++++++++++++++++++----------
-> > 6 files changed, 116 insertions(+), 45 deletions(-)
-> >
-> >-- 
-> >1.7.4.1
-> >
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe linux-media"
-> >in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Hi Christoph, James and Co,
 > 
+> At this point I have no further changes beyond RFC-v4 for the initial
+> merge of iscsi-target.  Please let me know if anything was missed from
+> your review for the above changes, and I will get any remaining items
+> addressed ASAP.
 
-> Florian,
-> 
-> For all of these, what happens when the USB call times out and you kfree() the buffer?  Can the USB DMA actually complete after this kfree(), possibly corrupting space that has been reallocated off the heap, since the kfree()?
-> 
-> This is the scenario for which I assume allocating off the stack is bad.  
-> 
-> Do these changes simply make corruption less noticable since heap gets corrupted vs stack?
-> 
-> Regards,
-> Andy
+OK ... so if you're ready, you can send the next one as a patch not rfc.
 
-To be blunt, I'm not shure I fully understand the requirements myself.
-But as far as I grasped it, the main problem is that we need memory
-which the processor can see as soon as the device has scribbled upon
-it. (think caches and the like)
+> Also James, how do you prefer this series be sent out for the initial
+> merge in order avoid the vger lists max character limit..?
 
-Somewhere down the line, the buffer to usb_control_msg get's to be
-a parameter to dma_map_single which is described as part of
-the DMA API in Documentation/DMA-API.txt 
+I don't really care ... it's fairly easy to combine stuff.  It's nice if
+the first patch has the complete changelog ...
 
-The main point I filter out from that is that the memory has to begin
-exactly at a cache line boundary... 
-
-I guess (not verified), that the dma api takes sufficient precautions
-to abort the dma transfer if a timeout happens.  So freeing _should_
-not be an issue. (At least, I would expect big fat warnings everywhere
-if that were the case)
-
-I cc'd some people that hopefully will correct me if I'm wrong...
-
-regards,
-Flo
+James
 
 
