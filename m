@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab1CUXoH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:44:07 -0400
-Received: from kroah.org ([198.145.64.141]:49507 "EHLO coco.kroah.org"
+	id S1755444Ab1CUXPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:15:48 -0400
+Received: from kroah.org ([198.145.64.141]:49338 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755460Ab1CUXPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:15:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:14 2011
-Message-Id: <20110321230714.782320798@clark.kroah.org>
+	id S1755292Ab1CUXP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:15:26 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:07:12 2011
+Message-Id: <20110321230712.047034457@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:06:53 -0700
+Date: Mon, 21 Mar 2011 16:06:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [54/87] ALSA: hda - fix digital mic selection in mixer on 92HD8X codecs
+        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [28/87] libata: fix hotplug for drivers which dont implement LPM
 In-Reply-To: <20110321230732.GA26510@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 094a42452abd5564429045e210281c6d22e67fca upstream.
+commit eb0e85e36b971ec31610eda7e3ff5c11c1c44785 upstream.
 
-When the mux for digital mic is different from the mux for other mics,
-the current auto-parser doesn't handle them in a right way but provides
-only one mic.  This patch fixes the issue.
+ata_eh_analyze_serror() suppresses hotplug notifications if LPM is
+being used because LPM generates spurious hotplug events.  It compared
+whether link->lpm_policy was different from ATA_LPM_MAX_POWER to
+determine whether LPM is enabled; however, this is incorrect as for
+drivers which don't implement LPM, lpm_policy is always
+ATA_LPM_UNKNOWN.  This disabled hotplug detection for all drivers
+which don't implement LPM.
 
-Signed-off-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix it by comparing whether lpm_policy is greater than
+ATA_LPM_MAX_POWER.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/ata/libata-eh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -749,7 +749,7 @@ static int stac92xx_mux_enum_put(struct
- 	struct sigmatel_spec *spec = codec->spec;
- 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
- 	const struct hda_input_mux *imux = spec->input_mux;
--	unsigned int idx, prev_idx;
-+	unsigned int idx, prev_idx, didx;
- 
- 	idx = ucontrol->value.enumerated.item[0];
- 	if (idx >= imux->num_items)
-@@ -761,7 +761,8 @@ static int stac92xx_mux_enum_put(struct
- 		snd_hda_codec_write_cache(codec, spec->mux_nids[adc_idx], 0,
- 					  AC_VERB_SET_CONNECT_SEL,
- 					  imux->items[idx].index);
--		if (prev_idx >= spec->num_analog_muxes) {
-+		if (prev_idx >= spec->num_analog_muxes &&
-+		    spec->mux_nids[adc_idx] != spec->dmux_nids[adc_idx]) {
- 			imux = spec->dinput_mux;
- 			/* 0 = analog */
- 			snd_hda_codec_write_cache(codec,
-@@ -771,9 +772,13 @@ static int stac92xx_mux_enum_put(struct
- 		}
- 	} else {
- 		imux = spec->dinput_mux;
-+		/* first dimux item is hardcoded to select analog imux,
-+		 * so lets skip it
-+		 */
-+		didx = idx - spec->num_analog_muxes + 1;
- 		snd_hda_codec_write_cache(codec, spec->dmux_nids[adc_idx], 0,
- 					  AC_VERB_SET_CONNECT_SEL,
--					  imux->items[idx - 1].index);
-+					  imux->items[didx].index);
- 	}
- 	spec->cur_mux[adc_idx] = idx;
- 	return 1;
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1618,7 +1618,7 @@ static void ata_eh_analyze_serror(struct
+ 	 * host links.  For disabled PMP links, only N bit is
+ 	 * considered as X bit is left at 1 for link plugging.
+ 	 */
+-	if (link->lpm_policy != ATA_LPM_MAX_POWER)
++	if (link->lpm_policy > ATA_LPM_MAX_POWER)
+ 		hotplug_mask = 0;	/* hotplug doesn't work w/ LPM */
+ 	else if (!(link->flags & ATA_LFLAG_DISABLED) || ata_is_host_link(link))
+ 		hotplug_mask = SERR_PHYRDY_CHG | SERR_DEV_XCHG;
 
 
