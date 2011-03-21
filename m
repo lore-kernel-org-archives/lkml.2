@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1CUPEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 11:04:16 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51018 "EHLO
+	id S1753553Ab1CUPEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:04:25 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36359 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751259Ab1CUPEO (ORCPT
+	by vger.kernel.org with ESMTP id S1753521Ab1CUPEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 11:04:14 -0400
-X-Sasl-enc: PWwSA6qWA+k7jpnACW5KomZ6iWzOIOloDO2ywWKxfOPm 1300719853
+	Mon, 21 Mar 2011 11:04:20 -0400
+X-Sasl-enc: HLArzNNZTiZIVIMLNnPxctY/UvAF4O96Q013eAdv7nmP 1300719859
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: tyhicks@linux.vnet.ibm.com
 Cc: kirkland@canonical.com, dhowells@redhat.com, jmorris@namei.org,
         linux-fsdevel@vger.kernel.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org, ecryptfs-devel@lists.launchpad.net,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH v2 0/5] eCryptfs key locking patches
-Date: Mon, 21 Mar 2011 16:00:50 +0100
-Message-Id: <1300719658-3184-1-git-send-email-roberto.sassu@polito.it>
+Subject: [PATCH v2 1/5] eCryptfs: removed num_global_auth_toks from ecryptfs_mount_crypt_stat
+Date: Mon, 21 Mar 2011 16:00:51 +0100
+Message-Id: <1300719658-3184-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1300719658-3184-1-git-send-email-roberto.sassu@polito.it>
+References: <1300719658-3184-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----26EB38108E5E47D2BA80565D14C7CA4B"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----EBE5D53A4519B70136405A28375AEECF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------26EB38108E5E47D2BA80565D14C7CA4B
+------EBE5D53A4519B70136405A28375AEECF
 
-This patch set modifies the eCryptfs code in order to lock requested keys
-while authentication tokens are used to encrypt or decrypt files.
+This patch removes the 'num_global_auth_toks' field of the
+ecryptfs_mount_crypt_stat structure, used to count the number of items in
+the 'global_auth_tok_list' list. This variable is not needed because there
+are no checks based upon it.
 
-Changelog:
-  - removed patch "eCryptfs: ecryptfs_keyring_auth_tok_for_sig() bug fix"
-	(already applied to the eCryptfs git repository at git.kernel.org);
-  - added new patch "eCryptfs: removed num_global_auth_toks from 
-	ecryptfs_mount_crypt_stat";
-  - patch 3/5: avoid invalidating a global authentication token only if
-	key_validate() returns the error -EKEYEXPIRED;
-  - patch 3/5: added new function
-	process_find_global_auth_tok_for_sig_err() to handle errors
-	returned by ecryptfs_find_global_auth_tok_for_sig();
-  - patch 3/5: return an error in the function
-	ecryptfs_generate_key_packet_set() if at least one global
-	authentication token cannot be retrieved.
-
-Roberto Sassu
-
-
-Roberto Sassu (5):
-  eCryptfs: removed num_global_auth_toks from ecryptfs_mount_crypt_stat
-  eCryptfs: modified size of keysig in the ecryptfs_key_sig structure
-  eCryptfs: verify authentication tokens before their use
-  eCryptfs: move ecryptfs_find_auth_tok_for_sig() call before
-    mutex_lock
-  eCryptfs: write lock requested keys
-
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+---
  fs/ecryptfs/crypto.c          |    1 -
- fs/ecryptfs/ecryptfs_kernel.h |    4 +-
- fs/ecryptfs/keystore.c        |  280 ++++++++++++++++++++++++++---------------
- fs/ecryptfs/main.c            |    8 +-
- 4 files changed, 185 insertions(+), 108 deletions(-)
+ fs/ecryptfs/ecryptfs_kernel.h |    1 -
+ fs/ecryptfs/keystore.c        |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
 
+diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
+index bfd8b68..38178ff 100644
+--- a/fs/ecryptfs/crypto.c
++++ b/fs/ecryptfs/crypto.c
+@@ -266,7 +266,6 @@ void ecryptfs_destroy_mount_crypt_stat(
+ 				 &mount_crypt_stat->global_auth_tok_list,
+ 				 mount_crypt_stat_list) {
+ 		list_del(&auth_tok->mount_crypt_stat_list);
+-		mount_crypt_stat->num_global_auth_toks--;
+ 		if (auth_tok->global_auth_tok_key
+ 		    && !(auth_tok->flags & ECRYPTFS_AUTH_TOK_INVALID))
+ 			key_put(auth_tok->global_auth_tok_key);
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index e007534..6ea1faa 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -380,7 +380,6 @@ struct ecryptfs_mount_crypt_stat {
+ 	u32 flags;
+ 	struct list_head global_auth_tok_list;
+ 	struct mutex global_auth_tok_list_mutex;
+-	size_t num_global_auth_toks;
+ 	size_t global_default_cipher_key_size;
+ 	size_t global_default_fn_cipher_key_bytes;
+ 	unsigned char global_default_cipher_name[ECRYPTFS_MAX_CIPHER_NAME_SIZE
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 4feb78c..523e51d 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -2454,7 +2454,6 @@ ecryptfs_add_global_auth_tok(struct ecryptfs_mount_crypt_stat *mount_crypt_stat,
+ 	mutex_lock(&mount_crypt_stat->global_auth_tok_list_mutex);
+ 	list_add(&new_auth_tok->mount_crypt_stat_list,
+ 		 &mount_crypt_stat->global_auth_tok_list);
+-	mount_crypt_stat->num_global_auth_toks++;
+ 	mutex_unlock(&mount_crypt_stat->global_auth_tok_list_mutex);
+ out:
+ 	return rc;
 -- 
 1.7.4
 
 
-------26EB38108E5E47D2BA80565D14C7CA4B
+------EBE5D53A4519B70136405A28375AEECF
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -104,17 +120,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAzMjExNTAwNThaMCMGCSqG
-SIb3DQEJBDEWBBRGZ16nobd+isjv8L8lRU1h8riJrzB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAzMjExNTAxMDlaMCMGCSqG
+SIb3DQEJBDEWBBTW3uKYjlB1ekE3sLk9NNVDXNZ6FzB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQB0zHBm0ZSNvpo9uom+CI/Thiir
-/b71NXWdg19eTmN0Q4TnXv5U56GBEe+tjBQy2Ff5ddMDiTBCWfbTNIUF81avHLut
-JH4mhIWTc0cCJmD45amMjbGe2MKmBTHWy/d03YpZMPJj0S8Tc8t4VFGOxnHpOmCy
-12/9tcvIalX2Grq8iuiPjbzW6Dv4umQcPe8Gs5Ii3LqzbGsirhBwReJoHlgaH/YP
-FDQ/wsihYdoAmKEN6O/qxOeRy906w/0U9VMnPwvNQeTMR0qgdZuD3urqC3atsbCT
-DQMRjL3h+lzCX2jho7Yf364O/xhprqFUC4QF6JKnUimYP8p+1sN7DGKGHxY9
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCwfPVPV88czY1umtzZZ7GQbieC
+l1Mj25qzsytCvfXC7/EcDgKxbC+LtFhyI81wuQwwpbWpQHDAlMyX0SWeSH6YT5no
+qg0kUdAyw/mLlnZqXx669yoJXb5PK/0kWTtzBqXctKTEYiQVLlM+gt4iss2YNW1N
+qcZ0isMwWwH+6D/1rbfrBNIlQJbQ/NZKWcjz4vsaPGmIjN28rUxPE5pbLXGsWY8V
+v06KISzme3uZJm6RCo0rxaktDKfzSmhMbg5rAV7aG5rEpPBpjGh5PtPpNw0lIXWt
+7I4UxiuBHPs8HrDVWTw27Wa5Ihr58ihlKb2HN2IvI1YPf6ejmqNmVMO1KIji
 
-------26EB38108E5E47D2BA80565D14C7CA4B--
+------EBE5D53A4519B70136405A28375AEECF--
 
 
