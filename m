@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab1CUXdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:33:45 -0400
-Received: from kroah.org ([198.145.64.141]:52514 "EHLO coco.kroah.org"
+	id S932150Ab1CUXRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:17:32 -0400
+Received: from kroah.org ([198.145.64.141]:52478 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224Ab1CUXRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:17:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:22 2011
-Message-Id: <20110321230322.582740312@clark.kroah.org>
+	id S1755563Ab1CUXR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:17:27 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:21 2011
+Message-Id: <20110321230321.854111685@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:01:25 -0700
+Date: Mon, 21 Mar 2011 16:01:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sean Hefty <sean.hefty@intel.com>, Doug Ledford <dledford@redhat.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [09/78] RDMA/cma: Fix crash in request handlers
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [02/78] VFS: Fix the nfs sillyrename regression in kernel 2.6.38
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,131 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sean Hefty <sean.hefty@intel.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 25ae21a10112875763c18b385624df713a288a05 upstream.
+commit c83ce989cb5ff86575821992ea82c4df5c388ebc upstream.
 
-Doug Ledford and Red Hat reported a crash when running the rdma_cm on
-a real-time OS.  The crash has the following call trace:
+The new vfs locking scheme introduced in 2.6.38 breaks NFS sillyrename
+because the latter relies on being able to determine the parent
+directory of the dentry in the ->iput() callback in order to send the
+appropriate unlink rpc call.
 
-    cm_process_work
-       cma_req_handler
-          cma_disable_callback
-          rdma_create_id
-             kzalloc
-             init_completion
-          cma_get_net_info
-          cma_save_net_info
-          cma_any_addr
-             cma_zero_addr
-          rdma_translate_ip
-             rdma_copy_addr
-          cma_acquire_dev
-             rdma_addr_get_sgid
-             ib_find_cached_gid
-             cma_attach_to_dev
-          ucma_event_handler
-             kzalloc
-             ib_copy_ah_attr_to_user
-          cma_comp
+Looking at the code that cares about races with dput(), there doesn't
+seem to be anything that specifically uses d_parent as a test for
+whether or not there is a race:
+  - __d_lookup_rcu(), __d_lookup() all test for d_hashed() after d_parent
+  - shrink_dcache_for_umount() is safe since nothing else can rearrange
+    the dentries in that super block.
+  - have_submount(), select_parent() and d_genocide() can test for a
+    deletion if we set the DCACHE_DISCONNECTED flag when the dentry
+    is removed from the parent's d_subdirs list.
 
-[ preempted ]
-
-    cma_write
-        copy_from_user
-        ucma_destroy_id
-           copy_from_user
-           _ucma_find_context
-           ucma_put_ctx
-           ucma_free_ctx
-              rdma_destroy_id
-                 cma_exch
-                 cma_cancel_operation
-                 rdma_node_get_transport
-
-        rt_mutex_slowunlock
-        bad_area_nosemaphore
-        oops_enter
-
-They were able to reproduce the crash multiple times with the
-following details:
-
-    Crash seems to always happen on the:
-            mutex_unlock(&conn_id->handler_mutex);
-    as conn_id looks to have been freed during this code path.
-
-An examination of the code shows that a race exists in the request
-handlers.  When a new connection request is received, the rdma_cm
-allocates a new connection identifier.  This identifier has a single
-reference count on it.  If a user calls rdma_destroy_id() from another
-thread after receiving a callback, rdma_destroy_id will proceed to
-destroy the id and free the associated memory.  However, the request
-handlers may still be in the process of running.  When control returns
-to the request handlers, they can attempt to access the newly created
-identifiers.
-
-Fix this by holding a reference on the newly created rdma_cm_id until
-the request handler is through accessing it.
-
-Signed-off-by: Sean Hefty <sean.hefty@intel.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/core/cma.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ fs/dcache.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/core/cma.c
-+++ b/drivers/infiniband/core/cma.c
-@@ -1210,6 +1210,11 @@ static int cma_req_handler(struct ib_cm_
- 	cm_id->context = conn_id;
- 	cm_id->cm_handler = cma_ib_handler;
- 
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -296,8 +296,12 @@ static struct dentry *d_kill(struct dent
+ 	__releases(parent->d_lock)
+ 	__releases(dentry->d_inode->i_lock)
+ {
+-	dentry->d_parent = NULL;
+ 	list_del(&dentry->d_u.d_child);
 +	/*
-+	 * Protect against the user destroying conn_id from another thread
-+	 * until we're done accessing it.
++	 * Inform try_to_ascend() that we are no longer attached to the
++	 * dentry tree
 +	 */
-+	atomic_inc(&conn_id->refcount);
- 	ret = conn_id->id.event_handler(&conn_id->id, &event);
- 	if (!ret) {
- 		/*
-@@ -1222,8 +1227,10 @@ static int cma_req_handler(struct ib_cm_
- 			ib_send_cm_mra(cm_id, CMA_CM_MRA_SETTING, NULL, 0);
- 		mutex_unlock(&lock);
- 		mutex_unlock(&conn_id->handler_mutex);
-+		cma_deref_id(conn_id);
- 		goto out;
- 	}
-+	cma_deref_id(conn_id);
- 
- 	/* Destroy the CM ID by returning a non-zero value. */
- 	conn_id->cm_id.ib = NULL;
-@@ -1425,17 +1432,25 @@ static int iw_conn_req_handler(struct iw
- 	event.param.conn.private_data_len = iw_event->private_data_len;
- 	event.param.conn.initiator_depth = attr.max_qp_init_rd_atom;
- 	event.param.conn.responder_resources = attr.max_qp_rd_atom;
-+
-+	/*
-+	 * Protect against the user destroying conn_id from another thread
-+	 * until we're done accessing it.
-+	 */
-+	atomic_inc(&conn_id->refcount);
- 	ret = conn_id->id.event_handler(&conn_id->id, &event);
- 	if (ret) {
- 		/* User wants to destroy the CM ID */
- 		conn_id->cm_id.iw = NULL;
- 		cma_exch(conn_id, CMA_DESTROYING);
- 		mutex_unlock(&conn_id->handler_mutex);
-+		cma_deref_id(conn_id);
- 		rdma_destroy_id(&conn_id->id);
- 		goto out;
- 	}
- 
- 	mutex_unlock(&conn_id->handler_mutex);
-+	cma_deref_id(conn_id);
- 
- out:
- 	if (dev)
++	dentry->d_flags |= DCACHE_DISCONNECTED;
+ 	if (parent)
+ 		spin_unlock(&parent->d_lock);
+ 	dentry_iput(dentry);
+@@ -1030,6 +1034,7 @@ static struct dentry *try_to_ascend(stru
+ 	 * or deletion
+ 	 */
+ 	if (new != old->d_parent ||
++		 (old->d_flags & DCACHE_DISCONNECTED) ||
+ 		 (!locked && read_seqretry(&rename_lock, seq))) {
+ 		spin_unlock(&new->d_lock);
+ 		new = NULL;
 
 
