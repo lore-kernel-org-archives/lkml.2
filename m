@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab1CUAyV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Mar 2011 20:54:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59191 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752382Ab1CUAyT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Mar 2011 20:54:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110319085802.GA18336@sepie.suse.cz>
-References: <20110319085802.GA18336@sepie.suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 20 Mar 2011 17:53:24 -0700
-Message-ID: <AANLkTin5vYaU83K0YOdD1OgCS24LA8XBSvNfmGFnjhGF@mail.gmail.com>
-Subject: Re: [GIT] kbuild core updates for 2.6.39-rc1
-To: Michal Marek <mmarek@suse.cz>
-Cc: bp@alien8.de, dot@dotat.at, mikew@google.com, randy.dunlap@oracle.com,
-        u.kleine-koenig@pengutronix.de, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752508Ab1CUBBQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Mar 2011 21:01:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33952 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1CUBBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Mar 2011 21:01:13 -0400
+Date: Sun, 20 Mar 2011 18:01:06 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Greg KH <gregkh@suse.de>, Oliver Neukum <oneukum@suse.de>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: "usb_wwan: error case of resume" (16871dcac) is buggy
+Message-Id: <20110320180106.a835ce67.randy.dunlap@oracle.com>
+In-Reply-To: <alpine.LNX.2.00.1103210140530.19969@pobox.suse.cz>
+References: <alpine.LNX.2.00.1103210130260.19969@pobox.suse.cz>
+	<alpine.LNX.2.00.1103210140530.19969@pobox.suse.cz>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt358.oracle.com [141.146.40.158]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D86A355.0008,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 19, 2011 at 1:58 AM, Michal Marek <mmarek@suse.cz> wrote:
->
-> * Section mismatch analysis enabled by default
->  - there are only a few warnings for defconfig builds,
->    all{yes,mod}config still has a lot of them. Depending on the general
->    perception of this change, we might disable it later in the rc phase
->    again.
+On Mon, 21 Mar 2011 01:41:14 +0100 (CET) Jiri Kosina wrote:
 
-No.
+> 
+> [ fixing Oliver's address in CC ]
+> 
+> On Mon, 21 Mar 2011, Jiri Kosina wrote:
+> 
+> > Hi,
+> > 
+> > the commit in subject make the kernel with CONFIG_PM_RUNTIME unset fail 
+> > during compilation, as struct dev_pm_info doesn't have whole bunch of 
+> > members in such case.
+> > 
+> > The commit in question adds this code:
+> > 
+> > 	/* we have to throw away the rest */
+> > 	do {
+> > 		unbusy_queued_urb(urb, portdata);
+> > 		//extremely dirty
+> > 		atomic_dec(&port->serial->interface->dev.power.usage_count);
+> > 	} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+> > 
+> > The 'extermely dirty' comment makes me a bit nervous whether the patch 
+> > below is correct or some more thinking would be necessary.
+> > 
+> > 
+> > 
+> > From: Jiri Kosina <jkosina@suse.cz>
+> > Subject: [PATCH] USB: usb_wvan: fix compilation for !CONFIG_PM_RUNTIME case
+> > 
+> > With CONFIG_PM_RUNTIME unset, struct dev_pm_info doesn't have
+> > usage count which is used only for run-time power management
+> > purposes.
+> > 
+> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> > ---
+> >  drivers/usb/serial/usb_wwan.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+> > index a65ddd5..8b456dc 100644
+> > --- a/drivers/usb/serial/usb_wwan.c
+> > +++ b/drivers/usb/serial/usb_wwan.c
+> > @@ -698,8 +698,10 @@ static void play_delayed(struct usb_serial_port *port)
+> >  			/* we have to throw away the rest */
+> >  			do {
+> >  				unbusy_queued_urb(urb, portdata);
+> > -				//extremely dirty
+> > +#ifdef CONFIG_PM_RUNTIME
+> > +				/* extremely dirty */
+> >  				atomic_dec(&port->serial->interface->dev.power.usage_count);
+> > +#endif
+> >  			} while ((urb = usb_get_from_anchor(&portdata->delayed)));
+> >  			break;
+> >  		}
+> > -- 
+> > 1.7.3.1
+> > 
+> > 
 
-We don't enable stuff like this by default. Not when it actually
-changes some really fundamental compiler flags, and thus the whole "we
-can disable it late in -rc again" is a totally broken option, since if
-we have any compiler issues, we'd want to know it early.
+Please see Oliver's patch for this at
+http://marc.info/?l=linux-usb&m=130044862323463&w=2
 
-And we _know_ we are going to disable it, since it enables the "don't
-inline" flag to gcc for called-once functions. So there's no question
-at all what the default should be in any release kernel.
-
-Anyway - in general, enabling options like this had better have some
-_seriously_ major reasons. IOW, major known issues that just have to
-be sorted out and cannot be sorted out any other way. That doesn't
-seem to be the case here.
-
-WE DO NOT EVER ENABLE NEW THINGS BY DEFAULT. I know, I know - every
-developer always thinks that _his_ code is special and magically so
-important that it should be enabled by default, but no, that is simply
-not the case. The only reason to enable something by default is that
-it used to never be a config option in the first place, so if somebody
-builds a new kernel, and he used to just silently get the feature,
-then the new config option is still on by default.
-
-Not pulling. This is a pet peeve of mine. We don't use "set to 'y' on
-default" as a way to trick people into enabling code. No, no, no.
-
-                             Linus
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
