@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab1CUXXO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 19:23:14 -0400
-Received: from kroah.org ([198.145.64.141]:52785 "EHLO coco.kroah.org"
+	id S932449Ab1CUXXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 19:23:43 -0400
+Received: from kroah.org ([198.145.64.141]:52779 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932410Ab1CUXS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 19:18:28 -0400
+	id S932307Ab1CUXS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 19:18:27 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Mar 21 16:03:28 2011
-Message-Id: <20110321230328.288889845@clark.kroah.org>
+Message-Id: <20110321230328.187056915@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 21 Mar 2011 16:02:20 -0700
+Date: Mon, 21 Mar 2011 16:02:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Sandeen <sandeen@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: [64/78] ext3: Always set dx_nodes fake_dirent explicitly.
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tapan Dhimant <tdhimant@akamai.com>, Josh Hunt <johunt@akamai.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [63/78] perf tools: Version incorrect with some versions of grep
 In-Reply-To: <20110321230346.GA14681@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Josh Hunt <johunt@akamai.com>
 
-commit d7433142b63d727b5a217c37b1a1468b116a9771 upstream.
+commit 58d406ed6a5f1ca4bc1dba5390b718c67847fa5f upstream.
 
-(crossport of 1f7bebb9e911d870fa8f997ddff838e82b5715ea
-by Andreas Schlick <schlick@lavabit.com>)
+Some versions of grep don't treat '\s' properly. When building perf on such
+systems and using a kernel tarball the perf version is unable to be determined
+from the main kernel Makefile and the user is left with a version of '..'.
+Replacing the use of '\s' with '[[:space:]]', which should work in all grep
+versions, gives a usable version number.
 
-When ext3_dx_add_entry() has to split an index node, it has to ensure that
-name_len of dx_node's fake_dirent is also zero, because otherwise e2fsck
-won't recognise it as an intermediate htree node and consider the htree to
-be corrupted.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Reported-by: Tapan Dhimant <tdhimant@akamai.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tapan Dhimant <tdhimant@akamai.com>
+Cc: linux-kernel@vger.kernel.org
+LKML-Reference: <1300241800-30281-1-git-send-email-johunt@akamai.com>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext3/namei.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/PERF-VERSION-GEN |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -1540,8 +1540,8 @@ static int ext3_dx_add_entry(handle_t *h
- 			goto cleanup;
- 		node2 = (struct dx_node *)(bh2->b_data);
- 		entries2 = node2->entries;
-+		memset(&node2->fake, 0, sizeof(struct fake_dirent));
- 		node2->fake.rec_len = ext3_rec_len_to_disk(sb->s_blocksize);
--		node2->fake.inode = 0;
- 		BUFFER_TRACE(frame->bh, "get_write_access");
- 		err = ext3_journal_get_write_access(handle, frame->bh);
- 		if (err)
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -23,10 +23,10 @@ if test -d ../../.git -o -f ../../.git &
+ then
+ 	VN=$(echo "$VN" | sed -e 's/-/./g');
+ else
+-	eval `grep '^VERSION\s*=' ../../Makefile|tr -d ' '`
+-	eval `grep '^PATCHLEVEL\s*=' ../../Makefile|tr -d ' '`
+-	eval `grep '^SUBLEVEL\s*=' ../../Makefile|tr -d ' '`
+-	eval `grep '^EXTRAVERSION\s*=' ../../Makefile|tr -d ' '`
++	eval $(grep '^VERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
++	eval $(grep '^PATCHLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
++	eval $(grep '^SUBLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
++	eval $(grep '^EXTRAVERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
+ 
+ 	VN="${VERSION}.${PATCHLEVEL}.${SUBLEVEL}${EXTRAVERSION}"
+ fi
 
 
