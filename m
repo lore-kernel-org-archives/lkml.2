@@ -1,116 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab1CUP0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 11:26:35 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:58915 "EHLO mgw-da01.nokia.com"
+	id S1752935Ab1CUP24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 11:28:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18328 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab1CUP0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 11:26:33 -0400
-Message-ID: <4D876ECA.4010503@nokia.com>
-Date: Mon, 21 Mar 2011 17:29:14 +0200
-From: Roger Quadros <roger.quadros@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1751287Ab1CUP2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 11:28:53 -0400
+Date: Mon, 21 Mar 2011 16:19:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: [PATCH 3/8] job control: Fix ptracer wait(2) hang and explain
+	notask_error clearing
+Message-ID: <20110321151941.GA20917@redhat.com>
+References: <1299614199-25142-1-git-send-email-tj@kernel.org> <1299614199-25142-4-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: ext Alan Stern <stern@rowland.harvard.edu>
-CC: <gregkh@suse.de>, <sshtylyov@mvista.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] usb: gadget: storage: Add fsg_get_toc helper
-References: <Pine.LNX.4.44L0.1103211017240.1978-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1103211017240.1978-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.37.109]
-X-OriginalArrivalTime: 21 Mar 2011 15:26:16.0676 (UTC) FILETIME=[521EC240:01CBE7DC]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299614199-25142-4-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2011 04:20 PM, ext Alan Stern wrote:
-> On Mon, 21 Mar 2011, Roger Quadros wrote:
+On 03/08, Tejun Heo wrote:
 >
->> From: Roger Quadros<roger.quadros@nokia.com>
->>
->> fsg_get_toc can be used by both storage gadgets to build a CD-ROM
->> Table of Contents which can be used as data for READ_TOC command.
->> Currently fsg_get_toc supports two TOC formats, i.e.
->> format 0: Formatted TOC and format 2: Raw TOC.
->>
->> Raw TOC is required for CD-ROM emulation to work with Mac OS-X.
->>
->> Signed-off-by: Roger Quadros<roger.quadros@nokia.com>
->> ---
->>   drivers/usb/gadget/storage_common.c |   68 +++++++++++++++++++++++++++++++++++
->>   1 files changed, 68 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
->> index b015561..d47f148 100644
->> --- a/drivers/usb/gadget/storage_common.c
->> +++ b/drivers/usb/gadget/storage_common.c
->> @@ -655,6 +655,74 @@ static void store_cdrom_address(u8 *dest, int msf, u32 addr)
->>   	}
->>   }
->>
->> +/**
->> + * fsg_get_toc() - Builds a TOC with required format @format.
->> + * @curlun: The LUN for which the TOC has to be built
->> + * @msf: Min Sec Frame format or LBA format for address
->> + * @format: TOC format code
->> + * @buf: The buffer into which the TOC is built
->> + *
->> + * Builds a Table of Content which can be used as data for READ_TOC command.
->> + * The TOC simulates a single session, single track CD-ROM mode 1 disc.
->> + *
->> + * Returns number of bytes written to @buf, -EINVAL if format not supported.
->> + */
->> +static int fsg_get_toc(struct fsg_lun *curlun, int msf, int format, u8 *buf)
->> +{
->> +	int i, len;
->> +	switch (format) {
->> +	case 0:
->> +		/* Formatted TOC */
->> +		len = 4 + 2*8;		/* 4 byte header + 2 descriptors */
->> +		memset(buf, 0, len);
->> +		len -= 2;		/* TOC Length excludes length field */
->> +		buf[1] = len;		/* TOC data length */
+>   static void *nooper(void *arg)
+>   {
+> 	  pause();
+> 	  return NULL;
+>   }
 >
-> These two lines are wrong.  You should do:
+>   int main(void)
+>   {
+> 	  const struct timespec ts1s = { .tv_sec = 1 };
+> 	  pid_t tracee, tracer;
+> 	  siginfo_t si;
 >
-> 		buf[1] = len - 2;	/* TOC data length excludes header */
+> 	  tracee = fork();
+> 	  if (tracee == 0) {
+> 		  pthread_t thr;
 >
-> The way it is now, the function ends up returning 18 instead of 20,
-> causing the wrong amount of data to be transmitted.
+> 		  pthread_create(&thr, NULL, nooper, NULL);
+> 		  nanosleep(&ts1s, NULL);
+> 		  printf("tracee exiting\n");
+> 		  pthread_exit(NULL);	/* let subthread run */
+> 	  }
+>
+> 	  tracer = fork();
+> 	  if (tracer == 0) {
+> 		  ptrace(PTRACE_ATTACH, tracee, NULL, NULL);
+> 		  while (1) {
+> 			  if (waitid(P_PID, tracee, &si, WSTOPPED) < 0) {
+> 				  perror("waitid");
+> 				  break;
+> 			  }
+> 			  ptrace(PTRACE_CONT, tracee, NULL,
+> 				 (void *)(long)si.si_status);
+> 		  }
+> 		  return 0;
+> 	  }
+>
+> 	  waitid(P_PID, tracer, &si, WEXITED);
+> 	  kill(tracee, SIGKILL);
+> 	  return 0;
+>   }
+>
+> Before the patch, after the tracee becomes a zombie, the tracer's
+> waitid(WSTOPPED) never returns and the program doesn't terminate.
 
-Yes indeed.
+Yes. The program should terminate after nooper() exits. Agreed, this
+looks strange.
 
+> After the patch, tracee exiting triggers waitid() to fail.
 >
->> +		buf[2] = 1;		/* First track number */
->> +		buf[3] = 1;		/* Last track number */
->> +		buf[5] = 0x16;		/* Data track, copying allowed */
->> +		buf[6] = 0x01;		/* Only track is number 1 */
->> +		store_cdrom_address(&buf[8], msf, 0);
->> +
->> +		buf[13] = 0x16;		/* Lead-out track is data */
->> +		buf[14] = 0xAA;		/* Lead-out track number */
->> +		store_cdrom_address(&buf[16], msf, curlun->num_sectors);
->> +		return len;
->> +		break;
->> +
->> +	case 2:
->> +		/* Raw TOC */
->> +		len = 4 + 3*11;		/* 4 byte header + 3 descriptors */
->> +		memset(buf, 0, len);	/* Header + A0, A1&  A2 descriptors */
->> +		len -= 2;		/* TOC Length excludes length field */
->> +		buf[1] = len;		/* TOC data length */
+>   tracee exiting
+>   waitid: No child processes
+
+OK, but
+
+> @@ -1550,17 +1550,41 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+>  		return 0;
+>  	}
 >
-> Same thing here.  I'm surprised it worked during testing.  Did you
-> really check to see that the correct data was being sent?
+> -	/*
+> -	 * We don't reap group leaders with subthreads.
+> -	 */
+> -	if (p->exit_state == EXIT_ZOMBIE && !delay_group_leader(p))
+> -		return wait_task_zombie(wo, p);
+> +	/* slay zombie? */
+> +	if (p->exit_state == EXIT_ZOMBIE) {
+> +		/* we don't reap group leaders with subthreads */
+> +		if (!delay_group_leader(p))
+> +			return wait_task_zombie(wo, p);
+>
+> -	/*
+> -	 * It's stopped or running now, so it might
+> -	 * later continue, exit, or stop again.
+> -	 */
+> -	wo->notask_error = 0;
+> +		/*
+> +		 * Allow access to stopped/continued state via zombie by
+> +		 * falling through.  Clearing of notask_error is complex.
+> +		 *
+> +		 * When !@ptrace:
+> +		 *
+> +		 * If WEXITED is set, notask_error should naturally be
+> +		 * cleared.  If not, subset of WSTOPPED|WCONTINUED is set,
+> +		 * so, if there are live subthreads, there are events to
+> +		 * wait for.  If all subthreads are dead, it's still safe
+> +		 * to clear - this function will be called again in finite
+> +		 * amount time once all the subthreads are released and
+> +		 * will then return without clearing.
+> +		 *
+> +		 * When @ptrace:
+> +		 *
+> +		 * Stopped state is per-task and thus can't change once the
+> +		 * target task dies, so notask_error should be cleared only
+> +		 * if WCONTINUED is set.
+> +		 */
+> +		if (likely(!ptrace) || (wo->wo_flags & WCONTINUED))
+> +			wo->notask_error = 0;
 
-I too am surprised. I tried playing a few videos without problems.
-After you pointed out the problem I ran a checksum on the files and they match!!
+I don't understand this part. Suppose that this task is not traced and
+its real parent does do_wait(WEXITED). We shouldn't return -ECHLD in
+this case (EXIT_ZOMBIE && delay_group_leader()).
 
-But thanks for pointing out, I'll send a new patch.
+If the task is traced and debugger does do_wait(WEXITED) we should not
+return -ECHLD too.
 
--- 
-regards,
--roger
+So I think this patch is wrong in its current state. Hmm, I just noticed
+the comment says "If WEXITED is set, notask_error should ...", but this
+is not what the code does?
+
+
+
+
+
+But the main problem is, I do not think do_wait() should block in this
+case, and thus I am starting to think this patch is not "complete".
+
+I mean, we are going to add the user-visible change, and I agree the
+current behaviour looks strange. But if we change this code, perhaps
+the tracer should ignore delay_group_leader() at all (unless we are
+going to do wait_task_zombie) ?
+
+Your test-case could use waitid(WEXITED) instead WSTOPPED with the same
+result, it should hang. Why it hangs? The tracee is dead, we can't do
+ptrace(PTRACE_DETACH), and we can do nothing until other threads exit.
+This looks equally strange.
+
+IOW. Assuming that ptrace == T and WEXITED is set, perhaps we should
+do something like this pseudo-code
+
+	if (p->exit_state == EXIT_ZOMBIE) {
+		if (!delay_group_leader(p))
+			return wait_task_zombie(wo, p);
+
+		ptrace_unlink();
+		wait_task_zombie(WNOWAIT);
+	}
+
+However. This is another user-visible change, we need another discussion
+even if I am right. In particular, it is not clear what should we do
+if parent == real_parent. And probably this can confuse gdb, but iirc
+gdb already have the problems with the dead leader anyway.
+
+Oleg.
+
