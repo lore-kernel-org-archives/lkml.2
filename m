@@ -1,40 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab1CUUB3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 16:01:29 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:56688 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab1CUUB2 (ORCPT
+	id S1754435Ab1CUUEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 16:04:38 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18581 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab1CUUEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 16:01:28 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D87AEE0.8000807@cam.ac.uk>
-Date: Mon, 21 Mar 2011 20:02:40 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Mon, 21 Mar 2011 16:04:35 -0400
+Date: Mon, 21 Mar 2011 21:04:26 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-scsi@vger.kernel.org
+cc: linux-kernel@vger.kernel.org,
+        Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        James Bottomley <jejb@kernel.org>
+Subject: [PATCH][SCSI][resend] aacraid: Remove mem leak in
+ aac_send_raw_srb()
+Message-ID: <alpine.LNX.2.00.1103212057390.15815@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        David Brownell <david-b@pacbell.net>
-Subject: Standard handling of boolean attributes in sysfs.
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+We leak in drivers/scsi/aacraid/commctrl.c::aac_send_raw_srb() :
 
-Just wondering what the feeling would be about having
-a utility function similar to sysfs_streq to provide a
-consistent option for all those sysfs attributes out there
-where
+We allocate memory:
+        ...
+                        struct user_sgmap* usg;
+                        usg = kmalloc(actual_fibsize - sizeof(struct aac_srb)
+                          + sizeof(struct sgmap), GFP_KERNEL);
+and then neglect to free it:
+        ...
+                        for (i = 0; i < usg->count; i++) {
+                                u64 addr;
+                                void* p;
+                                if (usg->sg[i].count >
+                                    ((dev->adapter_info.options &
+                                     AAC_OPT_NEW_COMM) ?
+                                      (dev->scsi_host_ptr->max_sectors << 9) :
+                                      65536)) {
+                                        rcode = -EINVAL;
+                                        goto cleanup;
+        ... this 'goto' makes 'usg' go out of scope and leak the memory we 
+            allocated.
+            Other exits properly kfree(usg), it's just here it is neglected.
 
-1, on, true -> 1
-0, off, false -> 0
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ commctrl.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Or does such a beast already exist and I'm just being unobservant?
+ patch against current Linus tree.
+ compile tested only, but I'm pretty certain it is sound.
 
-Jonathan
+diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
+index 645ddd9..33370fb 100644
+--- a/drivers/scsi/aacraid/commctrl.c
++++ b/drivers/scsi/aacraid/commctrl.c
+@@ -649,6 +649,7 @@ static int aac_send_raw_srb(struct aac_dev* dev, void __user * arg)
+ 				     AAC_OPT_NEW_COMM) ?
+ 				      (dev->scsi_host_ptr->max_sectors << 9) :
+ 				      65536)) {
++					kfree(usg);
+ 					rcode = -EINVAL;
+ 					goto cleanup;
+ 				}
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
